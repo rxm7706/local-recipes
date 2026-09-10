@@ -731,6 +731,28 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "and opens NO socket. Wins over --open-fix-prs when both are set"
         ),
     )
+    scan.add_argument(
+        "--pixi-environment",
+        default=None,
+        metavar="NAME",
+        help=(
+            "when extracting pixi.lock, scope to this pixi environment's "
+            "platform package list instead of the top-level union (Story "
+            "12.2). CI callers must pass this explicitly alongside "
+            "--pixi-platform"
+        ),
+    )
+    scan.add_argument(
+        "--pixi-platform",
+        default=None,
+        metavar="PLATFORM",
+        help=(
+            "platform sub-key under the selected pixi environment's "
+            "packages (e.g. linux-64). When --pixi-environment is set "
+            "without this flag, the host platform is used for interactive "
+            "scans only"
+        ),
+    )
     return parser, scan
 
 
@@ -1196,8 +1218,16 @@ def _run_scan(args: argparse.Namespace) -> int:
         try:
             # extractor_for lives INSIDE the guarded region: an unknown
             # manifest kind is an internal-error report, never a crash.
-            extractor = extractor_for(manifest.kind, router)
+            extractor = extractor_for(
+                manifest.kind,
+                router,
+                pixi_environment=args.pixi_environment,
+                pixi_platform=args.pixi_platform,
+            )
             extracted = extractor.extract(target / manifest.path, manifest)
+            pixi_warnings = getattr(extractor, "warnings", ())
+            for warning in pixi_warnings:
+                _stderr(f"{TOOL_NAME}: {warning}")
         except UnparsableManifestError as exc:
             _record_error(
                 errors,

@@ -367,3 +367,66 @@ def test_lockfile_exact_version_folds_over_pyproject_range(tmp_path):
     assert merged.version == "1.26.0"
     assert merged.vuln_matchable is True
     assert merged.cve_match_level is CveMatchLevel.EXACT
+
+
+# --- Story 12.2: environment-scoped pixi.lock extraction ----------------------
+
+
+MULTI_ENV_FIXTURE = FIXTURES / "pixi_lock_multi_env" / "pixi.lock"
+
+
+def _identity_set(components) -> set[tuple[str, str | None]]:
+    return {(c.name, c.version) for c in components}
+
+
+def test_pixi_lock_scoped_environment_excludes_other_env_packages():
+    extractor = PixiLockExtractor(
+        DefaultRouter(), environment="env-a", platform="linux-64"
+    )
+    components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+    names = {c.name for c in components}
+    assert "alpha-only" in names
+    assert "bravo-only" not in names
+    assert extractor.warnings == ()
+
+
+def test_pixi_lock_unscoped_union_keeps_both_environments_packages():
+    extractor = PixiLockExtractor(DefaultRouter())
+    components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+    names = {c.name for c in components}
+    assert names == {"alpha-only", "bravo-only"}
+    assert len(extractor.warnings) == 1
+    assert "2 pixi environments" in extractor.warnings[0]
+
+
+def test_pixi_lock_scoped_unknown_environment_raises():
+    extractor = PixiLockExtractor(
+        DefaultRouter(), environment="missing-env", platform="linux-64"
+    )
+    with pytest.raises(UnparsableManifestError, match="unknown pixi environment"):
+        extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+
+
+def test_pixi_lock_scoped_unknown_platform_raises():
+    extractor = PixiLockExtractor(
+        DefaultRouter(), environment="env-a", platform="noarch-404"
+    )
+    with pytest.raises(UnparsableManifestError, match="has no platform"):
+        extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+
+
+def test_pixi_lock_conda_source_row_parses_name_and_revision():
+    extractor = PixiLockExtractor(
+        DefaultRouter(), environment="env-a", platform="linux-64"
+    )
+    components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+    core = next(c for c in components if c.name == "pyforge-core")
+    assert core.version == "abc123"
+    assert core.ecosystem is Ecosystem.CONDA
+
+
+def test_pixi_lock_host_platform_default_when_environment_set(monkeypatch):
+    monkeypatch.setattr(lockfiles, "_host_platform", lambda: "linux-64")
+    extractor = PixiLockExtractor(DefaultRouter(), environment="env-b")
+    components = extractor.extract(MULTI_ENV_FIXTURE, PIXI_LOCK_MANIFEST)
+    assert {c.name for c in components} == {"bravo-only"}

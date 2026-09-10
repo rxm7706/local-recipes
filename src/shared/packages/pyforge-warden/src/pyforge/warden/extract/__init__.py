@@ -58,7 +58,13 @@ from .environment_yml import EnvironmentYmlExtractor  # noqa: E402
 from .pixi import PixiTomlExtractor  # noqa: E402
 
 
-def extractor_for(kind: str, router: Router) -> Extractor:
+def extractor_for(
+    kind: str,
+    router: Router,
+    *,
+    pixi_environment: str | None = None,
+    pixi_platform: str | None = None,
+) -> Extractor:
     """The extractor for a manifest-kind token; unknown kinds fail loud.
 
     The raise is a plain ``ValueError`` (NOT ``UnparsableManifestError``):
@@ -67,7 +73,11 @@ def extractor_for(kind: str, router: Router) -> Extractor:
     if kind == PYPROJECT_KIND:
         return PyprojectExtractor(router)
     if kind == PIXI_LOCK_KIND:
-        return PixiLockExtractor(router)
+        return PixiLockExtractor(
+            router,
+            environment=pixi_environment,
+            platform=pixi_platform,
+        )
     if kind == CONDA_LOCK_KIND:
         return CondaLockExtractor(router)
     if kind == RECIPE_YAML_KIND:

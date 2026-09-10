@@ -1243,7 +1243,7 @@ def test_internal_value_error_from_an_extractor_is_internal_error(
             raise ValueError("sentinel internal failure")
 
     monkeypatch.setattr(
-        cli, "extractor_for", lambda kind, router: ExplodingExtractor()
+        cli, "extractor_for", lambda kind, router, **_: ExplodingExtractor()
     )
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
@@ -1508,7 +1508,7 @@ def test_unexpected_extractor_exception_still_emits_the_report(
             raise TypeError("sentinel type failure")
 
     monkeypatch.setattr(
-        cli, "extractor_for", lambda kind, router: ExplodingExtractor()
+        cli, "extractor_for", lambda kind, router, **_: ExplodingExtractor()
     )
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
