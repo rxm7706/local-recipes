@@ -436,9 +436,17 @@ in `src/marp/`:
    "bundled page", pulled via the Design↔Code bridge — warden's 411 KB poster is
    the exemplar); `marp --html` render of #3 is the **fallback** when no
    Design-authored bundle exists.
-5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint** via
-   the **deckcraft** pipeline (python-pptx / pptxgenjs); `marp --pptx` is the
-   explicitly **interim** generator (it renders image-slides, not editable text).
+5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint**.
+   **Preferred (shipped 2026-09-10, Story 19.4):** author
+   `src/content_plan.json` and fill via `pixi run -e pyforge-herald pyforge herald
+   deck pptx-fill src/content_plan.json -o src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx`
+   — real `<a:t>` text runs via `pptx_pipeline.py` (CAP-1/CAP-2), including
+   dense slides through the shape API (`add_card` / `add_metric_box` /
+   `add_table` / `add_section_label`). Exemplar:
+   `presentations/pyforge-warden/src/content_plan.json` →
+   `pyforge-warden-deck-2026-09-10.pptx`. **Interim fallback:** `marp --pptx`
+   (renders image-slides, not editable text). **Future:** deckcraft /
+   pptxgenjs when it delivers.
 6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — same engine rule as #5
    (underscore form kept from Example 2).
 

@@ -1,0 +1,171 @@
+{
+  "slides": [
+    {
+      "layout": 0,
+      "placeholders": {
+        "0": "never false-green",
+        "1": "WARDEN · Dependency-trust gate · A CI dependency-trust gate for both Python ecosystems — PyPI applications and the conda / conda-forge world of scientific, analytics & ML/AI computing."
+      }
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT I",
+        "0": "The green check that lies"
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "01 · Exit 0 is not a promise",
+        "1": [
+          "A gate reduces to one number. 0 merges, non-zero blocks.",
+          "exit 0 — assessed & clean — the tool looked hard and found nothing.",
+          "exit 0 — never looked — the tool found nothing because it could not check.",
+          "Warden refuses to collapse them — an unproven result is never reported as clean."
+        ]
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "02 · False-green #1 — the empty database",
+        "1": "If the OSV feed is missing, empty, corrupt, or stale, a naive scanner queries it, gets zero hits, and reports clean. Warden content-pre-flights the database before it trusts a single result."
+      }
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT II",
+        "0": "The frozen contract"
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "05 · One report, one schema",
+        "1": [
+          "Every engine and axis merges into one ComplianceReport, schema-validated.",
+          "Producer-agnostic — the source of truth, not the log.",
+          "Carries coverage and provenance per axis.",
+          "Versioned schema — the contract cannot silently drift."
+        ]
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "06 · The verdict lattice — highest wins",
+        "1": "The whole design turns on one placement: indeterminate sits above the pass line. An unproven axis fails the gate — it never slides down to clean."
+      }
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT III",
+        "0": "The engines, orchestrated"
+      }
+    },
+    {
+      "layout": 6,
+      "placeholders": {},
+      "shapes": [
+        {
+          "type": "section_label",
+          "left": 457200,
+          "top": 274638,
+          "width": 8229600,
+          "height": 400000,
+          "text": "16 · Six axes of dependency trust"
+        },
+        {
+          "type": "table",
+          "left": 457200,
+          "top": 900000,
+          "width": 5500000,
+          "height": 3800000,
+          "rows": [
+            ["Axis", "Question", "Engine", "Maturity"],
+            ["Hygiene", "Is it used?", "deptry", "v1 gate"],
+            ["Security", "Is it vulnerable?", "osv-scanner + KEV", "v1 gate"],
+            ["License", "Is it allowed?", "license-expression", "v1 flag-activated"],
+            ["Currency", "Is it patchable?", "LTS registry", "v1 flag-activated"]
+          ]
+        },
+        {
+          "type": "metric_box",
+          "left": 6200000,
+          "top": 900000,
+          "width": 2500000,
+          "height": 1200000,
+          "value": "6",
+          "label": "axes of dependency trust"
+        },
+        {
+          "type": "metric_box",
+          "left": 6200000,
+          "top": 2300000,
+          "width": 2500000,
+          "height": 1200000,
+          "value": "4",
+          "label": "v1 gates (2 default-on)"
+        },
+        {
+          "type": "card",
+          "left": 6200000,
+          "top": 3700000,
+          "width": 2500000,
+          "height": 2200000,
+          "title": "Never false-green",
+          "body": "indeterminate sits above the pass line — an unproven axis fails the gate, never slides to clean."
+        }
+      ]
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT IV",
+        "0": "Offline by default"
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "13 · Deny-by-default egress",
+        "1": [
+          "A scan makes no network calls by default.",
+          "Database and engines are provisioned ahead of time as declared dependencies.",
+          "Any online behavior is opt-in and explicit — never silent."
+        ]
+      }
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT V",
+        "0": "From a gate to governance"
+      }
+    },
+    {
+      "layout": 1,
+      "placeholders": {
+        "0": "17 · KEV + EPSS — prioritize by exploitability",
+        "1": "Not every CVE matters equally. Warden enriches each finding so the gate blocks on what is actually dangerous — not theoretical noise."
+      }
+    },
+    {
+      "layout": 2,
+      "placeholders": {
+        "1": "ACT VI",
+        "0": "One command, one honest gate"
+      }
+    },
+    {
+      "layout": 0,
+      "placeholders": {
+        "0": "A green check should mean it was actually checked.",
+        "1": "No empty database, no skipped manifest, no false green. Warden · pyforge-warden · pyforge.warden"
+      }
+    }
+  ]
+}

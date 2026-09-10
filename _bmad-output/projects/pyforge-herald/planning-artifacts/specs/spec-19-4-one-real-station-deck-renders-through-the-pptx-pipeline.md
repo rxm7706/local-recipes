@@ -2,9 +2,10 @@
 title: 'One real station deck renders through the pptx pipeline'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '7c41c11838a8a648a22350f01d51f8deb440b675'
 context: []
 warnings: []
 deferred: []
@@ -96,3 +97,29 @@ ships, it does not add one.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Fifteen-slide content_plan is incomplete vs the 28-slide Marp deck — the spec asks for a six-act framework exemplar, not a full slide-for-slide transcription; 15 slides cover all six acts plus a shape-API dense slide.
+  - `[false]` `[reject]` `_REPO_ROOT = Path(__file__).resolve().parents[6]` is brittle — verified: resolves to repo root from the package test path; matches the monorepo layout.
+  - `[false]` `[reject]` No `soffice` round-trip test on the committed warden `.pptx` — Story 15.1 already proves round-trip on herald slides; 19.4 tests prove real `<a:t>` runs and shape API output on the warden artifact.
+
+## Auto Run Result
+
+**Summary:** Authored the first real `content_plan.json` for `pyforge-warden` (six-act framework, Warden deck content), filled it through `herald deck pptx-fill` against the bundled interim template, and committed the pipeline-generated `pyforge-warden-deck-2026-09-10.pptx` with editable text runs and a dense slide exercising `add_table` / `add_metric_box` / `add_card` / `add_section_label`.
+
+**Files changed:**
+- `presentations/pyforge-warden/src/content_plan.json` — six-act Warden deck content plan (15 slides, shape API on slide 9)
+- `presentations/pyforge-warden/src/pptx/pyforge-warden-deck-2026-09-10.pptx` — pipeline-filled editable deck output
+- `src/shared/packages/pyforge-herald/tests/unit/test_story_19_4_warden_deck.py` — matrix coverage tests for the committed artifact
+- `docs/specs/presentation-deck.md` — documents the preferred `pptx-fill` path vs Marp interim exports
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml` — story 19.4 → `done`
+
+**Review:** 0 patches, 0 deferred, 3 rejected (see triage log).
+
+**Follow-up review recommended:** false
+
+**Verification:** `pixi run -e pyforge-herald pytest tests/unit/test_story_19_4_warden_deck.py -v` — 6 passed; manual OOXML check confirms 15 slides, no `<p:pic>`, shape-API strings on slide 9.
+
+**Residual risks:** The committed deck is a curated six-act summary (15 slides), not a full 28-slide Marp parity export; future work may expand `content_plan.json` slide-by-slide.
