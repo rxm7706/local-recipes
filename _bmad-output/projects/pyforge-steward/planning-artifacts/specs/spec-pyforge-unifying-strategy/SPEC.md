@@ -270,11 +270,12 @@ they are why this is not merely a UI project.
     long operations surviving connection loss. **Not** a `services/` process-per-station topology.
   - **success:** An agent completes a multi-minute station operation across a simulated ingress
     disconnect and still retrieves the result.
-  - **verified:** atlas+warden `start`/`get` + handle TTL live in
-    `src/platform/tests/test_start_get_survives_disconnect.py:82-281`; 6/8 stations lack
-    `start`/`get` (`src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py:28`,
-    `src/shared/packages/django-warden/src/django_warden_fabric/mcp_asgi.py:68` only);
-    ingress-disconnect + multi-minute success criterion unexercised.
+  - **verified:** all eight station MCP faces ship supervisor `start`/`get` over the shared
+    durable store (`django_pyforge/mcp_start_get.py` + per-station `mcp_asgi.py` under each
+    `django-<station>` portal); handle TTL + disconnect survival in
+    `src/platform/tests/test_start_get_survives_disconnect.py:82-281` (atlas) and
+    `src/platform/tests/test_mcp_disconnect_start_get.py` (all eight, including transport
+    `http.disconnect` mid-get while a gated worker simulates a multi-minute op).
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
     capability to Tasks would block it on upstream. See the `start`/`get` constraint below.

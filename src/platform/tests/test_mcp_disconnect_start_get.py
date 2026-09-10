@@ -247,49 +247,10 @@ def _reset_slow_gate():
     _SLOW_GATE.set()
 
 
-@pytest.fixture
-def preserve_test_runner(monkeypatch):
-    """First ``register_runner`` wins — rebuilds must not clobber test doubles."""
-
+def _install_runner(station: str, tool: str, fn: object) -> None:
     import django_pyforge.supervisor as supervisor  # noqa: PLC0415
 
-    original = supervisor.register_runner
-
-    def _preserve(station: str, tool: str, fn: object) -> None:
-        key = (station, tool)
-        if key not in supervisor._runners:  # noqa: SLF001
-            original(station, tool, fn)
-
-    monkeypatch.setattr(supervisor, "register_runner", _preserve)
-
-
-@pytest.fixture(autouse=True)
-def _reset_mcp_app_caches():
-    """Each TestClient lifespan needs a fresh StreamableHTTPSessionManager."""
-    import django_pyforge.supervisor as supervisor  # noqa: PLC0415
-
-    supervisor._runners.clear()  # noqa: SLF001
-    import django_atlas_portal.mcp_asgi as atlas_mcp  # noqa: PLC0415
-    import django_doctor_portal.mcp_asgi as doctor_mcp  # noqa: PLC0415
-    import django_herald_portal.mcp_asgi as herald_mcp  # noqa: PLC0415
-    import django_marshal_portal.mcp_asgi as marshal_mcp  # noqa: PLC0415
-    import django_mason_portal.mcp_asgi as mason_mcp  # noqa: PLC0415
-    import django_scribe_portal.mcp_asgi as scribe_mcp  # noqa: PLC0415
-    import django_steward_portal.mcp_asgi as steward_mcp  # noqa: PLC0415
-    import django_warden_fabric.mcp_asgi as warden_mcp  # noqa: PLC0415
-
-    atlas_mcp._APP = None  # noqa: SLF001
-    warden_mcp._SERVER = None  # noqa: SLF001
-    for mod in (
-        doctor_mcp,
-        herald_mcp,
-        marshal_mcp,
-        mason_mcp,
-        scribe_mcp,
-        steward_mcp,
-    ):
-        mod._CACHE.clear()  # noqa: SLF001
-    yield
+    supervisor._runners[(station, tool)] = fn  # noqa: SLF001
 
 
 @pytest.mark.django_db
@@ -330,7 +291,6 @@ def test_start_get_tools_are_listed(face: StationStartGet) -> None:
 def test_mcp_disconnect_then_get_retrieves_result(
     face: StationStartGet,
     monkeypatch,
-    preserve_test_runner,
 ) -> None:
     """Drop transport mid-get while the op runs, then reconnect and retrieve."""
     calls = {"n": 0}
@@ -356,8 +316,8 @@ def test_mcp_disconnect_then_get_retrieves_result(
         else {"target": ".", "assertion": assertion}
     )
 
-    register_runner(face.station, face.run_tool, counting_slow_runner)
     mcp_face = _build_mcp_face(face.station)
+    _install_runner(face.station, face.run_tool, counting_slow_runner)
 
     with TestClient(_host_app(face.station, mcp_face)) as client:
         started = _tool_call(
@@ -380,6 +340,7 @@ def test_mcp_disconnect_then_get_retrieves_result(
 
     # Attempt get while worker is blocked — transport disconnect injected.
     fresh_face = _build_mcp_face(face.station)
+    _install_runner(face.station, face.run_tool, counting_slow_runner)
     disconnect_app = _disconnect_on_get_asgi(_host_app(face.station, fresh_face))
     with TestClient(disconnect_app) as drop_client:
         try:
