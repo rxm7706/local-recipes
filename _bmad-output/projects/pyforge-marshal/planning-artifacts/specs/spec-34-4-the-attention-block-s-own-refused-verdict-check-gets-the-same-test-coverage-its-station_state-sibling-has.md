@@ -2,7 +2,8 @@
 title: "The ATTENTION-block's own refused-verdict check gets the same test coverage its station_state() sibling has"
 type: 'chore'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'be8c100c055b201a0083d0cc1be729e458f1a515'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
