@@ -233,8 +233,23 @@ verify_commands = [
 # be outscored by another project's denser-vocabulary node) was found and
 # fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
 # scope= parameter. wire/output/structure-graph/derived-context stay
-# declared-off (undeclared = default off) pending Stories 28.28-28.31.
+# declared-off (undeclared = default off) pending Story 28.31 (dispatch
+# cost spike) / 28.33 (spin reference wiring).
 [context."planning-graph"]
+enabled = true
+
+# context.derived-context (Story 28.28/28.32, token-economy CAP-5): scribe's
+# `index refresh --declare` shipped and the lean pyforge-scribe env's
+# missing cocoindex dependency was fixed -- verified live 2026-09-10
+# against pyforge-marshal, mode: incremental with zero findings.
+[context."derived-context"]
+enabled = true
+
+# context.output (Story 28.30/28.32, token-economy CAP-3): caveman skill
+# deployment now reaches dispatch worktrees too (not just loop homes), and
+# bmad-build-auto's own step-01-clarify-and-route.md tells the agent to
+# invoke it.
+[context.output]
 enabled = true
 
 [model_tier_map.heavy]
