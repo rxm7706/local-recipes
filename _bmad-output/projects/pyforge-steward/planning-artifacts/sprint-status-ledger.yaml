@@ -167,7 +167,7 @@ development_status:
   45-1-eval-quality-joins-the-suite: done
   45-2-the-reviewer-is-measured-against-a-planted-defect: done
   46-1-the-adoption-register-governs-wiring: done
-  46-10-the-release-cadence-is-one-runbook-and-the-next-rehearsal-has-run-once: backlog
+  46-10-the-release-cadence-is-one-runbook-and-the-next-rehearsal-has-run-once: done
   46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders: done
   46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task: done
   46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven: done
@@ -313,7 +313,7 @@ development_status:
   epic-44-retrospective: optional
   epic-45: done
   epic-45-retrospective: optional
-  epic-46: in-progress
+  epic-46: done
   epic-46-retrospective: optional
   epic-47: done
   epic-47-retrospective: optional
