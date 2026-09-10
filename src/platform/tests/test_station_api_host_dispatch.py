@@ -104,7 +104,8 @@ def test_legacy_bare_api_herald_webhook_does_not_reach_station_handler():
 
 
 def test_host_dispatches_herald_webhook_unsigned_returns_401(
-    monkeypatch, tmp_path,
+    monkeypatch,
+    tmp_path,
 ):
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "test-secret")
