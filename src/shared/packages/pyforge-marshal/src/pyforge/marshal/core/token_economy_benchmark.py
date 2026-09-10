@@ -269,11 +269,20 @@ def leg_from_mapping(payload: Mapping[str, object]) -> BenchmarkLegRecord:
     layer_savings: LayerSavings | None = None
     if isinstance(savings_raw, Mapping):
         layer_savings = LayerSavings(
-            output_compression_saved=_optional_int(savings_raw.get("output_compression_saved")),
-            wire_compression_saved=_optional_int(savings_raw.get("wire_compression_saved")),
-            graph_hits_vs_file_reads=_optional_pair(savings_raw.get("graph_hits_vs_file_reads")),
-            derived_context_cache_hits=_optional_int(savings_raw.get("derived_context_cache_hits")),
-            planning_graph_tokens_saved=_optional_int(
+            output_compression_saved=_optional_measurement(
+                savings_raw.get("output_compression_saved")
+            ),
+            wire_compression_saved=_optional_measurement(
+                savings_raw.get("wire_compression_saved")
+            ),
+            graph_hits_vs_file_reads=_optional_graph_stats(
+                savings_raw.get("graph_hits_vs_file_reads"),
+                savings_raw,
+            ),
+            derived_context_cache_hits=_optional_measurement(
+                savings_raw.get("derived_context_cache_hits")
+            ),
+            planning_graph_tokens_saved=_optional_measurement(
                 savings_raw.get("planning_graph_tokens_saved")
             ),
         )
@@ -312,6 +321,35 @@ def _optional_int(value: object) -> int | None:
     if value is None:
         return None
     return int(value)
+
+
+def _optional_measurement(value: object) -> int | str | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        return value
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_graph_stats(
+    value: object, savings_raw: Mapping[str, object]
+) -> tuple[int, int] | str | None:
+    if isinstance(value, str):
+        return value
+    hits = savings_raw.get("graph_hits")
+    if value is None and isinstance(hits, int):
+        reads_raw = savings_raw.get("file_reads", 0)
+        try:
+            reads = int(reads_raw) if reads_raw is not None else 0
+        except (TypeError, ValueError):
+            return None
+        return (hits, reads)
+    return _optional_pair(value)
 
 
 def _optional_str(value: object) -> str | None:

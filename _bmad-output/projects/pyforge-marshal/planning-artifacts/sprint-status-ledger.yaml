@@ -11,7 +11,7 @@
 # Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
-# project: pyforge-marshal
+# project: marshal
 # stories: 294
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
@@ -179,7 +179,7 @@ development_status:
   32-6-governance-documents-cannot-go-stale-silently: done
   32-7-coverage-is-measured-on-all-eight-stations-before-any-floor-is-enforced: done
   32-8-every-caller-and-ci-lane-follows-the-convergence: done
-  33-1-measurement-first-the-benchmark-artifact-with-real-savings-getters: backlog
+  33-1-measurement-first-the-benchmark-artifact-with-real-savings-getters: done
   33-10-the-cfe-pin-is-derived-never-stamped: backlog
   33-11-attribution-becomes-unforgeable-before-the-track-serves-a-second-principal: blocked
   33-2-the-layers-are-enabled-on-factory-dispatch: backlog
@@ -298,7 +298,7 @@ development_status:
   epic-33-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
-  epic-5: in-progress
+  epic-5: done
   epic-5-retrospective: done
   epic-6: done
   epic-6-retrospective: optional

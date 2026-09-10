@@ -246,11 +246,11 @@ class LayerSavings:
     - ``planning_graph_tokens_saved``: Layer 4 (graphifyy) - tokens saved by selective
       retrieval vs full document loads from planning corpus"""
     
-    output_compression_saved: int | None = None
-    wire_compression_saved: int | None = None
-    graph_hits_vs_file_reads: tuple[int, int] | None = None  # (hits, reads)
-    derived_context_cache_hits: int | None = None
-    planning_graph_tokens_saved: int | None = None
+    output_compression_saved: int | str | None = None
+    wire_compression_saved: int | str | None = None
+    graph_hits_vs_file_reads: tuple[int, int] | str | None = None  # (hits, reads)
+    derived_context_cache_hits: int | str | None = None
+    planning_graph_tokens_saved: int | str | None = None
 
 
 @dataclass(frozen=True)
