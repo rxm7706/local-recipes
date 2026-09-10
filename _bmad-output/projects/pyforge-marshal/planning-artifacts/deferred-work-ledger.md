@@ -6188,3 +6188,14 @@ status: open
     clobber.
 
   verified: 2026-09-08 — resolved-in-pass — fix, restore, and both-direction proof landed together.
+
+### DW-FU-5-11: Live pyforge-steward acceptance fixture not encoded in CI — steward home must be verified manually with `marshal status --project pyforge-steward`.
+
+- source_spec: `planning-artifacts/specs/spec-5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown.md`
+  summary: Live pyforge-steward acceptance fixture not encoded in CI — steward home must be verified manually with `marshal status --project pyforge-steward`.
+  evidence: The steward loop home is operator-local; the diff uses synthetic tmp_path fixtures with the same run id shape (20260820-140536-988f).
+  location: (none cited)
+  origin: spec-deferred 0f9a025d7d75 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
