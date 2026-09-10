@@ -16,7 +16,7 @@ def oldest_queue_age_seconds(redis_client: object) -> float:
     for queue in ALL_QUEUES:
         try:
             payload = redis_client.lindex(queue, 0)  # type: ignore[attr-defined]
-        except Exception:  # noqa: BLE001 -- probe must not crash the beat task
+        except Exception:
             logger.warning("queue-age probe failed for queue %s", queue, exc_info=True)
             continue
         if not payload:

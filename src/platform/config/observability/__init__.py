@@ -110,9 +110,15 @@ def configure_observability(service_version: str | None = None) -> bool:
 
 
 def _register_platform_observability_hooks() -> None:
-    from django_pyforge.observability_hooks import set_celery_queue_age_writer
-    from django_pyforge.observability_hooks import set_event_stream_lag_writer
-    from django_pyforge.observability_hooks import set_mcp_duration_observer
+    from django_pyforge.observability_hooks import (  # noqa: PLC0415
+        set_celery_queue_age_writer,
+    )
+    from django_pyforge.observability_hooks import (  # noqa: PLC0415
+        set_event_stream_lag_writer,
+    )
+    from django_pyforge.observability_hooks import (  # noqa: PLC0415
+        set_mcp_duration_observer,
+    )
 
     set_mcp_duration_observer(observe_mcp_duration)
     set_celery_queue_age_writer(set_celery_queue_oldest_age)

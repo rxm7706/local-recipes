@@ -6,10 +6,11 @@ import json
 from pathlib import Path
 
 import pytest
-
-from pyforge.doctor.actuators.flag_kill_switch import disable_flag
-from pyforge.doctor.actuators.flag_kill_switch import kill_switch
-from pyforge.doctor.actuators.flag_kill_switch import record_kill_switch_metric
+from pyforge.doctor.actuators.flag_kill_switch import (
+    disable_flag,
+    kill_switch,
+    record_kill_switch_metric,
+)
 
 
 def _sample_tree() -> dict:

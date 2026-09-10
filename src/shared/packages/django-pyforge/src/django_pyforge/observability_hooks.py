@@ -14,17 +14,17 @@ _event_stream_lag_writer: Callable[[float], None] | None = None
 
 
 def set_mcp_duration_observer(observer: Callable[[float], None] | None) -> None:
-    global _mcp_duration_observer  # noqa: PLW0603
+    global _mcp_duration_observer
     _mcp_duration_observer = observer
 
 
 def set_celery_queue_age_writer(writer: Callable[[float], None] | None) -> None:
-    global _celery_queue_age_writer  # noqa: PLW0603
+    global _celery_queue_age_writer
     _celery_queue_age_writer = writer
 
 
 def set_event_stream_lag_writer(writer: Callable[[float], None] | None) -> None:
-    global _event_stream_lag_writer  # noqa: PLW0603
+    global _event_stream_lag_writer
     _event_stream_lag_writer = writer
 
 

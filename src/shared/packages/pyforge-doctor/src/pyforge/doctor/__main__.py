@@ -51,11 +51,8 @@ from . import fleet_surface, score, sources
 from .checks import env_hygiene, registry
 from .hooks import build_prescriptions, gather_for_diagnose
 from .models import DoctorReport, DoctorStatus, Finding, Prescription, Source
-from .sources import atlas
-from .sources import backlog_intake
-from .sources import bmad_method
+from .sources import atlas, backlog_intake, bmad_method, sibling_dreams
 from .sources import marshal as marshal_source
-from .sources import sibling_dreams
 from .sources import warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
 
@@ -918,7 +915,7 @@ def _run_flags(args: argparse.Namespace) -> int:
     else:
         try:
             from django_pyforge.flags import resolve_flags_path
-        except ImportError as exc:
+        except ImportError:
             _stderr(
                 "doctor flags kill-switch: --flags-path is required when "
                 "django_pyforge is not importable"

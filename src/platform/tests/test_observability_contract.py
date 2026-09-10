@@ -53,7 +53,7 @@ def test_health_check_middleware_observes_ht():
 
     middleware = HealthCheckMetricsMiddleware(_ok)
     request = SimpleNamespace(path="/ht/")
-    middleware(request)
+    middleware(request)  # type: ignore[arg-type]
 
     after = HEALTH_CHECK_DURATION._sum.get()  # noqa: SLF001
     assert after >= before

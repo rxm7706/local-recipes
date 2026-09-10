@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
-
-from django.http import HttpRequest
-from django.http import HttpResponse
+from typing import TYPE_CHECKING
 
 from config.observability.metrics import observe_health_check
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from django.http import HttpRequest
+    from django.http import HttpResponse
+
+_HTTP_OK_RANGE_START = 200
+_HTTP_OK_RANGE_END = 300
 
 
 class HealthCheckMetricsMiddleware:
@@ -23,5 +29,6 @@ class HealthCheckMetricsMiddleware:
         started = time.perf_counter()
         response = self.get_response(request)
         duration = time.perf_counter() - started
-        observe_health_check(success=200 <= response.status_code < 300, duration_seconds=duration)
+        ok = _HTTP_OK_RANGE_START <= response.status_code < _HTTP_OK_RANGE_END
+        observe_health_check(success=ok, duration_seconds=duration)
         return response

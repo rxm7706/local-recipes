@@ -35,15 +35,19 @@ from typing import Any
 
 from celery import shared_task
 
-from django_pyforge.events.tracing import bind_structlog_trace
-from django_pyforge.events.tracing import trace_headers
-from django_pyforge.events.tracing import traceparent_from_task_request
+from django_pyforge.events.tracing import (
+    bind_structlog_trace,
+    trace_headers,
+    traceparent_from_task_request,
+)
 from django_pyforge.models import RunState
-from django_pyforge.supervisor import begin_attempt
-from django_pyforge.supervisor import complete_run
-from django_pyforge.supervisor import lookup_runner
-from django_pyforge.supervisor import prune_run_state
-from django_pyforge.supervisor import sweep_lost_runs
+from django_pyforge.supervisor import (
+    begin_attempt,
+    complete_run,
+    lookup_runner,
+    prune_run_state,
+    sweep_lost_runs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,8 +186,10 @@ def observability_probe_task() -> dict[str, float]:
 
     from django_pyforge.celery_probes import oldest_queue_age_seconds
     from django_pyforge.events.probes import event_stream_lag_seconds
-    from django_pyforge.observability_hooks import publish_celery_queue_age
-    from django_pyforge.observability_hooks import publish_event_stream_lag
+    from django_pyforge.observability_hooks import (
+        publish_celery_queue_age,
+        publish_event_stream_lag,
+    )
 
     try:
         import redis
