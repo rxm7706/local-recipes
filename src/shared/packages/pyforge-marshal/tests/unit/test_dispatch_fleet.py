@@ -541,19 +541,35 @@ def _cycle(
     station: str | None = None,
     explicit_stories: tuple[str, ...] | None = None,
 ):
-    return execute_fleet_cycle(
-        repo_root=tmp_path,
-        mode=mode,
-        leave_remaining=leave_remaining,
-        campaign_blocked=campaign_blocked if campaign_blocked is not None else {},
-        fs=FakeFs(),
-        vcs=vcs if vcs is not None else FakeVcs(tmp_path),
-        build_harness=build_harness if build_harness is not None else FakeBuildHarness(),
-        process=process if process is not None else FakeProcess(alive=False),
-        harness=harness if harness is not None else FakeHarness(ledgers),
-        station=station,
-        explicit_stories=explicit_stories,
-    )
+    import os
+
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from scope_triangle import point_scope_triangle
+
+    real_dispatch_once = dispatch_cli.dispatch_once
+
+    def _scoped_dispatch_once(*, slug: str, story: str, **kwargs):
+        point_scope_triangle(tmp_path, slug)
+        os.environ["BMAD_ACTIVE_PROJECT"] = slug
+        return real_dispatch_once(slug=slug, story=story, **kwargs)
+
+    dispatch_cli.dispatch_once = _scoped_dispatch_once
+    try:
+        return execute_fleet_cycle(
+            repo_root=tmp_path,
+            mode=mode,
+            leave_remaining=leave_remaining,
+            campaign_blocked=campaign_blocked if campaign_blocked is not None else {},
+            fs=FakeFs(),
+            vcs=vcs if vcs is not None else FakeVcs(tmp_path),
+            build_harness=build_harness if build_harness is not None else FakeBuildHarness(),
+            process=process if process is not None else FakeProcess(alive=False),
+            harness=harness if harness is not None else FakeHarness(ledgers),
+            station=station,
+            explicit_stories=explicit_stories,
+        )
+    finally:
+        dispatch_cli.dispatch_once = real_dispatch_once
 
 
 def _status_by_station(report) -> dict[str, StationCycleStatus]:
@@ -1073,14 +1089,30 @@ def _drain_args(**overrides) -> argparse.Namespace:
 
 
 def _run_drain(tmp_path: Path, args: argparse.Namespace, **kwargs) -> int:
-    return run_fleet_drain(
-        args,
-        fs=kwargs.get("fs") or FakeFs(),
-        vcs=kwargs.get("vcs") or FakeVcs(tmp_path),
-        build_harness=kwargs.get("build_harness") or FakeBuildHarness(),
-        process=kwargs.get("process") or FakeProcess(alive=False),
-        harness=kwargs.get("harness") or FakeHarness(kwargs["ledgers"]),
-    )
+    import os
+
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from scope_triangle import point_scope_triangle
+
+    real_dispatch_once = dispatch_cli.dispatch_once
+
+    def _scoped_dispatch_once(*, slug: str, story: str, **kwargs):
+        point_scope_triangle(tmp_path, slug)
+        os.environ["BMAD_ACTIVE_PROJECT"] = slug
+        return real_dispatch_once(slug=slug, story=story, **kwargs)
+
+    dispatch_cli.dispatch_once = _scoped_dispatch_once
+    try:
+        return run_fleet_drain(
+            args,
+            fs=kwargs.get("fs") or FakeFs(),
+            vcs=kwargs.get("vcs") or FakeVcs(tmp_path),
+            build_harness=kwargs.get("build_harness") or FakeBuildHarness(),
+            process=kwargs.get("process") or FakeProcess(alive=False),
+            harness=kwargs.get("harness") or FakeHarness(kwargs["ledgers"]),
+        )
+    finally:
+        dispatch_cli.dispatch_once = real_dispatch_once
 
 
 def test_drain_refuses_a_missing_mode_loudly(
@@ -1609,8 +1641,14 @@ def test_one_stations_raising_dispatch_never_starves_the_rest(
     real_dispatch_once = dispatch_cli.dispatch_once
 
     def exploding(*, slug: str, story: str, **kwargs):
+        import os
+
+        from scope_triangle import point_scope_triangle
+
         if slug == "pyforge-doctor":  # sorts BEFORE pyforge-marshal
             raise VcsCommandError("worktree vanished under a live session")
+        point_scope_triangle(tmp_path, slug)
+        os.environ["BMAD_ACTIVE_PROJECT"] = slug
         return real_dispatch_once(slug=slug, story=story, **kwargs)
 
     monkeypatch.setattr(dispatch_cli, "dispatch_once", exploding)

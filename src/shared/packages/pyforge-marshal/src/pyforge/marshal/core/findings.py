@@ -1695,6 +1695,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 29.2 (CAP-11 marshal half): harness-done story is CAP-4 only;
         # land failed or is not yet eligible — park, never another session.
         "MRS-DISP-040",
+        # Story 33.9 (spec-bmad-switch-scope-enforcement CAP-1 third call
+        # site): `verify_scope` at `factory dispatch` — marker/symlink
+        # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
+        "MRS-DISP-041",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

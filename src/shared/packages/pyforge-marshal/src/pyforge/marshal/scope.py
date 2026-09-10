@@ -116,8 +116,20 @@ def verify_scope(root: Path, expected_slug: str) -> ScopeDrift | None:
     )
 
 
+def format_scope_drift(drift: ScopeDrift) -> str:
+    """Human-readable ScopeDrift for stderr / Finding messages."""
+    return (
+        "scope drift: "
+        f"expected {drift.expected!r} but "
+        f"marker={drift.marker!r}, "
+        f"planning-artifacts={drift.planning_artifacts!r}, "
+        f"implementation-artifacts={drift.implementation_artifacts!r}"
+    )
+
+
 __all__ = [
     "UNRECOGNIZED",
     "ScopeDrift",
+    "format_scope_drift",
     "verify_scope",
 ]

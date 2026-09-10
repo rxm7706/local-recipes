@@ -110,6 +110,7 @@ from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
+from ..scope import format_scope_drift, verify_scope
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -259,6 +260,33 @@ def _format_entry_ts(moment: datetime) -> str:
 
 def _random_token() -> str:
     return secrets.token_hex(4)
+
+
+def _dispatch_scope_refusal(repo_root: Path, slug: str) -> Finding | None:
+    """Story 33.9 / FR-190 CAP-1 third call site: refuse before any launch work.
+
+    Checks the parent ``BMAD_ACTIVE_PROJECT`` env (when set) and the sole
+    ``verify_scope`` triangle against the dispatch slug.
+    """
+    env_slug = os.environ.get("BMAD_ACTIVE_PROJECT", "").strip()
+    if env_slug and env_slug != slug:
+        return Finding(
+            code="MRS-DISP-041",
+            severity=Severity.ERROR,
+            message=(
+                f"scope drift: dispatch resolved project {slug!r} disagrees with "
+                f"BMAD_ACTIVE_PROJECT env {env_slug!r} -- use physical paths under "
+                f"_bmad-output/projects/{slug}/ and never scripts/bmad-switch"
+            ),
+        )
+    drift = verify_scope(repo_root, slug)
+    if drift is not None:
+        return Finding(
+            code="MRS-DISP-041",
+            severity=Severity.ERROR,
+            message=format_scope_drift(drift),
+        )
+    return None
 
 
 def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
@@ -1380,6 +1408,11 @@ def dispatch_once(
                 message=f"cannot resolve repository root: {exc}",
             )
         )
+        return _done()
+
+    scope_refusal = _dispatch_scope_refusal(repo_root, slug)
+    if scope_refusal is not None:
+        findings.append(scope_refusal)
         return _done()
 
     spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story)

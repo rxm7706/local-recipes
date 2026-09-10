@@ -312,6 +312,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-038",
             "MRS-DISP-039",
             "MRS-DISP-040",
+            # Story 33.9: verify_scope at factory dispatch boundary.
+            "MRS-DISP-041",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",
