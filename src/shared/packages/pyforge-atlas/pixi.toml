@@ -88,17 +88,3 @@ beautifulsoup4 = ">=4.15.0"           # imported as `bs4`
 # Story 14.2 (CAP-2): admission.py/factory/lasuite.py/datasets/{basilisk,migration_status,refresh}.py's
 # mandatory run-dep (atomic_write/atomic_write_text).
 pyforge-core = { path = "../pyforge-core" }
-# Story 14.1 (CAP-1): `views/render.py` hard-imports bokeh to render each static view's
-# rows as a self-contained `bokeh.embed.components()` script+div fragment. Kept
-# byte-for-byte in step with the pyproject.toml [project].dependencies entry
-# (AUD-ATLAS-010), matching the root pixi.toml `bokeh` floor already used by local-recipes.
-bokeh = ">=3.9.2"
-# Story 14.3 (CAP-2): `views/live.py` hard-imports `bokeh.server.server.Server` (built on
-# Tornado's IOLoop/HTTPServer) and `views/asgi.py` hard-imports `starlette` for the ASGI
-# mounting layer. Both were already resolvable transitively (via dagster/bokeh) but were
-# never declared — AUD-ATLAS-010: an undeclared module-level import is a runtime dependency
-# whether or not the manifest says so. Floors pinned to the versions resolved in the working
-# env on 2026-08-14. Kept byte-for-byte in step with the pyproject.toml [project].dependencies
-# entries.
-tornado = ">=6.5.8"
-starlette = ">=1.6.0"

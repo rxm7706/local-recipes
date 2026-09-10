@@ -7,6 +7,21 @@ from typing import Any
 from . import __version__
 
 
+def discover_cli_verbs() -> frozenset[str]:
+    """Return Kedro project command names for ``pyforge.atlas`` at runtime.
+
+    Story 25.3: the atlas CLI⇄tool parity gate derives its verb inventory from
+    Kedro's own project command surface — never from a hand-typed list or a
+    copied Click group in ``pyforge-core``.
+    """
+    from kedro.framework.cli.project import project_group
+    from kedro.framework.project import configure_project
+
+    package_name = __package__ or "pyforge.atlas"
+    configure_project(package_name)
+    return frozenset(project_group.commands.keys())
+
+
 def main(*args, **kwargs) -> Any:
     # Story 7.1: Kedro's own Click-based command routing has no built-in
     # `--version` (`pyforge-atlas --version` exits 2, "no such option") --

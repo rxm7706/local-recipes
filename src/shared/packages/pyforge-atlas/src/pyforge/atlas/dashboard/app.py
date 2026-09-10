@@ -10,7 +10,7 @@ structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; i
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
 
-Page set (the full 28-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
+Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
   * GROUNDED data pages — feedstock-health, my-feedstocks, estate-cache
     (BSL over a migrated dataset or the CAP-19 estate Parquet).
   * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas, adoption-stage

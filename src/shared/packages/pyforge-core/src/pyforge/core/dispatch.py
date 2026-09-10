@@ -23,10 +23,10 @@ EXIT_NOT_FOUND = 127
 SKIP_DISTRIBUTIONS = frozenset({"pyforge-core", "pyforge-testing-kit"})
 
 # Stations whose CLI cannot be AST-introspected. Values are tracked story
-# spec stems under pyforge-steward's planning-artifacts/specs/. A station
+# spec stems under each owning station's planning-artifacts/specs/. A station
 # with neither verbs nor an entry here is a silent skip -- CI must fail.
 PREPARATORY_UNINTROSPECTABLE: dict[str, str] = {
-    "atlas": "spec-22-prep-atlas-kedro-cli-introspection",
+    "atlas": "spec-25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate",
 }
 
 

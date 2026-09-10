@@ -97,6 +97,16 @@ def introspect_verbs(station_dir: Path) -> set[str]:
     return verbs
 
 
+def _preparatory_spec_path(stem: str) -> Path:
+    """Resolve a preparatory story spec to its owning BMAD project tree."""
+    repo = PACKAGES_ROOT.parents[2] / "_bmad-output" / "projects"
+    if stem.startswith("spec-25-3-atlas"):
+        project = "pyforge-atlas"
+    else:
+        project = "pyforge-steward"
+    return repo / project / "planning-artifacts" / "specs" / f"{stem}.md"
+
+
 def generate_parity_matrix(packages_root: Path) -> list[ParityRow]:
     mapping = script_map_from_packages_root(packages_root)
     rows: list[ParityRow] = []
@@ -168,15 +178,7 @@ def test_ci_generates_parity_matrix_and_every_verb_is_reachable():
         assert child[1:] == rest
         if row.verb is None:
             assert row.preparatory
-            spec = (
-                PACKAGES_ROOT.parents[2]
-                / "_bmad-output"
-                / "projects"
-                / "pyforge-steward"
-                / "planning-artifacts"
-                / "specs"
-                / f"{row.preparatory}.md"
-            )
+            spec = _preparatory_spec_path(row.preparatory)
             assert spec.is_file(), f"named preparatory story missing: {spec}"
 
 
