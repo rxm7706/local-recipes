@@ -2,7 +2,7 @@
 
 Structural, OFFLINE gate mirroring the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` pattern:
 it builds the BSL-driven Vizro ``Dashboard`` object and asserts the D2 acceptance criteria
-that ARE buildable now (the full 28-page inventory + per-page design is CIS-two-spine
+that ARE buildable now (the full PAGE_INVENTORY page set + per-page design is CIS-two-spine
 deferred, DW-D2). It performs NO live execution — no Vizro server, no ``.run()``. Data
 functions are lazy, so the object builds with no migrated data present; the gate exercises
 them directly against fixtures to prove they are BSL-driven.

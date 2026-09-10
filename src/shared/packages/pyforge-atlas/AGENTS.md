@@ -80,7 +80,7 @@ rulebook; content confirmed still true against the live tree, not carried over u
   (safe non-secret placeholders), `tests/fixtures/data/` (static Parquet for offline gate runs).
 - Spec (binding contract): `docs/specs/cfe-atlas-datapipeline-kedro-migration.md`.
 - Module layout is live and grows (`pipelines/`, `datasets/`, `mcp/`, `semantic/`, `a2a/`,
-  `artifactory/`, `trending_candidates/`, `views/`, …) — read the directory, don't cite a frozen
+  `artifactory/`, `trending_candidates/`, …) — read the directory, don't cite a frozen
   listing here; one already went stale between 2026-08-24 and 2026-09-06.
 
 ## Known pitfalls

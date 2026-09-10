@@ -19,7 +19,7 @@ warnings: ['oversized']
 (`staleness-report`, `feedstock-health`, `whodepends`, …) or hand-written SQL — nothing
 renders the same data as a linkable page.
 
-**Approach:** Stand up a new `pyforge.atlas.views` package that mirrors the 6 CLIs whose
+**Approach:** Stand up a new `pyforge/atlas/views/` package that mirrors the 6 CLIs whose
 `query()` runs with zero required arguments (`staleness-report`, `feedstock-health`,
 `behind-upstream`, `cve-watcher`, `release-cadence`, `adoption-stage`) as a static,
 self-contained Bokeh HTML fragment per view. Each view calls that CLI's own
@@ -138,7 +138,7 @@ must catch that `SystemExit` and translate it, or a missing db kills the render 
 
 Status: done
 
-**Summary.** Implemented a new `pyforge.atlas.views` package (Story 14.1, Epic 14 CAP-1):
+**Summary.** Implemented a new `pyforge/atlas/views/` package (Story 14.1, Epic 14 CAP-1; retired Story 25.1):
 a curated, static catalog of 6 conda-forge-expert CLIs — `staleness-report`,
 `feedstock-health`, `behind-upstream`, `cve-watcher`, `release-cadence`,
 `adoption-stage` — rendered as self-contained `bokeh.embed.components()` HTML fragments
