@@ -182,7 +182,7 @@ development_status:
   47-4-the-foundry-stack-carries-a-bmad-floor-row: done
   47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: done
   48-1-the-ledger-syncer-guards-blocked-and-missing-keys: done
-  48-10-the-one-container-guild-proves-itself-at-build-time-ci-builds-the-root-containerfile: backlog
+  48-10-the-one-container-guild-proves-itself-at-build-time-ci-builds-the-root-containerfile: done
   48-11-the-platform-image-can-import-the-warden-engine-it-calls: backlog
   48-2-r-18-sizing-rewrite: done
   48-3-r-19-network-baseline: done
