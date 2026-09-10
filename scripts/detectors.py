@@ -215,6 +215,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 21.11 (Epic 21): capability-effect beside story-status in one
     # detectors run -- offline, deterministic, no budget concerns.
     ("capability-effect", "capability-effect-check"),
+    # Story 21.16 (Epic 21): status-body-consistency beside capability-effect
+    # in one detectors run -- offline, deterministic, no budget concerns.
+    ("status-body-consistency", "status-body-consistency-check"),
     ("chain-completeness", "chain-completeness-check"),
     ("dashboard-drift", "retired-console-check"),
     ("check-layout", "dashboard-layout-check"),

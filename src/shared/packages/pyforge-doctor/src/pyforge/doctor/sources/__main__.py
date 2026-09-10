@@ -60,6 +60,7 @@ from . import (
     marshal,
     platform_policy,
     sibling_dreams,
+    status_body_consistency,
 )
 
 __all__ = ("main", "DISPATCH")
@@ -108,6 +109,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 21.11 (Epic 21) -- capability-effect beside story-status in
     # detectors; same shape as FROZEN_PATH_CHANGED above.
     Source.CAPABILITY_EFFECT.value: capability_effect.gather,
+    # Story 21.16 (Epic 21) -- status-body-consistency beside capability-effect
+    # in detectors; same shape as CAPABILITY_EFFECT above.
+    Source.STATUS_BODY_CONSISTENCY.value: status_body_consistency.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
