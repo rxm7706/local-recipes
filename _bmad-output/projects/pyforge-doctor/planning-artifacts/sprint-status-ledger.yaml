@@ -60,7 +60,7 @@ development_status:
   21-15-a-status-comment-that-contradicts-its-own-ledger-is-a-finding: done
   21-16-the-status-body-check-renders-where-the-operator-already-looks: done
   21-2-a-spec-with-no-status-line-is-a-finding-not-a-silent-exemption: done
-  21-3-sibling-dreams-drift-joins-on-the-key-the-two-trees-actually-share: backlog
+  21-3-sibling-dreams-drift-joins-on-the-key-the-two-trees-actually-share: done
   21-4-constitutive-is-derived-from-the-roster-not-hardcoded-beside-it: backlog
   21-5-the-deferred-work-verifier-resolves-a-project-relative-source_spec-from-the-project-root: backlog
   21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced: backlog
