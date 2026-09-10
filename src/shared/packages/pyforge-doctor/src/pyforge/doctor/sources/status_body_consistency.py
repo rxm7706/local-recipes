@@ -74,7 +74,7 @@ _PROMISSORY_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bdescribed a mid-build\b", re.IGNORECASE), "mid-build-described"),
     (
         re.compile(
-            r"\bcontradicted this Spec.*status: shipped\b",
+            r"\bcontradicted this Spec.*[`']?status:\s*shipped[`']?",
             re.IGNORECASE,
         ),
         "contradicted-shipped-status",

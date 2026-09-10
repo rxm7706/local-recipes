@@ -64,4 +64,10 @@ declared_low_risk: false
 
 ## Spec Change Log
 
+## Verification
+
+```bash
+pixi run -e pyforge-doctor pyforge-doctor-test -- tests/unit/test_sources_status_body_promissory.py -v
+```
+
 ## Review Triage Log
