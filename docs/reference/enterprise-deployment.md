@@ -590,6 +590,8 @@ application dependency (canopy:AD-19).
    | `MIGRATION_DATABASE_URL` | Migration-role DDL URL (Liquibase Job) |
    | `POSTGRES_PASSWORD` | Postgres container bootstrap password |
    | `REDIS_PASSWORD` | Redis AUTH (Story 12.6) |
+   | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (bundled OIDC profile only; Story 48.9) |
+   | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only) |
    | `PYFORGE_ASSERTION_PRIVATE_KEY` | RS256 assertion minter (optional env; inject when mint path is live) |
    | `PYFORGE_ASSERTION_PUBLIC_KEY` | RS256 assertion verifier (optional env) |
 

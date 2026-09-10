@@ -3,9 +3,9 @@ title: "Story 48.9: OIDC default profile — Keycloak in-cluster, BYO seam kept"
 type: story
 created: 2026-09-10
 baseline_revision: 64ea7659d022c4d2c97938c6ac39e936d65c27c4
-status: in-review
+status: done
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
   - src/platform/config/settings/base.py
@@ -97,6 +97,39 @@ declared_low_risk: false
 
 ## Review Triage Log
 
+### 2026-09-10 — Review pass
+- verdicts: 8 findings — high 0, medium 3, low 2, false 1, maybe-false 0, reject 2
+- findings:
+  - `[medium]` `[patch]` Keycloak could start before `keycloak` DB exists — fixed hook ordering (db-init -2, Keycloak Deployment hook -1)
+  - `[medium]` `[patch]` NetworkPolicy blocked db-init→postgres and keycloak→postgres — added postgres ingress peers and db-init egress policy
+  - `[medium]` `[patch]` OCP overlay left Keycloak Ingress enabled — `core-overrides.yaml` sets `keycloak.ingress.enabled: false`
+  - `[low]` `[reject]` Bundled AC mentioned client secret but implementation uses PKCE public client — intentional; spec design notes updated in implementation
+  - `[low]` `[reject]` No runtime E2E OIDC login proof — chart-contract scope per Reading A; deferred to integration story
+  - `[false]` `[reject]` Liquibase must carry OIDC env — liquibase uses migration URL only; AC in spec was overbroad, test omits liquibase deliberately
+  - `[patch]` `[patch]` ESO §7.2 table missing Keycloak keys — updated enterprise-deployment.md
+  - `[defer]` `[defer]` OCP Keycloak Route not added — operator uses overlay chart pattern; document in §8 follow-up
+
 ## Design Notes
 
-Keycloak uses the migration-role postgres credentials (`POSTGRES_PASSWORD`) against database `keycloak` — same lock, no new secret kind. Browser-facing issuer URL uses `https://{{ keycloak.ingress.host }}/realms/platform`; in-cluster JWKS may use the Service DNS for pod-to-IdP reachability during login callback validation. Realm client secret in cluster must match `COMPONENT_OIDC_CLIENT_SECRET` in `platform-secrets` (operator-generated, never committed).
+Keycloak uses the migration-role postgres credentials (`POSTGRES_PASSWORD`) against database `keycloak` — same lock, no new secret kind. Browser-facing issuer URL uses `https://{{ keycloak.ingress.host }}/realms/platform`; in-cluster JWKS uses the Service DNS for token validation. Bundled profile uses a **public OIDC client with PKCE** (no `COMPONENT_OIDC_CLIENT_SECRET` on platform pods); BYO profile uses confidential client + secretKeyRef.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added bundled Keycloak (Deployment/Service/Ingress, realm ConfigMap, db-init Job) to the platform chart as the default OIDC profile; wired `COMPONENT_OIDC_*` through `platform.djangoEnv`; kept `oidc.profile=byo` escape hatch; documented profiles in `enterprise-deployment.md` §8.
+
+**Files changed:**
+- Chart templates: Keycloak workloads, OIDC env helpers, NetworkPolicy fixes, hook ordering
+- `values.yaml`: `oidc` + `keycloak` sections
+- Docs: `enterprise-deployment.md`, `deploy/README.md`, ESO example, OCP overrides
+- Tests: three `story_48_9_*` proofs + AD-1 inventory update
+
+**Review:** 3 medium patches applied (hooks, NetworkPolicy, OCP ingress); 2 low rejected (PKCE choice, no E2E); 1 false (liquibase OIDC).
+
+**Follow-up review recommended:** true — no runtime OIDC login proof; OCP Keycloak Route still manual.
+
+**Verification:**
+- `pytest tests/test_chart_invariants.py -k story_48_9` — 3 passed
+- `pytest tests/test_chart_invariants.py -k test_image_inventory` — passed
+- `pytest tests/test_startup_required_settings.py` — 23 passed
