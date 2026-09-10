@@ -2,7 +2,7 @@
 title: 'Structure-graph (codegraph) for dispatch — provisioning cost weighed against a single-story session'
 type: 'spike'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 baseline_revision: 'd7280cee9791e1602a6e62d98df8ce2a2e0bd7c9'
 followup_review_recommended: false
@@ -62,8 +62,11 @@ acceptance criterion. This story does not pre-commit to writing follow-on code.
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/kit.py` — the existing `init`-vs-`sync` split a "shared repo-level index" recommendation would build on
-- A new benchmark artifact (location matching Story 28.5's own precedent) — the measured comparison
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py` — the existing `init`-vs-`sync` split a "shared repo-level index" recommendation would build on
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/structure_graph_dispatch_benchmark.py` — pure CAP-3 dispatch spike artifact shaping
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/benchmark.py` — `marshal benchmark structure-graph-dispatch` materializes the artifact from live measurements
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/benchmarks/structure-graph-dispatch-28-31.json` — the measured comparison (tracked)
+- `planning-artifacts/specs/spec-28-34-dispatch-structure-graph-shared-index-provisioning.md` — follow-on draft scoped by the spike recommendation
 
 ## Tasks & Acceptance
 
@@ -85,4 +88,21 @@ acceptance criterion. This story does not pre-commit to writing follow-on code.
 
 ## Spec Change Log
 
+- 2026-09-10: spike complete — live measurements on dispatch worktree; recommendation `share-repo-level-index`; follow-on spec-28-34 drafted
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Measured dispatch-worktree `codegraph init -y` (18.92s wall, 222MiB, 65k nodes) and `codegraph sync -q` (4.16s) against ~51,774 estimated navigation tokens for Story 28.31's representative file manifest. Recommendation: **share repo-level index** — dispatch should sync from a loop-home/primary `.codegraph/` base, not init per worktree. Follow-on implementation scoped in `spec-28-34-dispatch-structure-graph-shared-index-provisioning.md`.
+
+**Artifact:** [structure-graph-dispatch-28-31.json](../benchmarks/structure-graph-dispatch-28-31.json)
+
+**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7785 passed.
