@@ -70,3 +70,55 @@ def test_unknown_station_api_version_returns_404_not_500():
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {"detail": "Not Found"}
+
+
+def test_host_dispatches_herald_openapi():
+    response = _get("/stations/herald/api/v1/openapi.json")
+
+    assert response.status_code == HTTPStatus.OK
+    paths = response.json().get("paths", {})
+    assert "/stations/herald/api/v1/health" in paths
+
+
+def test_host_dispatches_herald_health():
+    response = _get("/stations/herald/api/v1/health")
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {"status": "ok", "station": "herald"}
+
+
+def test_legacy_bare_api_herald_webhook_does_not_reach_station_handler():
+    async def _call():
+        transport = ASGITransport(app=application)
+        base_url = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            return await client.post(
+                "/api/herald/webhooks/on-ship",
+                json={"station": "warden"},
+            )
+
+    response = asyncio.run(_call())
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Not Found"}
+
+
+def test_host_dispatches_herald_webhook_unsigned_returns_401(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "test-secret")
+
+    async def _call():
+        transport = ASGITransport(app=application)
+        base_url = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            return await client.post(
+                "/stations/herald/api/v1/webhooks/on-ship",
+                json={"station": "warden"},
+            )
+
+    response = asyncio.run(_call())
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

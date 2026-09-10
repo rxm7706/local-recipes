@@ -169,15 +169,16 @@ deployment shape stays out of Surface (see the Scope note above) — but
 
 The shape:
 
-- **Routes:** `POST /api/herald/webhooks/on-ship` (calls the same
+- **Routes:** `POST /stations/herald/api/v1/webhooks/on-ship` (calls the same
   `progress.upsert` `herald progress <station> --update` calls) and
-  `POST /api/herald/webhooks/on-pr-close` (calls the same `claims.create`
-  `herald success create` calls, only when the payload's own `merged` and
-  `gates_passed` are both `true` — any other combination is a 202 no-op,
-  never an error). Mounted under a prefix, the routes are served at
-  `<prefix>/api/herald/webhooks/...` — per the ASGI spec `path` includes
-  `root_path`, and the route literals already begin with `/api`, so
-  mounting under `/api` yields `/api/api/herald/webhooks/...`.
+  `POST /stations/herald/api/v1/webhooks/on-pr-close` (calls the same
+  `claims.create` `herald success create` calls, only when the payload's own
+  `merged` and `gates_passed` are both `true` — any other combination is a
+  202 no-op, never an error). The literals are the full station-API paths the
+  platform host dispatches to herald v1 on
+  (`config/station_api.py`); per the ASGI spec `path` includes `root_path`,
+  so a further mount prefix still requires `root_path` stripping inside
+  `webhook.py`.
 - **`on-ship` REPLACES the day's record; it does not merge into it.**
   `progress.upsert` is keyed `(station, date)`, and the handler substitutes
   the CLI's own flag defaults (`[]`/`0.0`/`0`/`0.0`/`""`) for every field

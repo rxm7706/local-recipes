@@ -203,7 +203,7 @@ jobs:
           ).hexdigest()
 
           req = urllib.request.Request(
-              "http://127.0.0.1:8765/api/herald/webhooks/on-ship",
+              "http://127.0.0.1:8765/stations/herald/api/v1/webhooks/on-ship",
               data=body,
               method="POST",
               headers={
@@ -323,7 +323,7 @@ jobs:
           ).hexdigest()
 
           req = urllib.request.Request(
-              "http://127.0.0.1:8766/api/herald/webhooks/on-pr-close",
+              "http://127.0.0.1:8766/stations/herald/api/v1/webhooks/on-pr-close",
               data=body,
               method="POST",
               headers={
