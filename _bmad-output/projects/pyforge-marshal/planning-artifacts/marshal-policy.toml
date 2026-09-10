@@ -366,6 +366,12 @@ enabled = true
 [context."planning-graph"]
 enabled = true
 
+# dispatch (Story 33.8, CAP-6): factory-dispatch wave concurrency -- independent
+# of bmad-loop scm max_parallel (spin). Must sit BEFORE model_tier_map (TOML
+# table-scoping: trailing root keys nest under the last opened table).
+[dispatch]
+max_parallel = 2
+
 # model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
 # the LAST thing in this file -- see the comment block above. "heavy"/"easy" reuse
 # Story 6.1's own test-fixture vocabulary (`test_spin.py::_model_tier_map_policy_path`)

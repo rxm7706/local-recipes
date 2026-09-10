@@ -617,6 +617,26 @@ def test_resolve_context_layers_returns_a_fresh_plain_dict():
     _json.dumps(resolved)  # must not raise
 
 
+def test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clamp():
+    """Story 33.8: dispatch.max_parallel=2 composes without MRS-POLICY-007 --
+    that advisory applies to scm max_parallel (SEED) only, not dispatch."""
+    repo_root = Path(__file__).resolve().parents[6]
+    policy_path = (
+        repo_root
+        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    )
+    if not policy_path.is_file():
+        pytest.skip("marshal-policy.toml not present in this checkout")
+
+    parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
+    effective, findings = compose(
+        project_slug="pyforge-marshal", project=parsed, flags={}
+    )
+    assert effective.dispatch.value == {"max_parallel": 2}
+    codes = {f.code for f in findings}
+    assert "MRS-POLICY-007" not in codes
+
+
 def test_the_real_pyforge_marshal_policy_declares_all_five_context_layers_enabled():
     """Story 33.2 regression: the tracked marshal-policy.toml enables every
     CAP-1 layer on factory dispatch — not a hand-duplicated fixture."""
@@ -1992,6 +2012,9 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
+            dispatch=PolicyField(
+                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
+            ),
             _seed=seed,
         )
 
@@ -2015,6 +2038,9 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
+            dispatch=PolicyField(
+                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
+            ),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -2038,6 +2064,9 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
+            dispatch=PolicyField(
+                value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}
+            ),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -2131,6 +2160,7 @@ def test_schema_file_declares_the_thirty_three_keys():
         "stream_capture_kb",
         "review_min_score",
         "model_cost_catalog",
+        "dispatch",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 

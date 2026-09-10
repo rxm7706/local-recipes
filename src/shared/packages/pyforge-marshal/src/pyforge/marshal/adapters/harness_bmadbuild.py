@@ -48,6 +48,7 @@ from pyforge.core.process import PosixProcess, ProcessError
 from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
 from ..core.harness_profile import resolve_wire_wrap as _resolve_wire_wrap
+from ..core.harness_profile import wire_port_for_worktree
 from ..ports.build_harness import (
     DispatchLaunchResult,
     HarnessCandidateSkip,
@@ -259,6 +260,7 @@ class BmadBuildHarness:
             prompt=prompt,
             model=model,
             wire=wire,
+            wire_port=wire_port_for_worktree(worktree),
         )
 
         # Precedence, lowest to highest: the operator's environment, the

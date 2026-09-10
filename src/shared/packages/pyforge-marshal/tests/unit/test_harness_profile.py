@@ -31,6 +31,7 @@ from pyforge.marshal.core.harness_profile import (
     render_dispatch_argv,
     resolve_wire_wrap,
     translate_model,
+    wire_port_for_worktree,
 )
 
 _MINIMAL = {
@@ -498,6 +499,8 @@ def test_packaged_claude_declares_the_headroom_wrapper():
     assert wrapper is not None
     assert wrapper.binary == "headroom"
     assert wrapper.argv[:2] == ("wrap", "claude")
+    assert "--port" in wrapper.argv
+    assert "{wire_port}" in wrapper.argv
     assert wrapper.argv[-1] == "--"
     assert wrapper.reversible is True
     assert wrapper.store_env == "HEADROOM_WORKSPACE_DIR"
@@ -783,6 +786,43 @@ def test_an_off_or_degraded_wire_leaves_the_argv_exactly_as_before(tmp_path: Pat
             wire=wire,
         )
         assert argv == baseline
+
+
+def test_wire_port_for_worktree_is_in_range_and_distinct_per_worktree() -> None:
+    left = Path("/tmp/dispatch-pyforge-marshal/33-8-a")
+    right = Path("/tmp/dispatch-pyforge-marshal/33-8-b")
+    port_left = wire_port_for_worktree(left)
+    port_right = wire_port_for_worktree(right)
+    assert 8800 <= port_left <= 9799
+    assert 8800 <= port_right <= 9799
+    assert port_left != port_right
+
+
+def test_render_dispatch_argv_substitutes_wire_port_in_wrapper_prefix(
+    tmp_path: Path,
+) -> None:
+    profile = _wrapped_profile(
+        binary="headroom",
+        argv=["wrap", "fakecli", "--port", "{wire_port}", "--"],
+    )
+    worktree = tmp_path / "dispatch-wt"
+    wire = resolve_wire_wrap(
+        profile,
+        wire_layer={"enabled": True},
+        home=worktree,
+        wrapper_binary_path="/opt/bin/headroom",
+    )
+    port = wire_port_for_worktree(worktree)
+    argv, _, _ = render_dispatch_argv(
+        profile,
+        binary_path="/usr/bin/fakecli",
+        worktree=worktree,
+        prompt="probe",
+        model=None,
+        wire=wire,
+        wire_port=port,
+    )
+    assert str(port) in argv
 
 
 # --- bmad-loop translation ---------------------------------------------------

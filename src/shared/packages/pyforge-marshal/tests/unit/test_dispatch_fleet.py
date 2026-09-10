@@ -527,6 +527,10 @@ def _seed_live_dispatch_journal(
     return run_dir
 
 
+_CYCLE_POLICY_SERIAL: dict[str, object] = {"dispatch": {"max_parallel": 1}}
+_CYCLE_POLICY_REAL = object()
+
+
 def _cycle(
     tmp_path: Path,
     *,
@@ -540,7 +544,19 @@ def _cycle(
     harness: FakeHarness | None = None,
     station: str | None = None,
     explicit_stories: tuple[str, ...] | None = None,
+    policy_flags: dict[str, object] | None | object = _CYCLE_POLICY_REAL,
 ):
+    """Fleet-cycle helper.
+
+    Default: force ``dispatch.max_parallel = 1`` so tests stay serial even
+    when the tracked ``marshal-policy.toml`` enables waves (Story 33.8).
+    Pass ``policy_flags=None`` to compose from the live project policy only.
+    """
+    resolved_policy: dict[str, object] | None
+    if policy_flags is _CYCLE_POLICY_REAL:
+        resolved_policy = _CYCLE_POLICY_SERIAL
+    else:
+        resolved_policy = policy_flags  # type: ignore[assignment]
     return execute_fleet_cycle(
         repo_root=tmp_path,
         mode=mode,
@@ -553,6 +569,7 @@ def _cycle(
         harness=harness if harness is not None else FakeHarness(ledgers),
         station=station,
         explicit_stories=explicit_stories,
+        policy_flags=resolved_policy,
     )
 
 
@@ -1067,6 +1084,7 @@ def _drain_args(**overrides) -> argparse.Namespace:
         "tick_seconds": 60,
         "campaign": None,
         "format": "json",
+        "max_in_flight": 1,
     }
     base.update(overrides)
     return argparse.Namespace(**base)
@@ -2437,3 +2455,59 @@ def test_harness_done_no_pr_does_not_relaunch_on_drain(
     assert _status_by_station(report)[slug] is StationCycleStatus.REFUSED
     assert any(f.code == "MRS-DISP-040" for f in report.findings)
     assert any(str(worktree) in f.message for f in report.findings)
+
+
+def test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 33.8: dispatch.max_parallel=2 + disjoint probe specs → one wave,
+    two ``dispatch_once`` launches, dispatch-wave journal."""
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from pyforge.marshal.cli.dispatch import DispatchAttempt
+
+    slug = "pyforge-marshal"
+    story_a = "33-8"
+    story_b = "33-9"
+    _init_git_repo(tmp_path)
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / "spec-33-8-wave-probe-a.md").write_text(
+        '---\nstatus: backlog\nsurface: ["scripts/bmad_loop_baseline_drift_check.py"]\n---\n',
+        encoding="utf-8",
+    )
+    (specs / "spec-33-9-wave-probe-b.md").write_text(
+        '---\nstatus: backlog\nsurface: ["scripts/missing_preserve_check.py"]\n---\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    launches: list[str] = []
+
+    def recording_dispatch_once(*, story: str, **kwargs):
+        launches.append(story)
+        return DispatchAttempt(
+            data={"session_pid": 7070, "story": story},
+            findings=(),
+        )
+
+    monkeypatch.setattr(dispatch_cli, "dispatch_once", recording_dispatch_once)
+
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((story_a, "backlog"), (story_b, "backlog"))},
+        build_harness=harness,
+        station=slug,
+        policy_flags={"dispatch": {"max_parallel": 2}},
+    )
+    assert sorted(launches) == sorted([story_a, story_b])
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+
+    waves_root = dispatch_core.dispatch_runs_dir(tmp_path, slug) / "waves"
+    assert waves_root.is_dir()
+    wave_dirs = [p for p in waves_root.iterdir() if p.is_dir()]
+    assert len(wave_dirs) == 1
+    journal = (wave_dirs[0] / "journal.jsonl").read_text(encoding="utf-8")
+    assert dispatch_core.KIND_DISPATCH_WAVE in journal
+    assert story_a in journal and story_b in journal
