@@ -24,6 +24,13 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # classifies it generated-derived, so leaving it tracked leaves every adopting
 # repo permanently dirty -- the same failure the symlink rule above prevents.
 .bmad-loop/policy.toml
+# Derived artifact (Story 33.3, SPEC-marshal-token-economy CAP-2): the
+# wire-compression bmad-loop profile overlay `factory spin` writes per
+# adapter when the `wire` layer is on. Untracked and not ignored, it makes
+# `bmad-loop run` refuse the loop home with "git worktree is not clean" --
+# the same failure shape `.bmad-loop/policy.toml` above already exists to
+# prevent.
+.bmad-loop/profiles/
 
 # The plan artifact (AD-57): derived, cheap to regenerate, and a committed
 # stale plan is a hazard -- so the plan file is ignored, but NOT the whole

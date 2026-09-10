@@ -822,6 +822,16 @@ claude_hash.txt
 # bookkeeping for stale-projection detection only, never hand-edited, never
 # tracked (same precedent as .bmad-loop/policy.toml above).
 .bmad-loop/skill-projection.json
+# Derived artifact (Story 33.3, SPEC-marshal-token-economy CAP-2): the
+# wire-compression bmad-loop profile overlay `factory spin` writes per
+# adapter when the `wire` layer is on
+# (adapters/harness_bmadloop.py::write_spin_wire_profile_overlay). Live gap
+# found 2026-09-10: untracked and not ignored, it made `bmad-loop run`
+# refuse pyforge-marshal's own loop home with "git worktree is not clean" --
+# the same failure shape `.bmad-loop/policy.toml` above already exists to
+# prevent. Directory-scoped (not a single filename) because it is
+# per-adapter, same precedent as `.bmad-loop/archive/`.
+.bmad-loop/profiles/
 # pyforge-marshal Story 28.2 (SPEC-marshal-token-economy CAP-2): the
 # loop-home-scoped wire-compression (CCR) store the harness-seam wrapper
 # writes into. The store lives INSIDE the loop home / dispatch worktree on
