@@ -199,6 +199,9 @@ development_status:
   49-13-index-scribe-realization-gate-effect-stories: blocked
   49-14-cap-10-in-effect-the-resilience-primitives-get-a-real-caller-or-the-criterion-says-test-only: backlog
   49-2-the-capability-effect-check: blocked
+  50-1-the-silo-conda-forge-recipe-exists-and-is-pixi-installable: backlog
+  50-2-local-dev-object-storage-silo-default-garage-alternative-pixi-provisioned: backlog
+  50-3-a-minimal-s3-client-seam-proves-the-exception-end-to-end: backlog
   49-3-cap-4-in-effect-start-and-get-on-all-eight-with-a-real-disconnect: backlog
   49-4-cap-7-in-effect-the-real-board-or-the-criterion-says-fixture: backlog
   49-5-cap-11-in-effect-the-eviction-test: backlog
@@ -319,6 +322,8 @@ development_status:
   epic-49: backlog
   epic-49-retrospective: optional
   epic-5: done
+  epic-50: backlog
+  epic-50-retrospective: optional
   epic-5-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
