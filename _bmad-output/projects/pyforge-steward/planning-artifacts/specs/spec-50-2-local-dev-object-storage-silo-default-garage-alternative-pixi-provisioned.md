@@ -2,7 +2,7 @@
 title: 'Local-dev object storage — Silo default, Garage alternative, pixi-provisioned'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -87,5 +87,17 @@ combined with the pluggable-backend pattern already built this session for
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: full suite green
 
 ## Spec Change Log
+
+### 2026-09-10 — Landed
+- New standalone `[feature.platform-object-storage]` / `platform-object-storage`
+  pixi env (`linux-64` only — the only platform verified live for both `silo`
+  ≥20260903131801.0.0 and `garage` ≥2.4.0), `scripts/platform_object_storage.py`
+  providing real up/down/status against a fixed `127.0.0.1:9000` endpoint,
+  backend via `PYFORGE_OBJECT_STORAGE_BACKEND` (default `silo`). Full lifecycle
+  verified live for both backends: idempotent up/re-up/status/down/re-down, real
+  S3 traffic (403 on unsigned root GET), Garage's clean Windows refusal exercised
+  via a `platform.system()` mock for all three verbs. Landed via
+  `rxm7706/local-recipes#1184` (merged `c3ba172ecc`, `maintenance` label, local
+  verification per the confirmed CI billing outage).
 
 ## Review Triage Log
