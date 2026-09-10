@@ -1,4 +1,8 @@
-"""Story 23.1: same board URL, role-sliced rows (canopy AD-20).
+"""Story 23.1 / CAP-7: same board URL, role-sliced rows (canopy AD-20).
+
+The host deliverable is the JSON fixture board at ``/stations/atlas/board/``
+(Story 49.4, 2026-09-10). Atlas's package-local Vizro stack is intentionally
+not mounted on the host URLconf — that boundary is asserted, not a gap.
 
 This module must not ``import pyforge`` — isolation is asserted over HTTP
 and AST, not by pulling factory packages into ``src/platform/tests/``.
@@ -211,6 +215,7 @@ def test_this_file_does_not_import_pyforge() -> None:
 
 
 def test_atlas_vizro_cli_is_not_mounted_on_host_urlconf() -> None:
+    """Fixture-grade CAP-7: Vizro stays package-local; steward filtering drives the host board."""
     urlconf = (PLATFORM_ROOT / "config" / "urls.py").read_text(encoding="utf-8")
     assert "vizro" not in urlconf.lower()
     assert "pyforge.atlas.dashboard" not in urlconf
