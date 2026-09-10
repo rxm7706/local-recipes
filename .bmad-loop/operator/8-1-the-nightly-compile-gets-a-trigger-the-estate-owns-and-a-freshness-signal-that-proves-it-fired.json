@@ -1,0 +1,12 @@
+{
+  "actions": [
+    "Run `pixi run -e pyforge-scribe scribe-install-nightly-trigger` on the machine that holds all three surfaces the nightly compile needs (this checkout's `.claude/memory/`, your own per-user session transcripts under `~/.claude/projects/<encoded-repo>/*.jsonl`, and the gitignored `.claude/data/pyforge-scribe/` graph store) \u2014 this installs and enables the checked-in systemd-user timer.",
+    "If the installer warns that linger is not enabled (`loginctl show-user $USER --property=Linger` reads `Linger=no`), run `loginctl enable-linger $USER` so the timer keeps firing at 02:30 even when you are fully logged out overnight, not only right after your next login.",
+    "If your `GraphStore` driver is PostgreSQL (`PYFORGE_GRAPHSTORE_OWNER=steward`), export that variable in the shell you run the installer from BEFORE installing, so it gets baked into the rendered systemd unit \u2014 and re-run the installer any time you change that setting, since the baked-in value does not update itself.",
+    "Let the timer fire on its own schedule for at least 4 consecutive nights, then confirm it: check `~/.cache/scribe-nightly-compile.log` (or `journalctl --user -u pyforge-scribe-nightly-compile.service`) for 4 distinct 02:30 runs, or run `pixi run -e local-recipes scribe-graph-freshness-check` and confirm it reports the graph store as fresh across that period. This is spec-pyforge-scribe's own CAP-2 success signal and cannot be verified from the repo alone \u2014 it requires your machine and real elapsed time."
+  ],
+  "parked_at": "2026-09-10",
+  "run_id": "20260910-100026-d567",
+  "spec_file": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired.md",
+  "story_key": "8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired"
+}

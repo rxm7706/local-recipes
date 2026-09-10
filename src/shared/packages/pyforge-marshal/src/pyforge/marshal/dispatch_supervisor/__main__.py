@@ -22,6 +22,10 @@ from ..core.dispatch_completion import (
     has_git_progress,
 )
 from ..core.supervise import resolve_terminal_session_verdict
+from ..core.worktree_checkpoint import (
+    commit_worktree_checkpoint,
+    should_checkpoint_on_idle,
+)
 from ..core.dispatch_preserve import (
     failed_patch_path,
     relative_preserve_ref,
@@ -944,6 +948,8 @@ def run_dispatch_supervisor(
 
     tick_count = 0
     stuck_land_ticks = 0
+    last_session_log_snapshot: str | None = None
+    last_session_activity_monotonic = time.monotonic()
 
     while True:
         tick_count += 1
@@ -968,6 +974,27 @@ def run_dispatch_supervisor(
 
         session_alive = process.is_alive(session_pid)
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
+        if session_alive:
+            current_log = session_log
+            if current_log != last_session_log_snapshot:
+                last_session_log_snapshot = current_log
+                last_session_activity_monotonic = time.monotonic()
+            idle_elapsed_s = time.monotonic() - last_session_activity_monotonic
+            try:
+                dirty = vcs.has_uncommitted_changes(worktree)
+            except VcsCommandError:
+                dirty = False
+            if should_checkpoint_on_idle(
+                idle_elapsed_s=idle_elapsed_s,
+                threshold_s=float(_TICK_SECONDS),
+                has_uncommitted_changes=dirty,
+            ):
+                commit_worktree_checkpoint(
+                    vcs,
+                    repo_root=repo_root,
+                    worktree=worktree,
+                    story_key=story_key,
+                )
         v_outcome = _verification_outcome_verdict(folded, run_id)
         if _landing_succeeded(folded, run_id):
             verdict = DispatchSessionVerdict.COMPLETED

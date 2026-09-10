@@ -2,7 +2,7 @@
 spec: asgi-multiplexer-monolith
 status: absorbed
 owner-dream: docs/dreams/asgi-multiplexer-monolith.md
-absorbed-into: spec-python-agent-platform
+absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
   - ../../../../../../docs/dreams/asgi-multiplexer-monolith.md

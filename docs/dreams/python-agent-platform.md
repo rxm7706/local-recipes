@@ -68,9 +68,14 @@ statelessness is mandatory, not aspirational.
   the sibling topology dreams record the full decision trail.
 - **Not** a new packaging effort — the engines are already on conda-forge.
 - **Not** a fork of the factory's engines — the platform consumes the factory's published conda
-  packages only and never imports `pyforge.*` code. *(Corrected 2026-08-14: originally "not
-  owned by this repo's codebase"; the operator's monorepo decision places the platform IN this
-  repo at `src/platform/` — the boundary survives as this import rule, not a repo wall.)*
+  packages only; **`src/platform/` must not import `pyforge.*` station code** as the default
+  boundary rule, with the two recorded brownfield carve-outs until their owning stories land:
+  `src/platform/ingest/github_projects/*` (eight `pyforge.steward.*` imports) and
+  `django-atlas` portal tests (allow-listed `pyforge.steward.dashboard` imports). *(Corrected
+  2026-08-14: originally "not owned by this repo's codebase"; the operator's monorepo decision
+  places the platform IN this repo at `src/platform/` — the boundary survives as this import
+  rule, not a repo wall. Qualified 2026-09-10, Story 48.8 — the absolute ban was knowingly
+  false against live code.)*
 
 ## Kinships
 

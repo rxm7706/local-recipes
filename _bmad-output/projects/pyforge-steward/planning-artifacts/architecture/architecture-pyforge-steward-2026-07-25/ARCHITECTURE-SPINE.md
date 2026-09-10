@@ -278,9 +278,10 @@ graph TD
 
 ### Inherited Invariants
 
-Parent: `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`. Cite as **`pap:AD-n`**
-(same as **parent AD-n**). Original IDs in that file stay `AD-n`. Unifying ADs in this file
-are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
+Parent: host spine in `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md` (merged into
+`spec-pyforge-unifying-strategy` by Story 48.8; companion file remains the `pap:AD-*` detail
+home). Cite as **`pap:AD-n`** (same as **parent AD-n**). Original IDs in that file stay `AD-n`.
+Unifying ADs in this file are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 | Inherited | Binds here |
 |---|---|
@@ -614,8 +615,9 @@ flag flip (fnd:AD-17), not by a date; until a capability freezes (fnd:AD-22) `lo
 ### Inherited Invariants
 
 Parent: `## Satellite: Canopy — pyforge-unifying-strategy` (this document; was `../architecture-pyforge-unifying-strategy-2026-08-24/` before the 2026-09-08 fold)
-(canopy:AD-1..23) and, through it, `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
-(`pap:AD-1..17`). Read-only; original ids; never re-derived.
+(canopy:AD-1..23) and, through it, host spine in `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
+(`pap:AD-1..17`; contract merged into `spec-pyforge-unifying-strategy` by Story 48.8).
+Read-only; original ids; never re-derived.
 
 | Inherited | Binds here |
 |---|---|

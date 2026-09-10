@@ -1,8 +1,8 @@
 ---
 spec: python-agent-platform
-status: in-progress   # Story 48.8 SUPERSEDES this Spec into `spec-pyforge-unifying-strategy`.
-                      # `pap:` STAYS A LIVE ID PREFIX — see § Superseded by Story 48.8.
-updated: "2026-09-09"
+status: superseded
+absorbed-into: spec-pyforge-unifying-strategy
+updated: "2026-09-10"
 companions: [ARCHITECTURE-SPINE.md]
 owner-dream: docs/dreams/python-agent-platform.md
 surface:

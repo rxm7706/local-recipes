@@ -367,6 +367,7 @@ from ..core.supervise import (
     rung_at,
     rung_index,
 )
+from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot, UsageSnapshot
@@ -2032,6 +2033,24 @@ def run_supervisor(
                 # here instead of rejecting the small thresholds.
                 if rung_index(rung) > rung_index(last_acted_rung) + 1:
                     rung = rung_at(rung_index(last_acted_rung) + 1)
+
+                if (
+                    watched_alive
+                    and not deferred
+                    and samples
+                    and rung_index(rung) >= rung_index(LadderRung.NUDGE)
+                ):
+                    story_label = (
+                        _feed_key_form(current_story_key)
+                        if current_story_key is not None
+                        else slug
+                    )
+                    commit_worktree_checkpoint(
+                        vcs,
+                        repo_root=home,
+                        worktree=home,
+                        story_key=story_label,
+                    )
 
                 if already_retried and rung_index(rung) >= rung_index(
                     LadderRung.STOP_AND_RETRY

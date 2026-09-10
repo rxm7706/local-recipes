@@ -77,7 +77,14 @@ contradiction without proposing text — reconciliation belongs to the
 - A Spec with no memlog is `ok`, not an error.
 - The check reports the contradiction without proposing text — reconciliation belongs to the `chain-currency-sweep` loop, never to the detector.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green, including the new open_questions/memlog-contradiction tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse this story's own dispatch verification -- live journal: "no Success signal to bind against -- the story has no tracked spec, or its tracked spec has no parseable ## Verification -> **Commands:** section."
 
 ## Review Triage Log
 
