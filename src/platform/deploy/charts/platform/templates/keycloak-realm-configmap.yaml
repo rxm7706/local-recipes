@@ -1,0 +1,70 @@
+{{- if eq .Values.oidc.profile "bundled" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}-realm
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+data:
+  {{ .Values.keycloak.realm }}-realm.json: |
+    {
+      "realm": {{ .Values.keycloak.realm | quote }},
+      "displayName": "Platform",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "resetPasswordAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "groups": [
+        {"name": {{ .Values.oidc.staffGroup | quote }}, "path": "/{{ .Values.oidc.staffGroup }}"},
+        {"name": {{ .Values.oidc.superuserGroup | quote }}, "path": "/{{ .Values.oidc.superuserGroup }}"}
+      ],
+      "clients": [
+        {
+          "clientId": {{ .Values.keycloak.clientId | quote }},
+          "name": "Platform web",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": {{ .Values.keycloak.publicClient }},
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": [
+            "https://{{ .Values.ingress.host }}/*",
+            "http://{{ .Values.ingress.host }}/*"
+          ],
+          "webOrigins": ["+"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256"
+          },
+          "protocolMappers": [
+            {
+              "name": "platform-web-audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": {{ .Values.keycloak.clientId | quote }},
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "groups-claim",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "claim.name": {{ .Values.oidc.groupClaim | quote }},
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ]
+    }
+{{- end }}

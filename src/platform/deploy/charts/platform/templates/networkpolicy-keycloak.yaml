@@ -1,0 +1,54 @@
+{{- if and .Values.networkPolicy.enabled (eq .Values.oidc.profile "bundled") }}
+{{- $root := . }}
+{{- $fullname := include "platform.fullname" . }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}-ingress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: keycloak
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "platform.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: web
+      ports:
+        - protocol: TCP
+          port: 8080
+    {{- range .Values.networkPolicy.webIngressFrom }}
+    - from:
+        - namespaceSelector:
+            {{- toYaml .namespaceSelector | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+    {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}-egress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: keycloak
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.egressToPostgres" . | nindent 4 }}
+    {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
+{{- end }}

@@ -32,6 +32,10 @@ spec:
                   - beat
                   - migrate
                   - liquibase
+                  {{- if eq .Values.oidc.profile "bundled" }}
+                  - keycloak
+                  - keycloak-db-init
+                  {{- end }}
                   {{- if .Values.postgres.backup.enabled }}
                   - postgres-backup
                   {{- end }}

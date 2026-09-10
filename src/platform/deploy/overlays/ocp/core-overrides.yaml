@@ -17,6 +17,12 @@
 ingress:
   enabled: false
 
+# Keycloak browser OIDC uses a Route in the OCP overlay chart (same pattern
+# as web — set keycloak.route.service.name to the Keycloak Service).
+keycloak:
+  ingress:
+    enabled: false
+
 # restricted-v2 assigns arbitrary UIDs at admission and forbids fixing
 # one: null the data services' vanilla-K8s UID pins so the SCC assigns
 # them. (The platform-image pods never had a UID to null -- the core

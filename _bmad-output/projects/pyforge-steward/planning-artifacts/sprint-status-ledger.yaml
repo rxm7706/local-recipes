@@ -191,7 +191,7 @@ development_status:
   48-6-r-22-live-browser-streaming-or-the-pillar-deleted: done
   48-7-the-cap-axis-namespace-pass: done
   48-8-the-single-spec-merge: done
-  48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: backlog
+  48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: done
   49-1-the-verified-column-on-every-capability: backlog
   49-10-index-atlas-realization-gate-effect-stories: blocked
   49-11-index-herald-realization-gate-effect-stories: blocked

@@ -28,6 +28,8 @@ Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
   | `MIGRATION_DATABASE_URL` | migration-role DDL URL for the Liquibase Job, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` (postgres Service DNS, not a pooler) |
   | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
   | `REDIS_PASSWORD` | Redis AUTH password (Story 12.6); consumed by redis and wired into platform pods' `REDIS_URL` |
+  | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak bootstrap admin (Story 48.9 bundled OIDC profile only) |
+  | `COMPONENT_OIDC_CLIENT_SECRET` | BYO IdP client secret (`oidc.profile=byo` only; bundled default uses PKCE public client) |
 
   `helm install` prints the exact in-cluster DNS names (NOTES.txt), so the
   operator composes `DATABASE_URL` from them — the chart never composes it
@@ -39,6 +41,12 @@ Vault/ESO enterprise path are documented in
 manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
 `src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
 
+**OIDC profile (Story 48.9 / CAP-1):** default `oidc.profile=bundled`
+deploys Keycloak in-cluster (PostgreSQL-backed, realm-as-code ConfigMap).
+Set `oidc.profile=byo` and populate `oidc.byo.*` to use an external IdP
+via the `COMPONENT_OIDC_*` seam. Full profile comparison:
+`docs/reference/enterprise-deployment.md` § 8.
+
 ## Vanilla Kubernetes
 
 ```sh
@@ -47,7 +55,8 @@ kubectl create secret generic platform-secrets \
     --from-literal=DATABASE_URL=postgres://platform_app:...@platform-postgres:5432/platform \
     --from-literal=MIGRATION_DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
     --from-literal=POSTGRES_PASSWORD=... \
-    --from-literal=REDIS_PASSWORD=...
+    --from-literal=REDIS_PASSWORD=... \
+    --from-literal=KEYCLOAK_ADMIN_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     --set-file flags.tree=src/platform/config/flags.json \
     --set image.digest=sha256:<digest-from-platform-ci>

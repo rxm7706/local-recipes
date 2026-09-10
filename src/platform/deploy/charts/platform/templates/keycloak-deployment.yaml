@@ -1,0 +1,101 @@
+{{- if eq .Values.oidc.profile "bundled" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook-delete-policy: before-hook-creation
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: keycloak
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: keycloak
+    spec:
+      serviceAccountName: {{ include "platform.dataServiceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: keycloak
+          image: {{ include "platform.imageRef" (dict "image" .Values.keycloak.image "path" "keycloak.image") }}
+          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          args:
+            - start
+            - --import-realm
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL_HOST
+              value: {{ include "platform.postgres.fullname" . | quote }}
+            - name: KC_DB_URL_DATABASE
+              value: {{ .Values.keycloak.database | quote }}
+            - name: KC_DB_USERNAME
+              value: {{ .Values.postgres.auth.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform.existingSecretName" . | quote }}
+                  key: POSTGRES_PASSWORD
+            - name: KC_HOSTNAME
+              value: {{ .Values.keycloak.ingress.host | quote }}
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform.existingSecretName" . | quote }}
+                  key: KEYCLOAK_ADMIN_PASSWORD
+          startupProbe:
+            httpGet:
+              path: /realms/master
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /realms/master
+              port: http
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /realms/{{ .Values.keycloak.realm }}
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- $_ := required "keycloak.resources.limits.memory is required" .Values.keycloak.resources.limits.memory }}
+            {{- toYaml .Values.keycloak.resources | nindent 12 }}
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm-import
+          configMap:
+            name: {{ include "platform.keycloak.fullname" . }}-realm
+{{- end }}

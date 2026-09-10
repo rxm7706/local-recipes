@@ -1,0 +1,56 @@
+{{- if eq .Values.oidc.profile "bundled" }}
+# Creates the Keycloak database in the existing PostgreSQL instance (Story 48.9).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}-db-init
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak-db-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-2"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    # Runs before the Keycloak hook Deployment (weight -1) so the database
+    # exists before Keycloak boots.
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: keycloak-db-init
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "platform.dataServiceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: db-init
+          image: {{ include "platform.imageRef" (dict "image" .Values.postgres.image "path" "postgres.image") }}
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          env:
+            - name: PGHOST
+              value: {{ include "platform.postgres.fullname" . | quote }}
+            - name: PGUSER
+              value: {{ .Values.postgres.auth.username | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform.existingSecretName" . | quote }}
+                  key: POSTGRES_PASSWORD
+            - name: KEYCLOAK_DB
+              value: {{ .Values.keycloak.database | quote }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              psql -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='${KEYCLOAK_DB}'" | grep -q 1 \
+                || psql -d postgres -c "CREATE DATABASE \"${KEYCLOAK_DB}\""
+{{- end }}
