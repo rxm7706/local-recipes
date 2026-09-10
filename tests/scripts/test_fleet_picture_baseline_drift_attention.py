@@ -267,6 +267,7 @@ def _stub_fleet_main_ambient(fleet, monkeypatch, tmp_path):
     monkeypatch.setattr(fleet, "verification_staleness_findings", lambda: [])
     monkeypatch.setattr(fleet, "dream_chain_gap_findings", lambda: [])
     monkeypatch.setattr(fleet, "sibling_dreams_drift_findings", lambda: [])
+    monkeypatch.setattr(fleet, "capability_effect_findings", lambda: [])
     monkeypatch.setattr(
         fleet.subprocess,
         "run",
@@ -319,6 +320,32 @@ def test_main_attention_silent_on_baseline_drift_when_clean(monkeypatch, capsys,
     assert rc == 0
     assert "unrecovered baseline-drift" not in out
     assert "none of the stations is waiting on you" in out
+
+
+def test_main_attention_watches_capability_effect_findings(monkeypatch, capsys, tmp_path):
+    """Story 21.11: missing verified-line WARNs surface in ATTENTION watch."""
+    fleet = _load_fleet()
+    _stub_fleet_main_ambient(fleet, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        fleet,
+        "capability_effect_findings",
+        lambda: [
+            {
+                "source": "capability-effect",
+                "check": "capability-effect-verified",
+                "status": "warn",
+                "message": "pyforge-doctor/spec-foo CAP-1 is in a 'shipped' Spec but carries no `verified:` line",
+                "evidence": {},
+            }
+        ],
+    )
+    monkeypatch.setattr(fleet, "baseline_drift_findings", lambda: [])
+
+    rc = fleet.main()
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "ATTENTION:" in out
+    assert "capability-effect-verified: pyforge-doctor/spec-foo CAP-1" in out
 
 
 def test_main_attention_watches_a_warn_mode_scope_advisory(monkeypatch, capsys, tmp_path):

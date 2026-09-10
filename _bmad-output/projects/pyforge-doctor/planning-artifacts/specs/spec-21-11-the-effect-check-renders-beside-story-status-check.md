@@ -2,9 +2,10 @@
 title: 'The effect check renders beside `story-status-check`'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'b2f99e866acf5ea45b4a90a8edd57b1fb1d03dbd'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 warnings: []
 deferred: []
@@ -86,3 +87,47 @@ package it judges (`tests/meta/test_source_independence.py`).
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 12 findings — high 0, medium 2, low 1, false 2, reject 1, defer 6
+- findings:
+  - `[false]` `[reject]` Spec Change Log / Auto Run Result empty mid-review — workflow artifact filled at finalize, not a code defect.
+  - `[medium]` `[patch]` `_DOCTOR_SOURCE_TASKS` count-only tests allow dropping `capability-effect` silently — added `test_doctor_source_tasks_include_capability_effect_beside_story_status` pinning name, task, and ordering after `story-status`.
+  - `[medium]` `[patch]` Fleet-picture ATTENTION wiring for capability-effect untested at `main()` — added `test_main_attention_watches_capability_effect_findings` plus helper meta-test stub update.
+  - `[low]` `[patch]` New CFE meta test missing from `skf-manifest.yaml` — added `test_fleet_picture_capability_effect.py` beside sibling fleet-picture meta tests.
+  - `[false]` `[reject]` Meta-tests pass not evidenced — ran `test_verdict_sole_ownership.py`, `test_source_independence.py`, and dispatch tests (200 passed).
+  - `[maybe-false]` `[defer]` `scripts/.spec-surface-baseline.json` not stamped for new meta test — cross-spec drift includes 21.10 paths; scoped `--write-baseline --spec pyforge-doctor/spec-21-11-…` belongs at PR land after memlog reconcile.
+  - `[maybe-false]` `[defer]` Story 21.10 live-fleet integration test still open — pre-existing follow-up, not introduced by 21.11 wiring.
+  - `[low]` `[defer]` `_run_doctor_sources` docstring still says "ten ported sources" — pre-existing stale comment, not caused by this story's tuple append.
+  - `[maybe-false]` `[defer]` `_DOCTOR_SOURCE_TASKS` ↔ `pixi.toml` task cross-check (DW-FU-6-9-3) — repo-wide known gap, unchanged.
+  - `[maybe-false]` `[defer]` Edge-case hunter returned no findings — no action.
+  - `[maybe-false]` `[defer]` Intent-alignment surface-gap notes (REGISTRY/schema pre-21.11, doctor-report E2E) — satisfied by prior stories or out of 21.11 scope; wiring AC met.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Wired the existing `capability-effect` source (Stories 21.9/21.10 module) into operational surfaces beside `story-status-check`: `DISPATCH`, `_DOCTOR_SOURCE_TASKS`, standalone `capability-effect-check` pixi task, and fleet-picture ATTENTION watch lines.
+
+Files changed:
+- `sources/__main__.py` — `capability-effect` DISPATCH entry
+- `scripts/detectors.py` — `_DOCTOR_SOURCE_TASKS` pair immediately after `story-status`
+- `pixi.toml` — `capability-effect-check` task
+- `scripts/fleet_picture.py` — `capability_effect_findings()` + ATTENTION integration
+- `tests/unit/test_sources_dispatch.py` — dispatch map entry
+- `tests/scripts/test_detectors_doctor_sources.py` — ordering/name regression pin
+- `tests/scripts/test_fleet_picture_baseline_drift_attention.py` — ATTENTION wiring test + stub
+- `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_capability_effect.py` — helper meta-test (new)
+- `_bmad/_config/skf-manifest.yaml` — manifest entry for new meta test
+- Comment-only updates in `sources/__init__.py`, `capability_effect.py`
+
+Review: 3 patches applied (detectors ordering test, ATTENTION main test, skf-manifest); 6 deferred (spec-surface baseline cross-spec, live-fleet integration, stale docstring, DW-FU-6-9-3, edge-case empty, intent-alignment informational).
+
+Follow-up review recommended: true — two medium wiring-regression patches on first pass; unverified risk is silent drop from `_DOCTOR_SOURCE_TASKS` or ATTENTION block if a future edit removes wiring without the new regression tests.
+
+Verification:
+- `pixi run -e pyforge-doctor pytest … test_sources_dispatch.py test_sources_capability_effect_verified.py test_verdict_sole_ownership.py test_source_independence.py` — 200 passed
+- `pixi run -e pyforge-ci pyforge-doctor-scripts-test` — passed (297 tests)
+- `pixi run -e local-recipes test-skill -- --meta -k fleet_picture_capability_effect` — 3 passed
+- `pixi run -e local-recipes capability-effect-check` — exit 0, WARN findings emitted
+- `pixi run -e local-recipes detectors -- --list` — shows `story-status` then `capability-effect` adjacent
