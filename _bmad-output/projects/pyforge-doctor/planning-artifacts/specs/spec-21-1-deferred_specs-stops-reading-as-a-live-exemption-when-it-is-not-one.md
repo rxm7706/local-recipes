@@ -2,7 +2,8 @@
 title: '`DEFERRED_SPECS` stops reading as a live exemption when it is not one'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '2e49ad54af52cd352a4ae25c1052e69cf1ac6fd4'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -95,4 +96,42 @@ silently accumulating.
 
 ## Spec Change Log
 
+- 2026-09-10 — Review pass 1: added `test_deferred_specs_story_21_1_reconciliation` to pin de-registrations (`spec-intelligence-hub`, shipped pair) and `spec-pyforge-charter` registration; switched live-status test to public `board._frontmatter`.
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 14 findings — high 0, medium 1, low 2, false 8, maybe-false 1, reject 2
+- findings:
+  - `[false]` `[reject]` AC lists deleting `spec-agentic-sdlc-autonomy` but diff keeps it — live Spec reads `ready` (open); Boundaries invariant requires removal only for terminal status, so keep is correct.
+  - `[false]` `[reject]` `spec-golden-path-conda-blind-spot` should de-register because narrative criteria met — status still `ready`; de-registration awaits operator confirmation per dict precedent, not status alone.
+  - `[low]` `[reject]` Unit test only checks open status, not narrative de-registration criteria — out of story scope; open-status guard is the stated deliverable.
+  - `[medium]` `[patch]` `spec-intelligence-hub` de-registration not pinned — added `test_deferred_specs_story_21_1_reconciliation` negative membership assertions.
+  - `[low]` `[patch]` `spec-pyforge-charter` registration not test-adopted — same test asserts key presence and exact reason string.
+  - `[false]` `[defer]` Charter SPEC.md still says unregistered — pre-existing doc drift in steward/governance prose; no chain-completeness consumer.
+  - `[false]` `[defer]` Code Map line refs stale (`:716`, `:87-135`) — cosmetic spec doc only.
+  - `[false]` `[patch]` Test used `_frontmatter_from_text` instead of `_frontmatter` — switched to public path reader.
+  - `[maybe-false]` `[defer]` Glob could return ambiguous slug matches — sorted first match; no duplicate slug paths exist today.
+  - `[low]` `[reject]` `read_text` OSError unhandled in test — pytest surfaces read failures; acceptable for monorepo gate.
+  - `[false]` `[reject]` Empty triage/changelog at review start — filled during finalize.
+  - `[false]` `[defer]` `spec-bmad-cursor-interactive-routing` rationale narrower than Spec — incidental `draft`→`ready` sync; not a defect.
+  - `[false]` `[reject]` Blind hunter: story AC not amended for agentic-sdlc keep — intent-contract is read-only; live-status reconciliation supersedes stale audit slug list at implementation time.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Reconciled `DEFERRED_SPECS` in `board.py` against live Spec statuses: removed three inert/ready-to-de-register entries (`spec-artifact-chain-reconciliation`, `spec-chain-currency-sweep`, `spec-intelligence-hub`), corrected drifted rationale for `spec-golden-path-conda-blind-spot` and `spec-bmad-cursor-interactive-routing`, registered `spec-pyforge-charter`, rewrote the invariant comment, and added unit tests that read live `SPEC.md` files plus pin Story 21.1 membership changes.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py` — dict reconciliation and invariant comment
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py` — live open-status invariant + Story 21.1 membership pins
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-21-1-…md` — build-auto metadata
+
+**Review:** 2 patches applied (membership pin test, `_frontmatter` reader); 8 findings rejected as false or out-of-scope; 4 deferred (governance doc drift, ambiguous glob edge, cursor rationale breadth, charter SPEC self-description).
+
+**Follow-up review recommendation:** false (0 high patches; 1 medium patch only)
+
+**Verification:** `pixi run -e pyforge-doctor pyforge-doctor-test` — 1485 passed, 1 skipped (40.76s).
+
+**Residual risks:** `spec-agentic-sdlc-autonomy` retained because live status is `ready` (contradicts static AC slug list from the 2026-09-09 audit snapshot). `spec-golden-path-conda-blind-spot` remains registered while its narrative de-registration criteria appear satisfied — operator-confirmed removal still pending.
