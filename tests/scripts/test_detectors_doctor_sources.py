@@ -131,6 +131,16 @@ def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
     assert "dashboard-drift" in {row["name"] for row in all_rows}
 
 
+def test_doctor_source_tasks_include_capability_effect_beside_story_status():
+    """Story 21.11: capability-effect must stay in the detectors sweep
+    immediately after story-status so one run answers both questions."""
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["story-status"] == "story-status-check"
+    assert tasks["capability-effect"] == "capability-effect-check"
+    names = [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    assert names.index("capability-effect") == names.index("story-status") + 1
+
+
 def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):

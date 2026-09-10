@@ -265,6 +265,7 @@ import tomlkit
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.vcs_git import GitVcs
 from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
     HarnessError,
@@ -300,6 +301,7 @@ from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_ret
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
+from .dispatch import spin_loop_home_in_flight_conflict
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -1626,6 +1628,30 @@ def run_spin(
     # here, with NO journal entries at all, the same precondition-gate
     # precedent every check above it already follows.
     if _resolve_model_tiering(harness, home, slug, preview, findings, data):
+        return _emit(args, data, findings)
+
+    # --- Story 34.1: refuse a second spin against a live loop home ----------
+    guard_story_key = render_feed_key(preview[0]) if preview else "34.1"
+    effective_policy, _guard_policy_findings = _compose_spin_policy(slug)
+    spin_conflict = spin_loop_home_in_flight_conflict(
+        fs=fs,
+        vcs=GitVcs(),
+        process=process,
+        harness=harness,
+        home=home,
+        slug=slug,
+        story_key=guard_story_key,
+        effective_policy=effective_policy,
+    )
+    if spin_conflict is not None:
+        findings.append(
+            Finding(
+                code=spin_conflict.code,
+                severity=Severity.ERROR,
+                message=spin_conflict.message,
+            )
+        )
+        data["in_flight_run"] = spin_conflict.in_flight_story_key
         return _emit(args, data, findings)
 
     # --- mint the run id, THEN create its directory (AD-25/AD-6) ------------

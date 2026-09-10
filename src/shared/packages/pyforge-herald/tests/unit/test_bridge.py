@@ -352,12 +352,18 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
     until it is either added to the sweep or, with cause, to the exclusion
     set (``cli`` is the CLI layer, AD-2; ``transport`` is the adapter side,
     AD-3; ``pptx_pipeline`` is Story 15.1's parallel, non-bridge PPTX
-    pipeline -- see ``_BRIDGE_CORE_MODULES``'s own docstring)."""
+    pipeline; ``station_api`` is Story 19.1's platform-host registration
+    seam -- importlib-loaded by the host, no ``pyforge.*`` import crossing
+    that boundary, the same adapter shape as ``cli``/``transport`` -- see
+    ``_BRIDGE_CORE_MODULES``'s own docstring)."""
     package_modules = {
         module.name for module in pkgutil.iter_modules(herald_pkg.__path__)
     }
     swept = {module.__name__.rsplit(".", 1)[-1] for module in _BRIDGE_CORE_MODULES}
-    assert package_modules - {"cli", "transport", "pptx_pipeline"} == swept
+    assert (
+        package_modules - {"cli", "transport", "pptx_pipeline", "station_api"}
+        == swept
+    )
 
 
 def _import_statements(source: str) -> list[tuple[str, tuple[str, ...]]]:

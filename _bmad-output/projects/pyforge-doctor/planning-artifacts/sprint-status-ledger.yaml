@@ -52,9 +52,9 @@ development_status:
   20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done
   20-5-the-version-drift-spec-s-open-questions-are-written-back: done
   21-1-deferred_specs-stops-reading-as-a-live-exemption-when-it-is-not-one: done
-  21-10-a-verified-line-on-a-capability-is-read-and-rendered: backlog
-  21-11-the-effect-check-renders-beside-story-status-check: backlog
-  21-12-a-body-that-says-3-of-9-under-realized-is-a-finding: backlog
+  21-10-a-verified-line-on-a-capability-is-read-and-rendered: done
+  21-11-the-effect-check-renders-beside-story-status-check: done
+  21-12-a-body-that-says-3-of-9-under-realized-is-a-finding: done
   21-13-open_questions-over-a-live-memlog-question-is-a-finding: backlog
   21-14-promissory-language-under-a-terminal-status-is-measured-before-it-ships: backlog
   21-15-a-status-comment-that-contradicts-its-own-ledger-is-a-finding: backlog
@@ -127,7 +127,7 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
-  epic-20: in-progress
+  epic-20: done
   epic-20-retrospective: optional
   epic-21: in-progress
   epic-21-retrospective: optional

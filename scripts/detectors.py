@@ -212,6 +212,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # actually gates. Offline and deterministic, like its neighbours here.
     ("ledger-direction", "ledger-direction-check"),
     ("story-status", "story-status-check"),
+    # Story 21.11 (Epic 21): capability-effect beside story-status in one
+    # detectors run -- offline, deterministic, no budget concerns.
+    ("capability-effect", "capability-effect-check"),
     ("chain-completeness", "chain-completeness-check"),
     ("dashboard-drift", "retired-console-check"),
     ("check-layout", "dashboard-layout-check"),

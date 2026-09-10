@@ -486,7 +486,16 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
     import ast
 
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
-    documented = {"apps.py", "cache.py", "models.py", "audit.py", "views.py"}
+    documented = {
+        "apps.py",
+        "asgi.py",
+        "audit.py",
+        "cache.py",
+        "consumers.py",
+        "models.py",
+        "routing.py",
+        "views.py",
+    }
 
     actual: set[str] = set()
     for path in sorted(dashboard_dir.rglob("*.py")):

@@ -2,7 +2,7 @@
 title: 'A body that says "3 of 9" under `realized` is a finding'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -86,3 +86,25 @@ document is a named finding, never silence.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+Status: done (bookkeeping completed after a terminal crash cut the session off
+right after the code commit -- real implementation was already landed and
+verified green, only this section and the status flip were missing).
+
+### Summary
+Added the `status_body_consistency` source module (CAP-1: warns when a
+terminal-status Dream/Spec still reads incomplete N-of-M progress), wired
+into `sources/__init__.py` and `models.py`, with fixtures (complete-realized,
+the live pyforge-scribe case, unparseable) and a dedicated unit test suite.
+
+### Files changed
+- `sources/status_body_consistency.py` (new, 326 lines)
+- `sources/__init__.py`, `models.py`, `data/report-schema.json` — registration
+- `tests/unit/test_sources_status_body_consistency.py` (new)
+- `tests/fixtures/status_body/*` (new fixtures)
+- `tests/meta/test_source_independence.py`, `tests/unit/test_models.py` — updated
+
+### Verification
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1514 passed, 1 skipped

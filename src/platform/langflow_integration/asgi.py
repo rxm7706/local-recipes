@@ -1,6 +1,6 @@
 """Builds Langflow's FastAPI app once, exported for `config/asgi.py`'s dispatcher.
 
-Story 11.1 (spec-python-agent-platform CAP-2, AD-4/AD-14 Pattern A): Langflow
+Story 11.1 (pap:CAP-2, AD-4/AD-14 Pattern A): Langflow
 lives in-process as a mounted ASGI app, not a sidecar. `langflow.main.create_app()`
 reads Langflow's own settings (`LANGFLOW_DATABASE_URL`, `LANGFLOW_CACHE_TYPE`,
 `LANGFLOW_CONFIG_DIR`, `LANGFLOW_KNOWLEDGE_BASES_DIR`, ...) from the process

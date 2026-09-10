@@ -1,4 +1,4 @@
-"""Story 11.3 (spec-python-agent-platform CAP-4, AD-17 Pattern A): proves the
+"""Story 11.3 (pap:CAP-4, AD-17 Pattern A): proves the
 registry-driven dispatch shape is symmetric across both integration patterns.
 `dbgpt_integration/tasks.py::text_to_sql` proves Pattern-B's shape (a Celery
 task that talks to its engine OVER REST, to a sidecar); this module proves

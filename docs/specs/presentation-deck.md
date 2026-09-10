@@ -66,8 +66,13 @@ a deck about the deck engine.
    per deck.
 4. **Run the pipeline:** `npm run extract` → `npm run dev` to review →
    `npm run build` for the static bundle. Generate the Marp + PPTX exports.
-5. **Verify** against [Acceptance criteria](#acceptance-criteria).
-6. **Append a new Worked Example** recording the concrete parameters, slide
+5. **Run deck visual QA (advisory):** from the **repo root**, after step 4 has produced
+   `presentations/<slug>/dist/`, run `pixi run -e pyforge-herald deck-qa <slug>` — invokes
+   `herald deck qa <slug>`, writes a gate-keyed JSON report to stdout and render artifacts
+   (PNG contact sheet + per-slide captures) under `.herald/deck-qa/<slug>/`. Failures inform
+   human/LLM review; this step does **not** block merge and is not a second PR gate.
+6. **Verify** against [Acceptance criteria](#acceptance-criteria).
+7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
 
 ---
@@ -431,9 +436,17 @@ in `src/marp/`:
    "bundled page", pulled via the Design↔Code bridge — warden's 411 KB poster is
    the exemplar); `marp --html` render of #3 is the **fallback** when no
    Design-authored bundle exists.
-5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint** via
-   the **deckcraft** pipeline (python-pptx / pptxgenjs); `marp --pptx` is the
-   explicitly **interim** generator (it renders image-slides, not editable text).
+5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint**.
+   **Preferred (shipped 2026-09-10, Story 19.4):** author
+   `src/content_plan.json` and fill via `pixi run -e pyforge-herald pyforge herald
+   deck pptx-fill src/content_plan.json -o src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx`
+   — real `<a:t>` text runs via `pptx_pipeline.py` (CAP-1/CAP-2), including
+   dense slides through the shape API (`add_card` / `add_metric_box` /
+   `add_table` / `add_section_label`). Exemplar:
+   `presentations/pyforge-warden/src/content_plan.json` →
+   `pyforge-warden-deck-2026-09-10.pptx`. **Interim fallback:** `marp --pptx`
+   (renders image-slides, not editable text). **Future:** deckcraft /
+   pptxgenjs when it delivers.
 6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — same engine rule as #5
    (underscore form kept from Example 2).
 

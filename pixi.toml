@@ -301,6 +301,10 @@ platforms = ["linux-64", "osx-arm64-min"]
 postgresql = ">=17.11,<18"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
 pgvector = ">=0.8.1"              # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
 redis-server = ">=8.10.1"         # per-user local Redis server process -- cache + Celery broker (AD-1)
+channels = ">=4.3.2,<5.0"         # Story 48.6: host `/ws/events/` delegates to pyforge.steward.dashboard when importable
+daphne = ">=4.2.3,<5.0"           # Story 48.6: ASGI websocket termination for the dashboard extra face
+asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels load-bearing adapter (matches pyforge-steward `[dashboard]` extra)
+channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer backend when the dashboard relay is exercised locally
 kubernetes-helm = ">=4.2.4"       # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
 kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 
@@ -366,6 +370,7 @@ platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
+pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # herald Epic 19.1: station_api mounts webhook_host on the herald v1 seam
 python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
 python-slugify = ">=8.0.4"
@@ -455,6 +460,10 @@ openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = ">=0.5.2"
 cachebox = ">=5.2.3,<6"
+channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests import pyforge.steward.dashboard
+daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)
+asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels adapter layer
+channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer for EventsStreamConsumer in Platform CI
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
@@ -520,6 +529,8 @@ channels = ">=4.3.2,<5.0"         # Story 9.5 (CAP-6/AD-5): the [dashboard] extr
 daphne = ">=4.2.3,<5.0"           # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 asgiref = ">=3.12.1,<4.0"         # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 channels_redis = ">=4.3.0,<5.0"   # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+pyjwt = ">=2.13.0"                # Story 48.6: EventsStreamConsumer verifies RS256 assertions via django-pyforge (test-time + dashboard websocket face)
+redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (imports as `redis`)
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -939,6 +950,10 @@ cmd = "python -m pyforge.doctor.sources bmad-method-version-drift"
 [feature.local-recipes.tasks.story-status-check]
 description = "Detector: no story reads `done` in a sprint feed without having landed. A bmad-loop dev pass self-marks its story `done`; if the REVIEW then fails to converge the story is deferred and NOTHING rolls the feed back — a false green in the artifact the dashboard renders and the next run dispatches from, so the board over-reports AND the next run SKIPS a story that was never finished. Caught 3 live on 2026-07-31 (marshal 1-6, doctor 1-4, mason 1-3), all in the same shape: dev completed, review failed. Confirms a landing via a merge commit on any ref OR a harness-recorded commit_sha (AD-33: git owns repository facts), and reports only when the harness positively says deferred/escalated — so hand-implemented stories with no run record are never flagged. The real fix belongs upstream in bmad-loop; this is the containment. Premise note (2026-08-22): BMAD 6.11's build-auto finalize writes `done` only at true finalize (post-review), shrinking — not closing — the dev-marks-done window; pre-6.11 feeds and interrupted runs keep the premise live, so detector behavior is unchanged. Contract: spec-regenerable-factory."
 cmd = "python -m pyforge.doctor.sources story-status"
+
+[feature.local-recipes.tasks.capability-effect-check]
+description = "Detector: a shipped/realized Spec CAP carries no `verified:` line (Story 21.10/21.11, spec-capability-effect-check CAP-2). Answers \"is the capability reached\" beside story-status-check's \"did the story land\" in one detectors run. Read-only — never authors a verified line. Warn-only, never gates. Contract: spec-21-11-the-effect-check-renders-beside-story-status-check."
+cmd = "python -m pyforge.doctor.sources capability-effect"
 
 [feature.local-recipes.tasks.loop-stall-check]
 description = "Watchdog: a live bmad-loop run has stopped making progress. `bmad-loop status` reports the last phase it WROTE, so a session blocked on an interactive startup dialog reads `dev-running` forever — and the dialog never reaches the session log, it renders only in the tmux pane, so the log just stops growing. The supervisor's stall ladder does not fire either. Live cost 2026-07-31: scribe 1.3 sat 74 min on the CLAUDE.md external-import dialog, seven times its 600s grace, while five siblings wrote every second. Compares now against the newest mtime across a run's logs + journal, for runs whose state.json says neither finished, stopped, paused, nor parked-only (a paused run is SUPPOSED to sit still, and since Story 25.5 a parked-only run — every task awaiting-operator — reports awaiting-operator (run bmad-loop confirm) and exits 0 instead of reading as a stall). Threshold 15m, override with -- --minutes N. Catches any cause: folder-trust prompt, external-import prompt, wedged model call, hung nested CLI. Contract: spec-bmad-loop-governance."
@@ -2484,6 +2499,10 @@ depends-on = ["pyforge-herald-build-conda", "pyforge-herald-build-dist"]
 description = "Export .herald/claims.json -> web/public/success.json for the web dashboard (Story 9.4)"
 cmd = "python scripts/export_web_snapshot.py"
 cwd = "src/shared/packages/pyforge-herald"
+
+[feature.pyforge-herald.tasks.deck-qa]
+description = "Story 19.3: run Herald's deck visual-QA gates against a built deck — JSON report plus render artifacts under .herald/deck-qa/<slug>/. Advisory only (never a PR gate). Run from repo root: pixi run -e pyforge-herald deck-qa <slug>. See docs/specs/presentation-deck.md."
+cmd = "herald deck qa"
 
 [feature.pyforge-core.tasks.pyforge-core-test]
 description = "Run the pyforge.core test suite"

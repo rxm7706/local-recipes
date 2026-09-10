@@ -51,10 +51,10 @@ development_status:
   18-1-the-first-station-video-renders-from-herald-s-studio: done
   18-2-release-comms-go-through-bmad-os-changelog-and-social: done
   18-3-slides-generator-is-herald-wielded: done
-  19-1-the-webhook-routes-move-onto-the-station-api-seam: backlog
+  19-1-the-webhook-routes-move-onto-the-station-api-seam: done
   19-2-one-real-ship-records-itself-against-a-persistent-store: blocked
-  19-3-the-deck-qa-gate-gets-a-caller: backlog
-  19-4-one-real-station-deck-renders-through-the-pptx-pipeline: backlog
+  19-3-the-deck-qa-gate-gets-a-caller: done
+  19-4-one-real-station-deck-renders-through-the-pptx-pipeline: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
@@ -100,9 +100,9 @@ development_status:
   epic-16-retrospective: optional
   epic-17: done
   epic-17-retrospective: optional
-  epic-18: backlog
+  epic-18: done
   epic-18-retrospective: optional
-  epic-19: backlog
+  epic-19: in-progress
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional

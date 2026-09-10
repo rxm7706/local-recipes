@@ -180,8 +180,8 @@ from . import claims, errors, notices, progress
 
 logger = logging.getLogger(__name__)
 
-ON_SHIP_PATH = "/api/herald/webhooks/on-ship"
-ON_PR_CLOSE_PATH = "/api/herald/webhooks/on-pr-close"
+ON_SHIP_PATH = "/stations/herald/api/v1/webhooks/on-ship"
+ON_PR_CLOSE_PATH = "/stations/herald/api/v1/webhooks/on-pr-close"
 """The two routes ``epics.md``'s Story 13.4 AC names literally. Exported so
 Story 13.6's ASGI host wiring (out of this story's Surface) has one place
 to import them from rather than re-typing the literals."""
@@ -1273,12 +1273,11 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             # trailing slash cannot merge two real routes -- these two
             # literals differ in a segment, not in punctuation.
             #
-            # Note for Story 13.6: per the ASGI spec `path` INCLUDES
-            # `root_path`, so mounting under a prefix serves these routes at
-            # `<prefix>/api/herald/webhooks/...` -- the route literals
-            # already begin with `/api`, so mounting under `/api` yields
-            # `/api/api/herald/webhooks/...`. That is correct, not a bug,
-            # but it is worth knowing before choosing the mount point.
+            # Story 19.1: route literals are the full station-API paths
+            # (`/stations/herald/api/v1/webhooks/...`). Per the ASGI spec
+            # `path` INCLUDES `root_path`, so a host that mounts this app
+            # under a further prefix must still strip `root_path` below --
+            # the same discipline as Story 13.6's daphne mount note.
             path = scope.get("path") or ""
             while "//" in path:
                 path = path.replace("//", "/")

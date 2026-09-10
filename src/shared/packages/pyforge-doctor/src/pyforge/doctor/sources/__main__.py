@@ -51,6 +51,7 @@ from . import (
     bmad_config,
     bmad_method,
     board,
+    capability_effect,
     chain,
     deps,
     factory,
@@ -104,6 +105,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 20.3 (Epic 20) -- another genuinely NEW (non-ported) DISPATCH
     # member, same shape as BMAD_RENDER_CONFIG_AMBIGUITY above.
     Source.FROZEN_PATH_CHANGED.value: frozen_path.gather,
+    # Story 21.11 (Epic 21) -- capability-effect beside story-status in
+    # detectors; same shape as FROZEN_PATH_CHANGED above.
+    Source.CAPABILITY_EFFECT.value: capability_effect.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

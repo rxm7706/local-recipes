@@ -130,7 +130,7 @@ def test_daphne_answers_a_real_signed_on_ship_post(live_daphne):
     body = json.dumps({"station": "warden", "compute_hours": 1.5}).encode("utf-8")
     ts = str(int(time.time()))
     response = httpx2.post(
-        f"{base_url}/api/herald/webhooks/on-ship",
+        f"{base_url}/stations/herald/api/v1/webhooks/on-ship",
         content=body,
         headers={
             "X-Hub-Signature-256": _sign(_SECRET, ts, body),
@@ -153,7 +153,7 @@ def test_daphne_rejects_an_unsigned_request(live_daphne):
     base_url, repo_root = live_daphne
     body = json.dumps({"station": "warden"}).encode("utf-8")
     response = httpx2.post(
-        f"{base_url}/api/herald/webhooks/on-ship",
+        f"{base_url}/stations/herald/api/v1/webhooks/on-ship",
         content=body,
         headers={"Content-Type": "application/json"},
         timeout=10.0,

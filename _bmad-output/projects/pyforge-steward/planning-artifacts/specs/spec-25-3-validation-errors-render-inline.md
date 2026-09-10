@@ -38,7 +38,7 @@ warnings: []
 | Rejected HTMX submit | POST bound form; FastAPI-shaped 422 `detail` with `loc: ["body", "version"]` | HTTP 422; `#id_version` errorlist shows `msg` on the originating form | Field highlighted; not a toast-only dump |
 | Bridge to ValidationError | Same JSON array | `ValidationError` dict keyed by `version` | `body`/`query` loc prefixes dropped |
 | Opaque toast (mechanism absent) | Same 422 passed to `toast_http_422` | Generic blob; form field has no errorlist | Documents the toast trap; canopy:AD-15 |
-| Bridge removed | AST of `form_errors.py` without `PydanticFormErrorBridge` unpacking `detail`/`loc` | Test fails | Canopy canopy:AD-15 |
+| Bridge removed | AST of `form_errors.py` without `PydanticFormErrorBridge` unpacking `detail`/`loc` | Test fails | canopy:AD-15 |
 
 </intent-contract>
 

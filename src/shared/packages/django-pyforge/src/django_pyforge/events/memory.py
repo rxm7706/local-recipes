@@ -317,6 +317,46 @@ class MemoryRedis:
                 claimed.append((pending.stream_id, fields))
         return claimed
 
+    def xread(
+        self,
+        streams: dict[str, str],
+        count: int | None = None,
+        block: int | None = None,
+        **_kwargs: Any,
+    ) -> list[list[Any]]:
+        del block  # blocking is not modeled; tests drive time via advance_ms
+        out: list[list[Any]] = []
+        for stream_name, start_id in streams.items():
+            messages = self._xread_stream(stream_name, start_id, count)
+            if messages:
+                out.append([stream_name, messages])
+        return out
+
+    def _xread_stream(
+        self,
+        stream_name: str,
+        start_id: str,
+        count: int | None,
+    ) -> list[tuple[str, dict[str, str]]]:
+        entries = self._streams.get(stream_name, [])
+        cursor_key = f"_xread:{stream_name}:$"
+        if start_id == "$":
+            if cursor_key not in self._kv:
+                self._kv[cursor_key] = entries[-1].stream_id if entries else "0-0"
+            floor = _parse_stream_id(self._kv[cursor_key])
+        else:
+            floor = _parse_stream_id(start_id)
+        messages: list[tuple[str, dict[str, str]]] = []
+        for entry in entries:
+            if _parse_stream_id(entry.stream_id) <= floor:
+                continue
+            messages.append((entry.stream_id, dict(entry.fields)))
+            if count is not None and len(messages) >= count:
+                break
+        if messages and start_id == "$":
+            self._kv[cursor_key] = messages[-1][0]
+        return messages
+
     def xrange(
         self,
         name: str,

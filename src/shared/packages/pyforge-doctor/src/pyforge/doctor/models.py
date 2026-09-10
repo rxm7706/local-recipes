@@ -288,6 +288,18 @@ class Source(StrEnum):
     # --append" ownership). See sources/frozen_path.py for the independence
     # rationale.
     FROZEN_PATH_CHANGED = "frozen-path-changed"
+    # Story 21.10 (Epic 21 / spec-capability-effect-check CAP-2): read-only
+    # realized-versus-verified column from each CAP's optional ``verified:``
+    # line in ``SPEC.md``; WARN when a ``shipped``/``realized`` Spec's CAP
+    # carries none. Story 21.9 (CAP-1 caller reach) and Story 21.11
+    # (detectors / fleet-picture wiring) extend the same module and member.
+    CAPABILITY_EFFECT = "capability-effect"
+    # Story 21.12 (Epic 21 / spec-status-body-consistency CAP-1): read-only
+    # verdict on whether a Dream or Spec's prose still agrees with its own
+    # terminal ``status:`` — starting with incomplete progress phrases
+    # (``N of M stories/capabilities`` with ``N < M``). Stories 21.13–21.16
+    # extend the same module; Story 21.16 wires dispatch + detectors.
+    STATUS_BODY_CONSISTENCY = "status-body-consistency"
 
 
 class Partition(StrEnum):

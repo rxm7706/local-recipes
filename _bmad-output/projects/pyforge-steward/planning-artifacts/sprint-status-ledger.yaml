@@ -188,8 +188,8 @@ development_status:
   48-3-r-19-network-baseline: done
   48-4-r-20-secrets-profile: done
   48-5-r-21-observability-contract: done
-  48-6-r-22-live-browser-streaming-or-the-pillar-deleted: backlog
-  48-7-the-cap-axis-namespace-pass: backlog
+  48-6-r-22-live-browser-streaming-or-the-pillar-deleted: done
+  48-7-the-cap-axis-namespace-pass: done
   48-8-the-single-spec-merge: backlog
   48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: backlog
   49-1-the-verified-column-on-every-capability: backlog

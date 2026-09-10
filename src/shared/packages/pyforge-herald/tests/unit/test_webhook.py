@@ -1624,7 +1624,7 @@ def test_asgi_app_never_propagates_a_send_failure(
         webhook.ON_SHIP_PATH,
         webhook.ON_SHIP_PATH + "/",
         "/" + webhook.ON_SHIP_PATH,
-        "/api//herald/webhooks/on-ship",
+        "/stations/herald/api/v1//webhooks/on-ship",
     ],
 )
 def test_asgi_app_normalizes_the_request_path(tmp_path: Path, path: str):
@@ -1647,8 +1647,26 @@ def test_asgi_app_still_declines_a_genuinely_unknown_route(tmp_path: Path):
     app = webhook.create_app(tmp_path, b"shared-secret")
     recorder = _Recorder()
     asyncio.run(
-        app(_scope("/api/herald/webhooks/on-shipp"), _boom_receive, recorder)
+        app(
+            _scope("/stations/herald/api/v1/webhooks/on-shipp"),
+            _boom_receive,
+            recorder,
+        )
     )
+    assert recorder.status == 404
+
+
+def test_asgi_app_legacy_bare_api_namespace_path_is_not_served(tmp_path: Path):
+    """Story 19.1: the pre-seam ``/api/herald/...`` literals must 404."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode()
+    scope = _scope(
+        "/api/herald/webhooks/on-ship",
+        headers=_signed_headers(secret, body),
+    )
+    recorder = _Recorder()
+    asyncio.run(app(scope, _receive_once(body), recorder))
     assert recorder.status == 404
 
 

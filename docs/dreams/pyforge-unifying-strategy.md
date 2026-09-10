@@ -353,10 +353,17 @@ first tested against what Foundry had already decided or shipped (seed Dream
    2026-09-05: Lane 1 media stays on the RWX PVC (mounted by all five platform
    Deployments; bound on CRC 2026-08-25). The only real gap was the unstated RWX
    storage-class prerequisite, now in canopy:AD-13.
-2. **Realtime push — already answered.** `architecture-secure-live-dashboards-2026-08-09`:
+2. **Realtime push — shipped (transport).** Operator ruling **2026-09-10**
+   (Story 48.6 / red-team T-8): implement the `/ws/events/` pillar, do not
+   delete it. `architecture-secure-live-dashboards-2026-08-09` stands:
    Django + Channels + Daphne + `channels_redis` as the optional extra
-   `pyforge-steward[dashboard]`, on the `redis-broker` / `redis-cache` split (Story 20.2).
-   Open: whether it is wired to live station data yet, or is plumbing only.
+   `pyforge-steward[dashboard]`, on the `redis-broker` / `redis-cache` split
+   (Story 20.2). **Shipped:** `EventsStreamConsumer` at `/ws/events/` on the
+   host ASGI router (when `[dashboard]` is importable) tail-reads
+   `pyforge.events` via non-group `XREAD`, verifies an RS256 assertion with
+   audience `mcp:events`, and forwards CloudEvents whose `data.subject`
+   matches the verified `sub` claim. HTMX badge UI remains future work;
+   this slice is transport only.
 3. **Baseline MCP tools per station — real work, not a generator.** Portals carry no
    domain models, so InsForge's schema-introspection premise does not transfer. Atlas is
    the proven official-SDK server (13 tools, Story 21.2); **porting Marshal's FastMCP

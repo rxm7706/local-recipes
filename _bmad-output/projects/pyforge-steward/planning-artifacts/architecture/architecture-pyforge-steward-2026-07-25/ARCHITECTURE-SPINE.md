@@ -659,141 +659,141 @@ flowchart LR
 
 #### fnd:AD-1 — Fresh root, pinned source `[ADOPTED]`
 
-- **Binds:** CAP-1, CAP-7; Stories 44.3, 44.10
+- **Binds:** fnd:CAP-1, fnd:CAP-7; Stories 44.3, 44.10
 - **Prevents:** two live histories; the purged-secret history and 268 worktrees riding into the lasting repo; ambiguity over which repo is truth
 - **Rule:** Foundry's first commit carries no `local-recipes` history (no `filter-repo`, no subtree import). Every manifest row carries the `source_sha` it was lifted at, and the manifest records the **foundry epoch SHA** (fnd:AD-16). After Phase 6, `local-recipes` is archived read-only at its final SHA, that SHA is pinned in the foundry manifest and the Dream's Realization log, and its README opens with the supersession banner.
 
 #### fnd:AD-2 — Two layers: a capability ledger over the file manifest, both derived
 
-- **Binds:** CAP-2, CAP-3, CAP-4, CAP-5, CAP-9; Story 44.1 and every realization story
+- **Binds:** fnd:CAP-2, fnd:CAP-3, fnd:CAP-4, fnd:CAP-5, fnd:CAP-9; Story 44.1 and every realization story
 - **Prevents:** two stories routing one path differently; a tracked path silently dropped; the spec-surface allowlist (`.claude/**`, `_bmad/**`, `_bmad-output/**`, `docs/dreams/**`, `docs/governance/**`, `.github/**` — the very trees the cutover moves) leaving 20 % of paths unrouted; a hand list that omits the newest thing
 - **Rule:** The **capability ledger** has one row per capability, derived from the Dreams and the spec-surface owner map: `mode` (`rebuild` | `move` | `retire`), `state` (`planned` | `rebuilding` | `moving` | `verified-in-foundry` | `cut`), dependencies, and the four decision signals. The **file manifest** exists only under `move` rows; a `rebuild` row has no file rows (its files are `stays` by construction) and a `retire` row's files are `dies`. Manifest rows come from `git ls-files` — one row per tracked path, allowlisted trees included. The spec-surface classification (`scripts/spec_surface_check.py`) supplies the row's **owner** only (`unowned` is legal). Coupling comes from `scribe index move-list` (`pyforge.scribe.extras.move_list`: host `pyforge.*` imports, `sys.path` inserts, `five_tier` roots, CFE callers) **plus a `parent_depth` signal** for code that computes paths by `parents[N]` / fixed `../` depth. **Destination** is resolved by an ordered precedence list of glob rules (most specific wins); a path matched by two rules of equal precedence is row kind `ambiguous` and blocks until an operator rule resolves it. The manifest is a machine-readable file with per-directory rollups (24,858 rows are not a markdown table), produced by `steward cutover plan` in two modes: `--regenerate` rebuilds every row from scratch at HEAD; `--append` folds in only the delta since the manifest's recorded `source_sha` (added, renamed and deleted paths gain or update rows). Both modes preserve `moved` rows, so regeneration is idempotent over status. A move story consumes the rows for its phase and marks them `moved` with the foundry commit; a move without a row is review-blocking.
 
 #### fnd:AD-3 — Two locks, one workspace name; tooling split by role
 
-- **Binds:** CAP-1, CAP-4; Stories 44.3, 44.4, 44.7; red-team D-2 / R-17
+- **Binds:** fnd:CAP-1, fnd:CAP-4; Stories 44.3, 44.4, 44.7; red-team D-2 / R-17
 - **Prevents:** the 29-environment single lock that turns every dependency change into a 59k-line diff; recipe churn re-solving the estate; a "no solver tooling" rule that strips warden's test oracles
 - **Rule:** Root `pixi.toml` is `name = "pyforge"` and locks the estate only. `factory/pixi.toml` + `factory/pixi.lock` lock the island only. No path dependency crosses the island boundary in either direction. The island owns **recipe build / lint / submit tooling by role**: `rattler-build`, `conda-smithy`, `conda-build` as a build engine, `conda-forge-pinning`, `grayskull`. Estate exemptions are enumerated by name, never by role: warden's test-only differential oracles `conda-build` and `py-rattler-build` (`[feature.pyforge-warden]`), and the `pixi-build-python` / `pixi-build-rattler-build` workspace-member backends. Any other solver-farm package in the estate lock is a finding.
 
 #### fnd:AD-4 — Mason reaches the island by manifest path, never by import
 
-- **Binds:** CAP-3, CAP-4, CAP-6; Stories 44.6, 44.7, 44.9
+- **Binds:** fnd:CAP-3, fnd:CAP-4, fnd:CAP-6; Stories 44.6, 44.7, 44.9
 - **Prevents:** the estate environment regrowing the solver farm; a second copy of the CFE skill; `MASON_CFE_ROOT` pointing back at the archive; a marker constant that no longer matches after the move
 - **Rule:** `MASON_CFE_ROOT` stays a **repo root** (flag → env → cwd walk, `pyforge/mason/resolve.py`) whose marker `_CFE_MARKER` (today `.claude/scripts/conda-forge-expert`, `resolve.py:100`) moves with the cell to `skills/domain/conda-forge-expert/scripts`; the marker constant is a manifest consumer rewritten in 44.6. Recipe build, submit and update are subprocesses of `pixi run --manifest-path factory/pixi.toml <task>`; `pyforge-mason` imports nothing from the island.
 
 #### fnd:AD-5 — One skills tree; IDE directories are adapters
 
-- **Binds:** CAP-2, CAP-3; Stories 44.5, 44.6; canopy:AD-17
+- **Binds:** fnd:CAP-2, fnd:CAP-3; Stories 44.5, 44.6; canopy:AD-17
 - **Prevents:** divergent `SKILL.md` copies per IDE; an edit landing in one adapter and not the other; the installer carve-out accidentally exempting the eight station personas; a symlink in git that checks out as a text file on stock Windows
 - **Rule:** Estate-authored skills live only under `skills/{stations,personas,domain}/<x>/`; SKF export writes there (`skills/stations/<x>/` is its root; 44.5 verifies `skf-export` accepts it). **No adapter is tracked in git.** Adapters are generated per machine by the link step (fnd:AD-19): `.claude/skills/<x>` always; `.cursor/skills/<x>` only where Cursor is detected or requested. Both are gitignored. Installer-**written** directories (`bmad-*` from the BMAD installer, `skf-*` from the forge) stay real directories; the eight station personas (`bmad-agent-<station>`) are estate-authored and move to `skills/personas/<station>/`. A regular directory for an estate skill under an adapter is a detector finding.
 
 #### fnd:AD-6 — The packages fold is a path rewrite, not a rename
 
-- **Binds:** CAP-2; Story 44.4; canopy:AD-4, fnd:AD-14, fnd:AD-17
+- **Binds:** fnd:CAP-2; Story 44.4; canopy:AD-4, fnd:AD-14, fnd:AD-17
 - **Prevents:** a half-moved tree with two package roots; a distribution or import rename smuggled in with the move; 59 files computing paths by fixed parent depth silently resolving a wrong root; a stale spec-surface baseline after every move
 - **Rule:** `src/shared/packages/<x>` → `src/packages/<x>`; distribution and import names unchanged. Every consumer is rewritten from manifest rows in the same story: `pixi.toml` path-dependencies (103 sites), the Containerfile `COPY` lines, `five_tier._packages_root`, `script_map_from_packages_root`, `marshal-policy.toml` globs, Spec `surface:` globs, CI `paths:`, and every `parent_depth` coupling row (`parents[N]` constants; no silent wrong-root fallback survives). `CLAUDE.md` / `AGENTS.md` are rewritten by re-running `skf-export` (canopy:AD-17). Every move story ends with a scoped `spec_surface_check.py --write-baseline --spec <affected>` re-stamp. After 44.4 no `src/shared/` exists and `rg src/shared/packages` returns only the manifest and the archive.
 
 #### fnd:AD-7 — The host consumes packages, never copies source
 
-- **Binds:** CAP-2; Story 44.4; ratifies pap:AD-9, canopy:AD-16
+- **Binds:** fnd:CAP-2; Story 44.4; ratifies pap:AD-9, canopy:AD-16
 - **Prevents:** the ten `COPY src/shared/packages/...` lines (nine django portals + the `pyforge-steward` library) and the builder-stage `COPY . /app` riding into foundry; deleting a working import path with no successor
 - **Rule:** Each `src/packages/*` is a pixi-build workspace member with its own `pixi.toml`; today that is true for all ten `pyforge-*` packages (under the `pixi-build` preview flag) and for none of the seven `django-*` packages — 44.4 adds theirs. The platform image installs workspace members; the Containerfile has no `COPY src/packages`, no `COPY . /app` of package source, and no `sys.path` insert for a package (`platformapp`'s own insert is host-internal `[ASSUMPTION]`). No import path is deleted without its successor named in the story (`ingest-keys-import`).
 
 #### fnd:AD-8 — Two CI estates, disjoint triggers, classified not counted
 
-- **Binds:** CAP-1, CAP-4, CAP-7; Stories 44.3, 44.7, 44.10; R-17a
+- **Binds:** fnd:CAP-1, fnd:CAP-4, fnd:CAP-7; Stories 44.3, 44.7, 44.10; R-17a
 - **Prevents:** a recipe PR paying for platform CI and the reverse; the `maintenance`-label and hand-run `environment.yaml` rituals; an undercounted "dies" list
 - **Rule:** Estate workflows carry `paths-ignore: [factory/**]`; island workflows carry `paths: [factory/**]`. Every workflow and CI script is a manifest row; a row that references `staged-recipes` **dies**: the four linter workflows, `test-all.yml` and `test-{linux,macos,windows}.yml`, `scripts/linter.py` (where the `environment.yaml` sync check lives), `azure-pipelines.yml`, `.azure-pipelines/`, `.scripts/`. `environment.yaml` is produced by a workflow step or dropped; never a by-hand step. No foundry workflow references `staged-recipes`.
 
 #### fnd:AD-9 — Every Epic 44 story is a gate the operator flips
 
-- **Binds:** CAP-1, CAP-6, CAP-7; all of 44.1–44.10
+- **Binds:** fnd:CAP-1, fnd:CAP-6, fnd:CAP-7; all of 44.1–44.10
 - **Prevents:** a drain creating a GitHub repository, opening conda-forge PRs, or disabling CI unattended; implementation starting before the solutioning review closes
 - **Rule:** All 44.x are ledger `blocked` while solutioning is under review; the flip to `backlog` is the operator's act per story. 44.3, 44.9 and 44.10 additionally require explicit operator confirmation at dispatch. Marshal never auto-flips a `blocked` key.
 
 #### fnd:AD-10 — Working set, not universe
 
-- **Binds:** CAP-5; Story 44.8
+- **Binds:** fnd:CAP-5; Story 44.8
 - **Prevents:** the 7,855-directory `recipes/` copy
 - **Rule:** `factory/recipes/` admits a recipe only through a manifest row whose `reason` is one of `in-flight`, `sole-maintainer`, `referenced-by-spec` (the fnd:AD-2 precedence list resolves the many-to-many `recipes/**` claims). Island CI asserts `count(factory/recipes/*) <= count(manifest rows)`.
 
 #### fnd:AD-11 — Two remotes are a migration interval bounded by the flag
 
-- **Binds:** CAP-2..CAP-8; Phases 1–5
+- **Binds:** fnd:CAP-2..fnd:CAP-8; Phases 1–5
 - **Prevents:** drift between the two trees while both are live; freezing the evergreen repo before the flip
 - **Rule:** Before the flip (fnd:AD-17) `local-recipes` is primary and evolves normally except where a capability has entered `rebuilding` or `moving`, which freezes its source paths at once (fnd:AD-22); every other change reaches foundry by `steward cutover plan --append` followed by the replay (fnd:AD-18). After the flip the roles reverse: foundry is primary, every `moved` row and every rebuilt capability's source is frozen in `local-recipes` (detector `frozen-path-changed`), and `local-recipes` accepts only hygiene.
 
 #### fnd:AD-12 — The BMAD chain moves whole; one ledger of record
 
-- **Binds:** CAP-2; Stories 44.5–44.10
+- **Binds:** fnd:CAP-2; Stories 44.5–44.10
 - **Prevents:** a loop home or a `bmad-switch` marker still targeting `local-recipes`; two ledgers both accepting rows mid-epic
 - **Rule:** `_bmad/`, `_bmad-output/projects/` and `docs/dreams/` move in 44.5 as one unit. The marker and the two planning symlinks are per-working-tree state recreated by `bmad-switch` / `bmad-loop-worktree`, never copied. The ledger of record follows the flag (fnd:AD-17), not the story: before the flip it is `local-recipes`', after it foundry's, and `sprint-ledger-sync` runs in the primary root. The eight `~/.bmad-loops/*` homes are re-provisioned against the foundry remote by the same flip, in an attended session with no loop running.
 
 #### fnd:AD-13 — The CFE cell is one unit with one owner
 
-- **Binds:** CAP-3; Story 44.6; canopy:AD-17
+- **Binds:** fnd:CAP-3; Story 44.6; canopy:AD-17
 - **Prevents:** three claimants on `.claude/skills/conda-forge-expert` (the skills move, 44.6, and the SKF export); its siblings having no owner; both CFE detectors matching nothing after the move and reporting clean
 - **Rule:** The cell is `.claude/skills/conda-forge-expert/` + `.claude/scripts/conda-forge-expert/` + `.claude/tools/conda_forge_server.py` + the 76 `.claude/scripts/conda-forge-expert` references in `pixi.toml` (its runtime state `.claude/data/conda-forge-expert/` moves to `var/cfe/`, fnd:AD-19). It moves in **44.6 only**, to `skills/domain/conda-forge-expert/{SKILL.md,scripts,tools}`; 44.5 leaves it in place. The path literals in `cfe_rebuild_guard_check.py` and `mason_cfe_surface_check.py` are manifest consumers rewritten in 44.6.
 
 #### fnd:AD-14 — Repo operational envelope
 
-- **Binds:** CAP-1, CAP-6; Stories 44.3, 44.9
+- **Binds:** fnd:CAP-1, fnd:CAP-6; Stories 44.3, 44.9
 - **Prevents:** a repository created with undecided visibility, no branch protection, and secrets re-typed by hand; a conda-forge reviewer sent to a link that is dead outside the account
 - **Rule:** Visibility is **private, permanently** (operator 2026-09-04, iteration 4; closes `repo-visibility`). `dashboard.yml` keeps deploying GitHub Pages on the paid plan that already serves the public site from the private `local-recipes`; the win-64 leg (fnd:AD-19) bills at 2×, so Actions minutes are a standing budget under fnd:AD-23. Nothing Mason submits carries a foundry URL; the strip on the submit path stays. Default branch `main`, protected, merge commits only; the operator and the marshal bot identity may push. Secrets and variables (`CRC_PULL_SECRET`, `HERALD_WEBHOOK_SECRET`, the six `vars.PLATFORM_CI_*`) are manifest rows of kind `secret` (no value in the manifest) re-provisioned through `steward keys` (FR-5 inventory).
 
 #### fnd:AD-15 — Identity strings are manifest rows; environment ids are not renamed here
 
-- **Binds:** CAP-3, CAP-6, CAP-7; Stories 44.4–44.10
+- **Binds:** fnd:CAP-3, fnd:CAP-6, fnd:CAP-7; Stories 44.4–44.10
 - **Prevents:** 333 `rxm7706/local-recipes` occurrences in 148 files pointing at the archive; a silent rename of the `local-recipes` pixi env breaking 974 call sites and GATE-011-frozen `verify_commands`
 - **Rule:** Repository identity strings (`rxm7706/local-recipes` URLs and slugs) are manifest rows of kind `identity`, rewritten by the story that moves the file. The pixi environment id `local-recipes` stays until a named rename story — the same rule the Dream applies to `[feature.python-agent-platform]`.
 
 #### fnd:AD-16 — Detector ranges on a fresh root
 
-- **Binds:** CAP-1, CAP-3; Stories 44.3, 44.6
+- **Binds:** fnd:CAP-1, fnd:CAP-3; Stories 44.3, 44.6
 - **Prevents:** `cfe_rebuild_guard_check` and `mason_cfe_surface_check` passing vacuously on a repository whose git range starts at the epoch
 - **Rule:** The foundry epoch SHA is recorded in the manifest; every git-range detector takes it as its floor. A zero-commit range is exit 2 (could-not-run), never a clean verdict.
 
 #### fnd:AD-17 — Cutover is a flag, not a date `[ADOPTED]`
 
-- **Binds:** CAP-8, CAP-6, CAP-7; every story from 44.4 on
+- **Binds:** fnd:CAP-8, fnd:CAP-6, fnd:CAP-7; every story from 44.4 on
 - **Prevents:** a dated phase boundary that freezes the evergreen repo; a cutover with no rollback; three consumers deciding the root of record differently
-- **Rule:** One flag, `pyforge.cutover_root` in {`local-recipes`, `foundry`}, lives in the CAP-13 flag tree (`src/platform/config/flags.json`, canopy:AD-11), read in-process by the host and by the CLIs through a `pyforge-core` reader (a 44.12 task; none exists today). It alone decides the ledger of record (fnd:AD-12), Mason's submit and update targets (fnd:AD-4), which remote the loop homes track, and which root the detectors treat as primary. The transition point is the flip, allowed once the capabilities it depends on are `verified-in-foundry` (fnd:AD-22); flipping back is the rollback. The flip is an operator act recorded in the Dream's Realization log.
+- **Rule:** One flag, `pyforge.cutover_root` in {`local-recipes`, `foundry`}, lives in the canopy:CAP-13 flag tree (`src/platform/config/flags.json`, canopy:AD-11), read in-process by the host and by the CLIs through a `pyforge-core` reader (a 44.12 task; none exists today). It alone decides the ledger of record (fnd:AD-12), Mason's submit and update targets (fnd:AD-4), which remote the loop homes track, and which root the detectors treat as primary. The transition point is the flip, allowed once the capabilities it depends on are `verified-in-foundry` (fnd:AD-22); flipping back is the rollback. The flip is an operator act recorded in the Dream's Realization log.
 
 #### fnd:AD-18 — Moves are replays; rebuilds are regeneration drills
 
-- **Binds:** CAP-2..CAP-5, CAP-8, CAP-9; Stories 44.4–44.8, 44.14 and every capability row
+- **Binds:** fnd:CAP-2..fnd:CAP-5, fnd:CAP-8, fnd:CAP-9; Stories 44.4–44.8, 44.14 and every capability row
 - **Prevents:** one-off hand moves that cannot be repeated after the plan changes; a foundry mirror that silently falls behind the evolving repo; a rebuild that is a rewrite by another name
 - **Rule:** A `move` capability is realized by a manifest-driven, idempotent apply step (`steward cutover apply --phase <n>`) that can be re-run into foundry after every `--regenerate` or `--append` until the flag flips; a hand move the apply step cannot reproduce is review-blocking, and the replay records the foundry commit on each row. A `rebuild` capability is realized as a regeneration drill in foundry: its Dream and moved memlog → `bmad-spec` re-derives the Spec → `bmad-architecture` inherits the parent invariants → epics and stories → `bmad-build` drained by Marshal under a `steward budget` ceiling, with the archived code visible only as reference. Either way the row reaches `verified-in-foundry` only through fnd:AD-21.
 
 #### fnd:AD-19 — Native estate on stock Windows; host and supervisor remote `[ADOPTED]`
 
-- **Binds:** CAP-1, CAP-2, CAP-3; Story 44.11
+- **Binds:** fnd:CAP-1, fnd:CAP-2, fnd:CAP-3; Story 44.11
 - **Prevents:** symlinks that check out as text files; Developer Mode or WSL as a prerequisite; paths past 260 characters; shell-only tasks that break outside POSIX
 - **Rule:** No symlink is tracked in git. A link step (`steward links` — name a 44.11 task) generates every runtime link per machine: symlinks on Linux and macOS, directory junctions via `_winapi.CreateJunction` on Windows (no privilege needed); the same helper serves `bmad-switch` and the adapters. A doctor preflight fails loud when a link is missing or is a text file, and when the deepest tracked path from the clone root exceeds the Windows limit (long-path registry settings are never assumed). No pixi task depends on `bash -c`, `sed`, `grep`, `awk`, `find` or `tee`; Python replaces them, `m2-*` conda tools are the fallback. A win-64 CI leg runs the station suites, the link check and the detectors. Runtime state lives in gitignored `var/` at the repo root (`var/atlas`, `var/cfe`, `var/worktrees`). The Django host and the fleet supervisor are Linux and macOS only, reached from Windows through a remote Linux dev host; making the host native is a solver-probe story, never a promise.
 
 #### fnd:AD-20 — The seed is Dreams plus memlogs `[ADOPTED]`
 
-- **Binds:** CAP-2, CAP-9; Stories 44.13, 44.1
+- **Binds:** fnd:CAP-2, fnd:CAP-9; Stories 44.13, 44.1
 - **Prevents:** carrying 69 MB of rendered planning narrative into a greenfield root; re-deriving a Spec and losing hand-edits its memlog never recorded
 - **Rule:** `docs/dreams/` and every Spec and spine `.memlog.md` move unconditionally; they are the decision record. `SPEC.md`, spines, epics and stories are re-rendered in foundry by `bmad-spec`, `bmad-architecture` and `bmad-create-epics-and-stories`. Every other planning document (research, reviews, proposals, readiness reports, retros, run records, per-story specs of shipped stories) is archived. Prerequisite, in `local-recipes` before Phase 0 (Story 44.13): every hand-edit in a rendered `SPEC.md` — the unifying strategy first — is folded back into memlog entries, and each Spec proves it re-renders without loss.
 
 #### fnd:AD-21 — The archive is the oracle
 
-- **Binds:** CAP-9; every `rebuild` row
+- **Binds:** fnd:CAP-9; every `rebuild` row
 - **Prevents:** regeneration drift dressed as a rebuild
 - **Rule:** A rebuilt capability reaches `verified-in-foundry` only when the archived test suite for that capability passes against the rebuilt code, or an equivalence check does, and the re-derived Spec's success criteria hold. A rebuild story without its oracle gate is review-blocking.
 
 #### fnd:AD-22 — Per-capability state and freeze under one global flag
 
-- **Binds:** CAP-8, CAP-9; every capability row
+- **Binds:** fnd:CAP-8, fnd:CAP-9; every capability row
 - **Prevents:** a fragmented root of record; double maintenance of a capability being rebuilt while its source keeps changing; a flip that outruns its dependencies
 - **Rule:** `pyforge.cutover_root` remains the only root-of-record switch. Each capability row carries its own state; the flip is allowed only when every capability it depends on is `verified-in-foundry`. A capability entering `rebuilding` or `moving` freezes its source paths in `local-recipes` at once; `frozen-path-changed` is keyed by ledger state, not by the flag, and `steward cutover plan --append` reports any source change against a frozen row as a finding.
 
 #### fnd:AD-23 — CI evidence ladder and the minutes guard `[ADOPTED]`
 
-- **Binds:** CAP-1, CAP-9, CAP-10; Stories 44.3, 44.14, 44.15
-- **Prevents:** a "green" that never ran (the 2026-08-30 block failed every job in 2 s and looked cheap); CAP-1 dispatched into a blocked account; a drain that discovers the minutes ceiling by being refused
-- **Rule:** CAP-1's evidence is a real green workflow run on a registered runner, in this order: GitHub-hosted; the fnd:AD-19 remote Linux dev host registered as a self-hosted runner (estate workflows declare its label as the `runs-on` fallback); and, only while both are unavailable, a documented fresh-clone run of the estate gates on that host — **provisional**, never CAP-1's success. With no evidence path at all, 44.3 does not dispatch. `steward budget check` meters the account's Actions minutes (the billing API through a `user`-scoped credential in `steward keys`, never a token in the manifest) against the plan's included minutes and the declared ceiling; it is read at 44.3's confirmation, by Marshal's foundry drains and by the rebuild harness as their ceiling (Story 44.15). fnd:AD-8's classification is unchanged; runner selection lives here.
+- **Binds:** fnd:CAP-1, fnd:CAP-9, fnd:CAP-10; Stories 44.3, 44.14, 44.15
+- **Prevents:** a "green" that never ran (the 2026-08-30 block failed every job in 2 s and looked cheap); fnd:CAP-1 dispatched into a blocked account; a drain that discovers the minutes ceiling by being refused
+- **Rule:** fnd:CAP-1's evidence is a real green workflow run on a registered runner, in this order: GitHub-hosted; the fnd:AD-19 remote Linux dev host registered as a self-hosted runner (estate workflows declare its label as the `runs-on` fallback); and, only while both are unavailable, a documented fresh-clone run of the estate gates on that host — **provisional**, never fnd:CAP-1's success. With no evidence path at all, 44.3 does not dispatch. `steward budget check` meters the account's Actions minutes (the billing API through a `user`-scoped credential in `steward keys`, never a token in the manifest) against the plan's included minutes and the declared ceiling; it is read at 44.3's confirmation, by Marshal's foundry drains and by the rebuild harness as their ceiling (Story 44.15). fnd:AD-8's classification is unchanged; runner selection lives here.
 
 ### Consistency Conventions
 
@@ -839,7 +839,7 @@ python-foundry/
   skills/{stations,personas,domain}/       # authoring tree; mason → domain/conda-forge-expert/{SKILL.md,scripts,tools}
   .claude/skills/  (.cursor/skills/)       # generated per-machine links (gitignored) + installer-written skills
   var/                                     # gitignored runtime state: atlas, cfe, worktrees (fnd:AD-19)
-  src/platform/config/flags.json           # CAP-13 flag tree; carries pyforge.cutover_root (fnd:AD-17)
+  src/platform/config/flags.json           # canopy:CAP-13 flag tree; carries pyforge.cutover_root (fnd:AD-17)
   _bmad/  _bmad-output/projects/  docs/dreams/  docs/governance/
   docs/foundry/manifest.*                  # rows · owner · coupling · destination · epoch (fnd:AD-2)  [ASSUMPTION: location]
 ```
@@ -862,16 +862,16 @@ flowchart LR
 
 | Capability | Lives in | Governed by |
 |---|---|---|
-| CAP-1 open foundry | `python-foundry` root, estate workflows | fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9, fnd:AD-14, fnd:AD-16, fnd:AD-23 |
-| CAP-2 realize the estate | `src/packages/`, `skills/`, `_bmad*/`, `docs/dreams/` | fnd:AD-2, fnd:AD-5, fnd:AD-6, fnd:AD-7, fnd:AD-12, fnd:AD-15, fnd:AD-18, fnd:AD-19 |
-| CAP-3 CFE comes home | `skills/domain/conda-forge-expert`, `pyforge/mason/resolve.py` | fnd:AD-4, fnd:AD-5, fnd:AD-13, fnd:AD-16 |
-| CAP-4 factory island | `factory/` | fnd:AD-3, fnd:AD-4, fnd:AD-8 |
-| CAP-5 working set | `factory/recipes/` + manifest | fnd:AD-2, fnd:AD-10 |
-| CAP-6 Mason → conda-forge | `pyforge-mason` submit/update paths | fnd:AD-4, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
-| CAP-7 archive | `rxm7706/local-recipes` | fnd:AD-1, fnd:AD-8, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
-| CAP-8 flag-gated, replayable cutover | `steward cutover plan/apply`, `flags.json`, `pyforge-core` flag reader | fnd:AD-2, fnd:AD-17, fnd:AD-18, fnd:AD-22 |
-| CAP-9 capability ledger + rebuild harness | `steward cutover plan` (ledger), foundry's own planning tree, Marshal drains | fnd:AD-2, fnd:AD-18, fnd:AD-20, fnd:AD-21, fnd:AD-22, fnd:AD-23 |
-| CAP-10 metered minutes budget | `steward budget` (metering source), `steward keys`, estate workflows' `runs-on` | fnd:AD-14, fnd:AD-19, fnd:AD-23 |
+| fnd:CAP-1 open foundry | `python-foundry` root, estate workflows | fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9, fnd:AD-14, fnd:AD-16, fnd:AD-23 |
+| fnd:CAP-2 realize the estate | `src/packages/`, `skills/`, `_bmad*/`, `docs/dreams/` | fnd:AD-2, fnd:AD-5, fnd:AD-6, fnd:AD-7, fnd:AD-12, fnd:AD-15, fnd:AD-18, fnd:AD-19 |
+| fnd:CAP-3 CFE comes home | `skills/domain/conda-forge-expert`, `pyforge/mason/resolve.py` | fnd:AD-4, fnd:AD-5, fnd:AD-13, fnd:AD-16 |
+| fnd:CAP-4 factory island | `factory/` | fnd:AD-3, fnd:AD-4, fnd:AD-8 |
+| fnd:CAP-5 working set | `factory/recipes/` + manifest | fnd:AD-2, fnd:AD-10 |
+| fnd:CAP-6 Mason → conda-forge | `pyforge-mason` submit/update paths | fnd:AD-4, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
+| fnd:CAP-7 archive | `rxm7706/local-recipes` | fnd:AD-1, fnd:AD-8, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
+| fnd:CAP-8 flag-gated, replayable cutover | `steward cutover plan/apply`, `flags.json`, `pyforge-core` flag reader | fnd:AD-2, fnd:AD-17, fnd:AD-18, fnd:AD-22 |
+| fnd:CAP-9 capability ledger + rebuild harness | `steward cutover plan` (ledger), foundry's own planning tree, Marshal drains | fnd:AD-2, fnd:AD-18, fnd:AD-20, fnd:AD-21, fnd:AD-22, fnd:AD-23 |
+| fnd:CAP-10 metered minutes budget | `steward budget` (metering source), `steward keys`, estate workflows' `runs-on` | fnd:AD-14, fnd:AD-19, fnd:AD-23 |
 
 ### Deferred
 
@@ -890,7 +890,7 @@ flowchart LR
 
 ### Open Questions (iteration 4)
 
-None. Answered in iteration 4: `repo-visibility` (fnd:AD-14 — private, permanently) and `actions-minutes` (fnd:AD-23 — evidence ladder, self-hosted fallback on the remote host, provisional fresh-clone run, no dispatch without an evidence path; CAP-10 metering, Story 44.15).
+None. Answered in iteration 4: `repo-visibility` (fnd:AD-14 — private, permanently) and `actions-minutes` (fnd:AD-23 — evidence ladder, self-hosted fallback on the remote host, provisional fresh-clone run, no dispatch without an evidence path; fnd:CAP-10 metering, Story 44.15).
 
 Answered in iteration 2 (recorded as ADs): `windows-symlink-adapters` and `runtime-state-home` (fnd:AD-19), `cursor-skill-discovery` and `skf-export-root` (fnd:AD-5), `loop-home-cutover-timing` (fnd:AD-17). Answered in iteration 3: `planning-history-scope` (fnd:AD-20), `ingest-keys-import` (rebuild the ingest in `pyforge-steward` behind the station port; capability ledger first pass).
 
@@ -1092,7 +1092,7 @@ stable nor narrow.*
 #### sld:AD-10 — Static export and role isolation are mutually exclusive
 
 **Binds:** the choice of delivery mode, per dashboard.
-**Prevents:** a board silently losing the guarantee CAP-2 exists to make, by being republished
+**Prevents:** a board silently losing the guarantee sld:CAP-2 exists to make, by being republished
 somewhere cheaper.
 **Rule:** the two delivery modes are a **choice, not a spectrum** — public and unrestricted at
 zero infrastructure, or role-isolated and hosted. A board that has **declared an access column
@@ -1210,14 +1210,14 @@ framework, and all of it installs as one Django app.
 
 | Capability | Where it lives | Governed by |
 |---|---|---|
-| CAP-1 identity from request | library | sld:AD-1, sld:AD-4, sld:AD-9, sld:AD-11 |
-| CAP-2 declared row isolation | library | sld:AD-1, sld:AD-2, sld:AD-5, sld:AD-6, sld:AD-12 |
-| CAP-3 unauthorized page absent | library | sld:AD-1, sld:AD-2 |
-| CAP-4 audit with row counts | library | sld:AD-1, sld:AD-7, sld:AD-12, sld:AD-13 |
-| CAP-5 export gated server-side | library (refusal) + subcommand (alerting) | sld:AD-1, sld:AD-2 |
-| CAP-6 deployment perimeter | subcommand | sld:AD-1, sld:AD-5, sld:AD-8 |
-| CAP-7 non-vacuous security suite | subcommand | sld:AD-2, sld:AD-3 |
-| CAP-8 hosted-or-static, one definition | subcommand | sld:AD-10 |
+| sld:CAP-1 identity from request | library | sld:AD-1, sld:AD-4, sld:AD-9, sld:AD-11 |
+| sld:CAP-2 declared row isolation | library | sld:AD-1, sld:AD-2, sld:AD-5, sld:AD-6, sld:AD-12 |
+| sld:CAP-3 unauthorized page absent | library | sld:AD-1, sld:AD-2 |
+| sld:CAP-4 audit with row counts | library | sld:AD-1, sld:AD-7, sld:AD-12, sld:AD-13 |
+| sld:CAP-5 export gated server-side | library (refusal) + subcommand (alerting) | sld:AD-1, sld:AD-2 |
+| sld:CAP-6 deployment perimeter | subcommand | sld:AD-1, sld:AD-5, sld:AD-8 |
+| sld:CAP-7 non-vacuous security suite | subcommand | sld:AD-2, sld:AD-3 |
+| sld:CAP-8 hosted-or-static, one definition | subcommand | sld:AD-10 |
 
 ### Deferred
 
@@ -1407,7 +1407,7 @@ SEED — verified against the shipped image at authoring; the code owns this.
 ### Open Assumption
 
 **Adopters host their own dashboards; Steward only scaffolds.** The dashboard spine's uc:AD-1 and
-CAP-6 both read scaffold-not-serve — `steward deploy` generates the ASGI runtime and edge, and
+uc:CAP-6 both read scaffold-not-serve — `steward deploy` generates the ASGI runtime and edge, and
 the adopter runs it. **If Steward is ever meant to *serve* dashboards itself** — one
 Steward-run ASGI process hosting the Guild's boards — then the ASGI stack *is* a station
 runtime dependency, **uc:AD-1 collapses**, and the lean image is simply heavier than advertised.
@@ -1464,75 +1464,75 @@ the pilot and the cutover keep their owners; this chain orders them and relays g
 
 #### suite:AD-1 — One install path per class; steward is the only writer of suite skills `[ADOPTED]`
 
-- **Binds:** CAP-2, CAP-5, CAP-6
+- **Binds:** suite:CAP-2, suite:CAP-5, suite:CAP-6
 - **Prevents:** hand copies into `.claude/skills/`; `cleanup-legacy.py` wiping `_bmad/core/config.yaml`; `bmad-module-skill-forge uninstall` deleting every skill dir (its manifest walks the whole tree); two copies of one skill; two writers for one class (a raw `npx skills add` beside the conda member)
 - **Rule:** module class → `steward provision --module <name>`; own-installer → the member's installer (`bmad-module-skill-forge install/update`); plugin-path → **one steward-wrapped, pinned writer** (`steward provision --plugin labs --skill <name>`, calling the conda member's share tree or `npx skills add` pinned to the recipe's commit — the register's provisioning-path cell equals that invocation); scaffold-n/a → never provisioned. A manual copy, or a second path for the same class, is a defect.
 
 #### suite:AD-2 — Routing lives with the wielder, in one durable home
 
-- **Binds:** CAP-3
+- **Binds:** suite:CAP-3
 - **Prevents:** two stations reaching for one skill under different contracts; routing notes rotting in CLAUDE.md; per-skill lines in a managed block that is replaced on refresh
 - **Rule:** exactly one wielding station per adopted skill. The routing note has exactly one durable home: the wielding persona skill (`bmad-agent-<station>/SKILL.md`, estate-authored, moving to `skills/personas/` under fnd:AD-5). AGENTS.md carries one pointer line ("skill routing: `adoption-register.md` § 2"), placed once through `bmad-project-context`, never per-skill lines. `adoption-register.md` § 2 is the index; a re-route edits the register row **and both** persona skills. A meta-test asserts every § 2 skill dir is named by exactly one persona skill and by CLAUDE.md never (Story 46.1 ships it; 46.1 verifies this rule, it does not decide it).
 
 #### suite:AD-3 — The studio is a separate root, declared once
 
-- **Binds:** CAP-5
+- **Binds:** suite:CAP-5
 - **Prevents:** manticore's wipe-and-reinstall ritual touching this repo's `_bmad/` or `_bmad-output/`; the studio root living in three places (register cell, studio config, herald runtime); `mc-*` skills a repo session cannot load
 - **Rule:** the studio root is `~/pyforge-studio/` by default (outside the repo — decided 2026-09-06, closing the Spec's open question 1), declared once, machine-readable and per-machine, by `PYFORGE_STUDIO_ROOT` (fallback: a gitignored `pyforge.local.toml` key); herald's CLI, pipeline-truth's manticore probe and the register all *cite* it (the register cell is a pointer). The studio owns its own `_bmad/` and `_bmad/custom/config.toml` (`[modules.manticore]` written by `mc-setup`); the stale in-repo `[modules.manticore]` block in the gitignored `_bmad/custom/config.user.toml` (present 2026-09-06) is retired by Story 46.6; `mc-*` are never provisioned into the repo tree; the persona note is a hand-off ("open a session in `<studio>`; run `mc-*` there"), never a route; render artifacts are gitignored.
 
 #### suite:AD-4 — Advisory lenses never gate
 
-- **Binds:** CAP-4, CAP-7, warden relays
+- **Binds:** suite:CAP-4, suite:CAP-7, warden relays
 - **Prevents:** a second PR verdict; eval trials or TEA scores joining `detectors-ci`; a lens key invented in bmad-loop's `[review]`; an in-place skill edit to add a lens; a circular knob dependency
 - **Rule:** `tea-test-review`, `bmad-os-review-pr` / `findings-triage` and eval-quality outputs are findings beside Warden's gate or lenses inside the marshal review step; none is a member of `detectors` / `detectors-ci`; the gate's exit code is unchanged by them. A marshal review lens is a `bmad-review` customize override under `_bmad/custom/`, never a harness-policy key or an in-place skill edit. Steward 46.3 ships the `tea-test-review` task taking `--min-score` as an argument (default 80); marshal 31.3 supplies the value from `review.min_score`. Warden's advisory rides as a non-`Finding` advisory note (no schema bump to the frozen five families) unless a later story versions an `advisory:<tool>:<subject>` family.
 
 #### suite:AD-5 — Retire behind equivalence; the retiring test's predicate is the oracle
 
-- **Binds:** CAP-4, CAP-10
+- **Binds:** suite:CAP-4, suite:CAP-10
 - **Prevents:** deleting a repo mechanism (the TEA generator, its meta-tests, a shim caller) before its replacement is proven; the oracle being defined in one story and deleted by the next; a caller deletion judged against the tracked template instead of the rendered artifacts
 - **Rule:** a repo-owned generator, test or caller is deleted only in the same story that records an equivalence check, and the deletion follows a passing check; a failed check narrows the capability, never forces the delete. The retiring test's predicate (story-id coverage, test-inventory rows, the no-placeholder invariant — the generator hard-fails on a literal placeholder token) is the oracle: it is re-pointed at TEA's output and kept, deleted only by a later memlog decision that retires the predicate itself. Each station's `test-architecture.md` has one writer (marshal 31.1) and one path pinned in that station's `.bmad-config.toml`; TEA's `test_artifacts` answer is authored by the provisioning story (suite:AD-9). A caller deletion's equivalence check names the *producer's* rendered artifacts (the eight rendered loop-home policies), not the tracked template.
 
 #### suite:AD-6 — The register is the wiring ledger; agreement is a declared per-class function
 
-- **Binds:** CAP-1
+- **Binds:** suite:CAP-1
 - **Prevents:** wiring by side effect (a provision run nobody recorded); pipeline-truth drifting from intent; a `wired` column that can never agree (labs unobservable, manticore outside the repo, bmb with zero skills on disk); a status cell that becomes a second ledger
 - **Rule:** a member's verdict / wielder / path change lands as a register row first. Agreement is declared, not implied: each `SUITE_PACKAGES` row carries the expected probe value for verdict `wield` in its class (`wire_policy`), and each class probe observes the provisioning path the register names — labs: the named skill dirs and no other labs dir; manticore: the suite:AD-3 declaration and its `mc-*` census in the studio; bmb: the five skill dirs; module class: the suite:AD-9 roster. The register's `Wired` column is derived from `pipeline-truth --json`, never typed; its status cell holds pointer keys (story ids), never state words. Owner: steward 46.9 (widened to the wired predicate).
 
 #### suite:AD-7 — One cadence; mechanisms stay with their chains; a relay is a memlog line plus a re-render
 
-- **Binds:** CAP-8, CAP-9, CAP-10
+- **Binds:** suite:CAP-8, suite:CAP-9, suite:CAP-10
 - **Prevents:** duplicate stories across kin chains; a second owner for the apply; a "relayed" capability whose rendered SPEC still says the opposite; a mechanism story filed under the wrong chain
 - **Rule:** `release-cadence.md` orders detect → catalog → pre-flight → apply → prove-landed → era round → suite refresh → flips → record. core-upgrade owns the apply, `--no-shims` (14.9) and the `@next` rehearsal (14.10); era-alignment owns the harness, the guard and the rulebooks (30.x); eval-quality owns the pilot (45.2); the cutover Spec owns Epic 44. This chain relays by memlog and never mints a story a kin chain already owns. A relay is complete only when the owner's memlog carries the dated `(capability)` line **and** the owner's SPEC is re-rendered in the same commit; `adoption-register.md` § 3 cites the memlog entries by date and type, not "retired by memlog".
 
 #### suite:AD-8 — Readiness is a gate with owners; the foundry stack carries the bmad floor; the register is the replay list
 
-- **Binds:** CAP-9
+- **Binds:** suite:CAP-9
 - **Prevents:** opening the foundry with a red BMAD line; a lean foundry `pixi.toml` with no BMAD toolchain; installer-written skill dirs that nothing re-creates in foundry
 - **Rule:** every `cutover-readiness.md` P line names an owner and a story; Story 44.3 is not flipped while any P line is red. The cutover spine's Stack gains a `bmad-*` floor row (method ≥6.12.0, loop ≥0.11.1, skf ≥2.1.0 linux-64 only, CIS, TEA, eval-quality, utility-skills, BMB), rendered by steward 47.4; win-64 excludes skf and eval-quality. P18: every register row with verdict `wield` is re-provisioned in foundry by its class adapter from the register's provisioning-path cell — the replay list; tracked copies are never moved.
 
 #### suite:AD-9 — One module roster, one config-pin path
 
-- **Binds:** CAP-2, CAP-6, CAP-9
-- **Prevents:** two rosters of "installed modules" (provision writing `_bmad/config.yaml`, which 6.12 does not ship and `render_skill.py` never reads, while 14.9 / CAP-7 / CAP-8 read `_bmad/_config/manifest.yaml`); a provisioned module whose config keys have no writer (TEA's `test_artifacts` key, 84 references, HALTs at render); the CAP-8 scan blind to conda-installed modules
-- **Rule:** installer-tree and custom modules are rostered by `_bmad/_config/manifest.yaml` (bmad-method's). Every steward-provisioned module (module class, plugin-path skills) is rostered in exactly one machine-readable place that `--list-modules`, pipeline-truth's module census, the apply's post-core re-provision step and the CAP-8 scan all read: `_bmad/custom/config.toml [modules.<code>]` — the pin layer that survives applies — carrying the module's `module.yaml` answers at the installer's own key paths plus `provisioned_by`, `installer`, `skills`. The provisioning story answers the module's variables in the same PR (46.3 authors TEA's `test_artifacts`); `render_skill.py` renders one of the module's skills on the first try as that story's acceptance. `_bmad/config.yaml` is retired as a roster (46.2 moves provision's writer). The CAP-8 scan compares conda-module skills against `share/<pkg>/{skills,agents,workflows}`.
+- **Binds:** suite:CAP-2, suite:CAP-6, suite:CAP-9
+- **Prevents:** two rosters of "installed modules" (provision writing `_bmad/config.yaml`, which 6.12 does not ship and `render_skill.py` never reads, while 14.9 / suite:CAP-7 / suite:CAP-8 read `_bmad/_config/manifest.yaml`); a provisioned module whose config keys have no writer (TEA's `test_artifacts` key, 84 references, HALTs at render); the suite:CAP-8 scan blind to conda-installed modules
+- **Rule:** installer-tree and custom modules are rostered by `_bmad/_config/manifest.yaml` (bmad-method's). Every steward-provisioned module (module class, plugin-path skills) is rostered in exactly one machine-readable place that `--list-modules`, pipeline-truth's module census, the apply's post-core re-provision step and the suite:CAP-8 scan all read: `_bmad/custom/config.toml [modules.<code>]` — the pin layer that survives applies — carrying the module's `module.yaml` answers at the installer's own key paths plus `provisioned_by`, `installer`, `skills`. The provisioning story answers the module's variables in the same PR (46.3 authors TEA's `test_artifacts`); `render_skill.py` renders one of the module's skills on the first try as that story's acceptance. `_bmad/config.yaml` is retired as a roster (46.2 moves provision's writer). The suite:CAP-8 scan compares conda-module skills against `share/<pkg>/{skills,agents,workflows}`.
 
 #### suite:AD-10 — Cross-station prerequisites are checks, not `Deps:` tokens
 
-- **Binds:** CAP-9, CAP-10, every station relay
+- **Binds:** suite:CAP-9, suite:CAP-10, every station relay
 - **Prevents:** a `Deps:` token read three ways (fleet drain skips it fail-open; station dispatch strips the prefix to a local key — `marshal:S-30.2` aliasing steward's *done* 30.2; doctor parses it as cross-station); a relayed story dispatched before its producer landed
 - **Rule:** a `Deps:` field never carries a foreign station key; the producer is named in trailing prose ("after steward 46.3"). A cross-station prerequisite is (a) a ledger `blocked` row the operator flips when the producer lands (AGENTS.md's standing rule) **and** (b) a machine check inside the consuming story's own acceptance against the producer's live artifact, run before the irreversible act — 14.9's refusal while the harness still emits `bmad-dev-auto` is the template; 31.1 / 11.2 refuse when the suite:AD-9 roster lacks `tea`; 44.5 refuses while `cutover-readiness.md` P11 / P12 are red.
 
 #### suite:AD-11 — Surface ownership follows the writer class
 
-- **Binds:** CAP-2, CAP-9, CAP-10
+- **Binds:** suite:CAP-2, suite:CAP-9, suite:CAP-10
 - **Prevents:** `.claude/skills/**` owned by four epics at once and `_bmad/**` by none of the ones that write it (14.9 firing MRS-GATE-007); hand edits to AGENTS.md through an epic row
 - **Rule:** `.claude/skills/<installer-written>/**` and `_bmad/**` are steward provision/upgrade surfaces (Epics 14, 46); `.claude/skills/bmad-agent-<x>/**` belongs to station `<x>`; the `bmad:context` block is `bmad-project-context`'s and the SKF block `skf-export`'s — the routing stories reach AGENTS.md only through the skill; Epic 44 lists these paths only for the move story and only after 46/47 close. Every story that writes a path ships its `[epic_surfaces]` row in the same PR.
 
 #### suite:AD-12 — skf's root is declared once
 
-- **Binds:** CAP-2, CAP-9
-- **Prevents:** skf's root declared in three files (`_bmad/custom/config.toml`, `_bmad/config.toml`, `_bmad/skf/config.yaml`) with CAP-7 restoring the yaml from git while the custom pin is the declared source
-- **Rule:** the `_bmad/custom/config.toml [modules.skf]` pin is the single declaration; `_bmad/skf/config.yaml` is derived from it (CAP-7's restore becomes a re-render from the pin, not a checkout); Story 47.2 records the exact key and proves `skf-export` accepts the foundry root; flipping the root is a 44.5 act.
+- **Binds:** suite:CAP-2, suite:CAP-9
+- **Prevents:** skf's root declared in three files (`_bmad/custom/config.toml`, `_bmad/config.toml`, `_bmad/skf/config.yaml`) with suite:CAP-7 restoring the yaml from git while the custom pin is the declared source
+- **Rule:** the `_bmad/custom/config.toml [modules.skf]` pin is the single declaration; `_bmad/skf/config.yaml` is derived from it (suite:CAP-7's restore becomes a re-render from the pin, not a checkout); Story 47.2 records the exact key and proves `skf-export` accepts the foundry root; flipping the root is a 44.5 act.
 
 ```mermaid
 flowchart LR
@@ -1619,7 +1619,7 @@ sequenceDiagram
   participant Ma as Mason
   D->>S: version-drift warn (target vX)
   S->>S: catalog + pre-flight (local customizations listed)
-  S->>S: apply --no-shims (CAP-6/7/8) + prove-landed
+  S->>S: apply --no-shims (suite:CAP-6/7/8) + prove-landed
   S->>M: era round (guard, rulebooks, living docs, loop skills)
   S->>Ma: suite recipe refresh (CFE flow) + metapackage
   Ma->>S: channel current
@@ -1630,16 +1630,16 @@ sequenceDiagram
 
 | Capability / Area | Lives in | Governed by |
 | --- | --- | --- |
-| CAP-1 adoption register | `specs/spec-bmad-suite-lifecycle/adoption-register.md` | suite:AD-6, suite:AD-2 (the § 2 meta-test) |
-| CAP-2 module wave | `steward provision` (`provision.py` backends); `_bmad/custom/config.toml [modules.*]` | suite:AD-1, suite:AD-9, suite:AD-11, steward suite:AD-1 |
-| CAP-3 station routing | `bmad-agent-<station>` skills; one AGENTS pointer line | suite:AD-2, suite:AD-11 |
-| CAP-4 TEA full adoption | TEA workflows; `bmad-review` customize override; warden advisory note | suite:AD-4, suite:AD-5, suite:AD-9 |
-| CAP-5 manticore studio | `$PYFORGE_STUDIO_ROOT` (separate root) | suite:AD-3, suite:AD-1 |
-| CAP-6 labs by consent | `steward provision --plugin labs --skill <name>` per row | suite:AD-1, suite:AD-6, suite:AD-9 |
-| CAP-7 eval-quality pilot | `evals/…` + three pixi tasks | suite:AD-4 |
-| CAP-8 release cadence | `release-cadence.md`; core-upgrade 14.10 (rehearsal) | suite:AD-7 |
-| CAP-9 cutover readiness | `cutover-readiness.md` (P1–P18); relays to 44.x, 31.x, 20.x | suite:AD-8, suite:AD-7, suite:AD-10, suite:AD-11, suite:AD-12, fnd:AD-5/12/20 |
-| CAP-10 shim retirement | marshal 30.5, steward 14.9 | suite:AD-5, suite:AD-7, suite:AD-10, suite:AD-11, steward suite:AD-5 |
+| suite:CAP-1 adoption register | `specs/spec-bmad-suite-lifecycle/adoption-register.md` | suite:AD-6, suite:AD-2 (the § 2 meta-test) |
+| suite:CAP-2 module wave | `steward provision` (`provision.py` backends); `_bmad/custom/config.toml [modules.*]` | suite:AD-1, suite:AD-9, suite:AD-11, steward suite:AD-1 |
+| suite:CAP-3 station routing | `bmad-agent-<station>` skills; one AGENTS pointer line | suite:AD-2, suite:AD-11 |
+| suite:CAP-4 TEA full adoption | TEA workflows; `bmad-review` customize override; warden advisory note | suite:AD-4, suite:AD-5, suite:AD-9 |
+| suite:CAP-5 manticore studio | `$PYFORGE_STUDIO_ROOT` (separate root) | suite:AD-3, suite:AD-1 |
+| suite:CAP-6 labs by consent | `steward provision --plugin labs --skill <name>` per row | suite:AD-1, suite:AD-6, suite:AD-9 |
+| suite:CAP-7 eval-quality pilot | `evals/…` + three pixi tasks | suite:AD-4 |
+| suite:CAP-8 release cadence | `release-cadence.md`; core-upgrade 14.10 (rehearsal) | suite:AD-7 |
+| suite:CAP-9 cutover readiness | `cutover-readiness.md` (P1–P18); relays to 44.x, 31.x, 20.x | suite:AD-8, suite:AD-7, suite:AD-10, suite:AD-11, suite:AD-12, fnd:AD-5/12/20 |
+| suite:CAP-10 shim retirement | marshal 30.5, steward 14.9 | suite:AD-5, suite:AD-7, suite:AD-10, suite:AD-11, steward suite:AD-5 |
 
 ### Deferred
 
@@ -1675,7 +1675,7 @@ A webhook says only *"this item may have changed"*. The engine does not trust th
 the change: it reads the affected item's current state on both boards, compares each side
 against the baseline it was last synced to (jira:AD-5, jira:AD-10), and converges. The payload is a **wake-up, not a source of truth**.
 
-That distinction is what keeps idempotence (CAP-3) a property of the paradigm rather than
+That distinction is what keeps idempotence (jira:CAP-3) a property of the paradigm rather than
 something defended per-payload. A propagation pipeline must remember which deliveries it has
 seen to stay idempotent; a reconciler re-reads and converges, so a redelivered or
 out-of-order webhook is harmless by construction. This matters more under webhooks than it
@@ -1782,7 +1782,7 @@ authority because it is where the work happens and where this repo's build line 
 
 #### jira:AD-5 — The zero-loop guard compares values against a baseline; it is not the conflict rule
 
-**Binds:** CAP-2, CAP-3, both transports, every trigger.
+**Binds:** jira:CAP-2, jira:CAP-3, both transports, every trigger.
 **Prevents:** conflating "did the engine cause this change?" (loop guard) with "which side
 wins?" (authority) — two different questions that a single mechanism will answer badly. Also
 prevents the guard becoming trigger-specific, which would break the moment a deployment moves
@@ -1820,21 +1820,21 @@ a per-field change signal because the two are not peers — a per-field signal m
 other would work around; it also keeps the correctness path free of an unverified vendor claim
 (per-field timestamps are genuinely asymmetric across the two APIs, whereas values are returned
 by both). The third — accepting a bounded data-loss window with operator telemetry — was
-rejected on two independent grounds: it contradicts the Spec's own Constraints, which make CAP-2
-and CAP-3 non-negotiable and require the operator to **prove** zero-loop on demand; and its
+rejected on two independent grounds: it contradicts the Spec's own Constraints, which make jira:CAP-2
+and jira:CAP-3 non-negotiable and require the operator to **prove** zero-loop on demand; and its
 premise is false, because the misclassification is permanent rather than windowed, so there is
 no bounded window to document.*
 
 *A property worth naming: this is a three-way merge against a shared base, which makes it the
 first mechanism in this design that can genuinely **detect** a simultaneous conflicting edit —
 the precondition jira:AD-4 was always written against but no earlier mechanism could supply. It also
-makes CAP-2's success criterion demonstrable by construction rather than by timing: after one
+makes jira:CAP-2's success criterion demonstrable by construction rather than by timing: after one
 propagation both sides equal the baseline, so every subsequent reconcile is a no-op regardless
 of when it runs.*
 
 #### jira:AD-6 — Unmapped values fail loud; unlinked items fail alone
 
-**Binds:** CAP-4 and CAP-5.
+**Binds:** jira:CAP-4 and jira:CAP-5.
 **Prevents:** a phantom state written by a pass-through, and one broken item aborting a batch.
 **Rule:** every status value crossing the boundary passes through `value_translation`; an
 unmapped value is a hard, named, logged failure and is **never** passed through. An item
@@ -1884,12 +1884,12 @@ real-time reintroduces, recorded as an invariant rather than left to per-story d
 
 *Rejected: trusting the webhook payload's field values directly (the intake doc's Flow A1/A2
 sketch). It is fewer API calls per event, but it makes correctness depend on delivery order,
-and it converts CAP-3 from a property of the design into per-payload dedupe state that has
+and it converts jira:CAP-3 from a property of the design into per-payload dedupe state that has
 nowhere to live under jira:AD-2.*
 
 #### jira:AD-10 — The baseline's storage contract and lifecycle
 
-**Binds:** CAP-2 and CAP-3 via jira:AD-5; both materializations of jira:AD-3.
+**Binds:** jira:CAP-2 and jira:CAP-3 via jira:AD-5; both materializations of jira:AD-3.
 **Prevents:** five stories each inventing a different baseline shape, and — the specific trap —
 each answering "what does it mean when the baseline has no entry for this field?" differently.
 **Rule:** the baseline is a **per-field map of last-synced values, per side**, and it
@@ -1939,11 +1939,11 @@ SEED — verified at authoring; the code owns this once it exists.
 
 | Capability | Where it lives | Governed by |
 |---|---|---|
-| CAP-1 bidirectional propagation | reconcile loop | jira:AD-1, jira:AD-3, jira:AD-9 |
-| CAP-2 zero-loop | value comparison vs baseline | jira:AD-5, jira:AD-10 |
-| CAP-3 idempotent processing | the paradigm itself | Paradigm, jira:AD-2, jira:AD-9, jira:AD-5 |
-| CAP-4 fail loud, fail alone | per-item error path | jira:AD-6 |
-| CAP-5 vocabulary translation | `value_translation` | jira:AD-6, jira:AD-3 |
+| jira:CAP-1 bidirectional propagation | reconcile loop | jira:AD-1, jira:AD-3, jira:AD-9 |
+| jira:CAP-2 zero-loop | value comparison vs baseline | jira:AD-5, jira:AD-10 |
+| jira:CAP-3 idempotent processing | the paradigm itself | Paradigm, jira:AD-2, jira:AD-9, jira:AD-5 |
+| jira:CAP-4 fail loud, fail alone | per-item error path | jira:AD-6 |
+| jira:CAP-5 vocabulary translation | `value_translation` | jira:AD-6, jira:AD-3 |
 
 ### Deferred
 
@@ -1952,7 +1952,7 @@ SEED — verified at authoring; the code owns this once it exists.
   is speculative. Revisit when a first Mode B adopter exists.
 - **Schedule cadence** — the concrete interval. A per-deployment tuning value, not an
   invariant; the paradigm is correct at any cadence.
-- **Which fields sync beyond status, assignee, and the identity link** — CAP-1 names three;
+- **Which fields sync beyond status, assignee, and the identity link** — jira:CAP-1 names three;
   extending the set is a `field_mapping` change, not an architecture change.
 - **Jira-side trigger parity** — whether Jira Automations push or the schedule pulls both
   sides. Both satisfy jira:AD-1; the choice is an implementation trade the first story can make.
@@ -1986,10 +1986,10 @@ the Canopy host (`src/platform/`), and the strategy chain's own spine. Deltas:
   owner. The v1 "revisit if the duty count grows materially" trigger has now genuinely
   fired for the lazy-loading question; no problem observed yet, so it stays Deferred on
   evidence, not oversight.
-- **The plugin seam the Deferred list anticipated arrived via CAP-18, not entry-points.**
+- **The plugin seam the Deferred list anticipated arrived via jira:CAP-18, not entry-points.**
   Story 32.2 registered Steward's deploy-profile adapters as plugins on the shared
   `pyforge-core` hook-spec/registration contract (`spec-pyforge-unifying-strategy`
-  CAP-18) — the cross-station shape, chosen over a Steward-private entry-point scheme.
+  jira:CAP-18) — the cross-station shape, chosen over a Steward-private entry-point scheme.
 - **AD-4 amended in place this pass** (see above): `dashboard-gen` retired by Story 30.2;
   the reconciliation invariant survives the retirement of the wrapped external.
 - **The "own architecture pass" this spine demanded for OpenShift/air-gap happened.**

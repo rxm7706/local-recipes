@@ -2,9 +2,10 @@
 title: 'A `verified:` line on a capability is read and rendered'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '5d2e8bfa52be28febdf616b83bbce4d767144bf8'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 warnings: []
 deferred: []
@@ -76,4 +77,51 @@ hand-maintained in a research file that goes stale between passes.
 
 ## Spec Change Log
 
+- 2026-09-10 — Story 21.10 shipped: `capability_effect.py` CAP-2 verified-line parse/render/WARN; `Source.CAPABILITY_EFFECT` + schema/registry; unit tests. Dispatch wiring deferred to Story 21.11.
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 18 findings — high 0, medium 5, low 3, false 6, maybe-false 4
+- findings:
+  - `[medium]` `[patch]` Missing `capability-effect` in `test_models.py` taxonomy and `report-schema.json` — fixed both; `test_schema_source_enum_matches_the_source_taxonomy_exactly` green.
+  - `[medium]` `[patch]` `gather_verified_line` read-only test never asserted return value — extended test to assert WARN finding tuple.
+  - `[medium]` `[patch]` No multi-CAP parse coverage — added `test_multi_cap_spec_parses_each_block_independently`.
+  - `[medium]` `[patch]` Quoted YAML frontmatter status (`status: 'shipped'`) not stripped — added quote stripping in `_parse_spec_frontmatter_status` + test.
+  - `[medium]` `[defer]` Unreadable `SPEC.md` silently skipped — parent spec fail-open named finding is broader than CAP-2; defer until caller-reach pass (21.9) defines fleet scan degrade shape.
+  - `[low]` `[patch]` `UnicodeDecodeError` on non-UTF-8 spec not caught — broadened except clause alongside `OSError`.
+  - `[low]` `[patch]` Module docstring contradicted partial `REGISTRY` registration — docstring corrected (21.10 registry, 21.11 dispatch).
+  - `[low]` `[reject]` Empty triage/changelog at review start — filled by this pass; not a code defect.
+  - `[false]` `[reject]` Per-CAP terminal status required — story I/O matrix "Capability status" reads as spec frontmatter under Epic 21 convention; implementation matches spec Tasks.
+  - `[false]` `[reject]` Present verified lines must appear in operator report now — Story 21.11 owns detectors/fleet-picture wiring; silence on present lines is specified.
+  - `[false]` `[reject]` Staleness gate on `verified:` date — out of story 21.10 scope; "current" means present non-empty line per I/O matrix.
+  - `[false]` `[reject]` Story 21.9 must land first — module shell with CAP-2 only is acceptable; 21.9 extends same file.
+  - `[false]` `[reject]` `parse_spec_capability_verified_rows` must be in `__all__` — internal helper; public surface is `iter_*`, `gather_*`, `render_*`.
+  - `[false]` `[reject]` Duplicate board parsing is drift risk — intentional reuse of board regex constants; shared heading contract.
+  - `[maybe-false]` `[defer]` `iterdir` PermissionError collapses whole fleet scan — `degrade_on_exception` on `gather()` covers; rare in CI.
+  - `[maybe-false]` `[defer]` Alternate `## Capabilities` heading silently skips CAPs — known board.py contract; not introduced here.
+  - `[maybe-false]` `[defer]` Frontmatter fence without newline before closing `---` — fleet SPEC.md samples use standard fences; board parser not reused to limit scope.
+  - `[maybe-false]` `[defer]` `gather()`/`degrade_on_exception` path untested — thin wrapper; verified via `gather_verified_line` integration test.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `capability_effect.py` (CAP-2): parses optional per-CAP `verified:` lines from fleet `SPEC.md` files, renders them mechanically via `CapabilityVerifiedRow.rendered`, and emits WARN findings when a `shipped`/`realized` Spec's CAP carries no `verified:` line. Read-only by construction. Registered `Source.CAPABILITY_EFFECT` in models, `REGISTRY`, schema, and independence map; `detectors`/`__main__` dispatch remains Story 21.11.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py` — new CAP-2 module
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py` — `CAPABILITY_EFFECT` enum member
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — registry row
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json` — additive enum entry
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_verified.py` — 10 unit tests
+- `src/shared/packages/pyforge-doctor/tests/unit/test_models.py` — taxonomy pin
+- `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py` — SOURCE_MODULE map
+
+**Review:** 5 patches applied (3 medium test/schema, 2 medium/low robustness); 6 rejected false positives; 4 deferred pre-existing or 21.11/21.9 scope.
+
+**Follow-up review recommended:** true — three medium patches on first pass; unverified risk is filesystem gather path on live multi-CAP fleet specs once Story 21.11 wires dispatch.
+
+**Verification:** `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_verified.py src/shared/packages/pyforge-doctor/tests/unit/test_models.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py -q` — all green (112 tests in targeted set).
+
+**Residual risks:** No live-fleet integration test yet; unreadable spec paths still silent (deferred); operator-visible column awaits Story 21.11 wiring.

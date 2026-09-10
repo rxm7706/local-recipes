@@ -11,8 +11,8 @@
 # Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
-# project: pyforge-atlas
-# stories: 142
+# project: atlas
+# stories: 143
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -80,6 +80,7 @@ development_status:
   25-1-retire-the-second-lane-3-runtime: done
   25-2-materialize-cap-8-s-canonical-parquets-one-recorded-run: blocked
   25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate: done
+  25-4-a-live-artifactory-transport-exists-for-the-attended-operator-to-plug-in: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done
@@ -138,7 +139,7 @@ development_status:
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
-  epic-24: backlog
+  epic-24: done
   epic-24-retrospective: optional
   epic-25: in-progress
   epic-25-retrospective: optional
