@@ -209,35 +209,48 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
     # Layer 0: Output compression savings
     if "output_compression_saved" in layer_savings:
         bytes_saved = layer_savings["output_compression_saved"]
-        if isinstance(bytes_saved, (int, float)) and bytes_saved > 0:
+        if isinstance(bytes_saved, str):
+            parts.append(f"output:{bytes_saved}")
+        elif isinstance(bytes_saved, (int, float)) and bytes_saved >= 0:
             parts.append(f"output:{_format_bytes(bytes_saved)}")
     
     # Layer 1: Wire compression savings  
     if "wire_compression_saved" in layer_savings:
         bytes_saved = layer_savings["wire_compression_saved"]
-        if isinstance(bytes_saved, (int, float)) and bytes_saved > 0:
+        if isinstance(bytes_saved, str):
+            parts.append(f"wire:{bytes_saved}")
+        elif isinstance(bytes_saved, (int, float)) and bytes_saved >= 0:
             parts.append(f"wire:{_format_bytes(bytes_saved)}")
     
     # Layer 2: Graph hits vs file reads
-    if "graph_hits" in layer_savings and "file_reads" in layer_savings:
+    graph_stats = layer_savings.get("graph_hits_vs_file_reads")
+    if isinstance(graph_stats, str):
+        parts.append(f"graph:{graph_stats}")
+    elif "graph_hits" in layer_savings and "file_reads" in layer_savings:
         hits = layer_savings["graph_hits"]
         reads = layer_savings["file_reads"]
-        if isinstance(hits, int) and isinstance(reads, int) and hits > 0:
+        if isinstance(hits, int) and isinstance(reads, int) and hits >= 0 and reads >= 0:
             total = hits + reads
             if total > 0:
                 hit_rate = (hits / total) * 100
                 parts.append(f"graph:{hits}/{total}({hit_rate:.0f}%)")
+            else:
+                parts.append("graph:0/0")
     
     # Layer 3: Derived context cache hits
     if "derived_context_cache_hits" in layer_savings:
         cache_hits = layer_savings["derived_context_cache_hits"]
-        if isinstance(cache_hits, int) and cache_hits > 0:
+        if isinstance(cache_hits, str):
+            parts.append(f"context:{cache_hits}")
+        elif isinstance(cache_hits, int) and cache_hits >= 0:
             parts.append(f"context:{cache_hits}hits")
     
     # Layer 4: Planning graph tokens saved
     if "planning_graph_tokens_saved" in layer_savings:
         tokens_saved = layer_savings["planning_graph_tokens_saved"]
-        if isinstance(tokens_saved, (int, float)) and tokens_saved > 0:
+        if isinstance(tokens_saved, str):
+            parts.append(f"planning:{tokens_saved}")
+        elif isinstance(tokens_saved, (int, float)) and tokens_saved >= 0:
             parts.append(f"planning:{tokens_saved}tok")
     
     return ",".join(parts)

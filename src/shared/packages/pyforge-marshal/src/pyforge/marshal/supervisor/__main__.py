@@ -429,10 +429,13 @@ def _layer_savings_payload(layer_savings: object) -> dict[str, object]:
         savings_dict["output_compression_saved"] = layer_savings.output_compression_saved
     if layer_savings.wire_compression_saved is not None:
         savings_dict["wire_compression_saved"] = layer_savings.wire_compression_saved
-    if layer_savings.graph_hits_vs_file_reads is not None:
-        hits, reads = layer_savings.graph_hits_vs_file_reads
+    graph_stats = layer_savings.graph_hits_vs_file_reads
+    if isinstance(graph_stats, tuple):
+        hits, reads = graph_stats
         savings_dict["graph_hits"] = hits
         savings_dict["file_reads"] = reads
+    elif isinstance(graph_stats, str):
+        savings_dict["graph_hits_vs_file_reads"] = graph_stats
     if layer_savings.derived_context_cache_hits is not None:
         savings_dict["derived_context_cache_hits"] = layer_savings.derived_context_cache_hits
     if layer_savings.planning_graph_tokens_saved is not None:

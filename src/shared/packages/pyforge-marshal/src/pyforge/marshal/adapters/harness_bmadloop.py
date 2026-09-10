@@ -741,10 +741,13 @@ def _usage_dollar_fields(
             )
         if layer_savings.wire_compression_saved is not None:
             savings_dict["wire_compression_saved"] = layer_savings.wire_compression_saved
-        if layer_savings.graph_hits_vs_file_reads is not None:
-            hits, reads = layer_savings.graph_hits_vs_file_reads
+        graph_stats = layer_savings.graph_hits_vs_file_reads
+        if isinstance(graph_stats, tuple):
+            hits, reads = graph_stats
             savings_dict["graph_hits"] = hits
             savings_dict["file_reads"] = reads
+        elif isinstance(graph_stats, str):
+            savings_dict["graph_hits_vs_file_reads"] = graph_stats
         if layer_savings.derived_context_cache_hits is not None:
             savings_dict["derived_context_cache_hits"] = (
                 layer_savings.derived_context_cache_hits
@@ -1821,81 +1824,60 @@ class BmadLoopHarness:
         )
 
     def _gather_layer_savings(self, run_dir: Path) -> LayerSavings | None:
-        """Story 28.4: Gather per-layer savings telemetry (CAP-7).
-        
-        Collects available savings stats from each token economy layer:
-        - Layer 0 (caveman): Output compression savings 
-        - Layer 1 (headroom): Wire compression savings
-        - Layer 2 (codegraph): Graph hits vs file reads
-        - Layer 3 (cocoindex): Derived context cache hits  
-        - Layer 4 (graphifyy): Planning graph tokens saved
-        
-        Returns None when no layers are active or stats unavailable.
-        Absent/null fields indicate the layer is disabled or degraded."""
+        """Story 28.4 / 33.1: Gather per-layer savings telemetry (CAP-7)."""
         try:
-            # For now, implement a stub that looks for savings data in conventional locations
-            # This would be extended to integrate with actual layer implementations
-            
-            # Layer 0: Caveman output compression (look for caveman stats)
-            output_compression_saved = self._get_caveman_savings(run_dir)
-            
-            # Layer 1: Headroom wire compression (look for headroom CCR store stats)
-            wire_compression_saved = self._get_headroom_savings(run_dir)
-            
-            # Layer 2: Codegraph structure queries (look for graph hit/miss stats)
-            graph_hits_vs_file_reads = self._get_codegraph_stats(run_dir)
-            
-            # Layer 3: Cocoindex derived context (look for cache hit stats)
-            derived_context_cache_hits = self._get_cocoindex_stats(run_dir)
-            
-            # Layer 4: Graphifyy planning graph (look for token savings)
-            planning_graph_tokens_saved = self._get_graphifyy_savings(run_dir)
-            
-            # Only return LayerSavings if at least one layer has data
-            if any([
-                output_compression_saved is not None,
-                wire_compression_saved is not None,
-                graph_hits_vs_file_reads is not None,
-                derived_context_cache_hits is not None,
-                planning_graph_tokens_saved is not None,
-            ]):
-                return LayerSavings(
-                    output_compression_saved=output_compression_saved,
-                    wire_compression_saved=wire_compression_saved,
-                    graph_hits_vs_file_reads=graph_hits_vs_file_reads,
-                    derived_context_cache_hits=derived_context_cache_hits,
-                    planning_graph_tokens_saved=planning_graph_tokens_saved,
-                )
-            
-            return None
+            from ..core import layer_savings_sources as sources
+
+            home = sources.loop_home_from_run_dir(run_dir)
+            output_compression_saved = self._get_caveman_savings(home)
+            wire_compression_saved = self._get_headroom_savings(home)
+            graph_hits_vs_file_reads = self._get_codegraph_stats(home)
+            derived_context_cache_hits = self._get_cocoindex_stats(home)
+            planning_graph_tokens_saved = self._get_graphifyy_savings(home)
+
+            fields = (
+                output_compression_saved,
+                wire_compression_saved,
+                graph_hits_vs_file_reads,
+                derived_context_cache_hits,
+                planning_graph_tokens_saved,
+            )
+            if not any(value is not None for value in fields):
+                return None
+            return LayerSavings(
+                output_compression_saved=output_compression_saved,
+                wire_compression_saved=wire_compression_saved,
+                graph_hits_vs_file_reads=graph_hits_vs_file_reads,
+                derived_context_cache_hits=derived_context_cache_hits,
+                planning_graph_tokens_saved=planning_graph_tokens_saved,
+            )
         except Exception:
-            # Never raise from savings gathering - it's advisory only
             return None
 
-    def _get_caveman_savings(self, run_dir: Path) -> int | None:
-        """Get Layer 0 (caveman) output compression savings."""
-        # Stub: would integrate with actual caveman stats when available
-        return None
-    
-    def _get_headroom_savings(self, run_dir: Path) -> int | None:
-        """Get Layer 1 (headroom) wire compression savings."""
-        # Stub: would integrate with actual headroom CCR store when available
-        return None
-        
-    def _get_codegraph_stats(self, run_dir: Path) -> tuple[int, int] | None:
-        """Get Layer 2 (codegraph) graph hits vs file reads."""
-        # Stub: would integrate with actual codegraph stats when available
-        return None
-        
-    def _get_cocoindex_stats(self, run_dir: Path) -> int | None:
-        """Get Layer 3 (cocoindex) derived context cache hits."""
-        # Stub: would integrate with actual cocoindex stats when available
-        return None
-        
-    def _get_graphifyy_savings(self, run_dir: Path) -> int | None:
-        """Get Layer 4 (graphifyy) planning graph tokens saved."""
-        # Stub: would integrate with actual graphifyy stats when available
-        return None
+    def _get_caveman_savings(self, home: Path) -> int | str | None:
+        from ..core.layer_savings_sources import read_caveman_output_saved
+
+        return read_caveman_output_saved(home)
+
+    def _get_headroom_savings(self, home: Path) -> int | str | None:
+        from ..core.layer_savings_sources import read_headroom_wire_saved
+
+        return read_headroom_wire_saved(home)
+
+    def _get_codegraph_stats(self, home: Path) -> tuple[int, int] | str | None:
+        from ..core.layer_savings_sources import read_codegraph_hits_vs_reads
+
+        return read_codegraph_hits_vs_reads(home)
+
+    def _get_cocoindex_stats(self, home: Path) -> int | str | None:
+        from ..core.layer_savings_sources import read_cocoindex_cache_hits
+
+        return read_cocoindex_cache_hits(home)
+
+    def _get_graphifyy_savings(self, home: Path) -> int | str | None:
+        from ..core.layer_savings_sources import read_planning_graph_tokens_saved
+
+        return read_planning_graph_tokens_saved(home)
 
     @staticmethod
     def _redact_text(text: str) -> str | None:
