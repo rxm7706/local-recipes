@@ -54,7 +54,7 @@ development_status:
   19-1-the-webhook-routes-move-onto-the-station-api-seam: done
   19-2-one-real-ship-records-itself-against-a-persistent-store: blocked
   19-3-the-deck-qa-gate-gets-a-caller: done
-  19-4-one-real-station-deck-renders-through-the-pptx-pipeline: backlog
+  19-4-one-real-station-deck-renders-through-the-pptx-pipeline: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
