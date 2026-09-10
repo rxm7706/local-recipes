@@ -2,7 +2,7 @@
 title: 'The status/body check renders where the operator already looks'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '82626b1239a5c47dc8604676ae3066bced6c52e9'
 review_loop_iteration: 0
 followup_review_recommended: false
