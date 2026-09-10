@@ -37,25 +37,28 @@ _langflow_pkg.main.create_app.return_value = _langflow_asgi_app
 sys.modules.setdefault("langflow", _langflow_pkg)
 sys.modules.setdefault("langflow.main", _langflow_pkg.main)
 
-import jwt
-import pytest
+import jwt  # noqa: E402
+import pytest  # noqa: E402
 
 pytest.importorskip("channels")
 
-from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
-from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
-from django_pyforge.assertion.schema import ALG
-from django_pyforge.assertion.schema import CLAIM_AUD
-from django_pyforge.assertion.schema import CLAIM_DELEGATED_BY
-from django_pyforge.assertion.schema import CLAIM_EXP
-from django_pyforge.assertion.schema import CLAIM_IAT
-from django_pyforge.assertion.schema import CLAIM_ROLES
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import DELEGATED_BY
-from django_pyforge.assertion.schema import EVENTS_AUDIENCE
-from django_pyforge.assertion.schema import MAX_TTL_SECONDS
+from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM  # noqa: E402
+from django_pyforge.assertion.schema import ALG  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_AUD  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_DELEGATED_BY  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_EXP  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_IAT  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_ROLES  # noqa: E402
+from django_pyforge.assertion.schema import CLAIM_SUB  # noqa: E402
+from django_pyforge.assertion.schema import DELEGATED_BY  # noqa: E402
+from django_pyforge.assertion.schema import EVENTS_AUDIENCE  # noqa: E402
+from django_pyforge.assertion.schema import MAX_TTL_SECONDS  # noqa: E402
 
-from config.asgi import application
+import config.asgi as asgi_module  # noqa: E402
+from config.asgi import application  # noqa: E402
+
+_CLOSE_UNAUTHORIZED = 4401
+_CLOSE_DASHBOARD_MISSING = 4403
 
 
 class _WsRecorder:
@@ -105,7 +108,7 @@ async def _drive_websocket(
 def test_ping_websocket_still_returns_pong():
     async def _run() -> list[dict]:
         recorder = _WsRecorder()
-        steps = [
+        steps: list[dict] = [
             {"type": "websocket.connect"},
             {"type": "websocket.receive", "text": "ping"},
             {"type": "websocket.disconnect", "code": 1000},
@@ -133,7 +136,7 @@ def test_events_websocket_rejects_invalid_token():
         ),
     )
     assert any(
-        msg.get("type") == "websocket.close" and msg.get("code") == 4401
+        msg.get("type") == "websocket.close" and msg.get("code") == _CLOSE_UNAUTHORIZED
         for msg in recorder.messages
     )
 
@@ -144,7 +147,10 @@ def test_events_websocket_accepts_with_valid_token():
 
     async def _run() -> _WsRecorder:
         recorder = _WsRecorder()
-        steps = [{"type": "websocket.connect"}, {"type": "websocket.disconnect", "code": 1000}]
+        steps: list[dict] = [
+            {"type": "websocket.connect"},
+            {"type": "websocket.disconnect", "code": 1000},
+        ]
 
         async def receive() -> dict:
             return steps.pop(0)
@@ -161,16 +167,16 @@ def test_events_websocket_accepts_with_valid_token():
     recorder = asyncio.run(_run())
     assert any(msg.get("type") == "websocket.accept" for msg in recorder.messages)
     assert not any(
-        msg.get("type") == "websocket.close" and msg.get("code") in {4401, 4403}
+        msg.get("type") == "websocket.close"
+        and msg.get("code") in {_CLOSE_UNAUTHORIZED, _CLOSE_DASHBOARD_MISSING}
         for msg in recorder.messages
     )
 
 
 def test_events_websocket_closes_4403_when_dashboard_extra_missing(monkeypatch):
-    import config.asgi as asgi_module
-
     def _missing_events_app():
-        raise ImportError("dashboard extra absent")
+        msg = "dashboard extra absent"
+        raise ImportError(msg)
 
     monkeypatch.setattr(asgi_module, "_load_events_ws_application", _missing_events_app)
     recorder = asyncio.run(
@@ -180,6 +186,7 @@ def test_events_websocket_closes_4403_when_dashboard_extra_missing(monkeypatch):
         ),
     )
     assert any(
-        msg.get("type") == "websocket.close" and msg.get("code") == 4403
+        msg.get("type") == "websocket.close"
+        and msg.get("code") == _CLOSE_DASHBOARD_MISSING
         for msg in recorder.messages
     )

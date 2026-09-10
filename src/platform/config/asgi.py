@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/dev/howto/deployment/asgi/
 """
 
 import contextlib
+import importlib
 import os
 import sys
 from pathlib import Path
@@ -211,9 +212,11 @@ def _is_events_websocket_path(path: str) -> bool:
 
 
 def _load_events_ws_application():
-    from pyforge.steward.dashboard.asgi import application as events_ws_application  # noqa: PLC0415
-
-    return events_ws_application
+    # ``src/platform/`` never imports ``pyforge.*`` -- load steward's events
+    # WebSocket ASGI app by name, the same seam ``config/station_api.py``
+    # already uses for herald's webhook mount (``pap:AD-2``).
+    events_module = importlib.import_module("pyforge.steward.dashboard.asgi")
+    return events_module.application
 
 
 async def _dispatch_websocket(scope, receive, send) -> None:
