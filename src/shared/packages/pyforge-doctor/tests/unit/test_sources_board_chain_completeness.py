@@ -129,6 +129,48 @@ def test_shipped_spec_is_not_open_and_reports_no_finding(tmp_path: Path) -> None
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_spec_without_status_key_reports_spec_status_missing(tmp_path: Path) -> None:
+    """A missing ``status:`` key must not silently exempt a Spec the way a
+    declared-terminal status does — it fires ``spec-status-missing`` instead."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    spec_path = pa / "specs" / "spec-foo" / "SPEC.md"
+    spec_path.parent.mkdir(parents=True, exist_ok=True)
+    spec_path.write_text(
+        "---\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.CHAIN_COMPLETENESS
+    assert finding.check == "spec-status-missing"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-A"
+    assert finding.evidence["subject"] == "spec-foo"
+    assert "no status:" in finding.message
+    assert "DEFERRED_SPECS" in finding.evidence["remedy"]
+    assert "status: line" in finding.evidence["remedy"]
+
+
+def test_deferred_spec_without_status_key_reports_no_finding(tmp_path: Path) -> None:
+    """``DEFERRED_SPECS`` remains a whole-Spec escape hatch even when the
+    ``status:`` key is absent."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    spec_path = pa / "specs" / "spec-agentic-sdlc-autonomy" / "SPEC.md"
+    spec_path.parent.mkdir(parents=True, exist_ok=True)
+    spec_path.write_text(
+        "---\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
 # --- INV-A: CAP-id coverage (Story 12.3, Round 4) -----------------------------
 #
 # A Spec that declares real `## Capabilities` CAP ids is judged by CAP-id
@@ -665,11 +707,17 @@ def test_unreadable_spec_in_one_project_does_not_hide_a_real_finding_in_another(
 
     findings = board.gather_chain_completeness(tmp_path)
 
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.check == "spec-not-decomposed"
+    by_check = {f.check: f for f in findings}
+    assert "spec-not-decomposed" in by_check, (
+        f"alpha's real FAIL was masked: {[(f.check, f.evidence.get('project')) for f in findings]}"
+    )
+    finding = by_check["spec-not-decomposed"]
     assert finding.status is DoctorStatus.FAIL
     assert finding.evidence["project"] == "pyforge-alpha"
+    # beta's non-UTF-8 SPEC.md degrades to empty text → no status: key →
+    # spec-status-missing (no longer a silent exemption).
+    assert by_check.get("spec-status-missing") is not None
+    assert by_check["spec-status-missing"].evidence["project"] == "pyforge-beta"
 
 
 def test_non_dict_data_js_project_entry_does_not_crash_or_hide_other_findings(
