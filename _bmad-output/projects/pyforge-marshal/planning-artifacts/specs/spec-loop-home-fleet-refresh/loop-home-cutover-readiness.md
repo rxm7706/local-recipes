@@ -12,10 +12,10 @@ in the originating story spec).
 There are eight `~/.bmad-loops/pyforge-*` loop homes today. Each is a full git worktree pointed
 at **this** repo (`local-recipes`), with its own `pixi.toml`, `pyforge.toml`
 (`[project] name = "local-recipes"`), `_bmad/`, and `_bmad-output/`. At the python-foundry
-cutover flip, steward Story 44.12 (`epics.md:2688-2693`) builds `pyforge.cutover_root`, a config
+cutover flip, steward Story 44.12 (`_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md:2706-2715`) builds `pyforge.cutover_root`, a config
 flag in `src/platform/config/flags.json` whose value alone decides the ledger of record, Mason's
 targets, and the loop-home remotes — flipping it back restores the previous state (explicitly
-reversible). Story 44.5's own note on that flip (`epics.md:2619`) states that flipping
+reversible). Story 44.5's own note on that flip (`epics.md:2636`) states that flipping
 `pyforge.cutover_root` from `local-recipes` to `foundry` is an attended act with no loop running,
 and that "the eight loop homes [are] re-provisioned against the foundry remote" as part of it.
 This doc names what the resulting state must satisfy (R1–R6 below) — it does not build the flag
@@ -31,10 +31,10 @@ command/field only — no new detector), and who runs it.
 |---|---|---|---|
 | R1 | The home's git remote points at the new foundry repo, not `local-recipes` | manual: `git remote -v` in the home's root checkout | steward 44.12, attended |
 | R2 | `pyforge.toml`'s `[project] name` matches the foundry repo's own name, not `"local-recipes"` | manual: `cat pyforge.toml` | steward 44.12, attended |
-| R3 | The home's marker/symlink/backlink state is internally consistent for its slug | `marshal homes --json` — the home's row reports `desynced: false` and `active_project` equal to the expected slug (the boolean is computed from marker-vs-symlink-vs-Tier-3-backlink agreement internally; the raw fields are not themselves serialized — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py::_evaluate_home`) | steward 44.12, attended |
+| R3 | The home's marker/symlink/backlink state is internally consistent for its slug | `marshal homes --json` — the home's row reports `desynced: false` and `active_project` equal to the **expected slug** (the directory basename under `~/.bmad-loops/`, e.g. `pyforge-marshal` for `~/.bmad-loops/pyforge-marshal`; the eight slugs are the eight `pyforge-*` station tokens). The boolean is computed from marker-vs-symlink-vs-Tier-3-backlink agreement internally; the raw fields are not themselves serialized — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py::_evaluate_home`) | steward 44.12, attended |
 | R4 | The rendered `.bmad-loop/policy.toml`'s `[dev] skill` field reads `"bmad-dev-auto"` — a permanent internal adapter discriminator that is never renamed to whatever harness skill is actually invoked (the invoked skill, e.g. `bmad-build-auto`, is resolved from disk at runtime, independent of this field) | `bmad-loop validate`, or manual `cat .bmad-loop/policy.toml` for the `[dev] skill` value; per the `spec-bmad-suite-lifecycle/.memlog.md` CAP-10 spec correction (2026-09-06), verified against installed `bmad_loop` 0.11.1 (`policy.py:44`, `DEV_SKILLS = {"bmad-dev-auto"}`) | steward 44.12, attended |
 | R5 | The `_bmad-output` planning/implementation relays are refreshed against the new tree (not stale symlinks or content pointed at the retired `local-recipes` project layout) | manual inspection: `readlink -f` on the planning-artifacts and implementation-artifacts links, cross-checked against the new tree's active project | steward 44.12, attended |
-| R6 | No run is in flight for that home at the moment of re-provisioning | `marshal status` / `bmad-loop status` for that home | steward 44.12, attended |
+| R6 | No run is in flight for that home at the moment of re-provisioning | `marshal status --project <slug> --format json` (home must not report a running/awaiting state) and, if a run id is visible, `bmad-loop status <run_id> --json` from that home's root | steward 44.12, attended |
 
 **Not proven by any of the above** (confirmed by code search — no existing marshal code reads
 `pyforge.toml`; `grep -rln "pyforge.toml" src/shared/packages/pyforge-marshal/src/` returns zero
@@ -52,7 +52,7 @@ automation.
 ## Reconciling "retired" vs "re-provisioned"
 
 `spec-python-foundry-cutover`'s deferred-work entry `DW-CC-2026-09-04-1`
-(`deferred-work-ledger.md:2571-2576`) is an aggregate over 268 registered worktrees across six
+(`_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md:2591-2598`; the ledger row reads `status: resolved` as of 2026-09-08 — this reconciliation is historiographic, not an open blocker) is an aggregate over 268 registered worktrees across six
 categories (58 `.worktrees/`, 66 `.cursor/worktrees`, 33 `.claude/worktrees`, 93 retired under
 loop homes, 8 loop homes, 3 `local-recipes-wt-*`); "8 loop homes... retired at Phase 6, never
 moved" is one line-item within that larger entry, and it is only that line-item this section
