@@ -4544,6 +4544,19 @@ So that fleet status stops naming a worktree that is already gone and work that 
 **And** `marshal status`/`fleet-picture`'s `awaiting-operator` row clears accordingly, with no change to the case where the newest run is itself the one still stuck
 **Status:** done
 
+### Story 28.26: CAP-4's own feed-sync guards missing keys too, not just regressions
+
+As a marshal operator,
+I want `_promote_sprint_ledger`'s (`cli/land.py`) feed-sync step to refuse a promotion that would drop any twin-only key, not just one moving out of a protected state,
+So that CAP-4's fully-autonomous auto-land path cannot silently wipe a freshly-authored epic's still-backlog stories the moment it lands that epic's first story.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-4 (incident 2026-09-10: pyforge-warden Epic 12, restored PR #1117)
+**Note:** Story 48.1 (pyforge-steward) fixed this exact class of bug in `scripts/promote_sprint_status.py`'s own standalone `main()` CLI (the `sprint-ledger-sync` / `--repair-feed` path) — but confirmed, by reading its own scope in epics.md, that it does not touch `cli/land.py`'s separate internal call site, which CAP-4's auto-land path uses directly (`promote_mod.regressions()`/`render()`, never `main()`). Found live 2026-09-10: `_promote_sprint_ledger` auto-landed pyforge-warden's Story 12.1, then its own post-land feed-sync step promoted the tracked ledger from warden's stale Tier-3 feed (which had never learned of the freshly-authored Epic 12) and silently dropped Epic 12's five still-backlog stories plus the epic/retrospective rows — `regressions()` alone never caught it, since a `backlog` key is not a protected state.
+**Given** a station's tracked twin carries a key absent from its incoming Tier-3 feed, regardless of that key's status **When** `_promote_sprint_ledger`'s feed-sync step runs **Then** the promotion is refused (WARN-named, matching the existing regression-refusal shape) rather than silently written with that key dropped
+**And** a feed that is a superset of (or equal to) the twin's own keys still promotes normally — this only refuses on any key disappearing, not on new keys appearing
+**And** the existing `regressions()`-based refusal (a key moving OUT of `done`) is unchanged, this is additive
+**Status:** done
+
 ## Epic 29: Done-spec dispatch does not review-loop
 
 **Goal:** FR-193 CAP-11 (`spec-marshal-single-story-dispatch`, Dream addendum

@@ -2388,3 +2388,57 @@ def test_sprint_ledger_promote_uses_isolated_remote_tip(tmp_path, capsys, monkey
     assert writes[0][0].endswith("sprint-status-ledger.yaml")
     assert "4-4-batch: done" in writes[0][1]
     assert "sprint-status ledger" in message
+
+
+class _FakePromoteModForRefusal:
+    @staticmethod
+    def regressions(existing: dict, incoming: dict):
+        # Mirrors scripts/promote_sprint_status.py::regressions -- a key
+        # already done or story-blocked moving out of that state.
+        TERMINAL = {"done"}
+        out = []
+        for key, old in sorted(existing.items()):
+            if old not in TERMINAL:
+                continue
+            new = incoming.get(key)
+            if new is None:
+                out.append((key, old, "<absent>"))
+            elif new not in TERMINAL:
+                out.append((key, old, new))
+        return out
+
+
+def test_land_feed_sync_refusal_none_when_incoming_is_a_superset() -> None:
+    existing = {"1-1-a": "done", "1-2-b": "backlog"}
+    incoming = {"1-1-a": "done", "1-2-b": "backlog", "1-3-c": "backlog"}
+    assert land_module._land_feed_sync_refusal(
+        _FakePromoteModForRefusal, existing, incoming
+    ) is None
+
+
+def test_land_feed_sync_refusal_catches_dropped_done_key() -> None:
+    existing = {"1-1-a": "done"}
+    incoming = {}
+    refusal = land_module._land_feed_sync_refusal(
+        _FakePromoteModForRefusal, existing, incoming
+    )
+    assert refusal is not None
+    label, detail = refusal
+    assert label == "un-finish"
+    assert "1-1-a" in detail
+
+
+def test_land_feed_sync_refusal_catches_dropped_backlog_key() -> None:
+    # Live incident 2026-09-10: a still-backlog story in a freshly-authored
+    # epic the feed has never seen -- regressions() alone misses this
+    # entirely since "backlog" was never a protected state.
+    existing = {"12-1-a": "done", "12-2-b": "backlog", "12-3-c": "backlog"}
+    incoming = {"12-1-a": "done"}
+    refusal = land_module._land_feed_sync_refusal(
+        _FakePromoteModForRefusal, existing, incoming
+    )
+    assert refusal is not None
+    label, detail = refusal
+    assert label == "drop"
+    assert "12-2-b" in detail
+    assert "12-3-c" in detail
