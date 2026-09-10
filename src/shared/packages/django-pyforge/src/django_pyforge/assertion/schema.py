@@ -4,6 +4,7 @@ from __future__ import annotations
 
 ALG = "RS256"
 AUDIENCE_PREFIX = "mcp:"
+EVENTS_AUDIENCE = "mcp:events"
 CLAIM_AUD = "aud"
 CLAIM_DELEGATED_BY = "delegated_by"
 CLAIM_EXP = "exp"

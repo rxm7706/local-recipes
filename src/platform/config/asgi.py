@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/dev/howto/deployment/asgi/
 """
 
 import contextlib
+import importlib
 import os
 import sys
 from pathlib import Path
@@ -206,11 +207,42 @@ async def _dispatch_lifespan(receive, send) -> None:
     await send({"type": "lifespan.shutdown.complete"})
 
 
+def _is_events_websocket_path(path: str) -> bool:
+    return path == "/ws/events/" or path.startswith("/ws/events/")
+
+
+def _load_events_ws_application():
+    # ``src/platform/`` never imports ``pyforge.*`` -- load steward's events
+    # WebSocket ASGI app by name, the same seam ``config/station_api.py``
+    # already uses for herald's webhook mount (``pap:AD-2``).
+    events_module = importlib.import_module("pyforge.steward.dashboard.asgi")
+    return events_module.application
+
+
+async def _dispatch_websocket(scope, receive, send) -> None:
+    path = scope.get("path", "")
+    if _is_events_websocket_path(path):
+        try:
+            events_ws_application = _load_events_ws_application()
+        except ImportError:
+            while True:
+                event = await receive()
+                if event["type"] == "websocket.connect":
+                    await send({"type": "websocket.close", "code": 4403})
+                    return
+                if event["type"] == "websocket.disconnect":
+                    return
+        else:
+            await events_ws_application(scope, receive, send)
+            return
+    await websocket_application(scope, receive, send)
+
+
 async def application(scope, receive, send):
     if scope["type"] == "http":
         await _dispatch_http(scope, receive, send)
     elif scope["type"] == "websocket":
-        await websocket_application(scope, receive, send)
+        await _dispatch_websocket(scope, receive, send)
     elif scope["type"] == "lifespan":
         await _dispatch_lifespan(receive, send)
     else:
