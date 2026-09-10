@@ -287,6 +287,16 @@ def test_run_dispatch_spawns_completion_supervisor_without_waiting(
 
     args = argparse.Namespace(slug=slug, story=story, format="json")
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # Story 33.9's scope guard (`_dispatch_scope_refusal`) fires unconditionally on every
+    # dispatch and refuses when no real `_bmad` marker/symlink triangle matches `slug` --
+    # this test's bare `_init_git_repo` fixture has none, and scope verification is not
+    # this test's concern (it verifies completion-supervisor spawning). Patched at the
+    # dispatch module's own imported binding, not the `scope` module's source, since
+    # `from ..scope import verify_scope` binds a local name `dispatch.py` reads directly.
+    import pyforge.marshal.cli.dispatch as dispatch_module
+
+    monkeypatch.setattr(dispatch_module, "verify_scope", lambda *_a, **_k: None)
     code = run_dispatch(
         args,
         fs=fs,

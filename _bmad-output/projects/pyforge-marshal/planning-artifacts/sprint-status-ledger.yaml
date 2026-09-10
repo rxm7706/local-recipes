@@ -168,7 +168,7 @@ development_status:
   31-1-tea-s-workflows-produce-every-station-s-test-architecture: done
   31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check: done
   31-3-tea-test-review-is-a-marshal-review-lens: done
-  31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: backlog
+  31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: done
   31-5-loop-home-readiness-is-defined-for-the-cutover-flip: done
   31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: blocked
   32-1-the-operating-model-standard-is-6-12-accurate-and-derives-what-it-can: done
@@ -180,16 +180,16 @@ development_status:
   32-7-coverage-is-measured-on-all-eight-stations-before-any-floor-is-enforced: done
   32-8-every-caller-and-ci-lane-follows-the-convergence: done
   33-1-measurement-first-the-benchmark-artifact-with-real-savings-getters: done
-  33-10-the-cfe-pin-is-derived-never-stamped: backlog
+  33-10-the-cfe-pin-is-derived-never-stamped: done
   33-11-attribution-becomes-unforgeable-before-the-track-serves-a-second-principal: blocked
   33-2-the-layers-are-enabled-on-factory-dispatch: done
   33-3-the-layers-are-enabled-on-factory-spin-or-spin-is-declared-a-two-layer-engine: done
   33-4-cap-18-one-publisher-run-state-and-savings-telemetry-reach-the-supervisor: blocked
   33-5-risk-tiered-review-depth-gets-a-producer-and-a-caller: done
   33-6-adaptive-tiering-is-fed-on-all-eight-stations-and-the-floor-raise-reaches-dispatch: done
-  33-7-the-two-epic-20-watchdogs-observe-the-plane-the-estate-actually-runs: backlog
+  33-7-the-two-epic-20-watchdogs-observe-the-plane-the-estate-actually-runs: done
   33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max_parallel-key: done
-  33-9-verify_scope-guards-marshal-factory-dispatch: backlog
+  33-9-verify_scope-guards-marshal-factory-dispatch: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
@@ -207,7 +207,7 @@ development_status:
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
-  5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: backlog
+  5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
   5-2-per-run-detail: done
   5-3-escalation-queue: done
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done

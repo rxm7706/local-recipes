@@ -238,6 +238,7 @@ from ..ports.harness import (
     DeferredStory,
     EngineLiveness,
     HarnessPort,
+    HarnessRunTerminalVerdict,
     LayerSavings,
     RunStatusSnapshot,
     SmokeRunResult,
@@ -1868,6 +1869,23 @@ class BmadLoopHarness:
                     return mapped
             return "unknown"
         return "unknown"
+
+    def run_terminal_verdict(self, project: Path, run_id: str) -> HarnessRunTerminalVerdict:
+        """Story 5.11 (FR-196/AD-5): classify a launch-pid-less harness run via
+        bmad-loop's own ``state.json`` only -- see ``HarnessPort.run_terminal_
+        verdict``."""
+        run_dir = Path(project) / ".bmad-loop" / "runs" / run_id
+        try:
+            from bmad_loop.journal import load_state
+        except ImportError:
+            return "unknown"
+        try:
+            state = load_state(run_dir)
+        except (OSError, ValueError, KeyError, TypeError):
+            return "unknown"
+        if bool(state.finished):
+            return "terminal"
+        return "non_terminal"
 
     def usage_snapshot(self, project: Path, run_id: str) -> UsageSnapshot | None:
         # Lazy import, this method's own instance -- see the module

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import pytest
 
 from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
 from pyforge.marshal.core import policy
+from scope_triangle import point_scope_triangle
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
@@ -22,7 +24,7 @@ from pyforge.marshal.ports.build_harness import (
 from pyforge.marshal.ports.fs import AdvisoryLock
 
 
-def _init_git_repo(path: Path) -> None:
+def _init_git_repo(path: Path, *, scope_slug: str | None = None) -> None:
     subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
     subprocess.run(
         ["git", "config", "user.email", "dispatch@test"],
@@ -36,6 +38,9 @@ def _init_git_repo(path: Path) -> None:
         check=True,
         capture_output=True,
     )
+    if scope_slug is not None:
+        point_scope_triangle(path, scope_slug)
+        os.environ["BMAD_ACTIVE_PROJECT"] = scope_slug
 
 
 class FakeFs:
@@ -183,8 +188,8 @@ def test_build_fleet_row_surfaces_live_dispatch(tmp_path: Path) -> None:
 
 
 def test_run_dispatch_journals_and_returns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -227,8 +232,8 @@ def test_run_dispatch_surfaces_the_context_payload(
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -282,8 +287,8 @@ def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -
 
 
 def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
     args = argparse.Namespace(slug=slug, story=story, format="text")
     monkeypatch.chdir(tmp_path)
@@ -327,8 +332,8 @@ def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
     cannot apply)."""
     import json
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -365,8 +370,8 @@ def test_dispatch_journals_and_echoes_what_the_wire_layer_did(
 
     from pyforge.marshal.core.harness_profile import WireWrap
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -429,8 +434,8 @@ def test_dispatch_reports_a_degraded_wire_layer_as_a_warning(
 
     from pyforge.marshal.core.harness_profile import WireWrap
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -478,8 +483,8 @@ def test_dispatch_with_no_wire_decision_reports_the_layer_as_off(
     and raises nothing, because nothing was enabled."""
     import json
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -519,8 +524,8 @@ def test_dispatch_wire_payload_has_exactly_the_single_spellings_fields(
 
     from pyforge.marshal.core.harness_profile import WireWrap
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -560,8 +565,8 @@ def test_dispatch_states_the_wire_disposition_even_when_the_launch_fails(
 
     from pyforge.marshal.adapters.harness_bmadbuild import BuildHarnessError
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -597,8 +602,8 @@ def test_run_dispatch_carries_profile_and_reports_skips(
 ) -> None:
     """Story 22.8: the envelope names the resolved profile; every skipped
     preference candidate surfaces as a structured MRS-DISP-027 WARN."""
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -650,8 +655,8 @@ def test_run_dispatch_refusal_names_every_candidate_tried(
 ) -> None:
     """MRS-DISP-003 must say what was tried and why each candidate was
     skipped -- the 2026-08-27 silent cursor-auth death, made loud."""
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
@@ -715,6 +720,8 @@ def _dispatch(
     would leave a dispatch that provisioned nothing exiting 0 with the
     whole suite still green.
     """
+    point_scope_triangle(repo_root, slug)
+    os.environ["BMAD_ACTIVE_PROJECT"] = slug
     _seed_spec(repo_root, slug, story)
     monkeypatch.chdir(repo_root)
     args = argparse.Namespace(slug=slug, story=story, format="json")
@@ -1227,8 +1234,8 @@ def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
 ) -> None:
     """`dispatch <slug> --stories a,b` reuses `run_fleet_drain`'s own
     chaining/preflight/journal machinery -- no second implementation."""
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     _seed_spec(tmp_path, slug, "22-11-fleet")
     _seed_spec(tmp_path, slug, "22-12-next")
     monkeypatch.chdir(tmp_path)
@@ -1261,8 +1268,8 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
 ) -> None:
     import json
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     _seed_spec(tmp_path, slug, "22-11-fleet")
     monkeypatch.chdir(tmp_path)
     harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"),)})
@@ -1308,8 +1315,8 @@ def test_done_spec_does_not_launch_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Story 29.2: worktree spec done + follow-up false → 0 harness launches."""
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "13-2-recipe-refresh"
     worktree = _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
     monkeypatch.chdir(tmp_path)
@@ -1336,8 +1343,8 @@ def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
     """41.2-shaped: DIRTY PR → MRS-DISP-040 names the PR, launch count 0."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-steward"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "41-2-query-plane"
     _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
     pr_url = "https://github.com/rxm7706/local-recipes/pull/1017"
@@ -1368,8 +1375,8 @@ def test_harness_done_lands_via_cap4_without_second_session(
     """When CAP-4 can land, no second session and no MRS-DISP-040."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "29-2-cap4-only"
     _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
     monkeypatch.setattr(
@@ -1395,8 +1402,8 @@ def test_harness_done_lands_via_cap4_without_second_session(
 def test_followup_true_still_launches(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "29-1-followup"
     followup = (
         "---\nstatus: done\nfollowup_review_recommended: true\n"
@@ -1505,8 +1512,8 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
             encoding="utf-8",
         )
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "33-6-adaptive-tiering"
     feed = render_feed_key(normalize(story))
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
@@ -1568,8 +1575,8 @@ def test_dispatch_does_not_escalate_on_first_attempt(
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "33-6-first-attempt"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True, exist_ok=True)
@@ -1652,8 +1659,8 @@ def test_dispatch_failure_count_resets_after_completed_run(
             encoding="utf-8",
         )
 
-    _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
     story = "33-6-reset-after-complete"
     feed = render_feed_key(normalize(story))
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
@@ -1720,4 +1727,69 @@ def test_resolve_max_parallel_cli_override_wins() -> None:
         flags={},
     )
     assert resolve_max_parallel(effective, cli_override=2) == 2
+
+
+# --------------------------------------------------------------------------
+# Story 33.9: verify_scope at factory dispatch
+# --------------------------------------------------------------------------
+
+
+def test_dispatch_refuses_triangle_drift_before_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    point_scope_triangle(tmp_path, "pyforge-steward")
+    os.environ["BMAD_ACTIVE_PROJECT"] = slug
+    story = "33-9-scope-guard"
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "expected 'pyforge-marshal'" in finding.message
+    assert "marker='pyforge-steward'" in finding.message
+
+
+def test_dispatch_refuses_bmad_active_project_env_disagreement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    os.environ["BMAD_ACTIVE_PROJECT"] = "pyforge-atlas"
+    story = "33-9-env-guard"
+    _seed_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-041"]
+    assert "pyforge-marshal" in finding.message
+    assert "pyforge-atlas" in finding.message
+
+
+def test_format_scope_drift_matches_bmad_switch_shape() -> None:
+    from pyforge.marshal.scope import ScopeDrift, format_scope_drift
+
+    drift = ScopeDrift(
+        expected="project-a",
+        marker="project-b",
+        planning_artifacts="project-b",
+        implementation_artifacts="project-b",
+    )
+    text = format_scope_drift(drift)
+    assert text.startswith("scope drift:")
+    assert "expected 'project-a'" in text
+    assert "marker='project-b'" in text
 

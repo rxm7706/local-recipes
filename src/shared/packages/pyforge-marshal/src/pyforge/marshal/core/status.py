@@ -652,6 +652,7 @@ def classify_resync_outcome(
 # =============================================================================
 
 _MALFORMED_JOURNAL_CODE = "MRS-STATUS-002"
+_HARNESS_NATIVE_TERMINAL_CODE = "MRS-STATUS-013"
 
 #: A run whose journal read fine but whose harness snapshot is gone -- the
 #: retired-run shape. WARN, never a hard failure, and never `unknown`.
@@ -893,6 +894,12 @@ class FleetHomeFacts:
     #: one whose liveness callers cannot assert, the precondition for the
     #: duplicate-dispatch class recorded on 2026-08-27 (DW-STATUS-2026-09-08-1).
     run_state_retired: bool = False
+    #: A run bmad-loop started directly (no recoverable marshal launch pid),
+    #: classified terminal via ``HarnessPort.run_terminal_verdict`` (Story
+    #: 5.11, FR-196). Distinct from ``journal_unreadable`` (nothing could be
+    #: recovered) and ``run_state_retired`` (marshal journal read fine but
+    #: the harness snapshot for a resolved id is gone).
+    harness_native_terminal: bool = False
     finished: bool = False
     paused_stage: str | None = None
     tasks: tuple[TaskPhaseSnapshot, ...] = ()
@@ -1311,6 +1318,61 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
     # (a home that crashed before ever landing a run, or whose journal
     # write itself got interrupted) -- the precise false-green this
     # story's own motivating incident describes.
+    if facts.harness_native_terminal:
+        state = derive_home_state(
+            finished=facts.finished,
+            paused_stage=facts.paused_stage,
+            tasks=facts.tasks,
+            supervisor_alive=facts.supervisor_alive,
+            engine_alive=facts.engine_alive,
+        )
+        current_story = _current_story_key(facts.tasks)
+        escalated = state == "paused-on-escalation"
+        row = {
+            "slug": facts.slug,
+            "branch": facts.branch,
+            "state": state,
+            "current_story": current_story,
+            "elapsed_seconds": facts.elapsed_seconds,
+            "budget_consumed": facts.budget_consumed,
+            "budget_consumed_usd": facts.budget_consumed_usd,
+            "layer_savings": facts.layer_savings if facts.layer_savings else None,
+            "layer_savings_usd": facts.layer_savings_usd if facts.layer_savings_usd else None,
+            "escalation_reason": facts.paused_reason if escalated else None,
+            "escalation_artifact": (
+                facts.escalated_spec_file
+                if facts.escalated_spec_file is not None
+                else facts.escalated_task_phase
+            )
+            if escalated
+            else None,
+            "escalation_preserve_ref": facts.escalated_preserve_ref if escalated else None,
+            "parked_stories": tuple(
+                task.story_key
+                for task in facts.tasks
+                if task.phase == _AWAITING_OPERATOR_PHASE
+            ),
+            "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
+        }
+        finding = Finding(
+            code=_HARNESS_NATIVE_TERMINAL_CODE,
+            severity=Severity.WARN,
+            message=(
+                f"{facts.slug}: the most recent run was started directly by "
+                "bmad-loop without a marshal launch pid -- this row reports "
+                f"'{state}' from the harness snapshot, never a silent healthy "
+                "state with no signal"
+            ),
+            path=facts.slug,
+        )
+        return _apply_finalize_escalation(
+            _apply_missing_spec_escalation(
+                _apply_dispatch_overlay(row, facts), facts
+            ),
+            facts,
+        ), finding
+
     if facts.journal_unreadable:
         row: dict[str, object] = {
             "slug": facts.slug,

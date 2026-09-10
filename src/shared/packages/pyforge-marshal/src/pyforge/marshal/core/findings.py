@@ -1492,6 +1492,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # is reported free rather than `unknown`, and the unresolvable run is
         # named rather than silently dropped.
         "MRS-STATUS-012",
+        # Story 5.11 (FR-196): a harness-native terminal run Marshal never
+        # launched -- WARN naming the gap, never a silent healthy state.
+        "MRS-STATUS-013",
         "MRS-DEPLOY-024",
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",
@@ -1692,6 +1695,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 29.2 (CAP-11 marshal half): harness-done story is CAP-4 only;
         # land failed or is not yet eligible — park, never another session.
         "MRS-DISP-040",
+        # Story 33.9 (spec-bmad-switch-scope-enforcement CAP-1 third call
+        # site): `verify_scope` at `factory dispatch` — marker/symlink
+        # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
+        "MRS-DISP-041",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

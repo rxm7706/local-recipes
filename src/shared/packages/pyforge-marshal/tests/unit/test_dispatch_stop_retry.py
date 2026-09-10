@@ -5,12 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.marshal.cli.dispatch import (
+    _policy_flags_from_harness_arg,
     _surface_worktree_wip_before_dispatch,
     gather_dispatch_journal_facts,
     resolve_dispatch_session_verdict,
     station_in_flight_conflict,
     station_story_blocked_evidence,
 )
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
     DispatchGitFacts,
@@ -325,3 +327,155 @@ def test_surface_worktree_wip_reports_file_and_line_counts(tmp_path: Path) -> No
     assert finding.code == "MRS-DISP-036"
     assert "1 changed file" in finding.message
     assert "2 diff line" in finding.message
+
+
+class _EmptyChangedFilesVcs(FakeVcs):
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+        return ()
+
+
+class _ChangedFilesErrorVcs(FakeVcs):
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+        raise VcsCommandError("git diff --name-only failed")
+
+
+class _UnifiedPatchErrorVcs(FakeVcs):
+    def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
+        raise VcsCommandError("git diff failed")
+
+
+def test_surface_worktree_wip_returns_none_when_no_changed_files(tmp_path: Path) -> None:
+    wt = tmp_path / "wt"
+    wt.mkdir()
+    assert (
+        _surface_worktree_wip_before_dispatch(
+            vcs=_EmptyChangedFilesVcs(tmp_path),
+            repo_root=tmp_path,
+            worktree=wt,
+            baseline_head_sha="aaa111",
+        )
+        is None
+    )
+
+
+def test_surface_worktree_wip_returns_none_when_changed_files_errors(tmp_path: Path) -> None:
+    wt = tmp_path / "wt"
+    wt.mkdir()
+    assert (
+        _surface_worktree_wip_before_dispatch(
+            vcs=_ChangedFilesErrorVcs(tmp_path),
+            repo_root=tmp_path,
+            worktree=wt,
+            baseline_head_sha="aaa111",
+        )
+        is None
+    )
+
+
+def test_surface_worktree_wip_reports_unavailable_line_count_when_patch_errors(
+    tmp_path: Path,
+) -> None:
+    wt = tmp_path / "wt"
+    wt.mkdir()
+    finding = _surface_worktree_wip_before_dispatch(
+        vcs=_UnifiedPatchErrorVcs(tmp_path),
+        repo_root=tmp_path,
+        worktree=wt,
+        baseline_head_sha="aaa111",
+    )
+    assert finding is not None
+    assert "1 changed file" in finding.message
+    assert "diff line count unavailable" in finding.message
+
+
+def test_policy_flags_from_harness_arg_none_returns_empty() -> None:
+    assert _policy_flags_from_harness_arg(None) == {}
+
+
+def test_policy_flags_from_harness_arg_blank_returns_empty() -> None:
+    assert _policy_flags_from_harness_arg("   ") == {}
+
+
+def test_policy_flags_from_harness_arg_single_profile() -> None:
+    assert _policy_flags_from_harness_arg("claude") == {
+        "harness_preference": ("claude",)
+    }
+
+
+def test_policy_flags_from_harness_arg_multiple_profiles_trims_whitespace() -> None:
+    assert _policy_flags_from_harness_arg("cursor, claude ,  gemini") == {
+        "harness_preference": ("cursor", "claude", "gemini")
+    }
+
+
+def test_policy_flags_from_harness_arg_ignores_empty_segments() -> None:
+    assert _policy_flags_from_harness_arg("claude,,gemini") == {
+        "harness_preference": ("claude", "gemini")
+    }
+
+
+def test_epics_path_lands_under_planning_artifacts(tmp_path: Path) -> None:
+    from pyforge.marshal.cli.dispatch import _epics_path
+
+    path = _epics_path(tmp_path, "pyforge-marshal")
+    assert path == (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "epics.md"
+    )
+
+
+def test_load_station_deps_graph_returns_empty_when_epics_missing(tmp_path: Path) -> None:
+    from pyforge.marshal.cli.dispatch import _load_station_deps_graph
+
+    assert _load_station_deps_graph(tmp_path, "pyforge-marshal") == {}
+
+
+def test_load_station_deps_graph_parses_real_epics_file(tmp_path: Path) -> None:
+    from pyforge.marshal.cli.dispatch import _epics_path, _load_station_deps_graph
+    from pyforge.marshal.core.identity import StoryKey
+
+    epics = _epics_path(tmp_path, "pyforge-marshal")
+    epics.parent.mkdir(parents=True)
+    epics.write_text(
+        "### Story 1.1: Foo\n**Deps:** —\n\n"
+        "### Story 1.2: Bar\n**Deps:** S-1.1\n",
+        encoding="utf-8",
+    )
+    graph = _load_station_deps_graph(tmp_path, "pyforge-marshal")
+    assert graph.get("1.2") == (StoryKey(1, 1),)
+
+
+def test_resolve_max_parallel_cli_override_wins() -> None:
+    from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
+
+    effective = _compose_policy("pyforge-marshal")
+    assert resolve_max_parallel(effective, cli_override=3) == 3
+
+
+def test_resolve_max_parallel_cli_override_floors_at_one() -> None:
+    from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
+
+    effective = _compose_policy("pyforge-marshal")
+    assert resolve_max_parallel(effective, cli_override=0) == 1
+
+
+def test_resolve_max_parallel_policy_flag_wins_over_default() -> None:
+    from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
+
+    effective = _compose_policy("pyforge-marshal")
+    assert (
+        resolve_max_parallel(effective, policy_flags={"max_parallel": 4}) == 4
+    )
+
+
+def test_resolve_max_parallel_defaults_from_effective_policy() -> None:
+    from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
+
+    effective = _compose_policy("pyforge-marshal")
+    assert resolve_max_parallel(effective) == int(
+        effective.seed_view()["max_parallel"].value
+    )
