@@ -448,6 +448,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 21.10 -- sources/capability_effect.py. Reads every station's
     # SPEC.md CAP ``verified:`` lines (CAP-2); caller reach (CAP-1) lands in
     # Story 21.9; ``detectors`` / ``__main__`` dispatch wiring in 21.11.
+    SourceRegistration(
+        source=Source.STATUS_BODY_CONSISTENCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 21.12 -- sources/status_body_consistency.py. CAP-1
+    # progress-phrase pass; CAP-2..4 land in 21.13–21.15; ``detectors`` /
+    # ``__main__`` dispatch wiring in 21.16.
 )
 
 
