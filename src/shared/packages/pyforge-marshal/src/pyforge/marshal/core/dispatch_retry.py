@@ -94,3 +94,42 @@ def prune_blocked_stories_merged_on_main(
         for story, reason in blocked.items()
         if story not in merged_story_keys
     }
+
+
+def should_dispatch_retry_escalate(
+    prior_failed_attempts: int, max_dev_attempts: int
+) -> bool:
+    """Pure: ``True`` when prior dispatch failures reached the dev ceiling.
+
+    Mirrors ``core.supervise.evaluate_retry_escalation``'s
+    ``attempt >= max_dev_attempts`` axis for the dispatch retry path (Story
+    33.6, spec-adaptive-model-tiering CAP-2 on factory dispatch).
+    """
+    if (
+        not isinstance(prior_failed_attempts, int)
+        or isinstance(prior_failed_attempts, bool)
+        or not isinstance(max_dev_attempts, int)
+        or isinstance(max_dev_attempts, bool)
+    ):
+        return False
+    if max_dev_attempts < 1:
+        return False
+    return prior_failed_attempts >= max_dev_attempts
+
+
+def apply_dispatch_retry_floor_raise(
+    from_model: str | None, review_model: str | None
+) -> tuple[str | None, bool, str | None, str | None]:
+    """Floor-raise a dispatch launch model from dev to review tier.
+
+    Returns ``(model, escalated, from_model, to_model)`` -- detail fields
+    are populated only when ``escalated`` is ``True``, matching spin resume's
+    journal shape (Story 3.12 / Story 33.6).
+    """
+    if not isinstance(from_model, str) or not from_model:
+        return from_model, False, None, None
+    if not isinstance(review_model, str) or not review_model:
+        return from_model, False, None, None
+    if from_model == review_model:
+        return from_model, False, None, None
+    return review_model, True, from_model, review_model

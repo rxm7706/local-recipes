@@ -7,7 +7,7 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-difficulty: ''
+difficulty: 'medium'
 baseline_revision: 'e410666e276108b0d3cc05955687511bd49e18c4'
 final_revision: 'd630deb2f4017ab331e70c40c8aa0c39c8e7da77'
 ---

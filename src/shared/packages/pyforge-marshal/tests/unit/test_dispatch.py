@@ -1414,3 +1414,156 @@ def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:
             tmp_path / "repo",
             tmp_path / "wt",
         )
+
+
+# --- Story 33.6: dispatch retry floor-raise (spec-adaptive-model-tiering CAP-2) ---
+
+
+def test_dispatch_escalates_model_after_prior_failed_attempts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Prior failed runs >= max_dev_attempts floor-raise dev -> review on launch."""
+    import json
+
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.cli.dispatch import _count_prior_failed_dispatch_attempts
+    from pyforge.marshal.core import policy
+    from pyforge.marshal.core.identity import normalize, render_feed_key
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
+
+    def _seed_failed_run(run_id: str) -> None:
+        run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        intent = prepare_for_write(
+            build_entry(
+                id=JournalEntryId("w", 0),
+                ts="2026-09-01T00:00:00.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+                phase=Phase.INTENT,
+                payload={"story_key": feed},
+            )
+        ).line
+        completion_intent = prepare_for_write(
+            build_entry(
+                id=JournalEntryId("w", 2),
+                ts="2026-09-01T00:01:00.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+                phase=Phase.INTENT,
+                payload={"verdict": DispatchSessionVerdict.FAILED.value},
+            )
+        ).line
+        completion_outcome = prepare_for_write(
+            build_entry(
+                id=JournalEntryId("w", 3),
+                ts="2026-09-01T00:01:01.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 2),
+                payload={"verdict": DispatchSessionVerdict.FAILED.value, "ok": True},
+            )
+        ).line
+        (run_dir / "journal.jsonl").write_text(
+            intent + "\n" + completion_intent + "\n" + completion_outcome + "\n",
+            encoding="utf-8",
+        )
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "33-6-adaptive-tiering"
+    feed = render_feed_key(normalize(story))
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+            }
+        },
+        flags={"max_dev_attempts": 2},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+
+    for run_id in ("run-fail-1", "run-fail-2"):
+        _seed_failed_run(run_id)
+
+    class JournalFs(FakeFs):
+        def read_text(self, path: Path) -> str | None:
+            try:
+                return path.read_text(encoding="utf-8")
+            except OSError:
+                return self.files.get(path)
+
+    fs = JournalFs()
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert _count_prior_failed_dispatch_attempts(fs, tmp_path, slug, feed) == 2
+    assert attempt.data.get("escalated") is True
+    assert attempt.data.get("from_model") == "composer-2.5-fast"
+    assert attempt.data.get("to_model") == "composer-2.5"
+    assert attempt.data.get("model") == "composer-2.5"
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    intent = json.loads(launch_lines[0])
+    assert intent["payload"]["escalated"] is True
+    assert intent["payload"]["from_model"] == "composer-2.5-fast"
+    assert intent["payload"]["to_model"] == "composer-2.5"
+    assert attempt.data.get("session_pid") == 4242
+
+
+def test_dispatch_does_not_escalate_on_first_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 33.6: zero prior failures keeps the base dev model."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "33-6-first-attempt"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+            }
+        },
+        flags={"max_dev_attempts": 2},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert "escalated" not in attempt.data
+
