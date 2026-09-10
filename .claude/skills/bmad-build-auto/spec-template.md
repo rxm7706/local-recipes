@@ -8,6 +8,7 @@ followup_review_recommended: false # set by step-04 on status: done; step-01 REA
 context: [] # optional: `{project-root}/`-prefixed paths to project-wide standards/docs the implementation agent should load. Keep short — only what isn't already distilled into the spec body.
 warnings: [] # optional: machine-readable warnings for orchestration, e.g. oversized, multiple-goals
 deferred: [] # append-only machine-readable deferred review findings; each item carries summary/evidence and optional location/severity
+declared_low_risk: false # Story 33.5: when true AND diff is small (<=3 files), gate review_depth tier is "low"
 ---
 
 <!-- Aim for 900–1600 tokens. If larger, add `oversized` to frontmatter `warnings` and continue.

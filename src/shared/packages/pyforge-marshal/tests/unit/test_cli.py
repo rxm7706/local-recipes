@@ -2612,6 +2612,105 @@ def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(
     assert exit_code == 0
 
 
+# --- Story 33.5: `gate evaluate --story` classifies review depth -----------
+
+
+def _write_tracked_spec_with_low_risk(
+    tmp_path, slug, key, *, declared_low_risk: bool, commands=()
+):
+    from pyforge.marshal.core.identity import render_filename_slug
+
+    specs_dir = (
+        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    commands_block = "\n".join(f"- `{command}` -- expected: ok." for command in commands)
+    low_risk_line = f"declared_low_risk: {'true' if declared_low_risk else 'false'}\n"
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
+        "---\ntitle: 'x'\n"
+        f"{low_risk_line}"
+        "---\n\n<intent-contract>\n\n"
+        f"## Verification\n\n**Commands:**\n{commands_block}\n",
+        encoding="utf-8",
+    )
+
+
+def test_gate_evaluate_story_low_risk_small_diff_resolves_fewer_review_cycles(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["true"]\nmax_review_cycles = 3\n',
+    )
+    _write_tracked_spec_with_low_risk(
+        tmp_path, "acme", StoryKey(epic=33, seq=5), declared_low_risk=True, commands=("true",)
+    )
+    args = _story_args(story="33.5")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("a.py", "b.py"))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    depth = payload["data"]["review_depth"]
+    assert depth["checked"] is True
+    assert depth["tier"] == "low"
+    assert depth["default_max_review_cycles"] == 3
+    assert depth["max_review_cycles"] == 1
+    assert depth["max_review_cycles"] < depth["default_max_review_cycles"]
+    assert exit_code == 0
+
+
+def test_gate_evaluate_story_standard_tier_keeps_default_review_cycles(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["true"]\nmax_review_cycles = 3\n',
+    )
+    _write_tracked_spec_with_low_risk(
+        tmp_path,
+        "acme",
+        StoryKey(epic=33, seq=5),
+        declared_low_risk=False,
+        commands=("true",),
+    )
+    args = _story_args(story="33.5")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=tuple(f"f{i}.py" for i in range(10)))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    depth = payload["data"]["review_depth"]
+    assert depth["checked"] is True
+    assert depth["tier"] == "standard"
+    assert depth["max_review_cycles"] == depth["default_max_review_cycles"] == 3
+    assert exit_code == 0
+
+
+def test_gate_evaluate_without_story_omits_review_depth(tmp_path, capsys, monkeypatch):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    args = _story_args(story=None)
+
+    gate_module.run_evaluate(args, vcs=_FakeVcs())
+    payload = json.loads(capsys.readouterr().out)
+    assert "review_depth" not in payload["data"]
+
+
 # --- Story 2.1 follow-up review pass -- regression guards ------------------
 
 

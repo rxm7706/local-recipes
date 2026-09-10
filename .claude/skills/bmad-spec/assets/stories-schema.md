@@ -13,6 +13,12 @@
 | `done_checkpoint` | boolean | no (default `false`) | Caller-only, like `spec_checkpoint`. When true, dispatch pauses after this story completes, before anything further runs. |
 | `invoke_dev_with` | string | no (default `""`) | Free text appended verbatim to the prompt that dispatches this story; the implementing dev skill reads it as part of its prompt, and nothing else interprets it. If the text needs structure, put it inside the string. Which dev skill to invoke is the caller's configuration, never data in this file. |
 
+## Story markdown frontmatter (when materialized)
+
+When a story is dispatched as a tracked markdown spec (via `bmad-build-auto`), its
+frontmatter may include `declared_low_risk: true|false` (default `false`). Marshal's
+`marshal gate evaluate --story` reads this key to classify review depth (Story 33.5).
+
 ## Validity rules
 
 1. Every entry parses with all required fields; ids unique.
