@@ -151,6 +151,24 @@ def wire_port_for_worktree(worktree: Path) -> int:
     digest = hashlib.sha256(str(worktree.resolve()).encode()).hexdigest()
     return _WIRE_PORT_BASE + (int(digest[:8], 16) % _WIRE_PORT_SPAN)
 
+
+def substitute_wire_port(
+    argv: Sequence[str], *, worktree: Path, wire_port: int | None = None
+) -> tuple[str, ...]:
+    """Replace the ``{wire_port}`` placeholder in ``argv`` with a real port
+    number (reusing Story 33.8's deterministic per-worktree derivation).
+
+    ``render_dispatch_argv`` substitutes this token as one step of its own
+    launch-token pass, but the bmad-loop wire profile overlay (Story 33.3,
+    ``adapters/harness_bmadloop.py``) writes a wrapper's argv into a static
+    TOML file that bmad-loop itself launches from -- bmad-loop has no
+    notion of marshal's own ``{wire_port}`` token, so marshal must resolve
+    it before handing the argv over. Live bug found 2026-09-10: without
+    this call, headroom received the literal string ``'{wire_port}'`` and
+    refused every launch with ``Error: Invalid value for '--port'``."""
+    port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
+    return tuple(token.replace(_WIRE_PORT_TOKEN, str(port)) for token in argv)
+
 #: A profile name is a filename stem and a policy-preference entry -- the
 #: same conservative shape a project slug takes, minus dots (a profile
 #: named ``..`` has no business existing).

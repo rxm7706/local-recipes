@@ -30,6 +30,7 @@ from pyforge.marshal.core.harness_profile import (
     parse_profile,
     render_dispatch_argv,
     resolve_wire_wrap,
+    substitute_wire_port,
     translate_model,
     wire_port_for_worktree,
 )
@@ -814,6 +815,32 @@ def test_wire_port_for_worktree_is_in_range_and_distinct_per_worktree() -> None:
     assert 8800 <= port_left <= 9799
     assert 8800 <= port_right <= 9799
     assert port_left != port_right
+
+
+def test_substitute_wire_port_replaces_the_literal_token(tmp_path: Path) -> None:
+    """Regression (live bug, 2026-09-10): the bmad-loop wire profile overlay
+    (Story 33.3, ``adapters/harness_bmadloop.py``) needs this exact
+    substitution outside ``render_dispatch_argv``'s own launch-token pass --
+    bmad-loop has no notion of ``{wire_port}``, so an unsubstituted argv
+    reaches headroom as the literal string, which refuses to launch."""
+    worktree = tmp_path / "loop-home"
+    argv = ("wrap", "claude", "--code-memory", "none", "--port", "{wire_port}", "--")
+
+    substituted = substitute_wire_port(argv, worktree=worktree)
+
+    assert "{wire_port}" not in substituted
+    port = wire_port_for_worktree(worktree)
+    assert str(port) in substituted
+
+
+def test_substitute_wire_port_honors_an_explicit_port(tmp_path: Path) -> None:
+    worktree = tmp_path / "loop-home"
+
+    substituted = substitute_wire_port(
+        ("--port", "{wire_port}"), worktree=worktree, wire_port=9001
+    )
+
+    assert substituted == ("--port", "9001")
 
 
 def test_render_dispatch_argv_substitutes_wire_port_in_wrapper_prefix(
