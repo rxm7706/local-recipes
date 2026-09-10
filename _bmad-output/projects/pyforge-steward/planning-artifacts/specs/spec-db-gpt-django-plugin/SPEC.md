@@ -2,7 +2,7 @@
 spec: db-gpt-django-plugin
 status: absorbed
 owner-dream: docs/dreams/db-gpt-django-plugin.md
-absorbed-into: spec-python-agent-platform
+absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
   - ../../../../../../docs/dreams/db-gpt-django-plugin.md

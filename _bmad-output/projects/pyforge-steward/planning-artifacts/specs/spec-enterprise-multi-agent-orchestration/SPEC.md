@@ -2,7 +2,7 @@
 spec: enterprise-multi-agent-orchestration
 status: absorbed
 owner-dream: docs/dreams/enterprise-multi-agent-orchestration.md
-absorbed-into: spec-python-agent-platform
+absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
   - ../../../../../../docs/dreams/enterprise-multi-agent-orchestration.md
