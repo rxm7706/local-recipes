@@ -53,7 +53,6 @@ spec:
               path: /health
               port: http
             periodSeconds: 10
-          {{- with .Values.mcpHost.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- $_ := required "mcpHost.resources.limits.memory is required" .Values.mcpHost.resources.limits.memory }}
+            {{- toYaml .Values.mcpHost.resources | nindent 12 }}

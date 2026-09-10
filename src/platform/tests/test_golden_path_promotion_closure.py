@@ -81,7 +81,7 @@ def test_promotion_scan_matches_shipped_closure_oracle(tmp_path: Path) -> None:
 
     env = os.environ.copy()
     env.pop("WARDEN_TARGET", None)
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603 -- fixed argv, no shell, repo script under test
         _promotion_scan_command(workspace),
         cwd=_REPO_ROOT,
         env=env,
@@ -97,8 +97,8 @@ def test_promotion_scan_matches_shipped_closure_oracle(tmp_path: Path) -> None:
     assert report["inventory_count"] == len(expected)
     assert report["resolved_scan_set"] == [{"kind": "pixi.lock", "path": "pixi.lock"}]
 
-    extractor_check = subprocess.run(
-        [
+    extractor_check = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
+        [  # noqa: S607 -- resolved via PATH like every other pixi invocation in this suite
             "pixi",
             "run",
             "-e",

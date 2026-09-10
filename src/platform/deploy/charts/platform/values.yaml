@@ -10,6 +10,14 @@
 # Web (gunicorn) replicas. The worker has its own count below.
 replicaCount: 1
 
+# Story 48.2 / R-18: web is memory-bound (Langflow in-process RSS ~1.5–3 GiB;
+# Vizro/BSL dashboard shares this pod). --preload shares bytecode across workers.
+web:
+  workers: 2
+  preload: true
+  # Explicit anyio thread-pool ceiling (spec-asgi-multiplexer-monolith residue).
+  anyioMaxThreads: 40
+
 # The Story 10.3 platform image. Fully parameterized so the reference is
 # registry-relocatable (CAP-6 air-gap: point registry at an internal
 # mirror; no default upstream registry is assumed).
@@ -29,10 +37,15 @@ image:
 # {name: <secret>} entries, rendered into EVERY pod spec.
 imagePullSecrets: []
 
-# Web container resources. Empty by default (no speculative requests);
-# the seam exists because quota'd/hardened namespaces (LimitRange /
-# ResourceQuota) reject or throttle pods without explicit resources.
-resources: {}
+# Web container resources (Story 48.2 / R-18). Memory-bound: Langflow +
+# Vizro/BSL in one pod; sized for --preload with two uvicorn workers.
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
 
 # AD-12 / canopy AD-19 (Story 26.2): the chart NEVER renders a Secret and
 # carries no credential defaults — values hold Secret *names and keys*,
@@ -105,8 +118,14 @@ worker:
   # legitimately run 300s; 310 leaves it that plus shutdown slack before
   # the kubelet SIGKILLs mid-task.
   terminationGracePeriodSeconds: 310
-  # Same empty-default seam rationale as the top-level `resources`.
-  resources: {}
+  # Story 48.2 / R-18: general pool is CPU-bound (station tasks, not builds).
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 4Gi
   # The builds pool (Story 42.4, red-team T-6): a second worker Deployment
   # consuming ONLY `builds`, with an hours-scale hard limit passed as
   # `--time-limit` AND exported as CELERY_BUILDS_TASK_TIME_LIMIT on every
@@ -123,8 +142,14 @@ worker:
     softTimeLimitSeconds: 14100
     # Shutdown slack added to the limit for the drain budget.
     drainSlackSeconds: 60
-    # Same empty-default seam rationale as the top-level `resources`.
-    resources: {}
+    # Story 48.2 / R-18: builds pool is the heaviest CPU consumer.
+    resources:
+      requests:
+        cpu: "2"
+        memory: 2Gi
+      limits:
+        cpu: "4"
+        memory: 8Gi
 
 # Celery beat (Story 42.4): the one scheduler process that fires
 # CELERY_BEAT_SCHEDULE (run_state retention from 42.2, the worker-lost
@@ -169,7 +194,14 @@ migrate:
 # hook-weight -1, same platform image). No second image, no initContainer.
 liquibase:
   backoffLimit: 6
-  resources: {}
+  # Story 48.2 / R-18: Liquibase JVM spike during hook Job.
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
 
 # PostgreSQL (official image, StatefulSet, 1 replica -- AD-1).
 postgres:
@@ -277,14 +309,22 @@ sidecar:
   persistence:
     size: 1Gi
     storageClassName: ""
-  # Optional LLM provider passthrough (bare keys mirror compose.yml's
-  # dbgpt service — unset keys fall through to the image's TOML defaults).
+  # LLM inference is EXTERNAL — Ollama, Tachyon, vLLM, or another HTTP
+  # provider reachable at sidecar.llm.apiBase. The platform image does not
+  # ship transformers, diffusers, or llama.cpp (red-team S-7).
   llm:
     modelName: ""
     modelProvider: ""
     apiBase: ""
     apiKeySecretKey: ""
-  resources: {}
+  # Story 48.2 / R-18: DB-GPT sidecar (SQLite metadata + REST face).
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
 
 # MCP-host sidecar (spec-mcp-era-isolation slice 1 / CAP-4). mcp 2.x
 # official SDK faces. Web/worker proxy POST /stations/<name>/mcp here.
@@ -296,7 +336,37 @@ mcpHost:
     digest: ""
     tag: ""
     pullPolicy: IfNotPresent
-  resources: {}
+  # Story 48.2 / R-18: MCP-host (lightweight uvicorn proxy).
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Story 48.2 / R-18: HPA on web and general worker (not worker-builds).
+autoscaling:
+  web:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  worker:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+# Story 48.2 / R-18: voluntary-disruption guard for the two scalable tiers.
+podDisruptionBudget:
+  web:
+    enabled: true
+    minAvailable: 1
+  worker:
+    enabled: true
+    minAvailable: 1
 
 # Story 26.4 / canopy AD-11: FILE flags. The JSON tree is NOT stored here —
 # pass --set-file flags.tree=src/platform/config/flags.json (the only tree).

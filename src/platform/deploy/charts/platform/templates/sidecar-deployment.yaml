@@ -83,10 +83,9 @@ spec:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
-          {{- with .Values.sidecar.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- $_ := required "sidecar.resources.limits.memory is required" .Values.sidecar.resources.limits.memory }}
+            {{- toYaml .Values.sidecar.resources | nindent 12 }}
           volumeMounts:
             - name: sqlite-data
               mountPath: {{ .Values.sidecar.metadataMountPath | quote }}
