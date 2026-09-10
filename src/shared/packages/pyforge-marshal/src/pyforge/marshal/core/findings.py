@@ -1492,6 +1492,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # is reported free rather than `unknown`, and the unresolvable run is
         # named rather than silently dropped.
         "MRS-STATUS-012",
+        # Story 5.11 (FR-196): a harness-native terminal run Marshal never
+        # launched -- WARN naming the gap, never a silent healthy state.
+        "MRS-STATUS-013",
         "MRS-DEPLOY-024",
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",

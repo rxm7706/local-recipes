@@ -34,6 +34,7 @@ from pyforge.marshal.core.journal import (
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.ports.harness import (
     DeferredStory,
+    HarnessRunTerminalVerdict,
     RunStatusSnapshot,
     TaskPhaseSnapshot,
 )
@@ -1852,12 +1853,15 @@ class _FakeHarness:
         self,
         snapshots: dict[tuple[str, str], RunStatusSnapshot | None] | None = None,
         *,
+        terminal_verdicts: dict[tuple[str, str], HarnessRunTerminalVerdict] | None = None,
         ledger_statuses: tuple[tuple[str, str], ...] = (),
         ledger_raises: bool = False,
         ledger_error_message: str = "sprint status file not found",
     ) -> None:
         self.snapshots = snapshots or {}
+        self.terminal_verdicts = terminal_verdicts or {}
         self.calls: list[tuple[str, str]] = []
+        self.terminal_verdict_calls: list[tuple[str, str]] = []
         # Story 5.4: `_reconcile_ledger`'s `HarnessPort.ledger_story_statuses`
         # call -- `ledger_raises` mirrors `sprintstatus.load`'s own
         # `SprintStatusError` (missing file, invalid YAML, ...), always
@@ -1870,6 +1874,10 @@ class _FakeHarness:
     def run_status_snapshot(self, project, run_id):
         self.calls.append((str(project), run_id))
         return self.snapshots.get((str(project), run_id))
+
+    def run_terminal_verdict(self, project, run_id):
+        self.terminal_verdict_calls.append((str(project), run_id))
+        return self.terminal_verdicts.get((str(project), run_id), "unknown")
 
     def ledger_story_statuses(self, path):
         self.ledger_calls.append(path)
@@ -6057,3 +6065,166 @@ class TestRetiredRunState:
             slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
         )
         assert status.is_run_live(facts) is True
+
+
+class TestHarnessNativeTerminalRun:
+    """Story 5.11 (FR-196): a bmad-loop-direct run reads as finished, not
+    `unknown`, when Marshal's journal never recorded a launch pid."""
+
+    def test_harness_native_terminal_reports_stopped_with_warn(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            harness_native_terminal=True,
+            finished=True,
+            supervisor_alive=False,
+            engine_alive=False,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "stopped"
+        assert finding is not None
+        assert finding.code == "MRS-STATUS-013"
+        assert finding.severity is Severity.WARN
+        assert "marshal launch pid" in finding.message
+
+    def test_harness_native_terminal_is_not_confused_with_unreadable_journal(self):
+        unreadable, _ = status.build_fleet_row(
+            status.FleetHomeFacts(
+                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
+            )
+        )
+        native, _ = status.build_fleet_row(
+            status.FleetHomeFacts(
+                slug="acme",
+                branch="loop/acme",
+                has_run=True,
+                harness_native_terminal=True,
+                finished=True,
+            )
+        )
+        assert unreadable["state"] == "unknown"
+        assert native["state"] == "stopped"
+
+    def test_finished_harness_native_terminal_is_not_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            harness_native_terminal=True,
+            finished=True,
+        )
+        assert status.is_run_live(facts) is False
+
+    def test_harness_native_terminal_end_to_end(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Marshal journal readable but launch-pid-less; bmad-loop state says
+        finished -- row must be `stopped` with MRS-STATUS-013, not `unknown`."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_budget_usage_line("acme-run1", cost_estimate=99)],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        harness_run_id = "20260820-140536-988f"
+        bmad_run_dir = home / ".bmad-loop" / "runs" / harness_run_id
+        bmad_run_dir.mkdir(parents=True)
+        (bmad_run_dir / "state.json").write_text(
+            json.dumps(
+                {
+                    "run_id": harness_run_id,
+                    "project": str(home),
+                    "started_at": "2026-08-20T14:05:36Z",
+                    "paused_stage": None,
+                    "paused_story_key": None,
+                    "paused_reason": None,
+                    "finished": True,
+                    "tasks": {},
+                }
+            ),
+            encoding="utf-8",
+        )
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            terminal_verdicts={(str(home), harness_run_id): "terminal"},
+            snapshots={
+                (str(home), harness_run_id): _snapshot(finished=True),
+            },
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "stopped"
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-013" in codes
+        assert "MRS-STATUS-002" not in codes
+        assert harness.terminal_verdict_calls == [(str(home), harness_run_id)]
+        assert exit_code == 0
+
+    def test_non_terminal_verdict_stays_unknown(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_budget_usage_line("acme-run1", cost_estimate=99)],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        harness_run_id = "20260820-140536-988f"
+        bmad_run_dir = home / ".bmad-loop" / "runs" / harness_run_id
+        bmad_run_dir.mkdir(parents=True)
+        (bmad_run_dir / "state.json").write_text("{}", encoding="utf-8")
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            terminal_verdicts={(str(home), harness_run_id): "non_terminal"},
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "unknown"
+        assert "MRS-STATUS-002" in [f["code"] for f in payload["findings"]]
+        assert status.is_run_live(
+            status.FleetHomeFacts(
+                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
+            )
+        )
+        assert exit_code == 0
+
+
+class TestLatestBmadLoopRunId:
+    def test_returns_none_when_runs_dir_missing(self, tmp_path):
+        home = tmp_path / "home"
+        home.mkdir()
+        assert status_cli._latest_bmad_loop_run_id(home) is None
+
+    def test_skips_retired_and_dirs_without_state(self, tmp_path):
+        home = tmp_path / "home"
+        runs = home / ".bmad-loop" / "runs"
+        (runs / ".retired-old").mkdir(parents=True)
+        (runs / ".retired-old" / "state.json").write_text("{}", encoding="utf-8")
+        (runs / "20260820-120000-aaaa").mkdir()
+        newer = runs / "20260820-140536-988f"
+        newer.mkdir()
+        (newer / "state.json").write_text("{}", encoding="utf-8")
+        assert status_cli._latest_bmad_loop_run_id(home) == "20260820-140536-988f"

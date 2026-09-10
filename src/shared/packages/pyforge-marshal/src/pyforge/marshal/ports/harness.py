@@ -208,6 +208,7 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 EngineLiveness = Literal["alive", "dead", "unknown"]
+HarnessRunTerminalVerdict = Literal["terminal", "non_terminal", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -780,6 +781,20 @@ class HarnessPort(Protocol):
         unreadable run directory degrades to ``"unknown"``; a recognized list
         status maps to ``"alive"``/``"dead"``/``"unknown"`` honestly, with
         ``"unknown"`` never coerced to either verdict."""
+        ...
+
+    def run_terminal_verdict(self, project: Path, run_id: str) -> HarnessRunTerminalVerdict:
+        """Whether a harness run Marshal did NOT launch (no recoverable launch
+        pid in Marshal's own journal) has reached a terminal state (Story 5.11,
+        FR-196/AD-5) -- ``run_id`` is bmad-loop's own self-minted run id under
+        ``<project>/.bmad-loop/runs/<run_id>/``, the SAME one
+        ``run_status_snapshot`` keys on, never Marshal's Tier-3 journal
+        ``run_id``. Reads ONLY bmad-loop's own ``state.json`` via the same
+        ``load_state`` seam ``run_status_snapshot`` uses -- never Marshal's
+        ``run-launch``/``run-resume`` vocabulary. Never raises: any read/parse
+        failure degrades to ``"unknown"``; a readable ``state.json`` whose own
+        ``finished`` flag is ``True`` reports ``"terminal"``; a readable
+        ``state.json`` that is not finished reports ``"non_terminal"``."""
         ...
 
     def resolution_reference(
