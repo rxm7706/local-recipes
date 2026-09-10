@@ -222,6 +222,9 @@ they are why this is not merely a UI project.
     a portal uses to join the host.
   - **success:** Two portals render identical chrome from that one package with zero duplicated
     template or static files, proven by a test that fails if either portal ships its own copy.
+  - **verified:** chrome dedup + portal static/template scan live in
+    `src/platform/tests/test_django_pyforge_chrome.py:104-149`; all-eight-portal byte parity not
+    deployed-exercised.
   - *(Correct-course 2026-08-24, operating-model Q3. The registration seam also carries owner
     station slug, backup, `work_class`, and promotion date so Guildhall can refuse to tile 01/02
     work. The SLA body is not a CAP-1 field — it stays in the 03 BMAD spec until Doctor or
@@ -239,6 +242,9 @@ they are why this is not merely a UI project.
     (`PyForge Lane 1 — published from PostgreSQL.`); unauthenticated `GET /cms/` **302**
     to `/accounts/oidc/oidc/login/?next=/cms/`. Seed:
     `platformapp.front_door.lane1_seed.seed_lane1_homepage` on `post_migrate`.
+  - **verified:** Lane-1 ORM publish + `/cms/`→OIDC + `generate.py` absence live in
+    `src/platform/tests/test_front_door_publish.py:114-158` and
+    `test_console_parity_homes.py:243-259`; CRC `/` 200 and full parity surfaces documentary only.
 
 - **CAP-3 — Eight portals, one session.**
   - **intent:** Every station is reachable as a Lane 2 application under the one host, so an
@@ -246,6 +252,9 @@ they are why this is not merely a UI project.
     **reusable Django app** in its station's own distribution, not an app in the host project.
   - **success:** All eight portal URLs resolve behind a single session, and adding or removing a
     portal changes no host code outside that portal's own registration.
+  - **verified:** eight `/stations/<name>/` GETs on one session + host urlconf free of station
+    roster live in `src/platform/tests/test_station_portal_shells.py:138-168`; portal add/remove
+    and full OIDC session not runtime-exercised.
   - *(Correct-course 2026-08-24, operating-model Q7. Lane 2 contract is HTMX. DRF JSON:API is
     not a portal face — it stays on the Atlas / enterprise-data-models kinship. Compute JSON
     is FastAPI via CAP-6's client.)*
@@ -261,6 +270,10 @@ they are why this is not merely a UI project.
     long operations surviving connection loss. **Not** a `services/` process-per-station topology.
   - **success:** An agent completes a multi-minute station operation across a simulated ingress
     disconnect and still retrieves the result.
+  - **verified:** atlas+warden `start`/`get` + handle TTL live in
+    `src/platform/tests/test_start_get_survives_disconnect.py:82-281`; 6/8 stations lack
+    `start`/`get` (`django-atlas/.../mcp_asgi.py:28`, `django-warden/.../mcp_asgi.py:68` only);
+    ingress-disconnect + multi-minute success criterion unexercised.
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
     capability to Tasks would block it on upstream. See the `start`/`get` constraint below.
@@ -272,12 +285,19 @@ they are why this is not merely a UI project.
     existing station CLIs without reimplementing their logic.
   - **success:** A generated parity matrix shows every station verb reachable through both the
     unified entry point and its own binary, and the build fails when the two diverge.
+  - **verified:** CI parity matrix over all station CLIs live in
+    `src/shared/packages/pyforge-core/tests/meta/test_cli_parity_matrix.py:1-170`; per-verb
+    runtime dispatch outside matrix not exercised.
 
 - **CAP-6 — One client, carrying identity.**
   - **intent:** Portals reach their station services through a shared client that carries the end
     user's identity as a signed, audience-bound assertion rather than a trusted header.
   - **success:** A service can independently verify which end user a portal call was made on behalf
     of, and no portal constructs a raw HTTP request to a service.
+  - **verified:** RS256 assertion + `StationHttpClient` + default in-process port live in
+    `src/platform/tests/test_django_pyforge_assertion.py:27+`, `test_station_api_seam.py:94-120`,
+    `test_station_port_no_loopback.py:31-60`; full eight-portal production caller coverage not
+    proven.
 
   - *(Correct-course 2026-09-02, red-team X-1 / R-1 → Story 40.1: the host mint MUST
     verify the presented IdP bearer — signature via the configured JWKS, `iss`, `aud`,
@@ -289,12 +309,19 @@ they are why this is not merely a UI project.
     pattern rather than a second one.
   - **success:** Two users with different roles request the same board URL and provably receive
     different row sets.
+  - **verified:** role-sliced JSON board live in
+    `src/platform/tests/test_host_board_row_isolation.py:71-87`; fixture `_MASTER_ROWS` at
+    `src/shared/packages/django-atlas/src/django_atlas_portal/board.py:28-36`; real Vizro/BSL
+    host mount explicitly absent (`test_host_board_row_isolation.py:213-229`).
 
 - **CAP-8 — Stations can tell each other things.**
   - **intent:** A durable event backbone carries structured events between stations, with
     consumer groups, poison-message quarantine, and a ceiling on cascade depth.
   - **success:** A poisoned event lands in the dead-letter queue instead of retrying forever, and a
     cyclic publish chain halts at the declared depth rather than running away.
+  - **verified:** DLQ + loop-depth=8 logic live in
+    `src/platform/tests/test_cloudevents_redis_broker.py:283-327` and
+    `test_cascades_halt_adapters_validate.py:46+`; deployed broker poison path fixture-only.
   - *(Correct-course 2026-08-24, operating-model Q4. Envelope fields for work
     identity are `spec_id`, git sha, SBOM purl, and optional work-item id. Jira
     is a steward-profile adapter, not a required CloudEvents field. Never:
@@ -310,8 +337,11 @@ they are why this is not merely a UI project.
     **Live proof (CRC 2026-08-26, not a new CAP):** `platform_app` exists; `:2` EXECUTED;
     `/api/health` **200** as that role; `CREATE` on `public` refused. Schema `liquibase` and
     contrib/auth/Wagtail `:15`–`:19` are in the changelog. Isolated `mfa` sqlmigrate stays
-    fake. `/ht/` 200 is steward **12-7**. See
+    fake.     `/ht/` 200 is steward **12-7**. See
     `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
+  - **verified:** PostgreSQL CREATE/ALTER/DROP refusal + sqlmigrate extraction gate live in
+    `src/platform/tests/policy/test_liquibase_ddl_governance.py:197-224` and
+    `test_sqlmigrate_extraction.py:38-49`; CRC live DDL proof (`:310-314` above) documentary only.
 
 - **CAP-10 — Failure is contained.**
   - **intent:** A failing dependency degrades its caller instead of cascading, concurrent writers
@@ -320,11 +350,18 @@ they are why this is not merely a UI project.
   - **success:** Each of the four invariants in `resilience-invariants.md` has a test that fails
     with the invariant absent and passes with it present — demonstrated individually, not as a
     suite.
+  - **verified:** four invariant unit/policy tests pass individually
+    (`test_circuits_trip_on_async_too.py:51`, `pyforge-atlas/tests/unit/test_duckdb_boundary.py:133`,
+    `test_validation_errors_render_inline.py:36+`, `test_restarts_reconcile.py:47+`); circuit
+    wrapper + mason boot reconcile have zero production callers (test-only bar).
 
 - **CAP-11 — Queue and cache cannot evict each other.**
   - **intent:** The task broker and the cache are separate resources with separate eviction
     policies, and the web and worker pools scale independently.
   - **success:** Filling the cache to its eviction limit provably loses no queued task.
+  - **verified:** Helm redis split + eviction policies + HPA rendered live in
+    `src/platform/tests/test_chart_invariants.py:747-2043`; cache-fill→queue-retention success
+    clause unexercised.
 
   - *(Correct-course 2026-09-02, red-team S-1 / A-3 / R-2 → Story 40.2: the broker is
     durable (AOF on a PVC) and bounded (`maxmemory` below its memory limit, `noeviction`).
@@ -337,18 +374,29 @@ they are why this is not merely a UI project.
     environment.
   - **success:** Revoking a role at the IdP removes portal access on the user's next request, and
     no long-lived secret value appears in any pod specification.
+  - **verified:** next-request revoke live only via test hooks
+    (`src/platform/tests/test_idp_revoke_next_request.py:38-99`); production `IDP_USERINFO=None` at
+    `src/platform/config/settings/base.py:214-215`; pod secretKeyRef policy live in
+    `test_chart_invariants.py:566-575`.
 
 - **CAP-13 — Behaviour flips without a redeploy.**
   - **intent:** Django, service and CLI surfaces evaluate feature flags through one vendor-neutral
     interface, entirely offline.
   - **success:** One flag change alters behaviour across all three surfaces with no egress and no
     redeploy.
+  - **verified:** Django+MCP+CLI flag parity + egress block live in
+    `src/platform/tests/test_openfeature_file_flags.py:210-254`; deployed no-redeploy flip not
+    cluster-exercised.
 
 - **CAP-14 — Scribe's graph outlives one file.**
   - **intent:** The knowledge graph gains a durable, concurrent-safe backing store behind its
     existing port, keeping a local-development path, and gains semantic recall.
   - **success:** The same graph operations pass against both drivers, and semantic recall returns
     a relevant result that lexical token-overlap recall does not.
+  - **verified:** GraphStore ops on flatfile+postgres + semantic>lexical live in
+    `pyforge-scribe/tests/unit/test_graph_store_operations.py:1-138` and
+    `test_recall_semantic.py:54-68`; synonym-map semantic at `embeddings.py:24-32` and
+    single-plugin selection at `graph_store_plugins.py:47-53`; dual-write unexercised.
 
 - **CAP-15 — Every station teaches an agent its own work.**
   - **intent:** Each **03** station capability carries an agent-loadable domain skill encoding how
@@ -356,6 +404,9 @@ they are why this is not merely a UI project.
     work may stop at a spec + script or spec + skill and does not mint a station skill.
   - **success:** An agent asked to perform a station's core **03** task loads that station's skill
     and follows it, demonstrated for a station that has no skill today.
+  - **verified:** 40/40 five-tier structural gate live in
+    `pyforge-steward/tests/meta/test_five_tier_check.py:90-100`; agent-follows-skill end-to-end
+    not runtime-exercised.
   - *(Correct-course 2026-08-24, operating-model Q2. Five-tier completeness is the 03 shape, not
     a mandate to build skill+persona+portal for every task.)*
   - *(Realization 2026-08-26, Epic 37.1. Roster declared complete — 40/40. Mason's
@@ -367,6 +418,9 @@ they are why this is not merely a UI project.
     work does not mint a persona.
   - **success:** A persona completes a station **03** task end to end using only CAP-5's grammar and
     CAP-4's service face, with no direct filesystem or ad-hoc HTTP access in the transcript.
+  - **verified:** CAP-16 persona/skill contract meta-tests live across stations (e.g.
+    `pyforge-warden/tests/meta/test_station_persona.py:1`); full E2E persona transcript via
+    grammar+MCP not exercised.
   - *(Correct-course 2026-08-24, operating-model Q2. Same scoping as CAP-15.)*
   - *(Correct-course 2026-08-24, operating-model Q6. Path B is this persona + the Agent Canopy.
     Tachyon is a production LLM provider adapter, not a persona and not a rename of CAP-16.)*
@@ -378,6 +432,10 @@ they are why this is not merely a UI project.
   - **success:** The front door displays live run state in a deployed, egress-blocked namespace
     with no access to any operator's home directory, and a completed run's timing survives the
     workstation that produced it.
+  - **verified:** front-door `/runs/` from `RunState` + no home-dir literals live in
+    `src/platform/tests/test_front_door_queries_supervisor.py:57-243`; marshal loop homes still
+    filesystem-backed (`pyforge-marshal/src/pyforge/marshal/cli/init.py:336`); deployed
+    egress-blocked proof unexercised.
   - *(Added 2026-08-24 by operator ruling. The retired console read `~/.bmad-loops`, tmux sessions
     and journal files directly, so three of its surfaces degraded to `unavailable` when published.
     Choosing to keep those surfaces is what makes this a capability rather than an answered
@@ -395,6 +453,10 @@ they are why this is not merely a UI project.
     package that ships a second registration mechanism fails the check; today's backend
     is the default plugin for that process; a default Warden run stays green with no
     named commercial scanner plugin present.
+  - **verified:** shared `pyforge.core.hooks` dummy + parallel-loader refusal + default Warden scan
+    live in `pyforge-core/tests/unit/test_hooks.py:33-59`,
+    `test_plugin_registration_conformance.py:107-128`, `test_default_warden_without_checkmarx.py`;
+    not all station hook books runtime-swapped.
   - *(Correct-course 2026-08-24, later the same day. Operator: this is the missing
     story — it does not exist in Canopy 18–30. Those epics stay chrome/portals/MCP/DDL;
     they must not violate this capability. Drain: Epic 32 + peer hook stories **landed**;
@@ -416,6 +478,10 @@ they are why this is not merely a UI project.
     (or a store-port driver that is the plane) and still satisfies canopy:FR-36.
     Tests fail if a second writable analytical engine or an agent OLTP DSN
     is reintroduced.
+  - **verified:** attach+Parquet+HNSW+plane DSN+duckdb read_only boundary live in
+    `pyforge-atlas/tests/unit/test_read_only_live_attach.py`, `test_query_plane_parquet_cache.py`,
+    `test_query_plane_vectors.py`, `test_estate_dsn_is_plane.py`, `test_duckdb_boundary.py:133-137`;
+    pg attach optional-skip; DB-GPT/Langflow production plane consumers not integration-exercised.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
     in-progress; rebuild is allowed. First slice shipped the same day:
     34.1–34.5 + 36.1–36.2. OQs closed 2026-08-26: both faces, one boot
