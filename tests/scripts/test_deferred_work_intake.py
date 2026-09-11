@@ -10,6 +10,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INTAKE = REPO_ROOT / "scripts" / "deferred_work_intake.py"
 
@@ -180,3 +182,138 @@ def test_intake_no_op_without_frontmatter_deferred(tmp_path: Path) -> None:
     mod = _load_intake_module(repo)
     outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
     assert outcome.status == "no-op"
+
+
+UNCITED_DEFERRED_YAML = """\
+---
+title: uncited spec
+status: done
+deferred:
+  - summary: deferred to a later story
+    evidence: out of scope for this pass
+    severity: medium
+---
+
+# Uncited
+"""
+
+
+def test_intake_refuses_entry_with_no_resolvable_location(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-uncited.md", UNCITED_DEFERRED_YAML)
+    tracked = _write_tracked(repo, "pyforge-doctor", "# existing ledger\n")
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "refused"
+    assert outcome.refused == 1
+    assert tracked.read_text(encoding="utf-8") == "# existing ledger\n"
+    captured = capsys.readouterr()
+    assert "spec-uncited.md" in captured.err
+    assert "missing resolvable `location:`" in captured.err
+
+
+def test_intake_main_exits_nonzero_when_all_refused(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-uncited.md", UNCITED_DEFERRED_YAML)
+    _write_tracked(repo, "pyforge-doctor", "# existing ledger\n")
+
+    mod = _load_intake_module(repo)
+    old_argv = sys.argv
+    try:
+        sys.argv = ["deferred_work_intake.py", "--fix", "--project", "doctor"]
+        assert mod.main() == 1
+    finally:
+        sys.argv = old_argv
+
+
+def test_intake_preserves_pre_existing_ledger_on_append(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    existing = """\
+# ledger
+
+### DW-OLD-1: pre-existing entry
+
+- source_spec: `old-spec.md`
+  summary: keep me verbatim
+  status: open
+"""
+    _write_spec(repo, "pyforge-doctor", "spec-good.md", CANARY_DEFERRED_YAML)
+    tracked = _write_tracked(repo, "pyforge-doctor", existing)
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "ingested"
+    text = tracked.read_text(encoding="utf-8")
+    assert "keep me verbatim" in text
+    assert "GitHub-releases fallback" in text
+
+
+EVIDENCE_ONLY_DEFERRED_YAML = """\
+---
+title: evidence-only spec
+status: done
+deferred:
+  - summary: tighten the parser
+    evidence: |-
+      `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` over-matches
+    severity: medium
+---
+
+# Evidence only
+"""
+
+
+def test_intake_accepts_deferral_with_path_only_in_evidence(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-evidence-only.md", EVIDENCE_ONLY_DEFERRED_YAML)
+    _write_tracked(repo, "pyforge-doctor", "# empty ledger\n")
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "ingested"
+    text = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    ).read_text(encoding="utf-8")
+    assert "tighten the parser" in text
+    assert "chain.py" in text
+
+
+def test_intake_accepts_resolvable_entry_and_refuses_uncited_in_same_run(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-good.md", CANARY_DEFERRED_YAML)
+    _write_spec(repo, "pyforge-doctor", "spec-uncited.md", UNCITED_DEFERRED_YAML)
+    _write_tracked(repo, "pyforge-doctor", "# empty ledger\n")
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "ingested"
+    assert outcome.refused == 1
+    text = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    ).read_text(encoding="utf-8")
+    assert "GitHub-releases fallback" in text
+    assert "deferred to a later story" not in text

@@ -79,6 +79,9 @@ __all__ = (
     "discover_spec_frontmatter_deferrals",
     "frontmatter_deferral_in_tracked",
     "format_frontmatter_intake_entry",
+    "finding_has_resolvable_location",
+    "format_intake_location_refusal",
+    "NO_LOCATION_MARKER",
     "HARVEST_ORIGIN",
     "SourceSpecResolution",
     "SourceSpecResolutionStatus",
@@ -3083,14 +3086,9 @@ def frontmatter_deferral_in_tracked(finding: SpecDeferredFinding, tracked_text: 
     return _source_spec_cited_in(finding.spec_rel, tracked_text)
 
 
-#: What an intake entry's `location:` says when the entry cites no code at
-#: all. The entry is still admitted -- an uncited deferral is real work, and
-#: refusing it would simply push the backlog somewhere unmeasured -- but the
-#: gap is named in the artifact rather than left to be rediscovered.
-#:
-#: Measured 2026-09-08, the fleet's first full sweep: 144 of 183 due entries
-#: cited no extractable path, which is why CAP-2's churn filter skipped ZERO
-#: of them. An uncitable entry costs an agent read every sweep, forever.
+#: Historical marker stamped on ledger entries admitted before Story 21.8's
+#: intake gate. New frontmatter deferrals without a resolvable ``location:``
+#: are refused at intake instead of being stamped with this value.
 NO_LOCATION_MARKER = "(none cited)"
 
 
@@ -3108,27 +3106,48 @@ def _block_names_no_path(text: str) -> bool:
     )
 
 
+def _text_has_resolvable_path(text: str) -> bool:
+    """True when ``text`` names at least one file CAP-2 could extract."""
+    return not _block_names_no_path(text)
+
+
+def finding_has_resolvable_location(finding: SpecDeferredFinding) -> bool:
+    """True when intake can cite at least one checkable repo path."""
+    if finding.location:
+        loc = finding.location.strip()
+        if _is_path_token(loc) or _text_has_resolvable_path(loc):
+            return True
+    for part in (finding.summary, finding.evidence):
+        if part and _text_has_resolvable_path(part):
+            return True
+    return False
+
+
+def format_intake_location_refusal(finding: SpecDeferredFinding) -> str:
+    """Explain why a frontmatter deferral was refused at intake."""
+    summary_hint = f" ({finding.summary!r})" if finding.summary else ""
+    return (
+        f"refused {finding.spec_rel!r}{summary_hint}: missing resolvable "
+        f"`location:` — cite a repo file path in `location:` (for example "
+        f"src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py) "
+        f"or backtick a checkable file path in `summary`/`evidence` "
+        f"(for example `scripts/deferred_work_intake.py`); dotted symbols "
+        f"such as os.replace do not count"
+    )
+
+
 def format_frontmatter_intake_entry(
     new_id: str,
     finding: SpecDeferredFinding,
     *,
     promoted_date: date | None = None,
 ) -> str:
-    """One tracked-ledger block for a frontmatter-deferred finding.
-
-    An entry that cites no resolvable code is still admitted, but its
-    `location:` is stamped `NO_LOCATION_MARKER` so the gap is visible in the
-    ledger and countable by the caller.
-    """
+    """One tracked-ledger block for a frontmatter-deferred finding."""
     promoted = promoted_date or date.today()
     origin = f"{HARVEST_ORIGIN} {finding.fingerprint}"
     source_spec = f"`{finding.spec_rel}`"
     sev_line = f"  severity: {finding.severity}\n" if finding.severity else ""
     location = finding.location
-    if not location and _block_names_no_path(
-        f"{finding.summary}\n{finding.evidence}\n"
-    ):
-        location = NO_LOCATION_MARKER
     loc_line = f"  location: {location}\n" if location else ""
     return (
         f"### {new_id}: {finding.summary}\n"
@@ -3551,7 +3570,8 @@ def _deferred_work_message(item: dict) -> str:
         return (
             f"{item['project']}/spec-frontmatter {item['id']}: deferred finding in "
             f"{item['tier3']} has no tracked twin in {item['tracked']}"
-            f"{hint} — run `python scripts/deferred_work_intake.py --fix`"
+            f"{hint} — run `python scripts/deferred_work_intake.py --fix` "
+            f"(Story 21.8 refuses deferrals with no resolvable repo path)"
         )
     if kind == "no-deferred-work-baseline":
         return item["detail"]
