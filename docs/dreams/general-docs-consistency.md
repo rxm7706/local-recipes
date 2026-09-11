@@ -2,7 +2,7 @@
 title: General documentation stops contradicting itself, and stays that way
 type: dream
 owner: doctor
-status: dreamt
+status: specified
 ---
 
 # General documentation stops contradicting itself, and stays that way
@@ -158,4 +158,9 @@ scoped in its first finding.
   (`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-general-docs-consistency/`)
   is now stale and needs re-deriving via `bmad-spec` against this widened
   Dream before any restructuring work starts.
+- **2026-09-11 (later, same day)** — Spec re-derived via `bmad-spec` against
+  the widened Dream (6 capabilities, self-validate PASS on both passes).
+  Decomposed into doctor Epic 22 (Stories 22.1-22.6), minted `backlog`, per
+  the operator's own request to get this Dream dispatch-ready for `marshal`.
+  Status: dreamt → specified.
 

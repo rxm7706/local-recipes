@@ -1707,3 +1707,127 @@ Chain-currency sweep cascade continues (`arch→epics` edge, fired by the spine'
   Not a gap this pass needs to close; named here rather than silently folded in.
 - No epic or story content above was restructured; this note and the frontmatter
   `updated:` bump are the whole edit.
+
+## Epic 22: General documentation stops contradicting itself, and stays that way (spec-general-docs-consistency CAP-1..6)
+
+Minted 2026-09-11 from `spec-general-docs-consistency` (owner Dream
+`docs/dreams/general-docs-consistency.md`, `bmad-spec`-derived, self-validate PASS on both
+passes). Two halves: content correctness (Stories 22.1-22.3, the original scope) and a
+Diátaxis-adapted structural reorganization of the general-facing documentation layer only
+(Stories 22.4-22.6, added when the Dream was widened 2026-09-11). **The BMAD spec-driven tier
+(`docs/dreams/`, `docs/specs/` legacy Tier 1, `_bmad-output/*/planning-artifacts/`, gitignored
+`implementation-artifacts/`) is out of scope for every story below** — it is a different layer
+(the spec-and-build pipeline, already coherent) than the general-facing docs this Epic
+reorganizes.
+
+### Story 22.1: The 2 identity contradictions are fixed at their source
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-general-docs-consistency CAP-1
+(`SPEC.md` success)
+**Surface:** `src/shared/packages/pyforge-doctor/README.md`, `AGENTS.md`.
+**Given** `pyforge-doctor/README.md` claims doctor consolidates warden + cf_atlas signals into
+"its own exit-code gate," contradicting `skill-brief.yaml`/`CLAUDE.md`/`AGENTS.md`'s "advisory
+— not a second PR gate," and `AGENTS.md` assigns Herald "keeping the Dream → spec handoff
+portable across agents," contradicting Herald's own Dream (which assigns that to Marshal,
+citing a dated ownership review) **When** both lines are corrected to match every other
+authoritative source **Then** `pyforge-doctor/README.md` no longer uses gate language for
+itself
+**And** `AGENTS.md`'s cross-agent-portability claim names Marshal (or is reworded to make no
+ownership claim at all), matching `docs/dreams/pyforge-herald.md`
+**Status:** backlog
+
+### Story 22.2: The 4 cross-cutting decay findings are corrected
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-general-docs-consistency CAP-2
+(`SPEC.md` success)
+**Surface:** `README.md`, `CLAUDE.md`.
+**Given** `README.md`'s "GitHub Actions Workflows" section lists 4 of 19 real workflow files
+and falsely claims CI is "manual trigger only"; `README.md`'s own project-structure tree cites
+`docs/bmad-setup-plan.md`/`docs/developer-guide.md`, neither of which exists at those paths
+(real paths: `archive/docs/bmad-setup-plan.md`, `docs/reference/developer-guide.md`) while the
+same file's own prose elsewhere cites the correct paths; the active-project-resolution-priority
+list is duplicated verbatim in `README.md` and `CLAUDE.md`, `CLAUDE.md`'s copy substantially
+richer; `CLAUDE.md` names 8 PyForge Guild stations in one place and "7 skills" (silently
+omitting Mason) in its own SKF Skills block **When** all four facts are corrected **Then**
+`README.md`'s workflow section accurately distinguishes automatic PR-gate workflows from
+on-demand/manual ones, against the real `.github/workflows/*.yml` trigger types
+**And** `README.md`'s tree cites only paths that exist
+**And** the priority list exists in exactly one place (`CLAUDE.md`), with `README.md` pointing
+to it rather than duplicating it
+**And** `CLAUDE.md`'s SKF block and its 8-station list agree, with Mason's deliberate
+skill-omission noted rather than silent
+**Status:** backlog
+
+### Story 22.3: A repeatable Doctor detector catches this class of drift going forward
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-general-docs-consistency
+CAP-3 (`SPEC.md` success)
+**Note:** Fixture-based — replays the Story 22.1/22.2 contradictions as frozen before/after
+fixtures rather than depending on those stories landing first.
+**Surface:** a new or extended `pyforge.doctor.sources` module (mirrors
+`capability_effect.py`/`status_body_consistency.py`'s own discipline), its pixi task, its test
+file.
+**Given** none of Doctor's existing hygiene detectors (`capability-effect-verified`,
+`status-body-consistency`, `sibling-dreams-drift`, `dreams-hygiene`) reach the general,
+human-facing documentation layer (`README.md`, `CLAUDE.md`, `AGENTS.md`, station `README.md`s,
+`skill-brief.yaml`s, Dream identity claims) **When** a new detector cross-references what a
+station's README/skill-brief/Dream/AGENTS.md say against each other **Then** it names a real
+divergence — bounded, textual, explainable, matching `capability-effect-verified`'s own
+evidence-based discipline (never an inferred or invented contradiction)
+**And** it is warn-only and fail-open — never a second PR gate, matching Doctor's existing
+hygiene-check contract
+**And** it fires against at least the Doctor/Herald cases (Story 22.1's fixtures) that
+motivated this Spec, plus a clean-station fixture proving it does not false-positive on
+consistent sources
+**Status:** backlog
+
+### Story 22.4: A Diátaxis-adapted information architecture is designed for the general-facing docs layer
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-general-docs-consistency
+CAP-4 (`SPEC.md` success)
+**Note:** A design/decision story — produces the map, not the fully-populated content (Story
+22.5 populates the two new quadrants; Story 22.6 wires the entry-point docs into it).
+**Surface:** the general-facing documentation layer only (`README.md`, `docs/reference/`,
+`docs/intake/`, scattered onboarding/operational content) — explicitly excludes the BMAD
+spec-driven tier.
+**Given** the general-facing docs layer has no recognizable information-architecture lens
+applied to it, and `docs/reference/` mixes true reference material with architecture/rationale
+("why") content **When** a Diátaxis-adapted map is designed, naming four quadrants
+(Tutorials/Getting-Started, How-to Guides, Reference, Explanation) and which existing files
+move where **Then** the map is documented and `docs/reference/`'s existing content is assigned
+to a quadrant by kind — true reference material (config/CLI/schema specs) to Reference,
+architecture-rationale content to the new Explanation quadrant — relocated/reorganized, not
+discarded and rebuilt
+**And** the BMAD spec-driven tier (`docs/dreams/`, `docs/specs/` legacy,
+`_bmad-output/*/planning-artifacts/`, `implementation-artifacts/`) is named explicitly as
+untouched by the map
+**Status:** backlog
+
+### Story 22.5: The Tutorials/Getting-Started and How-to-Guides quadrants are populated
+
+**Type:** feature • **Effort:** M • **Deps:** S-22.4 (needs the map's quadrant boundaries
+decided first) • **FR/AD:** spec-general-docs-consistency CAP-5 (`SPEC.md` success)
+**Surface:** new quadrant homes per Story 22.4's map; source content currently in `README.md`'s
+"Common Commands," `docs/reference/developer-guide.md`, and skill-scoped guides.
+**Given** the Tutorials/Getting-Started and How-to-Guides roles have no discoverable home
+today, and their content is scattered across `README.md`'s Common Commands section,
+`docs/reference/developer-guide.md`, and skill-scoped guides **When** that content is relocated
+into the two new quadrant homes Story 22.4 designed **Then** a newcomer with no prior context
+can find one place to get a working environment running (Tutorials/Getting Started) and one
+place to find task-oriented operational instructions (How-to Guides)
+**And** the content populating both is relocated/corrected existing material, not rewritten
+from scratch
+**Status:** backlog
+
+### Story 22.6: README.md, CLAUDE.md, and AGENTS.md point cleanly into the reorganized structure
+
+**Type:** fix • **Effort:** S • **Deps:** S-22.4, S-22.5 (needs the final structure to exist
+before pointing to it) • **FR/AD:** spec-general-docs-consistency CAP-6 (`SPEC.md` success)
+**Surface:** `README.md`, `CLAUDE.md`, `AGENTS.md`.
+**Given** the reorganized structure exists (Stories 22.4-22.5) but the three entry-point docs
+still duplicate or predate it **When** their pointers are corrected **Then** no internal link
+into the reorganized structure is broken
+**And** no fact that lives in the new structure is also duplicated verbatim in
+`README.md`/`CLAUDE.md`/`AGENTS.md` without one side pointing to the other — the same
+discipline Story 22.2 already applies, now applied to the new structure
+**Status:** backlog
