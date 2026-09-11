@@ -56,6 +56,7 @@ the derivation that fills the gap for hand-driven stories from the signal they a
   - **success:** After a local generate, doctor's 8.1–8.4 carry timing marks derived from
     their promoted specs' revision fields; a re-run refreshes (never permanently freezes)
     the derived values, matching the existing `derived: true` discipline.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `4a8034f705`: `scripts/fleet_scan.py` genuinely implements this — `_frontmatter_scalars(spec_path, ("baseline_revision", "final_revision"))` (lines 2916-2942) reads the promoted spec's revision pair, the derived ceiling is `final_revision − baseline_revision` commit timestamps (lines 2792, 3243), and derived output is marked `"derived": True` (lines 3178, 3256) matching the existing discipline; `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py -q` → 22 passed. **Cannot verify end-to-end** ("after a local generate"): confirmed live that `fleet_scan.py:main()` (lines 3505-3511) unconditionally prints a retirement notice and returns 2 — `_generate`, the only caller of `scan_timing`, is unreachable from the CLI (steward Story 30.2 retired the Guildhall generator), exactly as this Spec's own 2026-09-09 Residual note already documents. The derivation is real and unit-proven; the "next local dashboard generate" it describes has no live entry point to exercise it against.
 - **CAP-2 — fidelity is visible, never blended.**
   - **intent:** A wall-clock-derived mark is visually and textually distinguished from
     journal-derived active agent-compute wherever both render — wall-clock measures a
@@ -64,6 +65,7 @@ the derivation that fills the gap for hand-driven stories from the signal they a
   - **success:** On a line mixing both classes, a reader can tell each story's metric class
     from the rendered chart/caption alone; no wall-clock number appears as if it were
     active-compute.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `4a8034f705`: `TIMING_CLASS_ACTIVE = "active-compute"` / `TIMING_CLASS_WALL_CLOCK = "wall-clock-ceiling"` (lines 2806-2807) back a per-sid `perStoryClass` field (line 3262); epic rollups never blend — `epicMin` (journal) vs a distinct `epicMinWallClock` (line 3266) with a dual `totalLabel`; the class-separation logic is exercised by the 22 passing unit tests in `test_dashboard_scan_timing_wall_clock.py`. Same production-reachability caveat as CAP-1: the render this describes has no live caller (see CAP-1's `main()` finding), so "on the rendered chart" is verified against code + tests, not a live render.
 - **CAP-3 — the coverage caption partitions by true reason.**
   - **intent:** The coverage statement stops lumping every unmeasured story under "predates
     loop instrumentation" and instead states the real classes: journal-measured,
@@ -72,6 +74,7 @@ the derivation that fills the gap for hand-driven stories from the signal they a
   - **success:** For a line containing hand-driven stories, the rendered caption names each
     absence class accurately; no caption claims "predates instrumentation" for a story whose
     spec carries revision fields.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `4a8034f705`: all four named classes exist as distinct constants (`TIMING_COVERAGE_JOURNAL`/`_WALL_CLOCK`/`_SPEC_NO_REVS`/`_NO_SPEC`, lines 2810-2813) and are independently formatted into the caption (lines 3008-3026: "N journal-measured", "N wall-clock-derived", "N spec-without-revision-fields deliberately absent", "N no-spec-at-all deliberately absent") — no blanket "predates loop instrumentation" phrase remains in the caption-building code. Same production-reachability caveat as CAP-1/CAP-2: verified against code + the 22-test suite, not a live rendered caption, since `main()` has no path to `_generate`.
 
 ## Constraints
 
