@@ -289,6 +289,12 @@ def _strip_surface_annotation(fragment: str) -> str:
 def _surface_path_token(fragment: str) -> str:
     token = _clean_surface_fragment(_strip_surface_annotation(fragment))
     token = re.sub(r":\d+.*$", "", token).strip()
+    # `path.py::symbol_name` (pytest-style module::symbol addressing) names a
+    # path plus a symbol, not a literal path ending in "::symbol_name" — drop
+    # the suffix so the path half resolves. The digit-suffix strip above
+    # doesn't catch this: `::identifier` has no digit immediately after the
+    # colon.
+    token = re.sub(r"::[A-Za-z_][A-Za-z0-9_]*$", "", token).strip()
     return token.strip("`")
 
 
@@ -304,9 +310,9 @@ def _split_surface_fragments(surface: str) -> list[str]:
     depth = 0
     start = 0
     for idx, char in enumerate(surface):
-        if char == "(":
+        if char in "({":
             depth += 1
-        elif char == ")":
+        elif char in ")}":
             depth = max(depth - 1, 0)
         elif char == "," and depth == 0:
             piece = surface[start:idx].strip()
@@ -325,7 +331,7 @@ def _resolve_surface_paths(target: Path, fragment: str, *, project: str) -> list
         return []
     if "**" in token or "*" in token:
         try:
-            return sorted(p for p in target.glob(token) if p.is_file())
+            return sorted(p for p in target.glob(token) if p.exists())
         except OSError:
             return []
     candidates = [target / token]
@@ -342,8 +348,26 @@ def _resolve_surface_paths(target: Path, fragment: str, *, project: str) -> list
             / station
         )
         candidates.append(pkg_root / token)
+        # Package root (not the nested src/pyforge/<station> tree) — covers a
+        # Surface fragment written relative to the package itself, most often
+        # its own tests/ dir (a sibling of src/, never reachable via pkg_root).
+        package_root = target / "src" / "shared" / "packages" / project
+        candidates.append(package_root / token)
+        # The project's own BMAD planning-artifacts root — covers a Surface
+        # fragment naming one of the project's own specs/epics by its
+        # planning-artifacts-relative path.
+        planning_root = (
+            target / "_bmad-output" / "projects" / project / "planning-artifacts"
+        )
+        candidates.append(planning_root / token)
+        # Same, but for a fragment naming a sibling spec by its
+        # `<spec-slug>/SPEC.md` shorthand (omitting the `specs/` directory).
+        candidates.append(planning_root / "specs" / token)
     for path in candidates:
-        if path.is_file():
+        # A directory is a legitimate Surface target (e.g. a package to
+        # delete, or a docs subtree) — `is_file()` alone made every directory
+        # fragment a permanent false positive.
+        if path.exists():
             return [path]
     return []
 
@@ -628,7 +652,14 @@ def _caller_reach_findings_for_project(
                 continue
 
             code_fragments = [
-                frag for frag in fragments if not _is_document_surface_fragment(frag)
+                frag
+                for frag in fragments
+                # Check the annotation-stripped fragment, not the raw one — a
+                # doc file followed by a `(...)` annotation (e.g.
+                # `` `install-matrix.md` (caveat retired) ``) doesn't END in
+                # a document suffix until the annotation is removed, so the
+                # raw-fragment check let it fall through as a "code" path.
+                if not _is_document_surface_fragment(_strip_surface_annotation(frag))
             ]
             if not code_fragments:
                 findings.append(

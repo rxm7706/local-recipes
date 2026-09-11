@@ -333,3 +333,190 @@ def test_station_relative_surface_resolves_under_pyforge_package(
         and f.evidence.get("symbol") == "station_fn"
         for f in findings
     )
+
+
+def test_directory_surface_fragment_resolves_as_existing(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    pkg_dir = (
+        tmp_path
+        / "src"
+        / "shared"
+        / "packages"
+        / "pyforge-demo"
+        / "src"
+        / "pyforge"
+        / "demo"
+        / "views"
+    )
+    pkg_dir.mkdir(parents=True)
+    (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
+
+    pa = _pa(tmp_path, "pyforge-demo")
+    _write_spec(
+        pa / "specs",
+        slug="spec-dir-surface",
+        caps="- **CAP-1 — directory surface.**\n",
+    )
+    rel = pkg_dir.relative_to(tmp_path).as_posix() + "/"
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: directory surface\n\n"
+        "**FR/AD:** spec-dir-surface CAP-1\n\n"
+        f"**Surface:** `{rel}` (delete)\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert not any(
+        f.check == "capability-effect-absent-surface-path" for f in findings
+    )
+
+
+def test_brace_expansion_fragment_not_split_on_internal_comma(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    pa = _pa(tmp_path, "pyforge-demo")
+    _write_spec(
+        pa / "specs",
+        slug="spec-brace-surface",
+        caps="- **CAP-1 — brace surface.**\n",
+    )
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: brace surface\n\n"
+        "**FR/AD:** spec-brace-surface CAP-1\n\n"
+        # `.py`, not `.yml`/`.md` — a document-suffixed fragment would be
+        # filtered out as a document surface before reaching path resolution,
+        # which would pass for the wrong reason (see the doc-suffix test
+        # above) rather than exercising the brace-depth fix.
+        "**Surface:** `src/pkg/{mod_a,mod_b}.py`\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    missing = [
+        f for f in findings if f.check == "capability-effect-absent-surface-path"
+    ]
+    assert len(missing) == 1
+    assert missing[0].evidence["missing_path"] == "src/pkg/{mod_a,mod_b}.py"
+
+
+def test_double_colon_symbol_suffix_resolves_path(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    module = tmp_path / "src" / "packages" / "demo" / "core.py"
+    module.parent.mkdir(parents=True, exist_ok=True)
+    module.write_text("def some_fn():\n    return 1\n", encoding="utf-8")
+
+    pa = _pa(tmp_path, "pyforge-demo")
+    _write_spec(
+        pa / "specs",
+        slug="spec-colon-surface",
+        caps="- **CAP-1 — colon surface.**\n",
+    )
+    rel = module.relative_to(tmp_path).as_posix()
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: colon surface\n\n"
+        "**FR/AD:** spec-colon-surface CAP-1\n\n"
+        f"**Surface:** `{rel}::some_fn`\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert not any(
+        f.check == "capability-effect-absent-surface-path" for f in findings
+    )
+
+
+def test_document_suffix_with_annotation_is_not_absent_path(tmp_path: Path) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(
+        pa / "specs",
+        slug="spec-doc-annotated",
+        caps="- **CAP-1 — doc with annotation.**\n",
+    )
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: doc with annotation\n\n"
+        "**FR/AD:** spec-doc-annotated CAP-1\n\n"
+        "**Surface:** `install-matrix.md` (installed-stage caveat retired)\n",
+    )
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert not any(
+        f.check == "capability-effect-absent-surface-path" for f in findings
+    )
+    assert any(f.check == "capability-effect-document-surface" for f in findings)
+
+
+def test_package_relative_tests_path_resolves(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    test_file = (
+        tmp_path
+        / "src"
+        / "shared"
+        / "packages"
+        / "pyforge-demo"
+        / "tests"
+        / "unit"
+        / "test_thing.py"
+    )
+    test_file.parent.mkdir(parents=True, exist_ok=True)
+    test_file.write_text("def test_x():\n    assert True\n", encoding="utf-8")
+
+    pa = _pa(tmp_path, "pyforge-demo")
+    _write_spec(
+        pa / "specs",
+        slug="spec-tests-rel",
+        caps="- **CAP-1 — tests relative.**\n",
+    )
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: tests relative surface\n\n"
+        "**FR/AD:** spec-tests-rel CAP-1\n\n"
+        "**Surface:** `tests/unit/test_thing.py`\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert not any(
+        f.check == "capability-effect-absent-surface-path" for f in findings
+    )
+
+
+def test_sibling_spec_shorthand_resolves_under_specs_dir(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    pa = _pa(tmp_path, "pyforge-demo")
+    _write_spec(
+        pa / "specs",
+        slug="spec-sibling-target",
+        caps="- **CAP-1 — sibling target.**\n",
+    )
+    _write_spec(
+        pa / "specs",
+        slug="spec-citer",
+        caps="- **CAP-1 — cites sibling.**\n",
+    )
+    _write_epics(
+        pa,
+        "## Epic 1\n\n"
+        "### Story 1.1: sibling spec shorthand\n\n"
+        "**FR/AD:** spec-citer CAP-1\n\n"
+        "**Surface:** `spec-sibling-target/SPEC.md`\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert not any(
+        f.check == "capability-effect-absent-surface-path" for f in findings
+    )
