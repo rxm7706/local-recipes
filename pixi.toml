@@ -489,6 +489,7 @@ hatchling = ">=1.32.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+rattler-build = ">=0.76.0"        # Story 16.2: the build engine `native-build.sh` (CFE's own script, invoked by `recipe.py::build()` via `bash`) shells out to bare `rattler-build` on PATH -- mason's own env must carry it for `mason recipe build` to actually run, not just for `mason doctor` to report the verb available (mirrors [feature.local-recipes.dependencies]'s identical pin).
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."
@@ -505,8 +506,12 @@ description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one
 depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test]
-description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
-cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\""
+description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow) plus Story 16.3's CFE CLI⇄tool parity meta-test."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\" && pytest .claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py -q"
+
+[feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]
+description = "Story 16.2: the first real estate caller of `mason recipe build` (FR-9's use-case, wired outside mason's own test tree) -- builds recipes/click-help-colors (a tiny, already-graduated noarch: python recipe with an explicit setuptools host dep and no ${{ python_min }} reference, chosen for a fast, dependency-light smoke build that needs neither the conda-forge-pinning overlay nor an isolated pip build-backend fetch) through `mason recipe build` against mason's own env, rather than `pixi run -e local-recipes recipe-build`. Wired into .github/workflows/pyforge-station-tests.yml's mason-test job so it runs on every execution of that already-existing lane, not only on demand. Does not replace the local-recipes route as the estate's primary recipe-build path."
+cmd = "mason recipe build recipes/click-help-colors"
 
 [feature.pyforge-mason.tasks.pyforge-mason-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-mason. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."

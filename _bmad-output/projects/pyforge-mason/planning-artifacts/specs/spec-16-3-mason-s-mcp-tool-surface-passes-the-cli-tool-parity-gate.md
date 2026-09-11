@@ -2,12 +2,22 @@
 title: "Mason's MCP tool surface passes the CLI-tool parity gate"
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 'e16443693d844e87fc473a90096ab6fac7a7258e'
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      `pyforge-mason-test` still fails on pre-existing portal meta
+      `test_django_mason_has_no_raw_http_pyforge_or_minio` (boot_reconcile.py
+      imports pyforge.mason.boot); present on baseline before Story 16.3.
+    evidence: |-
+      Reproduced on e16443693d before any 16.3 edits; unrelated to parity gate.
+    location: >-
+      src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -136,3 +146,45 @@ passes clean today and can actually fail (fixture-injected mismatches in each di
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 18 findings — high 0, medium 1, low 8, false 2, maybe-false 0, reject 7
+- findings:
+  - `[low]` `[patch]` Duplicate `_REPO_ROOT` assignment in `mcp_parity.py` — removed redundant line.
+  - `[low]` `[patch]` Missing symmetric test that `TOOL_ONLY_NAMES` entries have `cli: None` — added `test_tool_only_inventory_helpers_are_declared`.
+  - `[medium]` `[defer]` Pre-existing `test_django_mason_has_no_raw_http_pyforge_or_minio` failure blocks `pyforge-mason-test` `&&` chain — not introduced by 16.3; verified on baseline.
+  - `[low]` `[reject]` No standalone pixi parity task — spec chore was conditional; gate wired via `pyforge-mason-test` satisfies verification intent.
+  - `[low]` `[reject]` Not in `detectors-ci` — out of story scope; marshal FR-155 gate is also package-test scoped.
+  - `[low]` `[reject]` No SKILL.md Operating Principles update — Rule-2 retro captured in CHANGELOG v8.90.2.
+  - `[low]` `[reject]` No parity ratio reporter — marshal gate is binary; spec AC "reported" satisfied by gated meta-test count.
+  - `[low]` `[reject]` `conda_forge_server.py` F401 import — intentional registry anchor for drift tooling.
+  - `[low]` `[reject]` `sys.path` marshal bootstrap — pragmatic for CFE skill scripts env; no pixi dep on pyforge-marshal in mason env.
+  - `[false]` `[reject]` CLI derivation ignores script directory — pixi tasks are the operator CLI surface per design.
+  - `[false]` `[reject]` Forked parity logic — delegates to `pyforge.marshal.mcp.parity.parity_findings`.
+  - `[low]` `[reject]` Missing `cli_only_unknown` / `tool_spec_invalid` fixtures — marshal superset; core bidirectional AC covered.
+  - `[low]` `[reject]` AST `.tool()` matcher too broad — no non-mcp `.tool()` in server module today.
+  - `[low]` `[reject]` Doc/index drift — follow-up hygiene, not AC.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended marshal's FR-155 parity primitive over the CFE MCP server: `mcp_tools.TOOL_SPECS` (46 tools), `mcp_parity` (pixi-task CLI discovery + 37 CLI-only / 6 tool-only allowlists with reasons), meta-test with live pass and bidirectional fixture failures. CFE skill bumped to v8.90.2 (Rule-2 retro).
+
+**Files changed:**
+- `.claude/skills/conda-forge-expert/scripts/mcp_tools.py` — TOOL_SPECS + AST drift guard
+- `.claude/skills/conda-forge-expert/scripts/mcp_parity.py` — marshal parity adapter + allowlists
+- `.claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py` — gated meta-test (12 tests)
+- `.claude/tools/conda_forge_server.py` — imports TOOL_SPECS registry
+- `pixi.toml` — `pyforge-mason-test` runs parity meta-test
+- CFE skill version files (SKILL.md, CHANGELOG, MANIFEST, skill-config) — v8.90.2 retro
+
+**Review:** 2 low patches applied; 1 medium deferred (pre-existing portal meta failure); remainder rejected as out of scope or false.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pytest .claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py` — 12 passed
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 1 failed (pre-existing portal meta; parity leg not reached due to `&&`)
+
+**Residual risks:** Pre-existing portal import guard failure; pixi.toml regex parser may miss exotic task block shapes; no standalone pixi/detectors-ci entry for parity yet.
