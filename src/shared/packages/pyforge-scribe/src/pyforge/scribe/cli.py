@@ -335,7 +335,10 @@ def recall_cmd(
     semantic: bool = typer.Option(
         False,
         "--semantic",
-        help="Rank by embedding similarity (durable GraphStore / pgvector).",
+        help=(
+            "Opt-in: rank by SHA-256 bag-of-concepts similarity (pgvector driver only; "
+            "not embedding-model recall)."
+        ),
     ),
     scope: str = typer.Option(
         None,

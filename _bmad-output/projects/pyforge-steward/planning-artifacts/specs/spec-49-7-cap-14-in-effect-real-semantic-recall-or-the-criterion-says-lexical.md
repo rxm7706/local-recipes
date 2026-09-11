@@ -2,7 +2,7 @@
 title: 'CAP-14 in effect — real semantic recall, or the criterion says lexical'
 type: 'feature'
 created: '2026-09-11'
-status: 'in-progress'
+status: 'shipped'
 baseline_revision: '29c9036962bda93fa3da647903fe3089972874f3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -92,5 +92,15 @@ mode (`lexical` or `semantic`) the criterion is graded against, and records that
   pyforge-steward)
 
 ## Spec Change Log
+
+- **2026-09-11 — decision: CRITERION_REWRITE.** CAP-14's graded recall mode is `lexical`
+  (default at `recall.py:114`, CLI without `--semantic`). Opt-in `semantic` mode documented
+  honestly as a 32-dim SHA-256 bag-of-concepts over the 7-entry `_CONCEPTS` map in
+  `embeddings.py`, not embedding-model recall. Updated `spec-pyforge-unifying-strategy/SPEC.md`
+  CAP-14 success/verified/residual/OQ blocks: prior "dual-write unexercised" and
+  "dual-write for now" wording mis-described the correct dual-driver CI parametrization +
+  AD-5 single-plugin selection design (not a gap). Dual-driver CI unchanged.
+- **2026-09-11 — docs:** `embeddings.py` module docstring, `cli.py` `--semantic` help, and
+  `test_recall_semantic.py` header aligned to honest naming.
 
 ## Review Triage Log
