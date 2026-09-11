@@ -3317,7 +3317,7 @@ the externally-supplied endpoint instead
 **And** with the overlay NOT applied, a `helm template` render of the chart is
 byte-identical to today's output — the self-hosted default is unconditionally
 preserved, not just assumed unaffected
-**Status:** backlog
+**Status:** done
 
 ### Story 51.2: A BYO-external-Redis deployment overlay exists, additive to the self-hosted default
 
@@ -3338,7 +3338,7 @@ endpoint instead
 **And** with the overlay NOT applied, a `helm template` render of the chart is
 byte-identical to today's output — the self-hosted default is unconditionally
 preserved, not just assumed unaffected
-**Status:** backlog
+**Status:** done
 
 ### Story 51.3: The backup/PITR handoff is explicit when the BYO-PostgreSQL overlay is active
 

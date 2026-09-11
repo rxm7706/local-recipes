@@ -1,6 +1,7 @@
 # Two Redis Deployments, same image class (canopy AD-10 / parent AD-1):
 # redis-cache evicts (allkeys-lru) on emptyDir; redis-broker is durable
 # (AOF on PVC) and bounded (noeviction + required maxmemory < limit).
+{{- if not .Values.redis.external.enabled }}
 {{- range $role := tuple "cache" "broker" }}
 ---
 apiVersion: apps/v1
@@ -119,4 +120,5 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+{{- end }}
 {{- end }}

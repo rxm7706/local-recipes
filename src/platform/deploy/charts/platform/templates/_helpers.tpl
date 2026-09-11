@@ -318,12 +318,21 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+{{- if .Values.redis.external.enabled }}
+- name: REDIS_BROKER_URL
+  value: {{ required "redis.external.brokerUrl is required when redis.external.enabled is true" .Values.redis.external.brokerUrl | quote }}
+- name: REDIS_CACHE_URL
+  value: {{ required "redis.external.cacheUrl is required when redis.external.enabled is true" .Values.redis.external.cacheUrl | quote }}
+- name: REDIS_URL
+  value: {{ (.Values.redis.external.url | default .Values.redis.external.brokerUrl) | quote }}
+{{- else }}
 - name: REDIS_BROKER_URL
   value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisBroker.fullname" .) | quote }}
 - name: REDIS_CACHE_URL
   value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisCache.fullname" .) | quote }}
 - name: REDIS_URL
   value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisBroker.fullname" .) | quote }}
+{{- end }}
 - name: MEDIA_ROOT
   value: {{ .Values.media.mountPath | quote }}
 - name: DBGPT_SIDECAR_BASE_URL

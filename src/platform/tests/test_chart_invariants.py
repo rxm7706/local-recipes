@@ -38,6 +38,12 @@ _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _CORE_CHART = _PLATFORM_DIR / "deploy" / "charts" / "platform"
 _OVERLAY_CHART = _PLATFORM_DIR / "deploy" / "overlays" / "ocp" / "chart"
 _CORE_OVERRIDES = _PLATFORM_DIR / "deploy" / "overlays" / "ocp" / "core-overrides.yaml"
+_EXTERNAL_POSTGRES_OVERLAY = (
+    _PLATFORM_DIR / "deploy" / "overlays" / "external-postgres" / "values.yaml"
+)
+_EXTERNAL_REDIS_OVERLAY = (
+    _PLATFORM_DIR / "deploy" / "overlays" / "external-redis" / "values.yaml"
+)
 
 # The plain kinds AD-11 allows the core chart to render -- anything else
 # (Route, DeploymentConfig, ImageStream, BuildConfig, ...) is a finding.
@@ -682,6 +688,95 @@ def _redis_deployments(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             ),
         ).startswith("redis-")
     ]
+
+
+def _redis_services(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and str(
+            (doc.get("metadata") or {})
+            .get("labels", {})
+            .get("app.kubernetes.io/component", ""),
+        ).startswith("redis-")
+    ]
+
+
+def _redis_broker_pvcs(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        == "redis-broker"
+    ]
+
+
+def _assert_self_hosted_redis_resources_present(docs: list[dict[str, Any]]) -> None:
+    """Story 51.2: default path still renders cache+broker Deployments/Services."""
+    deployments = _redis_deployments(docs)
+    services = _redis_services(docs)
+    pvcs = _redis_broker_pvcs(docs)
+    components = {
+        (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        for doc in deployments
+    }
+    assert components == _REDIS_COMPONENTS, (
+        f"expected redis-cache and redis-broker Deployments, got {components!r}"
+    )
+    service_components = {
+        (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        for doc in services
+    }
+    assert service_components == _REDIS_COMPONENTS, (
+        f"expected redis-cache and redis-broker Services, got {service_components!r}"
+    )
+    assert len(pvcs) == 1, f"expected one redis-broker PVC, got {len(pvcs)}"
+
+
+def _assert_no_self_hosted_redis_resources(docs: list[dict[str, Any]]) -> None:
+    """Story 51.2: BYO overlay renders zero self-hosted Redis manifests."""
+    assert not _redis_deployments(docs), (
+        f"redis Deployments must not render: "
+        f"{[doc['metadata']['name'] for doc in _redis_deployments(docs)]}"
+    )
+    assert not _redis_services(docs), (
+        f"redis Services must not render: "
+        f"{[doc['metadata']['name'] for doc in _redis_services(docs)]}"
+    )
+    assert not _redis_broker_pvcs(docs), (
+        f"redis-broker PVC must not render: "
+        f"{[doc['metadata']['name'] for doc in _redis_broker_pvcs(docs)]}"
+    )
+
+
+def _assert_platform_pods_use_external_redis_urls(
+    docs: list[dict[str, Any]],
+    *,
+    broker_url: str,
+    cache_url: str,
+    redis_url: str,
+) -> None:
+    """Story 51.2: platform pods take REDIS_* from overlay values."""
+    by_component = _pod_specs_by_component(docs)
+    for component in sorted(_PLATFORM_COMPONENTS):
+        env = _collect_env_by_name(by_component[component])
+        assert env.get("REDIS_BROKER_URL", {}).get("value") == broker_url, (
+            f"{component} REDIS_BROKER_URL mismatch: {env.get('REDIS_BROKER_URL')!r}"
+        )
+        assert env.get("REDIS_CACHE_URL", {}).get("value") == cache_url, (
+            f"{component} REDIS_CACHE_URL mismatch: {env.get('REDIS_CACHE_URL')!r}"
+        )
+        assert env.get("REDIS_URL", {}).get("value") == redis_url, (
+            f"{component} REDIS_URL mismatch: {env.get('REDIS_URL')!r}"
+        )
 
 
 def _assert_redis_cache_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
@@ -2584,6 +2679,65 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
 
 
 @requires_helm
+def test_external_postgres_overlay_skips_self_hosted_resources():
+    """AC (Story 51.1): external overlay renders zero in-cluster postgres
+    workloads while platform pods still wire DATABASE_URL via secretKeyRef.
+    """
+    docs = _render(_CORE_CHART, "-f", str(_EXTERNAL_POSTGRES_OVERLAY))
+    postgres_workloads = [
+        doc
+        for doc in docs
+        if doc.get("kind") in {"StatefulSet", "Service", "PersistentVolumeClaim"}
+        and doc["metadata"]
+        .get("labels", {})
+        .get("app.kubernetes.io/component", "")
+        .startswith("postgres")
+    ]
+    assert postgres_workloads == [], (
+        "expected no self-hosted postgres StatefulSet/Service/PVC, got: "
+        f"{[(doc.get('kind'), doc['metadata']['name']) for doc in postgres_workloads]}"
+    )
+    by_component = _pod_specs_by_component(docs)
+    env = _collect_env_by_name(by_component["web"])
+    db_env = env.get("DATABASE_URL")
+    assert db_env is not None
+    secret_ref = db_env.get("valueFrom", {}).get("secretKeyRef")
+    assert secret_ref is not None
+    assert secret_ref["key"] == "DATABASE_URL"
+
+
+@requires_helm
+def test_external_postgres_toggle_off_preserves_self_hosted_postgres():
+    """AC (Story 51.1): overlay with external disabled matches the default
+    self-hosted postgres render (toggle gates behavior, not overlay presence).
+    """
+    default_docs = _render(_CORE_CHART)
+    overlay_docs = _render(
+        _CORE_CHART,
+        "-f",
+        str(_EXTERNAL_POSTGRES_OVERLAY),
+        "--set",
+        "postgres.external.enabled=false",
+    )
+    default_postgres = [
+        doc["metadata"]["name"]
+        for doc in default_docs
+        if doc.get("kind") == "StatefulSet"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "postgres"
+    ]
+    overlay_postgres = [
+        doc["metadata"]["name"]
+        for doc in overlay_docs
+        if doc.get("kind") == "StatefulSet"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "postgres"
+    ]
+    assert default_postgres == overlay_postgres
+    assert len(default_postgres) == 1
+
+
+@requires_helm
 def test_liquibase_job_then_fake_migrate():
     """AC (Story 27.2): Liquibase Job weight -1 then migrate --fake."""
     docs = _render(_CORE_CHART, release="platform")
@@ -2619,6 +2773,52 @@ def test_overlay_route_default_targets_the_core_web_service():
     )
 
     _assert_route_targets_service(routes[0], web_services[0])
+
+
+@requires_helm
+def test_external_redis_defaults_preserve_self_hosted_render():
+    """Story 51.2 matrix row: overlay NOT applied — self-hosted Redis renders."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_self_hosted_redis_resources_present(docs)
+
+
+@requires_helm
+def test_external_redis_overlay_enabled_drops_self_hosted_resources():
+    """Story 51.2 matrix row: overlay applied with enabled true — zero
+    self-hosted Redis manifests and external REDIS_* URLs on platform pods.
+    """
+    yaml = _import_yaml()
+    overlay_values = yaml.safe_load(_EXTERNAL_REDIS_OVERLAY.read_text())
+    external = overlay_values["redis"]["external"]
+    docs = _render(_CORE_CHART, "-f", str(_EXTERNAL_REDIS_OVERLAY), release="platform")
+    _assert_no_self_hosted_redis_resources(docs)
+    _assert_platform_pods_use_external_redis_urls(
+        docs,
+        broker_url=external["brokerUrl"],
+        cache_url=external["cacheUrl"],
+        redis_url=external["brokerUrl"],
+    )
+
+
+@requires_helm
+def test_external_redis_overlay_toggle_off_matches_default_render():
+    """Story 51.2 matrix row: overlay present but toggle off — identical to
+    the default self-hosted render (byte-identical helm template output).
+    """
+    default_stdout = _helm("template", "platform", str(_CORE_CHART))
+    toggle_off_stdout = _helm(
+        "template",
+        "platform",
+        str(_CORE_CHART),
+        "-f",
+        str(_EXTERNAL_REDIS_OVERLAY),
+        "--set",
+        "redis.external.enabled=false",
+    )
+    assert default_stdout == toggle_off_stdout, (
+        "overlay with redis.external.enabled=false must be byte-identical to "
+        "the base render"
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -237,9 +237,16 @@ postgres:
   fsGroup: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
-  # Story 51.1: BYO external PostgreSQL overlay (default off — self-hosted).
+  # Story 51.1: BYO external PostgreSQL. When enabled, the three in-cluster
+  # postgres templates (StatefulSet, Service, backup PVC) render nothing;
+  # DATABASE_URL / MIGRATION_DATABASE_URL come from existingSecret (or
+  # postgres.external.secretName when set) pointing at the external instance.
   external:
     enabled: false
+    # Empty uses top-level existingSecret.
+    secretName: ""
+    databaseUrlKey: DATABASE_URL
+    migrationDatabaseUrlKey: MIGRATION_DATABASE_URL
   # Story 41.1: physical base backup + WAL archive to a separate RWX PVC.
   backup:
     enabled: true
@@ -281,6 +288,15 @@ redis:
   runAsUser: 999
   # Cache-only resource seam (broker uses redis.broker.resources).
   resources: {}
+  # Story 51.2: BYO-external-Redis overlay (default self-hosted). When
+  # enabled, redis-deployment/service/broker-pvc templates render empty and
+  # platform pods take REDIS_* URLs from these fields instead of in-cluster
+  # Service DNS. Password expansion via $(REDIS_PASSWORD) is supported.
+  external:
+    enabled: false
+    brokerUrl: ""
+    cacheUrl: ""
+    url: ""
 
 # Wagtail media (Story 20.2 / canopy AD-13). ReadWriteMany; Django
 # FileSystemStorage. Not an object-store backend. Mounted by every platform

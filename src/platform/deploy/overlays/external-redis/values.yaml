@@ -1,0 +1,17 @@
+# Story 51.2 — BYO-external-Redis overlay (additive to the self-hosted default).
+#
+# Layer with:
+#   pixi run -e platform-dev helm install platform \
+#     src/platform/deploy/charts/platform \
+#     -f src/platform/deploy/overlays/external-redis/values.yaml
+#
+# Replace the placeholder hostnames with the operator's Enterprise Managed
+# Redis endpoints. REDIS_PASSWORD still comes from existingSecret; URLs may
+# embed it via $(REDIS_PASSWORD) at runtime.
+
+redis:
+  external:
+    enabled: true
+    brokerUrl: "redis://:$(REDIS_PASSWORD)@enterprise-redis-broker.example.com:6379/0"
+    cacheUrl: "redis://:$(REDIS_PASSWORD)@enterprise-redis-cache.example.com:6379/0"
+    url: ""

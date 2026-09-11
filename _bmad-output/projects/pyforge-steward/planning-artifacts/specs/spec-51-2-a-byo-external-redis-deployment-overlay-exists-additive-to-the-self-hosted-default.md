@@ -2,8 +2,8 @@
 title: 'A BYO-external-Redis deployment overlay exists, additive to the self-hosted default'
 type: 'feature'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'db1cc4bb4c8d948be1218c44827b0b219a6ba790'
+status: 'done'
+baseline_revision: 'fb55f147c20c797b29f34307ebdd16fde02de4ce'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -98,3 +98,36 @@ application-layer code changes.
   src/platform/deploy/overlays/external-redis/values.yaml` — expect
   `redis-deployment.yaml`/`redis-service.yaml`/`redis-broker-pvc.yaml` to render empty and the
   Deployment's `REDIS_URL` env value to reflect the external endpoint.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (no review findings — implementation matched intent on first pass)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `redis.external.enabled` (default `false`) to the platform Helm chart, guarded self-hosted Redis templates, wired external `REDIS_*` URLs through `platform.djangoEnv`, and shipped `deploy/overlays/external-redis/` (values + README). Default `helm template` output is byte-identical to pre-change; the overlay drops in-cluster Redis workloads and points platform pods at operator-supplied endpoints.
+
+Files changed:
+- `src/platform/deploy/charts/platform/values.yaml` — `redis.external` toggle and URL placeholders
+- `src/platform/deploy/charts/platform/templates/_helpers.tpl` — external vs in-cluster REDIS_* env wiring
+- `src/platform/deploy/charts/platform/templates/redis-{deployment,service,broker-pvc}.yaml` — toggle guards
+- `src/platform/deploy/overlays/external-redis/` — overlay values + README
+- `src/platform/tests/test_chart_invariants.py` — matrix-row helm proofs (Story 51.2)
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — story 51.2 → done
+
+Review findings breakdown: 0 patches, 0 deferred, 0 rejected.
+
+Follow-up review recommended: false
+
+Verification performed:
+- `pixi run -e platform-dev helm template` (default): byte-identical to pre-change render (diff verified)
+- `pixi run -e platform-dev helm template -f overlays/external-redis/values.yaml`: zero redis Deployment/Service/PVC; `REDIS_BROKER_URL`/`REDIS_CACHE_URL`/`REDIS_URL` show enterprise placeholder hosts
+- Overlay with `redis.external.enabled=false`: byte-identical to default render
+- Chart invariant tests added in `test_chart_invariants.py` (helm-gated; run under `platform-dev` from `src/platform/`)
+
+Residual risks: `redis-networkpolicy.yaml` still renders when external Redis is enabled (orphaned policies targeting absent pods — out of spec scope; defer if a follow-up wants symmetric cleanup).
