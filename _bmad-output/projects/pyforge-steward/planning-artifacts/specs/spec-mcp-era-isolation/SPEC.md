@@ -52,6 +52,10 @@ operator cannot reach it on the live image without a second interpreter.
     `2025-06-18` echoes that revision. `MCP-Protocol-Version: 2026-07-28`
     is accepted. Unsupported revision returns JSON-RPC `-32022` with
     `data.supported`. GET returns 405 and `Allow: POST`.
+  - **verified:** 2026-09-11 — code-level re-check: `mcp_dual_era.py` carries `"2025-06-18"`,
+    `UNSUPPORTED_PROTOCOL_VERSION = -32022`, and the non-POST 405/`Allow` rejection, matching
+    the claim. The live CRC handshake proof itself (this spec's own evidence map, `.memlog.md`,
+    2026-08-26) is not re-run in this pass — needs a live CRC cluster.
 
 - **CAP-2 — isolated mcp-host env**
   - **intent:** A pixi environment exists that materializes mcp 2.x and the
@@ -60,6 +64,10 @@ operator cannot reach it on the live image without a second interpreter.
     `python -c "from mcp.server.mcpserver import MCPServer"` succeeds.
     `rg -n fastmcp pixi.toml` under `[feature.mcp-host]` is empty.
     `[feature.python-agent-platform]` is not lifted to mcp 2.x.
+  - **verified:** 2026-09-11 — live: `pixi install --frozen -e mcp-host` solves;
+    `pixi run -e mcp-host python -c "from mcp.server.mcpserver import MCPServer"` succeeds;
+    `[feature.mcp-host.dependencies]` carries no `fastmcp`; `pixi list -e python-agent-platform`
+    resolves `mcp 1.28.1`, confirming it is NOT lifted to 2.x.
 
 - **CAP-3 — host proxies; sidecar down is loud**
   - **intent:** The host ASGI process keeps the `/stations/<name>/mcp`
@@ -68,6 +76,11 @@ operator cannot reach it on the live image without a second interpreter.
   - **success:** With the URL set, dispatch does not import `MCPServer` in
     the web interpreter. When the sidecar is unreachable, the host logs at
     error and returns HTTP 502 — not a silent skip.
+  - **verified:** 2026-09-11 — code-level re-check: `mcp_http.py:432`'s docstring and
+    implementation match exactly ("Stream the request to the mcp-host sidecar. Unreachable →
+    502 + error log"); `MCP_HOST_SIDECAR_URL_ENV` gates the forward path. `test_mcp_host_
+    sidecar.py`'s Django-backed test suite not re-run in this pass (needs Postgres+Redis via
+    the `platform-ci-test` env — disproportionate to a doc-hygiene sweep).
 
 - **CAP-4 — cluster overlay cannot omit mcp-host**
   - **intent:** A Helm install / `helm template` of the platform chart (vanilla
@@ -82,6 +95,12 @@ operator cannot reach it on the live image without a second interpreter.
     Production/cluster Django check fails if the URL is unset. Sidecar not
     Ready is 502 on `/stations/<name>/mcp`, not a web CrashLoop. ImportError
     skip is **not** deleted (`retire-skip.md`).
+  - **verified:** 2026-09-11 — code-level re-check: `mcp-host-deployment.yaml:3`'s `required`
+    directive cites this exact CAP ("mcpHost.image.repository is required — cluster overlay
+    cannot omit mcp-host (spec-mcp-era-isolation CAP-4)"); `test_chart_invariants.py` carries
+    `test_helm_template_fails_when_mcp_host_repository_empty` and
+    `test_mcp_host_values_have_no_enabled_knob` by name. No `helm` binary available in this
+    environment to re-run `helm template` live — code-level match only.
 
 ## Constraints
 
