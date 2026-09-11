@@ -306,15 +306,18 @@ they are why this is not merely a UI project.
     `exp` — before signing. Never: a decode-only bearer path, in any profile.)*
 
 - **CAP-7 — Analytics behind the front door.**
-  - **intent:** Atlas's analytical boards are reachable through the host with per-tenant row
-    isolation enforced at the identity boundary, adopting the estate's existing secure-dashboard
-    pattern rather than a second one.
+  - **intent:** A role-isolated analytical board is reachable through the host at
+    `/stations/atlas/board/`, adopting the estate's secure-dashboard pattern
+    (`filter_by_role`, `AccessDeclaration`, master-dataset cache) rather than a second one.
+    *(Correct-course 2026-09-10, Story 49.4: the deliverable is the JSON fixture board in
+    `django_atlas_portal/board.py`, not Atlas's package-local Vizro/BSL stack.)*
   - **success:** Two users with different roles request the same board URL and provably receive
     different row sets.
-  - **verified:** role-sliced JSON board live in
-    `src/platform/tests/test_host_board_row_isolation.py:71-87`; fixture `_MASTER_ROWS` at
-    `src/shared/packages/django-atlas/src/django_atlas_portal/board.py:28-36`; real Vizro/BSL
-    host mount explicitly absent (`test_host_board_row_isolation.py:213-229`).
+  - **verified:** fully exercised — role-sliced JSON fixture board live at
+    `/stations/atlas/board/` (`test_host_board_row_isolation.py:71-87`; `_MASTER_ROWS` at
+    `django_atlas_portal/board.py:28-36`; steward pattern consumed at `board.py:17-20`).
+    Atlas's 34-page Vizro board (`pyforge/atlas/dashboard/`) is package-local by design
+    (`dashboard-dryrun`, `:8050` serve) and out of CAP-7 scope.
 
 - **CAP-8 — Stations can tell each other things.**
   - **intent:** A durable event backbone carries structured events between stations, with
@@ -731,8 +734,9 @@ Bound from `research/currency-review-pyforge-unifying-strategy-2026-09-09.md` an
   Wagtail alone.
 - **Not** a general-purpose multi-tenancy model. CAP-7's isolation is row-level for analytical
   boards, not a tenancy layer for the estate.
-- **Not** atlas's adoption of the secure-dashboard pattern. CAP-7 consumes that pattern; making
-  atlas's own board adopt it is atlas's story.
+- **Not** mounting Atlas's package-local Vizro board on the host — CAP-7's deliverable is the
+  fixture-grade JSON board (Story 49.4, 2026-09-10). The full nine-module Django half of
+  `spec-secure-live-dashboards` is deferred until a production board needs it.
 - **Not** a sibling `spec-htap-query-plane` or a ninth station. CAP-19 lives on this SPEC.
 - **Not** installing extensions on a customer enterprise database that forbids them.
 - **Not** JSON:API / DRF over the plane (`enterprise-data-models-and-apis`).
@@ -773,11 +777,11 @@ Reopened by the currency review; each line names its vessel.
   inline; `extends:` retired; `spec-python-agent-platform` superseded. Renaming
   `[feature.python-agent-platform]` remains a separate named story if ever.
 - **Story 43.7** `backlog` — sidecar runtime validation on Python 3.14 (added 2026-09-08).
-- **Six capabilities with an unexercised named criterion** → Epic 49: CAP-4 (`start`/`get` on 2
-  of 8, no disconnect test), CAP-7 (fixture board; real Vizro board asserted absent from the
-  host), CAP-11 (no eviction test), CAP-12 (`IDP_USERINFO = None` → next-login revocation),
-  CAP-14 (7-entry synonym map as "semantic"; no dual-write), CAP-17 (marshal never publishes to
-  the supervisor). Eleven CAPs verify fully.
+- **Four capabilities with an unexercised named criterion** → Epic 49: CAP-11 (no eviction test),
+  CAP-12 (`IDP_USERINFO = None` → next-login revocation), CAP-14 (7-entry synonym map as
+  "semantic"; no dual-write), CAP-17 (marshal never publishes to the supervisor). CAP-4 closed
+  2026-09-10 (Story 49.3); CAP-7 closed 2026-09-10 (Story 49.4 — fixture is the named
+  deliverable). Thirteen CAPs verify fully.
 - **`realization-gate-home` precondition MET this pass (2026-09-09, fleet readiness C4).** The
   question binds Epic 49's re-home to `hub:CAP-*` on `spec-intelligence-hub` reaching `ready`;
   all nine of that Spec's open questions were answered as one operator-approved bundle and its

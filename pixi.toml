@@ -222,6 +222,7 @@ elevenlabs = ">=1.52.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs
 # results); conda-forge current is 3.3.x.
 psycopg = ">=3.2.10"
 httpx = ">=0.28.1"                # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
+boto3 = ">=1.43.0"                # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client -- same client construction works against Story 50.2's local Silo/Garage or real StorageGRID; no consumer wired in yet
 dlt = ">=1.30.0"                  # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 48.11 (warden-B7 / fleet readiness C7): django_warden_fabric/tasks.py lazy-imports pyforge.warden.cli — platform image must ship the engine it calls
@@ -465,6 +466,7 @@ channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests
 daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)
 asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels adapter layer
 channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer for EventsStreamConsumer in Platform CI
+boto3 = ">=1.43.0"                # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client — the round-trip test needs a real S3-compatible client, this is not an AWS dependency
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
@@ -807,6 +809,10 @@ pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
 # Separate because pgvector has no win-64 build; installing this env is how a
 # developer gets the database the durable GraphStore tests demand.
 pyforge-scribe-pg = { features = ["pyforge-scribe", "scribe-pg"], no-default-feature = true }
+# Standalone local object-storage server (Story 50.2) -- Silo (default) or
+# Garage, chosen at runtime via PYFORGE_OBJECT_STORAGE_BACKEND. Separate from
+# any station env: it carries no pyforge package, only the two server binaries.
+platform-object-storage = { features = ["platform-object-storage"], no-default-feature = true }
 # Lean core env (Story 14.1, pyforge-scribe mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
@@ -2392,6 +2398,37 @@ cmd = "python scripts/scribe_pg.py down"
 [feature.scribe-pg.tasks.scribe-pg-status]
 description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433 and whether its data directory exists. Read-only; always exits 0."
 cmd = "python scripts/scribe_pg.py status"
+
+[feature.platform-object-storage]
+# --- platform-object-storage: local Silo/Garage S3-compatible server (Story 50.2) ---
+# Story 50.1's AD-1 exception lets pyforge *consume* S3-compatible object
+# storage (production target: NetApp StorageGRID, ops-provided, externally
+# operated). Nobody develops against production StorageGRID, so this feature
+# provisions a REAL local server -- never a mock -- for Story 50.3's
+# S3-client seam (and anything after it) to round-trip against.
+#
+# A SEPARATE feature, deliberately standalone (not folded into `platform-dev`),
+# for the same reason as `scribe-pg`: `garage` has NO win-64 conda-forge build
+# (verified live: 0 builds vs 7 each on linux-64/linux-aarch64/osx-64/osx-arm64),
+# and this workspace's default platform list includes win-64.
+platforms = ["linux-64"]  # only platform with both silo (SelfExplainML, Story 50.1) and garage verified live
+
+[feature.platform-object-storage.dependencies]
+python = "3.14.*"                 # standalone env (no-default-feature) needs its own interpreter for the up/down/status script
+silo = ">=20260903131801.0.0"    # default backend -- Story 50.1's own conda-forge-expert recipe (SelfExplainML channel)
+garage = ">=2.4.0"                # alternative backend -- already on conda-forge; no win-64 build (live-verified 2.4.1 config/CLI shape)
+
+[feature.platform-object-storage.tasks.platform-object-storage-up]
+description = "Start a real local S3-compatible object-storage server -- Silo (default) or Garage (PYFORGE_OBJECT_STORAGE_BACKEND=garage) -- on the fixed contract endpoint 127.0.0.1:9000. Idempotent: re-running against a live server re-asserts (prints ready) rather than restarting it. Server state lives under gitignored var/platform-object-storage/<backend>/. Garage refuses cleanly on Windows (no win-64 build) rather than silently no-op'ing."
+cmd = "python scripts/platform_object_storage.py up"
+
+[feature.platform-object-storage.tasks.platform-object-storage-down]
+description = "Stop the local object-storage server for the selected backend (PYFORGE_OBJECT_STORAGE_BACKEND). The data directory survives, so the next -up starts rather than re-initialises."
+cmd = "python scripts/platform_object_storage.py down"
+
+[feature.platform-object-storage.tasks.platform-object-storage-status]
+description = "Report whether the selected backend's local object-storage server is listening on 127.0.0.1:9000. Read-only; always exits 0 (except Garage's clean Windows refusal)."
+cmd = "python scripts/platform_object_storage.py status"
 
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg

@@ -2,7 +2,7 @@
 title: The estate gets an S3-compatible object store, without becoming its operator
 type: dream
 owner: steward
-status: specified
+status: realized
 ---
 
 # The estate gets an S3-compatible object store, without becoming its operator
@@ -105,3 +105,15 @@ fresh.
   qualified to match); decomposed into steward **Epic 50** (Stories 50.1-50.3):
   the Silo conda-forge recipe, local-dev pixi tooling (Silo default / Garage
   alternative), and a minimal S3-client seam. Status: `pitched` → `specified`.
+- **2026-09-10 (later still, same session)** — Epic 50 drained 3/3. Story 50.1:
+  `recipes/silo/recipe.yaml` authored, all four CFE gates green locally,
+  published to `https://anaconda.org/SelfExplainML/silo` (`local-recipes#1183`).
+  Story 50.2: the standalone `platform-object-storage` pixi feature +
+  `scripts/platform_object_storage.py`, both backends' up/down/status verified
+  live (idempotent, real S3 traffic, Garage's clean Windows refusal exercised)
+  (`local-recipes#1184`). Story 50.3: `src/platform/config/object_storage.py` +
+  a real round-trip test against an ephemeral local Silo, `platform-ci-local
+  -- --test` full green (`local-recipes#1185`). All four capabilities in
+  `spec-platform-object-storage-kind/SPEC.md` carry `verified:` lines; the
+  Spec and this Dream both close as `shipped`/`realized`. Status: `specified`
+  → `realized`.

@@ -396,6 +396,18 @@ REDIS_BROKER_URL = env("REDIS_BROKER_URL", default=REDIS_URL)
 REDIS_CACHE_URL = env("REDIS_CACHE_URL", default=REDIS_URL)
 REDIS_SSL = is_tls_broker(REDIS_BROKER_URL)
 
+# pap:AD-1 dated exception (2026-09-10, Story 50.1): S3-compatible object
+# storage is permitted as a CONSUMED, never self-hosted, backing service --
+# production target is NetApp StorageGRID, ops-provided and externally
+# operated. Config-only, deliberately with NO default: a default here would
+# either point at a specific StorageGRID instance (forbidden) or silently
+# resolve to something that looks configured when it is not. See
+# config/object_storage.py (Story 50.3) for the client this feeds and
+# Story 50.2's local dev backend (scripts/platform_object_storage.py).
+OBJECT_STORAGE_ENDPOINT_URL = env("OBJECT_STORAGE_ENDPOINT_URL", default=None)
+OBJECT_STORAGE_ACCESS_KEY = env("OBJECT_STORAGE_ACCESS_KEY", default=None)
+OBJECT_STORAGE_SECRET_KEY = env("OBJECT_STORAGE_SECRET_KEY", default=None)
+
 from platformapp.front_door.lane1_runtime import locmem_cache_aliases  # noqa: E402
 
 CACHES = locmem_cache_aliases()
