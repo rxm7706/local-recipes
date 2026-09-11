@@ -48,15 +48,33 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-1**
   - **intent:** An operator can issue, scope, rotate, audit, inventory, and record revocation of credentials through one CLI (`steward keys`), with the historical `JFROG_API_KEY` cross-host leak pattern closed as a named automated regression test.
   - **success:** A credential declared with an explicit host allowlist is never attached to a request outside it; `encrypt`/`decrypt` round-trips a fixture exactly via `age`; `rotate` re-encrypts every secret under a newly generated identity and the old identity fails to decrypt afterward, with no calendar/cron auto-rotation path; `audit --drift` reports the historical unconditional-injection pattern against a fixture and reports clean against today's fixed `_http.py`; `list` enumerates identities with scope/last-rotated metadata and never prints a raw secret value under any flag; `revoke` marks an identity retired and prints manual remediation guidance with zero third-party API calls; a dedicated conformance test fails loudly if the host-gating logic is ever removed or bypassed.
+  - **verified:** 2026-09-11 — `test_keys_{audit_cli,audit_drift,host_scoping,plaintext_secret_scan,
+    rotate,revoke,encrypt_decrypt,list}.py` (78/78) cover every sub-claim; live `age --version`
+    confirms the real binary; live `steward keys list --json` returns real inventory entries
+    with a `provenance` field and `secrets: []` (no raw value printed).
 - **CAP-2**
   - **intent:** An operator can build and publish the Pages dashboard through one reconciled command (`steward deploy dashboard`) instead of hand-running `dashboard-gen` + `git push`.
   - **success:** Running twice with no source change between runs results in zero commits on the second run; a real change to the generated output results in exactly one new commit containing exactly the changed files, pushed to the existing Pages-serving branch; `--dry-run` performs the build+diff and prints it without committing or pushing; `status` reports the last successful deploy's commit SHA and timestamp read from Git history alone, with no separate state store.
+  - **verified:** 2026-09-11 — `test_deploy_{build,reconcile,perimeter,static,profile_plugins,
+    dry_run,status,ledger_refusal}.py` (175/175); live `steward deploy status` returns
+    `last deploy e0783458... at 2026-08-25T06:15:44-05:00` — a real commit SHA + timestamp,
+    no separate state store.
 - **CAP-3**
   - **intent:** An operator or an unattended bmad-loop session can materialize any named pixi environment or a bmad-loop runner+environment together, list what exists, and verify the `environment.yaml` sync gate, without recalling raw pixi/`bmad-loop-worktree` syntax.
   - **success:** A valid environment name materializes via `pixi install -e`; an invalid name reports a clear error listing valid names rather than surfacing pixi's raw error; `--runner bmad-loop --env <name>` wraps `scripts/bmad-loop-worktree` to materialize a worktree plus its named environment in one call, surfacing underlying failures clearly rather than leaving orphaned state unreported; `--list` enumerates every `pixi.toml` `[environments]` entry with its composing features (plus `--json`); `--verify` wraps the existing sync-gate check and reports drift with a non-zero exit when out of sync.
+  - **verified:** 2026-09-11 — live: `steward provision --list --json` enumerates real
+    `pixi.toml` environments; `steward provision --verify` reports `environment.yaml is in
+    sync with pixi.toml`; `steward provision --env not-a-real-env` prints a clear "not a
+    valid pixi environment" error listing every real environment name, not pixi's raw error.
+    `--runner bmad-loop` materialization not re-exercised live (creates a real worktree,
+    disproportionate to a doc-hygiene sweep) — covered by `test_provision_runner.py`.
 - **CAP-4**
   - **intent:** An operator can declare and query a machine-readable resource ceiling and get an honest signal about spend rather than a fabricated number.
   - **success:** `budget set --cap <amount><currency>/<period>` records a stable, documented schema and rejects a malformed cap value without writing a corrupt entry; `budget show` prints the declared ceiling(s) in human and `--json` form, and reports clearly (not a crash or misleading zero) when none is declared; `budget check` returns one of three distinct exit codes — not-configured / under-budget / over-budget — never collapsing "no data" into a pass, with no cloud-cost-SDK or Kubecost/OpenCost/Infracost client import anywhere in the codebase.
+  - **verified:** 2026-09-11 — `test_budget_{show,check,set}.py` (37/37); live `steward budget
+    show --json` returns `[]` cleanly (no crash, no misleading zero) with none declared; a
+    repo-wide grep for `kubecost`/`opencost`/`infracost`/`boto3`/`google-cloud-billing` under
+    `pyforge-steward/src` returns zero hits.
 
 ## Constraints
 
