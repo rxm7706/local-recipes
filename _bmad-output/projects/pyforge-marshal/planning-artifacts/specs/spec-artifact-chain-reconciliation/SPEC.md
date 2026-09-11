@@ -61,6 +61,7 @@ the artifact. Nothing silent, everything cited and landed in reviewable PRs.
     dispositioned.
   - **success:** Six detectors + meta-suite green; zero `[drift-presumed]`
     fleet-wide.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PR #400 ("audit phase 0: mechanical debt to zero — 51 warns measured, named, stamped") is real and merged 2026-08-10; the resume-package's own summary confirms "13/13 detectors green at close, baseline re-stamped at 3fd83c1aa1".
 - **CAP-2**
   - **intent:** Every one of the 68 remaining stories (steward 4 → mason 28 →
     marshal 35 + blocked 8-5) carries a cited verdict — `STILL-VALID` /
@@ -68,6 +69,7 @@ the artifact. Nothing silent, everything cited and landed in reviewable PRs.
     traceability-matrix gate report.
   - **success:** 68/68 verdict rows, each with `file:line` or command-output
     evidence; one gate report landed per unfinished station.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PRs #401 (steward, 4 verdicts)/#402 (mason, 28)/#403 (marshal, 35+1) real and merged, summing to 68. Read PR #401's merge-commit content (`implementation-readiness-report-20260810.md`) directly: a real traceability matrix, every row cited to `file:line`, verdicts STILL-VALID/NEEDS-RESPEC used exactly as this CAP specifies.
 - **CAP-3**
   - **intent:** All five completed stations (atlas, doctor, herald, scribe,
     warden) audited at equal rigor: done-claims sampled per epic against code,
@@ -75,11 +77,13 @@ the artifact. Nothing silent, everything cited and landed in reviewable PRs.
     sets, board rows), statuses corrected to earned values.
   - **success:** Per-station gate report; every chain column verified or
     carries a dispositioned finding; Spec statuses match evidence.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PR #404 ("audit phase 2: five completed stations reconciled at equal rigor") is real and merged 2026-08-10, matching all five named stations (atlas, doctor, herald, scribe, warden).
 - **CAP-4**
   - **intent:** The TEA column is refreshed by measurement: per-epic
     AC → covering-test map across all 8 stations; an AC with no test becomes a
     visible, non-gating coverage-debt row for operator disposition.
   - **success:** Coverage table present per epic in the gate reports.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: confirmed directly in PR #401's gate report — a real `## TEA / coverage-debt` table exists, naming a real coverage-debt row (8.1's "live pair" AC covered only by fake-transport tests) as non-gating per this CAP's own contract.
 - **CAP-5**
   - **intent:** Audit verdicts become repairs in both directions: artifact
     diverged from code → artifact rebuilt through the owning skills
@@ -91,24 +95,28 @@ the artifact. Nothing silent, everything cited and landed in reviewable PRs.
     recorded.
   - **success:** Every fix traceable to a verdict row and an owning-skill or
     tested-code landing; detectors green after each landing PR.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PR #401's gate report directly evidences this — AF-1/AF-2/AF-8 landed real fixes IN that same PR (Tier-3 keys corrected, 10 epics.md Status lines corrected, both READMEs fixed), each traced to its own finding row, exactly the both-directions repair discipline this CAP claims.
 - **CAP-6**
   - **intent:** Each of the four queued decomposition chains (atlas → herald →
     doctor → steward) starts only after its owning station's audit gate report
     has landed.
   - **success:** Every decomposition PR cites the landed gate report it builds
     on.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PR #406 ("audit phase 3: conservative decomposition — doctor lands, herald/steward held") is real and merged, matching the resume-package's own account that doctor was the audit's one landed decomposition while herald/steward were held pending operator go-ahead.
 - **CAP-7**
   - **intent:** Operator can make the resume decision on measured artifacts:
     final baseline re-stamp, board regeneration, fleet-picture, and a
     per-station go/no-go summary.
   - **success:** Baseline stamped; board matches ledger; the 68-story
     projection is backed by verdict rows rather than presumption.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: `resume-package-2026-08-10.md` (39 lines, read in full) is this CAP's own deliverable — a real per-station go/no-go table naming specific unmet gates (e.g. mason/marshal "NO-GO until one correct-course session"), not a rubber-stamped go-everywhere.
 - **CAP-8**
   - **intent:** The non-station estate is audited too: every Dream in
     `docs/dreams/` gets a verdict row — status truth against the README state
     definitions, chain completeness, satellite-consolidation correctness,
     stranded artifacts.
   - **success:** 61/61 Dreams dispositioned in an inventory gate report.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `fd9eeb53bc`: PR #405 ("audit phase 2b: 61-Dream inventory — two truth-ups, estate verified") is real and merged; `dream-inventory-2026-08-10.md` (44 lines) is this CAP's own companion deliverable.
 
 ## Constraints
 
