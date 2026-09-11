@@ -2,7 +2,7 @@
 title: 'Rule-2 retro for Story 13.2 lands in the CFE skill'
 type: 'chore'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e16443693d844e87fc473a90096ab6fac7a7258e'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -144,3 +144,37 @@ mason meta-test is satisfied by construction rather than worked around.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 1, defer 2
+- findings:
+  - `[low]` `[patch]` Initial retro commit omitted `failure-catalog.yaml` regeneration after G26 text moved — regenerated via `pixi run -e local-recipes generate-failure-catalog`; `test_failure_catalog_freshness.py` now green.
+  - `[false]` `[reject]` CHANGELOG v8.90.2 TL;DR claims `cfe-rebuild-guard-check` verified clean at landing time — it was not yet clean because `brief_mirrored_through` had not been advanced; fixed by advancing both slice entries to `ab0cb3b2a0` in `campaign-state.yaml`.
+  - `[medium]` `[defer]` `test_portal_last_diagnose.py::test_django_mason_has_no_raw_http_pyforge_or_minio` fails on `boot_reconcile.py`'s `from pyforge.mason.boot import ...` — pre-existing at baseline `e16443693d`, not introduced by this story; out of scope.
+  - `[medium]` `[defer]` Prior commits carry `Co-Authored-By: Cursor` lines contrary to AGENTS.md commit policy — pre-existing on this branch's auto-run commits; not reverted here.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Landed the Rule-2 CFE retro deferred from pyforge-mason Story 13.2: G26 extension for the `dbgpt-client` `sqlalchemy` upper-bound cap (`>=2.0.25,<2.0.29` → `<2.1` + source patch), distinct from Story 13.1's `langflow-base` marker-split case study. PATCH bump to v8.90.2; closed `DW-13-2-1`.
+
+Files changed:
+- `.claude/skills/conda-forge-expert/SKILL.md` — G26 dbgpt-client case study (Story 15.2)
+- `.claude/skills/conda-forge-expert/CHANGELOG.md` — v8.90.2 entry naming Story 13.2
+- `.claude/skills/conda-forge-expert/MANIFEST.yaml`, `config/skill-config.yaml` — version 8.90.2
+- `.claude/skills/conda-forge-expert/config/failure-catalog.yaml` — regenerated (source_sha256 refresh)
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md` — `DW-13-2-1` closed
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml` — `brief_mirrored_through` advanced to `ab0cb3b2a0` (docs-only, no byte re-port)
+
+Review findings: 1 low patch applied (failure-catalog + campaign-state); 2 deferred (pre-existing portal test, commit-attribution policy on prior auto commits); 1 false (guard-clean claim timing).
+
+Follow-up review recommendation: false (1 low patch; score 1).
+
+Verification performed:
+- `pixi run -e local-recipes cfe-rebuild-guard-check` — clean after campaign-state advance
+- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_failure_catalog_freshness.py` — 1 passed
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` — 14 passed (after committing CFE surface edits)
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 1 failed (`test_django_mason_has_no_raw_http_pyforge_or_minio`, pre-existing at baseline)
+
+Residual risks: `sprint-status-ledger.yaml` still lists 15-2 as `backlog` — needs `sprint-ledger-sync` in a follow-up commit; feedstock PR #4 CI not re-verified here.
