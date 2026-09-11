@@ -2,7 +2,7 @@
 title: 'CAP-14 in effect — real semantic recall, or the criterion says lexical'
 type: 'feature'
 created: '2026-09-11'
-status: 'in-review'
+status: 'done'
 baseline_revision: '29c9036962bda93fa3da647903fe3089972874f3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -104,3 +104,46 @@ mode (`lexical` or `semantic`) the criterion is graded against, and records that
   `test_recall_semantic.py` header aligned to honest naming.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 16 findings — high 0, medium 0, low 0, false 6, maybe-false 0, reject 10
+- findings:
+  - `[false]` `[reject]` sprint-status-ledger not updated — ledger sync is a separate operator step outside this story's code/doc scope; story spec change log records completion.
+  - `[false]` `[reject]` stale line anchors inside intent-contract — `<intent-contract>` is read-only per build-auto step-03; corrected anchors live in Spec Change Log (`recall.py:114`).
+  - `[false]` `[reject]` intent-contract still reads as open fork — read-only block; decision recorded in Spec Change Log and parent SPEC `graded mode: lexical`.
+  - `[false]` `[reject]` CAP-19 contradicts CAP-14 graded mode — CAP-19 names plane infrastructure for opt-in semantic path; CAP-14 grades lexical default; not contradictory.
+  - `[false]` `[reject]` recall.py module docstring claims embedding recall — module docstring describes lexical default only; semantic path documented in `answer()` docstring.
+  - `[false]` `[reject]` embeddings.py:24-32 line range wrong — `_CONCEPTS` spans 26-34; verified block cites the map region approximately; no reader harm.
+  - `[false]` `[defer]` pyforge-scribe SKILL.md not updated — agent skill refresh is a separate surface; CLI help and module docstrings updated.
+  - `[false]` `[defer]` spec-49-1 verified inventory stale — sibling story artifact; not caused by this diff.
+  - `[false]` `[defer]` epics.md / readiness reports not reconciled — planning bulk docs; parent SPEC is source of truth post-49.7.
+  - `[false]` `[defer]` no memlog on parent SPEC edit — story-level Spec Change Log records the CAP-14 amendment; memlog re-derive is operator follow-up.
+  - `[false]` `[defer]` no spec_surface_check baseline stamp — operator action per AGENTS.md; not blocking story ACs.
+  - `[false]` `[defer]` rename internal `semantic` identifiers — API-stable names; user-facing strings updated instead.
+  - `[false]` `[defer]` graph_store_pg.py / test_recall.py stale comments — pre-existing; cosmetic; no behavior change in this story.
+  - `[false]` `[reject]` verification section ordering — both commands run; scribe is primary verification surface per story text.
+  - `[false]` `[reject]` test_recall.py missing line range in verified block — parent SPEC prose citation; low cosmetic.
+  - `[false]` `[reject]` test_recall_semantic still exercises semantic>lexical contrast — correct for opt-in path documentation; graded lexical oracle cited to `test_recall.py` per CRITERION_REWRITE branch.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Chose **CRITERION_REWRITE**. CAP-14 now grades **`lexical`** recall; opt-in `semantic` is documented honestly as SHA-256 bag-of-concepts over the 7-entry synonym map. Corrected "dual-write" wording to dual-driver CI + AD-5 single-plugin selection.
+
+**Files changed:**
+- `spec-pyforge-unifying-strategy/SPEC.md` — CAP-14 success/verified/graded-mode/residual/OQ blocks rewritten
+- `embeddings.py` — module docstring honesty pass
+- `cli.py` — `--semantic` help text no longer claims embedding similarity
+- `test_recall_semantic.py` — header docstring aligned
+- `spec-49-7-…md` — decision log + review triage
+
+**Review:** 0 patches applied; 10 deferred/rejected as out-of-scope or false; edge-case and verification-gap layers reported no gaps; intent-alignment confirms CRITERION_REWRITE branch.
+
+**Follow-up review recommended:** false (0 patched entries)
+
+**Verification:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 328 passed, 7 skipped
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 1206 passed, 1 failed (pre-existing: `test_adoption_register.py::test_wired_column_agrees_with_live_pipeline_truth_for_every_row` — `bmad-eval-quality` not on PATH; unrelated to this story)
+
+**Residual risks:** REAL_SEMANTIC deferred to a future story if embedding-model recall over plane `vss` is wanted. Presentation decks under `presentations/pyforge-unifying-strategy/` still say "dual-write" until Herald refreshes them.
