@@ -2,8 +2,8 @@
 title: 'The Tutorials/Getting-Started and How-to-Guides quadrants are populated'
 type: 'feature'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'a7752e7f91015b81d79a979bfca61a0dc8c8c8bb'
+status: 'done'
+baseline_revision: '85cfb7d7e4bc743c2d636f18d2eb761e423d3eea'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -98,3 +98,75 @@ docs, only pulls the general-purpose material that belongs at the repo level.
 - Manual verification: every fact relocated out of `README.md`'s Common Commands section and
   `developer-guide.md` is findable in exactly one new location, not duplicated in both the old
   and new spot.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 4 findings — high 0, medium 1, low 2, false 1, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` `enterprise-deployment.md` §1 retained duplicate procedural steps after creating `air-gapped-mirror-setup.md` — trimmed Setup Steps/Mirror Management/Offline build blocks; pointer to how-to remains
+  - `[low]` `[defer]` Inbound links to old `docs/reference/antigravity-developer-startup.md` / `manticore-studio.md` paths remain repo-wide — Story 22.6 entry-point sweep
+  - `[low]` `[defer]` `CLAUDE.md` still cites pre-relocation doc paths — Story 22.6 explicit scope
+  - `[false]` `[reject]` README project-structure tree stale doc paths — updated in this pass to Diátaxis layout
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Populated `docs/tutorials/getting-started.md` and seven how-to guides by relocating existing content from `README.md`, `developer-guide.md`, and `enterprise-deployment.md` §1; moved antigravity/manticore to `docs/how-to/` with redirect stubs; split `developer-guide.md` to reference-only; updated MAP and quadrant indexes.
+
+**Files changed:**
+- `docs/tutorials/getting-started.md` — onboarding path (new)
+- `docs/how-to/*.md` — recipe testing, pixi tasks, GitHub Actions CI, troubleshooting, air-gap mirror, antigravity, manticore (new + relocated)
+- `docs/reference/developer-guide.md` — reference-only split with quadrant pointers
+- `docs/reference/antigravity-developer-startup.md`, `manticore-studio.md` — redirect stubs
+- `README.md` — temporary pointers to new homes (no duplicate full content)
+- `docs/MAP.md`, quadrant README indexes — population status updated
+- `docs/explanation/enterprise-deployment.md` — procedural split to how-to
+- Story spec + sprint ledger — status promoted
+
+**Review:** 1 patch applied (enterprise-deployment dedupe); 2 items deferred to Story 22.6; 1 rejected as already fixed.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e local-recipes dreams-hygiene-check` — exit 0
+- Manual: relocated README Quick start / Pixi / GitHub Actions content lives only under `docs/tutorials/` and `docs/how-to/`; `developer-guide.md` retains formats + config reference only
+
+**Residual risks:** Inbound links to old paths (including § anchors) remain until Story 22.6; README pointers are temporary per spec until 22.6 full entry-point sweep.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 1, maybe-false 0, reject 2
+- findings:
+  - `[low]` `[patch]` Mason-backed `recipe build` route dropped during `developer-guide.md` split — re-added to `docs/how-to/recipe-testing-and-builds.md`
+  - `[false]` `[reject]` Duplicate README/Pixi task tables remain — README now holds pointers only; full tables live in `docs/how-to/pixi-tasks.md`
+  - `[defer]` `CLAUDE.md` / agent entry points still cite pre-relocation paths — Story 22.6 explicit scope
+  - `[defer]` Section-anchor inbound links to relocated docs hit redirect stubs — Story 22.6 link sweep
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Populated `docs/tutorials/getting-started.md` and seven how-to guides by relocating scattered onboarding and operational content from `README.md` and `docs/reference/developer-guide.md`. Split `developer-guide.md` to reference-only (formats, platform matrix, config). Moved `antigravity-developer-startup.md` and `manticore-studio.md` to `docs/how-to/` with redirect stubs. Updated quadrant READMEs and `docs/MAP.md`.
+
+**Files changed:**
+- `docs/tutorials/getting-started.md` — onboarding path (new)
+- `docs/tutorials/README.md` — index
+- `docs/how-to/*.md` — recipe testing, CI, pixi tasks, troubleshooting, air-gap, antigravity, manticore (new/relocated)
+- `docs/how-to/README.md` — index
+- `docs/reference/developer-guide.md` — split to reference-only with quadrant pointers
+- `docs/reference/antigravity-developer-startup.md`, `manticore-studio.md` — redirect stubs
+- `docs/reference/README.md`, `docs/MAP.md` — population status updated
+- `README.md` — duplicate sections replaced with pointers to new homes
+
+**Review:** 1 patch applied (low); 2 items deferred to Story 22.6; 2 rejected/false.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e local-recipes dreams-hygiene-check` — exit 0 (pre-existing warnings only)
+- Manual: README and developer-guide no longer duplicate relocated tutorial/how-to content; new quadrant homes indexed in READMEs and MAP
+
+**Residual risks:** Inbound links from `CLAUDE.md`, `AGENTS.md`, and §-anchored references remain until Story 22.6.
