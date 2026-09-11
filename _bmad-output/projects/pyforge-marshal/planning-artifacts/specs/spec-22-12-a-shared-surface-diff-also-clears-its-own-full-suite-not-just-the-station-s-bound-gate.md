@@ -2,9 +2,11 @@
 title: A shared-surface diff also clears its own full suite, not just the station's bound gate
 type: feature
 created: '2026-09-11'
-status: in-progress
+status: done
 updated: '2026-09-11'
 baseline_revision: 8365d1f0f5e62fb810f113fa719ad4def5d46c4a
+review_loop_iteration: 1
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-3-verification-is-the-product-no-landing-on-a-self-report.md
@@ -66,3 +68,23 @@ warnings: []
 
 **Commands:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test` — expected: all unit tests pass including new cross-surface cases.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — self-review after full test suite green)
+
+## Auto Run Result
+
+Status: done
+Summary: Story 22.12 (FR-193 CAP-12) adds an additive cross-surface verify gate: when a dispatch diff touches `src/platform/`, `evaluate_dispatch_verification` runs `platform-ci-local -- --test` after the station-bound gate; failures emit `MRS-GATE-015` (GATE_FAILED). Station-only diffs unchanged.
+Files:
+- `core/gate.py` — shared-surface detection + hardcoded command/constants
+- `dispatch_verify.py` — `_run_verify_command` helper + cross-surface wiring
+- `core/findings.py`, `core/verdict.py` — register/classify `MRS-GATE-015`
+- `core/dispatch_retry.py` — transient retry for cross-surface gate failures
+- `tests/unit/test_dispatch_verification.py` — matrix + 49.14 fixture tests
+- `tests/unit/test_findings.py` — registry membership
+Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` — **7790 passed**, 12 deselected.
+Review: 0 patch findings; follow-up review not recommended.

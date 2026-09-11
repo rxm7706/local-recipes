@@ -32,6 +32,7 @@ _TRANSIENT_FAILED_GATES: frozenset[str] = frozenset(
         "MRS-GATE-006",
         "MRS-GATE-010",
         "MRS-GATE-011",
+        "MRS-GATE-015",  # Story 22.12: cross-surface gate fail — retriable like 001
     }
 )
 
