@@ -7,6 +7,10 @@ Tier-3 since 0.9.1; this script closes the hand-driven gap by promoting
 findings into each project's tracked ``deferred-work-ledger.md`` without a
 human relay (marshal Story 25.6 / CAP-6).
 
+Story 21.8 / CAP-9: a deferral citing no resolvable repo path is **refused**
+(not appended). Refusals go to stderr and count toward exit code 1 when nothing
+ingestible remains for a project; partial batches still ingest resolvable rows.
+
 Imports the pure helpers from ``pyforge.doctor.sources.chain`` — the same
 algorithms the ``deferred-work`` detector uses — rather than duplicating
 parsing or fingerprint logic.
@@ -125,10 +129,13 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
                 already_minted,
             )
         except ValueError as exc:
+            for refusal in refused:
+                print(refusal, file=sys.stderr)
             return _Outcome(
                 slug,
                 "aborted",
                 f"{slug}: ABORTED, no write — could not mint id for {finding.spec_rel!r}: {exc}",
+                refused=len(refused),
             )
         already_minted.add(new_id)
         minted_ids.append(new_id)

@@ -3113,25 +3113,26 @@ def _text_has_resolvable_path(text: str) -> bool:
 
 def finding_has_resolvable_location(finding: SpecDeferredFinding) -> bool:
     """True when intake can cite at least one checkable repo path."""
-    for part in (finding.location, finding.summary, finding.evidence):
-        if not part:
-            continue
-        if _is_path_token(part.strip()):
+    if finding.location:
+        loc = finding.location.strip()
+        if _is_path_token(loc) or _text_has_resolvable_path(loc):
             return True
-        if _text_has_resolvable_path(part):
+    for part in (finding.summary, finding.evidence):
+        if part and _text_has_resolvable_path(part):
             return True
     return False
 
 
 def format_intake_location_refusal(finding: SpecDeferredFinding) -> str:
     """Explain why a frontmatter deferral was refused at intake."""
+    summary_hint = f" ({finding.summary!r})" if finding.summary else ""
     return (
-        f"refused {finding.spec_rel!r}: missing resolvable `location:` — cite a "
-        f"repo file path in `location:` (for example "
-        f"`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`) "
+        f"refused {finding.spec_rel!r}{summary_hint}: missing resolvable "
+        f"`location:` — cite a repo file path in `location:` (for example "
+        f"src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py) "
         f"or backtick a checkable file path in `summary`/`evidence` "
-        f"(for example `` `scripts/deferred_work_intake.py` ``); dotted symbols "
-        f"such as `os.replace` do not count"
+        f"(for example `scripts/deferred_work_intake.py`); dotted symbols "
+        f"such as os.replace do not count"
     )
 
 
@@ -3569,7 +3570,8 @@ def _deferred_work_message(item: dict) -> str:
         return (
             f"{item['project']}/spec-frontmatter {item['id']}: deferred finding in "
             f"{item['tier3']} has no tracked twin in {item['tracked']}"
-            f"{hint} — run `python scripts/deferred_work_intake.py --fix`"
+            f"{hint} — run `python scripts/deferred_work_intake.py --fix` "
+            f"(Story 21.8 refuses deferrals with no resolvable repo path)"
         )
     if kind == "no-deferred-work-baseline":
         return item["detail"]

@@ -2273,6 +2273,22 @@ def test_intake_entry_citing_no_code_has_no_resolvable_location() -> None:
     assert "missing resolvable `location:`" in chain.format_intake_location_refusal(finding)
 
 
+def test_intake_entry_prose_with_slash_is_not_resolvable() -> None:
+    finding = _finding(
+        "deferred to a later story",
+        "out of scope / follow-up pass",
+    )
+    assert not chain.finding_has_resolvable_location(finding)
+
+
+def test_intake_entry_citing_code_in_summary_is_resolvable() -> None:
+    finding = _finding(
+        "fix `scripts/deferred_work_intake.py` gate ordering",
+        "out of scope for this pass",
+    )
+    assert chain.finding_has_resolvable_location(finding)
+
+
 def test_intake_entry_citing_code_in_evidence_is_resolvable() -> None:
     finding = _finding(
         "tighten the parser",

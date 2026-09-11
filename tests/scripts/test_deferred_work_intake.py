@@ -256,6 +256,43 @@ def test_intake_preserves_pre_existing_ledger_on_append(tmp_path: Path) -> None:
     assert "GitHub-releases fallback" in text
 
 
+EVIDENCE_ONLY_DEFERRED_YAML = """\
+---
+title: evidence-only spec
+status: done
+deferred:
+  - summary: tighten the parser
+    evidence: |-
+      `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` over-matches
+    severity: medium
+---
+
+# Evidence only
+"""
+
+
+def test_intake_accepts_deferral_with_path_only_in_evidence(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-evidence-only.md", EVIDENCE_ONLY_DEFERRED_YAML)
+    _write_tracked(repo, "pyforge-doctor", "# empty ledger\n")
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "ingested"
+    text = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    ).read_text(encoding="utf-8")
+    assert "tighten the parser" in text
+    assert "chain.py" in text
+
+
 def test_intake_accepts_resolvable_entry_and_refuses_uncited_in_same_run(
     tmp_path: Path,
 ) -> None:

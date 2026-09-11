@@ -134,3 +134,21 @@ Verification:
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 2 failed pre-existing on baseline (`pixi-currency-ledger` schema/source drift), 1583 passed; failures unchanged by this diff
 
 Residual risks: Entries with backticked paths only in `summary`/`evidence` pass intake but may still lack an explicit `location:` ledger field (same as before 21.8). Fleet never-verified totals are halted at the intake boundary only — not re-measured in this story.
+
+### 2026-09-11 — Review pass (follow-up)
+- verdicts: 14 findings — high 0, medium 4, low 3, false 4, maybe-false 3
+- findings:
+  - `[false]` `[reject]` Cross-story pixi-currency bundle in diff — not present in commit d3b4b18494; only 21.8 files shipped
+  - `[false]` `[reject]` Refuse-or-flag intent mismatch — refuse-only satisfies the Always clause and I/O matrix
+  - `[low]` `[reject]` Code Map omits `tests/scripts/` — documentation gap only; script tests exist and pass
+  - `[medium]` `[patch]` Detector hint omits Story 21.8 refusal semantics — appended note to `spec-frontmatter-only-deferral` remedy text in `chain.py`
+  - `[low]` `[patch]` Module docstring did not document refusal — added Story 21.8 / CAP-9 paragraph to `deferred_work_intake.py`
+  - `[low]` `[reject]` Partial-refuse exit 0 undocumented — intentional partial-success semantics; all-refused still exits 1
+  - `[medium]` `[patch]` Summary-only resolvable path untested — added unit + script integration tests
+  - `[maybe-false]` `[defer]` Promoted blocks may omit explicit `location:` when path only in evidence — pre-21.8 shape; gate still blocks ungrounded entries
+  - `[maybe-false]` `[defer]` memlog documents superseded admit-and-flag — planning doc drift, not intake regression
+  - `[low]` `[patch]` Refusal message nested backticks — flattened examples in `format_intake_location_refusal`
+  - `[medium]` `[patch]` Mint abort dropped collected refusals — print stderr + propagate `refused` count on abort path
+  - `[medium]` `[patch]` Multiple uncited deferrals share `spec_rel` in refusal — include `summary` snippet in refusal message
+  - `[false]` `[reject]` Verification gap on evidence-only path — closed by `test_intake_accepts_deferral_with_path_only_in_evidence`
+  - `[maybe-false]` `[defer]` Narrow intake surface vs fleet measurement — story scope is spec-frontmatter promotion only
