@@ -19,6 +19,7 @@ sources: ['docs/dreams/marshal-land-merge-subject.md']
 - **CAP-1**
   - **intent:** `marshal land` renders the same templated merge subject `deploy land-story` already does (`identity.render_merge_subject(story_key, template)`, AD-24) and applies it to the GitHub merge, instead of leaving GitHub to auto-generate one.
   - **success:** `marshal_native_merged_keys(subjects, template, project_slug)`, given a real subject string from a `marshal land`-driven merge, classifies it as native — the same outcome it already produces for a `deploy land-story` merge.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `cli/land.py::run_land` renders `subject = identity.render_merge_subject(wave_keys[0], template)` and threads it into `forge.merge_pr(..., subject=ForgeRef(subject))`; `adapters/forge_gh.py::merge_pr` appends `--subject <value>` to the `gh pr merge` invocation whenever `subject is not None`. `tests/unit/test_promotion.py::test_marshal_native_merged_keys_recognizes_a_land_rendered_subject` (the exact success-criterion scenario) and 23 sibling promotion/land subject tests pass.
 
 ## Constraints
 

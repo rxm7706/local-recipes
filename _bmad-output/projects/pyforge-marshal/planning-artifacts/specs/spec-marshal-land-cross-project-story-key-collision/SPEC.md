@@ -54,6 +54,7 @@ caused.
     regression test pins this exact real subject against
     `project_slug='mason'` and asserts no key is returned, and against
     `project_slug='marshal'` and asserts `StoryKey(4, 2)` is still returned.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `pyforge.core.landing_evidence._branch_belongs_to_project` (line 159) scopes both branch shapes to `project_slug`; `promotion.py::extract_story_key_from_github_merge_subject` delegates to it. `test_github_pattern_rejects_a_different_projects_story_key_collision` (marshal) and `test_github_pattern_rejects_cross_project_collision` (core) — both pinning PR #274's real subject — pass, alongside `test_github_pattern_still_recognizes_the_owning_projects_own_key`.
 
 - **CAP-2 — both real branch-naming shapes still resolve correctly for a
   project's own stories.**
@@ -66,6 +67,7 @@ caused.
     `extract_story_key_from_github_merge_subject` still passes unmodified,
     plus new tests covering both shapes scoped correctly against their own
     `project_slug`.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_merged_story_keys_land_slug_branch_shape_recognized_for_owning_station` (the `land/<slug>-...` shape) and `test_extracts_key_from_real_github_merge_subject_2_3`/`_3_8` (the `<slug>/...` shape) both pass alongside the full 9-test `test_promotion.py` github-pattern subset — no existing case regressed.
 
 ## Constraints
 
