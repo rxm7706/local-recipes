@@ -153,7 +153,7 @@ this document's five fields.
     pipeline and consumers reference it by catalog name; the former unregistered side-effect
     (per-version download history) is an explicit node with declared outputs; and the legacy
     per-phase engineering contracts survive the port with their fixtures carried over green.
-
+  - **verified:** confirmed by real test evidence: `test_core_pipeline_has_eight_nodes`, `test_vcs_health_pipeline_has_ten_nodes`, `test_no_dataset_is_written_by_two_pipelines`, `test_combined_dag_resolves_topologically_with_no_procedural_order` (`tests/unit/pipelines/test_dag_resolves.py`), part of the full `pyforge-atlas-test` run (1818 passed, 18 skipped, 2026-09-11).
 - **CAP-2 — all IO is catalog-declared, all credentials are host-scoped**
   - **intent:** No node function contains data-access logic, and a credential reaches only the
     host it belongs to.
@@ -162,7 +162,7 @@ this document's five fields.
     survive as dataset-level endpoint config so an enterprise mirror substitutes without code
     change; and a non-JFrog host provably never receives the JFrog API header — closing the
     legacy global-injection defect rather than porting it.
-
+  - **verified:** `kedro-catalog-check` (67 tests) green, incl. `test_catalog_never_hardcodes_a_host` (`tests/unit/catalog/test_override_points.py`) and the whole-package no-inline-IO scan (`test_no_inline_io.py`).
 - **CAP-3 — incremental state is a dataset concern, not a node concern**
   - **intent:** Freshness, resumption, and re-fetch decisions belong to one reusable dataset
     class, so no node ever re-implements them.
@@ -171,7 +171,7 @@ this document's five fields.
     catalog (7 d, 30 d, 1 d, 90 d, … — never a global constant); the bespoke `phase_state`
     checkpoint table is deleted, with resumability supplied by the runner plus persisted
     intermediate datasets.
-
+  - **verified:** `IncrementalParquetDataset`'s TTL round-trip live in `tests/unit/datasets/test_incremental_parquet.py` (`test_save_stamps_fetched_at_and_load_round_trips`, `test_stale_mask_gates_old_stale_recent_fresh`, `test_two_instances_with_different_ttls_gate_differently`); per-dataset TTL declaration confirmed by `kedro-catalog-check`'s catalog-convention tests above.
 - **CAP-4 — one execution plane, orchestrated and budgeted**
   - **intent:** The operator watches scheduled, retried, per-node-budgeted runs instead of
     tailing stdout, and every entry point rides identical machinery.
@@ -182,7 +182,7 @@ this document's five fields.
     abort its siblings — the coarse-cap silent-drop class is structurally retired; the
     highest-cost phase stays admin-config-only behind an explicit enable flag and is never a
     default schedule; and structural lineage renders in the browser via a dedicated task.
-
+  - **verified:** `dagster-dryrun` green, incl. `test_jobs_resolve`, `test_schedules_enumerate`, `test_cadence_table_is_encoded`, `test_every_op_has_its_own_timeout`, `test_timeouts_are_not_a_single_monolith`, `test_phase_r_overrun_cannot_abort_phase_f_k_n` (proves the coarse-cap silent-drop class is structurally retired), `test_phase_p_job_exists_but_is_unscheduled` (`tests/unit/orchestration/test_definitions_dryrun.py`).
 - **CAP-5 — event-driven ingestion on the same plane**
   - **intent:** Upstream release activity can pull the pipeline forward incrementally instead
     of waiting for the next scheduled tick.
@@ -191,7 +191,7 @@ this document's five fields.
     event yields an explicit skip reason; the decision logic is orchestrator-free and
     unit-testable from a simulated event; and sensors enumerate under the definitions dry-run
     gate.
-
+  - **verified:** same `dagster-dryrun` run, incl. `test_sensors_enumerate_in_definitions`, `test_each_sensor_targets_a_real_existing_job`, `test_simulated_event_yields_run_request_for_the_right_job`, `test_no_event_yields_skip_reason` (`tests/unit/orchestration/test_definitions_dryrun.py`).
 - **CAP-6 — one engine for compute, graph, and vector**
   - **intent:** Analytical compute, graph traversal, and semantic retrieval all run in the same
     store, over the same canonical files.
@@ -200,7 +200,7 @@ this document's five fields.
     alike; a grep gate proves no SQLite read or write path survives anywhere in the migrated
     surface; and a similarity query returns ranked results from the same store, with the
     embedding strategy and offline extension provisioning resolved rather than assumed.
-
+  - **verified:** `duckdb-singularity` gate green: `test_only_the_boot_module_launches_duckdb_server`, `test_no_sqlite_in_the_migrated_surface`, `test_duckdb_is_present_as_the_engine` (`tests/unit/singularity/`); vector similarity live in `tests/unit/rag/test_vss_similarity_search.py` (`test_similarity_query_returns_ranked_results_from_duckdb`, `test_store_loads_vss_offline_with_autoinstall_disabled`).
 - **CAP-7 — retirement earned by recorded parity, not asserted**
   - **intent:** The legacy orchestrator is retired only against evidence a human signed.
   - **success:** A fixture-based, loop-callable parity harness compares migrated Parquet
@@ -209,7 +209,7 @@ this document's five fields.
     ordering-only differences documented benign); the evidence is recorded with human sign-off
     at an attended boundary event; and only then are the legacy orchestrator and its
     checkpoint table marked for retirement.
-
+  - **verified:** `parity-diff` (71 tests) green — the same fixture-mode parity gate cited on `spec-atlas-kedro-catalog-expansion` CAP-1's `verified:` line. The attended human-sign-off retirement event itself is out of a code-verification pass's reach by design (CAP-7's own intent: retirement earned by a recorded, signed event, not by tests alone).
 - **CAP-8 — the read surface is declared once and consumed everywhere**
   - **intent:** Metric logic lives in exactly one place, and every read surface — page,
     natural-language query, agent read — translates through it.
@@ -225,7 +225,7 @@ this document's five fields.
     question.)*; a natural-language query returns a chart
     grounded in declared metrics; and its language backend routes through repo model-backend
     configuration, never a hardcoded public endpoint.
-
+  - **verified:** `bsl-metric-check` (16 tests) + `dashboard-dryrun` (72 tests, incl. the real-server Playwright/ARIA check) + `vizro-ai-dryrun` (`tests/unit/nl`, offline-safe backend-config-driven NL query, no hardcoded public endpoint) all green (2026-09-11). Page count is 34 live (`dashboard/app.py::PAGE_INVENTORY`), not the 28 this CAP's own text already flags as stale/superseded — same finding already recorded on `spec-atlas-query-dashboards` CAP-7.
 - **CAP-9 — agents trigger and read the pipeline natively**
   - **intent:** An authoring or execution agent can run a named pipeline and read the resulting
     dataset without a load-bearing plugin between it and the data.
@@ -234,7 +234,7 @@ this document's five fields.
     and another reads its output dataset; tool bodies carry dataset passthrough and triggers
     only — no metric or business logic; and a triggered run inherits the same budgets, hooks,
     profiles, and lineage as a scheduled one.
-
+  - **verified:** `test_audit_covers_exactly_the_23_atlas_tools`, `test_every_read_dataset_target_is_a_declared_catalog_dataset`, `test_pipeline_trigger_tools_match_the_registered_pipelines` (`tests/unit/mcp/test_audit_mapping.py`) + `test_kedro_mcp_import_is_actually_poisoned` / `test_surface_imports_and_triggers_with_kedro_mcp_absent` (`tests/unit/mcp/test_kedro_mcp_absent.py`, proves the tools work with the third-party plugin genuinely absent).
 - **CAP-10 — one structured channel between agents**
   - **intent:** Insights, contract violations, and policy breaches move between the analytical
     agent and the recipe-authoring agent as structured payloads, never as prose.
@@ -242,7 +242,7 @@ this document's five fields.
     single A2A surface whose schemas live in one module — the sole source for both alerts and
     insights; validation failures and policy breaches raise on that same channel; and payloads
     that feed authoring decisions carry their build timestamp.
-
+  - **verified:** `test_insight_round_trip_is_exact`, `test_alert_round_trip_is_exact`, `test_analytical_to_authoring_hand_off`, `test_ad17_stamp_required_and_injected` (`tests/unit/a2a_surface/test_a2a_payloads.py`) — the build-timestamp/AD-17 requirement and the single-schema-module claim both directly covered.
 - **CAP-11 — bad data halts before it persists**
   - **intent:** A malformed upstream payload stops the run rather than quietly landing in the
     store.
@@ -250,14 +250,14 @@ this document's five fields.
     a malformed-payload fixture raises a native exception that propagates to the orchestrator,
     halts the pipeline, and raises an A2A alert; and swapping or adding a second validator
     backend requires no node change, proven with a stub validator.
-
+  - **verified:** `test_malformed_payload_halts_via_native_raise_before_persist_and_alerts`, `test_alert_rides_the_real_a2a_channel_e1`, `test_validator_agnostic_stub_second_validator_no_node_change`, `test_backends_conform_to_the_validator_protocol` (`tests/unit/validation/test_validation_hook.py`).
 - **CAP-12 — every run is traceable to the API call**
   - **intent:** A failure or a slow run is diagnosable from recorded lineage and traces rather
     than reconstructed by reading source.
   - **success:** Every node emits lineage events carrying rows, latency, and cache hits, and
     participates in an end-to-end trace that resolves down to named API calls; emitted-event
     and span fixtures are the gate assets that prove it.
-
+  - **verified:** `test_openlineage_emits_start_and_complete_per_node`, `test_output_statistics_rowcount_facet`, `test_node_metrics_run_facet_rows_latency_cache`, `test_span_tree_is_nested_pipeline_node_dataset`, `test_all_spans_belong_to_one_trace` (`tests/unit/observability/test_observability_fixtures.py`).
 - **CAP-13 — any manifest becomes one comparable inventory, behind one exit code**
   - **intent:** CI consumes one schema-validated artifact and one exit code instead of scraping
     CLI text.
@@ -268,7 +268,7 @@ this document's five fields.
     freshness contract; a matching run reproduces the six-bucket classification on a fixture
     inventory; and one terminal node — the single producer — assembles the four-axis compliance
     report and exits on the frozen convention, halting the orchestrator and alerting on breach.
-
+  - **verified:** `test_pypi_dep_purl_has_no_channel_qualifier`, `test_matched_conda_row_carries_channel_qualifier_purl_and_version_comparison`, `test_classify_bucket_verbatim_decision_tree` (`tests/unit/pipelines/universal_sbom/`); the frozen-exit/four-axis/halt-and-alert contract live in `tests/unit/policy_gate/test_policy_gate.py` (`test_policy_breach_halts_with_frozen_exit_1_and_alerts`, `test_deptry_engine_error_yields_frozen_exit_2`, `test_report_is_four_axis_and_schema_valid`, `test_real_pipeline_breach_halts_before_report_persists`). The full-universe (~856k component) BOM's live materialization was not independently re-run in this pass — verified at the node/contract level via these fixtures.
 - **CAP-14 — new signals ride in additively, with their failure modes fixture-pinned**
   - **intent:** A newly ingested signal reaches the read surface without renegotiating the
     migration's parity scope, and without repeating a known measurement error.
@@ -280,7 +280,7 @@ this document's five fields.
     and computed against **first availability** of the matched version; and migration readiness
     is a four-way split driven by upstream category lists, so a new upstream migration needs
     zero code change and inferred membership is always labeled inferred.
-
+  - **verified:** `test_fix_available_never_fillna_false_across_hops` (tri-state never collapses to false) + `test_ingest_restricts_to_known_population_by_name` (name-based matching survives a foreign-ecosystem tag) (`tests/unit/pipelines/vulnerability/test_basilisk_nodes.py`).
 - **CAP-15 — the derived layer regenerates and refuses to go stale**
   - **intent:** Reports and exports are downstream nodes of the rebuild, and a consumer can
     never silently read an old one.
@@ -290,7 +290,7 @@ this document's five fields.
     read-only report nodes whose byte-identical-seed guarantee survives as a pipeline test; and
     the three separately-built external stores refresh as scheduled assets with retries and
     observability, never written from anywhere else.
-
+  - **verified:** `test_atlas_built_at_stamp_enables_the_freshness_gate` (`tests/unit/pipelines/derived_artifacts/test_universe_sbom.py`); `test_seed_files_are_byte_identical_before_and_after_a_full_run` + `test_no_seed_gaps_node_writes_a_seed_dataset` (`tests/unit/pipelines/seed_gaps/test_byte_identical_seed.py`, the read-only guarantee); `test_lts_exact_and_likely_and_registry_exclusion` + `test_cwe_strong_weak_and_seed_exclusion` (`tests/unit/pipelines/seed_gaps/test_nodes.py`).
 - **CAP-16 — the read surface runs with no backend at all**
   - **intent:** The intelligence surface is portable to a browser against a static host.
   - **success:** The dashboard and semantic layer load and query client-side over Parquet
@@ -298,7 +298,7 @@ this document's five fields.
     asserts **zero non-loopback requests**, and fails on an in-page error rather than passing
     silently; and the emitter is host-agnostic so an enterprise mirror substitutes for the
     default host.
-
+  - **verified:** `publish-range` gate green (12 tests, 2026-09-11) — proves real 206-Partial-Content HTTP-Range consumption (not a whole-file 200), manifest-driven chunk discovery, and host-agnosticism (`tests/integration/publish/test_emit_range.py`). The Playwright headless-Chromium zero-non-loopback-requests half (`wasm-smoke`, `tests/integration/wasm/test_wasm_smoke.py::test_wasm_smoke_client_side_query`) SKIPPED in this environment — "no Chromium executable under PLAYWRIGHT_BROWSERS_PATH" — an environment-provisioning gap, not independently re-verified in this pass.
 - **CAP-17 — the knowledge factory maintains itself and never writes back**
   - **intent:** Agent crews compile, lint, publish, and answer over a wiki built from pipeline
     outputs, without becoming a second writer into pipeline data.
@@ -317,35 +317,43 @@ this document's five fields.
 > Success clauses reference this satellite's own `FR-n` (local to
 > `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md`) and cross-reference `AD-n`
 > renumbered to match the merged `ARCHITECTURE-SPINE.md`.
-
+  - **verified:** `test_compile_transforms_raw_to_compiled`, `test_compile_is_deterministic`, `test_compile_forwards_source_staleness`, `test_lint_clean_wiki_has_no_violations`, `test_qa_answers_grounded_in_compiled_content`, `test_qa_ungrounded_question_yields_no_grounding` (`tests/unit/factory/test_crews.py`); `test_exactly_the_five_spec_personas` (`tests/unit/factory/test_personas.py`, the frozen-five-workforce guarantee); `test_scaffold_is_idempotent_and_non_destructive` (`tests/unit/factory/test_wiki_scaffold.py`); CMS-sync idempotency + the weekly-schedule/new-file-sensor triggers live in `tests/unit/factory/test_lasuite_live_rehearsal.py` (`test_live_round_trip_push_update_idempotent_resume`, `test_main_exit_2_when_an_all_skipped_run_never_reaches_the_cms`).
 - **CAP-18**
   - **intent:** A platform engineer declares one Workspace root — platform matrix, channels, system-requirement floors, and the set of Packages — from which Environments compose from named Features with no inherited bloat, and every Package carries a declared owner.
   - **success:** FR-1–9 hold: adding a Package requires editing exactly one place; no dependency version string is duplicated; a minimal Environment's installed size is measured against a documented ceiling and a regression fails the gate; Stages are modelled separately from Environments so the number of distinct solves is bounded by genuine dependency variation, not Stage naming (AD-27).
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-19**
   - **intent:** The Workspace produces one authoritative Workspace Lock covering native and Python packages together, reproducing an Environment offline on every declared platform, with a derived standards-format export and an air-gapped Offline Bundle, and credentials that are host-scoped and never appear in a URL or argument.
   - **success:** FR-10–17 hold: multi-platform coverage is proven by materialization, never assumed (FR-11); the Exported Lock is generated from, and drift-checked against, one pinned Workspace Lock commit SHA, failing the gate on mismatch (FR-12, resolves PRD OQ-1 via AD-25).
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-20**
   - **intent:** A developer runs one command that executes every check CI executes — lint, format, type checking, coverage thresholds, security scanning, and a tagged behavioural-test tier — with pre-commit mirroring a fast subset.
   - **success:** FR-18–25 hold: a parity check asserts the local and CI check-sets are identical and fails on divergence (AD-32); coverage that decreases relative to the base branch fails the gate.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-21**
   - **intent:** Every Constitution Mandate is classified, machine-readably, as a Platform Invariant (no override) or a Domain Default (Domain-overridable with a recorded decision); violations name the clause they violate; amendment is a governed, versioned process.
   - **success:** FR-26–32 hold: an unclassified Mandate, or an override with no linked decision record, fails the Quality Gate (AD-31); the Constitution carries semver, ratified/amended/next-review dates; a coverage report distinguishes automatically-enforced Mandates from human-review-only ones.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-22**
   - **intent:** Every Package names a Trusted Committer accountable for reviewing outside contributions, an outside contributor finds a documented path to contribute to code they don't own, and branch/commit/merge conventions are enforced automatically.
   - **success:** FR-33–38 hold: a Package with no Trusted Committer fails the gate; a scaffolded Package or Data Product passes the Quality Gate immediately with no manual fixes (FR-37); cross-team contribution rate and an internal-fork counter-signal are both measured (FR-38).
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-23**
   - **intent:** Every built artifact carries a versioned SBOM with a populated dependency graph (runtime-scoped and full variants) and a build-provenance attestation, continuously gated against exploitation-aware vulnerability data through one schema-validated Compliance Report, with baselining/grandfathering and opt-in remediation proposals.
   - **success:** FR-39–47 hold, delivered by **integrating** `pyforge-warden` (already a strict superset of the intake approach) rather than reimplementing it; SBOM generation runs against the built artifact and a test asserts a populated transitive dependency edge (AD-34); an artifact with no provenance attestation cannot be promoted to any Stage whose policy requires approval (AD-35).
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-24**
   - **intent:** Each Domain owns Data Products layered Raw → Curated → Consumption, with an enforced naming convention, a structured metadata contract, and versioned schema contracts; one reference Domain (`customer`) is implemented end to end as the pattern others follow.
   - **success:** FR-48–54 hold: a schema change that breaks a declared consumer is detected before merge, requiring a version increment and migration note (FR-52, AD-39); the reference Domain exercises all three Layers, publishes a contract, and passes every gate — its structure is exactly what the FR-37 scaffolding templates generate.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-25**
   - **intent:** Every capability available with public network access is available in Air-Gap Mode (or declares why not); deployment is declarative and environment-promoted under Stage policy; secrets are never committed and are validated present at service startup; a Stage's Data Classification bounds which datastores and network posture it may be configured against.
   - **success:** FR-55–58 hold: a parity test enumerates capabilities and asserts each works air-gapped, targeting 100% with declared exceptions (SM-6); a secret-shaped string committed to the repository fails an automated check (FR-57).
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-26**
   - **intent:** A developer starts, stops, and inspects the full local service stack — aggregate and per-service — with single commands, and the Workspace names a small, stable public task API.
   - **success:** FR-59–60 hold: status reports actual service health, not process existence; removing or renaming a public task is a breaking change requiring a decision record.
-
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 ### Satellite: Wasm Analytics Stack capabilities
 
 > Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`
@@ -357,19 +365,23 @@ this document's five fields.
 - **CAP-27**
   - **intent:** A business user uploads an `.xlsx` file via an OIDC-authenticated FastAPI endpoint, and its structure and data quality are checked inside a genuine WASI Preview 2 sandbox before any row reaches ingestion, with row-level failures reported precisely and valid rows queued independently of rejected ones.
   - **success:** FR-1–4 hold: an unauthenticated request receives HTTP 401 before the upload body is read; a structurally-invalid file is rejected in full (zero rows reach Bronze); each rejected row's error names the specific column/rule that failed without blocking rows that passed; no row reaches DuckDB Bronze via `dlt` without having passed validation.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-28**
   - **intent:** `dbt-duckdb` transforms Bronze into schema-declared Silver and Gold models, emits column-level lineage for every model, and a failing `dbt test` blocks promotion of that model's output to the next layer.
   - **success:** FR-5–7 hold: every `dbt run` is traceable to the Bronze table state it consumed; a lineage query for any Gold column returns its full upstream column chain back to Bronze; a `dbt run` with a failing test does not update the corresponding table and the prior good state remains queryable.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-29**
   - **intent:** One W3C trace ID, minted once at the browser/API boundary, correlates OTel spans and OpenLineage facets across every pipeline stage to Marquez via a per-pod Vector sidecar, so a single trace-ID lookup reconstructs the full upload-to-Gold journey with no gaps.
   - **success:** FR-8–11 hold: the trace ID returned to the client at upload time is the same one attached to that upload's eventual Gold-table lineage record; a trace query for any upload returns spans for every stage it passed through with no gap; Marquez returns the full Bronze→Silver→Gold lineage graph; no pipeline container other than the Vector sidecar holds an external telemetry egress path.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-30**
   - **intent:** An automated, non-hollow gate mechanically proves the WASI validation component cannot reach any capability beyond its WIT-declared surface, and a build-time check blocks denylisted imports from ever entering the component's dependency closure.
   - **success:** FR-12–13 hold: the gate fails on any host interaction beyond the component's declared WIT imports; deliberately widening the component's declared capabilities without a corresponding WIT change makes the gate fail, proving it checks something rather than always passing; adding a denylisted import (`numpy`, `pandas`, `pyarrow`, `pydantic`, or any other C-extension-backed or `componentize-py`-unproven package) fails `pixi run build`, not a later runtime error.
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 - **CAP-31**
   - **intent:** One Pixi toolchain builds every artifact the pipeline needs, including the compiled WASI component, and the same security context runs identically under a Podman digital twin and OpenShift Restricted SCC, with DuckDB state persisted via a `ReadWriteOnce` PVC at a consistent mount path.
   - **success:** FR-14–17 hold: a clean checkout plus `pixi install && pixi run build` produces a runnable digital twin with no manual steps outside Pixi; every container starts as non-root UID 1001 with a read-only root filesystem in both the digital twin and OCP; the Helm chart's security context matches Restricted SCC exactly with no `anyuid` or other elevated binding requested; pipeline restarts do not lose previously-ingested Bronze/Silver/Gold data.
-
+  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
 ## Constraints
 
 - **Atlas measures; Warden judges.** An upstream-maintenance signal
