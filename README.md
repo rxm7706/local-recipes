@@ -149,11 +149,14 @@ local-recipes/
 ├─ recipes/
 │  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
 │  └─ <recipe>/meta.yaml          # conda-build format (legacy)
-├─ docs/                           # Project Documentation
-│  ├─ reference/developer-guide.md # Comprehensive build guide
-│  ├─ enterprise-deployment.md     # Air-gapped / JFrog deployment guide
-│  ├─ mcp-server-architecture.md   # FastMCP / BMAD architecture
-│  └─ specs/                       # Project tech-specs (e.g. copilot-bridge VSIX)
+├─ docs/                           # General docs (see docs/MAP.md for the Diátaxis map)
+│  ├─ MAP.md                       # Four-quadrant documentation map
+│  ├─ tutorials/                   # Getting started (see docs/tutorials/README.md)
+│  ├─ how-to/                      # Task-oriented guides (see docs/how-to/README.md)
+│  ├─ reference/                   # CLI/config/schema reference
+│  ├─ explanation/                 # Architecture rationale ("why")
+│  ├─ dreams/                      # Tier-0 Dreams (BMAD intake)
+│  └─ specs/                       # Legacy Tier-1 intake specs
 ├─ archive/
 │  └─ docs/bmad-setup-plan.md      # BMAD installation + multi-project layout plan
 ├─ _bmad/                          # BMAD configuration (installer-managed + custom overrides)
@@ -278,7 +281,7 @@ Manual recipe CI to preserve quota — dispatch with `gh workflow run`:
 | Platform deploy | `gh workflow run platform-deploy.yml` | Deploy platform from a CI promotion artifact |
 | Linter self-test | `gh workflow run reusable-staged-recipes-linter-selftest.yml` | Self-test for the reusable linter workflow |
 
-For detailed documentation on local testing, see the [Developer Guide](docs/reference/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/reference/mcp-server-architecture.md).
+For detailed documentation on local testing, see the [Developer Guide](docs/reference/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/explanation/mcp-server-architecture.md). The general documentation map lives at [`docs/MAP.md`](docs/MAP.md).
 
 ## Pixi tasks
 
@@ -371,7 +374,7 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 > `GITHUB_API_BASE`). The shared `_http.py` helper picks them up at runtime
 > alongside system trust roots and `~/.netrc`. **No enterprise URLs live in
 > the committed `pixi.toml`** — the same checkout works externally and
-> internally. See `docs/reference/enterprise-deployment.md` for the full air-gapped
+> internally. See `docs/explanation/enterprise-deployment.md` for the full air-gapped
 > setup.
 
 ## Known limitations and tips

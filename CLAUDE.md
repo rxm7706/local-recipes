@@ -197,9 +197,9 @@ These rules reshape **story scope** for `bmad-prd`, `bmad-create-epics-and-stori
 
 ## Project Documentation Reference
 
-For extended architectural context, please reference the centralized `docs/` folder:
-- **`docs/reference/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
-- **`docs/reference/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
+For extended architectural context, please reference the centralized `docs/` folder (map at **`docs/MAP.md`**):
+- **`docs/explanation/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
+- **`docs/explanation/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/reference/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/dreams/pyforge-herald.md`** + **`docs/specs/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck). Same spec, § *Artifact dependency tree & editing surfaces* — **read before editing any deck artifact**: per-deck branch heads (deck prototype / infographic trio head / exec summary / marp exports), what derives from what, and the two propagation paths.
 - **`docs/reference/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
