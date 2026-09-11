@@ -2,7 +2,8 @@
 title: 'The Containerfile convention guard derives its file list'
 type: 'fix'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '3aada76d39921c8951520906ec5bc543fd22f77f'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

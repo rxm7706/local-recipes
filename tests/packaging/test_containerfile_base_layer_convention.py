@@ -1,6 +1,5 @@
-"""Regression gate for this repo's base-layer convention across all three
-Containerfiles (`Containerfile`, `src/platform/Containerfile`,
-`src/platform/compose/dbgpt/Containerfile`).
+"""Regression gate for this repo's base-layer convention across every
+git-tracked Containerfile (glob ``Containerfile*`` under the repo root).
 
 Two anti-patterns, both statically detectable from the Containerfile text
 alone (see `docs/reference/container-base-layer-convention.md` for the full
@@ -40,17 +39,46 @@ strings (or synthetic multi-line snippets) that are never written to disk.
 from __future__ import annotations
 
 import re
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-CONTAINERFILES: tuple[Path, ...] = (
-    REPO_ROOT / "Containerfile",
-    REPO_ROOT / "src" / "platform" / "Containerfile",
-    REPO_ROOT / "src" / "platform" / "compose" / "dbgpt" / "Containerfile",
+MCP_HOST_CONTAINERFILE = (
+    REPO_ROOT / "src" / "platform" / "compose" / "mcp-host" / "Containerfile"
 )
+
+EXPECTED_CONTAINERFILE_COUNT = 4
+
+
+@lru_cache
+def _discover_containerfiles() -> tuple[Path, ...]:
+    """Every git-tracked path whose basename matches ``Containerfile*``.
+
+    Restricted to tracked files so an untracked scratch Containerfile cannot
+    red the suite. The set is derived, never hand-enumerated.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    paths: list[Path] = []
+    for rel in result.stdout.splitlines():
+        rel = rel.strip()
+        if not rel:
+            continue
+        name = Path(rel).name
+        if name == "Containerfile" or name.startswith("Containerfile"):
+            paths.append(REPO_ROOT / rel)
+    return tuple(sorted(paths))
+
+
+CONTAINERFILES: tuple[Path, ...] = _discover_containerfiles()
 
 # Tolerates a leading `--platform=...` flag and a trailing `AS <name>`, e.g.:
 #   FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
@@ -89,18 +117,19 @@ CREDENTIAL_DENYLIST: tuple[str, ...] = (
     "CREDENTIAL",
 )
 
-# 2 stages (builder + runtime) x 3 Containerfiles, today. A regression that
+# 2 stages (builder + runtime) x 4 Containerfiles, today. A regression that
 # drops below this is itself worth a look even before considering whether
 # any individual FROM is unpinned.
-MIN_EXPECTED_FROM_LINES = 6
+MIN_EXPECTED_FROM_LINES = 8
 
 # `src/platform/Containerfile` (HOME, DJANGO_SETTINGS_MODULE) +
-# `src/platform/compose/dbgpt/Containerfile` (HOME, NOTE_BOOK_ENABLE) = 4 ENV
+# `src/platform/compose/dbgpt/Containerfile` (HOME, NOTE_BOOK_ENABLE) +
+# `src/platform/compose/mcp-host/Containerfile` (HOME, PYTHONPATH) = 6 ENV
 # directives today. The root `Containerfile` has none. This floor exists so
 # a regex that stopped matching ENV lines entirely would fail loudly here
 # rather than letting `test_no_env_key_is_credential_shaped` pass having
 # checked nothing.
-MIN_EXPECTED_ENV_LINES = 3
+MIN_EXPECTED_ENV_LINES = 6
 
 
 def _parse_image_ref(ref: str) -> tuple[str, str | None]:
@@ -175,7 +204,7 @@ def _parse_from_lines(text: str) -> list[tuple[int, str, str | None, bool]]:
 
 
 def _from_directives() -> list[tuple[Path, int, str, str | None, bool]]:
-    """Every `FROM` directive across all three Containerfiles, as
+    """Every `FROM` directive across all tracked Containerfiles, as
     (file, 1-indexed line number, raw image ref, tag or None, is a
     same-file stage-name reference)."""
     results: list[tuple[Path, int, str, str | None, bool]] = []
@@ -188,7 +217,7 @@ def _from_directives() -> list[tuple[Path, int, str, str | None, bool]]:
 
 
 def _env_directives() -> list[tuple[Path, int, str]]:
-    """Every `ENV` key across all three Containerfiles, as (file,
+    """Every `ENV` key across all tracked Containerfiles, as (file,
     1-indexed line number, key). A single `ENV` line can declare more than
     one key (the `ENV KEY1=val1 KEY2=val2` multi-pair form) -- each
     contributes its own entry at the same line number."""
@@ -202,6 +231,22 @@ def _env_directives() -> list[tuple[Path, int, str]]:
                 for key in _env_keys(match.group(1)):
                     results.append((path, lineno, key))
     return results
+
+
+def test_discover_containerfiles_finds_all_four():
+    """The derivation must find every known Containerfile, including the
+    previously-omitted mcp-host path -- an empty or partial glob must not
+    pass vacuously."""
+    discovered = _discover_containerfiles()
+    assert len(discovered) >= EXPECTED_CONTAINERFILE_COUNT, (
+        f"expected at least {EXPECTED_CONTAINERFILE_COUNT} tracked Containerfiles, "
+        f"found {len(discovered)}: "
+        f"{[str(p.relative_to(REPO_ROOT)) for p in discovered]}"
+    )
+    assert MCP_HOST_CONTAINERFILE in discovered, (
+        "derivation must include src/platform/compose/mcp-host/Containerfile; "
+        f"found: {[str(p.relative_to(REPO_ROOT)) for p in discovered]}"
+    )
 
 
 def test_discovery_is_not_vacuous():
@@ -248,7 +293,7 @@ def test_every_from_has_an_explicit_non_latest_tag():
 
 
 def test_no_env_key_is_credential_shaped():
-    """The AC: no ENV key across any of the three Containerfiles matches a
+    """The AC: no ENV key across any tracked Containerfile matches a
     credential-shaped deny-list -- secrets must cross the build boundary
     only via `--mount=type=secret` (convention doc pillar 3)."""
     envs = _env_directives()
@@ -279,7 +324,7 @@ def test_no_env_key_is_credential_shaped():
         # (`_parse_image_ref` returns "" here, not None); must still count
         # as unpinned.
         ("FROM ubuntu:", "", True),
-        # Real, correctly-pinned examples (mirroring the three real files) --
+        # Real, correctly-pinned examples (mirroring the real files) --
         # prove the check does NOT false-positive on the golden shape.
         (
             "FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder",
@@ -399,3 +444,67 @@ def test_env_credential_guard_catches_key_after_first_on_multi_var_line():
     assert keys == ["HOME", "DB_PASSWORD"], f"multi-var key extraction mismatch: {keys!r}"
     assert _is_credential_shaped("HOME") is False
     assert _is_credential_shaped("DB_PASSWORD") is True
+
+
+@pytest.mark.parametrize(
+    "snippet,expected_unpinned_line",
+    [
+        (
+            "\n".join(
+                [
+                    "FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.80.0 AS builder",
+                    "FROM --platform=linux/amd64 ubuntu AS runtime",
+                ]
+            ),
+            2,
+        ),
+        (
+            "\n".join(
+                [
+                    "FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.80.0 AS builder",
+                    "FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime",
+                    "ENV HOME=/app/.home",
+                    "ENV MCP_HOST_TOKEN=planted",
+                ]
+            ),
+            None,
+        ),
+    ],
+    ids=["mcp-host-unpinned-runtime-base", "mcp-host-env-credential"],
+)
+def test_mcp_host_shape_synthetic_regressions_red(snippet, expected_unpinned_line):
+    """Synthetic snippets mirroring ``mcp-host/Containerfile`` must red when
+    an unpinned external base or a credential-shaped ENV key is planted --
+    proving the fourth file is governed, not merely listed."""
+    parsed_froms = _parse_from_lines(snippet)
+    unpinned = [
+        lineno
+        for lineno, _ref, tag, is_stage_reference in parsed_froms
+        if not is_stage_reference and _is_unpinned(tag)
+    ]
+    if expected_unpinned_line is not None:
+        assert unpinned == [expected_unpinned_line], (
+            "unpinned-base guard must fire on the planted mcp-host runtime stage: "
+            f"expected line {expected_unpinned_line}, got {unpinned!r}"
+        )
+    else:
+        assert unpinned == [], f"golden mcp-host shape must have no unpinned FROM: {unpinned!r}"
+
+    offending_env = []
+    for lineno, line in enumerate(snippet.splitlines(), start=1):
+        match = ENV_HEADER_RE.match(line)
+        if match:
+            for key in _env_keys(match.group(1)):
+                if _is_credential_shaped(key):
+                    offending_env.append((lineno, key))
+
+    if expected_unpinned_line is not None:
+        assert offending_env == [], (
+            "unpinned-base scenario must not also trip the ENV guard: "
+            f"{offending_env!r}"
+        )
+    else:
+        assert offending_env == [(4, "MCP_HOST_TOKEN")], (
+            "ENV-credential guard must fire on the planted mcp-host key: "
+            f"got {offending_env!r}"
+        )
