@@ -21,8 +21,11 @@ mcp = MCPServer("conda-forge-expert")
 # Paths to the scripts relative to this file
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "skills" / "conda-forge-expert" / "scripts"
 
-# Path confinement shared with submit_pr.py / recipe_editor.py (AUD-CFE-006).
+# FR-155 inventory registry (Story 16.3): parity gate reads TOOL_SPECS.
 sys.path.insert(0, str(SCRIPTS_DIR))
+from mcp_tools import TOOL_SPECS  # noqa: E402,F401
+
+# Path confinement shared with submit_pr.py / recipe_editor.py (AUD-CFE-006).
 from _path_guard import (  # noqa: E402
     resolve_under_recipes,
     validate_recipe_file_path,

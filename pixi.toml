@@ -506,8 +506,8 @@ description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one
 depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test]
-description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
-cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\""
+description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow) plus Story 16.3's CFE CLI⇄tool parity meta-test."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\" && pytest .claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py -q"
 
 [feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]
 description = "Story 16.2: the first real estate caller of `mason recipe build` (FR-9's use-case, wired outside mason's own test tree) -- builds recipes/click-help-colors (a tiny, already-graduated noarch: python recipe with an explicit setuptools host dep and no ${{ python_min }} reference, chosen for a fast, dependency-light smoke build that needs neither the conda-forge-pinning overlay nor an isolated pip build-backend fetch) through `mason recipe build` against mason's own env, rather than `pixi run -e local-recipes recipe-build`. Wired into .github/workflows/pyforge-station-tests.yml's mason-test job so it runs on every execution of that already-existing lane, not only on demand. Does not replace the local-recipes route as the estate's primary recipe-build path."
