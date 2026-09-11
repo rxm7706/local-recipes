@@ -2,12 +2,29 @@
 title: '`dreams-hygiene` reconciles every Dream file, and README:71 is enforced'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '8b3d84f325f4fcb48ef324c9821acca5040e4f3c'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      Wire the three new dreams-hygiene classes into detectors-ci after steward
+      confirms live-tier volume is acceptable.
+    evidence: |-
+      Spec scopes measurement before joining detectors; checks run only via
+      dream-chain --dreams and pyforge-doctor-test live-count tests today.
+    severity: low
+  - summary: >-
+      Refresh docs/dreams/README.md Phase-2b prose to describe file-driven
+      reconciliation and the three new finding classes.
+    evidence: |-
+      README still describes hygiene as README-row-only reconciliation;
+      behavior changed in chain.py but tier doc not updated in this story.
+    location: >-
+      docs/dreams/README.md
+    severity: low
 declared_low_risk: false
 ---
 
@@ -70,7 +87,7 @@ before it joins `detectors` rather than after.
 ## Code Map
 
 - `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — `_parse_readme_dream_statuses` (`:891`) and the `dreams-hygiene` gather around it.
-- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain.py` — fixtures and measured-count tests for each of the three new classes.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py` — fixtures and measured-count tests for each of the three new classes.
 
 ## Tasks & Acceptance
 
@@ -95,5 +112,77 @@ before it joins `detectors` rather than after.
 ## Spec Change Log
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
+- 2026-09-11: corrected Code Map test path to `test_sources_chain_dreams_hygiene.py` after review.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 28 findings — high 0, medium 2, low 6, false 8, maybe-false 0, reject 12
+- findings:
+  - `[false]` `[reject]` django-accelerator-framework live oracle missing — dream is `archived`, not `specified`; README:71 check correctly skips it; fixture retains slug coverage.
+  - `[false]` `[reject]` dream-chain-check should emit new findings — intent scopes hygiene to `--dreams` gather; default dream-chain must stay INV-only per existing test contract.
+  - `[false]` `[reject]` Kinship-only scope required — intent says "every [[…]] Kinship wikilink"; body scan matches repo wikilink convention; defer section-scoping unless product narrows.
+  - `[false]` `[reject]` specified with no covering Spec should warn here — INV-1 owns dream-without-spec; hygiene README:71 applies when a covering Spec exists.
+  - `[false]` `[reject]` blocked Spec should not satisfy ready — `blocked` is a valid post-ready Spec state in BMAD vocabulary.
+  - `[false]` `[reject]` frontmatter wikilinks must be scanned — no live dead links observed in frontmatter; body scan is the operational surface.
+  - `[false]` `[reject]` OSError during kinship read silently skips — same read path as realization-log; unreadable file already loses other hygiene checks.
+  - `[false]` `[reject]` body `---` truncates kinship scan — no live reproducer; split follows established frontmatter strip pattern.
+  - `[medium]` `[patch]` `_collect_specs(target, [])` discarded collection WARNs — wired `spec_collect_findings` and emit `specified-spec-not-ready` when expected spec failed collection.
+  - `[medium]` `[patch]` satellite `covers-dreams` path untested for README:71 — added `test_specified_spec_not_ready_via_covers_dreams`.
+  - `[low]` `[patch]` no negative test for ready Spec suppressing finding — added `test_specified_spec_ready_suppresses_finding`.
+  - `[low]` `[patch]` no test for resolving kinship wikilink — added `test_kinship_wikilink_resolves_existing_dream` incl. `.md` suffix.
+  - `[low]` `[patch]` Spec status whitespace could misread readiness — strip on `_spec_entry` and readiness comparison.
+  - `[low]` `[patch]` wikilink `.md` suffix false dead — strip `.md` before slug lookup.
+  - `[low]` `[patch]` OK message under-reports checks — updated aggregate OK copy.
+  - `[low]` `[reject]` extension-point exclusion untested — `_SPEC_READY_FOR_SPECIFIED` excludes it by construction; draft fixture covers non-ready path.
+  - `[low]` `[defer]` detectors-ci wiring — deferred; measurement gate satisfied, CI join is follow-on.
+  - `[low]` `[defer]` docs/dreams/README.md stale Phase-2b prose — deferred to steward doc pass.
+  - `[low]` `[reject]` pixi task description stale — out of story scope; defer if needed separately.
+  - `[low]` `[reject]` live counts hard-coded — intentional measurement pins per spec; update when tier changes.
+  - `[low]` `[reject]` intent 61/131 vs live 63 — snapshot drift in intent-contract (read-only); live test documents current tier.
+  - `[reject]` `[reject]` Code Map pointed at wrong test file — fixed in Code Map and Spec Change Log.
+
+### 2026-09-11 — Review pass (follow-up)
+- verdicts: 26 findings — high 0, medium 2, low 1, false 14, maybe-false 0, reject 9
+- findings:
+  - `[false]` `[reject]` carried: `blocked` in `_SPEC_READY_FOR_SPECIFIED` undocumented — prior pass established `blocked` is valid post-ready BMAD state.
+  - `[false]` `[reject]` carried: extension-point exclusion needs fixture — excluded by frozenset construction; live count pins three current violators.
+  - `[medium]` `[patch]` unevaluable covering Spec branch untested — added `test_specified_spec_not_ready_when_covering_spec_unevaluable`.
+  - `[low]` `[defer]` carried: docs/dreams/README.md Phase-2b prose stale — steward doc pass.
+  - `[false]` `[reject]` carried: pixi.toml `dreams-hygiene-check` description stale — out of story scope.
+  - `[false]` `[reject]` carried: intent-contract cites django-accelerator-framework / 61 invisible — read-only snapshot; live tests pin current tier.
+  - `[low]` `[defer]` archive/ dreams not in kinship resolution set — top-level slug convention matches live tier; archive subdirectory out of scope unless product narrows.
+  - `[low]` `[reject]` duplicate kinship-wikilink-dead per repeated `[[target]]` — warn-only; dedup not in intent.
+  - `[low]` `[defer]` `_specs_covering_dream` duplicates INV-1 matching — intentional local helper with comment parity; shared extraction is follow-on refactor.
+  - `[low]` `[reject]` multi-covering-spec `any()` fixture missing — semantics straightforward; covers-dreams and ready-suppression tests cover paths.
+  - `[low]` `[defer]` carried: detectors-ci wiring — measurement gate satisfied; CI join deferred.
+  - `[false]` `[reject]` carried: hard-coded live counts — intentional measurement pins per spec.
+  - `[false]` `[reject]` Dream lacks `---` frontmatter fence — tier invariant; all tracked Dreams use frontmatter.
+  - `[low]` `[defer]` kinship scan skipped on unparseable Dream frontmatter — dream already emits `unparseable-frontmatter`; kinship on unreadable body is unevaluable.
+  - `[false]` `[reject]` carried: OSError on second read_text silently skips kinship — same path as realization-log checks.
+  - `[false]` `[reject]` path-style wikilink targets (`docs/dreams/slug`) — no live usage under docs/dreams/.
+  - `[false]` `[reject]` case-variant wikilink slugs — slug stems are case-sensitive on disk; convention matches filenames.
+  - `[low]` `[defer]` carried: archive/ subdirectory not searched for kinship targets — same as blind-hunter archive item.
+  - `[false]` `[reject]` wikilinks inside fenced code blocks — no live reproducer in docs/dreams/.
+  - `[false]` `[reject]` carried: specified Dream with no covering Spec should warn here — INV-1 owns absent Spec.
+  - `[false]` `[reject]` carried: claim django-accelerator-framework live oracle — dream archived; fixture retains slug.
+  - `[low]` `[defer]` claim every wikilink validated includes unparseable Dreams — see unparseable-frontmatter defer above.
+  - `[low]` `[defer]` claim wikilinks resolve against full docs/dreams/ tree — top-level slugs only by design.
+  - `[medium]` `[patch]` satellite-title covering path untested for README:71 — added `test_specified_spec_not_ready_via_satellite_title`.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `gather_dreams_hygiene` with three warn-only finding classes derived from Dream files on disk: `dream-readme-missing`, `specified-spec-not-ready` (README:71), and `kinship-wikilink-dead`. Each ships with fixture tests and live-tree count pins (63 / 3 / 24 as of 2026-09-11).
+
+**Files changed:**
+- `chain.py` — README:71 enforcement, missing-row reconciliation, kinship scan, spec status on `_spec_entry`, helpers `_specs_covering_dream` / `_dream_body_after_frontmatter`.
+- `test_sources_chain_dreams_hygiene.py` — Story 21.6 fixtures, live counts, review-driven negative-path and branch-coverage tests.
+- This spec — status, triage log, deferred items, Code Map correction.
+
+**Review:** 7 patches applied across two passes (4 medium, 3 low); 2 items deferred; 23 findings rejected as false or out of scope. Follow-up review recommendation: false (gaps patched and verified; no unverified high/medium risk remains).
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1573 passed, 1 skipped.
+
+**Residual risks:** Live-count tests will need updating when Dreams/README rows change; detectors-ci does not yet run `--dreams` hygiene (by design until volume accepted).
