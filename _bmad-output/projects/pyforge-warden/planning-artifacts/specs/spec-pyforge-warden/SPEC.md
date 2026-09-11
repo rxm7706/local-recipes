@@ -15,6 +15,19 @@ sources:
   - ../../prds/prd-pyforge-warden-2026-07-14/prd.md
   - ../../architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
   - ../../epics.md
+open_questions:
+  - "The legacy spec's v1 Definition of Done still carries unchecked release-level items
+     even though all 31 stories merged (the CFE Rule-2 closeout retro; the internal
+     JFrog PyPI+conda publish behind the engine version-range gate). Is v1 'released'
+     or 'story-complete'?"
+  - "The legacy Tier-1 spec docs/specs/pyforge-warden.md still reads status: in-progress
+     and its Goals block still describes the pre-D12 tiering (license/currency gates as
+     v1.x). Does it get re-stamped shipped and marked superseded by this Spec, or frozen
+     as-is as a historical record?"
+  - "Two axes of the Charter's six-axis Warden identity (provenance, maintenance) are
+     unbuilt and sit in the vision bucket with no owner or trigger. What promotes them
+     out of vision -- and until then, does the product describe itself as four-axis or
+     six-axis?"
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.

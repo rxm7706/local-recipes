@@ -8,6 +8,15 @@ companions:
   - hygiene-gap-catalog.md
 sources:
   - docs/dreams/fleet-hygiene-verification-exemplar-program.md
+open_questions:
+  - "Should the source catalog's remaining not-yet-scoped items (audit methodology ->
+     repeatable check; which manual exemplars graduate to mechanical enforcement, and
+     via which shape) become their own future Dreams/Specs, or fold into a later
+     revision of this one? Left open by the source Dream itself."
+  - "Where does the catalog live as a maintained artifact going forward -- does
+     docs/dreams/fleet-hygiene-verification-exemplar-program.md remain the catalog,
+     updated in place, or does it graduate to a dedicated tracked location once enough
+     items have a real status to track?"
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. The source document is for traceability only.
