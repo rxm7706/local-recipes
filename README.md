@@ -66,12 +66,14 @@ local-recipes/
 ├─ recipes/
 │  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
 │  └─ <recipe>/meta.yaml          # conda-build format (legacy)
-├─ docs/                           # Diátaxis docs layer (see docs/MAP.md)
-│  ├─ tutorials/                   # Getting started
-│  ├─ how-to/                      # Task-oriented guides
-│  ├─ reference/                   # Config / CLI / schema reference
-│  ├─ explanation/                 # Architecture rationale
-│  └─ specs/                       # Legacy intake specs (phasing out)
+├─ docs/                           # General docs (see docs/MAP.md for the Diátaxis map)
+│  ├─ MAP.md                       # Four-quadrant documentation map
+│  ├─ tutorials/                   # Getting started (see docs/tutorials/README.md)
+│  ├─ how-to/                      # Task-oriented guides (see docs/how-to/README.md)
+│  ├─ reference/                   # CLI/config/schema reference
+│  ├─ explanation/                 # Architecture rationale ("why")
+│  ├─ dreams/                      # Tier-0 Dreams (BMAD intake)
+│  └─ specs/                       # Legacy Tier-1 intake specs
 ├─ archive/
 │  └─ docs/bmad-setup-plan.md      # BMAD installation + multi-project layout plan
 ├─ _bmad/                          # BMAD configuration (installer-managed + custom overrides)

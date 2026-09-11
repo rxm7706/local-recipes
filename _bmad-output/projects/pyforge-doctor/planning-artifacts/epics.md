@@ -1830,4 +1830,4 @@ into the reorganized structure is broken
 **And** no fact that lives in the new structure is also duplicated verbatim in
 `README.md`/`CLAUDE.md`/`AGENTS.md` without one side pointing to the other — the same
 discipline Story 22.2 already applies, now applied to the new structure
-**Status:** backlog
+**Status:** done
