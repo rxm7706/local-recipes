@@ -56,6 +56,10 @@ Parent: `spec-bmad-suite-channel-product` (governed channel product). Kin: docto
   Deprecated rows stay in the manifest for doctor/catalog completeness but are **never**
   written into the metapackage `requirements.run`. *Success:* doctor Story 19.1 reads
   it; steward pipeline-truth cross-checks active population against install-matrix.
+  - **verified:** 2026-09-11 — `bmad_method.py:372` (`_SUITE_MANIFEST_REL`) and `:411`
+    (`_manifest_suite_members`) read `recipes/bmad-suite/suite-members.yaml` directly; live
+    `pipeline-truth --json` returned exactly 13 active members this session, matching the
+    manifest.
 
 - **CAP-2 — Metapackage recipe.** *Intent:* `recipes/bmad-suite/recipe.yaml` is a
   `noarch: generic` metapackage whose `requirements.run` pins each manifest member at `>=`
@@ -63,6 +67,10 @@ Parent: `spec-bmad-suite-channel-product` (governed channel product). Kin: docto
   `context.version` is a CalVer refresh stamp bumped whenever any member version in the
   generated block changes. *Success:* `pixi run -e local-recipes recipe-build recipes/bmad-suite`
   succeeds; tests assert every manifest member appears in `requirements.run`.
+  - **verified:** 2026-09-11 — this session's own PR #1205: `recipe-build recipes/bmad-suite`
+    built `bmad-suite-2026.9.11` green with all anchor-CLI tests passing (`bmad-loop --version`,
+    `bmad-module-skill-forge --help`, etc.); `requirements.run` carries all 13 active members
+    (verified by direct read).
 
 - **CAP-3 — Generator / refresh command.** *Intent:* one command (steward duty or CFE script)
   resolves upstream latest per member using registry class from each member's
@@ -70,11 +78,19 @@ Parent: `spec-bmad-suite-channel-product` (governed channel product). Kin: docto
   diff summary (member, old pin, new upstream, registry used). *Success:* dry-run against live
   upstream reproduces the 2026-09-01 channel table within one patch version; github-primary
   packages never consult stale npm.
+  - **verified:** 2026-09-11 — this session's own `generate-bmad-suite --dry-run` resolved
+    live upstream per member (`[npm+floor]`/`[github+floor]`/`[recipe-floor]` tags shown per
+    member in the diff summary), correctly flagged only `bmad-method-test-architecture-enterprise`
+    and `bmad-eval-quality` as changed and everything else unchanged.
 
 - **CAP-4 — Channel publish + pixi feature (optional follow-on).** *Intent:* publish
   `bmad-suite` to SelfExplainML; add optional `feature.bmad-suite-full` in `pixi.toml` that
   depends on `bmad-suite` instead of enumerating members. *Success:* `pixi install -e
   local-recipes` with feature enabled resolves the bundle; documented in install-matrix.
+  - **verified:** 2026-09-11 — the served `conda.anaconda.org/selfexplainml/noarch/repodata.json`
+    lists real published `bmad-suite` builds (2026.9.1, 2026.9.5, 2026.9.9 — 2026.9.11 from this
+    session not yet uploaded, an operator step by design); `feature.bmad-suite-full` at
+    `pixi.toml:1989`; `tests/packaging/test_bmad_suite_full_feature.py` 9/9 pass.
 
 ## Constraints
 
