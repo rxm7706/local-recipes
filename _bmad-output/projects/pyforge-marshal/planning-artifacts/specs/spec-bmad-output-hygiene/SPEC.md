@@ -43,6 +43,7 @@ compile.
   - **success:** None of the 7 station roots contain these paths; each exists
     under its mirrored `archive/` path; no test runner or CI config anywhere
     in the repo referenced the original paths (verified before moving).
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: confirmed live on disk for all 7 stations (atlas/doctor/marshal/mason/scribe/steward/warden) — original `tests/` path absent, mirrored `archive/_bmad-output/projects/<station>/tests` present.
 
 - **CAP-2 — hollow `sprint-status.yaml` archival.**
   - **intent:** `git mv` the dead, identical-shape `planning-artifacts/sprint-status.yaml`
@@ -52,6 +53,7 @@ compile.
   - **success:** File absent from its original path in all 9 projects, present
     under its mirrored `archive/` path; `dashboard_drift_check.py` and
     `bmad_drift_check.py` still exit 0 afterward.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: confirmed live — original `planning-artifacts/sprint-status.yaml` absent for all 9 stations checked (atlas/doctor/herald/marshal/mason/scribe/steward/warden/genesis).
 
 - **CAP-3 — Genesis `test-architecture.md` fix.**
   - **intent:** Regenerate Genesis's `test-architecture.md` — the one station the
@@ -60,6 +62,7 @@ compile.
     `src/pyforge_genesis` installer narrative.
   - **success:** The file makes no claim contradicted by Genesis's own current
     PRD/architecture.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: real commit `8e9c84a1010` ("bmad-output-hygiene: CAP-3 (Genesis test-architecture.md fix)") landed the fix. Genesis itself no longer exists as a project directory today (fully dissolved into `pyforge-marshal` per CAP-8's own Charter §5 note) — moot by later, legitimate consolidation, not a regression of this fix.
 
 - **CAP-4 — README placeholder fill.**
   - **intent:** The literal `[role]`/`[responsibilities]` placeholders actually
@@ -76,6 +79,7 @@ compile.
     its exact bracket-token wording didn't match what was on disk.
   - **success:** No station README contains a literal `[role]` or
     `[responsibilities]` token; no README describes archived scaffolding as live.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: `grep -rl '\[role\]\|\[responsibilities\]' src/shared/packages/pyforge-*/README.md` returns zero matches — clean fleet-wide.
 
 - **CAP-5 — orphaned single-file archival.**
   - **intent:** `git mv` Atlas's `RESUME-EPIC-10.md` and Herald's
@@ -85,6 +89,7 @@ compile.
   - **success:** Both files exist under their mirrored `archive/` path, are
     absent from their original path, and have zero remaining repo references to
     the original path.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: confirmed live — both `archive/_bmad-output/projects/pyforge-atlas/RESUME-EPIC-10.md` and `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/intake-video-scripts-manticore-2026-07-31.md` exist; original paths absent.
 
 - **CAP-6 — `project-context.md` drift fix.**
   - **intent:** Regenerate Mason's and Herald's `project-context.md` in place
@@ -99,6 +104,7 @@ compile.
     from `sprint-status-ledger.yaml`, and correct file paths.
   - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`;
     all referenced paths exist.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: real commit `9c7acb39bb6` ("bmad-output-hygiene: CAP-6 (project-context.md drift fix)") landed the fix. The `project-context.md` artifact itself no longer exists today — superseded by the BMAD 6.12 `bmad-project-context` convention (verified agent-instructions block in `AGENTS.md`, per commit `c0e4931e0c`, "the project-context surface follows 6.12"), a legitimate later evolution, not a regression.
 
 - **CAP-7 — `PROJECTS.md` Dream-pointer fix.**
   - **intent:** In `_bmad-output/PROJECTS.md`'s Projects table, repoint mason's
@@ -109,6 +115,7 @@ compile.
     `docs/dreams/pyforge-herald.md`.
   - **success:** Both pointers resolve to an existing `type: dream` file that is
     each station's actual charter.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: `_bmad-output/PROJECTS.md` currently reads `Dream: docs/dreams/pyforge-mason.md` and `Dream: docs/dreams/pyforge-herald.md` for mason/herald respectively — both exist, both are each station's actual charter.
 
 - **CAP-8 — fix CLAUDE.md's stale `local-recipes` pointer (revised; was a
   proposed relocation, reverted).**
@@ -125,6 +132,7 @@ compile.
     misdiagnosis. Fix CLAUDE.md's two mentions to `pyforge-marshal` instead.
   - **success:** CLAUDE.md's text matches where `bmad_drift_check.py`,
     `pixi.toml`, and `pyforge.doctor.sources.fleet_scan` actually read from.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: CLAUDE.md's live § "Keeping BMAD artifacts in sync" reads `_bmad-output/projects/pyforge-marshal/` (confirmed directly from the file's current content) — matches where the sync loop actually reads from, not the stale `local-recipes` pointer.
   - **note:** A relocation was executed, then reverted in full (verified via
     `git status` and a post-revert `bmad-drift-check --integrity-only` pass)
     before this branch went anywhere. Left here for the record.
@@ -138,6 +146,7 @@ compile.
     shape.
   - **success:** File lives at the sharded path; no remaining reference to the
     old loose path.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: confirmed live — `briefs/brief-pyforge-marshal-2026-07-25/brief.md` exists; the old loose `product-brief-pyforge-marshal.md` path is gone.
 
 - **CAP-10 — herald brief/architecture directory rename (found via the fleet
   dashboard, added after reopening).**
@@ -159,6 +168,7 @@ compile.
     final step.
   - **success:** `pyforge.doctor.sources.fleet_scan --source sprint-status` reports
     `pyforge-herald` `gaps: []`.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: real commit `cc6db24346c` ("bmad-output-hygiene: CAP-10 (herald brief/architecture directory rename)") landed the fix; directories confirmed live at the `pyforge-herald` naming today (`briefs/brief-pyforge-herald-2026-08-01`, `architecture/architecture-pyforge-herald-2026-08-01`). The specific `fleet_scan --source sprint-status` CLI invocation and the retired GuildHall `dashboard-gen` tasks it fed have since been retired fleet-wide (`retired-console-check`, per CLAUDE.md) — superseded by `fleet-picture`/`pyforge.doctor.sources`, so the exact command named here no longer applies, but the filesystem fact it asserted still holds.
 
 - **CAP-11 — currency-check grace period (found via user report of universal
   "outdated" readings after CAP-10).**
@@ -173,6 +183,7 @@ compile.
     check, extended to `_FEEDS`.
   - **success:** the 0–1 day `spec`/`prd` findings disappear from all 8
     stations; the 5 genuine multi-day pairs (CAP-12) still surface.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: `scripts/fleet_scan.py:2195` carries `_FEEDS_GRACE_DAYS = 2`, live in code exactly as this CAP specifies (real commit `c5aaf4f3e08`).
 
 - **CAP-12 — catch up the genuinely stale pairs (scope refined during
   execution: 3 fixed, 3 honestly left as real findings).**
@@ -205,6 +216,7 @@ compile.
   - **success:** fleet currency findings 16 → 4 (atlas/herald/marshal/scribe/steward
     fully clean); the 3 remaining findings (doctor, mason, warden `prd`/`gates`)
     are genuine and intentionally still visible, not silently suppressed.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `5a45f09fb1`: real commits `1567a478d12` + `698d32798c9` ("CAP-12: catch up genuinely stale currency pairs" + "fix CAP-12's genesis scoping oversight") landed the fix, confirmed via `git log`. As with CAP-10, the specific `fleet_scan`-driven dashboard surface this CAP measured against has since been retired fleet-wide in favor of `fleet-picture`/`pyforge.doctor.sources` — the historical fix is real and traceable, current re-measurement would need the successor tooling.
 
 ## Constraints
 
