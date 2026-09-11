@@ -1,6 +1,13 @@
-"""Regression gate for this repo's base-layer convention across all three
-Containerfiles (`Containerfile`, `src/platform/Containerfile`,
-`src/platform/compose/dbgpt/Containerfile`).
+"""Regression gate for this repo's base-layer convention across every
+git-tracked Containerfile in the repo (four today: `Containerfile`,
+`src/platform/Containerfile`, `src/platform/compose/dbgpt/Containerfile`,
+`src/platform/compose/mcp-host/Containerfile`) -- derived from the tracked
+tree, never a hard-coded list (see `_git_ls_files()` and
+`_filter_containerfile_paths()` below). This file's own `CONTAINERFILES`
+tuple used to hard-code three of the four and silently omit the fourth
+(`mcp-host`, spec-mcp-era-isolation slice 1), which was therefore
+ungoverned by both checks below despite being compliant -- nothing would
+have noticed if it stopped being.
 
 Two anti-patterns, both statically detectable from the Containerfile text
 alone (see `docs/reference/container-base-layer-convention.md` for the full
@@ -20,13 +27,14 @@ does NOT check -- that pillar is structural, not a grep):
    `COPY`/layer). Docker allows multiple `KEY=VALUE` pairs on one `ENV`
    line; every key on the line is checked, not just the first.
 
-**Pure stdlib, by design.** Only `re` + `pathlib` + `pytest`, matching this
-repo's other `tests/packaging` gates (see
+**Pure stdlib, by design.** Only `re` + `pathlib` + `fnmatch` + `subprocess`
+(to ask git, not the filesystem, which files are tracked) + `pytest`,
+matching this repo's other `tests/packaging` gates (see
 `test_containerfile_checkout_path.py`), so it runs in the deliberately lean
 `pyforge-ci` env with zero runtime libraries installed. This is a static
 text scan over the Containerfiles as committed -- not a build-time or
-runtime check; `scripts/container-gates secrets-scan` (wired into all three
-Containerfiles as a `RUN` step) is the complementary, different-layer check
+runtime check; `scripts/container-gates secrets-scan` (wired into every
+Containerfile as a `RUN` step) is the complementary, different-layer check
 that a *built* image ships nothing secret-shaped.
 
 **Synthetic-regression coverage is mandatory here, not optional.**
@@ -39,18 +47,52 @@ strings (or synthetic multi-line snippets) that are never written to disk.
 
 from __future__ import annotations
 
+import fnmatch
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-CONTAINERFILES: tuple[Path, ...] = (
-    REPO_ROOT / "Containerfile",
-    REPO_ROOT / "src" / "platform" / "Containerfile",
-    REPO_ROOT / "src" / "platform" / "compose" / "dbgpt" / "Containerfile",
-)
+
+def _git_ls_files() -> list[str]:
+    """Every path git tracks in this repo, `REPO_ROOT`-relative. The single
+    source of "is this file tracked" truth the derivation below filters
+    against, so an untracked scratch/experimental Containerfile sitting in
+    the working tree can never join the derived set no matter what a naive
+    filesystem glob would have found."""
+    result = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def _filter_containerfile_paths(tracked: list[str]) -> tuple[Path, ...]:
+    """Every tracked path whose basename matches the `Containerfile*` glob,
+    as absolute, sorted `Path`s under `REPO_ROOT`. A pure function over an
+    already-fetched tracked-file list (not a filesystem scan itself), so
+    tests can drive it against a synthetic list without shelling out or
+    touching the working tree."""
+    return tuple(
+        sorted(
+            REPO_ROOT / rel
+            for rel in tracked
+            if fnmatch.fnmatchcase(Path(rel).name, "Containerfile*")
+        )
+    )
+
+
+# Derived from the tracked tree, not hard-coded -- see the module docstring
+# and `test_derived_containerfiles_include_all_four_known_paths` below for
+# the proof this actually finds all four real Containerfiles rather than
+# passing vacuously on an empty or partial match.
+CONTAINERFILES: tuple[Path, ...] = _filter_containerfile_paths(_git_ls_files())
 
 # Tolerates a leading `--platform=...` flag and a trailing `AS <name>`, e.g.:
 #   FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
@@ -89,18 +131,19 @@ CREDENTIAL_DENYLIST: tuple[str, ...] = (
     "CREDENTIAL",
 )
 
-# 2 stages (builder + runtime) x 3 Containerfiles, today. A regression that
+# 2 stages (builder + runtime) x 4 Containerfiles, today. A regression that
 # drops below this is itself worth a look even before considering whether
 # any individual FROM is unpinned.
-MIN_EXPECTED_FROM_LINES = 6
+MIN_EXPECTED_FROM_LINES = 8
 
 # `src/platform/Containerfile` (HOME, DJANGO_SETTINGS_MODULE) +
-# `src/platform/compose/dbgpt/Containerfile` (HOME, NOTE_BOOK_ENABLE) = 4 ENV
+# `src/platform/compose/dbgpt/Containerfile` (HOME, NOTE_BOOK_ENABLE) +
+# `src/platform/compose/mcp-host/Containerfile` (HOME, PYTHONPATH) = 6 ENV
 # directives today. The root `Containerfile` has none. This floor exists so
 # a regex that stopped matching ENV lines entirely would fail loudly here
 # rather than letting `test_no_env_key_is_credential_shaped` pass having
 # checked nothing.
-MIN_EXPECTED_ENV_LINES = 3
+MIN_EXPECTED_ENV_LINES = 6
 
 
 def _parse_image_ref(ref: str) -> tuple[str, str | None]:
@@ -175,7 +218,7 @@ def _parse_from_lines(text: str) -> list[tuple[int, str, str | None, bool]]:
 
 
 def _from_directives() -> list[tuple[Path, int, str, str | None, bool]]:
-    """Every `FROM` directive across all three Containerfiles, as
+    """Every `FROM` directive across every tracked Containerfile, as
     (file, 1-indexed line number, raw image ref, tag or None, is a
     same-file stage-name reference)."""
     results: list[tuple[Path, int, str, str | None, bool]] = []
@@ -188,7 +231,7 @@ def _from_directives() -> list[tuple[Path, int, str, str | None, bool]]:
 
 
 def _env_directives() -> list[tuple[Path, int, str]]:
-    """Every `ENV` key across all three Containerfiles, as (file,
+    """Every `ENV` key across every tracked Containerfile, as (file,
     1-indexed line number, key). A single `ENV` line can declare more than
     one key (the `ENV KEY1=val1 KEY2=val2` multi-pair form) -- each
     contributes its own entry at the same line number."""
@@ -248,7 +291,7 @@ def test_every_from_has_an_explicit_non_latest_tag():
 
 
 def test_no_env_key_is_credential_shaped():
-    """The AC: no ENV key across any of the three Containerfiles matches a
+    """The AC: no ENV key across any tracked Containerfile matches a
     credential-shaped deny-list -- secrets must cross the build boundary
     only via `--mount=type=secret` (convention doc pillar 3)."""
     envs = _env_directives()
@@ -279,7 +322,7 @@ def test_no_env_key_is_credential_shaped():
         # (`_parse_image_ref` returns "" here, not None); must still count
         # as unpinned.
         ("FROM ubuntu:", "", True),
-        # Real, correctly-pinned examples (mirroring the three real files) --
+        # Real, correctly-pinned examples (mirroring the four real files) --
         # prove the check does NOT false-positive on the golden shape.
         (
             "FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder",
@@ -399,3 +442,113 @@ def test_env_credential_guard_catches_key_after_first_on_multi_var_line():
     assert keys == ["HOME", "DB_PASSWORD"], f"multi-var key extraction mismatch: {keys!r}"
     assert _is_credential_shaped("HOME") is False
     assert _is_credential_shaped("DB_PASSWORD") is True
+
+
+def test_derived_containerfiles_include_all_four_known_paths():
+    """Proves the git-tracked-glob derivation actually finds this repo's
+    real Containerfiles rather than passing vacuously on an empty or
+    partial match -- the exact failure mode this file's own hard-coded
+    `CONTAINERFILES` tuple used to be blind to (three literals, silently
+    missing the fourth, real file below). A count assertion alone could
+    still pass if the derivation matched the wrong four files, so this
+    also checks explicit membership for each known path."""
+    known_containerfiles = (
+        REPO_ROOT / "Containerfile",
+        REPO_ROOT / "src" / "platform" / "Containerfile",
+        REPO_ROOT / "src" / "platform" / "compose" / "dbgpt" / "Containerfile",
+        REPO_ROOT / "src" / "platform" / "compose" / "mcp-host" / "Containerfile",
+    )
+    assert len(CONTAINERFILES) >= len(known_containerfiles), (
+        f"expected the derivation to find at least the "
+        f"{len(known_containerfiles)} known Containerfiles, found "
+        f"{len(CONTAINERFILES)}: "
+        f"{[str(p.relative_to(REPO_ROOT)) for p in CONTAINERFILES]}"
+    )
+    missing = [p for p in known_containerfiles if p not in CONTAINERFILES]
+    assert not missing, (
+        "the derivation is missing known Containerfile(s): "
+        f"{[str(p.relative_to(REPO_ROOT)) for p in missing]} -- derived set: "
+        f"{[str(p.relative_to(REPO_ROOT)) for p in CONTAINERFILES]}"
+    )
+
+
+def test_untracked_scratch_containerfile_is_excluded_from_derivation():
+    """The derivation filters `git ls-files` output, never the filesystem
+    directly -- so a stray untracked `Containerfile.local` can never join
+    the derived set even though its name matches the `Containerfile*`
+    pattern, because real `git ls-files` output would never list it
+    either. Driven against a synthetic tracked-file list that (like a real
+    untracked file would) simply omits it -- no shelling out, no touching
+    the working tree."""
+    tracked_without_scratch_file = [
+        "Containerfile",
+        "src/platform/Containerfile",
+    ]
+    derived = _filter_containerfile_paths(tracked_without_scratch_file)
+    assert derived == (
+        REPO_ROOT / "Containerfile",
+        REPO_ROOT / "src" / "platform" / "Containerfile",
+    )
+    assert (REPO_ROOT / "Containerfile.local") not in derived, (
+        "an untracked scratch Containerfile must never appear in the "
+        "derived set just because its name matches the glob"
+    )
+
+
+MCP_HOST_CONTAINERFILE = (
+    REPO_ROOT / "src" / "platform" / "compose" / "mcp-host" / "Containerfile"
+)
+
+
+def test_planted_unpinned_base_in_mcp_host_containerfile_is_caught():
+    """`mcp-host/Containerfile` (spec-mcp-era-isolation slice 1) is the
+    file the old hard-coded `CONTAINERFILES` tuple omitted entirely --
+    nothing would have noticed if ITS base image drifted unpinned. Plants
+    an unpinned runtime base into the real file's text (in memory only,
+    never written to disk) and drives it through the same
+    `_parse_from_lines` / `_is_unpinned` logic `_from_directives()` uses,
+    proving the guard now actually reaches this file's real content."""
+    real_text = MCP_HOST_CONTAINERFILE.read_text(encoding="utf-8")
+    planted_text = real_text.replace(
+        "registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime",
+        "registry.access.redhat.com/ubi9/ubi-minimal AS runtime",
+    )
+    assert planted_text != real_text, (
+        "the planted substitution did not match anything in the real "
+        "mcp-host Containerfile -- update this test if that line changed"
+    )
+    unpinned = [
+        (lineno, ref)
+        for lineno, ref, tag, is_stage_reference in _parse_from_lines(planted_text)
+        if not is_stage_reference and _is_unpinned(tag)
+    ]
+    assert any("ubi9/ubi-minimal" in ref for _, ref in unpinned), (
+        f"expected the planted unpinned runtime base to be caught: {unpinned!r}"
+    )
+
+
+def test_planted_env_credential_in_mcp_host_containerfile_is_caught():
+    """Same rationale as above for the ENV-credential check: plants a
+    credential-shaped ENV key into the real mcp-host Containerfile's text
+    (in memory only) and proves the guard's key-extraction + deny-list
+    logic actually fires against it."""
+    real_text = MCP_HOST_CONTAINERFILE.read_text(encoding="utf-8")
+    planted_text = real_text.replace(
+        "ENV PYTHONPATH=/app",
+        "ENV PYTHONPATH=/app\nENV MCP_HOST_API_KEY=xyz",
+    )
+    assert planted_text != real_text, (
+        "the planted substitution did not match anything in the real "
+        "mcp-host Containerfile -- update this test if that line changed"
+    )
+    offending = []
+    for lineno, line in enumerate(planted_text.splitlines(), start=1):
+        match = ENV_HEADER_RE.match(line)
+        if match:
+            for key in _env_keys(match.group(1)):
+                if _is_credential_shaped(key):
+                    offending.append((lineno, key))
+    assert offending, (
+        f"expected the planted credential-shaped ENV key to be caught, "
+        f"found none: {offending!r}"
+    )
