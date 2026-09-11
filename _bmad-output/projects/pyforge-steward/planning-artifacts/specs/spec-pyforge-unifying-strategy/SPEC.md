@@ -545,6 +545,20 @@ they are why this is not merely a UI project.
   any object-store server inside the deployed platform remains forbidden without a further,
   separately-justified exception. See
   `sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md`.
+- **Exception (dated 2026-09-11, AD-1 datastores).** PostgreSQL and Redis — two of AD-1's own
+  three named infrastructure kinds — are permitted as **consumed**, never mandatorily
+  self-hosted, backing services, the same shape already granted to the identity provider
+  (`canopy:AD-19`) and to object storage (the 2026-09-10 exception above). Production target:
+  Enterprise Managed PostgreSQL and Enterprise Managed Redis, ops-provided and externally
+  operated on the same Enterprise Managed OCP cluster that already hosts the platform. This
+  does not withdraw or deprecate the existing self-hosted default — the bundled
+  `postgres-statefulset.yaml`/`redis-deployment.yaml` remain the supported path for local dev
+  and for any deployment not opting into the BYO-endpoint overlay; both paths are supported,
+  selected by configuration, never assumed. When the BYO-PostgreSQL overlay is selected,
+  `postgres-backup-cronjob.yaml` does not run against an instance pyforge does not own —
+  backup/PITR responsibility for an externally-managed PostgreSQL belongs to the enterprise's
+  own database team, named explicitly, never silently assumed away. See
+  `sprint-change-proposal-2026-09-11-ad-1-datastores-exception.md`.
 - **Always:** CAP-19 is one analytical engine and one writer (canopy:FR-27 intent). `ATTACH` joins
   sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
   and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.

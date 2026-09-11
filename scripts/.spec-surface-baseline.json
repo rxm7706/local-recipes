@@ -5088,6 +5088,10 @@
   "files": {},
   "memlog": "4ea51aeceef9bbdb3297b025849b7e471da86f94"
  },
+ "pyforge-steward/spec-platform-datastores-consumed-not-self-hosted": {
+  "files": {},
+  "memlog": "cd586b4c730b79ba8a86a1ed333e044f4ab05111"
+ },
  "pyforge-steward/spec-platform-fifteen-factors": {
   "files": {
    "scripts/platform_ci_test_requirements_check.py": "88270b0950cdbf35f3c7706d95826423f6c5e70b"
