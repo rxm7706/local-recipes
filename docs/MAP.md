@@ -10,8 +10,8 @@ not hundreds), not a generic four-folder template.
 
 | Quadrant | Path | Role | Population status |
 |----------|------|------|---------------------|
-| **Tutorials / Getting Started** | [`docs/tutorials/`](tutorials/) | Learning-oriented: first working environment, minimal path to success | Scaffold only — Story 22.5 relocates content from `README.md` "Quick start" and tutorial sections of `developer-guide.md` |
-| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Scaffold only — Story 22.5 relocates scattered how-to material |
+| **Tutorials / Getting Started** | [`docs/tutorials/`](tutorials/) | Learning-oriented: first working environment, minimal path to success | Populated — [`getting-started.md`](tutorials/getting-started.md) (Story 22.5) |
+| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Populated — recipe/pixi/CI/troubleshooting/air-gap + relocated antigravity/manticore (Story 22.5) |
 | **Reference** | [`docs/reference/`](reference/) | Information-oriented: exact CLI/config/schema surfaces, inventories, examples | Populated — seed from pre-22.4 `docs/reference/` (true reference material retained here) |
 | **Explanation** | [`docs/explanation/`](explanation/) | Understanding-oriented: architecture rationale, "why does this work this way?" | Populated — architecture-rationale files relocated from `docs/reference/` in Story 22.4 |
 
@@ -31,17 +31,15 @@ general documentation:
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
 
-## Scattered content accounted for (Story 22.5 targets)
+## Relocated in Story 22.5 (entry-point pointers remain until 22.6)
 
-Content that belongs in Tutorials or How-to but still lives elsewhere:
-
-| Current location | Future quadrant | Notes |
-|------------------|-----------------|-------|
-| `README.md` § Quick start, § Building a single recipe, § Pixi tasks | Tutorials + How-to | Entry-point duplication corrected in Story 22.6 |
-| `README.md` § Common Commands | How-to | Operational command surface |
-| `docs/reference/developer-guide.md` | **Split** (Tutorial + How-to + Reference) | Mixed file — see per-file table below; Story 22.5 executes the split |
-| `docs/reference/antigravity-developer-startup.md` | How-to | Developer startup / surface-selection guide |
-| `docs/reference/manticore-studio.md` | How-to | Procedural install + render setup for Herald's manticore studio |
+| Former location | New home | Notes |
+|-----------------|----------|-------|
+| `README.md` § Quick start, § Building, § Pixi tasks, § GitHub Actions | [`docs/tutorials/getting-started.md`](tutorials/getting-started.md) + [`docs/how-to/`](how-to/) | README now holds temporary pointers only |
+| `docs/reference/developer-guide.md` (mixed) | Split across tutorials, how-to, and reference | Reference file retains formats + config |
+| `docs/reference/antigravity-developer-startup.md` | [`docs/how-to/antigravity-developer-startup.md`](how-to/antigravity-developer-startup.md) | Redirect stub at old path |
+| `docs/reference/manticore-studio.md` | [`docs/how-to/manticore-studio.md`](how-to/manticore-studio.md) | Redirect stub at old path |
+| `docs/explanation/enterprise-deployment.md` §1 procedural steps | [`docs/how-to/air-gapped-mirror-setup.md`](how-to/air-gapped-mirror-setup.md) | Explanation doc retains architecture rationale |
 
 ## Per-file classification: `docs/reference/` (Story 22.4)
 
@@ -73,13 +71,13 @@ Every file that lived in `docs/reference/` before Story 22.4 is accounted for be
 Redirect stubs remain at the former `docs/reference/` paths for moved files until
 Story 22.6 updates entry-point links repo-wide.
 
-### Mixed / pending relocation (Story 22.5)
+### Split / relocated in Story 22.5 (complete)
 
-| File | Classification | Action in 22.5 |
-|------|----------------|----------------|
-| [`developer-guide.md`](reference/developer-guide.md) | **Split required** | Quick Start → Tutorials; Local Testing / Troubleshooting → How-to; Configuration Reference → Reference |
-| [`antigravity-developer-startup.md`](reference/antigravity-developer-startup.md) | How-to | Move to `docs/how-to/` |
-| [`manticore-studio.md`](reference/manticore-studio.md) | How-to | Move to `docs/how-to/` |
+| File | Classification | Result |
+|------|----------------|--------|
+| [`developer-guide.md`](reference/developer-guide.md) | Reference (split) | Formats, platform matrix, config reference only; pointers to tutorials/how-to |
+| [`antigravity-developer-startup.md`](how-to/antigravity-developer-startup.md) | How-to | Moved; redirect stub at old `reference/` path |
+| [`manticore-studio.md`](how-to/manticore-studio.md) | How-to | Moved; redirect stub at old `reference/` path |
 
 ## Archived reference (unchanged)
 
@@ -91,5 +89,5 @@ Story 22.6 updates entry-point links repo-wide.
 
 | Story | Builds on this map |
 |-------|-------------------|
-| **22.5** | Populates `docs/tutorials/` and `docs/how-to/`; executes mixed-file splits and pending relocations |
+| **22.5** | Populated `docs/tutorials/` and `docs/how-to/`; executed mixed-file splits and pending relocations (done) |
 | **22.6** | Corrects `README.md`, `CLAUDE.md`, `AGENTS.md` pointers; fixes broken internal links after relocation |

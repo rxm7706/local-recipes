@@ -1817,7 +1817,7 @@ can find one place to get a working environment running (Tutorials/Getting Start
 place to find task-oriented operational instructions (How-to Guides)
 **And** the content populating both is relocated/corrected existing material, not rewritten
 from scratch
-**Status:** backlog
+**Status:** done
 
 ### Story 22.6: README.md, CLAUDE.md, and AGENTS.md point cleanly into the reorganized structure
 
