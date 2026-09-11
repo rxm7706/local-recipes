@@ -38,6 +38,9 @@ _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _CORE_CHART = _PLATFORM_DIR / "deploy" / "charts" / "platform"
 _OVERLAY_CHART = _PLATFORM_DIR / "deploy" / "overlays" / "ocp" / "chart"
 _CORE_OVERRIDES = _PLATFORM_DIR / "deploy" / "overlays" / "ocp" / "core-overrides.yaml"
+_EXTERNAL_POSTGRES_OVERLAY = (
+    _PLATFORM_DIR / "deploy" / "overlays" / "external-postgres" / "values.yaml"
+)
 _EXTERNAL_REDIS_OVERLAY = (
     _PLATFORM_DIR / "deploy" / "overlays" / "external-redis" / "values.yaml"
 )
@@ -2645,6 +2648,65 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
     _assert_no_fixed_uid_keys(docs)
     for component in sorted(_PLATFORM_IMAGE_COMPONENTS):
         _assert_restricted_v2_pod_spec(by_component[component], where=component)
+
+
+@requires_helm
+def test_external_postgres_overlay_skips_self_hosted_resources():
+    """AC (Story 51.1): external overlay renders zero in-cluster postgres
+    workloads while platform pods still wire DATABASE_URL via secretKeyRef.
+    """
+    docs = _render(_CORE_CHART, "-f", str(_EXTERNAL_POSTGRES_OVERLAY))
+    postgres_workloads = [
+        doc
+        for doc in docs
+        if doc.get("kind") in {"StatefulSet", "Service", "PersistentVolumeClaim"}
+        and doc["metadata"]
+        .get("labels", {})
+        .get("app.kubernetes.io/component", "")
+        .startswith("postgres")
+    ]
+    assert postgres_workloads == [], (
+        "expected no self-hosted postgres StatefulSet/Service/PVC, got: "
+        f"{[(doc.get('kind'), doc['metadata']['name']) for doc in postgres_workloads]}"
+    )
+    by_component = _pod_specs_by_component(docs)
+    env = _collect_env_by_name(by_component["web"])
+    db_env = env.get("DATABASE_URL")
+    assert db_env is not None
+    secret_ref = db_env.get("valueFrom", {}).get("secretKeyRef")
+    assert secret_ref is not None
+    assert secret_ref["key"] == "DATABASE_URL"
+
+
+@requires_helm
+def test_external_postgres_toggle_off_preserves_self_hosted_postgres():
+    """AC (Story 51.1): overlay with external disabled matches the default
+    self-hosted postgres render (toggle gates behavior, not overlay presence).
+    """
+    default_docs = _render(_CORE_CHART)
+    overlay_docs = _render(
+        _CORE_CHART,
+        "-f",
+        str(_EXTERNAL_POSTGRES_OVERLAY),
+        "--set",
+        "postgres.external.enabled=false",
+    )
+    default_postgres = [
+        doc["metadata"]["name"]
+        for doc in default_docs
+        if doc.get("kind") == "StatefulSet"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "postgres"
+    ]
+    overlay_postgres = [
+        doc["metadata"]["name"]
+        for doc in overlay_docs
+        if doc.get("kind") == "StatefulSet"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "postgres"
+    ]
+    assert default_postgres == overlay_postgres
+    assert len(default_postgres) == 1
 
 
 @requires_helm

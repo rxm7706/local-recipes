@@ -1,4 +1,4 @@
-{{- if .Values.postgres.backup.enabled }}
+{{- if and .Values.postgres.backup.enabled (not .Values.postgres.external.enabled) }}
 # Story 41.1: scheduled pg_basebackup on the platform image (no second image).
 # WAL segments land on the same RWX PVC via postgres archive_command.
 apiVersion: batch/v1

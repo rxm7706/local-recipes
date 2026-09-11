@@ -1,0 +1,19 @@
+# Story 51.1: BYO external PostgreSQL overlay for the core chart.
+# Apply with:
+#   pixi run -e platform-dev helm install platform \
+#       src/platform/deploy/charts/platform \
+#       -f src/platform/deploy/overlays/external-postgres/values.yaml \
+#       --set-file flags.tree=src/platform/config/flags.json \
+#       --set image.digest=sha256:<digest-from-platform-ci>
+#
+# Prerequisite: pre-create existingSecret (default `platform-secrets`) with
+# DATABASE_URL and MIGRATION_DATABASE_URL pointing at the external PostgreSQL
+# endpoint. POSTGRES_PASSWORD is not consumed when external postgres is enabled.
+# See deploy/README.md for the full Secret key contract.
+
+postgres:
+  external:
+    enabled: true
+  # In-cluster backup requires a local postgres StatefulSet.
+  backup:
+    enabled: false
