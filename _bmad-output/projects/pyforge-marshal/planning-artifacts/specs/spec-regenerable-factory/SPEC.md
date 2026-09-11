@@ -38,6 +38,7 @@ with other loops (e.g. Warden 6.3).
   retrofitted.
   Success: the checker (CAP-3) can enumerate every spec's surface; no spec
   without one.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: `scripts/spec_surface_check.py::parse_surface` correctly enumerates every spec's `surface:` globs when present (confirmed live via CAP-3's own run below), but "no spec without one" does NOT currently hold — 22 `SPEC.md` files fleet-wide have no `surface:` frontmatter key at all (a scripted count against every `_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md`), and the checker silently contributes zero coverage for them rather than flagging the omission. Real, current gap — not fixed here (which of the 22 legitimately need one is a per-spec judgment call, not a mechanical fix).
 
 - **CAP-2 — backfill waves.**
   Intent: brownfield-`bmad-spec` each realized Dream per the wave order in
@@ -46,6 +47,7 @@ with other loops (e.g. Warden 6.3).
   Success: every realized Dream traces to a validated kernel with a surface
   manifest; each wave's spec self-validates with zero unresolved
   contradictions.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): the program itself completed (`.memlog.md`: "PROGRAM COMPLETE 2026-07-23: all 14 stories done" across CAP-1/2/3/4). Re-ran `dream-chain-check` for the CURRENT fleet-wide state (not the historical claim alone): 1 outstanding `dream-without-spec` gap (`marshal-launch-environment-integrity`, unrelated to this program's own backfill targets) plus 2 `spec-without-dream-link` findings. The waves this program executed are complete; the broader chain-completeness invariant they feed is not presently 100% clean fleet-wide — a known, separately-tracked gap, not something this CAP's own scope reopens.
 
 - **CAP-3 — repo-wide surface checker.**
   Intent: a deterministic script reporting (a) coverage — every tracked
@@ -54,6 +56,7 @@ with other loops (e.g. Warden 6.3).
   without the spec/memlog moving.
   Success: exit 0 on a clean repo, non-zero with named findings otherwise;
   runs as a pixi task and joins the CI detector family.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `pixi run -e local-recipes spec-surface-check` run live this pass — exit 2 (non-zero) with 47 named drift findings against the repo's current, actively-changing state (concurrent fleet work mid-flight), each naming the exact spec + changed/added path. Exactly the claimed coverage+drift behavior, exercised live, not a synthetic fixture.
 
 - **CAP-4 — regeneration drill.**
   Intent: prove regenerability — delete a governed module (pilot:
@@ -61,6 +64,7 @@ with other loops (e.g. Warden 6.3).
   same verification the original passed.
   Success: one documented drill with a green outcome; the drill procedure
   recorded so it can be repeated on any governed surface.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `spec-factory-console/drill-evidence.md` (dated 2026-07-23) documents a clean-room subagent rebuild of `pyforge.doctor.sources.fleet_scan` from `console-contract.md` alone — verdict PASS, both scripts' outputs byte-identical after timestamp normalization, `--source git` mode ran green (25 dreams scanned, correct tallies), procedure recorded (back up → install rebuild → run both modes → normalized diff → restore). Durable, dated evidence — not re-run this pass, since CAP-4 asks for one documented drill, not perpetual re-execution.
 
 ## Constraints
 
