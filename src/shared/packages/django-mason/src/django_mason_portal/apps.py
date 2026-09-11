@@ -21,6 +21,7 @@ class MasonPortalConfig(PortalConfig):
     urlconf = "django_mason_portal.urls"
 
     def ready(self) -> None:
+        from django_mason_portal.boot_reconcile import run_mason_boot_reconcile
         from django_mason_portal.diagnose import last_diagnose
         from django_mason_portal.mcp_asgi import ensure_mason_runner  # noqa: PLC0415
         from django_pyforge.assertion.client import LAST_DIAGNOSE_TOOL
@@ -28,6 +29,7 @@ class MasonPortalConfig(PortalConfig):
 
         register_portal_job(self.station_name, LAST_DIAGNOSE_TOOL, last_diagnose)
         ensure_mason_runner()
+        run_mason_boot_reconcile()
 
     def mcp_asgi_app(self):
         from django_mason_portal.mcp_asgi import build_mason_mcp_asgi  # noqa: PLC0415

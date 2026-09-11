@@ -7,19 +7,54 @@ routes via this wrapper.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from django_pyforge.assertion.client import PortalClient
+from django_pyforge.circuits import CircuitBreaker
+from django_pyforge.circuits import Degraded
 from pyforge.core.client import API_VERSION_HEADER
 from pyforge.core.client import PyForgeStationClient
+from pyforge.core.client import StationClientError
 from pyforge.core.client import Transport
 
 __all__ = [
     "API_VERSION_HEADER",
     "PyForgeStationClient",
+    "StationClientDegraded",
     "StationHttpClient",
     "Transport",
+    "station_outbound_breaker",
 ]
+
+station_outbound_breaker = CircuitBreaker(name="station_outbound")
+
+
+class StationClientDegraded(StationClientError):
+    """Outbound station call degraded because the circuit is open."""
+
+
+def _guarded_transport(
+    transport: Transport,
+    breaker: CircuitBreaker = station_outbound_breaker,
+) -> Transport:
+    """Wrap a transport so outbound failures trip the shared async breaker."""
+
+    def wrapped(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        body: bytes | None,
+    ) -> bytes:
+        def _call() -> bytes:
+            return transport(method, url, headers, body)
+
+        result = asyncio.run(breaker.call_or_degrade(_call))
+        if isinstance(result, Degraded):
+            raise StationClientDegraded(result.reason)
+        return result
+
+    return wrapped
 
 
 class StationHttpClient:
@@ -44,6 +79,8 @@ class StationHttpClient:
             from django_pyforge.station_port import default_transport
 
             transport = default_transport()
+        if transport is not None:
+            transport = _guarded_transport(transport)
         return PyForgeStationClient(
             station=station,
             version=version,

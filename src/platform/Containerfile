@@ -182,6 +182,8 @@ COPY src/shared/packages/pyforge-steward/src/pyforge /app/pyforge
 # Same COPY shape as steward above; both are `pyforge` namespace packages
 # (no __init__.py), so steward/ and core/ merge under /app/pyforge/.
 COPY src/shared/packages/pyforge-core/src/pyforge/core /app/pyforge/core
+# Story 49.14: mason portal boot reconcile imports pyforge.mason.boot at runtime.
+COPY src/shared/packages/pyforge-mason/src/pyforge/mason /app/pyforge/mason
 COPY src/shared/packages/django-doctor/src/django_doctor_portal /app/django_doctor_portal
 COPY src/shared/packages/django-herald/src/django_herald_portal /app/django_herald_portal
 COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal
