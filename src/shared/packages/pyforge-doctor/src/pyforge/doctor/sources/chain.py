@@ -350,6 +350,7 @@ def _spec_entry(sp: Path, project: str, target: Path) -> dict:
             for c in (fm.get("covers-dreams") or [])
         ],
         "satellite_titles": _satellite_titles(sp),
+        "status": str(fm.get("status") or "").strip(),
         "path": str(sp.relative_to(target)),
     }
 
@@ -808,6 +809,22 @@ _STATUSES_REQUIRING_REALIZATION_LOG = frozenset(
 _STATUSES_HISTORICAL_SECTION_CHECK = frozenset({"specified", "realized"})
 _HISTORICAL_SECTION_MAX_LINES = 20
 _HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
+#: Story 21.6 — ``docs/dreams/README.md:71``: a Dream at ``specified`` needs a
+#: covering Spec at ``ready`` or beyond (not ``draft`` / ``extension-point``).
+_SPEC_READY_FOR_SPECIFIED = frozenset(
+    {
+        "ready",
+        "ready-for-dev",
+        "in-progress",
+        "in-review",
+        "shipped",
+        "done",
+        "realized",
+        "absorbed",
+        "blocked",
+    }
+)
+_KINSHIP_WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 
 def _long_historical_sections(body: str, *, max_lines: int = _HISTORICAL_SECTION_MAX_LINES) -> list[tuple[str, int]]:
@@ -939,6 +956,34 @@ def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
     return guild_dreams
 
 
+def _dream_body_after_frontmatter(text: str) -> str:
+    """Dream markdown body with the leading ``---`` fence stripped."""
+    if not text.startswith("---"):
+        return text
+    parts = text.split("---", 2)
+    return parts[2] if len(parts) >= 3 else ""
+
+
+def _specs_covering_dream(
+    slug: str,
+    dream: Mapping[str, str],
+    specs: Sequence[dict],
+) -> list[dict]:
+    """Specs that cover one Dream — same rules as ``_check_dream_chain`` INV-1."""
+    matched: list[dict] = []
+    title_norm = _normalize_title(dream.get("title", ""))
+    for s in specs:
+        if s.get("dream") == slug:
+            matched.append(s)
+        elif not s.get("dream") and s["spec"].removeprefix("spec-") == slug:
+            matched.append(s)
+        elif slug in s.get("covers", ()):
+            matched.append(s)
+        elif title_norm and title_norm in s.get("satellite_titles", ()):
+            matched.append(s)
+    return matched
+
+
 def _parse_readme_dream_statuses(readme: Path) -> dict[str, str]:
     """Slug → Status-column token from ``docs/dreams/README.md`` tables.
 
@@ -1011,15 +1056,15 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
         )
 
     readme_statuses = _parse_readme_dream_statuses(dreams_dir / "README.md")
-    dream_slugs: set[str] = set()
-    dream_count = 0
+    dream_paths = [
+        p for p in entries if p.suffix == ".md" and p.name != "README.md"
+    ]
+    dream_slugs = {p.stem for p in dream_paths}
+    dream_count = len(dream_paths)
+    dream_meta: dict[str, dict[str, str]] = {}
 
-    for path in entries:
-        if path.name == "README.md" or path.suffix != ".md":
-            continue
-        dream_count += 1
+    for path in dream_paths:
         slug = path.stem
-        dream_slugs.add(slug)
         fm, unparseable = _frontmatter_parse(path)
         if unparseable:
             findings.append(
@@ -1033,6 +1078,8 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
             )
             continue
 
+        title = fm.get("title")
+        title_s = title.strip() if isinstance(title, str) else ""
         status = fm.get("status")
         status_s = status.strip() if isinstance(status, str) else ""
         if not status_s:
@@ -1103,8 +1150,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 )
             )
 
-        title = fm.get("title")
-        if not isinstance(title, str) or not title.strip():
+        if not title_s:
             findings.append(
                 Finding(
                     source=Source.DREAMS_HYGIENE,
@@ -1115,11 +1161,20 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 )
             )
 
+        dream_meta[slug] = {
+            "owner": owner_s,
+            "status": status_s,
+            "title": title_s,
+        }
+
+        try:
+            raw_text = path.read_text(encoding="utf-8")
+        except OSError:
+            raw_text = ""
+        kinship_body = _dream_body_after_frontmatter(raw_text)
+
         if status_s in _STATUSES_REQUIRING_REALIZATION_LOG:
-            try:
-                body = path.read_text(encoding="utf-8")
-            except OSError:
-                body = ""
+            body = raw_text
             if not _REALIZATION_LOG_RE.search(body):
                 findings.append(
                     Finding(
@@ -1153,6 +1208,26 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                         )
                     )
 
+        for match in _KINSHIP_WIKILINK_RE.finditer(kinship_body):
+            link_slug = match.group(1).strip().removesuffix(".md")
+            if link_slug and link_slug not in dream_slugs:
+                findings.append(
+                    Finding(
+                        source=Source.DREAMS_HYGIENE,
+                        check="kinship-wikilink-dead",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"Dream {slug!r} Kinship wikilink "
+                            f"[[{link_slug}]] does not resolve under "
+                            f"docs/dreams/"
+                        ),
+                        evidence={
+                            "subject": slug,
+                            "link_target": link_slug,
+                        },
+                    )
+                )
+
         if slug in readme_statuses and status_s and readme_statuses[slug] != status_s:
             findings.append(
                 Finding(
@@ -1171,6 +1246,78 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                     },
                 )
             )
+
+    # Story 21.6 — Dream files absent from the curated README map.
+    for slug in sorted(dream_slugs):
+        if slug not in readme_statuses:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-readme-missing",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} has no row in docs/dreams/README.md"
+                    ),
+                    evidence={"subject": slug},
+                )
+            )
+
+    # Story 21.6 — README:71: ``specified`` requires a Spec at ready or beyond.
+    spec_collect_findings: list[dict] = []
+    specs = _collect_specs(target, spec_collect_findings)
+    for slug, meta in sorted(dream_meta.items()):
+        if meta["status"] != "specified":
+            continue
+        covering = _specs_covering_dream(slug, meta, specs)
+        if not covering:
+            expected_spec = f"spec-{slug}"
+            if any(
+                f.get("subject") == expected_spec for f in spec_collect_findings
+            ):
+                findings.append(
+                    Finding(
+                        source=Source.DREAMS_HYGIENE,
+                        check="specified-spec-not-ready",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"Dream {slug!r} status 'specified' but covering "
+                            f"Spec {expected_spec!r} could not be evaluated "
+                            f"for readiness"
+                        ),
+                        evidence={
+                            "subject": slug,
+                            "specs": [expected_spec],
+                            "spec_statuses": ["(unevaluable)"],
+                        },
+                    )
+                )
+            continue
+        if any(
+            (s.get("status") or "").strip() in _SPEC_READY_FOR_SPECIFIED
+            for s in covering
+        ):
+            continue
+        spec_statuses = sorted(
+            {(s.get("status") or "").strip() or "(missing)" for s in covering}
+        )
+        spec_names = sorted(s["spec"] for s in covering)
+        findings.append(
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="specified-spec-not-ready",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"Dream {slug!r} status 'specified' but covering Spec(s) "
+                    f"{spec_names} not ready or beyond "
+                    f"(statuses: {spec_statuses})"
+                ),
+                evidence={
+                    "subject": slug,
+                    "specs": spec_names,
+                    "spec_statuses": spec_statuses,
+                },
+            )
+        )
 
     # README rows that name a Dream file which does not exist — table orphan
     # (Phase-2b table sync). Omitted satellites are fine; dangling links are not.
@@ -1199,8 +1346,9 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 check="dreams-hygiene",
                 status=DoctorStatus.OK,
                 message=(
-                    "every Dream passes frontmatter hygiene, README table "
-                    "sync, and realization-log presence"
+                    "every Dream passes frontmatter hygiene, README "
+                    "reconciliation, README:71 Spec readiness, Kinship "
+                    "wikilinks, table sync, and realization-log presence"
                 ),
                 evidence={"dreams": dream_count},
             ),
