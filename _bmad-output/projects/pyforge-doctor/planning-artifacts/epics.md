@@ -1801,7 +1801,7 @@ discarded and rebuilt
 **And** the BMAD spec-driven tier (`docs/dreams/`, `docs/specs/` legacy,
 `_bmad-output/*/planning-artifacts/`, `implementation-artifacts/`) is named explicitly as
 untouched by the map
-**Status:** backlog
+**Status:** done
 
 ### Story 22.5: The Tutorials/Getting-Started and How-to-Guides quadrants are populated
 
