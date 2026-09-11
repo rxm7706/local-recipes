@@ -627,12 +627,12 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "2fca30c6b0085b88e58a14b7eccc82ede0e05d14"
-                                    # ADVANCED 2026-09-11 from ab0cb3b2a0 to
-                                    # 2fca30c6b0 (follow-up retro: failure-catalog
-                                    # source_sha256 refresh + CHANGELOG Files line
-                                    # for v8.90.2). DOCS + derived config only;
-                                    # no script under scripts/ changed.
+    brief_mirrored_through: "90537c239116143faaba43a4c1c6625065c80933"
+                                    # ADVANCED 2026-09-11 from 2fca30c6b0 to
+                                    # 90537c2391 (follow-up retro: Version History
+                                    # v8.90.2 bullet, G26 date clarification,
+                                    # failure-catalog source_sha256 refresh).
+                                    # DOCS + derived config only; no script changed.
     coverage:
       scripts: 3
       wrappers: 3
@@ -785,12 +785,12 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "2fca30c6b0085b88e58a14b7eccc82ede0e05d14"
-                                    # ADVANCED 2026-09-11 from ab0cb3b2a0 to
-                                    # 2fca30c6b0 (follow-up retro: failure-catalog
-                                    # source_sha256 refresh + CHANGELOG Files line
-                                    # for v8.90.2). DOCS + derived config only;
-                                    # no script under scripts/ changed.
+    brief_mirrored_through: "90537c239116143faaba43a4c1c6625065c80933"
+                                    # ADVANCED 2026-09-11 from 2fca30c6b0 to
+                                    # 90537c2391 (follow-up retro: Version History
+                                    # v8.90.2 bullet, G26 date clarification,
+                                    # failure-catalog source_sha256 refresh).
+                                    # DOCS + derived config only; no script changed.
     coverage:
       scripts: 22
       wrappers: 17
