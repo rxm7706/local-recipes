@@ -1,6 +1,7 @@
 # redis-broker AOF persistence (Story 40.2). The official redis:7 image
 # stores append-only files under /data -- same mount convention as
 # postgres.dataMountPath documents for image swaps.
+{{- if not .Values.redis.external.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,3 +18,4 @@ spec:
   {{- with .Values.redis.broker.persistence.storageClassName }}
   storageClassName: {{ . | quote }}
   {{- end }}
+{{- end }}

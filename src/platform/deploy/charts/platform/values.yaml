@@ -278,6 +278,15 @@ redis:
   runAsUser: 999
   # Cache-only resource seam (broker uses redis.broker.resources).
   resources: {}
+  # Story 51.2: BYO-external-Redis overlay (default self-hosted). When
+  # enabled, redis-deployment/service/broker-pvc templates render empty and
+  # platform pods take REDIS_* URLs from these fields instead of in-cluster
+  # Service DNS. Password expansion via $(REDIS_PASSWORD) is supported.
+  external:
+    enabled: false
+    brokerUrl: ""
+    cacheUrl: ""
+    url: ""
 
 # Wagtail media (Story 20.2 / canopy AD-13). ReadWriteMany; Django
 # FileSystemStorage. Not an object-store backend. Mounted by every platform
