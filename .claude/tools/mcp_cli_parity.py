@@ -60,14 +60,12 @@ if str(_MARSHAL_SRC) not in sys.path:
 MARSHAL_IMPORT_ERROR: ImportError | None
 try:
     from pyforge.marshal.mcp.parity import (  # noqa: E402
-        ParityFinding,
         assert_cli_tool_parity,
         parity_findings,
     )
 
     MARSHAL_IMPORT_ERROR = None
 except ImportError as exc:  # pragma: no cover - partial/monorepo-less checkout
-    ParityFinding = None  # type: ignore[assignment,misc]
     assert_cli_tool_parity = None  # type: ignore[assignment]
     parity_findings = None  # type: ignore[assignment]
     MARSHAL_IMPORT_ERROR = exc
@@ -224,7 +222,7 @@ def build_tool_specs() -> dict[str, dict[str, Any]]:
     verb_by_stem = _verb_by_stem(_cfe_pixi_tasks())
 
     specs: dict[str, dict[str, Any]] = {}
-    for node in tree.body:
+    for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         if not any(_is_mcp_tool(dec) for dec in node.decorator_list):

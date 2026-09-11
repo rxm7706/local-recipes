@@ -2,13 +2,28 @@
 title: "Mason's MCP tool surface passes the CLI-tool parity gate"
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '57c001c9d7c8864ec235b871c8e3dc024845e414'
 review_loop_iteration: 2
 followup_review_recommended: false
 context: []
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      No CI path exercises `.claude/skills/conda-forge-expert/tests/meta/test_mcp_cli_tool_parity.py`
+      when marshal's `pyforge.marshal.mcp.parity` public surface changes on the marshal side only.
+    evidence: |-
+      `cfe-regression-net.yml` (the only workflow that runs this test) has no
+      `src/shared/packages/pyforge-marshal/**` path trigger; `pyforge-station-tests.yml` triggers on
+      that path but only runs marshal's own test suite, never the CFE skill's tests. A marshal-only
+      commit that changes `ParityFinding`'s fields or `assert_cli_tool_parity`/`parity_findings`'s
+      signatures (updating marshal's own call sites and `TOOL_SPECS` to match, so marshal's own suite
+      stays green) would ship green with `mcp_cli_parity.py`'s now-mismatched call into that API never
+      exercised. Verified via review pass 3's Verification Gap layer reading both workflow files'
+      `paths:` filters directly.
+    location: >-
+      .github/workflows/cfe-regression-net.yml
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -257,3 +272,25 @@ addition to amendment #1's KEEP list above):**
   - `[low]` `[reject]` `carried` Edge Case Hunter: a future `@mcp.tool(name="...")` override isn't read — same claim and code shape as review pass 1's rejected finding.
   - `[medium]` `[bad_spec]` Intent Alignment Auditor (primary divergence): the CLI-verb derivation reads only `[feature.local-recipes.tasks.*]`, per the 2026-09-10 Code Map amendment itself — but the Approach/Acceptance-Criteria/I-O-Matrix say "the pixi task registry" unqualified, and `[feature.vuln-db.tasks.*]` also invokes `.claude/scripts/conda-forge-expert/` wrappers. Verified directly: `vuln-db.scan-project` runs `scan_project.py`, the identical script the `scan_project` MCP tool references — under the current local-recipes-only scope this real, resolvable match is instead misfiled in `TOOL_ONLY_NAMES` as a "deliberate asymmetry" it is not. Two more vuln-db-only CFE-wrapper tasks (`detail-cf-atlas-vdb`, `inventory-channel`) are invisible to the gate entirely. This reproduces the exact class of gap review pass 1 caught, one level up (pixi-feature scope instead of wrapper-stem naming). Action: Code Map amended again (see Spec Change Log); code reverted and re-derived.
   - `[false]` `[reject]` `carried` Intent Alignment Auditor (secondary divergence): re-raises the three-place-rule scope claim — same claim and code shape as review pass 1's rejected finding (disproof unchanged: `conda_forge_server.py` precedent).
+
+### 2026-09-10 — Review pass 3
+
+No `intent_gap`/`bad_spec` this pass — the Intent Alignment Auditor confirmed both prior scope gaps (wrapper-stem anchoring; local-recipes-only scanning) are closed: "the two gaps passes 1 and 2 left open... are both closed in this pass." Findings below are `patch`/`defer`/`reject` only, processed normally.
+
+- verdicts: 18 findings — high 0, medium 6, low 9, false 3, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` Blind Hunter (4 grouped rows — same root cause): the CHANGELOG's TL;DR section carries **two separate `v8.91.0` paragraphs** describing the same release with different text; the shorter one is tagged "current" and ends with a meaningless self-referential "See CHANGELOG."; the fuller, accurate paragraph (the one reflecting the actual review-pass fixes) is not marked current; and SKILL.md's Version History entry is a third, independently-worded paraphrase matching neither. Confirmed via direct `grep` — two `**v8.91.0**` lines exist in the TL;DR with materially different text. Action: consolidate to one canonical TL;DR paragraph (the fuller one, marked current), delete the stub, and make SKILL.md's entry match it (or is a close paraphrase, per the file's own established convention).
+  - `[low]` `[reject]` Blind Hunter: `_cfe_pixi_tasks()` only scans `[feature.*.tasks.*]`, never a top-level `[tasks]` table shared across environments. Confirmed via direct parse: `pixi.toml` has no top-level `tasks` key today — the scenario cannot currently occur; unlikely and the fix adds a guard for a structure that doesn't exist.
+  - `[low]` `[patch]` Blind Hunter: `ParityFinding` is imported from `pyforge.marshal.mcp.parity` but never referenced anywhere else in the module — confirmed via `grep`, a dead import. Direct fix: remove it (or use it in the `except` branch's type comment, if a lint rule wants the name kept).
+  - `[false]` `[reject]` Blind Hunter: claims the pass-2 Review Triage Log naming `test_discover_covers_all_46_tools` doesn't match this pass's `test_build_tool_specs_covers_all_46_tools`. Disproven: the pass-2 log entry is a dated historical record of pass-2's own (reverted) code; comparing it to pass-3's differently-shaped code is not a live inconsistency, the same pattern as pass-2's own disproven "37 vs 36" finding.
+  - `[low]` `[reject]` Blind Hunter: the new `reference/mcp-tools.md` bullet sits among cf_atlas/JFrog/CVE-database operational notes rather than its own heading. Subjective placement preference with no functional consequence; unlikely to meaningfully confuse a reader and "the right place" is a judgment call, not a direct correction.
+  - `[low]` `[patch]` Blind Hunter: the module docstring and CHANGELOG both promise "a missing **or stale** entry is itself a gate finding," but the two fixture tests only exercise the missing/undeclared direction (`cli_missing_tool`, `tool_without_cli`) — marshal's engine also emits `tool_only_has_cli`/`cli_only_has_tool` for a genuinely stale allowlist entry (confirmed by reading `parity.py`'s finding-code sites), and nothing here fixture-tests that direction. The live test already guards against a real stale entry existing today, but the story's own "prove the gate can fail" bar isn't fully met for this codepath. Direct fix: add one more fixture test mirroring the existing two, injecting a `CLI_ONLY_VERBS` (or `TOOL_ONLY_NAMES`) entry that's actually claimed, asserting `tool_only_has_cli`/`cli_only_has_tool` fires.
+  - `[low]` `[reject]` Blind Hunter: four `TOOL_ONLY_NAMES` reasons cite `test_skill_md_consistency.py`'s `no_task_allowlist` with no live cross-check that those scripts are still listed there. Real but narrow; the fix (a cross-file consistency check) is meaningfully more than a direct correction for a documentation-currency risk, not a functional one.
+  - `[low]` `[reject]` Edge Case Hunter: a task name shared across two pixi features could in principle map to two different scripts, silently misattributed. Confirmed via direct check: the three task names actually shared today (`atlas-phase`, `build-cf-atlas`, `detail-cf-atlas`) all resolve to the identical wrapper stem in both features (the regex ignores CLI flags, so `detail_cf_atlas.py` vs `detail_cf_atlas.py --vdb` still yield the same stem) — no live conflict exists; unlikely and the fix adds a guard for a case with zero current instances.
+  - `[low]` `[reject]` Edge Case Hunter: a pixi task expressed in short (bare-string) form rather than a table would crash `_cfe_pixi_tasks()` on `task.get("cmd")`. Confirmed via direct scan of all features: zero short-form task entries exist in `pixi.toml` today; unlikely and the fix adds a guard for a form not used anywhere in this manifest.
+  - `[low]` `[patch]` Edge Case Hunter: `build_tool_specs()` iterates `tree.body` (top-level statements only) rather than `ast.walk(tree)`, so an `@mcp.tool()` registration nested inside a class or another function would silently vanish from the inventory. Confirmed via direct AST comparison: today's top-level-only scan and a full `ast.walk` both find exactly the same 46 tools, so this has no live effect — but the fix is a one-token swap (`ast.walk(tree)` for `tree.body`) that adds no complexity and restores the more general pattern passes 1-2 already used; a direct correction, not a new guard.
+  - `[low]` `[reject]` Edge Case Hunter: a docstring that is non-empty but reduces to whitespace after `.strip()` would `IndexError` on `doc.strip().splitlines()[0]`. Confirmed via direct scan: no `@mcp.tool` docstring in the live file is whitespace-only; unlikely to ever occur given every tool carries a real one-line summary already.
+  - `[medium]` `[patch]` Verification Gap Reviewer: `.claude/tools/mcp_cli_parity.py` (this story's own new file) is absent from both `paths:` filters in `.github/workflows/cfe-regression-net.yml`, the only CI job that runs `test_mcp_cli_tool_parity.py` — confirmed via direct `grep` of the workflow file and of every workflow for `test-ci`/`.claude/tools` references. A commit touching only that file would not trigger the workflow that gates the very test proving the gate works, though in practice a real edit here almost always accompanies a Rule-2 CHANGELOG bump (a watched path). Direct fix: add `.claude/tools/mcp_cli_parity.py` to both `paths:` lists alongside the existing `conda_forge_server.py` entry.
+  - `[medium]` `[defer]` Verification Gap Reviewer: no CI path exercises `test_mcp_cli_tool_parity.py` when marshal's `pyforge.marshal.mcp.parity` public surface changes on the marshal side only (`cfe-regression-net.yml` has no `src/shared/packages/pyforge-marshal/**` trigger; `pyforge-station-tests.yml` runs marshal's own suite only). Real cross-package coupling gap, but closing it properly means widening a CI workflow's trigger scope to a sibling package's whole source tree (or adding a marshal-side contract test) — a broader cross-team wiring decision beyond this story's own file, per the reviewer's own filed disposition.
+  - `[false]` `[reject]` `carried` Intent Alignment Auditor: re-raises the three-place-rule scope claim for `mcp_cli_parity.py` — same claim and code shape as review passes 1-2's rejected finding (disproof unchanged: `conda_forge_server.py` precedent).
+  - `[false]` `[reject]` `carried` Intent Alignment Auditor: re-raises the Rule-2-retro literal-heading-structure claim — same claim and code shape as review pass 1's rejected finding (disproof unchanged: matches this file's own established prose-narrative convention).

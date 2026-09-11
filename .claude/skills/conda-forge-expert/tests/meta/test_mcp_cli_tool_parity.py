@@ -121,3 +121,16 @@ def test_fixture_tool_without_cli_undeclared_fails():
     assert "tool_without_cli" in codes
     with pytest.raises(AssertionError, match="tool_without_cli"):
         parity.assert_cli_tool_parity(**{**kwargs, "tool_specs": broken_specs})
+
+
+def test_fixture_stale_cli_only_allowlist_entry_fails():
+    """Deliberate miss: a CLI_ONLY_VERBS entry actually claimed by a real
+    tool -- a stale allowlist entry is itself a gate finding, not just a
+    missing/undeclared one."""
+    kwargs = _live_kwargs()
+    broken_cli_only = kwargs["cli_only"] | {"validate"}  # claimed by validate_recipe
+    findings = parity.parity_findings(**{**kwargs, "cli_only": broken_cli_only})
+    codes = {f.code for f in findings}
+    assert "cli_only_has_tool" in codes
+    with pytest.raises(AssertionError, match="cli_only_has_tool"):
+        parity.assert_cli_tool_parity(**{**kwargs, "cli_only": broken_cli_only})
