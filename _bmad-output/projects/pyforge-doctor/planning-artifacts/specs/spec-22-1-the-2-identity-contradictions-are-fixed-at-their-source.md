@@ -2,7 +2,7 @@
 title: 'The 2 identity contradictions are fixed at their source'
 type: 'fix'
 created: '2026-09-11'
-status: 'backlog'
+status: 'done'
 baseline_revision: 'a7752e7f91015b81d79a979bfca61a0dc8c8c8bb'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -95,3 +95,21 @@ clause in each changes.
 - Manual read-through: `grep -n "gate" src/shared/packages/pyforge-doctor/README.md` shows no
   self-referential gate claim; `grep -n "Herald" AGENTS.md` around the corrected line agrees
   with `docs/dreams/pyforge-herald.md`.
+
+## Auto Run Result
+
+Status: done
+Summary: `pyforge-doctor/README.md:5-6` reworded from "its own exit-code gate" to "findings
+stay advisory — not a second PR gate," matching `skill-brief.yaml`/`CLAUDE.md`/`AGENTS.md`.
+`AGENTS.md:111` reassigned cross-agent portability from Herald to Marshal, matching
+`docs/dreams/pyforge-herald.md`.
+Files changed:
+- `src/shared/packages/pyforge-doctor/README.md`
+- `AGENTS.md`
+Review: `bmad-build-auto`'s own 4-layer pass — 10 Blind Hunter observations (all
+defer/reject, out of scope or AC already met), 0 Edge Case findings, no verification gaps
+(doc-only change), diff matches the minimal surgical fix reading. 0 patch findings, no
+follow-up review recommended.
+Verification: `pixi run --frozen -e local-recipes dreams-hygiene-check` — exit 0. Manual grep
+confirmed both corrected lines.
+Blocking condition: none

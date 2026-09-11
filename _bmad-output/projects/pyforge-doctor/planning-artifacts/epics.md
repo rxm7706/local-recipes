@@ -1734,7 +1734,7 @@ authoritative source **Then** `pyforge-doctor/README.md` no longer uses gate lan
 itself
 **And** `AGENTS.md`'s cross-agent-portability claim names Marshal (or is reworded to make no
 ownership claim at all), matching `docs/dreams/pyforge-herald.md`
-**Status:** backlog
+**Status:** done
 
 ### Story 22.2: The 4 cross-cutting decay findings are corrected
 
