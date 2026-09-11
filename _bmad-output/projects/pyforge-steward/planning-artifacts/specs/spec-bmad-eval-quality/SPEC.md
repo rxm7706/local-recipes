@@ -57,6 +57,13 @@ with zero evidence about the last line of defence.
   run deps, doctor's drift watch, steward's pipeline-truth); pixi pin `bmad-eval-quality
   >=1.4.1` (`pixi.toml:1611`) with `environment.yaml` regenerated; baseline pin set, install-matrix,
   install-class and `library-llms-full.md` rows present; the PR carries `maintenance`.
+  - **verified:** 2026-09-11 — live in the `local-recipes` env: `eval-quality --version` ->
+    `1.4.1`; `--help` lists `score`; `compile --in .../corpus/dev/contracts/satisfied-declarations.json`
+    exits 0; `recipes/bmad-suite/suite-members.yaml:47` carries the `bmad-eval-quality` entry;
+    `pixi.toml:1679` pin reads `>=1.4.1` (the recipe itself moved to 3.0.0 this session, PR #1205 —
+    the pixi floor is deliberately held at 1.4.1 pending a `__win` build, see the pin's own
+    comment; CAP-1's "1.4.1 today" text is therefore still literally accurate for what's
+    installed, not stale).
 - **CAP-2 — Pilot contract `review-catches-planted-defect`.** *Intent:* one Behavioral
   Evaluation Contract, run twin-arm (clean vs one planted `file:line` defect) against the
   `edge-case-hunter` review layer bmad-loop relies on, yields a catch rate the fleet can read.
@@ -67,6 +74,16 @@ with zero evidence about the last line of defence.
   wired into `detectors`. *Known limitation (empirical, live `--trials 3` runs):* the clean arm is
   a reproducible false-positive source — `edge-case-hunter`'s exhaustive-enumeration methodology
   finds a different real boundary concern at the same line every time; see `.memlog.md` for detail.
+  - **verified:** 2026-09-11 — `eval-quality-smoke` (`evals/review-catches-planted-defect/driver.py`)
+    and `test_driver.py` (8/8) both pass; found and fixed a real regression while checking: the
+    pilot contract had drifted to a stale `schemaVersion: 3` against the installed CLI's `4`
+    (`compile` exit 5, `schema-version-mismatch`) — a one-line bump to `4` (no other field
+    changed) restored a clean `compile` exit 0 for both the shipped dev corpus and this contract.
+    The three pixi tasks (`eval-quality-smoke`, `-review-twin-run`, `-review-replay`) exist and
+    stay out of `detectors`/`detectors-ci`, confirmed by their own task descriptions. A live
+    `--trials N` `claude -p` twin-run (the catch-rate / `pkg/discount.py:17` citation claim) is
+    NOT re-exercised in this pass — real API cost and wall-clock, disproportionate to a doc-hygiene
+    sweep; that behavior is unverified, not disproven.
 
 ## Constraints
 
