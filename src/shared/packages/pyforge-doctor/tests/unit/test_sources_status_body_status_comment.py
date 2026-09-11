@@ -121,18 +121,84 @@ def test_gather_status_comment_silent_when_comment_agrees(tmp_path: Path):
 
 
 def test_gather_live_bmad_method_version_drift_case():
+    # Was a live contradiction (comment said "Epic 14 backlog" while
+    # pyforge-doctor's own epic-14 row read `done`) — fixed 2026-09-11 in
+    # both directions: the resolver now scopes to the document's OWN project
+    # (it had been silently checking against pyforge-atlas's epic-14 instead,
+    # a cross-project key collision — pyforge-atlas sorts before
+    # pyforge-doctor), and the comment itself was corrected to match.
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather_status_comment_reconcile(repo_root)
     hits = [
         f
         for f in findings
-        if f.check == sbc._CHECK_STATUS_COMMENT
-        and f.evidence.get("path") == "docs/dreams/bmad-method-version-drift.md"
+        if f.evidence.get("path") == "docs/dreams/bmad-method-version-drift.md"
     ]
-    assert hits, "expected live bmad-method-version-drift status-comment finding"
-    assert hits[0].evidence["ledger_key"] == "epic-14"
-    assert hits[0].evidence["claimed_status"] == "backlog"
-    assert hits[0].evidence["ledger_status"] == "done"
+    assert not hits, f"expected no findings, got: {hits}"
+
+
+def test_gather_status_comment_resolves_within_owning_project_on_key_collision(
+    tmp_path: Path,
+) -> None:
+    """Two projects both define epic-14 with different statuses — the Dream's
+    own owner: field must pick its own project's row, not whichever project
+    sorts first into the flat cross-project index."""
+    dreams = tmp_path / "docs" / "dreams"
+    dreams.mkdir(parents=True)
+    (dreams / "owned-by-second.md").write_text(
+        "---\n"
+        "title: collision fixture\n"
+        "type: dream\n"
+        "owner: second\n"
+        "status: realized   # Epic 14 backlog\n"
+        "---\n\n"
+        "Body text.\n",
+        encoding="utf-8",
+    )
+    # "pyforge-first" sorts before "pyforge-second" — the pre-fix flat index
+    # would resolve epic-14 to pyforge-first's `done` regardless of which
+    # project actually owns this Dream.
+    _write_ledger(tmp_path, "pyforge-first", {"epic-14": "done"})
+    _write_ledger(tmp_path, "pyforge-second", {"epic-14": "backlog"})
+
+    findings = sbc.gather_status_comment_reconcile(tmp_path)
+
+    assert not any(
+        f.evidence.get("path", "").endswith("owned-by-second.md") for f in findings
+    ), "claimed backlog agrees with pyforge-second's own row — should be silent"
+
+
+def test_gather_status_comment_fires_within_owning_project_not_the_wrong_one(
+    tmp_path: Path,
+) -> None:
+    """The mirror case: the comment agrees with the WRONG project's epic-14
+    and disagrees with its own — must still fire, scoped to its own project."""
+    dreams = tmp_path / "docs" / "dreams"
+    dreams.mkdir(parents=True)
+    (dreams / "owned-by-second.md").write_text(
+        "---\n"
+        "title: collision fixture\n"
+        "type: dream\n"
+        "owner: second\n"
+        "status: realized   # Epic 14 done\n"
+        "---\n\n"
+        "Body text.\n",
+        encoding="utf-8",
+    )
+    _write_ledger(tmp_path, "pyforge-first", {"epic-14": "done"})
+    _write_ledger(tmp_path, "pyforge-second", {"epic-14": "backlog"})
+
+    findings = sbc.gather_status_comment_reconcile(tmp_path)
+
+    hits = [
+        f
+        for f in findings
+        if f.check == sbc._CHECK_STATUS_COMMENT
+        and f.evidence.get("path", "").endswith("owned-by-second.md")
+    ]
+    assert len(hits) == 1
+    assert hits[0].evidence["ledger_project"] == "pyforge-second"
+    assert hits[0].evidence["ledger_status"] == "backlog"
 
 
 def test_gather_combined_includes_cap4(tmp_path: Path):

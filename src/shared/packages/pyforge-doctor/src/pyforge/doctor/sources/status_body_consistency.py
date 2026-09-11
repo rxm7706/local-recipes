@@ -137,8 +137,13 @@ _HYPHEN_OF_RE = re.compile(
     re.IGNORECASE,
 )
 
-# ``3/9`` only when the line also names stories or capabilities
-_SLASH_RE = re.compile(r"\b(\d+)/(\d+)\b")
+# ``3/9`` only when the line also names stories or capabilities. Excludes a
+# story/epic-ID pair or range glued to it on either side — ``Stories
+# 20.4/20.5`` (a "." before the first digit), ``Stories 11-2/11-3`` or
+# ``CAP-8/9/10`` (a "-" or a third ``/digit`` member on either side) all read
+# as two dotted/hyphenated IDs or a slash-joined ID list, not a fraction,
+# even though the bare digits satisfy ``n < m``.
+_SLASH_RE = re.compile(r"(?<![.\-/])\b(\d+)/(\d+)\b(?!/\d)")
 _SLASH_CONTEXT_RE = re.compile(r"\b(?:stories?|capabilities?)\b", re.IGNORECASE)
 
 
@@ -546,7 +551,16 @@ def _parse_ledger_statuses(text: str) -> dict[str, str]:
 
 
 def load_ledger_status_index(target: Path) -> dict[str, tuple[str, str]]:
-    """Map ledger keys to ``(project_slug, live_status)`` across every tracked ledger."""
+    """Map ledger keys to ``(project_slug, live_status)`` across every tracked ledger.
+
+    A ledger key (``epic-14``, a story key) is not fleet-unique — every
+    station numbers its own epics/stories from scratch, so two stations can
+    both define ``epic-14``. ``setdefault`` here means the first project in
+    sort order silently wins any collision. This flat index exists only as a
+    fallback for a document whose owning project can't be determined —
+    ``gather_status_comment_reconcile`` resolves against the document's own
+    project first via ``load_project_ledger_statuses``.
+    """
     index: dict[str, tuple[str, str]] = {}
     projects_root = target / "_bmad-output" / "projects"
     if not projects_root.is_dir():
@@ -565,6 +579,41 @@ def load_ledger_status_index(target: Path) -> dict[str, tuple[str, str]]:
         for key, status in statuses.items():
             index.setdefault(key, (project_slug, status))
     return index
+
+
+def load_project_ledger_statuses(target: Path, project_slug: str) -> dict[str, str]:
+    """Ledger key -> live status for exactly one project's own tracked ledger."""
+    ledger_path = target / "_bmad-output" / "projects" / project_slug / _LEDGER_SUFFIX
+    if not ledger_path.is_file():
+        return {}
+    try:
+        return _parse_ledger_statuses(ledger_path.read_text(encoding="utf-8"))
+    except OSError:
+        return {}
+
+
+def owning_project_for_doc(target: Path, path: Path, text: str) -> str | None:
+    """The BMAD project slug a status-comment reference should resolve against.
+
+    A story spec or ``SPEC.md`` under ``_bmad-output/projects/<slug>/...``
+    names its own project in the path — unambiguous. A Dream under
+    ``docs/dreams/`` carries no such path; its ``owner:`` frontmatter field
+    (a station name, e.g. ``doctor``) maps to that station's ``pyforge-``
+    project by this fleet's own naming convention.
+    """
+    try:
+        rel_parts = path.relative_to(target / "_bmad-output" / "projects").parts
+    except ValueError:
+        rel_parts = ()
+    if rel_parts:
+        return rel_parts[0]
+    fm, unparseable = _parse_frontmatter(text)
+    if unparseable:
+        return None
+    owner = fm.get("owner")
+    if isinstance(owner, str) and owner.strip():
+        return f"pyforge-{owner.strip()}"
+    return None
 
 
 def _frontmatter_lines(text: str) -> tuple[list[str], bool]:
@@ -747,13 +796,42 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
 
         scanned_documents += 1
         doc_fired = False
+        owning_project = owning_project_for_doc(target, path, text)
+        project_ledger = (
+            load_project_ledger_statuses(target, owning_project)
+            if owning_project
+            else {}
+        )
         for ref in refs:
-            if ref.kind == "story":
-                resolved_key = _resolve_story_ledger_key(ref.ledger_key, ledger_index)
-            else:
-                resolved_key = ref.ledger_key
+            # Resolve against the document's OWN project first — a ledger key
+            # like "epic-14" is not fleet-unique, every station numbers its
+            # own epics from scratch, so falling straight to the flat
+            # cross-project index risks checking the comment against a
+            # different station's epic 14 entirely.
+            project_slug: str | None = None
+            ledger_status: str | None = None
+            if project_ledger:
+                scoped_key = (
+                    _resolve_story_ledger_key(ref.ledger_key, project_ledger)
+                    if ref.kind == "story"
+                    else (ref.ledger_key if ref.ledger_key in project_ledger else None)
+                )
+                if scoped_key is not None:
+                    project_slug = owning_project
+                    ledger_status = project_ledger[scoped_key]
+                    resolved_key = scoped_key
 
-            if resolved_key is None or resolved_key not in ledger_index:
+            if project_slug is None:
+                if ref.kind == "story":
+                    resolved_key = _resolve_story_ledger_key(ref.ledger_key, ledger_index)
+                else:
+                    resolved_key = ref.ledger_key
+                if resolved_key is not None and resolved_key in ledger_index:
+                    project_slug, ledger_status = ledger_index[resolved_key]
+                else:
+                    resolved_key = None
+
+            if resolved_key is None:
                 unresolvable += 1
                 doc_fired = True
                 findings.append(
@@ -778,7 +856,6 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
                 )
                 continue
 
-            project_slug, ledger_status = ledger_index[resolved_key]
             if ref.claimed_status != ledger_status:
                 fired += 1
                 doc_fired = True

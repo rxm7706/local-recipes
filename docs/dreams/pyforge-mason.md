@@ -48,15 +48,21 @@ mason environment lock                        # conflicting worlds -> one lockfi
 
 ## What is real
 
-- **4 of 38 stories shipped (~11%)**, all in Epic 1 (`S-1.1` workspace-member
-  scaffold and dual-artifact build, `S-1.2` CLI noun-verb structure and global
-  flags, `S-1.3` error taxonomy and exit-code contract, `S-1.4` dual output
-  format with stream discipline). The installable shell and its output contract
-  exist; Epic 1's remaining six stories (CFE root resolution, interpreter
-  selection, degradation-when-CFE-is-absent, `mason doctor`, the fake-CFE-root
-  test harness, configuration/logging) are backlog, and Epics 2–5 — the whole
-  recipe lifecycle, the dual-ship motion, environment locking, and the seam
-  proof — have not started.
+- **Updated 2026-09-11 (this bullet had frozen at the original Epic-1-only
+  snapshot).** 66 of 67 tracked stories shipped across 15 of 16 epics, per
+  `fleet-picture` — the installable shell, its output contract, the full
+  recipe lifecycle, the dual-ship motion, environment locking, and the
+  CFE-independence seam (Epic 5) are all built; the scope also grew past the
+  original 5 epics / 38 stories as later work (the recipe-build MCP surface,
+  the CLI⇄tool parity gate, and more) was decomposed in. See
+  `spec-pyforge-mason` and `sprint-status-ledger.yaml` directly for the
+  current story-by-story state rather than this bullet.
+- Superseded reading, kept for the record: *"4 of 38 stories shipped (~11%),
+  all in Epic 1 (`S-1.1` workspace-member scaffold and dual-artifact build,
+  `S-1.2` CLI noun-verb structure and global flags, `S-1.3` error taxonomy and
+  exit-code contract, `S-1.4` dual output format with stream discipline)...
+  Epics 2–5 — the whole recipe lifecycle, the dual-ship motion, environment
+  locking, and the seam proof — have not started."*
 - Full planning chain landed 2026-07-25: brief → PRD (50 FRs / 16 NFRs / 13
   D-records) → architecture (16 ADs) → epics (5 epics / 38 stories). Spec:
   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md`.
