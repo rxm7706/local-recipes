@@ -20,6 +20,15 @@ PORTAL_PKG = "django-mason"
 PORTAL_MOD = "django_mason_portal"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
+#: Story 49.14 (CAP-10): boot reconciliation is a real, eager production
+#: caller of pyforge.mason.boot at MasonPortalConfig.ready() time -- the
+#: capability that story exists to prove is live, not test-only. Same shape
+#: as the platform-side boundary exception
+#: (test_station_portal_shells.py::_STATION_PYFORGE_ALLOWED["mason"]) --
+#: kept here too since this file enforces the identical invariant from
+#: mason's own package and was not updated when that one was.
+_ALLOWED_PYFORGE_IMPORTS = ("pyforge.mason.boot",)
+
 
 class PortalDiagnoseContractError(AssertionError):
     """django-mason last-diagnose surface violates Story 11.2."""
@@ -66,6 +75,13 @@ def _raw_http_imports(tree: ast.AST) -> list[str]:
     return found
 
 
+def _pyforge_import_allowed(module: str) -> bool:
+    return any(
+        module == prefix or module.startswith(prefix + ".")
+        for prefix in _ALLOWED_PYFORGE_IMPORTS
+    )
+
+
 def _pyforge_imports(tree: ast.AST) -> list[str]:
     found: list[str] = []
     for node in ast.walk(tree):
@@ -73,11 +89,14 @@ def _pyforge_imports(tree: ast.AST) -> list[str]:
             found.extend(
                 f"import {alias.name}"
                 for alias in node.names
-                if alias.name == "pyforge" or alias.name.startswith("pyforge.")
+                if (alias.name == "pyforge" or alias.name.startswith("pyforge."))
+                and not _pyforge_import_allowed(alias.name)
             )
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
-            if module == "pyforge" or module.startswith("pyforge."):
+            if (
+                module == "pyforge" or module.startswith("pyforge.")
+            ) and not _pyforge_import_allowed(module):
                 found.append(f"from {module} import ...")
     return found
 

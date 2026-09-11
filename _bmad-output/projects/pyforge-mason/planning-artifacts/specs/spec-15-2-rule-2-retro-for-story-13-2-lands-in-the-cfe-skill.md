@@ -192,3 +192,23 @@ Verification performed:
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 1 failed (`test_django_mason_has_no_raw_http_pyforge_or_minio`, pre-existing at baseline)
 
 Residual risks: `sprint-status-ledger.yaml` still lists 15-2 as `backlog` — needs `sprint-ledger-sync` in a follow-up commit; feedstock PR #4 CI not re-verified here.
+
+### 2026-09-11 — Rescue verification (stuck dispatch, deferred failure fixed)
+- Rescued from a stuck dispatch worktree: the branch was already 8 commits ahead of
+  `origin/main`, already up to date (0 behind), but never landed — the campaign
+  supervisor chained on to 16.1/16.2 without landing this one first.
+- Confirmed the deferred `test_django_mason_has_no_raw_http_pyforge_or_minio` failure
+  is real and pre-existing on `origin/main` itself (traced to Story 49.14's
+  `boot_reconcile.py`, which imports `pyforge.mason.boot` at `MasonPortalConfig.ready()`
+  time — a legitimate production caller, not a boundary violation; the platform-side
+  copy of this same check already carries an exception for it, this mason-side copy
+  never got updated to match). Since it blocks `pyforge-mason-test` for every
+  remaining mason story, not just this one, fixed it here rather than deferring
+  again: added `_ALLOWED_PYFORGE_IMPORTS` to
+  `tests/meta/test_portal_last_diagnose.py`, mirroring
+  `test_station_portal_shells.py::_STATION_PYFORGE_ALLOWED["mason"]`'s exact
+  rationale and scope (`pyforge.mason.boot` only).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1579 passed, 3 deselected
+  (0 failed, was 1 failed before the fix). `ruff check` clean on the changed file;
+  `ruff format --check` findings on it are pre-existing (confirmed identical on
+  `origin/main`'s own copy), not touched.
