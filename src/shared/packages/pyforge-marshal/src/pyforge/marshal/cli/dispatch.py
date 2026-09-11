@@ -897,6 +897,7 @@ def resolve_dispatch_session_verdict(
     try:
         git_facts = gather_dispatch_git_facts(
             vcs,
+            fs=fs,
             repo_root=repo_root,
             worktree=Path(journal.worktree_path),
             story_key=journal.story_key,
@@ -948,6 +949,7 @@ def _live_dispatch_evidence(
         ) or f"story {story_key!r} dispatch session is still live"
     git_facts = gather_dispatch_git_facts(
         vcs,
+        fs=fs,
         repo_root=repo_root,
         worktree=Path(journal.worktree_path),
         story_key=journal.story_key,
@@ -1389,6 +1391,7 @@ def station_story_block_facts(
                 try:
                     git_facts = gather_dispatch_git_facts(
                         vcs,
+                        fs=fs,
                         repo_root=repo_root,
                         worktree=Path(journal.worktree_path),
                         story_key=feed_story,

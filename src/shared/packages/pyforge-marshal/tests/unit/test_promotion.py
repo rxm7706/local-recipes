@@ -298,6 +298,57 @@ def test_merged_story_keys_tries_templated_pattern_before_github_pattern():
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(5, 5)})
 
 
+# --- known_keys scoping for the templated shape (Story 35.1,
+# spec-marshal-templated-merge-subject-cross-project-collision CAP-1) ---------
+
+
+def test_merged_story_keys_templated_form_unscoped_when_known_keys_omitted():
+    """The live bug, still reproducible by omission: the templated shape
+    carries no station token in its own text, so with no `known_keys`
+    corroboration a bare `"Merge 22.5 into main"` subject is accepted for
+    ANY project_slug -- the exact cross-station collision this Story
+    closes when the caller opts in."""
+    subjects = ("Merge 22.5 into main",)
+    assert merged_story_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset(
+        {StoryKey(22, 5)}
+    )
+    assert merged_story_keys(subjects, _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset(
+        {StoryKey(22, 5)}
+    )
+
+
+def test_merged_story_keys_templated_form_filters_to_known_keys():
+    """The fix: with `known_keys` supplied, a templated-form match is kept
+    only when its key is a member -- corroboration a project's own tracked
+    ledger provides, since the subject text cannot."""
+    subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
+    doctors_own_keys = frozenset({StoryKey(22, 1), StoryKey(22, 5), StoryKey(22, 6)})
+    assert merged_story_keys(
+        subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys
+    ) == frozenset({StoryKey(22, 5)})
+
+
+def test_merged_story_keys_templated_form_known_keys_empty_set_excludes_everything():
+    """An empty `known_keys` (a project with no tracked stories at all, or a
+    ledger that failed to load) trusts nothing from the templated shape --
+    fails closed, not open."""
+    subjects = ("Merge 1.1 into main",)
+    assert merged_story_keys(
+        subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()
+    ) == frozenset()
+
+
+def test_merged_story_keys_known_keys_does_not_affect_already_scoped_shapes():
+    """`known_keys` only gates the templated shape -- GitHub PR-merge,
+    bmad-loop-native, recovery, and story-direct subjects already carry
+    real `project_slug` scoping and must be unaffected by an unrelated
+    (even empty) `known_keys`."""
+    subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8)
+    assert merged_story_keys(
+        subjects, _TEMPLATE, _PROJECT_SLUG, known_keys=frozenset()
+    ) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
+
+
 # --- marshal_native_merged_keys (Story 5.9) -----------------------------------
 
 
@@ -385,6 +436,26 @@ def test_marshal_native_merged_keys_skips_non_merge_subjects():
 
 def test_marshal_native_merged_keys_empty_subjects_returns_empty_set():
     assert marshal_native_merged_keys((), _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+def test_marshal_native_merged_keys_templated_form_filters_to_known_keys():
+    """Story 35.1: `marshal_native_merged_keys` runs its own independent
+    templated-shape loop (never delegates to `_classify_merge_subject`) --
+    it needs the identical `known_keys` scoping, not just `merged_story_
+    keys`, or its own callers (`run_reconcile_completions`'s write path)
+    stay exposed to the same cross-station collision."""
+    subjects = ("Merge 22.5 into main", "Merge 22.11 into main")
+    doctors_own_keys = frozenset({StoryKey(22, 5)})
+    assert marshal_native_merged_keys(
+        subjects, _TEMPLATE, "pyforge-doctor", known_keys=doctors_own_keys
+    ) == frozenset({StoryKey(22, 5)})
+
+
+def test_marshal_native_merged_keys_templated_form_unscoped_when_known_keys_omitted():
+    subjects = ("Merge 22.11 into main",)
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, "pyforge-doctor") == frozenset(
+        {StoryKey(22, 11)}
+    )
 
 
 # --- count_conforming_subjects ------------------------------------------------

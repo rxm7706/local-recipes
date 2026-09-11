@@ -5108,6 +5108,33 @@ to tell "the session died before doing anything" apart from "the session ran and
 **Then** a fixture pins: (1) a station with a live run, a `dispatch_phase` set, and a `refused` verdict produces the `dispatch verify REFUSED` ATTENTION line; (2) the SAME refused verdict with `dispatch_phase=None` (a different engine live, e.g. spin) produces NO such line — the exact regression this story guards against recurring
 **And** no behavior changes — this story is test-coverage-only, closing the one gap the 2026-09-10 fix's own landing PR named explicitly
 
+## Epic 35: The templated merge-subject shape never masquerades as a same-numbered story from another project
+
+**Goal:** close the sibling gap `docs/dreams/marshal-land-cross-project-story-key-collision.md`'s
+own 2026-09-09 fix deliberately left open — `pyforge.core.landing_evidence.
+parse_templated_merge_subject` (the AD-24 `"Merge {key} into main"` shape, tried first in
+`classify_merge_subject`'s precedence chain) is the one parser among five with no `project_slug`
+scoping, since the templated subject carries no station token in its own text. Confirmed live
+2026-09-11: `merged_story_keys(subjects, 'Merge {key} into main', 'pyforge-doctor')` against real
+`main` returned 129 keys, a majority attributable to other stations. Caused 3 false "already
+merged" dispatch verdicts and 1 orphaned dev session during doctor's Epic 22 dispatch the same
+day, all recovered by hand.
+
+**HARD boundary:** the fix scopes ONLY the templated shape's corroboration; the already-shipped
+GitHub PR-merge fix (`_branch_belongs_to_project`) is untouched.
+
+### Story 35.1: A templated-form merge subject is corroborated against the querying project's own tracked ledger, not trusted from text alone
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** `spec-marshal-templated-merge-subject-cross-project-collision` CAP-1
+**Surface:** `core/promotion.py` (`_classify_merge_subject`, `merged_story_keys`, `marshal_native_merged_keys` all gain an optional `known_keys` parameter), `dispatch_supervisor/__main__.py` (`_load_known_story_keys` new helper reads the querying project's own tracked `sprint-status-ledger.yaml`; `gather_dispatch_git_facts` wired to use it — the exact function that produced 2026-09-11's false verdicts), `tests/unit/test_promotion.py`, `tests/unit/test_dispatch.py`
+**Given** a bare `"Merge 22.5 into main"` subject is accepted as ANY project's own merged key with zero station-scoping, since the templated shape's text carries no station token
+**When** the caller supplies `known_keys` (the querying project's own tracked story-key catalog, loaded from its `sprint-status-ledger.yaml`) **Then** a templated-shape match is trusted only when its key is a member — corroboration the ledger provides that git text cannot; an unrelated project's colliding key number is excluded
+**And** with `known_keys` omitted (the default), behavior is unchanged for any not-yet-updated caller — no silent regression
+**And** a missing or malformed ledger degrades to `frozenset()` (trust nothing from the templated shape), the SAFE direction, never a crash and never the dangerous direction
+**And** re-running the Dream's own live reproduction (`merged_story_keys` templated-shape matches for a `pyforge-doctor` query) drops from 79 to 30 keys, with `22.11`/`22.12`/`23.x`/`28.x`/`39.x`–`49.x` all gone
+**Status:** done
+
+**Residual, explicitly named, not closed by this story:** `gather_dispatch_git_facts` (wired, closes the exact site that caused 2026-09-11's false verdicts) is the only caller updated to supply `known_keys`. `cli/dispatch.py`'s wave/reconcile paths, `dispatch_land.py`'s "already landed" short-circuit, `cli/status.py`'s reconcile-ledger report, `cli/land.py`'s wave-based landing, and `branch_story_merge_confirmed_by_grammar` all still call `merged_story_keys`/`marshal_native_merged_keys` without `known_keys` and remain exposed to the same collision until a follow-up wires them too — mirrors the sibling Dream's own "not auditing every OTHER caller" Non-goal.
+
 ## Deferred-work verification state — reconciled 2026-09-08
 
 The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all
