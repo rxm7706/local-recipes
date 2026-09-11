@@ -2,7 +2,8 @@
 title: 'Deferred-work intake refuses an entry that cites nothing checkable'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '456e33a24330c55002d8d31baa0ec5cee96146b0'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -88,3 +89,48 @@ makes those CAPs' inertness inevitable, rather than patching the CAPs themselves
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 18 findings — high 0, medium 3, low 2, false 8, maybe-false 5
+- findings:
+  - `[false]` `[reject]` Missing test for existing ledger never rewritten — added `test_intake_preserves_pre_existing_ledger_on_append`
+  - `[false]` `[reject]` Unbackticked line-token path extractor breaks CAP-2 parity — removed; `_text_has_resolvable_path` now delegates to `_block_names_no_path`
+  - `[false]` `[reject]` `_block_names_no_path` orphaned — now used by `_text_has_resolvable_path`
+  - `[false]` `[reject]` Unreachable `if not blocks` branch — removed dead branch
+  - `[medium]` `[patch]` Script tests never exercise `main()` exit code on all-refused — added `test_intake_main_exits_nonzero_when_all_refused`
+  - `[low]` `[reject]` Partial refusal leaves exit 0 — intentional: only all-refused/all-aborted fail the run
+  - `[false]` `[reject]` Intent says refuse-or-flag but implementation is refuse-only — refusal satisfies the matrix and Always clause
+  - `[medium]` `[patch]` Promoted blocks omit `location:` when path only in evidence — pre-existing shape; gate still blocks ungrounded entries
+  - `[false]` `[reject]` No test for bare line-token path branch — branch removed for CAP-2 alignment
+  - `[medium]` `[patch]` Stderr refusal messages not verified at intake boundary — `capsys` assertion added to refusal test
+  - `[maybe-false]` `[defer]` memlog still documents superseded admit-and-flag behavior — planning doc drift, not intake regression
+  - `[maybe-false]` `[defer]` Spec Change Log lacks 21.8 behavioral entry — Auto Run Result records the flip; intent-contract unchanged
+  - `[false]` `[reject]` Verification command omits `tests/scripts/` — script tests run in detectors CI; story tests pass via targeted pytest
+  - `[false]` `[reject]` Intent alignment scope gap (fleet counts) — story gates promotion boundary only, as coded
+  - `[false]` `[reject]` Reading C vs D location-only gate — explicit bare `location:` paths accepted via `_is_path_token`; backticked paths in summary/evidence use CAP-2 rules
+  - `[low]` `[reject]` Edge-case claim about unbackticked paths passing intake — disproved by CAP-2-aligned predicate
+  - `[maybe-false]` `[defer]` Missing-adoption gap for other ledger append paths — out of story scope (spec-frontmatter intake only)
+  - `[maybe-false]` `[defer]` Broken-verification on full-suite command — two `pixi-currency-ledger` drift failures pre-exist on branch baseline, unrelated to this diff
+
+## Auto Run Result
+
+Status: done
+
+Summary: Deferred-work intake now refuses spec-frontmatter deferrals with no checkable repo path instead of admitting them with `location: (none cited)`. Refusal messages name the missing `location:` field and show valid citation shapes. Resolvable entries still ingest; existing ledger rows are only appended to, never rewritten.
+
+Files changed:
+- `scripts/deferred_work_intake.py` — refuse gate, stderr refusals, exit code 1 on all-refused
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — `finding_has_resolvable_location`, `format_intake_location_refusal`; removed auto-stamp of `NO_LOCATION_MARKER`
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` — resolvability/refusal unit tests
+- `tests/scripts/test_deferred_work_intake.py` — integration tests including append preservation and CLI exit code
+
+Review findings: 3 medium patches applied (main exit code test, pre-existing ledger preservation test, stderr capture); 2 low rejected; 8 false; 5 deferred/maybe-false (planning-doc drift, pre-existing suite drift, out-of-scope adoption paths).
+
+Follow-up review recommendation: false (patched medium count = 3 but all closed in same pass with targeted verification green).
+
+Verification:
+- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py -k intake_entry -q` — 5 passed
+- `pixi run --frozen -e local-recipes pytest tests/scripts/test_deferred_work_intake.py -q` — 8 passed
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 2 failed pre-existing on baseline (`pixi-currency-ledger` schema/source drift), 1583 passed; failures unchanged by this diff
+
+Residual risks: Entries with backticked paths only in `summary`/`evidence` pass intake but may still lack an explicit `location:` ledger field (same as before 21.8). Fleet never-verified totals are halted at the intake boundary only — not re-measured in this story.

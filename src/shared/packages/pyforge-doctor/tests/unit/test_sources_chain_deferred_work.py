@@ -2252,7 +2252,7 @@ def test_tier3_only_deferral_still_reports_fail(tmp_path: Path) -> None:
     assert any(f.check == "tier3-only-deferral" for f in findings)
 
 
-# --- Uncited-entry flagging at intake (2026-09-08) -----------------------------
+# --- Intake location gate (Story 21.8 / CAP-9) ---------------------------------
 
 
 def _finding(summary: str, evidence: str, location: str = "") -> chain.SpecDeferredFinding:
@@ -2267,47 +2267,36 @@ def _finding(summary: str, evidence: str, location: str = "") -> chain.SpecDefer
     )
 
 
-def test_intake_entry_citing_no_code_is_admitted_but_flagged() -> None:
-    """The entry is NOT refused -- an uncited deferral is real work -- but the
-    gap is named in the artifact so it is countable at intake rather than
-    rediscovered at the next sweep."""
-    block = chain.format_frontmatter_intake_entry(
-        "DW-1-1", _finding("deferred to a later story", "out of scope for this pass")
+def test_intake_entry_citing_no_code_has_no_resolvable_location() -> None:
+    finding = _finding("deferred to a later story", "out of scope for this pass")
+    assert not chain.finding_has_resolvable_location(finding)
+    assert "missing resolvable `location:`" in chain.format_intake_location_refusal(finding)
+
+
+def test_intake_entry_citing_code_in_evidence_is_resolvable() -> None:
+    finding = _finding(
+        "tighten the parser",
+        "`src/pyforge/doctor/sources/chain.py` over-matches",
     )
-    assert f"location: {chain.NO_LOCATION_MARKER}" in block
-    assert "### DW-1-1: deferred to a later story" in block
+    assert chain.finding_has_resolvable_location(finding)
 
 
-def test_intake_entry_citing_code_in_evidence_is_not_flagged() -> None:
-    """A path cited in prose still counts -- the marker means "CAP-2 can see
-    nothing here", not "the `location:` field is empty"."""
-    block = chain.format_frontmatter_intake_entry(
-        "DW-1-2", _finding("tighten the parser", "`src/pyforge/doctor/sources/chain.py` over-matches")
+def test_intake_entry_with_explicit_location_is_resolvable() -> None:
+    finding = _finding(
+        "a thing",
+        "some prose",
+        location="scripts/detectors.py",
     )
-    assert chain.NO_LOCATION_MARKER not in block
+    assert chain.finding_has_resolvable_location(finding)
+    block = chain.format_frontmatter_intake_entry("DW-1-3", finding)
+    assert "location: scripts/detectors.py" in block
 
 
-def test_intake_entry_with_explicit_location_is_never_flagged() -> None:
-    block = chain.format_frontmatter_intake_entry(
-        "DW-1-3", _finding("a thing", "some prose", location="`scripts/detectors.py`")
-    )
-    assert chain.NO_LOCATION_MARKER not in block
-    assert "location: `scripts/detectors.py`" in block
-
-
-def test_intake_entry_citing_only_a_dotted_symbol_is_flagged() -> None:
-    """The flag uses the churn filter's own extraction rules, so a token CAP-2
-    cannot resolve (`os.replace`) does not count as a citation."""
-    block = chain.format_frontmatter_intake_entry(
-        "DW-1-4", _finding("a thing", "`os.replace` is not atomic on Windows")
-    )
-    assert f"location: {chain.NO_LOCATION_MARKER}" in block
+def test_intake_entry_citing_only_a_dotted_symbol_is_not_resolvable() -> None:
+    finding = _finding("a thing", "`os.replace` is not atomic on Windows")
+    assert not chain.finding_has_resolvable_location(finding)
 
 
 def test_intake_entry_source_spec_path_does_not_count_as_a_citation() -> None:
-    """`source_spec:` names WHERE the entry came from, not the code under its
-    claim -- the same exclusion `_entry_named_paths` already makes."""
-    block = chain.format_frontmatter_intake_entry(
-        "DW-1-5", _finding("a thing", "no code named here at all")
-    )
-    assert f"location: {chain.NO_LOCATION_MARKER}" in block
+    finding = _finding("a thing", "no code named here at all")
+    assert not chain.finding_has_resolvable_location(finding)

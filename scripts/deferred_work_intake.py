@@ -31,12 +31,13 @@ for _pkg in ("pyforge-doctor", "pyforge-core"):
         sys.path.insert(0, str(_src))
 
 from pyforge.doctor.sources.chain import (  # noqa: E402
-    NO_LOCATION_MARKER,
     LegacyEntry,
     Tier3Shape,
     TRACKED_REL,
     discover_spec_frontmatter_deferrals,
+    finding_has_resolvable_location,
     format_frontmatter_intake_entry,
+    format_intake_location_refusal,
     frontmatter_deferral_in_tracked,
     mint_id_for_entry,
 )
@@ -47,13 +48,9 @@ TIER3_REL = Path("implementation-artifacts") / "deferred-work.md"
 @dataclass
 class _Outcome:
     slug: str
-    status: str  # "ingested" | "no-op" | "aborted"
+    status: str  # "ingested" | "no-op" | "aborted" | "refused"
     message: str
-    #: How many of this project's newly-ingested entries cite no code at
-    #: all. Admitted anyway (refusing would push the backlog somewhere
-    #: unmeasured), but counted here and totalled by `main` so the cost is
-    #: visible at intake instead of at the next sweep.
-    uncited: int = 0
+    refused: int = 0
 
 
 def _project_slug_map() -> dict[str, str]:
@@ -114,7 +111,11 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
     already_minted: set[str] = set()
     blocks: list[str] = []
     minted_ids: list[str] = []
+    refused: list[str] = []
     for finding in to_ingest:
+        if not finding_has_resolvable_location(finding):
+            refused.append(format_intake_location_refusal(finding))
+            continue
         try:
             new_id = mint_id_for_entry(
                 _legacy_entry_for_finding(finding.spec_rel, finding.summary),
@@ -133,11 +134,16 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
         minted_ids.append(new_id)
         blocks.append(format_frontmatter_intake_entry(new_id, finding))
 
-    uncited = [
-        mid
-        for mid, block in zip(minted_ids, blocks)
-        if f"location: {NO_LOCATION_MARKER}" in block
-    ]
+    for refusal in refused:
+        print(refusal, file=sys.stderr)
+
+    if refused and not blocks:
+        return _Outcome(
+            slug,
+            "refused",
+            f"{slug}: refused {len(refused)} spec-frontmatter deferral(s) — no resolvable `location:`",
+            refused=len(refused),
+        )
 
     new_blocks_text = "\n".join(blocks)
     if tracked_text:
@@ -159,18 +165,17 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
         raise
 
     ids_str = ", ".join(minted_ids)
-    uncited_note = (
-        f"; {len(uncited)} cite no code (stamped `location: {NO_LOCATION_MARKER}`)"
-        f" — {', '.join(uncited)}"
-        if uncited
+    refused_note = (
+        f"; refused {len(refused)} with no resolvable `location:`"
+        if refused
         else ""
     )
     return _Outcome(
         slug,
         "ingested",
         f"{slug}: ingested {len(minted_ids)} spec-frontmatter deferral(s) — "
-        f"{ids_str}{uncited_note}",
-        uncited=len(uncited),
+        f"{ids_str}{refused_note}",
+        refused=len(refused),
     )
 
 
@@ -228,7 +233,7 @@ def main() -> int:
 
     projects_dir = REPO_ROOT / "_bmad-output" / "projects"
     exit_code = 0
-    uncited_total = 0
+    refused_total = 0
     for slug in targets:
         try:
             outcome = _ingest_project(slug, projects_dir / slug_map[slug])
@@ -237,20 +242,14 @@ def main() -> int:
             exit_code = 1
             continue
         print(outcome.message)
-        uncited_total += outcome.uncited
-        if outcome.status == "aborted":
+        refused_total += outcome.refused
+        if outcome.status in {"aborted", "refused"}:
             exit_code = 1
-    if uncited_total:
-        # Never an error: an uncited deferral is real work and admitting it
-        # is the point. But it is the single biggest cost driver in a sweep
-        # -- 144 of 183 due entries cited nothing on 2026-09-08, which is
-        # why the churn filter could skip none of them -- so it is said out
-        # loud at the moment the entry is created, when adding the citation
-        # is cheapest.
+    if refused_total:
         print(
-            f"\n{uncited_total} newly-ingested entr(ies) cite no code. Each "
-            f"costs a full agent read every sweep until a `location:` is "
-            f"added. Consider citing the code now, while the context is warm."
+            f"\n{refused_total} spec-frontmatter deferral(s) refused — each "
+            f"cited no resolvable `location:`. Add a repo file path before "
+            f"intake can promote the entry into the tracked ledger."
         )
     return exit_code
 
