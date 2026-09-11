@@ -80,6 +80,11 @@ __all__ = (
     "frontmatter_deferral_in_tracked",
     "format_frontmatter_intake_entry",
     "HARVEST_ORIGIN",
+    "SourceSpecResolution",
+    "SourceSpecResolutionStatus",
+    "resolve_source_spec",
+    "source_spec_mechanical_still_open_eligible",
+    "source_spec_verdict_phrase",
 )
 
 
@@ -3467,6 +3472,135 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
         )
         for item in raw
     )
+
+
+# === Story 21.5: deferred-work ``source_spec`` resolution =====================
+#
+# The 2026-09-02 operator-directed mechanical re-verification stamped herald's
+# ``DW-FU-15-1`` as "source_spec path absent at HEAD" even though the spec file
+# is present at its project-relative path. These helpers centralise the
+# project-root fallback so future mechanical passes never re-stamp ``still-open``
+# on a resolver miss alone.
+
+
+class SourceSpecResolutionStatus(StrEnum):
+    """Outcome of resolving a ledger ``source_spec`` field at HEAD."""
+
+    PRESENT = "present"
+    ABSENT = "absent"
+    TIER3 = "tier3"
+    NOT_LOCATED = "not_located"
+
+
+@dataclass(frozen=True)
+class SourceSpecResolution:
+    """Where a ``source_spec`` value resolved, and how."""
+
+    status: SourceSpecResolutionStatus
+    resolved_path: Path | None
+    resolution_basis: str | None
+    normalized: str
+
+
+def _normalize_source_spec_path(raw: str) -> str:
+    """Strip markdown/backticks from a ledger ``source_spec`` field value."""
+    text = raw.strip()
+    if not text:
+        return ""
+    span_match = _BACKTICK_SPAN_RE.search(text)
+    if span_match:
+        text = span_match.group(1).strip()
+    elif "`" in text:
+        text = text.strip("`").strip()
+    return text.replace("\\", "/")
+
+
+def resolve_source_spec(
+    raw: str,
+    *,
+    repo_root: Path,
+    project: str | None = None,
+) -> SourceSpecResolution:
+    """Resolve a deferred-work ``source_spec`` at HEAD.
+
+    Tries the repo root first (paths already recorded as repo-relative, e.g.
+    ``_bmad-output/projects/<slug>/planning-artifacts/specs/...``), then the
+    owning project's directory (project-relative paths such as
+    ``planning-artifacts/specs/...``). A resolver miss without project
+    context is ``NOT_LOCATED``, not ``ABSENT`` -- a failed lookup is not
+    evidence the spec file is missing (Story 21.5).
+    """
+    normalized = _normalize_source_spec_path(raw)
+    if not normalized:
+        return SourceSpecResolution(
+            status=SourceSpecResolutionStatus.NOT_LOCATED,
+            resolved_path=None,
+            resolution_basis=None,
+            normalized=normalized,
+        )
+
+    if "implementation-artifacts" in normalized:
+        return SourceSpecResolution(
+            status=SourceSpecResolutionStatus.TIER3,
+            resolved_path=None,
+            resolution_basis=None,
+            normalized=normalized,
+        )
+
+    repo_candidate = Path(normalized)
+    if not repo_candidate.is_absolute():
+        repo_candidate = repo_root / normalized
+    if _is_file(repo_candidate):
+        return SourceSpecResolution(
+            status=SourceSpecResolutionStatus.PRESENT,
+            resolved_path=repo_candidate.resolve(),
+            resolution_basis="repo_root",
+            normalized=normalized,
+        )
+
+    if project:
+        project_candidate = (
+            repo_root / "_bmad-output" / "projects" / project / normalized
+        )
+        if _is_file(project_candidate):
+            return SourceSpecResolution(
+                status=SourceSpecResolutionStatus.PRESENT,
+                resolved_path=project_candidate.resolve(),
+                resolution_basis="project_root",
+                normalized=normalized,
+            )
+        return SourceSpecResolution(
+            status=SourceSpecResolutionStatus.ABSENT,
+            resolved_path=None,
+            resolution_basis=None,
+            normalized=normalized,
+        )
+
+    return SourceSpecResolution(
+        status=SourceSpecResolutionStatus.NOT_LOCATED,
+        resolved_path=None,
+        resolution_basis=None,
+        normalized=normalized,
+    )
+
+
+def source_spec_verdict_phrase(resolution: SourceSpecResolution) -> str:
+    """Mechanical re-verification wording for a ``source_spec`` check."""
+    if resolution.status is SourceSpecResolutionStatus.PRESENT:
+        return "source_spec present"
+    if resolution.status is SourceSpecResolutionStatus.TIER3:
+        return "source_spec is Tier-3 (gitignored, not in clone)"
+    if resolution.status is SourceSpecResolutionStatus.ABSENT:
+        return "spec absent at HEAD"
+    return "spec not located by this resolver"
+
+
+def source_spec_mechanical_still_open_eligible(
+    resolution: SourceSpecResolution,
+) -> bool:
+    """Whether a mechanical pass may map ledger status to ``still-open`` on
+    the strength of the ``source_spec`` check alone."""
+    return resolution.status is SourceSpecResolutionStatus.ABSENT
 
 
 # === gather_due_for_verification ===============================================
