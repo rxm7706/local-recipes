@@ -40,12 +40,14 @@ assessed.
   - **success:** Setting `max_parallel > 1` in a project's policy produces a registered
     finding/advisory naming the clamp and its cause, visible via the same surfaces (preflight,
     `marshal config`) other policy-shape findings already use.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `core/policy.py:1574` registers `MRS-POLICY-007` (WARN), firing whenever the resolved `max_parallel` exceeds 1 and naming bmad_loop 0.9.0's unbuilt Phase 5 scheduler as cause — confirmed live in code, part of 23/23 passing parallel-fan-out/upstream-register/max-parallel-tagged tests.
 - **CAP-2**
   - **intent:** The `bmad_loop` parallel-fan-out gap is tracked in the same upstream-contribution
     register Story 6.8 already maintains.
   - **success:** `upstream-register.json` carries an entry for this gap (id, gap description,
     workaround/status) in the same shape as its existing 8 entries, and `marshal upstream`
     surfaces it.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `upstream-register.json`'s `parallel-fan-out` entry is real, live, and shaped like its siblings (id/gap/workaround/compensating_fr/upstream_status); `cli/upstream.py` is the real CLI surface that reads this register.
 - **CAP-3**
   - **intent:** Marshal's own readiness for N-stories-in-flight — worktree isolation, the shared
     journal, the supervisor's idle/budget ladder, and the landing path — is assessed against what
@@ -54,6 +56,7 @@ assessed.
     worktree-per-story isolation) and what is unverified or would need to change, so a future
     story adopting an upstream Phase 5 scheduler starts from a scoped list rather than a fresh
     investigation.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `planning-artifacts/parallel-fan-out-readiness-assessment.md` exists (195 lines), is a real, substantive assessment (not a stub), and its own header is explicit about scope ("a scoped starting point — not a readiness certification").
 
 ## Constraints
 
