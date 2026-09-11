@@ -5,19 +5,22 @@
 [![Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml)
 [![Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
 
-> Comprehensive guide for building, testing, and maintaining conda-forge recipes locally and via CI/CD.
+> Configuration reference for conda-forge recipe development in this repo. For onboarding,
+> operational how-tos, and CI dispatch, see the Diátaxis map at [`docs/MAP.md`](../MAP.md):
+>
+> - [Getting started](../tutorials/getting-started.md) — first working environment
+> - [Recipe testing and builds](../how-to/recipe-testing-and-builds.md) — local builds and `test-recipes.py`
+> - [GitHub Actions recipe CI](../how-to/github-actions-recipe-ci.md) — on-demand workflow dispatch
+> - [Troubleshooting recipe builds](../how-to/troubleshooting-recipe-builds.md) — common failure fixes
+> - [Pixi tasks](../how-to/pixi-tasks.md) — full `local-recipes` task surface
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Local Testing](#local-testing)
-4. [GitHub Actions Workflows](#github-actions-workflows)
-5. [Recipe Formats](#recipe-formats)
-6. [Platform Support](#platform-support)
-7. [Configuration Reference](#configuration-reference)
-8. [Troubleshooting](#troubleshooting)
-9. [Best Practices](#best-practices)
+2. [Recipe Formats](#recipe-formats)
+3. [Platform Support](#platform-support)
+4. [Configuration Reference](#configuration-reference)
+5. [Best Practices](#best-practices)
 
 ---
 
@@ -25,10 +28,10 @@
 
 This repository provides a complete local development environment for conda-forge recipes, including:
 
-- **Local Testing Script** (`test-recipes.py`) - Test recipes on Windows, Linux (via WSL/Docker), without submitting to conda-forge CI
-- **GitHub Actions Workflows** - On-demand CI testing for all platforms (Linux, Windows, macOS)
-- **Multi-format Support** - Both `meta.yaml` (conda-build) and `recipe.yaml` (rattler-build) formats
-- **Configurable Builds** - Python versions, CUDA support, macOS SDK versions, Linux base images
+- **Local Testing Script** (`test-recipes.py`) — see [Recipe testing and builds](../how-to/recipe-testing-and-builds.md)
+- **GitHub Actions Workflows** — see [GitHub Actions recipe CI](../how-to/github-actions-recipe-ci.md)
+- **Multi-format Support** — Both `meta.yaml` (conda-build) and `recipe.yaml` (rattler-build) formats
+- **Configurable Builds** — Python versions, CUDA support, macOS SDK versions, Linux base images
 
 ### Architecture
 
@@ -51,205 +54,6 @@ local-recipes/
 ├── test-recipes.py            # Local testing script
 ├── conda_build_config.yaml    # Global pinning configuration
 └── pixi.toml                  # Pixi environment configuration
-```
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- [Pixi](https://pixi.sh) >= 0.72.2 (the workspace's `requires-pixi` floor; pixi 0.73+ is pinned in-env)
-- Or: Conda/Mamba with conda-build and rattler-build
-- For Linux builds on Windows: WSL2 with Ubuntu or Docker Desktop
-
-> **Which env builds recipes?** `rattler-build` (the v1 / `recipe.yaml` engine) lives in
-> the **`local-recipes`** env, not the minimal `build` env — the `build` env carries only
-> `conda-build` for legacy `meta.yaml`. For everyday recipe builds prefer the purpose-built
-> pixi tasks over `test-recipes.py`:
->
-> ```bash
-> pixi run -e local-recipes recipe-build recipes/<name>          # native rattler-build (fast, no Docker)
-> pixi run -e local-recipes recipe-build-docker linux64          # full conda-forge CI fidelity (alma9)
-> pixi run -e local-recipes recipe-build-cross recipes/<name> osx-arm64   # cross-platform .conda artifact
-> ```
->
-> `test-recipes.py` (below) remains available for batch/random sweeps and for `meta.yaml`
-> builds via the `build` env. See also the authoritative `conda-forge-expert` skill
-> (`.claude/skills/conda-forge-expert/`) whose recipe lifecycle loop drives these tasks.
->
-> **Mason-backed route** (Story 16.2, `pyforge-mason` — CAP-2): the same native rattler-build,
-> invoked through the `mason` CLI's `recipe build` verb instead of the bare `local-recipes`
-> task. `mason` still wraps `conda-forge-expert` by subprocess underneath (it adds no recipe
-> judgment of its own); this is one real estate caller wired to prove the `pyforge-mason`
-> `recipe` verb family is exercised in CI, not just built. It does not replace the
-> `local-recipes` route above as the estate's primary recipe-build path.
->
-> ```bash
-> pixi run -e pyforge-mason mason recipe build recipes/<name>
-> ```
->
-> CI wiring: `.github/workflows/pyforge-station-tests.yml`'s `mason-test` job runs
-> `pixi run -e pyforge-mason pyforge-mason-recipe-build-smoke` (a `pixi.toml` task building
-> `recipes/click-help-colors`, a tiny noarch recipe) after its own test suite, on every PR
-> that touches `src/shared/packages/pyforge-mason/**`.
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/rxm7706/local-recipes.git
-cd local-recipes
-
-# Install the build environment with Pixi
-pixi install -e build
-
-# Verify tools are available
-pixi run -e build python test-recipes.py --check
-```
-
-### Your First Build
-
-```bash
-# Build a specific recipe on your current platform
-pixi run -e build python test-recipes.py --recipe <package-name>
-
-# Dry-run to see what would be built
-pixi run -e build python test-recipes.py --recipe <package-name> --dry-run
-
-# Build on all available platforms
-pixi run -e build python test-recipes.py --recipe <package-name> --all
-```
-
----
-
-## Local Testing
-
-### test-recipes.py Reference
-
-The `test-recipes.py` script provides direct recipe testing without the CI workflow that removes recipes already in the main branch.
-
-#### Command Line Options
-
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--recipe NAME` | Build a specific recipe | `--recipe pandas` |
-| `--random N` | Build N random recipes | `--random 10` |
-| `--list` | List discovered recipes (no build) | `--list` |
-| `--all` | Build on all available platforms | `--all` |
-| `--platform PLAT` | Target specific platform | `--platform win-64` |
-| `--type TYPE` | Filter by recipe type | `--type recipe.yaml` |
-| `--dry-run` | Show what would be built | `--dry-run` |
-| `--check` | Check tool availability | `--check` |
-| `--filter PATTERN` | Filter recipes by pattern | `--filter "py*"` |
-| `--stop-on-error` | Stop at first failure | `--stop-on-error` |
-
-#### Examples
-
-```bash
-# Check available build tools
-pixi run -e build python test-recipes.py --check
-
-# Build 5 random recipe.yaml recipes
-pixi run -e build python test-recipes.py --random 5 --type recipe.yaml
-
-# Build pandas on Windows and Linux
-pixi run -e build python test-recipes.py --recipe pandas --all
-
-# Dry-run 100 random recipes on all platforms
-pixi run -e build python test-recipes.py --random 100 --all --dry-run
-
-# Build all recipes matching pattern
-pixi run -e build python test-recipes.py --filter "aws-*" --platform linux-64
-```
-
-### Platform Build Methods
-
-| Platform | Build Method | Requirements |
-|----------|--------------|--------------|
-| **win-64** | Native | Windows + pixi/conda |
-| **linux-64** | WSL (preferred) | WSL2 with pixi installed |
-| **linux-64** | Docker (fallback) | Docker Desktop |
-| **osx-64** | Native only | macOS Intel hardware |
-| **osx-arm64** | Native only | macOS Apple Silicon |
-
-### Platform CI Locally (zero Actions minutes)
-
-`pixi run -e local-recipes platform-ci-local` replays `.github/workflows/platform-ci.yml`
-on your machine: the `test` job step for step (`manage.py check`, Ruff, mypy, the policy
-suite, sqlmigrate extraction, the full pytest suite), the three image builds, the
-`container` job's runtime smokes against the built image, and `golden-path-promotion`
-plus the deploy-side verifier. It starts its own PostgreSQL 17 (+pgvector) and Redis 7
-from the `platform-dev` env on 15432/16379 and tears them down on exit.
-
-```bash
-pixi run -e local-recipes platform-ci-local                         # all four stages, docker
-pixi run -e local-recipes platform-ci-local -- --test               # only the test job
-pixi run -e local-recipes platform-ci-local -- --images --container --engine podman
-```
-
-Run it before pushing any `src/platform`, Containerfile or `pixi.toml` change: every push
-re-runs the whole workflow set in CI, and Platform CI alone builds three images per run.
-Images are built from a git-exported context (`git ls-files`, minus `recipes/`) — a raw
-`docker build .` from a developer checkout walks the 32 GB `.pixi/` tree and crawls.
-Logs land under `/tmp/platform-ci-local/`.
-
-### WSL Setup for Linux Builds
-
-```bash
-# Install pixi in WSL
-wsl bash -c "curl -fsSL https://pixi.sh/install.sh | bash"
-
-# Install the local-recipes environment in WSL (rattler-build lives here, not in `build`)
-wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi install -e local-recipes"
-
-# Verify rattler-build works
-wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi run -e local-recipes rattler-build --version"
-```
-
-**Note:** `conda-build` has compatibility issues when the project is on a Windows filesystem accessed via WSL. For `meta.yaml` recipes on Linux, use Docker instead.
-
----
-
-## GitHub Actions Workflows
-
-All workflows run **on-demand only** to preserve GitHub Actions quota. No automatic triggers on push/PR.
-
-### Available Workflows
-
-| Workflow | File | Description |
-|----------|------|-------------|
-| **Test All** | `test-all.yml` | Orchestrates builds on all platforms |
-| **Test Linux** | `test-linux.yml` | Linux builds with Docker |
-| **Test Windows** | `test-windows.yml` | Native Windows builds |
-| **Test macOS** | `test-macos.yml` | Native macOS builds (x86_64 + ARM64) |
-
-### Running Workflows
-
-#### Via GitHub UI
-
-1. Navigate to **Actions** tab
-2. Select the workflow (e.g., "Test All Platforms")
-3. Click **"Run workflow"** button
-4. Configure options and click **"Run workflow"**
-
-#### Via GitHub CLI
-
-```bash
-# Test all platforms with specific recipes
-gh workflow run test-all.yml -f recipes="pandas,numpy" -f platforms="all"
-
-# Test Linux only with CUDA
-gh workflow run test-linux.yml -f recipes="pytorch" -f cuda_version="12.9"
-
-# Test macOS with custom deployment target
-gh workflow run test-macos.yml -f recipes="scipy" -f osx_arm64_deployment_target="12.0"
-
-# Test Windows with Python 3.11
-gh workflow run test-windows.yml -f recipes="requests" -f python_version="3.11"
-
-# Test all recipes (first 20) on Linux
-gh workflow run test-linux.yml -f recipes="all" -f architecture="linux-64"
 ```
 
 ---
@@ -451,90 +255,7 @@ Platform-specific variant configurations:
 | `bmad-ui` | BMad Method UI dashboards | bmad-ui member (**linux-64 only**; `bmad-dashboard-install`, `mybmad`) |
 
 > The full per-library breakdown of every environment lives in
-> `docs/library-llms-full.md`.
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### "rattler-build not found"
-
-```bash
-# rattler-build ships in the local-recipes env (NOT the minimal `build` env)
-pixi run -e local-recipes rattler-build --version
-
-# Or activate manually
-pixi shell -e local-recipes
-rattler-build --version
-```
-
-#### WSL conda-build fails with path errors
-
-This occurs when the project is on a Windows filesystem. Solutions:
-
-1. **Use rattler-build** for `recipe.yaml` recipes (works with WSL)
-2. **Use Docker** for `meta.yaml` recipes (more reliable)
-3. **Clone to WSL filesystem**: `git clone ... ~/local-recipes`
-
-### Build Failures
-
-#### Dependency resolution fails
-
-```bash
-# Try with verbose output
-conda-build recipe/ -c conda-forge --debug
-
-# Check for conflicts
-mamba repoquery depends <package>
-```
-
-#### Test phase fails
-
-```bash
-# Skip tests temporarily
-conda-build recipe/ --no-test
-
-# Run tests separately
-conda-build recipe/ --test
-```
-
-#### Go CGO builds failing on Windows with "/Werror" error
-
-**Error**: `cl : Command line error D8021 : invalid numeric argument '/Werror'`
-
-**Root Cause**: Go's CGO runtime passes GCC-style compiler flags that MSVC doesn't understand. This occurs during compilation of `runtime/cgo` or other CGO-enabled packages.
-
-**Solution**: Use MinGW-w64 compilers instead of MSVC for Windows CGO builds.
-
-For `meta.yaml` recipes:
-```yaml
-requirements:
-  build:
-    - {{ compiler('cgo') }}
-    - {{ compiler('c') }}          # [unix]
-    - {{ stdlib('c') }}             # [unix]
-    - {{ compiler('m2w64_c') }}     # [win]
-    - {{ stdlib('m2w64_c') }}       # [win]
-    - m2-base                       # [win]
-```
-
-For `recipe.yaml` recipes:
-```yaml
-requirements:
-  build:
-    - ${{ compiler("go-cgo") }}
-    - if: unix
-      then:
-        - ${{ compiler("c") }}
-        - ${{ stdlib("c") }}
-    - if: win
-      then:
-        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
-        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
-        - m2-base                          # MSYS2 base utilities
-```
+> [`library-llms-full.md`](library-llms-full.md).
 
 ---
 
@@ -548,19 +269,7 @@ requirements:
 4. **Include tests** - at minimum `pip check` and imports
 5. **Add maintainers** in `extra.recipe-maintainers`
 
-### Testing Strategy
-
-1. **Local first** - Use `test-recipes.py` before pushing
-2. **Dry-run** - Always preview with `--dry-run`
-3. **Incremental** - Test one recipe at a time
-4. **All platforms** - Use `--all` before submitting to conda-forge
-
-### CI/CD Usage
-
-1. **On-demand only** - Workflows don't run automatically
-2. **Specify recipes** - Don't use "all" in production
-3. **Monitor quotas** - Check GitHub Actions usage
-4. **Cache artifacts** - Download and reuse build artifacts
+For testing strategy and CI usage tips, see [Recipe testing and builds](../how-to/recipe-testing-and-builds.md).
 
 ### Version Control
 
