@@ -28,7 +28,7 @@ sources:
   - ../../../../../../docs/dreams/unified-container.md
   - ../../research/technical-steward-pixi-workspace-member-research-2026-07-25.md   # Addendum A3/A4 — the feasibility study this Spec formalizes
   - ../../../pyforge-marshal/planning-artifacts/research/technical-pyforge-unification-2026-08-08.md   # § 2 — the orchestration half
-updated: "2026-09-09"
+updated: "2026-09-11"
 open_questions:
   # RETIRED 2026-09-09 — both were STALE, decided by the architecture run, and the frontmatter
   # comment above already said so, so this file was contradicting itself:
@@ -45,12 +45,12 @@ open_questions:
   - "Whether Mode L and the with-infrastructure Mode I are the same image with
     different mounts/limits, or Mode I forks — nothing here may foreclose
     Mode I, but its design is out of scope."
-  - "BLOCKER on both Mode questions (2026-09-09): neither is decidable until the image is built by
-    something. No CI workflow and no pixi task builds the root `Containerfile` — the workflow grep
-    matches only `src/platform/Containerfile` and the two sidecar files, and `pixi.toml` carries no
-    docker/podman build — and `pyforge-steward-container-gates-test` /
-    `-container-volumes-test` (`pixi.toml:556`, `:569`) run in ZERO CI jobs. CAP-5 is titled 'the
-    image proves itself at build time' and there is no build time. Vessel: new steward Story 48.10."
+  - "RESOLVED 2026-09-11 (was BLOCKER, 2026-09-09): Story 48.10 landed 2026-09-10 and wired
+    `.github/workflows/pyforge-station-tests.yml`'s `guild-container` job to build the root
+    `Containerfile` on a docker/podman matrix (`scripts/guild_image_ci.sh`), running
+    `container-gates secrets-scan` + `volumes-roundtrip` post-build — re-verified live locally
+    2026-09-11 on both engines. The image-build blocker is gone; the two Mode questions above are
+    now decidable on their own design merits (still genuinely open, unrelated to this resolution)."
 ---
 
 # SPEC — one container, eight stations
@@ -75,6 +75,17 @@ Steward (deployment is the estate); Marshal owns the entrypoint contract.
   `pyforge-*` station packages; entrypoint `marshal`. Success: `podman run`
   reaches every station's CLI surface; rootless, no daemon, no compose file
   (NFR-1/NFR-2's no-standing-service posture at the container layer).
+  - **verified:** 2026-09-11 — live, full end-to-end: `podman build -f Containerfile`
+    (this pass, local — rootless confirmed via `podman info .Host.Security.Rootless=true`)
+    completed clean from the unmodified root `Containerfile`, producing a 3.5 GB image (the
+    lean `pyforge-container` env, not `local-recipes`'s ~9.8 GB). Then `podman run --rm
+    --entrypoint /entrypoint.sh <image> <cli> --help` was run directly (not just the
+    build-time gate) for all eight real console scripts — `marshal`, `steward`,
+    `pyforge-atlas`, `warden`, `doctor`, `mason`, `herald`, `scribe` — all OK. No compose
+    file used; no podman daemon/service started (`ServiceIsRemote=false`, podman's normal
+    fork-exec rootless mode). `docker build` of the same Containerfile also verified clean in
+    the same pass (4.72 GB image) — both matrix legs green, matching CI's
+    `guild-container` job (`.github/workflows/pyforge-station-tests.yml`).
 - **CAP-2 — the image ships the repo at a fixed short path.** Intent: all four
   duty modules (`keys.py`, `provision.py`, `deploy.py`, `budget.py`) locate the
   repo by marker-file walk-ups, and `keys.py` imports CFE's `_http.py` from the
@@ -82,6 +93,9 @@ Steward (deployment is the estate); Marshal owns the entrypoint contract.
   wheels into a bare filesystem. Success: every marker walk-up resolves
   in-container unchanged; `/pyforge` also trivially satisfies the >~173-byte
   worktree path-length limit that panics pixi-build-python.
+  - **verified:** 2026-09-11 — code-level: `keys.py` walks up from its own resolved location
+    for the marker file (docstring confirms) and imports `_http.auth_headers_for` at module
+    top level (`keys.py:104`, import-time, not lazy) — matches the claim exactly.
 - **CAP-3 — credentials never enter image layers.** Intent: `age` identity files
   arrive as Podman secrets (tmpfs-mounted at run time); `_http.py` routing stays
   env-var-only (`podman run -e`/`--env-file`), so the air-gapped container is the
@@ -89,15 +103,37 @@ Steward (deployment is the estate); Marshal owns the entrypoint contract.
   runs over the unpacked image rootfs as a build gate (the shipped scanner needs
   zero changes) and finds nothing; no identity, token, or enterprise URL in any
   layer.
+  - **verified:** 2026-09-11 — code-level: `scripts/container-gates`'s `secrets-scan`
+    delegates entirely to `steward keys audit --secrets` (no second scanner, matches AD-2),
+    wired as a Containerfile `RUN` step in the final stage. The one documented, permanent,
+    unavoidable finding (`age-keygen`'s compiled-in upstream test-vector string) is named and
+    excluded by design, not silently swept.
 - **CAP-4 — state outlives the container.** Intent: mutable state mounts as
   volumes — `.steward/` (keys inventory, budget ceilings), the gitignored
   `.claude/data/conda-forge-expert/` runtime state, loop homes — so rotation and
   ceiling history survive container replacement. Success: replace the container,
   `steward keys list` / `budget check` answer from the surviving volume.
+  - **verified:** 2026-09-11 — code-level: `container-gates volumes-roundtrip --image IMAGE
+    --mount PATH` is real, implemented code (writes to a mounted path, replaces the container,
+    reads it back, fails loudly on mismatch/timeout) — not aspirational text.
 - **CAP-5 — the image proves itself at build time.** Intent: image smoke gates
   run `steward provision --verify` plus each station CLI's `--help` before an
   image is accepted. Success: a broken station wiring fails the build, not the
   first operator.
+  - **verified:** 2026-09-11 — live: the two build runs above (docker + podman) both executed
+    the Containerfile's two build-time `RUN` gates in-line — `container-gates secrets-scan`
+    (clean) and `container-gates cli-smoke --cli 'marshal --help' ... ` for all eight stations
+    (all OK) — and would have failed the `docker build`/`podman build` itself (and did, per
+    Story 48.10's own CI job `guild-container` in `pyforge-station-tests.yml`, which builds
+    the root Containerfile and is the first workflow ever to do so) had any station been
+    broken. **One precise textual mismatch found:** the shipped gate is
+    `container-gates cli-smoke` (per-station `--help`), not a literal `steward provision
+    --verify` call — grepping the Containerfile finds no `provision --verify` RUN step, and
+    `provision --verify` in `steward/provision.py` is actually the *repo* `environment.yaml`-
+    vs-`pixi.toml` PR-CI sync check (an unrelated command), not an image-wiring check. The
+    stated SUCCESS criterion ("a broken station wiring fails the build, not the first
+    operator") is fully met by `cli-smoke`; the specific tool name in the intent text is
+    stale/inaccurate and should be corrected to `container-gates cli-smoke`.
 
 ## Constraints
 
@@ -145,15 +181,16 @@ reaches all eight station CLIs; the secret gate over the rootfs finds nothing;
 the same image runs behind Artifactory by env vars alone; state volumes survive
 container replacement.
 
-## Nothing builds the image — 2026-09-09
+## RESOLVED 2026-09-11 — the image now builds in CI (was: "Nothing builds the image")
 
-**The signal above has never been exercised in CI**, and the two surviving Mode questions are not
-decidable until it is. No workflow and no pixi task builds the root `Containerfile`; the
-`container-gates` and `container-volumes` pixi tasks (`pixi.toml:556`, `:569`) are invoked by
-nothing. CAP-5 — "the image proves itself at build time" — has no build time to prove itself at.
-
-**Vessel: new steward Story 48.10** (batch § 2.3 C7 / rows stB-B5 / stB-B7) — a job or pixi task
-invoked by `pyforge-station-tests.yml` that builds the root `Containerfile` and runs
-`container-gates secrets-scan` + `container-volumes` on the result, landed **before Story 44.10
-closes the CI window**. The Spec stays `shipped` — Epic 7 delivered every capability it names —
-but the container half of the fleet's realization gate is unexercised until 48.10 lands.
+**Story 48.10 landed 2026-09-10** (`sprint-status-ledger.yaml`:
+`48-10-the-one-container-guild-proves-itself-at-build-time-ci-builds-the-root-containerfile: done`;
+commit `fbea18043c`). `.github/workflows/pyforge-station-tests.yml`'s `guild-container` job now
+builds the root `Containerfile` on a docker/podman matrix via
+`pixi run --frozen -e pyforge-steward pyforge-steward-guild-image-build` (`scripts/guild_image_ci.sh`),
+running `container-gates secrets-scan` + `container-gates volumes-roundtrip` post-build, on top of
+the Containerfile's own in-line `secrets-scan` + `cli-smoke` build-time `RUN` gates. Re-verified
+locally 2026-09-11 (both engines, see CAP-1/CAP-5 `verified:` entries above) — the signal in
+"Success signal" above is real and exercised, not merely aspirational. The two surviving Mode
+questions in `open_questions` above remain genuinely open (unrelated to this resolution — they are
+design-scope questions, not "does the image build" questions).
