@@ -81,10 +81,10 @@ it is anyone being **told**.
   ([[factory-console]], Marshal's ledger; in the persona ideal Herald
   proclaims from it).
 
-## The frontier — Moments 2–4, active now
+## Moments 2–4 (Progress, Success, Operations)
 
-Moments 2, 3 and 4 were specced but had no implementation surface. **This is
-now Herald's active, in-progress work** — not aspirational, not shipped:
+Moments 2, 3 and 4 were specced but had no implementation surface when this
+section was first written. They are now shipped (see below), covering:
 
 - **Moment 2 (Progress)** — `herald progress` / release notables composed
   from run telemetry and cost data, delivered where the audience lives.
