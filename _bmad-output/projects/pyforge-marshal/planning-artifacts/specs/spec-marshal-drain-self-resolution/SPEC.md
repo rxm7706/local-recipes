@@ -58,6 +58,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* After `spec-39-4-*.md` appears, the next eligible tick
   dispatches 39.4 without bare `factory dispatch`.
   *Story:* 28.18
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_missing_spec_refuse_re_preflights_when_spec_lands` and `test_unchanged_refuse_predicate_is_rate_limited_across_campaign_cycles` both pass.
 
 - **CAP-2 — Missing-spec escalates; never idle-with-backlog.**
   `MRS-DISP-005` sets the station `awaiting-operator` (or equivalent
@@ -66,6 +67,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* Fixture: ledger key + epics.md + empty specs glob → escalate,
   not silent idle.
   *Story:* 28.19
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_queued_story_without_a_tracked_spec_is_refused_naming_mrs_disp_005` — exactly this fixture shape — passes, asserting `MRS-DISP-005` named and `StationCycleStatus.REFUSED` (not silently idle).
 
 - **CAP-3 — Mechanical land-conflict union + local-clean when DIRTY.**
   CAP-4, on conflicts only in `sprint-status-ledger.yaml` (and optionally
@@ -75,6 +77,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   Unknown conflicts escalate with paths named.
   *Success:* Replay #985 → land without chat.
   *Story:* 28.20
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): all 8 tests in `test_dispatch_land_heal.py` pass — ledger union (`done` beats `backlog`), mechanical-conflict-only recognition, unknown-conflict escalation, and the local-advance-when-GitHub-DIRTY path (the #985 replay shape) all hold.
 
 - **CAP-4 — Push the dispatch branch before verify can strand it.**
   `origin/dispatch/<slug>/<story>` exists once the session has a
@@ -83,6 +86,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* After a worktree commit, `git ls-remote` shows the branch
   even if verify later refuses.
   *Story:* 28.21
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): all 7 tests in `test_dispatch_push.py` pass, including `test_run_and_journal_dispatch_push_pushes_before_verify`.
 
 - **CAP-5 — Verify blast radius (`pre-existing-gate`).**
   A `verify_commands` failure whose failing files/imports are outside
@@ -92,6 +96,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* 28.13-shaped diff + packaging pandas collection error → no
   story-refuse; `pyforge-marshal-test` still gates marshal diffs.
   *Story:* 28.22
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_terminal_block_on_pre_existing_gate` (MRS-GATE-014 stays terminal, not transient-retried into the same unrelated red command) passes.
 
 - **CAP-6 — Terminal overlay + stranded-work signal.**
   `derive_dispatch_phase` is `None` when completion is `failed` /
@@ -100,6 +105,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   or open unmerged PR is named in ATTENTION.
   *Success:* Dead+failed → not STUCK; unpushed 28.13-shaped ref → ATTENTION.
   *Story:* 28.23
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): all 4 tests in `test_fleet_picture_stranded_work.py` pass — dead+failed tail is not treated as active dispatch, and both the unpushed-branch and open-PR ATTENTION lines fire correctly.
 
 - **CAP-7 — Supervisor finalizes when the harness cannot run shell.**
   A session that claims done (or leaves a commitable dirty worktree) but
@@ -111,6 +117,7 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* Replay 28.18 pass-41 dirty tree + “shell unavailable” →
   commit + `origin/dispatch/…` without chat; #1000-shaped land.
   *Story:* 28.24
+  *Verified:* 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): all 12 tests in `test_dispatch_supervisor_finalize.py` pass — shell-unavailable detection, finalize-vs-redispatch gating, and the `awaiting-operator` escalation surface all hold.
 
 ## Constraints
 
