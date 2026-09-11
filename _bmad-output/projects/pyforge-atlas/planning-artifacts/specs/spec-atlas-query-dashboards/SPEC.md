@@ -50,6 +50,11 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** Each catalog view emits a self-contained HTML fragment from the live
     `cf_atlas.db` whose rows agree with its CLI counterpart's output on the same database
     snapshot; rendering a static view opens zero WebSocket connections.
+  - **verified:** retirement confirmed, not the original capability — `views/` (both
+    `src/.../pyforge/atlas/views/` and `tests/unit/views/`) is fully deleted (commit
+    `caeae255d05`), zero remaining importers of `pyforge.atlas.views` repo-wide
+    (`git grep`), and `bokeh`/`panel` no longer appear in `pyforge-atlas`'s
+    `pyproject.toml`. Superseded by the live Vizro/BSL board (`dashboard/app.py`).
 - **CAP-2** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** Genuinely interactive views (filter, drill, re-sort live) layer on Bokeh's
     WebSocket protocol through whatever ASGI host is chosen at decomposition time — host-agnostic
@@ -58,6 +63,9 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** At least one catalog view runs filter/drill/re-sort against `cf_atlas.db` over a
     live Bokeh WebSocket session on the chosen host; swapping the host touches mounting code
     only, never a view definition.
+  - **verified:** retirement confirmed (same evidence as CAP-1) — `views/` deleted in
+    `caeae255d05`, zero remaining importers, `bokeh`/`panel` dropped from
+    `pyproject.toml`. Superseded by the live Vizro/BSL board.
 - **CAP-3** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** Widget TYPES are pluggable behind a small registry, not hard-coded to a
     Tabulator/chart/pivot set — a view declares its query plus a widget-type name; the registry
@@ -65,6 +73,11 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** Adding a new widget type is one registry entry plus one renderer, with zero
     edits to existing view definitions; the seed set is derived from atlas's own query shapes
     (open question 1), not inherited from the source dream's catalog.
+  - **verified:** retirement confirmed (same evidence as CAP-1) — `views/` deleted in
+    `caeae255d05`, zero remaining importers, `bokeh`/`panel` dropped from
+    `pyproject.toml`; the "kept only if a Vizro page actually asks for it" condition
+    above was not met (no Vizro page adopts a pluggable widget-type registry — confirmed
+    no registry module exists under `dashboard/`).
 - **CAP-4** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** The CDN-URL-rewriting concern for air-gapped deployment is carried from day one,
     for static fragments and WebSocket apps alike: Bokeh/Panel asset URLs resolve to
@@ -74,6 +87,9 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** A page rendered under the air-gapped profile contains zero references to
     external CDN hosts (verifiable by grepping the emitted HTML); the default profile's output
     is unchanged.
+  - **verified:** retirement confirmed (same evidence as CAP-1) — `views/` deleted in
+    `caeae255d05`, zero remaining importers, `bokeh`/`panel` dropped from
+    `pyproject.toml`. Superseded by the live Vizro/BSL board.
 **CAP-1..CAP-4 amendment, 2026-09-09** (operator, fleet-readiness decision batch § 2.3 C1 / row
 atlas-B1). The intent of all four is superseded by the live Vizro/BSL board (`dashboard/app.py`'s
 `PAGE_INVENTORY`, reached through the D1 BSL seam, gated by `dashboard-dryrun`, served by
@@ -97,6 +113,15 @@ Retirement is atlas **Story 25.1**.
     (grep-verifiable single `duckdb-server` launch site); a parity gate runs an identical
     query set against both faces and fails on any divergence — parity is part of the face's
     definition of done.
+  - **verified:** the single boot script (`query_plane_boot.py`), stack-down degrade,
+    second-boot refusal, and the singularity gate live in
+    `tests/unit/test_query_plane_boot.py` (`test_stack_down_raises_library_face_only`,
+    `test_second_boot_invocation_is_refused`, `test_real_duckdb_server_launches_from_the_one_site`)
+    + `tests/unit/singularity/test_one_duckdb_server_launch_site.py`; the parity gate,
+    including a seeded-divergence-fails case, live in
+    `tests/unit/query_plane/test_face_parity.py::test_happy_path_rows_agree_row_for_row_including_empty_result`
+    + `test_seeded_divergence_fails_and_names_the_divergent_query`
+    + `test_face_down_reports_not_applicable_never_a_silent_pass`; 25 tests green (2026-09-11).
 - **CAP-6** *(added 2026-08-27 — bound by the `query-plane-catalog` operator ruling, 2026-08-26)*
   - **intent:** The composed semantic stores the grounded dashboard pages bind to (DW-D2-2's
     `semantic_packages` family, plus the `core_feedstock_health` Parquet the 2026-08-26 first
@@ -109,6 +134,15 @@ Retirement is atlas **Story 25.1**.
     "BSL-wired SHELL pages" banner retires; the grounded pages render rows (not
     honestly-empty shells) in a fresh checkout after that one pipeline run; DW-D2-2 closes
     citing this capability's story.
+  - **verified:** the named `semantic_packages` pipeline (`pipelines/semantic_packages/nodes.py`,
+    docstring cites "Story 20.3, CAP-6" directly) reads only the sealed seven's own catalog
+    dataset names — never a raw source — live in
+    `tests/unit/test_semantic_packages_pipeline.py::test_pipeline_reads_only_sealed_seven_output_names_never_a_raw_source`;
+    honest-NULL degrade for not-yet-migrated metrics (never a crash) live in
+    `test_composed_store_lets_the_deferred_bsl_metrics_degrade_honestly_not_crash`;
+    12 tests green across the pipeline + node suites (2026-09-11). A fresh-checkout
+    end-to-end `kedro run` producing real (non-empty) rows was not independently
+    re-executed in this pass — verified at the node/pipeline-contract level only.
 - **CAP-7** *(added 2026-08-27 — adopts the DW-D2-1/DW-D2-3 residue into this spec's chain)*
   - **intent:** The deferred Vizro page inventory completes: the CIS two-spine specs
     (`DESIGN.md` + `EXPERIENCE.md`, the DW-D2-1 precondition — still not produced as of
@@ -122,6 +156,15 @@ Retirement is atlas **Story 25.1**.
     data-present visual pass via `pixi run -e local-recipes dashboard-serve` are recorded;
     Vizro stays outside the Canopy host and Django imports no Vizro; the page set is NOT
     expanded past the live-confirmed core before the spine specs land.
+  - **verified:** both spine files exist
+    (`planning-artifacts/{DESIGN.md,EXPERIENCE.md}`); `pixi run -e local-recipes dashboard-dryrun`
+    green (72 tests, 2026-09-11) — builds the full page inventory with stable ids/titles AND
+    runs the real-server Playwright e2e + §2.1 semantic-HTML/ARIA navigation check
+    (`tests/integration/dashboard/test_dashboard_e2e.py`). Page count has grown past this
+    CAP's original 28 to **34** (Story 21.9 CAP-5 added pages after this Spec's success
+    criterion was written — pixi task description confirms "Full 34-page inventory shipped");
+    the intent (spine-gated, all-pages-render, ARIA-checked) holds, the literal "28" is stale
+    and superseded upward, not a shortfall.
 
 ## Constraints
 
