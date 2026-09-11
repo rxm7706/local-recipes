@@ -2,7 +2,7 @@
 title: "Resilience invariants — RFC-1..5 and BS-1..8"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-25"
+updated: "2026-09-10"
 ---
 
 # Resilience invariants
@@ -14,7 +14,9 @@ Where a row says *revised*, the Dream's own text is superseded and the revision 
 Realization log dated 2026-08-24.
 
 Each invariant names the capability that carries it. An invariant with no test that fails in its
-absence is not implemented, however much code exists (CAP-10 success criterion).
+absence is not implemented, however much code exists; BS-4 and BS-8 also require at least one
+production caller (Story 49.14, 2026-09-10 — CAP-10 success criterion tightened to match
+CAP-4/7/11/12/14/17).
 
 ## RFC directives
 
@@ -99,11 +101,11 @@ SQL artifact. Worth putting back to whoever wrote the directive.
 | **BS-1** | Dual-driver Scribe: SQLite locally, PostgreSQL + `pgvector` on OpenShift. Premise: SQLite over `ReadWriteMany` corrupts B-trees under concurrent writes. | **REVISED — premise false** | Scribe is **not** SQLite. It ships `FlatFileGraphStore`, a single JSON file at `.claude/data/pyforge-scribe/graph.json`. There is no B-tree to corrupt. The invariant is rewritten as **flat-file → PostgreSQL/pgvector behind the existing `GraphStore` port**, keeping a local path. Note also that `recall.py` is deterministic token overlap, so "semantic search" is a new capability, not a backend swap. |  |
 | **BS-2** | FastAPI emits `:keepalive` every 15s; OpenShift routes declare `haproxy.router.openshift.io/timeout: 30m`. | **REVISED — transport superseded** | See below. |  |
 | **BS-3** | Celery tasks receive an immutable `delegation_context` (`idp_subject`) and mint scoped tokens via Keycloak client-credentials Token Exchange (RFC 8693). | **as written, with a caveat** | Unchanged. Caveat for canopy:CAP-4: the current MCP authorization spec requires RFC 8707 resource indicators, which exist in Keycloak only behind an experimental `RESOURCE_INDICATORS` flag; the documented interim is an audience protocol mapper. Pin the Keycloak version in acceptance criteria. | canopy:CAP-6 |
-| **BS-4** | Django HTTPX clients use PyBreaker with 500ms fail-fast; HTMX views render degraded badges. | **REVISED — library cannot do it** | PyBreaker's async support is **Tornado-coroutine, not asyncio**. Passing an `httpx.AsyncClient` coroutine to `breaker.call()` returns the un-awaited coroutine, the breaker records an immediate success, and **the circuit never trips**. Native `acall` exists only in an unmerged PR from 2026-03-21. The SPEC binds: PyBreaker for sync paths (it is on conda-forge, dependency-free, and its Redis storage plugs into `django_redis`), plus **our own async wrapper** over PyBreaker's state storage. Rejected: `aiocircuitbreaker` (on conda-forge, dormant since January 2022) and `purgatory` (maintained, not packaged). Stale-while-revalidate HTMX fallbacks: unchanged. |  |
+| **BS-4** | Django HTTPX clients use PyBreaker with 500ms fail-fast; HTMX views render degraded badges. | **REVISED — library cannot do it** | PyBreaker's async support is **Tornado-coroutine, not asyncio**. Passing an `httpx.AsyncClient` coroutine to `breaker.call()` returns the un-awaited coroutine, the breaker records an immediate success, and **the circuit never trips**. Native `acall` exists only in an unmerged PR from 2026-03-21. The SPEC binds: PyBreaker for sync paths (it is on conda-forge, dependency-free, and its Redis storage plugs into `django_redis`), plus **our own async wrapper** over PyBreaker's state storage. Rejected: `aiocircuitbreaker` (on conda-forge, dormant since January 2022) and `purgatory` (maintained, not packaged). Stale-while-revalidate HTMX fallbacks: unchanged. **2026-09-10 (Story 49.14):** production caller is `django_pyforge.station_client.StationHttpClient` — every outbound transport is wrapped by `station_outbound_breaker.call_or_degrade`. | canopy:CAP-10 |
 | **BS-5** | Single dedicated ingestion worker writes `atlas.duckdb`; all FastAPI services and Vizro dashboards mount it `read_only=True`. | **SUPERSEDED 2026-09-09** | *(as of 2026-08-24: unbuilt — bare `duckdb.connect()`, no `read_only=True` anywhere.)* Now met: `read_only=True` appears at `pyforge-atlas/.../duckdb_writer.py:60` and `pyforge-scribe/.../graph_store_plane.py:69`, AST-enforced estate-wide by `pyforge-atlas/tests/unit/test_duckdb_boundary.py:93-117` (Story 41.2). Atlas's existing `filelock` admission covers Kedro *Parquet* outputs, a different surface. |  |
 | **BS-6** | Forward-compatible CloudEvents envelope carrying `schema_version: "2.x"`; validation in domain adapters, not at the stream boundary. | **SUPERSEDED 2026-09-09** | *(as of 2026-08-24: no envelope.)* Now met: a CloudEvents 1.0 envelope ships at `django_pyforge/events/constants.py` with five registered types and `LOOP_DEPTH_CEILING = 8` enforced in `events/fabric.py:267-270` (Epic 24). |  |
 | **BS-7** | `PydanticFormErrorBridge` in `django-pyforge` unpacks HTTP 422 JSON error arrays into Django `ValidationError` dicts for inline HTMX highlighting. | **as written** | Unchanged — and note it lands in `django-pyforge`, which per canopy:CAP-1 is **ours to build**; `django-lasuite` supplies OIDC plumbing, not chrome or form bridging. | canopy:CAP-1 |
-| **BS-8** | Idempotent startup reconciliation; Mason scans MinIO on boot to re-index database records, PostgreSQL as canonical anchor. | **REVISED — object store blocked** | Unchanged in principle (restart reconciles, PostgreSQL canonical), but MinIO/`boto3` would be a fourth infra kind (parent AD-1). canopy:AD-13 binds Lane 1 media to RWX, not object storage. Mason boot re-index is against PostgreSQL (+ RWX if files exist), not MinIO, until parent AD-1 is formally excepted. | canopy:CAP-10 |
+| **BS-8** | Idempotent startup reconciliation; Mason scans MinIO on boot to re-index database records, PostgreSQL as canonical anchor. | **REVISED — object store blocked** | Unchanged in principle (restart reconciles, PostgreSQL canonical), but MinIO/`boto3` would be a fourth infra kind (parent AD-1). canopy:AD-13 binds Lane 1 media to RWX, not object storage. Mason boot re-index is against PostgreSQL (+ RWX if files exist), not MinIO, until parent AD-1 is formally excepted. **2026-09-10 (Story 49.14):** production caller is `django_mason_portal.apps.MasonPortalConfig.ready()` → `run_mason_boot_reconcile()` (`DjangoPgIndexStore` + `reconcile_boot` against `MEDIA_ROOT`). | canopy:CAP-10 |
 
 ### BS-2, revised
 

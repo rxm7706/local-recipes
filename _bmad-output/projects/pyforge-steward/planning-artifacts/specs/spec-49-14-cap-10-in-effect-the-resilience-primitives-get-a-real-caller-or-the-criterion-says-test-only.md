@@ -2,7 +2,8 @@
 title: 'CAP-10 in effect — the resilience primitives get a real caller, or the criterion says test-only'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 29c9036962bda93fa3da647903fe3089972874f3
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -86,4 +87,42 @@ omission from the Residual list, as it is today.
 
 ## Spec Change Log
 
+- 2026-09-10 — Story 49.14: wired real production callers (Branch A); tightened CAP-10 success criterion in `SPEC.md` and BS-4/BS-8 rows in `resilience-invariants.md`.
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 18 findings — high 0, medium 3, low 2, false 4, maybe-false 9
+- findings:
+  - `[medium]` `[patch]` STATION_REMOTE urllib path bypassed circuit breaker — wrapped via `_resolve_transport` + `_urllib_transport`
+  - `[medium]` `[patch]` BS-8 ready() hook only source-scanned — added `test_mason_ready_invokes_boot_reconcile` runtime sentinel
+  - `[medium]` `[patch]` Remote profile breaker unproven — added `test_station_remote_default_path_uses_breaker`
+  - `[low]` `[reject]` Portal views still use PortalClient not StationHttpClient — out of story scope (CAP-6 DW-FU-43-2-4); breaker wired at client layer per Reading A/C
+  - `[low]` `[reject]` HTMX degraded badges not added — story Never boundary; BS-4 wrapper unchanged
+  - `[false]` `[reject]` asyncio.run fails in async context — no current production async caller of StationHttpClient; defer until async portal path exists
+  - `[false]` `[reject]` django-mason missing pyforge-mason pyproject dep — monorepo pythonpath + Containerfile COPY is established pattern for portal packages
+  - `[false]` `[reject]` Duplicate SQL drift — intentional PG adapter at django layer; boot.py remains library/test store
+  - `[false]` `[reject]` Verification command misses platform tests — platform-ci-test run performed; steward-test is story-declared gate
+  - `[maybe-false]` `[defer]` Boot reconcile silent skip on DB errors — intentional for collectstatic; production pods start post-migrate
+  - `[maybe-false]` `[defer]` Runtime CREATE TABLE vs Liquibase — mason_index is Mason-owned index table; revisit under CAP-9 if role-governance requires
+  - remaining maybe-false entries deferred as pre-existing or unverified edge cases without demonstrated harm
+
+## Auto Run Result
+
+Status: done
+
+Summary: Chose Branch A (wire real callers + tighten criterion). `StationHttpClient` wraps every outbound transport (in-process and `STATION_REMOTE` urllib) with `station_outbound_breaker`. Mason boot reconcile runs from `MasonPortalConfig.ready()` via `run_mason_boot_reconcile()` against PostgreSQL + `MEDIA_ROOT`. CAP-10 success text and BS-4/BS-8 companion rows updated consistently (2026-09-10).
+
+Files changed:
+- `django_pyforge/station_client.py` — circuit breaker on all outbound transports
+- `django_mason_portal/boot_reconcile.py` — PostgreSQL index store + boot reconcile entrypoint
+- `django_mason_portal/apps.py` — invoke reconcile on ready()
+- `src/platform/Containerfile` — COPY pyforge/mason for runtime import
+- `src/platform/tests/test_cap10_production_callers.py` — production-caller proof tests
+- `spec-pyforge-unifying-strategy/SPEC.md` + `resilience-invariants.md` — tightened CAP-10 bar
+
+Review: 3 medium patches applied (remote urllib guard, ready() runtime test, remote breaker test). HTMX badge gap and full portal adoption deferred (out of scope).
+
+Verification: `platform-ci-test pytest tests/test_cap10_production_callers.py tests/test_circuits_trip_on_async_too.py tests/test_restarts_reconcile.py` → 13 passed. `pyforge-steward-test` → 1206 passed, 1 pre-existing failure (`test_adoption_register` bmad-eval-quality PATH drift, unrelated).
+
+Residual risks: Portal views have not yet migrated to `StationHttpClient` (CAP-6); boot reconcile skips silently when DB unavailable at ready() time; `mason_index` DDL runs at runtime not via Liquibase.

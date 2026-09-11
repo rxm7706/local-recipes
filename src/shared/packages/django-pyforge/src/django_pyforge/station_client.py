@@ -7,19 +7,99 @@ routes via this wrapper.
 
 from __future__ import annotations
 
+import asyncio
+import urllib.error
+import urllib.request
 from typing import Any
 
 from django_pyforge.assertion.client import PortalClient
+from django_pyforge.circuits import CircuitBreaker
+from django_pyforge.circuits import Degraded
 from pyforge.core.client import API_VERSION_HEADER
 from pyforge.core.client import PyForgeStationClient
+from pyforge.core.client import StationClientError
 from pyforge.core.client import Transport
 
 __all__ = [
     "API_VERSION_HEADER",
     "PyForgeStationClient",
+    "StationClientDegraded",
     "StationHttpClient",
     "Transport",
+    "station_outbound_breaker",
 ]
+
+station_outbound_breaker = CircuitBreaker(name="station_outbound")
+
+
+class StationClientDegraded(StationClientError):
+    """Outbound station call degraded because the circuit is open."""
+
+
+def _guarded_transport(transport: Transport) -> Transport:
+    """Wrap a transport so outbound failures trip the shared async breaker."""
+
+    def wrapped(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        body: bytes | None,
+    ) -> bytes:
+        async def _call() -> bytes:
+            # Dispatch to a worker thread rather than calling `transport`
+            # directly: the in-process ASGI transport
+            # (config.station_port.asgi_invoke, Story 43.3) drives its OWN
+            # internal asyncio.run() to reach the host ASGI app, which
+            # cannot nest inside the event loop asyncio.run() below already
+            # owns ("asyncio.run() cannot be called from a running event
+            # loop"). A thread gives that inner asyncio.run() a clean
+            # context with no currently-running loop; the urllib transport
+            # is plain sync and unaffected either way.
+            return await asyncio.to_thread(transport, method, url, headers, body)
+
+        result = asyncio.run(station_outbound_breaker.call_or_degrade(_call))
+        if isinstance(result, Degraded):
+            raise StationClientDegraded(result.reason)
+        return result
+
+    return wrapped
+
+
+def _urllib_transport() -> Transport:
+    """HTTP transport for ``STATION_REMOTE=1`` (mirrors ``PyForgeStationClient._urllib``)."""
+
+    def transport(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        body: bytes | None,
+    ) -> bytes:
+        request = urllib.request.Request(  # noqa: S310 -- URL is caller-configured
+            url,
+            data=body,
+            headers=headers,
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+                return response.read()
+        except urllib.error.URLError as exc:
+            raise StationClientError from exc
+
+    return transport
+
+
+def _resolve_transport(transport: Transport | None) -> Transport | None:
+    if transport is None:
+        from django_pyforge.station_port import default_transport
+        from django_pyforge.station_port import is_station_remote
+
+        transport = default_transport()
+        if transport is None and is_station_remote():
+            transport = _urllib_transport()
+    if transport is not None:
+        return _guarded_transport(transport)
+    return None
 
 
 class StationHttpClient:
@@ -40,16 +120,12 @@ class StationHttpClient:
         transport: Transport | None = None,
     ) -> PyForgeStationClient:
         assertion = self._portal.emit(sub, roles, station, private_pem=private_pem)
-        if transport is None:
-            from django_pyforge.station_port import default_transport
-
-            transport = default_transport()
         return PyForgeStationClient(
             station=station,
             version=version,
             base_url=base_url,
             assertion=assertion,
-            transport=transport,
+            transport=_resolve_transport(transport),
         )
 
     def post(
@@ -65,10 +141,6 @@ class StationHttpClient:
         private_pem: str | None = None,
         transport: Transport | None = None,
     ) -> bytes:
-        if transport is None:
-            from django_pyforge.station_port import default_transport
-
-            transport = default_transport()
         client = self.emit_and_build(
             station=station,
             sub=sub,

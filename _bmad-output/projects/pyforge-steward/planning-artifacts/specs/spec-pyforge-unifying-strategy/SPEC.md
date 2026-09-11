@@ -355,11 +355,14 @@ they are why this is not merely a UI project.
     reconciles rather than duplicates.
   - **success:** Each of the four invariants in `resilience-invariants.md` has a test that fails
     with the invariant absent and passes with it present — demonstrated individually, not as a
-    suite.
+    suite — and BS-4/BS-8 each have at least one production caller (not test-only).
   - **verified:** four invariant unit/policy tests pass individually
     (`test_circuits_trip_on_async_too.py:51`, `pyforge-atlas/tests/unit/test_duckdb_boundary.py:133`,
-    `test_validation_errors_render_inline.py:36+`, `test_restarts_reconcile.py:47+`); circuit
-    wrapper + mason boot reconcile have zero production callers (test-only bar).
+    `test_validation_errors_render_inline.py:36+`, `test_restarts_reconcile.py:47+`); production
+    callers live at `django_pyforge/station_client.py` (BS-4 circuit on
+    `StationHttpClient`) and `django_mason_portal/boot_reconcile.py` invoked from
+    `django_mason_portal/apps.py:ready` (BS-8 boot reconcile), proven by
+    `test_cap10_production_callers.py`.
 
 - **CAP-11 — Queue and cache cannot evict each other.**
   - **intent:** The task broker and the cache are separate resources with separate eviction
