@@ -1734,7 +1734,7 @@ authoritative source **Then** `pyforge-doctor/README.md` no longer uses gate lan
 itself
 **And** `AGENTS.md`'s cross-agent-portability claim names Marshal (or is reworded to make no
 ownership claim at all), matching `docs/dreams/pyforge-herald.md`
-**Status:** backlog
+**Status:** done
 
 ### Story 22.2: The 4 cross-cutting decay findings are corrected
 
@@ -1756,7 +1756,7 @@ on-demand/manual ones, against the real `.github/workflows/*.yml` trigger types
 to it rather than duplicating it
 **And** `CLAUDE.md`'s SKF block and its 8-station list agree, with Mason's deliberate
 skill-omission noted rather than silent
-**Status:** backlog
+**Status:** done
 
 ### Story 22.3: A repeatable Doctor detector catches this class of drift going forward
 
@@ -1801,7 +1801,7 @@ discarded and rebuilt
 **And** the BMAD spec-driven tier (`docs/dreams/`, `docs/specs/` legacy,
 `_bmad-output/*/planning-artifacts/`, `implementation-artifacts/`) is named explicitly as
 untouched by the map
-**Status:** backlog
+**Status:** done
 
 ### Story 22.5: The Tutorials/Getting-Started and How-to-Guides quadrants are populated
 
