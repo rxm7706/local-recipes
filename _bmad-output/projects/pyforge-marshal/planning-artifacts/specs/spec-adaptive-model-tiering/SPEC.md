@@ -49,6 +49,7 @@ on attempt count).
     declaring a difficulty present in that map, the rendered `policy.toml` differs from the
     undeclared baseline in exactly the mapped stages — provable by diffing rendered output with
     and without the declaration.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml` carries a real, populated `[model_tier_map.heavy/medium/easy]` (not empty, as the Why section describes it was at authoring time). No story currently declares a live `difficulty:` value fleet-wide (grep across all `spec-*/SPEC.md` is empty), so this is currently an unexercised-in-production, fully-tested mechanism: `test_spin.py`'s tier/difficulty-tagged tests (25/25 pass) cover the resolve-and-render chain directly.
 - **CAP-2**
   - **intent:** A story showing it is genuinely struggling (repeated dev attempts, repeated
     review cycles) gets a floor-raised model without an operator hand-editing `policy.toml` and
@@ -57,6 +58,7 @@ on attempt count).
     under a model at least as strong as its declared tier (or the baseline, if undeclared) — and
     the change is journaled with the same intent/outcome discipline every other supervisor
     action uses.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `core/supervise.py::evaluate_retry_escalation` is real, live code, called from `cli/spin.py` (Story 3.12, `MRS-SPIN-016` finding for the floor-raise) — floor-only per its own docstring ("floor-raises the former to the latter"), matching this CAP's never-a-downgrade constraint. Covered by `test_spin.py`'s escalation-tagged tests (part of the same 25/25 green run).
 
 ## Constraints
 

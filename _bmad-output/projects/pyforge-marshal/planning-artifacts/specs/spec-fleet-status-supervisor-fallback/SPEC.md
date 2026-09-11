@@ -48,11 +48,13 @@ recovered) hits the same branch and reports the same word.
   - **success:** Reproducing the 2026-08-11 scenario (a run resumed with no supervisor
     sidecar, engine still active) no longer reports `"unsupervised"` on an active run; a run
     whose engine is also gone still does.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `core/status.py`'s `run_state_retired` field (`:896`) and `MRS-STATUS-012` finding code (`:659`) are real, live — a retired-but-resolvable run reports `idle`, not `unsupervised`, per the module's own docstrings (`:760-784`). 14/14 retired/unsupervised/fallback-tagged tests in `test_status.py` pass.
 - **CAP-2**
   - **intent:** The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead)
     are distinguishable from the fleet report itself.
   - **success:** An operator or an automated `fleet-picture` consumer can tell the two cases
     apart by reading the report -- never by running `ps` / `tmux ls` / `state.json` by hand.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `d3e71043f7`: `idle` (retired-but-fine) vs `unsupervised` (genuinely dead) are two distinct, directly-readable `FLEET_STATES` values on the row — same test coverage as CAP-1 (14/14 pass) confirms both branches render distinctly, not merged into one ambiguous word.
 
 ## Constraints
 
