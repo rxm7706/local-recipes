@@ -35,6 +35,7 @@ from pyforge.doctor.sources import (
     frozen_path,
     ledger,
     marshal,
+    pixi_currency,
     platform_policy,
     sibling_dreams,
     status_body_consistency,
@@ -62,6 +63,7 @@ _EXPECTED_DISPATCH = {
     "frozen-path-changed": frozen_path.gather,
     "capability-effect": capability_effect.gather,
     "status-body-consistency": status_body_consistency.gather,
+    "pixi-currency-ledger": pixi_currency.gather,
 }
 
 

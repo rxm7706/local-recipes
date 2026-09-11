@@ -243,6 +243,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # scripts/*_check.py origin) entry, added here like bmad-render-config-
     # ambiguity above -- offline, deterministic, no budget concerns.
     ("frozen-path-changed", "frozen-path-changed-check"),
+    # Story 21.7 (Epic 21 / spec-pixi-candidate-currency CAP-4): pixi-currency
+    # ledger staleness beside the other repo-scope doctor sources.
+    ("pixi-currency-ledger", "pixi-currency-staleness-check"),
 )
 
 

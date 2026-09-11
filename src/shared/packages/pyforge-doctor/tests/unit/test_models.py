@@ -211,6 +211,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "frozen-path-changed",
         "capability-effect",
         "status-body-consistency",
+        "pixi-currency-ledger",
     }
 
 

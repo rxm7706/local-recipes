@@ -300,6 +300,10 @@ class Source(StrEnum):
     # (``N of M stories/capabilities`` with ``N < M``). Stories 21.13–21.16
     # extend the same module; Story 21.16 wires dispatch + detectors.
     STATUS_BODY_CONSISTENCY = "status-body-consistency"
+    # Story 21.7 (Epic 21 / spec-pixi-candidate-currency CAP-4): advisory
+    # ledger-staleness check for the Dream's four dependency ledgers vs
+    # ``pixi.toml`` commit history. WARN-only; never gates.
+    PIXI_CURRENCY_LEDGER = "pixi-currency-ledger"
 
 
 class Partition(StrEnum):
