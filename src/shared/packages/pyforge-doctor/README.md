@@ -2,8 +2,8 @@
 
 Pre-flight + fleet-watch diagnostics CLI (`doctor check` / `doctor monitor` /
 `doctor diagnose`) consolidating [`pyforge-warden`](../pyforge-warden) +
-`cf_atlas` signals into one schema-validated `DoctorReport` envelope and its
-own exit-code gate.
+`cf_atlas` signals into one schema-validated `DoctorReport` envelope; findings
+stay advisory — not a second PR gate.
 
 **Status:** all 28 stories shipped (6 epics): the `check`/`monitor`/`diagnose` verbs are live, and `python -m pyforge.doctor.sources` dispatches the 10 detector sources the repo's gates run on
 [`_bmad-output/projects/pyforge-doctor/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-doctor/planning-artifacts/)
