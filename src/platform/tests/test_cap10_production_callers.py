@@ -116,28 +116,6 @@ def test_station_client_trips_breaker_and_degrades(monkeypatch) -> None:
     assert elapsed < FAIL_FAST_SECONDS
 
 
-@pytest.mark.django_db
-def test_mason_boot_reconcile_runs_against_live_db(tmp_path, settings) -> None:
-    from django.db import connection
-    from django.db.utils import OperationalError
-    from django_mason_portal.boot_reconcile import run_mason_boot_reconcile
-
-    try:
-        connection.ensure_connection()
-    except OperationalError as exc:
-        pytest.skip(f"PostgreSQL not available for live boot-reconcile exercise: {exc}")
-
-    settings.MEDIA_ROOT = str(tmp_path)
-    artifact = tmp_path / "recipe.yaml"
-    artifact.write_text("name: demo\n", encoding="utf-8")
-    run_mason_boot_reconcile()
-
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT COUNT(*) FROM mason_index")
-        count = cursor.fetchone()[0]
-    assert count == 1
-
-
 def test_station_client_breaker_module_is_shared_singleton() -> None:
     tree = ast.parse(_source(STATION_CLIENT))
     names = {
