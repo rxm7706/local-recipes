@@ -1,9 +1,12 @@
-"""Story 26.1: IdP revoke takes effect on the next request (FR-31)."""
+"""Story 26.1 / 49.6: IdP revoke takes effect on the next request (FR-31 / CAP-12)."""
 
 from __future__ import annotations
 
+import importlib
 import inspect
+import os
 from http import HTTPStatus
+from types import ModuleType
 from types import SimpleNamespace
 
 from django.http import HttpResponse
@@ -16,6 +19,19 @@ from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_pyforge.roles import prefixed_station
 from django_pyforge.roles import roles_from_request
 from django_warden_fabric import views as warden_views
+
+from config.authorization import idp_userinfo
+from config.authorization.idp_userinfo import fetch_current_userinfo
+
+_DEPLOYED_REQUIRED_ENV = {
+    "DJANGO_SETTINGS_MODULE": "config.settings.production",
+    "DJANGO_SECRET_KEY": "story-49-6-test-secret-key-not-for-production-use",
+    "DJANGO_ADMIN_URL": "secret-admin/",
+    "MCP_HOST_SIDECAR_BASE_URL": "http://platform-mcp-host:8090",
+    "COMPONENT_OIDC_ISSUER": "https://idp.invalid/realms/platform",
+    "COMPONENT_OIDC_JWKS_URL": "https://idp.invalid/realms/platform/certs",
+    "COMPONENT_OIDC_AUDIENCE": "platform-web",
+}
 
 
 class BoomGroups:

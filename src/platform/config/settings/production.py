@@ -1,5 +1,6 @@
 import sys
 
+from config.authorization.idp_userinfo import fetch_current_userinfo
 from config.observability.logging import build_logging_config
 from config.startup import run_stage_one
 from config.startup.stage_one import refuse_required_settings
@@ -163,6 +164,13 @@ LOGGING["filters"] = {
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+# Story 49.6 / CAP-12: re-read IdP roles from userinfo within a bounded cache
+# window so revocation at Keycloak (Story 48.9 default profile) lands on the
+# next request, not the next login. Local/test keep base.py's None hook and use
+# IDP_CLAIMS_SNAPSHOT in tests instead.
+IDP_CLAIMS_CACHE_SECONDS = env.int("COMPONENT_IDP_CLAIMS_CACHE_SECONDS", default=30)
+IDP_USERINFO = fetch_current_userinfo
 
 # CAP-3 stage 1: last statement of this leaf (not base.py). Re-checks required
 # env, then refuses unverified broker TLS (Story 41.4) — that condition reads
