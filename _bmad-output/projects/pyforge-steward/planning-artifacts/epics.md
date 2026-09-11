@@ -3361,4 +3361,4 @@ the owner of backup/PITR for the BYO-PostgreSQL path, so the handoff is document
 silently assumed
 **And** with the overlay NOT applied, the backup CronJob still deploys exactly as it does
 today — no change to the self-hosted default's backup behavior
-**Status:** backlog
+**Status:** done

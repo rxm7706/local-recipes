@@ -1,3 +1,4 @@
+{{- if not .Values.postgres.external.enabled }}
 {{- if .Values.postgres.backup.enabled }}
 # Story 41.1: scheduled pg_basebackup on the platform image (no second image).
 # WAL segments land on the same RWX PVC via postgres archive_command.
@@ -67,4 +68,5 @@ spec:
             - name: backup
               persistentVolumeClaim:
                 claimName: {{ include "platform.postgresBackup.pvcName" . }}
+{{- end }}
 {{- end }}

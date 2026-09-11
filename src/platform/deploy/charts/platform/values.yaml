@@ -237,6 +237,9 @@ postgres:
   fsGroup: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
+  # Story 51.1: BYO external PostgreSQL overlay (default off — self-hosted).
+  external:
+    enabled: false
   # Story 41.1: physical base backup + WAL archive to a separate RWX PVC.
   backup:
     enabled: true

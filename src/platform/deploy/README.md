@@ -8,6 +8,14 @@ Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
 Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
 (Story 41.1).
 
+**BYO PostgreSQL backup/PITR (Story 51.3):** when the external-postgres
+overlay is active (`postgres.external.enabled: true`, Story 51.1), the chart
+does not deploy the in-cluster `postgres-backup` CronJob — pyforge does not
+run a shadow backup of a database it does not own. Backup and point-in-time
+recovery for that path are owned and operated by the **enterprise database
+team** using their own managed-PostgreSQL backup tooling; follow their runbooks,
+not `DR.md`/`restore.md`, for that datastore.
+
 ## Prerequisites
 
 - **helm from the `platform-dev` pixi env** (AD-16 — never a system helm):

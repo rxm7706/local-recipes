@@ -2,8 +2,8 @@
 title: 'The backup/PITR handoff is explicit when the BYO-PostgreSQL overlay is active'
 type: 'feature'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'db1cc4bb4c8d948be1218c44827b0b219a6ba790'
+status: 'done'
+baseline_revision: 'fb55f147c20c797b29f34307ebdd16fde02de4ce'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -70,8 +70,8 @@ backup/PITR whenever the BYO-PostgreSQL overlay is active.
 ## Tasks & Acceptance
 
 **Execution:**
-- `feature` — guard `postgres-backup-cronjob.yaml` on `postgres.external.enabled`.
-- `feature` — add the ownership-handoff paragraph to `deploy/README.md`.
+- [x] `feature` — guard `postgres-backup-cronjob.yaml` on `postgres.external.enabled`.
+- [x] `feature` — add the ownership-handoff paragraph to `deploy/README.md`.
 
 **Acceptance Criteria:**
 - Given `postgres-backup-cronjob.yaml` today runs unconditionally against whatever Postgres the
@@ -93,3 +93,33 @@ backup/PITR whenever the BYO-PostgreSQL overlay is active.
   `postgres-backup-cronjob.yaml` to render empty.
 - Manual: `deploy/README.md` names the enterprise database team as backup/PITR owner for the
   BYO path.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[low]` `[defer]` Added `postgres.external.enabled: false` default to `values.yaml` — Story 51.1's first task, required so the guard renders before 51.1 lands; 51.3 spec scoped to cronjob + README only — evidence: helm template nil-pointer without the default
+
+## Auto Run Result
+
+Status: done
+
+Summary: Guarded `postgres-backup-cronjob.yaml` on Story 51.1's `postgres.external.enabled` toggle and documented the enterprise database team as BYO-PostgreSQL backup/PITR owner in `deploy/README.md`. Added the toggle default (`external.enabled: false`) to `values.yaml` so helm renders before Story 51.1 lands.
+
+Files changed:
+- `src/platform/deploy/charts/platform/templates/postgres-backup-cronjob.yaml` — skip backup CronJob when external Postgres is enabled
+- `src/platform/deploy/README.md` — BYO backup/PITR handoff paragraph (Story 51.3)
+- `src/platform/deploy/charts/platform/values.yaml` — `postgres.external.enabled: false` default (Story 51.1 seam, required for render)
+- `src/platform/tests/test_chart_invariants.py` — `test_external_postgres_omits_backup_cronjob` matrix proof
+
+Review findings breakdown: 0 patches applied; 1 deferred (`values.yaml` default overlaps Story 51.1)
+
+Follow-up review recommendation: false
+
+Verification performed:
+- `helm template` default render: 1 CronJob (postgres-backup present)
+- `helm template --set postgres.external.enabled=true`: 0 CronJobs, no cronjob template
+- `pytest tests/test_chart_invariants.py::test_postgres_backup_cronjob_and_archive_mode tests/test_chart_invariants.py::test_external_postgres_omits_backup_cronjob` (platform-ci-test + platform-dev helm on PATH): 2 passed
+
+Residual risks: Story 51.1 overlay file (`overlays/external-postgres/values.yaml`) not yet present — verification used `--set postgres.external.enabled=true` equivalent. Story 51.1 still owns StatefulSet/Service/PVC guards and overlay authoring.
