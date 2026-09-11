@@ -151,3 +151,23 @@ Residual risks: Entries with backticked paths only in `summary`/`evidence` pass 
   - `[medium]` `[patch]` Multiple uncited deferrals share `spec_rel` in refusal — include `summary` snippet in refusal message
   - `[false]` `[reject]` Verification gap on evidence-only path — closed by `test_intake_accepts_deferral_with_path_only_in_evidence`
   - `[maybe-false]` `[defer]` Narrow intake surface vs fleet measurement — story scope is spec-frontmatter promotion only
+
+### 2026-09-11 — Rescue verification (stuck worktree, stale merge, MRS-DISP scope collision)
+- The dispatch worktree completed and self-reported done (ledger promotion committed
+  locally) but never landed — a fresh `marshal factory dispatch` invocation reported
+  `land_verdict: already_landed`, which was **verified false**: `git merge-base
+  --is-ancestor <tip> origin/main` failed, and the tracked (symlinked) ledger still
+  read `backlog`. Rescued by hand: merged `origin/main` in (9 commits behind, pulling
+  in Stories 21.7/21.9), resolved one ledger-key conflict.
+- The merge silently dropped `origin/main`'s `Source.PIXI_CURRENCY_LEDGER` entry from
+  `tests/meta/test_source_independence.py`'s `SOURCE_MODULE` dict — this worktree's
+  own (now-stale) branch had independently classified `pixi_currency.py` as
+  self-judging (`NON_SOURCE_MODULES`) under an earlier draft of 21.7's
+  `subject_station` (before 21.7's own late review corrected it to `"fleet"`, already
+  correctly rejected by this story's own review pass above as
+  "not present in commit d3b4b18494"). Restored `origin/main`'s already-landed,
+  already-reviewed classification verbatim (`SOURCE_MODULE` entry, not
+  `NON_SOURCE_MODULES`) rather than re-deciding it — confirmed byte-identical to
+  `origin/main`'s copy of the file after the fix.
+- Full suite re-verified after the fix: `pixi run --frozen -e pyforge-doctor
+  pyforge-doctor-test` — 1597 passed, 1 skipped.

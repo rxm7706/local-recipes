@@ -132,6 +132,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.FROZEN_PATH_CHANGED: "frozen_path.py",  # Story 20.3 (Epic 20)
     Source.CAPABILITY_EFFECT: "capability_effect.py",  # Story 21.10 (Epic 21)
     Source.STATUS_BODY_CONSISTENCY: "status_body_consistency.py",  # Story 21.12
+    Source.PIXI_CURRENCY_LEDGER: "pixi_currency.py",  # Story 21.7
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
@@ -337,11 +338,7 @@ def test_env_hygiene_is_out_of_scope_by_design():
 #: 2026-08-10 when doctor story 6-9 landed the sources dispatcher: it imports EVERY
 #: source by design, so an independence scan over it is meaningless, and it gathers
 #: nothing itself.
-#: ``pixi_currency.py`` (Story 21.7) gathers a self-judging source
-#: (``subject_station == owning_station == "doctor"``), like ``env_hygiene``
-#: in ``checks/`` — no foreign station package to forbid, so independence
-#: scanning it is meaningless.
-NON_SOURCE_MODULES = frozenset({"__init__.py", "__main__.py", "pixi_currency.py"})
+NON_SOURCE_MODULES = frozenset({"__init__.py", "__main__.py"})
 
 
 def test_every_real_sources_file_is_mapped_by_at_least_one_source():
