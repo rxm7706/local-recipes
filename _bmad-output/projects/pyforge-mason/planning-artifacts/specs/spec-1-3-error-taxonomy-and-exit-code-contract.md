@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Error taxonomy and exit-code contract'
 type: 'feature'
@@ -227,4 +226,5 @@ EX_SOFTWARE-derived `EXIT_INTERNAL = 70`, which predates and contradicts AD-7/FR
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (existing + new tests).
+
