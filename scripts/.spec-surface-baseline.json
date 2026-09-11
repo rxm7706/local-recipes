@@ -2831,6 +2831,10 @@
   "files": {},
   "memlog": "ea501c527cc57309410c126b67b044f1370a49db"
  },
+ "pyforge-marshal/spec-marshal-launch-environment-integrity": {
+  "files": {},
+  "memlog": "c3f53d2b8204b5dc3b5dadda992abf3ef1a2cc51"
+ },
  "pyforge-marshal/spec-marshal-parallel-dispatch-fanout": {
   "files": {
    "_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml": "5beb3364d5af76cca6377d17a944036d5c2c5210",
