@@ -30,10 +30,12 @@ systematized.
   the existing `capture --promote` human-review flow; never auto-promoting.
   *Success:* pointed at a transcript with a known un-curated decision, the
   candidate surfaces with its provenance; curated-covered content does not.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `transcripts.py` present at 506 lines as claimed; `.claude/data/pyforge-scribe/transcript-scan-cache.json` present and dated 2026-09-11 (even more recently exercised than the Spec's own 2026-08-27 claim, i.e. still a live artifact, not a one-off); `pixi run -e pyforge-scribe python -m pytest -k transcript` 58/58 passing.
 - **CAP-2 — a compile source.** Transcripts join Epic 2's knowledge-graph
   compile source list (git history, memlogs, retros, CHANGELOGs, dreams)
   so the next Scribe layer doesn't re-miss them. *Success:* the source
   registry names them with the same provenance discipline.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `compile.py` imports `TranscriptCandidate`/`default_transcript_root`/`scan_transcripts` from `transcripts.py` and wires them as a named compile source alongside the other five; a real, current `graph.json` exists (part of the same live-scan evidence CAP-1 cites) confirming the source is actually exercised, not just wired.
 
 ## Constraints
 Human review stays the gate (promotion is proposed, never applied);
