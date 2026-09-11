@@ -442,6 +442,105 @@ def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
     assert not any(f.check == "specified-spec-not-ready" for f in findings)
 
 
+def test_specified_spec_not_ready_when_covering_spec_unevaluable(
+    tmp_path: Path,
+) -> None:
+    """When the expected covering Spec exists but fails collection, README:71
+    must warn with ``(unevaluable)`` rather than silently skipping."""
+    _write_roster(tmp_path)
+    slug = "broken-covering-spec"
+    _write_dream(
+        tmp_path,
+        slug,
+        status="specified",
+        title="Broken Covering Spec",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [(f"{slug}.md", "specified")])
+    spec = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "specs"
+        / f"spec-{slug}"
+        / "SPEC.md"
+    )
+    spec.parent.mkdir(parents=True, exist_ok=True)
+    spec.write_text("---\n- not\n- a\n- mapping\n---\n", encoding="utf-8")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    hit = [f for f in findings if f.check == "specified-spec-not-ready"]
+    assert len(hit) == 1
+    assert hit[0].status is DoctorStatus.WARN
+    assert hit[0].evidence["subject"] == slug
+    assert hit[0].evidence["spec_statuses"] == ["(unevaluable)"]
+    assert "could not be evaluated for readiness" in hit[0].message
+
+
+def test_specified_spec_not_ready_via_satellite_title(tmp_path: Path) -> None:
+    """README:71 must fire when the only covering Spec is matched via
+    ``## Satellite: <title>`` and is still at ``draft``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "satellite-dream",
+        status="specified",
+        title="The Satellite Dream",
+        owner="herald",
+        realization_log=True,
+    )
+    _write_dream(
+        tmp_path,
+        "host-dream",
+        status="realized",
+        title="Host Dream",
+        owner="herald",
+        realization_log=True,
+    )
+    _write_readme(
+        tmp_path,
+        [
+            ("satellite-dream.md", "specified"),
+            ("host-dream.md", "realized"),
+        ],
+    )
+    spec_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-herald"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-host"
+    )
+    spec_dir.mkdir(parents=True, exist_ok=True)
+    (spec_dir / "SPEC.md").write_text(
+        "\n".join(
+            [
+                "---",
+                "owner-dream: docs/dreams/host-dream.md",
+                "status: draft",
+                "---",
+                "",
+                "## Satellite: The Satellite Dream",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    hit = [
+        f
+        for f in findings
+        if f.check == "specified-spec-not-ready"
+        and f.evidence.get("subject") == "satellite-dream"
+    ]
+    assert len(hit) == 1
+    assert hit[0].evidence["spec_statuses"] == ["draft"]
+
+
 def test_specified_spec_not_ready_via_covers_dreams(tmp_path: Path) -> None:
     _write_roster(tmp_path)
     _write_dream(
