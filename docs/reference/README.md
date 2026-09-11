@@ -1,42 +1,37 @@
-# docs/reference — how the factory works today
+# docs/reference — Reference quadrant
 
-Living reference documentation (Diátaxis: reference/how-to). Descriptions of
-what exists — never aspirations (those are `docs/dreams/`) and never contracts
-(BMAD planning-artifacts; legacy: `docs/specs/`).
+Exact CLI/config/schema surfaces, inventories, and policy charters. Part of the
+Diátaxis-adapted general docs layer — see [`docs/MAP.md`](../MAP.md) for the full
+four-quadrant map and per-file classification.
 
-- `container-base-layer-convention.md` — the base-tag-pinning, multi-stage
-  pixi-materialization, and `--mount=type=secret`-only credential rules
-  shared by all three Containerfiles (root, `src/platform/`,
-  `src/platform/compose/dbgpt/`); guard test:
-  `tests/packaging/test_containerfile_base_layer_convention.py`.
+Architecture-rationale ("why") content lives in [`docs/explanation/`](../explanation/).
+Tutorials and how-to guides are scaffolded at [`docs/tutorials/`](../tutorials/) and
+[`docs/how-to/`](../how-to/) (Story 22.5 populates them).
+
+Descriptions of what exists — never aspirations (`docs/dreams/`) and never BMAD
+contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).
+
+## Reference files
+
+- `container-base-layer-convention.md` — base-tag pinning, multi-stage pixi-materialization, and `--mount=type=secret`-only credential rules shared by all three Containerfiles; guard test: `tests/packaging/test_containerfile_base_layer_convention.py`.
 - `conda-forge-packaging-inventory-operations_prompt.md` — standalone re-run prompt the inventory runner must obey.
 - `conda-forge-packaging-inventory-operations_replay.md` — replay / sync contract for that runner + prompt + curated config.
-- `developer-guide.md` — local testing + recipe development guidelines.
-- `mcp-server-architecture.md` — the FastMCP server + PyPI name mapping.
-- `enterprise-deployment.md` — air-gapped environments + JFrog Artifactory.
-- `pixi-config-jfrog.example.toml` — the JFrog pixi config example.
-- `library-llms-full.md` — the generated library catalog (detector:
-  `pixi run -e local-recipes llms-full-check`).
-- `github-workflows.md` — inventory of `.github/workflows/*.yml`. **Refresh
-  needed as of 2026-08-15**: still lists 4 retired workflows
-  (`automate-review-labels.yml`, `correct_directory.yml`,
-  `create_feedstocks.yml`, `do_not_edit_example.yml`) and omits 4 that now
-  exist (`detectors.yml`, `herald-live-demo.yml`, `kedro-viz-publish.yml`,
-  `platform-ci.yml`) — self-dated "Audited 2026-07-26," due for regeneration
-  against the live `.github/workflows/` tree.
-- `test-charter.md` — the testing charter backing `docs/dreams/pyforge-testing-charter.md`
-  / `spec-pyforge-testing-charter`.
-- `sync-jira-github-workflow-templates/` — reusable GitHub Actions workflow
-  templates for the (still-open, undecided) Jira↔GitHub Projects sync effort;
-  see `docs/intake/jira-github-projects-sync/`.
+- `developer-guide.md` — local testing + recipe development (**mixed** — split across quadrants in Story 22.5; see MAP).
+- `pixi-config-jfrog.example.toml` — JFrog pixi config example.
+- `library-llms-full.md` — generated library catalog (detector: `pixi run -e local-recipes llms-full-check`). **Refresh needed** — regenerate via catalog header prompt.
+- `github-workflows.md` — inventory of `.github/workflows/*.yml`. **Refresh needed as of 2026-08-15**: still lists 4 retired workflows and omits 4 that now exist — self-dated "Audited 2026-07-26."
+- `test-charter.md` — testing charter backing `docs/dreams/pyforge-testing-charter.md` / `spec-pyforge-testing-charter`.
+- `station-verify-commands.md` — derived verify-command lookup for PyForge stations. **Refresh needed** — keep in sync with `marshal-policy.toml` files.
+- `antigravity-developer-startup.md` — Antigravity 2.0 startup guide (**pending move** to `docs/how-to/` in Story 22.5).
+- `manticore-studio.md` — Herald manticore studio install procedure (**pending move** to `docs/how-to/` in Story 22.5).
+- `sync-jira-github-workflow-templates/` — reusable GitHub Actions workflow templates for the (still-open) Jira↔GitHub Projects sync effort; see `docs/intake/jira-github-projects-sync/`.
 
-Archived (superseded, kept at `archive/docs/reference/` — structure-preserving,
-never deleted):
-- ~~`GuildHall_Fleet_Status.md`~~ — a static fleet-status snapshot, self-dated
-  "Last refreshed 2026-08-08" but already order-of-magnitude wrong for that
-  date (e.g. atlas shown at 7/7 stories against a real 55-story scope).
-  Nothing in the repo points to it as authoritative — the live published
-  dashboard (`https://rxm7706.github.io/local-recipes/`) and
-  `pixi run -e local-recipes fleet-picture` are the current sources. Archived
-  2026-08-15 rather than refreshed, since a static markdown snapshot of fleet
-  counts will always drift again.
+## Relocated to Explanation (redirect stubs remain here)
+
+- `mcp-server-architecture.md` → [`docs/explanation/mcp-server-architecture.md`](../explanation/mcp-server-architecture.md)
+- `enterprise-deployment.md` → [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md)
+- `airgap-distribution-contract.md` → [`docs/explanation/airgap-distribution-contract.md`](../explanation/airgap-distribution-contract.md)
+
+## Archived (superseded, kept at `archive/docs/reference/`)
+
+- ~~`GuildHall_Fleet_Status.md`~~ — static fleet-status snapshot superseded by the live dashboard and `pixi run -e local-recipes fleet-picture`. Archived 2026-08-15.
