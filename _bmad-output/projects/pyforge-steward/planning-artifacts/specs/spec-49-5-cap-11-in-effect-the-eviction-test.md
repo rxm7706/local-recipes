@@ -76,3 +76,31 @@ first — the test is meaningless against a single shared instance.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 2, maybe-false 1
+- findings:
+  - `[false]` `[reject]` LPUSH to `default` is not a real Celery enqueue — the Redis transport stores queued tasks as list entries under the queue name; `_seed_broker_state` LPUSHes the same shape and the split test asserts depth unchanged after cache pressure.
+  - `[false]` `[reject]` Unsplit regression guard passes vacuously if stream is evicted before fill completes — `_broker_snapshot` handles missing stream/NOGROUP and the unsplit test asserts at least one broker metric degraded (stream evicted, queue drained, or PEL cleared).
+  - `[maybe-false]` `[reject]` `_start_redis` fixed 0.4s sleep may flake on slow hosts — matches `test_cloudevents_redis_broker.py`; both eviction tests passed in platform-ci-local full suite (869 passed).
+  - `[low]` `[reject]` `SHARED_MAXMEMORY` (4mb) larger than `CACHE_MAXMEMORY` (1mb) is undocumented — comment in test file explains unsplit needs headroom for broker-key eviction; cosmetic only.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `test_redis_cache_eviction_broker_survival.py` with two real-Redis tests: split-instance survival under `allkeys-lru` cache pressure, and unsplit regression proving broker stream/queue/PEL loss. Chart split from Story 40.2 already landed; conditional `hpa.yaml` work not needed.
+
+**Files changed:**
+- `src/platform/tests/test_redis_cache_eviction_broker_survival.py` — real-Redis CAP-11 eviction + unsplit regression tests
+- `spec-49-5-cap-11-in-effect-the-eviction-test.md` — build-auto metadata and review log
+
+**Review:** 0 patches applied; 4 findings rejected (2 false, 1 maybe-false, 1 low).
+
+**Follow-up review recommended:** false (0 high/medium patches)
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 1210 passed
+- `pixi run -e local-recipes platform-ci-local -- --test` — PASS (869 passed, 7 skipped)
+
+**Residual risks:** Tests skip when `redis-server` is not on PATH (same as other platform real-Redis tests).
