@@ -33,18 +33,22 @@ self-documenting surface into the repo-wide governance map.
   security scan, native/docker builds, submission tooling) as specified in
   SKILL.md. Success: the skill's own meta-test suite green; gates enforced
   per SKILL.md (no skipped gate).
+  - **verified:** 2026-09-11 — PASS (2 mason-caused failures fixed; 2 unrelated failures remain) — mechanical re-verification at HEAD df260ed9ea: full `.claude/skills/conda-forge-expert/tests/meta` suite ran 3 failed / 7692 passed before this pass. Fixed the 2 that were mason's own: `test_skill_md_lists_existing_scripts_only` (SKILL.md's v8.90.3 entry cites `cfe.py`, a real pyforge-mason src module the existence-check didn't recognise) and `test_all_scripts_listed` (Story 16.3's `mcp_tools.py`/`mcp_parity.py` were never added to the SCRIPTS/NO_HELP lists). Re-run after fix: 2 failed / 7693 passed / 4 skipped — the 2 residual failures (`test_bmad_artifacts_in_sync.py`, `test_spec_surface_check.py`) are pyforge-marshal/pyforge-scribe governance drift with zero pyforge-mason mentions in either finding set, confirmed by direct inspection; out of this Spec's surface, not fixed here.
 - **CAP-2 — atlas intelligence.** Intent: `cf_atlas.db` (15 phases B→N,
   17 CLIs, offline-safe reads) answering "what should I work on / is this
   safe / what depends on this". Success: `bmad-groundtruth` facts match the
   BMAD artifacts (the existing detector); read CLIs answer offline.
+  - **verified:** 2026-09-11 — PASS (offline-read half); intent text is stale — mechanical re-verification at HEAD df260ed9ea: `pixi run -e local-recipes staleness-report --maintainer rxm7706` returns real data offline (25 rows, no network); `pixi run -e local-recipes bmad-groundtruth` runs clean (`atlas_phases: 22, mcp_tools: 46, schema_version: 29, skill_version: "8.90.4"`) and the existing bmad-drift-check detector reports zero findings against this Spec. Note: this CAP's own intent text ("15 phases B→N, 17 CLIs") is copied from SKILL.md's "Atlas Intelligence Layer (v8.1.0)" header, which is itself stale against live (22 phases, 46 MCP tools) — not fixed this pass (a full phase-list/CLI re-audit is Rule-2 retro-sized work); flagged in the memlog for a future CFE retro.
 - **CAP-3 — MCP surface.** Intent: `conda_forge_server.py` exposes the
   recipe-authoring + atlas + scanning tools to agent sessions. Success:
   tool count and schemas match `reference/mcp-tools.md`.
+  - **verified:** 2026-09-11 — PASS (gap fixed) — mechanical re-verification at HEAD df260ed9ea found 10 of the 46 live `@mcp.tool` registrations undocumented in `reference/mcp-tools.md` (`channel_split`, `enrich_from_feedstock`, `env_inspect`, `get_feedstock_context`, `lookup_feedstock`, `platform_breakdown`, `prepare_submission_branch`, `pypi_intelligence`, `pypi_only_candidates`, `pyver_breakdown` — confirmed absent by direct grep, not just undercounted). Added all 10 with docstring-sourced one-line descriptions in their thematic sections and corrected the stale "30+ tools" intro line to "46+ tools". Re-verified: all 46 tool names from `grep '@mcp.tool'` now resolve in the doc.
 - **CAP-4 — the self-improvement loop.** Intent: every conda-forge effort
   ends with a Rule-2 retro landing skill edits + a CHANGELOG semver entry —
   the skill's contract moves with its code. Success: the CHANGELOG sentinel
   (frontmatter above) means a governed edit without a CHANGELOG move is a
   checker finding, mechanizing Rule 2's "the retro is not optional".
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD df260ed9ea: `pyforge.doctor.sources.chain.gather_spec_surface` reported 7 `drift-presumed` (WARN) findings for this spec's surface (6 pre-existing from Story 16.3 / v8.88.1 / Story 21.11, 1 from this pass's own mcp-tools.md edit) — verified each landing commit via `git log -1` (none out-of-band), reconciled by name in `.memlog.md`, and scoped-stamped via `python scripts/spec_surface_check.py --write-baseline --spec pyforge-mason/spec-packaging-factory`. Re-run: 0 findings for this spec. CHANGELOG sentinel not exercised this pass — the fixes made (2 meta-test bugs, 1 reference-doc gap) match this memlog's own established precedent for changes that land under the surface glob "by location, not by CFE-skill guidance" (test infra + a mechanical doc-completeness fill, not a behavior/gotcha change), so no SKILL.md/CHANGELOG move was warranted.
 
 ## Constraints
 

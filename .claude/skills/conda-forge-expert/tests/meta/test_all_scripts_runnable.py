@@ -50,6 +50,8 @@ SCRIPTS = [
     "lts_registry_gap.py",
     "mapping_gap.py",
     "mapping_manager.py",
+    "mcp_parity.py",
+    "mcp_tools.py",
     "my_feedstocks.py",
     "name_resolver.py",
     "npm_updater.py",
@@ -79,6 +81,12 @@ SCRIPTS = [
 NO_HELP = {
     "health_check.py",   # Runs the check directly
     "mapping_manager.py",  # No --help in current CLI
+    # FR-155 parity-gate library modules (mason Story 16.3): pure symbol
+    # modules with no __main__/argparse entry point at all -- imported
+    # directly by conda_forge_server.py and test_cli_tool_parity.py, never
+    # run standalone.
+    "mcp_parity.py",
+    "mcp_tools.py",
 }
 
 

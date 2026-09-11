@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-The conda-forge-expert skill exposes 30+ tools via a FastMCP server at `.claude/tools/conda_forge_server.py`. Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
+The conda-forge-expert skill exposes 46+ tools via a FastMCP server at `.claude/tools/conda_forge_server.py`. Full schemas (parameters, defaults, return types) are surfaced at tool-call time; this file is a navigable index by purpose.
 
 The tools fall into three layers:
 1. **Recipe authoring** (the original v6.x tooling) — generate / validate / edit / build / migrate / submit.
@@ -16,6 +16,9 @@ The tools fall into three layers:
 | `check_dependencies` | Verify dependencies exist on conda-forge or a custom channel. Uses batch repodata.json fetching (fast, air-gapped-friendly). Supports JFrog Artifactory via `channel` param + auth env vars (`JFROG_API_KEY`, etc.). |
 | `validate_recipe` | Lint a recipe against conda-forge standards; also runs `rattler-build lint` when available. |
 | `optimize_recipe` | Lint for quality and best practices. Check codes: DEP-001 (dev dep in run), DEP-002 (noarch Python upper bound), PIN-001 (exact pin), ABT-001 (missing license_file), SCRIPT-001/002 (build.sh anti-patterns), SEL-001/002 (redundant selectors, CFEP-25 python_min). |
+| `lookup_feedstock` | Look up an existing `conda-forge/<pkg_name>-feedstock` and return its parsed recipe (v0 Jinja2 placeholders stripped to bare tokens). Cached 1h. Used by `enrich_from_feedstock` / `get_feedstock_context`; also callable directly. |
+| `enrich_from_feedstock` | Enrich a freshly-generated recipe with metadata merged in from an existing feedstock (maintainers union, homepage/description fallback, license cross-check). |
+| `get_feedstock_context` | Surface a feedstock's open + recent-closed GitHub issues as planning context before generating/updating a recipe (known build failures, prior maintainer decisions). Non-blocking, never auto-applied. |
 
 ## Build, Test, and Debug
 
@@ -36,6 +39,7 @@ The tools fall into three layers:
 | `update_cve_database` | Update the local CVE database from `osv.dev`. |
 | `update_mapping_cache` | Update the local PyPI-to-Conda name-mapping cache from Grayskull. Run when `get_conda_name` misses a package. |
 | `migrate_to_v1` | **meta.yaml → recipe.yaml** via `feedrattler`. meta.yaml is preserved; review and remove it manually after validation. |
+| `prepare_submission_branch` | Stage a recipe on an `add-recipe-<recipe_name>` branch in your staged-recipes fork — the inspection checkpoint between a green build (step 8) and `submit_pr` (step 9); no PR opened. |
 | `submit_pr` | Push the recipe to your staged-recipes fork and open a PR to conda-forge. Always `dry_run=True` first. |
 | `download_pr_artifacts` | **v8.14.0.** Fetch CI-published `.conda` artifacts from a conda-forge staged-recipes or feedstock PR via the Azure DevOps Build Artifacts REST API. Resolves the Azure `buildId` from `gh pr checks`, anonymously streams the `conda_pkgs_(linux\|osx\|win)` ZIPs (no PAT, no `az login`), and extracts them into `build_artifacts/pr/<pr-number>/<buildId>/extracted/` — a valid `file://` mamba channel. Idempotent (manifest-keyed cache); `force=True` re-fetches. Read-only — no PR modification. Use to spot-check artifacts before merge approval or to bulk-fetch for offline smoke-tests. |
 | `get_conda_name` | Resolve a PyPI package name to its conda-forge equivalent. |
@@ -56,10 +60,16 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 | `behind_upstream` | Per-row upstream-of-record comparison: PyPI / GitHub / GitLab / Codeberg / npm / CRAN / CPAN / LuaRocks / crates.io / RubyGems / NuGet / Maven. Picks the right registry based on `conda_source_registry`. |
 | `cve_watcher` | Diff `vuln_history` snapshots — what CVE counts changed in the last N days. Severity filter (Critical / High / KEV / Total) + `--only-increases` filter. |
 | `version_downloads` | Per-version download breakdown for one package (Phase I). Sort by upload date or by adoption (`--by-downloads`). |
+| `platform_breakdown` | Per-platform conda-forge download breakdown (Phase F+ Wave 2) — single package, top-N-by-platform, or a maintainer's feedstock roundup. Read-only, offline. |
+| `pyver_breakdown` | Per-Python-version conda-forge download breakdown + `python_min` policy check — flags declared floor vs. empirical floor as bump-safe / aligned / aggressive / unknown / stale. |
+| `channel_split` | Per-channel conda-forge download breakdown (Phase F+ Wave 3) — `conda-forge` vs. `defaults` vs. `bioconda` vs. `pytorch` etc.; `migration_checklist=True` emits GitHub-issue-ready checkbox lines for high-`defaults`-share migration candidates. |
 | `release_cadence` | Trend classifier — accelerating / stable / decelerating / silent — based on rolling 30/90/365-day release counts. |
 | `find_alternative` | Suggest healthier replacements for an archived/abandoned package. Ranks by keyword/summary/dependent/maintainer overlap × recency × downloads. |
 | `adoption_stage` | Lifecycle stage classifier — bleeding-edge / stable / mature / declining / silent — based on age + cadence + downloads. |
+| `pypi_only_candidates` | List PyPI projects with no conda-forge equivalent (Phase D `pypi_universe` LEFT-OUTER against `packages`), newest/most-active first — channel-growth triage. |
+| `pypi_intelligence` | Richer PyPI-candidate surfacing from the `pypi_intelligence` side table (schema v22+) — combines Phase O activity/serial-delta, Phase P downloads, Phase Q cross-channel presence, Phase R license/packaging-shape, Phase S `conda_forge_readiness` score + recommended template. |
 | `scan_project` | Unified scanner: project paths / container images / SBOMs (CycloneDX 1.x + 1.6 + XML; SPDX 2.x JSON + 2.x tag-value + 3.0 JSON-LD; syft / trivy native JSON) / live conda envs / live Python venvs / Kubernetes manifests / Helm charts (rendered) / Kustomize overlays (built) / Argo CD Applications / Flux HelmReleases & Kustomizations / OCI archives. License compatibility check. SBOM emit with optional Phase G vuln annotations. |
+| `env_inspect` | Inspect a pixi/conda env from multiple angles (`mode=`): `default` (root packages), `audit` (pure-intent / transitively-covered / drifted manifest explicits), `freshness` (env vs. conda-forge vs. PyPI lag), `security` (Phase G CVE counts), `bus_factor` (maintainer-count risk), `licenses` (SPDX rollup). |
 | `export_purls` | **cyclonedx-universe-inventory S1.** Export the six purl + mapping artifacts (conda purls with `?channel=conda-forge`, versioned purls, full-pypi-universe purls, conda↔pypi TSV with provenance, recipe exceptions, non-PyPI upstream TSV) from cf_atlas.db + recipes/. Read-only; regenerate after every atlas rebuild. |
 | `universe_sbom` | **cyclonedx-universe-inventory S3.** Full conda-forge + PyPI universe as a CycloneDX 1.6 (or SPDX 2.3) BOM. A mapped conda↔pypi pair is ONE conda component (`cfe:pypi_purl`/`cfe:match_*` properties); slices: `actionable_only` / `mapped_only` / `conda_only` / `pypi_only`; `with_vulns`. Refuses a >14-day-stale atlas unless `allow_stale`. |
 | `inventory_match` | **cyclonedx-universe-inventory S5.** Match a user inventory (manifests / locks / SBOMs / pip+conda list text / live envs) against the atlas: ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN buckets via the three-way version comparison, freshness percentile, `match_confidence` per row; optional `policy` CI gate (rc 2 = violations) + `weights` sidecar; `sbom_in`+`sbom_out` annotates the BOM with `cfe:gap_status`/`cfe:conda_purl`. |
