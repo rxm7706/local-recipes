@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method-test-architecture-enterprise
-  version: "1.25.0"
+  version: "1.26.0"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 302423d515146ba7aa10d621daa7597274e906abbe62a4ddaf4b6e3f782264f5
+  sha256: e387c0bad411437e6a12f8305b7f65136746e5d21b15dbefdd153165b42b1355
 
 build:
   number: 0
@@ -88,11 +88,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33292
-  cfe-last-checked: "2026-09-09T07:55:00Z"
+  cfe-last-checked: "2026-09-11T10:21:29Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-09-09T07:55:00Z"
+  cfe-local-build-datetime: "2026-09-11T10:21:29Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -116,6 +116,13 @@ extra:
 #    #     moved with it (G103: mirror the FLOOR, never the ceiling).
 #    #   * csv-parse dropped from dependencies — no recipe change needed, the
 #    #     build vendors whatever `npm install --omit=dev` resolves.
+#    # 2026-09-11: fleet-hygiene bump 1.25.0 -> 1.26.0. G110 re-read: bin map
+#    # (3 entries), dependencies, and engines.node floor all byte-identical to
+#    # 1.25.0 (only devDependencies.eval-quality moved 1.3.0->1.4.0, dev-only,
+#    # irrelevant to `npm install --omit=dev`) — build.sh/build.bat needed no
+#    # edit. Confirmed src/agents, src/workflows, src/module-help.csv,
+#    # src/module.yaml, .claude-plugin all still present at the same paths in
+#    # the v1.26.0 tag archive before bumping.
 # build:
 #    # Since 1.20.0 upstream ships a WORKING `tea-test-review` bin entry
 #    # (package.json bin -> cli/test-review.js; it was EMPTY {} in 1.19.1) —
