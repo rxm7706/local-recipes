@@ -627,18 +627,12 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "ab0cb3b2a0e8f2ba001921f462d52d54c969bdb8"
-                                    # ADVANCED 2026-09-11 from 9b92661d4d to the
-                                    # pyforge-mason Story 15.2 / Story 13.2 Rule-2
-                                    # retro ab0cb3b2a0 (v8.90.0 -> v8.90.2, PATCH):
-                                    # G26 extension gains the dbgpt-client upper-bound
-                                    # cap case study (distinct from Story 13.1's
-                                    # langflow-base marker-split entry). DOCS +
-                                    # derived config only -- SKILL.md, CHANGELOG.md,
-                                    # MANIFEST.yaml, skill-config.yaml,
-                                    # failure-catalog.yaml (117 rows, source_sha256
-                                    # refresh only); no script under scripts/
-                                    # changed, so neither slice needs a byte re-port.
+    brief_mirrored_through: "2fca30c6b0085b88e58a14b7eccc82ede0e05d14"
+                                    # ADVANCED 2026-09-11 from ab0cb3b2a0 to
+                                    # 2fca30c6b0 (follow-up retro: failure-catalog
+                                    # source_sha256 refresh + CHANGELOG Files line
+                                    # for v8.90.2). DOCS + derived config only;
+                                    # no script under scripts/ changed.
     coverage:
       scripts: 3
       wrappers: 3
@@ -791,18 +785,12 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "ab0cb3b2a0e8f2ba001921f462d52d54c969bdb8"
-                                    # ADVANCED 2026-09-11 from 9b92661d4d to the
-                                    # pyforge-mason Story 15.2 / Story 13.2 Rule-2
-                                    # retro ab0cb3b2a0 (v8.90.0 -> v8.90.2, PATCH):
-                                    # G26 extension gains the dbgpt-client upper-bound
-                                    # cap case study (distinct from Story 13.1's
-                                    # langflow-base marker-split entry). DOCS +
-                                    # derived config only -- SKILL.md, CHANGELOG.md,
-                                    # MANIFEST.yaml, skill-config.yaml,
-                                    # failure-catalog.yaml (117 rows, source_sha256
-                                    # refresh only); no script under scripts/
-                                    # changed, so neither slice needs a byte re-port.
+    brief_mirrored_through: "2fca30c6b0085b88e58a14b7eccc82ede0e05d14"
+                                    # ADVANCED 2026-09-11 from ab0cb3b2a0 to
+                                    # 2fca30c6b0 (follow-up retro: failure-catalog
+                                    # source_sha256 refresh + CHANGELOG Files line
+                                    # for v8.90.2). DOCS + derived config only;
+                                    # no script under scripts/ changed.
     coverage:
       scripts: 22
       wrappers: 17
