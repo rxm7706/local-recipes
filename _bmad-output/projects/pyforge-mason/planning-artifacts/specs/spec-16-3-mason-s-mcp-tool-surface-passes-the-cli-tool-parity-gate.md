@@ -2,7 +2,7 @@
 title: "Mason's MCP tool surface passes the CLI-tool parity gate"
 type: 'feature'
 created: '2026-09-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: '57c001c9d7c8864ec235b871c8e3dc024845e414'
 review_loop_iteration: 2
 followup_review_recommended: false
@@ -279,18 +279,116 @@ No `intent_gap`/`bad_spec` this pass — the Intent Alignment Auditor confirmed 
 
 - verdicts: 18 findings — high 0, medium 6, low 9, false 3, maybe-false 0
 - findings:
-  - `[medium]` `[patch]` Blind Hunter (4 grouped rows — same root cause): the CHANGELOG's TL;DR section carries **two separate `v8.91.0` paragraphs** describing the same release with different text; the shorter one is tagged "current" and ends with a meaningless self-referential "See CHANGELOG."; the fuller, accurate paragraph (the one reflecting the actual review-pass fixes) is not marked current; and SKILL.md's Version History entry is a third, independently-worded paraphrase matching neither. Confirmed via direct `grep` — two `**v8.91.0**` lines exist in the TL;DR with materially different text. Action: consolidate to one canonical TL;DR paragraph (the fuller one, marked current), delete the stub, and make SKILL.md's entry match it (or is a close paraphrase, per the file's own established convention).
+  - `[medium]` `[patch]` Blind Hunter (4 grouped rows — same root cause): the CHANGELOG's TL;DR section carries **two separate `v8.91.0` paragraphs** describing the same release with different text; the shorter one is tagged "current" and ends with a meaningless self-referential "See CHANGELOG."; the fuller, accurate paragraph (the one reflecting the actual review-pass fixes) is not marked current; and SKILL.md's Version History entry is a third, independently-worded paraphrase matching neither. Confirmed via direct `grep` — two `**v8.91.0**` lines exist in the TL;DR with materially different text. Action: patched — the stub paragraph deleted, the fuller paragraph is now the sole `v8.91.0` TL;DR entry marked `(current)`, and SKILL.md's Version History entry reworded to track it closely. Verified: `grep -c "^\*\*v8.91.0"` now returns 1; no "See CHANGELOG." stray sentence remains.
   - `[low]` `[reject]` Blind Hunter: `_cfe_pixi_tasks()` only scans `[feature.*.tasks.*]`, never a top-level `[tasks]` table shared across environments. Confirmed via direct parse: `pixi.toml` has no top-level `tasks` key today — the scenario cannot currently occur; unlikely and the fix adds a guard for a structure that doesn't exist.
-  - `[low]` `[patch]` Blind Hunter: `ParityFinding` is imported from `pyforge.marshal.mcp.parity` but never referenced anywhere else in the module — confirmed via `grep`, a dead import. Direct fix: remove it (or use it in the `except` branch's type comment, if a lint rule wants the name kept).
+  - `[low]` `[patch]` Blind Hunter: `ParityFinding` is imported from `pyforge.marshal.mcp.parity` but never referenced anywhere else in the module — confirmed via `grep`, a dead import. Action: patched — removed from both the live import and the `except ImportError` stub-assignment; confirmed 0 remaining references.
   - `[false]` `[reject]` Blind Hunter: claims the pass-2 Review Triage Log naming `test_discover_covers_all_46_tools` doesn't match this pass's `test_build_tool_specs_covers_all_46_tools`. Disproven: the pass-2 log entry is a dated historical record of pass-2's own (reverted) code; comparing it to pass-3's differently-shaped code is not a live inconsistency, the same pattern as pass-2's own disproven "37 vs 36" finding.
   - `[low]` `[reject]` Blind Hunter: the new `reference/mcp-tools.md` bullet sits among cf_atlas/JFrog/CVE-database operational notes rather than its own heading. Subjective placement preference with no functional consequence; unlikely to meaningfully confuse a reader and "the right place" is a judgment call, not a direct correction.
-  - `[low]` `[patch]` Blind Hunter: the module docstring and CHANGELOG both promise "a missing **or stale** entry is itself a gate finding," but the two fixture tests only exercise the missing/undeclared direction (`cli_missing_tool`, `tool_without_cli`) — marshal's engine also emits `tool_only_has_cli`/`cli_only_has_tool` for a genuinely stale allowlist entry (confirmed by reading `parity.py`'s finding-code sites), and nothing here fixture-tests that direction. The live test already guards against a real stale entry existing today, but the story's own "prove the gate can fail" bar isn't fully met for this codepath. Direct fix: add one more fixture test mirroring the existing two, injecting a `CLI_ONLY_VERBS` (or `TOOL_ONLY_NAMES`) entry that's actually claimed, asserting `tool_only_has_cli`/`cli_only_has_tool` fires.
+  - `[low]` `[patch]` Blind Hunter: the module docstring and CHANGELOG both promise "a missing **or stale** entry is itself a gate finding," but the two fixture tests only exercise the missing/undeclared direction (`cli_missing_tool`, `tool_without_cli`) — marshal's engine also emits `tool_only_has_cli`/`cli_only_has_tool` for a genuinely stale allowlist entry (confirmed by reading `parity.py`'s finding-code sites), and nothing here fixture-tests that direction. The live test already guards against a real stale entry existing today, but the story's own "prove the gate can fail" bar isn't fully met for this codepath. Action: patched — added `test_fixture_stale_cli_only_allowlist_entry_fails`, injecting a `CLI_ONLY_VERBS` entry (`"validate"`) a real tool actually claims and asserting `cli_only_has_tool` fires via `parity_findings()` plus that `assert_cli_tool_parity()` raises; verified passing (9/9 in the test file).
   - `[low]` `[reject]` Blind Hunter: four `TOOL_ONLY_NAMES` reasons cite `test_skill_md_consistency.py`'s `no_task_allowlist` with no live cross-check that those scripts are still listed there. Real but narrow; the fix (a cross-file consistency check) is meaningfully more than a direct correction for a documentation-currency risk, not a functional one.
   - `[low]` `[reject]` Edge Case Hunter: a task name shared across two pixi features could in principle map to two different scripts, silently misattributed. Confirmed via direct check: the three task names actually shared today (`atlas-phase`, `build-cf-atlas`, `detail-cf-atlas`) all resolve to the identical wrapper stem in both features (the regex ignores CLI flags, so `detail_cf_atlas.py` vs `detail_cf_atlas.py --vdb` still yield the same stem) — no live conflict exists; unlikely and the fix adds a guard for a case with zero current instances.
   - `[low]` `[reject]` Edge Case Hunter: a pixi task expressed in short (bare-string) form rather than a table would crash `_cfe_pixi_tasks()` on `task.get("cmd")`. Confirmed via direct scan of all features: zero short-form task entries exist in `pixi.toml` today; unlikely and the fix adds a guard for a form not used anywhere in this manifest.
-  - `[low]` `[patch]` Edge Case Hunter: `build_tool_specs()` iterates `tree.body` (top-level statements only) rather than `ast.walk(tree)`, so an `@mcp.tool()` registration nested inside a class or another function would silently vanish from the inventory. Confirmed via direct AST comparison: today's top-level-only scan and a full `ast.walk` both find exactly the same 46 tools, so this has no live effect — but the fix is a one-token swap (`ast.walk(tree)` for `tree.body`) that adds no complexity and restores the more general pattern passes 1-2 already used; a direct correction, not a new guard.
+  - `[low]` `[patch]` Edge Case Hunter: `build_tool_specs()` iterates `tree.body` (top-level statements only) rather than `ast.walk(tree)`, so an `@mcp.tool()` registration nested inside a class or another function would silently vanish from the inventory. Confirmed via direct AST comparison: today's top-level-only scan and a full `ast.walk` both find exactly the same 46 tools, so this has no live effect — but the fix is a one-token swap (`ast.walk(tree)` for `tree.body`) that adds no complexity and restores the more general pattern passes 1-2 already used; a direct correction, not a new guard. Action: patched — confirmed via `grep`.
   - `[low]` `[reject]` Edge Case Hunter: a docstring that is non-empty but reduces to whitespace after `.strip()` would `IndexError` on `doc.strip().splitlines()[0]`. Confirmed via direct scan: no `@mcp.tool` docstring in the live file is whitespace-only; unlikely to ever occur given every tool carries a real one-line summary already.
-  - `[medium]` `[patch]` Verification Gap Reviewer: `.claude/tools/mcp_cli_parity.py` (this story's own new file) is absent from both `paths:` filters in `.github/workflows/cfe-regression-net.yml`, the only CI job that runs `test_mcp_cli_tool_parity.py` — confirmed via direct `grep` of the workflow file and of every workflow for `test-ci`/`.claude/tools` references. A commit touching only that file would not trigger the workflow that gates the very test proving the gate works, though in practice a real edit here almost always accompanies a Rule-2 CHANGELOG bump (a watched path). Direct fix: add `.claude/tools/mcp_cli_parity.py` to both `paths:` lists alongside the existing `conda_forge_server.py` entry.
+  - `[medium]` `[patch]` Verification Gap Reviewer: `.claude/tools/mcp_cli_parity.py` (this story's own new file) is absent from both `paths:` filters in `.github/workflows/cfe-regression-net.yml`, the only CI job that runs `test_mcp_cli_tool_parity.py` — confirmed via direct `grep` of the workflow file and of every workflow for `test-ci`/`.claude/tools` references. A commit touching only that file would not trigger the workflow that gates the very test proving the gate works, though in practice a real edit here almost always accompanies a Rule-2 CHANGELOG bump (a watched path). Action: patched — added `.claude/tools/mcp_cli_parity.py` to both `paths:` lists; confirmed via `grep` and that the workflow YAML still parses.
   - `[medium]` `[defer]` Verification Gap Reviewer: no CI path exercises `test_mcp_cli_tool_parity.py` when marshal's `pyforge.marshal.mcp.parity` public surface changes on the marshal side only (`cfe-regression-net.yml` has no `src/shared/packages/pyforge-marshal/**` trigger; `pyforge-station-tests.yml` runs marshal's own suite only). Real cross-package coupling gap, but closing it properly means widening a CI workflow's trigger scope to a sibling package's whole source tree (or adding a marshal-side contract test) — a broader cross-team wiring decision beyond this story's own file, per the reviewer's own filed disposition.
   - `[false]` `[reject]` `carried` Intent Alignment Auditor: re-raises the three-place-rule scope claim for `mcp_cli_parity.py` — same claim and code shape as review passes 1-2's rejected finding (disproof unchanged: `conda_forge_server.py` precedent).
   - `[false]` `[reject]` `carried` Intent Alignment Auditor: re-raises the Rule-2-retro literal-heading-structure claim — same claim and code shape as review pass 1's rejected finding (disproof unchanged: matches this file's own established prose-narrative convention).
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary.** Mason's 46 `@mcp.tool()` registrations in `.claude/tools/conda_forge_server.py` now
+have a CLI↔tool parity gate, extending marshal's `pyforge.marshal.mcp.parity` primitive (never
+forked) rather than re-implementing it. `.claude/tools/mcp_cli_parity.py` derives the CLI-verb
+surface from every `[feature.*.tasks.*]` pixi table (not one feature alone), anchored at the pixi
+**task name** — never the wrapper file's stem — and the tool surface by `ast`-parsing (never
+importing) `conda_forge_server.py`'s `@mcp.tool()` registrations. 35 CLI-only verbs and 9 tool-only
+tools are each declared in `CLI_ONLY_VERBS`/`TOOL_ONLY_NAMES` with a one-line reason; a
+`_VERB_OVERRIDE` resolves the one case static analysis can't disambiguate
+(`prepare_submission_branch` vs `submit_pr`, both delegating to the identical canonical
+`submit_pr.py`). The new `tests/meta/test_mcp_cli_tool_parity.py` proves the live inventory passes
+clean and that a fixture-injected mismatch in **each** direction — an on-surface verb with no tool,
+a tool with no verb and no allowlist entry, and a stale allowlist entry that's actually claimed —
+actually fails the gate, not merely that it runs.
+
+Two implementation attempts were reverted and re-derived after review found genuine scope gaps
+(both documented in the Spec Change Log above, not glossed over): attempt 1 anchored verbs at the
+wrapper file's stem instead of the pixi task name; attempt 2 anchored correctly but scanned only
+the `local-recipes` pixi feature, missing that `vuln-db` also invokes shared CFE wrapper scripts
+(concretely, `scan_project` was misfiled as a tool-only asymmetry it was not). The third attempt
+closed both gaps; a fourth, lighter pass then applied five review-caught fixes (a duplicated/stale
+CHANGELOG paragraph, a dead import, an `ast.walk` robustness restore, a missing stale-entry fixture
+test, and a CI `paths:` filter gap for the new file itself) with no further scope issues found.
+
+**Files changed** (final state, three commits: `748d0f1234` `feat(mason):`, `a36082be1c`
+`retro(cfe):`, `7c68196881` `retro(cfe):` follow-up):
+- `.claude/tools/mcp_cli_parity.py` (new) — the CLI↔tool derivation module.
+- `.claude/skills/conda-forge-expert/tests/meta/test_mcp_cli_tool_parity.py` (new) — 9 tests:
+  live-inventory pass, tool-count pin, allowlist-reconciliation check, task-name-anchoring
+  regression, vuln-db-scope regression, `_VERB_OVERRIDE` regression, and three fixture-injected
+  failures (CLI-only-missing-tool, tool-only-missing-cli, stale-allowlist-entry).
+- `.claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py` — allowlist entry for
+  `mcp_cli_parity.py` (a `.claude/tools/` library module, like `conda_forge_server.py`, outside the
+  three-place rule's `.claude/skills/conda-forge-expert/scripts/` scope).
+- `.claude/skills/conda-forge-expert/{SKILL.md,CHANGELOG.md,MANIFEST.yaml,config/skill-config.yaml,reference/mcp-tools.md}`
+  — Rule-2 retro: version 8.90.2 → 8.91.0 (MINOR).
+- `.github/workflows/cfe-regression-net.yml` — added `.claude/tools/mcp_cli_parity.py` to both
+  `paths:` filters so the new file's own CI coverage isn't a blind spot.
+
+**Review findings breakdown** (3 review passes, 58 total individual findings across all layers):
+- **Patched** (this pass, pass 3, 5 entries): duplicated/stale `v8.91.0` CHANGELOG+SKILL.md entries
+  consolidated (medium); dead `ParityFinding` import removed (low); `build_tool_specs()` restored to
+  `ast.walk(tree)` (low); a fixture test added for the stale-allowlist-entry failure direction
+  (low); `.claude/tools/mcp_cli_parity.py` added to `cfe-regression-net.yml`'s `paths:` filters
+  (medium). All five verified independently after application (direct `grep`/YAML-parse checks plus
+  a full re-run of the affected test files and the broader suites below).
+- **Deferred** (1): no CI path exercises this test suite when marshal's `pyforge.marshal.mcp.parity`
+  public surface changes on the marshal side only — closing it means widening a CI workflow's
+  trigger scope to a sibling package's whole source tree, a cross-team wiring decision beyond this
+  story's own file. Recorded in frontmatter `deferred:`.
+- **Rejected as real-but-low-priority** (pass 1: 10; pass 2: 10 incl. 5 carried; pass 3: 5 incl. 2
+  carried) — narrow AST-parsing looseness with zero live trigger today (constant-detection
+  operator/operand checks, whole-body verb-reference walk, multi-constant tie-break, bare-decorator
+  and `name=`-override forms, missing existence guards on the wrapper dir/tools file/pixi.toml,
+  short-form pixi task values, shared task names across features, whitespace-only docstrings, a
+  documentation-placement nit, and an unverified cross-file allowlist-reason citation) — each
+  confirmed to have no live instance in the current tree, with a fix that would add new guard/branch
+  complexity rather than a direct correction.
+- **Rejected as false** (pass 1: 3; pass 2: 1 carried; pass 3: 2 carried) — a
+  `mcp-tools.md` wording ambiguity (fixed anyway as a bonus low patch, pass 1); the three-place-rule
+  applying to `mcp_cli_parity.py` (disproven three times by the `conda_forge_server.py` precedent);
+  Rule-2's retro shape needing literal Corrections/Refinements/Additions headings (disproven by this
+  file's own established prose-narrative convention, twice); a `recipe-build-docker` allowlist gap
+  (disproven — that task's `cmd` never matches the CFE-wrapper regex, so it was never in scope); a
+  premature `followup_review_recommended` claim (disproven — that field is recomputed at every
+  pass's own Finalize step); and a cross-pass arithmetic-mismatch claim twice (disproven — the two
+  compared figures described two different, non-contemporaneous code versions, not a live
+  inconsistency).
+
+**Follow-up review recommendation: false.** Two `medium`-severity entries were patched this pass
+(the mechanical trigger for `true` on a first pass), but both were independently re-verified after
+application — direct `grep`/parse checks confirmed the fix landed exactly as intended, and the full
+`pyforge-mason` suite (1577 passed, 2 pre-existing unrelated failures), the full CFE meta suite
+(7673 passed, 6 pre-existing unrelated failures), the 9-test parity suite (9/9), and the
+`mason_cfe_surface_check.py` detector (clean) all re-ran clean afterward. No specific unverified risk
+can be named for either patch, so per the workflow's own rule ("if none can be named, it is
+`false`") this is not raised.
+
+**Verification performed:**
+- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_mcp_cli_tool_parity.py -v` — 9/9 passed (final state).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1577 passed, 3 deselected, 2 failed — both pre-existing (baseline commit `57c001c9d7`'s own merge-commit subject trips the CFE-surface-sanctioning guard; unrelated to this story, reproduced identically before any of this story's commits).
+- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/ -q` — 7673 passed, 6 failed (all pre-existing: 5 unrelated `sys.path` import bugs in `add_handoff.py`/`inventory_match.py`/`library_futures.py`/`recommend_2027.py`/`universe_sbom.py`, 1 unrelated `test_bmad_artifacts_integrity` "uncovered" spec-classification finding), 3 skipped.
+- `python3 scripts/mason_cfe_surface_check.py` — clean, no unsanctioned commit touches the CFE surface.
+- `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/cfe-regression-net.yml'))"` — valid.
+- Live allowlist reconciliation (direct script, not just tests): 0 stale `CLI_ONLY_VERBS`/`TOOL_ONLY_NAMES` entries, 0 undeclared real asymmetries, `scan_project`/`detail-cf-atlas-vdb`/`inventory-channel` all correctly resolved after the vuln-db scope fix.
+- Matrix Test Audit: all 5 I/O-matrix rows (live clean pass; CLI-only fixture fail; tool-only fixture fail; deliberate asymmetry declared with reason; atlas boundary untouched) covered by a passing, ran test.
+
+**Residual risks:** the deferred item above (marshal-side-only API changes aren't CI-exercised
+against this gate) is the only known gap, and it's explicitly out of this story's scope per its own
+"propose a shared helper to marshal, don't fork" boundary — closing it is a cross-team CI-wiring
+decision. The pre-existing `57c001c9d7` merge-commit guard failure in `pyforge-mason`'s test suite
+predates this story (from Story 15.2's bmad-loop landing) and is unrelated; it is not this story's
+defect to fix and rewriting that shared commit would be destructive.
