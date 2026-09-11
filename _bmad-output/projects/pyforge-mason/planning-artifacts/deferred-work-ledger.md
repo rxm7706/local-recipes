@@ -1420,12 +1420,14 @@ status: open
   origin: spec-deferred 22c09d04c9a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  location: .claude/skills/conda-forge-expert/SKILL.md:2454 (G26 extension) and CHANGELOG.md (v8.86.1)
-  status: open
+  location: .claude/skills/conda-forge-expert/SKILL.md (G26 dbgpt-client extension) and CHANGELOG.md (v8.90.2)
+  status: closed
 
   verified: 2026-09-08 — still-open — CONFIRMED, with a SCOPE CORRECTION that matters. A G26 extension DID land -- `SKILL.md:2454`, re-landed by CFE v8.86.1 from an orphaned retro commit -- so a reader could easily mark this done. It is not: that extension's **Case study** is `langflow-base`/`langflow-suite` **Story 13.1**, not Story 13.2's dbgpt-client upper-bound cap. The only `dbgpt-client` material in the CFE skill (`SKILL.md:2453`, `:2468`, `:2489`) is the Jun 17 2026 G26/G27/G28 originals, unrelated to this deferral. CFE is now at v8.87.1 with no 13.2 retro entry anywhere in CHANGELOG.md. The Rule-2 retro this entry defers remains unwritten.
 
   vessel: 2026-09-09 — mason Story 15.2 (Epic 15, "Rule-2 retro for Story 13.2 lands in the CFE skill"), minted from the fleet-readiness apply pass. CLAUDE.md Rule 2 is explicit that the retro is "not optional and not deferrable", and the 2026-09-08 verification above confirmed it has now been unwritten across four CFE releases (v8.87.1 -> v8.90.1). The story is scoped to land as a MAINTENANCE PR on the CFE surface, outside any mason story branch, which satisfies test_persona_consults_cfe.py::test_conda_forge_expert_not_replaced_or_skf_nested by construction — that meta-test is the reason this was deferred in the first place, and it is a branch-scope constraint, not a prohibition on the retro itself. Its acceptance criteria require the CHANGELOG entry to name Story 13.2 specifically (the landed G26 extension at SKILL.md:2454 carries Story 13.1's langflow-base case study — that near-miss is what the 2026-09-08 scope correction caught), a semver bump with SKILL.md / MANIFEST.yaml / config/skill-config.yaml in agreement, failure-catalog regeneration if any gotcha text moves, and the CAP-3 clause (b) mirror check. CLOSE THIS ENTRY when 15.2 lands — with a dated resolution, not another still-open line.
+
+  resolved: 2026-09-11 — pyforge-mason Story 15.2 landed the Rule-2 retro as CFE v8.90.2 (PATCH): G26 extension gains the `dbgpt-client` upper-bound cap case study (`SQLAlchemy>=2.0.25,<2.0.29` → `<2.1`, source patch `0003-loosen-dbgpt-client-sqlalchemy-cap.patch`) distinct from Story 13.1's `langflow-base` marker-split entry; CHANGELOG.md names Story 13.2; version bumps aligned across SKILL.md / MANIFEST.yaml / config/skill-config.yaml. Docs-only — no script mirror re-port; `cfe-rebuild-guard-check` verified clean.
 
 ### DW-13-2-2: Sidecar runtime validation on Python 3.14 (Celery REST round-trip + SQLite metadata store) deferred to Steward 43.6.
 

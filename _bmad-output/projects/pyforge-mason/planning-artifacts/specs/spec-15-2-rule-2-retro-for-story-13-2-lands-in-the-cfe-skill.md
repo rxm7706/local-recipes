@@ -2,7 +2,8 @@
 title: 'Rule-2 retro for Story 13.2 lands in the CFE skill'
 type: 'chore'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e16443693d844e87fc473a90096ab6fac7a7258e'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
