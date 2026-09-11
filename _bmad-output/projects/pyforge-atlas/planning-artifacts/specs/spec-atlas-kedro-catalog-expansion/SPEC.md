@@ -64,6 +64,14 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     dataset code has no default to `cf_atlas.db`; vdb/OSV/mapping stores live
     under `${paths.data_root}/stores/`; `parity-diff` and `bsl-metric-check`
     pass.
+  - **verified:** a real `pixi run -e pyforge-atlas pyforge-atlas-bootstrap`
+    (2026-09-11) completed 75/75 tasks in 201.8s with no `CF_ATLAS_DB`/legacy
+    `.claude/data/` on the path, materializing real live Tier-0/1 data under
+    `PYFORGE_ATLAS_DATA_ROOT` (`pypi_universe` 889,433 rows,
+    `core_feedstock_attribution` 32,998 rows); `parity-diff` (71 tests) and
+    `bsl-metric-check` (16 tests) both green. Credentialed-only nodes
+    (Artifactory/JFrog) correctly degraded to empty per AD-13, not a failure —
+    see CAP-8's verified line.
 
 - **CAP-2 — Public index catalog completeness (Phase C, Tier 0–2).**
   - **intent:** Every live source the inventory verification matrix needs is
@@ -73,6 +81,15 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     --live-catalog` produces matching `PyPI_Verified`, `CondaForge_Verified`,
     Basilisk/AOSS/Anaconda/cross-channel columns from Parquet alone; scale
     sanity gates fail loudly below order-of-magnitude floors (conda-forge ~30k+).
+  - **verified:** the ~30k+ conda-forge scale floor is cleared for real by
+    CAP-1's live bootstrap run (`core_feedstock_attribution` 32,998 rows, not
+    a fixture); `kedro-catalog-check` (67 tests, incl.
+    `tests/unit/catalog/test_scale_floors.py`'s below-floor-raises assertions)
+    green; `--live-catalog` metrics-script behavior live in
+    `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py`
+    (10 tests, incl. `test_live_catalog_formats_csv_md_and_queue_from_exports`).
+    A live `--live-catalog` invocation against this run's own fresh exports
+    was not independently re-run in this pass.
 
 - **CAP-3 — Identity join in `upstream_discovery` (Phase D).**
   - **intent:** PURL Associator ingest, OpenTeams project 1 board ingest,
@@ -82,6 +99,14 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     `lookup_assoc` / `from_inventory` / `from_board_only` parity on a fixed
     fixture corpus; gist publish reads export + merges ranking from
     `priority.py` at publish time.
+  - **verified:** `build_identity_packages_primary` (PURL Associator +
+    OpenTeams board + feedstock/staged-PR/local-recipe overlays) and
+    `build_identity_export_parquet` (docstring: "CAP-3 — GIST_SCHEMA-shaped
+    export, Story 21.6") in `pipelines/upstream_discovery/nodes.py`; live in
+    `tests/unit/pipelines/upstream_discovery/test_nodes.py` +
+    `test_identity_parity_fixtures.py` (258 tests green, shared suite with
+    `spec-upstream-discovery`'s CAP-2, 2026-09-11); CAP-1's live bootstrap run
+    also materialized real `identity_packages_primary` output end-to-end.
 
 - **CAP-4 — Quartet consumes Atlas exports (thin orchestration).**
   - **intent:** Inventory scripts stop owning public-index fetch and identity
@@ -91,6 +116,13 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     verification endpoints when `--live-catalog` is set; Epic 17 constraint
     (purl-associator stays in quartet) is superseded in inventory spec with a
     dated memlog cross-reference.
+  - **verified:** the quartet went further than this CAP's own ask — Story
+    23.9 fully RETIRED the direct-fetch path (not merely made it optional):
+    `conda-forge-packaging-inventory-operations_metrics.py`'s old flag now
+    "exits 2 with a pointer to --live-catalog"; `--live-catalog` is the only
+    live path, live in
+    `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py`
+    (10 tests green).
 
 - **CAP-5 — Bootstrap operator Vizro pages (optional follow-on, Story 21.9).**
   - **intent:** After bootstrap, operators inspect index health, identity
@@ -100,12 +132,27 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     `identity-export-snapshot`, `live-catalog-coverage`) render non-empty tables
     post-bootstrap; `dashboard-dryrun` includes them; no duplicate HTTP fetch in
     dashboard loaders.
+  - **verified:** all three pages present in `dashboard/app.py`'s
+    `PAGE_INVENTORY` with wired loaders (`build_bootstrap_index_health_model`,
+    `build_identity_export_snapshot_model`, `build_live_catalog_coverage_model`);
+    `pixi run -e local-recipes dashboard-dryrun` green (72 tests, 2026-09-11,
+    same run as `spec-atlas-query-dashboards` CAP-7) covers the full page
+    inventory including these three; whole-package no-inline-IO gate
+    (`tests/unit/catalog/test_no_inline_io.py`, part of the 67-test
+    `kedro-catalog-check`) covers the dashboard loaders structurally.
 
 - **CAP-6 — Kedro-Viz publish stays in sync (optional follow-on, Story 21.10).**
   - **intent:** Static Kedro-Viz export republishes when catalog or dataset
     code changes, not only pipeline Python edits.
   - **success:** `kedro-viz-publish.yml` triggers on `catalog.yml`, `globals.yml`,
     and `datasets/**`; merged catalog-only PR updates `docs/dashboard/kedro-viz/`.
+  - **verified:** `.github/workflows/kedro-viz-publish.yml`'s `on.push.paths`
+    literally lists all three (plus `pipelines/**`, a superset); `docs/dashboard/kedro-viz/`
+    exists and carries a real prior publish (`6a1ba53a134`, 2026-08-15, via
+    `steward deploy dashboard`). By config inspection, not a live CI trigger
+    test — the GH Actions billing outage active this session (2026-09-11)
+    means the workflow cannot be fired to prove the catalog-only path
+    specifically, as distinct from a pipeline-code-change path.
 
 - **CAP-7 — Vizro parity with identity canvases (Epic 22 follow-on).**
   - **intent:** Vizro becomes a **parallel replacement** for the three Cursor
@@ -116,6 +163,15 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     ranked export feeds Vizro (quartet `identity_ranked_export` until Epic 23.5,
     then `identity_complete_export.parquet` from Atlas); parity gate in
     `dashboard-dryrun`; canvas deprecation deferred to Story 22.6.
+  - **verified:** all three pages' parity against the canvas/gist aggregates on
+    a shared fixture live in
+    `tests/integration/dashboard/test_identity_parity.py`
+    (`test_identity_catalog_matches_write_canvas_on_shared_fixture`,
+    `test_identity_ops_pane_totals_match_write_ops_canvas_on_shared_fixture`,
+    `test_identity_workbook_both_sides_degrade_honestly_on_same_fixture`) +
+    per-page tests (`test_identity_catalog_page.py`, `test_identity_ops_page.py`,
+    `test_identity_workbook_page.py`); 24 tests green (2026-09-11); part of the
+    same `dashboard-dryrun` 72-test gate cited on CAP-5/6 above.
   - **explicitly deferred within CAP-7:** enterprise JFROG workbook parity until
     Epic 23.2 enterprise Parquet exists (19.4 shell OK); gist generator replacement
     until CAP-8d (Epic 23.6); full UX port; canvas writer removal before 22.5 gate.
@@ -130,6 +186,22 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     `complete-export-contract.md`; bootstrap produces complete export; parity vs
     frozen inventory corpus; BSL gist markdown matches today's gist files; Epic 22
     reads complete export only; `--live-catalog` / `--gist-only` are thin actuators.
+  - **verified:** the CAP-1 live bootstrap run (2026-09-11) DOES produce both
+    named Parquets end-to-end — `identity_complete_export` and
+    `enterprise_jfrog_consumption` both build cleanly (node
+    `build_identity_complete_export`, 75/75 tasks) — but **both are 0 rows**,
+    confirming (not contradicting) this Spec's own recorded "Dream holds at
+    `specified`" gap: the schema/pipeline machinery is real and green, but
+    Story 25.2's attended, credentialed Artifactory run — the thing that would
+    put real rows in these two files — genuinely has not happened, exactly as
+    already documented above. Everything NOT gated on that credential is
+    green: contract-shape/thin-actuator/zero-ranked-export-reference tests in
+    `tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py`
+    + `tests/integration/dashboard/test_zero_deferred_e2e_gate.py` (19 tests,
+    incl. `test_dashboard_constant_points_at_complete_export`); gist-markdown
+    parity in `tests/unit/test_dashboard_identity_gist.py` +
+    `tests/integration/dashboard/test_identity_gist_markdown.py` (54 tests,
+    incl. `test_bsl_dashboard_counts_match_legacy_on_fixture`).
   - **enterprise handoff:** Story 23.2 column contract is the build target for
     [[artifactory-download-intelligence]] live bring-up — see companion §1.
   - **workbook retirement (added 2026-08-30 course correction):** the inventory
