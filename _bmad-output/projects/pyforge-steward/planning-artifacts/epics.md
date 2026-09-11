@@ -3275,3 +3275,90 @@ configuration (env vars / settings, never hardcoded) and performs a put/get roun
 to consume it in this story — the seam exists and is proven; consumption is separate, future,
 story-by-story work
 **Status:** backlog
+
+## Epic 51: PostgreSQL and Redis become consumable, without pyforge mandating self-hosting
+
+Minted 2026-09-11 via `bmad-correct-course`
+(`sprint-change-proposal-2026-09-11-ad-1-datastores-exception.md`, seeded from
+`docs/dreams/platform-datastores-consumed-not-self-hosted.md`, the direct follow-up Epic
+50's own Non-goals left open — that effort scoped itself to object storage only). **The AD-1
+exception itself is already landed** by this correct-course pass, not a separate story:
+`spec-pyforge-unifying-strategy/SPEC.md`'s AD-1 gained a second dated, bounded exception
+bullet — PostgreSQL and Redis are permitted **consumed**, never mandatorily **self-hosted**,
+the same shape already granted to the identity provider and to object storage. Production
+target: Enterprise Managed PostgreSQL and Enterprise Managed Redis on the same Enterprise
+Managed OCP cluster that already hosts the platform (operator-confirmed 2026-09-11, not
+hypothetical). Stories 51.1-51.3 below decompose the remaining work: a BYO-external-endpoint
+overlay for each datastore, and the backup/PITR handoff the Postgres overlay creates. **The
+existing self-hosted default is not removed or changed by any of these three stories** — each
+adds an additional, opt-in overlay; the bundled StatefulSet/Deployment stays the default for
+local dev and for any deployment not opting into the BYO overlay. Does not reopen Kubernetes's
+own already-external treatment or any already-shipped feature.
+
+### Story 51.1: A BYO-external-PostgreSQL deployment overlay exists, additive to the self-hosted default
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy
+AD-1 datastores exception (`SPEC.md` § Constraints, dated 2026-09-11)
+**Note:** Mirrors the existing OCP overlay's own additive shape
+(`src/platform/deploy/overlays/ocp/core-overrides.yaml`) — a values file layered with `helm
+... -f`, never a rewrite of the base chart. `DATABASE_URL`/`MIGRATION_DATABASE_URL` are
+already read via `env()` in `settings/base.py`; nothing at the application layer needs to
+change, only what the chart deploys and what values populate those secrets.
+**Surface:** new `src/platform/deploy/overlays/external-postgres/` (values overlay +
+README), conditional guards in `postgres-statefulset.yaml`/`postgres-service.yaml`/
+`postgres-backup-pvc.yaml` (a `.Values.postgres.external.enabled` toggle, default `false`).
+**Given** pyforge's own chart unconditionally deploys a self-hosted PostgreSQL
+StatefulSet today **When** a new overlay is applied setting
+`postgres.external.enabled: true` plus an externally-supplied endpoint and credential
+secret reference **Then** the chart deploys zero self-hosted Postgres resources
+(`postgres-statefulset.yaml`/`postgres-service.yaml`/`postgres-backup-pvc.yaml` all
+render empty) and the application's `DATABASE_URL`/`MIGRATION_DATABASE_URL` resolve to
+the externally-supplied endpoint instead
+**And** with the overlay NOT applied, a `helm template` render of the chart is
+byte-identical to today's output — the self-hosted default is unconditionally
+preserved, not just assumed unaffected
+**Status:** backlog
+
+### Story 51.2: A BYO-external-Redis deployment overlay exists, additive to the self-hosted default
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy
+AD-1 datastores exception (`SPEC.md` § Constraints, dated 2026-09-11)
+**Note:** Same pattern as 51.1, applied to Redis. `REDIS_URL`/`REDIS_BROKER_URL`/
+`REDIS_CACHE_URL` are already read via `env()` in `settings/base.py`.
+**Surface:** new `src/platform/deploy/overlays/external-redis/` (values overlay +
+README), conditional guards in `redis-deployment.yaml`/`redis-service.yaml`/
+`redis-broker-pvc.yaml` (a `.Values.redis.external.enabled` toggle, default `false`).
+**Given** pyforge's own chart unconditionally deploys a self-hosted Redis Deployment
+today **When** a new overlay is applied setting `redis.external.enabled: true` plus an
+externally-supplied endpoint and credential secret reference **Then** the chart deploys
+zero self-hosted Redis resources (`redis-deployment.yaml`/`redis-service.yaml`/
+`redis-broker-pvc.yaml` all render empty) and the application's
+`REDIS_URL`/`REDIS_BROKER_URL`/`REDIS_CACHE_URL` resolve to the externally-supplied
+endpoint instead
+**And** with the overlay NOT applied, a `helm template` render of the chart is
+byte-identical to today's output — the self-hosted default is unconditionally
+preserved, not just assumed unaffected
+**Status:** backlog
+
+### Story 51.3: The backup/PITR handoff is explicit when the BYO-PostgreSQL overlay is active
+
+**Type:** feature • **Effort:** S • **Deps:** S-51.1 (needs the overlay's
+`postgres.external.enabled` toggle to condition on) • **FR/AD:**
+spec-pyforge-unifying-strategy AD-1 datastores exception (`SPEC.md` § Constraints, dated
+2026-09-11)
+**Note:** Not a large code change so much as a real, separately-reviewable decision the
+Dream deliberately left open rather than pre-deciding — kept as its own story rather than
+folded into 51.1 so it gets its own review.
+**Surface:** conditional guard on `postgres-backup-cronjob.yaml` (reuses 51.1's
+`.Values.postgres.external.enabled` toggle), one new paragraph in
+`src/platform/deploy/README.md`.
+**Given** `postgres-backup-cronjob.yaml` today runs unconditionally against whatever
+Postgres the chart deploys **When** `postgres.external.enabled: true` (Story 51.1's
+overlay) **Then** the backup CronJob is not deployed — pyforge's chart does not create a
+shadow backup of a database it does not own
+**And** `deploy/README.md` gains an explicit line naming the enterprise database team as
+the owner of backup/PITR for the BYO-PostgreSQL path, so the handoff is documented, not
+silently assumed
+**And** with the overlay NOT applied, the backup CronJob still deploys exactly as it does
+today — no change to the self-hosted default's backup behavior
+**Status:** backlog
