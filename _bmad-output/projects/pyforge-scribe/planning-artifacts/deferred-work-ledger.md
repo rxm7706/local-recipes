@@ -201,3 +201,5 @@ sibling ledgers and the detector both use.
   recorded: 2026-09-09
   status: open
   close_when: a second consumer repo exists AND it keeps `docs/adr/`-style records — otherwise this stays a hypothetical and closes as a Non-goal
+
+  verified: 2026-09-11 — still-open — mechanical re-verification at HEAD 3ff14108f1 (operator-directed fleet coverage sweep 2026-09-11): source_spec present; location path present; docs/adr/ still absent at HEAD (evidence claim holds); compile.py still enumerates six named surfaces (see file header); ledger status mapped to still-open; agent judgment not applied — the close_when trigger (a second consumer repo keeping docs/adr/-style records) has not occurred

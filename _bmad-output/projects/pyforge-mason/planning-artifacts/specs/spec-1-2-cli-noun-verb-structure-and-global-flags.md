@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'CLI noun-verb structure and global flags'
 type: 'feature'
@@ -318,7 +317,7 @@ actually built).
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green.
 
 ## Auto Run Result
 
