@@ -45,12 +45,20 @@ Vehicle: **Epic 31** (Epic 15 stays done).
   from `steward provision --help` (or an equivalent CLI pointer), not
   tribal knowledge. *Success:* the playbook exists, cites the matrix,
   and `provision --help` names it.
+  - **verified:** 2026-09-11 — `install-class-playbook.md` exists (84 lines), cites
+    `install-matrix.md` and `steward provision --prove-class-path`; live `steward provision
+    --help` names the playbook path verbatim under "Non-module suite pieces".
 - **CAP-2 — Class-correct wired-or-not.** *Intent:* the pipeline-truth
   report's `wired-or-not` column uses per-class predicates (installer
   tree / runner home / plugin enabled / VS Code extension / scaffold
   N/A), not a boolean only `--module` targets can satisfy. *Success:*
   run against a fresh clone it names each of the six by class without
   claiming "wired" for template-into-this-repo.
+  - **verified:** 2026-09-11 — live `pipeline-truth --json`: all six non-module classes report
+    distinct per-class predicates (`bmad-method`: "installer tree present"; `bmad-loop`:
+    "runner home provisionable"; skill-forge: "own installer present"; `bmad-labs-skills`:
+    "wired"; both dashboards: "VS Code extension / web runnable"; `bmad-module-template`:
+    "n/a — not a wireable module") — none collapsed to a bare boolean.
 - **CAP-3 — Fresh-clone class-path.** *Intent:* a fresh clone can reach
   "method core installed, loop runner provisionable via `--runner`, skf
   skills present via its own installer, labs plugin path documented,
@@ -58,6 +66,10 @@ Vehicle: **Epic 31** (Epic 15 stays done).
   without hand-driving npm `Installer` classes from a chat transcript.
   *Success:* a recorded fresh-clone run (or CI equivalent) reaches that
   state with zero improvised steps.
+  - **verified:** 2026-09-11 — live `steward provision --prove-class-path --json`: all six
+    classes report `expected == actual` (`ok: true`) with no improvised step; `.github/
+    workflows/pyforge-pip-install.yml` runs this same class-path resolution with no pixi
+    workspace present; `test_fresh_clone_class_path.py` 10/10 pass.
 
 ## Constraints
 
