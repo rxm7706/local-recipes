@@ -2,7 +2,8 @@
 title: 'CAP-14 in effect — real semantic recall, or the criterion says lexical'
 type: 'feature'
 created: '2026-09-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '29c9036962bda93fa3da647903fe3089972874f3'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

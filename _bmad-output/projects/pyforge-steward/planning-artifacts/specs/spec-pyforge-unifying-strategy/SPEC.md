@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-10"
+updated: "2026-09-11"
 companions:
   - convergence.md
   - resilience-invariants.md
