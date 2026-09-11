@@ -2,9 +2,11 @@
 title: "Mason's own env satisfies the CFE import floor"
 type: 'fix'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'e16443693d844e87fc473a90096ab6fac7a7258e'
 review_loop_iteration: 0
 followup_review_recommended: false
+updated: '2026-09-11'
 context: []
 warnings: []
 deferred: []
@@ -119,3 +121,46 @@ reported unavailable, never a hard failure).
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 18 findings — high 0, medium 1, low 2, false 8, maybe-false 0, reject 7
+- findings:
+  - `[false]` `[reject]` environment.yaml not regenerated — `pixi project export conda-environment -e build > environment.yaml` produced zero diff; pyforge-mason deps do not alter the build env export surface.
+  - `[low]` `[reject]` Code Map names test_doctor.py but test landed in tests/meta — Tasks say `tests/**`; meta tier is valid for pixi.toml/env-sync guards.
+  - `[false]` `[reject]` CAP-5 degradation lacks new coverage — pre-existing test_doctor.py mocked and unmocked never-raises tests plus test_cli doctor exit-0 tests already prove the contract.
+  - `[medium]` `[defer]` No end-to-end mason doctor assertion at repo root — probe-level test plus mocked doctor unit tests cover the likely regression; hermetic repo-root doctor test deferred as higher setup cost.
+  - `[medium]` `[patch]` Meta test hardcoded floor strings instead of reading sibling pixi feature tables — extended test_cfe_import_floor_env_sync.py to compare against [feature.python.dependencies] and [feature.vuln-db.dependencies] live.
+  - `[low]` `[patch]` Floor pin range test only checked SpecifierSet non-empty — now requires >= or > operator per NFR-C1 convention.
+  - `[false]` `[reject]` Other four CFE_IMPORT_FLOOR entries lack direct pixi pins — intent scoped to the two packages that were actually missing from pyforge-mason deps.
+  - `[low]` `[reject]` Spec frontmatter missing updated date / sprint ledger sync — planning hygiene outside this story's code contract.
+  - `[false]` `[reject]` Rule 2 retro missing — closed in same run (CFE v8.90.2 PATCH entry, no skill guidance changes).
+  - `[false]` `[reject]` Story still in-progress with open tasks — all execution tasks completed before finalize.
+  - `[false]` `[reject]` KeyError if pyforge-mason feature missing — would fail loudly in meta test; not a reachable runtime defect.
+  - `[low]` `[patch]` String equality for floor pins fragile to formatting — switched to SpecifierSet comparison in pin test.
+  - `[false]` `[reject]` Meta test could pass outside pyforge-mason pixi env — suite runs via pyforge-mason-test task in the correct env.
+  - `[false]` `[reject]` environment.yaml CI sync would fail — export verified clean after pixi.toml change.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `truststore` and `conda-forge-metadata` to `[feature.pyforge-mason.dependencies]` at repo-canonical floors, re-solved `pixi.lock`, and added meta regression tests that pin both the pixi declarations and a live `probe_import_floor(sys.executable)` check. Mason doctor now reports `cfe_import_floor_satisfied: True`, empty `cfe_import_floor_missing`, and no `recipe` in `unavailable_verbs`.
+
+**Files changed:**
+- `pixi.toml` — declare CFE import-floor deps for pyforge-mason env
+- `pixi.lock` — re-solve after dependency additions
+- `src/shared/packages/pyforge-mason/tests/meta/test_cfe_import_floor_env_sync.py` — regression pin (pixi pins + live import probe + cross-feature floor parity)
+- `.claude/skills/conda-forge-expert/{SKILL.md,CHANGELOG.md,MANIFEST.yaml,config/skill-config.yaml}` — Rule-2 retro (v8.90.2, no guidance changes)
+
+**Review findings:** 3 patches applied (cross-feature floor sync, SpecifierSet pin comparison, minimum-floor operator check). 1 deferred (repo-root doctor e2e). 14 rejected/false.
+
+**Follow-up review recommended:** false (1 medium patch, 2 low patches — below threshold)
+
+**Verification:**
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_cfe_import_floor_env_sync.py` — 3 passed
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_cfe_import_floor_env_sync.py src/shared/packages/pyforge-mason/tests/unit/test_doctor.py` — 35 passed
+- Live doctor probe: `cfe_import_floor_satisfied: True`, `unavailable_verbs: ()`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1581 passed, 1 pre-existing failure (`test_portal_last_diagnose.py::test_django_mason_has_no_raw_http_pyforge_or_minio`, also fails at baseline)
+- `pixi project export conda-environment -e build > environment.yaml` — no diff (build env unaffected)
+
+**Residual risks:** Full suite has one pre-existing portal import-boundary failure unrelated to this story. Doctor CLI outcome at repo root with a resolved CFE installation is inferred from probe + mocked unit tests, not a dedicated integration test.
