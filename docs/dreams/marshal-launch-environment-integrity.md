@@ -2,7 +2,7 @@
 title: Marshal trusts the environment it launches into — until it silently doesn't
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # Marshal trusts the environment it launches into — until it silently doesn't
@@ -170,3 +170,15 @@ found in the same session and not yet decomposed into a story:
   (`fix/fleet-picture-stale-dispatch-verdict`); the fix itself has direct
   unit coverage, but its ATTENTION-block sibling site does not — decomposed
   as **Story 34.4** below.
+- **2026-09-11** — Retroactive `spec-marshal-launch-environment-integrity`
+  authored. This Realization log had claimed `status: specified` and full
+  decomposition since 2026-09-10, but no dedicated Spec file was ever
+  produced — `dream-chain-check`'s INV-1 correctly flagged the gap when the
+  operator asked whether any Dreams still needed specing. Epic 34
+  (Stories 34.1–34.4) was already fully `done` in the tracked ledger at
+  that point (confirmed via real merge commits: `local-recipes#1153`,
+  `#1158`, `55153c8`/`dcda31b8cb`, `local-recipes#1145`/`02237d61b9`) — the
+  new Spec documents what shipped rather than specifying new work. Status:
+  specified → realized. `epic-34`'s own stale `in-progress` ledger stamp
+  (all 4 stories `done` underneath it) corrected to `done` in the same
+  pass.
