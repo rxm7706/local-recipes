@@ -192,7 +192,7 @@ def _broker_snapshot(broker_url: str, *, cloudevent_id: str) -> dict[str, Any]:
         try:
             pending_count = int(client.xpending(STREAM, GROUP)["pending"])
             pending_rows = client.xpending_range(STREAM, GROUP, "-", "+", 10)
-            stream_ids = [row["message_id"] for row in pending_rows]
+            stream_ids = [str(row["message_id"]) for row in pending_rows]
         except redis.exceptions.ResponseError:
             stream_exists = False
     return {
