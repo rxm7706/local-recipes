@@ -37,6 +37,7 @@ committing. Every station's landing flow can hit this the same way.
     any other status, a plain promotion run refuses and names the key exactly as it already does
     for `done -> backlog`, and `--repair-feed` restores the ledger's `done` into the Tier-3 feed
     exactly as it already does for `done -> backlog`.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `scripts/promote_sprint_status.py::regressions` treats `old == "done"` as a regression for ANY `new != "done"`, not just `new == "backlog"` (`TERMINAL = frozenset({"done"})`, checked before the sticky-status branch). `test_regressions_detects_done_to_blocked`, `test_regressions_detects_done_to_any_other_status`, and `test_repair_feed_restores_done_lost_to_blocked` (the exact success-criterion scenarios) pass; full 16/16 in `test_promote_sprint_status_regressions.py` green.
 
 ## Constraints
 
