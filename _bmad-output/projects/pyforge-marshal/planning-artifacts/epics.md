@@ -3686,6 +3686,39 @@ either new flag **When** a dispatch launches **Then** it reuses S-22.2's preflig
 S-22.4's landing, and S-22.10's divergence guard unchanged — no second preflight or landing
 path is introduced.
 
+### Story 22.12: A shared-surface diff also clears its own full suite, not just the station's bound gate
+**Type:** feature • **Effort:** M • **Deps:** S-22.3 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-12; decomposed 2026-09-11 — motivated by a live rescue the same day)
+**Surface:** `dispatch_verify.py::evaluate_dispatch_verification` (the CAP-3 driver — reuses
+the `changed` diff it already computes via `vcs.changed_files` for the scope check, no new
+diff read), `core/gate.py` (new cross-surface check + finding code, alongside
+`classify_outcome`/`check_scope_with_mode`), `tests/unit/test_dispatch_verify.py`
+**Note:** found live 2026-09-10/11 rescuing steward Story 49.14: it passed CAP-3's bound
+`pyforge-steward-test` gate and the harness's own targeted pytest run — whose review pass
+explicitly considered and rejected "verification command misses platform tests" as
+false — while shipping four real defects (a `ModuleNotFoundError` masking an unresolvable
+`twine`/`rich` conflict, a genuine portal client-only boundary violation, a nested
+`asyncio.run()` bug, and ruff findings) that surfaced only under a full
+`platform-ci-local -- --test` run. GitHub Actions, the intended backstop for exactly this
+class of gap, had been down fleet-wide the entire session, so the bound per-station command
+was the only gate running. `MRS-GATE-010`/`011`'s fixed, anti-gaming per-station binding is
+unchanged and always runs first — this is an additive gate, never a substitute for it, and
+never configurable per station (the shared directory is `src/platform/`, hardcoded, matching
+the CAP's own non-goal against reopening `MRS-GATE-011`'s binding).
+**Given** a dispatched story whose diff (already read for the CAP-3 scope check) touches
+only its own station's package **When** verification runs **Then** it lands exactly as
+today — the station-bound command runs, no new gate is reached, and `evaluate_dispatch_verification`'s
+existing verdict shape is unchanged; **given** a story whose diff touches `src/platform/`
+**When** verification runs **Then** the station-bound `MRS-GATE-010`/`011` command runs
+first and must pass on its own, and `pixi run -e local-recipes platform-ci-local -- --test`
+additionally runs and must pass before CAP-4 land — a failure produces a loud, named
+non-landing finding (never a silent skip, never downgraded to advisory) distinct from the
+station-bound command's own findings; **given** the 49.14 fixture replayed (bound gate
+green, full platform suite red) **When** verification runs **Then** the verdict is a
+refusal naming the cross-surface gate, not a landing; and **given** any two stories whose
+diffs both touch `src/platform/` **When** dispatched from different stations **Then** both
+are held to the identical cross-surface bar — the check keys on the diff surface alone,
+never on which station dispatched the story.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion
