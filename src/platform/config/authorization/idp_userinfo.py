@@ -14,17 +14,23 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 import structlog
+from allauth.socialaccount.models import SocialToken
 from django.conf import settings
 from django.core.cache import cache
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
-__all__ = ["fetch_current_userinfo", "userinfo_endpoint_url"]
+__all__ = [
+    "DEFAULT_CLAIMS_CACHE_SECONDS",
+    "fetch_current_userinfo",
+    "userinfo_endpoint_url",
+]
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 _CACHE_KEY_PREFIX = "idp-userinfo:"
+DEFAULT_CLAIMS_CACHE_SECONDS = 30
 
 
 def userinfo_endpoint_url() -> str:
@@ -39,12 +45,15 @@ def _cache_key(user_id: int) -> str:
 
 
 def _cache_timeout() -> int:
-    return max(0, int(getattr(settings, "IDP_CLAIMS_CACHE_SECONDS", 30)))
+    configured = getattr(
+        settings,
+        "IDP_CLAIMS_CACHE_SECONDS",
+        DEFAULT_CLAIMS_CACHE_SECONDS,
+    )
+    return max(0, int(configured))
 
 
 def _access_token_for(user: object) -> str | None:
-    from allauth.socialaccount.models import SocialToken
-
     row = (
         SocialToken.objects.filter(account__user_id=getattr(user, "pk", None))
         .order_by("-expires_at", "-id")
@@ -57,9 +66,9 @@ def _access_token_for(user: object) -> str | None:
 
 def _fetch_userinfo_http(access_token: str) -> dict[str, Any] | None:
     url = userinfo_endpoint_url()
-    if not url:
+    if not url.startswith(("http://", "https://")):
         return None
-    request = urllib.request.Request(
+    request = urllib.request.Request(  # noqa: S310
         url,
         headers={
             "Authorization": f"Bearer {access_token}",
@@ -68,7 +77,7 @@ def _fetch_userinfo_http(access_token: str) -> dict[str, Any] | None:
         method="GET",
     )
     try:
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310
             body = response.read().decode()
     except (urllib.error.URLError, TimeoutError, UnicodeDecodeError) as exc:
         logger.warning("authorization.userinfo_fetch_failed", error=str(exc))

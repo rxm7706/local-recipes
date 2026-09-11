@@ -2,7 +2,7 @@
 title: 'CAP-12 in effect — revocation on the next request'
 type: 'feature'
 created: '2026-09-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 29c9036962bda93fa3da647903fe3089972874f3
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -91,3 +91,22 @@ than only at login. Prove it with a test that fails on the current login-time-on
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 0, maybe-false 1
+- findings:
+  - `[low]` `[reject]` Chart `platform.djangoEnv` does not yet expose `COMPONENT_IDP_CLAIMS_CACHE_SECONDS` — operators can rely on the 30s default; wiring is optional follow-up, not required by AC.
+  - `[maybe-false]` `[defer]` When userinfo HTTP fails or no SocialToken exists, fetch returns None and session claims remain authoritative until next login — same degradation as Story 26.1 deferred item; production happy path uses live tokens from Keycloak (Story 48.9).
+
+## Auto Run Result
+
+Status: done
+Summary: Production settings now wire `IDP_USERINFO = fetch_current_userinfo` with a 30-second bounded Django cache (`COMPONENT_IDP_CLAIMS_CACHE_SECONDS`), so deployed Keycloak (Story 48.9) role revocations propagate on the next request instead of at next login. Tests prove the login-time-only gap and the production wiring.
+Files changed:
+- `src/platform/config/authorization/idp_userinfo.py` — OIDC userinfo fetch + Redis/LocMem cache
+- `src/platform/config/settings/production.py` — deployed-default claims source
+- `src/platform/tests/test_idp_revoke_next_request.py` — regression guard + production wiring + revoke-on-next-request proofs
+Review: 0 patches; 1 deferred (userinfo fetch failure falls back to session); 1 rejected low (chart env optional).
+Follow-up review recommended: false
+Verification: `pixi run --frozen -e platform-ci-test pytest tests/test_idp_revoke_next_request.py` — 9 passed. `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 1206 passed, 1 failed (pre-existing `bmad-eval-quality` adoption-register drift, unrelated to this story).
+Blocking condition: none
