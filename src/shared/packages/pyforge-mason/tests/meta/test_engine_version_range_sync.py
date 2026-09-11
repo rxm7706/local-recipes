@@ -123,12 +123,12 @@ def test_ranges_are_ranges_not_exact_pins():
 
 def test_evidence_backed_versions_are_in_range():
     """The exact minors this codebase has live-verified evidence for (spec
-    Always boundary: pixi 0.77.0 — 2026-08-21, build+ship self-hosting
+    Always boundary: pixi 0.80.0 — 2026-09-11, build+ship self-hosting
     integration green against it — twine 7.0.0, conda-lock 4.0.2, build
     1.5.0, gh 2.97.0) must be inside their own range — a vacuous guard (a
     range that excludes its own evidence) would be worse than no guard at
     all."""
-    assert Version("0.77.0") in PIXI_VERSION_RANGE
+    assert Version("0.80.0") in PIXI_VERSION_RANGE
     assert Version("7.0.0") in TWINE_VERSION_RANGE
     assert Version("4.0.2") in CONDA_LOCK_VERSION_RANGE
     assert Version("1.5.0") in PYTHON_BUILD_VERSION_RANGE
@@ -138,7 +138,7 @@ def test_evidence_backed_versions_are_in_range():
 def test_ranges_do_not_widen_to_the_next_untested_minor():
     """The whole point: an untested newer minor must fail loud, not silently
     pass."""
-    assert Version("0.78.0") not in PIXI_VERSION_RANGE
+    assert Version("0.81.0") not in PIXI_VERSION_RANGE
     assert Version("7.1.0") not in TWINE_VERSION_RANGE
     assert Version("4.1.0") not in CONDA_LOCK_VERSION_RANGE
     assert Version("1.6.0") not in PYTHON_BUILD_VERSION_RANGE
