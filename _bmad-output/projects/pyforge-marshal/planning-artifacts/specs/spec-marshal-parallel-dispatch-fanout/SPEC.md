@@ -74,6 +74,7 @@ width (parallel-safe waves among the ready set).
     with `max_parallel` unset or `1`, behavior is byte-identical to today's
     serial drain. A fixture pins two disjoint pyforge-marshal stories landing in
     one wave while a third overlapping story is refused with `surface-overlap`.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_wave_scheduler.py`'s 5 tests (disjoint fan-out, overlap refusal, unknown-surface never batches, dep-edge exclusion, serial default) and `test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel` (real two-story wave, journal contains both keys) all pass. Per this Spec's own Residual note, this is fixture/test evidence — `max_parallel` is `1` on all eight rendered loop homes and no live wave has ever formed in the running estate; not re-litigated here.
 
 - **CAP-2**
   - **intent:** **Narrow `station_in_flight_conflict()`** (22.5 refinement): refuse
@@ -87,6 +88,7 @@ width (parallel-safe waves among the ready set).
     while A remains LIVE. Same-key redispatch and dependency edges still refuse.
     Regression tests cover the 2026-09-01 zombie shape (A live by git facts, C
     unrelated and disjoint → C allowed).
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_unrelated_live_story_allowed_without_surface_data`, `test_surface_overlap_refuses_second_dispatch`, and `test_cross_station_dispatch_allowed_when_other_station_busy` all pass — the exact 2026-09-01 zombie shape (unrelated disjoint story allowed while another is LIVE) and the overlap-refusal counter-case both hold.
 
 - **CAP-3**
   - **intent:** **`dispatch-wave` journal observability**: each wave records wave
@@ -98,6 +100,7 @@ width (parallel-safe waves among the ready set).
   - **success:** A two-member wave produces one journal intent with both keys;
     status output names both in-flight stories and the wave id; a refused
     candidate names `surface-overlap` with the intersecting paths.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel` asserts the wave's `journal.jsonl` contains `KIND_DISPATCH_WAVE` and both story keys; `test_fleet_row_surfaces_wave_id_and_in_flight_stories` and `test_latest_dispatch_wave_id_returns_most_recent` confirm status surfacing. `test_overlapping_surface_refused_with_evidence` confirms the refused-candidate reason. All pass.
 
 - **CAP-4**
   - **intent:** **Explicit cap, default serial:** `dispatch.max_parallel` in
@@ -110,6 +113,7 @@ width (parallel-safe waves among the ready set).
     with only two disjoint ready stories launches two. Attempt to set cap without
     journaling the effective value fails review — cap must be visible in wave
     journal and status.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_serial_cap_returns_first_ready_only` confirms the absent-policy default; `test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel` confirms only the ready, disjoint members launch and the cap's effective value is visible in the wave journal (asserted directly on `journal.jsonl`). Both pass.
 
 - **CAP-5**
   - **intent:** **Compose with 28.12, do not duplicate:** ready-set and
@@ -121,6 +125,7 @@ width (parallel-safe waves among the ready set).
     second ordering module. Stories with **empty or unknown** effective surface
     never fan out with others (conservative default — serial until surface is
     declared).
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_unknown_surface_never_batches` passes — an unknown/empty effective surface stays conservatively serial. Did not independently re-verify "no second ordering module" beyond the code's own single `core/dispatch_fleet.py` wave-scheduler path (no separate topo-sort found via search).
 
 - **CAP-6**
   - **intent:** Factory fan-out gets its **own `dispatch.max_parallel` policy key**, resolved
@@ -132,6 +137,7 @@ width (parallel-safe waves among the ready set).
   - **success:** A station declaring `dispatch.max_parallel = N` forms waves of up to N with no
     bmad-loop clamp advisory; a station declaring nothing behaves exactly as today (`1`); the
     bmad-loop knob continues to govern the spin engine alone.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clamp` passes — `dispatch.max_parallel=2` composes against the real `marshal-policy.toml` shape without firing `MRS-POLICY-007`/`_max_parallel_clamp_finding`.
 
 ## Partial wave failure (v1 default)
 
