@@ -53,18 +53,35 @@ and its "installer-owned … Genesis must never write here" architecture line).
   into `.claude/skills/`" through one Steward command, and the run is
   re-runnable (idempotent or cleanly refusing) with no session-scratchpad
   driver script.
+  - **verified:** 2026-09-11 — `steward provision --module NAME` live at
+    `provision.py`, supporting bmb/cis/manticore/tea/utility-skills; re-run-safety exercised
+    by `tests/unit/test_provision_module.py` (104 tests, incl.
+    `test_provision_module_bmb_foreign_collision_refuses_and_writes_nothing` and
+    `test_provision_module_bmb_retry_after_first_script_failure_does_not_self_collide`) — all
+    pass. Not re-exercised against a real fresh clone in this pass (destructive/slow); the
+    unit-level idempotency claim is verified, the fresh-clone end-to-end claim is not.
 - **CAP-2 — module discovery.** Intent: `provision --list` (Story 3.3) is
   extended — or a sibling read verb added — so the operator sees which BMAD
   modules are installed vs merely available, with `--json` honored on success
   *and* error paths per the existing `_render_error` precedent. Success: the
   installed/available answer matches the filesystem, at-a-glance, before
   picking a module.
+  - **verified:** 2026-09-11 — live: `steward provision --list-modules --json` returns
+    `{"bmb": "installed", "cis": "installed", "manticore": "available", "tea": "installed",
+    "utility-skills": "installed"}`, matching the actually-installed `.claude/skills/` state;
+    `steward provision --module notreal --json` returns `{"error": "...not a supported
+    module..."}`, confirming `--json` is honored on the error path too.
 - **CAP-3 — partial state is named, never silent.** Intent: every `--module`
   failure path follows `_run_runner`'s template — anything already created
   when a later step fails (files landed, config half-merged) is named
   explicitly in the `DutyResult`, and the wrapped installer's own stderr
   reaches the operator, not a Steward paraphrase. Success: no `--module`
   failure leaves state the error message doesn't mention.
+  - **verified:** 2026-09-11 — `test_provision_module.py`'s
+    `test_provision_module_mid_chain_failure_names_already_wrote_config_section`,
+    `test_provision_module_first_script_failure_names_nothing_written`, and
+    `test_provision_module_script_failure_surfaces_stderr_verbatim_and_honors_json` all pass,
+    directly covering the named-partial-state and verbatim-stderr claims.
 
 ## Constraints
 
