@@ -36,14 +36,10 @@ remains out of scope until ≥2 Containerfiles diverge for real reasons —
 **four now exist and none diverges** (2026-09-09), so the exclusion stands.
 
 **The Containerfile set is enumerated by glob, never by a hard-coded list.**
-The two enumerations in the repo currently DISAGREE:
-`scripts/pixi_version_registry.py:79-87` already covers all four, while
-`tests/packaging/test_containerfile_base_layer_convention.py:50-52` hard-codes
-only three — so the fourth, `src/platform/compose/mcp-host/Containerfile`
-(`spec-mcp-era-isolation` slice 1; `ghcr.io/prefix-dev/pixi:0.80.0` builder +
-`registry.access.redhat.com/ubi9/ubi-minimal:9.6` runtime, no ENV credential),
-is UNGOVERNED by the convention guard. The omitted file is compliant today; the
-finding is that nothing would notice if it stopped being.
+The convention guard (`tests/packaging/test_containerfile_base_layer_convention.py`)
+derives its file list from git-tracked ``Containerfile*`` paths (Story 16.4), so
+all four — including `src/platform/compose/mcp-host/Containerfile`
+(`spec-mcp-era-isolation` slice 1) — are swept by the `FROM` and `ENV` checks.
 
 ## Non-goals
 Multi-arch; publishing a base image; touching recipe-build docker isolation
