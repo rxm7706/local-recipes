@@ -2,9 +2,9 @@
 title: 'A BYO-external-PostgreSQL deployment overlay exists, additive to the self-hosted default'
 type: 'feature'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'db1cc4bb4c8d948be1218c44827b0b219a6ba790'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 'fb55f147c20c797b29f34307ebdd16fde02de4ce'
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
@@ -111,3 +111,32 @@ Postgres Service. No application-layer code changes: the `env()` seam already re
   src/platform/deploy/overlays/external-postgres/values.yaml` — expect
   `postgres-statefulset.yaml`/`postgres-service.yaml`/`postgres-backup-pvc.yaml` to render
   empty and the Deployment's `DATABASE_URL` env value to reflect the external endpoint.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[low]` `[patch]` test asserted `secretKeyRef` at wrong nesting level — fixed to read `valueFrom.secretKeyRef`.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `postgres.external.enabled` (default `false`) to the platform Helm chart, guarded in-cluster postgres templates when external is enabled, and shipped `deploy/overlays/external-postgres/` (values + README) mirroring the OCP overlay pattern. `DATABASE_URL` / `MIGRATION_DATABASE_URL` continue to resolve via `existingSecret` secretKeyRef — no application changes.
+
+**Files changed:**
+- `src/platform/deploy/charts/platform/values.yaml` — `postgres.external.*` defaults and Secret key placeholders.
+- `src/platform/deploy/charts/platform/templates/postgres-{statefulset,service,backup-pvc}.yaml` — external toggle guards.
+- `src/platform/deploy/charts/platform/templates/postgres-backup-cronjob.yaml`, `networkpolicy-postgres-ingress.yaml` — defensive guards when external postgres is enabled.
+- `src/platform/deploy/overlays/external-postgres/` — overlay values + README.
+- `src/platform/tests/test_chart_invariants.py` — matrix coverage for overlay on/off and DATABASE_URL wiring.
+
+**Review:** 1 patch applied (test assertion fix); 0 deferred; 0 rejected.
+
+**Verification:**
+- Default render byte-identical to pre-change (`fb55f147c2` vs HEAD chart, image digests pinned).
+- External overlay render: zero postgres StatefulSet/Service/PVC resources.
+- `pytest tests/test_chart_invariants.py::test_external_postgres_overlay_skips_self_hosted_resources tests/test_chart_invariants.py::test_external_postgres_toggle_off_preserves_self_hosted_postgres` — 2 passed.
+
+**Residual risks:** Operators must pre-populate `existingSecret` with external `DATABASE_URL` / `MIGRATION_DATABASE_URL`; the chart does not compose URLs (by design, AD-12). No consumer profile migrated to this overlay in this story.

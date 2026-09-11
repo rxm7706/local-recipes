@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 319
+# stories: 222
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -211,7 +211,7 @@ development_status:
   50-1-the-silo-conda-forge-recipe-exists-and-is-pixi-installable: done
   50-2-local-dev-object-storage-silo-default-garage-alternative-pixi-provisioned: done
   50-3-a-minimal-s3-client-seam-proves-the-exception-end-to-end: done
-  51-1-a-byo-external-postgresql-deployment-overlay-exists-additive-to-the-self-hosted-default: backlog
+  51-1-a-byo-external-postgresql-deployment-overlay-exists-additive-to-the-self-hosted-default: done
   51-2-a-byo-external-redis-deployment-overlay-exists-additive-to-the-self-hosted-default: backlog
   51-3-the-backup-pitr-handoff-is-explicit-when-the-byo-postgresql-overlay-is-active: backlog
   6-1-provision-module-name: done
@@ -328,7 +328,7 @@ development_status:
   epic-5-retrospective: optional
   epic-50: done
   epic-50-retrospective: optional
-  epic-51: backlog
+  epic-51: in-progress
   epic-51-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

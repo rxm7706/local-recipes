@@ -1,3 +1,4 @@
+{{- if not .Values.postgres.external.enabled }}
 # PostgreSQL 17 (official image), 1 replica -- AD-1's exact
 # infrastructure, mirroring compose.yml's `postgres` service. StatefulSet
 # + volumeClaimTemplate because this is the one durable store.
@@ -152,3 +153,4 @@ spec:
         resources:
           requests:
             storage: {{ .Values.postgres.persistence.size }}
+{{- end }}
