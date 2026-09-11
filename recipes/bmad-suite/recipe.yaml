@@ -11,7 +11,7 @@ schema_version: 1
 context:
   name: bmad-suite
   # CalVer refresh stamp (unpadded) — bumped by generate-bmad-suite when pins change.
-  version: "2026.9.9"
+  version: "2026.9.11"
 
 package:
   name: ${{ name }}
@@ -30,7 +30,7 @@ requirements:
   run:
     - bmad-method >=6.12.0                               # "Build More Architect Dreams" - Agile Ai Driven Development — Turn an idea or change request into working software without giving up the thinking. # https://github.com/bmad-code-org/BMAD-METHOD # https://bmadcode.com/ # https://docs.bmad-method.org/
     - bmad-loop >=0.11.1                                 # Deterministic ralph-loop orchestrator that drives the BMAD implementation phase unattended. # https://github.com/bmad-code-org/bmad-loop # https://github.com/bmad-code-org/bmad-loop#readme
-    - bmad-method-test-architecture-enterprise >=1.25.0  # TEA (Murat) — risk-based test strategy, test automation and release-gate decisions. # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise # https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
+    - bmad-method-test-architecture-enterprise >=1.26.0  # TEA (Murat) — risk-based test strategy, test automation and release-gate decisions. # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise # https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
     - bmad-builder >=2.2.2                               # BMad Core expansion module for creating, sharing and discovering AI modules and agents. # https://github.com/bmad-code-org/bmad-builder # https://bmad-builder-docs.bmad-method.org
     - bmad-creative-intelligence-suite >=0.3.2           # Creative agent suite for innovation, design thinking, storytelling and presentations. # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite # http://cis-docs.bmad-method.org
     - bmad-module-skill-forge >=2.1.0                    # Turns code and docs into instructions AI agents can actually follow (Quick/Forge/Forge+/Deep tiers). # https://github.com/armelhbobdad/bmad-module-skill-forge
