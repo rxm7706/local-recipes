@@ -77,6 +77,22 @@ local-recipes/
 > `test-recipes.py` (below) remains available for batch/random sweeps and for `meta.yaml`
 > builds via the `build` env. See also the authoritative `conda-forge-expert` skill
 > (`.claude/skills/conda-forge-expert/`) whose recipe lifecycle loop drives these tasks.
+>
+> **Mason-backed route** (Story 16.2, `pyforge-mason` — CAP-2): the same native rattler-build,
+> invoked through the `mason` CLI's `recipe build` verb instead of the bare `local-recipes`
+> task. `mason` still wraps `conda-forge-expert` by subprocess underneath (it adds no recipe
+> judgment of its own); this is one real estate caller wired to prove the `pyforge-mason`
+> `recipe` verb family is exercised in CI, not just built. It does not replace the
+> `local-recipes` route above as the estate's primary recipe-build path.
+>
+> ```bash
+> pixi run -e pyforge-mason mason recipe build recipes/<name>
+> ```
+>
+> CI wiring: `.github/workflows/pyforge-station-tests.yml`'s `mason-test` job runs
+> `pixi run -e pyforge-mason pyforge-mason-recipe-build-smoke` (a `pixi.toml` task building
+> `recipes/click-help-colors`, a tiny noarch recipe) after its own test suite, on every PR
+> that touches `src/shared/packages/pyforge-mason/**`.
 
 ### Installation
 

@@ -2,7 +2,8 @@
 title: "A first estate caller of mason recipe"
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '8348928ac02e5952c1d74926830a54ddeab14e02'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -109,4 +110,32 @@ run with its command and output. The delegation boundary is unchanged — mason 
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Merged Story 16.1 (`dispatch/pyforge-mason/16.1`) as a hard prerequisite, then wired the first real estate caller of `mason recipe build`: a `pyforge-mason-recipe-build-smoke` pixi task (builds `recipes/click-help-colors`) and a matching step in `.github/workflows/pyforge-station-tests.yml`'s `mason-test` job so the route runs on every execution of that lane. Added `rattler-build` to `[feature.pyforge-mason.dependencies]` so the build engine is on PATH. Documented the mason-backed route in `docs/reference/developer-guide.md` (not the CFE skill tree — mason meta-tests forbid unsanctioned `.claude/skills/conda-forge-expert/**` edits).
+
+Files changed:
+- `pixi.toml` — `rattler-build` dep + `pyforge-mason-recipe-build-smoke` task
+- `pixi.lock` — lock refresh for rattler-build in pyforge-mason
+- `.github/workflows/pyforge-station-tests.yml` — smoke step after pytest in mason-test
+- `docs/reference/developer-guide.md` — mason-backed recipe-build route docs
+
+Review: 0 patches applied; 1 item deferred (pre-existing `test_portal_last_diagnose.py` failure from Story 49.14 `boot_reconcile.py` pyforge import — unrelated to 16.2, present at baseline).
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-mason mason doctor --format json` → `unavailable_verbs: []`, `cfe_import_floor_satisfied: true`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-recipe-build-smoke` → exit 0, `recipe build: ok`, artifact `click-help-colors-0.9.4-pyh59285b8_0.conda`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` → 1581 passed, 1 failed pre-existing (`test_django_mason_has_no_raw_http_pyforge_or_minio` / Story 49.14)
+
+Residual risk: the pre-existing portal meta-test failure will red `mason-test` CI until Story 49.14 reconciles the guard with `boot_reconcile.py`.
+
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 1 finding — high 0, medium 0, low 0, false 0, maybe-false 0, defer 1
+- findings:
+  - `[defer]` `[defer]` Pre-existing `test_django_mason_has_no_raw_http_pyforge_or_minio` failure — Story 49.14's `boot_reconcile.py` imports `pyforge.mason.boot`; present at baseline `8348928ac02`, not introduced by 16.2
