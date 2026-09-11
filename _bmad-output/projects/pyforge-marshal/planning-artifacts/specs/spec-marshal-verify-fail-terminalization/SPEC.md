@@ -61,6 +61,7 @@ state** so the fleet campaign supervisor's next `--once` cycle can advance.
   - **success:** Fixture: dead session + journaled verify refuse + WIP commit →
     supervisor exits within one tick; preserve ref exists; completion verdict
     `failed`. Live session + verify refuse → still **LIVE** (agent may recover).
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `core.dispatch_supervisor_state.should_terminalize_verify_refusal` gates on dead session + refused verdict + git progress; `dispatch_supervisor/__main__.py:1064` sets `verdict = FAILED` when it fires, which triggers `dispatch-completion: failed` and (`:1263`) `_journal_dispatch_preserve` when git progress exists. `test_terminalize_verify_refusal_when_dead_session_and_refused` plus the four sibling non-firing-case tests in `test_dispatch_hotfix.py`, and `test_terminalize_verify_refusal_unchanged` in `test_dispatch_supervisor_state.py`, all pass.
 
 - **CAP-2 — Transient auto-redispatch (fleet drain, compose with hotfix)**
   - **intent:** After CAP-1, `classify_dispatch_block` (existing hotfix) treats
@@ -70,6 +71,7 @@ state** so the fleet campaign supervisor's next `--once` cycle can advance.
   - **success:** Integration test or documented cycle: failed+preserve run →
     next fleet cycle launches a new dispatch for the same story key when ledger
     still backlog; no `MRS-DRAIN-005` permanent block for `MRS-GATE-001`.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: `core.dispatch_retry.classify_dispatch_block` classifies `MRS-GATE-001`..`006`/`010`/`011`/`015` as `TRANSIENT` (`test_transient_block_on_verify_gate` passes), and `cli/dispatch.py:1407-1408`'s `station_story_block_facts` returns `None` (no block evidence, so no `MRS-DRAIN-005`) whenever `block_kind is TRANSIENT` — the literal success criterion holds. **The Constraints section's separate "3 redispatches per story per campaign, policy-declared, default 3" cap is NOT implemented** — a repo-wide grep for any per-story/per-campaign retry counter or policy field (`transient_retry`, `retry_cap`, `max_transient`, `per_story_per_campaign`) finds nothing in `src/shared/packages/pyforge-marshal/`; transient retries are currently unbounded, unlike the 2026-09-09 Assumptions/Constraints text claims. Flagged as a real gap, not fixed here (a persisted per-story-per-campaign counter is a real design decision, not a mechanical fix within this sweep's scope).
 
 - **CAP-3 — Observability**
   - **intent:** `marshal status` / completion payload names
@@ -77,6 +79,7 @@ state** so the fleet campaign supervisor's next `--once` cycle can advance.
     fires; fleet-picture ATTENTION unchanged unless retry cap exceeded (future).
   - **success:** Journal observation entry or completion payload includes failed
     gate code from verify outcome when terminalizing.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): no literal `verify_refusal_terminalized` field exists, but the equivalent the SPEC's own intent hedges for is live — every `dispatch-verification` OUTCOME journal entry carries `failed_gate`/`failed_message` (`dispatch_supervisor/__main__.py:844,859`), surfaced to `marshal status` as `dispatch_verification_failed_gate` (`core/status.py:1015,1220-1222`; `cli/status.py:903`) — observed live earlier this session in a real `marshal status --format json` run. `test_story_with_gate_verdict_is_named`, `test_story_without_gate_verdict_is_null_not_fabricated`, and `test_full_run_detail_reports_stories_gate_verdicts_budget_and_open_intent` pass.
 
 ## Relationship to 28.13
 

@@ -34,6 +34,7 @@ run.
     `.bmad-loop/runs/<id>/` directory exists and is readable, `marshal status` reports the
     run's real state (`running`/`idle`/`stopped`), not `unknown` — reproduced against the live
     2026-08-15 case (`pyforge-doctor` story 9.1's spin).
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `_discover_harness_run_id_by_filesystem` (`cli/status.py:700`) recovers via a timestamp-correlated `.bmad-loop/runs/` scan; `test_poisoned_harness_run_id_recovers_via_filesystem_discovery` passes.
 
 - **CAP-2 — `MRS-STATUS-002` keeps firing correctly for genuinely unrecoverable cases.**
   - **intent:** A run whose directory truly cannot be found or read still reports `unknown`
@@ -41,6 +42,7 @@ run.
     the honest-degradation signal.
   - **success:** Given a run with no discoverable `.bmad-loop/runs/` directory at all (or an
     unreadable one), status still reports `unknown` and the finding still fires.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_poisoned_harness_run_id_with_no_run_dir_still_reports_unknown` and `test_poisoned_harness_run_id_only_stale_siblings_still_reports_unknown` both pass — `MRS-STATUS-002` still fires for a genuinely unrecoverable and a stale-siblings-only case.
 
 ## Constraints
 

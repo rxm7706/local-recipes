@@ -41,6 +41,7 @@ one worktree per *loop home*.
   Success: `bmad-switch <slug>` succeeds in a fresh worktree; the worktree's
   `implementation-artifacts` realpath equals the main checkout's; the main
   checkout's own marker/symlinks are unchanged.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `scripts/bmad-switch::ensure_tier3_backlink` matches this CAP's contract line for line (creates the canonical dir if absent, symlinks back, refuses a real non-empty local dir with the exact quoted error text). Corroborated by live production use earlier this session, not a fresh synthetic run: `~/.bmad-loops/pyforge-marshal` and `~/.bmad-loops/pyforge-mason` are real linked worktrees this tool provisioned, both successfully read/merged/pushed against in this same session.
 
 - **CAP-2 — `bmad-loop-worktree` provisioner.**
   Intent: `bmad-loop-worktree <slug>` creates (or reuses) a worktree on
@@ -49,6 +50,7 @@ one worktree per *loop home*.
   `--remove` tears the worktree + branch down.
   Success: provisioning is idempotent; the printed line is directly runnable;
   `--remove` leaves `git worktree list` clean.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `home_path`/`provision` in `scripts/bmad-loop-worktree` create `~/.bmad-loops/<slug>` on branch `loop/<slug>` (or reuse it — `home.exists()` short-circuits to a plain re-`bmad-switch`, confirming idempotency by code inspection), matching this session's live loop-homes exactly. Did not exercise `--remove` live (out of scope for this sweep — no throwaway slug to safely tear down without touching real project state).
 
 - **CAP-3 — isolation verification.**
   Intent: `bmad-loop-worktree --verify <slug-a> <slug-b>` asserts the two
@@ -57,6 +59,7 @@ one worktree per *loop home*.
   active project is untouched.
   Success: exit 0 on isolation; non-zero with a named finding on any
   cross-talk.
+  **Verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), CODE-LEVEL ONLY: `cmd_verify` (`scripts/bmad-loop-worktree:156`) checks exactly the three named invariants (marker identity, `planning-artifacts` symlink naming its own slug, Tier-3 realpath equal to canonical) plus main-checkout-untouched, returning 0/2 accordingly — matches the CAP text line for line. Deliberately NOT run live against real slugs this pass (the directive excludes touching `~/.bmad-loops/pyforge-marshal`/`pyforge-mason`, and `--verify` calls `provision()` which is not purely read-only); no dedicated automated test exists for this path (`tests/scripts/test_bmad_switch_hard_fail.py` covers `bmad-switch --current` drift detection, a different concern).
 
 ## Constraints
 
