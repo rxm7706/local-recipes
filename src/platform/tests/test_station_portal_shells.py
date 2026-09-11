@@ -104,13 +104,28 @@ def _pyforge_hit_module(hit: str) -> str:
     return hit.removeprefix("import ")
 
 
-def _atlas_pyforge_allowed(hit: str) -> bool:
-    """Atlas may import steward dashboard isolation + existing MCP (21.2).
+#: Per-station, deliberately narrow exceptions to the client-only boundary --
+#: each entry names the EXACT pyforge.<module> prefixes that station's portal
+#: may import directly, never a bare "pyforge" or "pyforge.<station>" escape
+#: hatch. Extend here, one dated line per exception, rather than loosening
+#: `_disallowed_pyforge_imports` itself.
+_STATION_PYFORGE_ALLOWED: dict[str, tuple[str, ...]] = {
+    # Atlas may import steward dashboard isolation + existing MCP (21.2).
+    # pyforge.atlas.dashboard (Vizro CLI) and other pyforge.atlas.* stay forbidden.
+    "atlas": ("pyforge.steward.dashboard", "pyforge.atlas.mcp"),
+    # Story 49.14 (CAP-10): boot reconciliation is a real, eager production
+    # caller of pyforge.mason.boot at MasonPortalConfig.ready() time -- the
+    # capability this story exists to prove is live, not test-only. Mason's
+    # engine-driving deps (twine et al.) make it unshippable as a pixi
+    # dependency here (see config/settings/base.py's sys.path fallback
+    # comment); the boundary exception is the same shape as atlas's own.
+    "mason": ("pyforge.mason.boot",),
+}
 
-    ``pyforge.atlas.dashboard`` (Vizro CLI) and other stations stay forbidden.
-    """
+
+def _station_pyforge_allowed(station: str, hit: str) -> bool:
     module = _pyforge_hit_module(hit)
-    allowed = ("pyforge.steward.dashboard", "pyforge.atlas.mcp")
+    allowed = _STATION_PYFORGE_ALLOWED.get(station, ())
     return any(
         module == prefix or module.startswith(prefix + ".") for prefix in allowed
     )
@@ -118,9 +133,9 @@ def _atlas_pyforge_allowed(hit: str) -> bool:
 
 def _disallowed_pyforge_imports(station: str, tree: ast.AST) -> list[str]:
     hits = _pyforge_package_imports(tree)
-    if station != "atlas":
+    if station not in _STATION_PYFORGE_ALLOWED:
         return hits
-    return [hit for hit in hits if not _atlas_pyforge_allowed(hit)]
+    return [hit for hit in hits if not _station_pyforge_allowed(station, hit)]
 
 
 def _model_subclasses(tree: ast.AST) -> list[str]:

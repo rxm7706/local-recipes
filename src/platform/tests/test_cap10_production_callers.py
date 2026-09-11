@@ -5,9 +5,9 @@ from __future__ import annotations
 import ast
 import time
 from datetime import UTC
-from unittest.mock import patch
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from django.test import override_settings
@@ -18,17 +18,18 @@ from django_pyforge.circuits import FAIL_FAST_SECONDS
 from django_pyforge.circuits import FAIL_MAX
 from django_pyforge.circuits import CircuitBreaker
 from django_pyforge.circuits import CircuitState
+from django_pyforge.roles import prefixed_station
 from django_pyforge.station_client import StationClientDegraded
 from django_pyforge.station_client import StationHttpClient
-
-from django_pyforge.roles import prefixed_station
 
 _SHARED = Path(__file__).resolve().parents[2] / "shared" / "packages"
 STATION_CLIENT = (
     _SHARED / "django-pyforge" / "src" / "django_pyforge" / "station_client.py"
 )
 MASON_APPS = _SHARED / "django-mason" / "src" / "django_mason_portal" / "apps.py"
-MASON_BOOT = _SHARED / "django-mason" / "src" / "django_mason_portal" / "boot_reconcile.py"
+MASON_BOOT = (
+    _SHARED / "django-mason" / "src" / "django_mason_portal" / "boot_reconcile.py"
+)
 SURPLUS = 20
 
 
@@ -44,7 +45,7 @@ def test_station_client_imports_and_uses_circuit_breaker() -> None:
 
 
 def test_mason_ready_invokes_boot_reconcile(monkeypatch) -> None:
-    from django.apps import apps
+    from django.apps import apps  # noqa: PLC0415
 
     calls: list[bool] = []
 
@@ -134,7 +135,7 @@ def test_station_client_trips_breaker_and_degrades(monkeypatch) -> None:
 
 
 def test_station_remote_default_path_uses_breaker(monkeypatch) -> None:
-    from django_pyforge.station_client import _resolve_transport
+    from django_pyforge.station_client import _resolve_transport  # noqa: PLC0415
 
     breaker = CircuitBreaker(fail_max=FAIL_MAX, reset_timeout=3600)
     monkeypatch.setattr(

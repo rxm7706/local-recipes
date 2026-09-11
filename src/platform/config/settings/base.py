@@ -39,6 +39,21 @@ for _dist, _module in _STATION_PORTAL_PACKAGES:
     _portal_src = BASE_DIR.parent / "shared" / "packages" / _dist / "src"
     if _portal_src.is_dir() and importlib.util.find_spec(_module) is None:
         sys.path.insert(0, str(_portal_src))
+# Story 49.14: django_mason_portal.boot_reconcile imports pyforge.mason.boot at
+# MasonPortalConfig.ready() time (eager, not lazy -- boot reconciliation must
+# run on every Django startup). pyforge-mason is deliberately NOT a pixi
+# dependency of this environment: its own conda package declares a hard
+# `twine>=7.0.0,<7.1` run-dependency (Story 3.1, the engine it drives), and
+# twine 7.0.0 requires `rich>=14.3.3`, which conflicts outright with
+# langflow-base 1.11.4's `rich<14.0.0` pin already in this same environment --
+# a genuine, unresolvable-here upstream conflict, not a missing pin. The
+# container COPYs pyforge/mason's raw source onto BASE_DIR instead (see
+# src/platform/Containerfile) -- same "monorepo pythonpath" shape as the
+# portal packages above, applied to the underlying pyforge.<station> library
+# rather than its django_<station>_portal wrapper.
+_MASON_SRC = BASE_DIR.parent / "shared" / "packages" / "pyforge-mason" / "src"
+if _MASON_SRC.is_dir() and importlib.util.find_spec("pyforge.mason") is None:
+    sys.path.insert(0, str(_MASON_SRC))
 # Story 42.4: the Celery queue topology is the chrome's table, not a settings
 # literal (after the sys.path insert above, hence mid-module). Plain module --
 # no models, no settings access at import.

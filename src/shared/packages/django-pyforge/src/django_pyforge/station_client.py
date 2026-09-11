@@ -45,8 +45,17 @@ def _guarded_transport(transport: Transport) -> Transport:
         headers: dict[str, str],
         body: bytes | None,
     ) -> bytes:
-        def _call() -> bytes:
-            return transport(method, url, headers, body)
+        async def _call() -> bytes:
+            # Dispatch to a worker thread rather than calling `transport`
+            # directly: the in-process ASGI transport
+            # (config.station_port.asgi_invoke, Story 43.3) drives its OWN
+            # internal asyncio.run() to reach the host ASGI app, which
+            # cannot nest inside the event loop asyncio.run() below already
+            # owns ("asyncio.run() cannot be called from a running event
+            # loop"). A thread gives that inner asyncio.run() a clean
+            # context with no currently-running loop; the urllib transport
+            # is plain sync and unaffected either way.
+            return await asyncio.to_thread(transport, method, url, headers, body)
 
         result = asyncio.run(station_outbound_breaker.call_or_degrade(_call))
         if isinstance(result, Degraded):
