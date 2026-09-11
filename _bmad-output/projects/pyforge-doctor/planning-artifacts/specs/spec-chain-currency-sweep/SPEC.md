@@ -51,6 +51,7 @@ A vision to realize on top of a proven pain: every Dream→Code chain on the boa
 - **CAP-6 — Worked-Example accumulation**
   - **intent:** Each sweep run leaves a record in the runbook, timeless-workflow style, so the procedure compounds — proportionate to the run, not a fixed narrative cost.
   - **success:** Run 1 — the 2026-08-26 clearance of 26 findings + 1 overtaken — lands as the runbook's validation Worked Example; every later run appends a one-line entry (date, findings cleared, deviations). A run that appends nothing has not completed its Land step.
+  - **verified:** 2026-09-11 — PARTIAL (Run 1 half only, cross-run accumulation unverified) — mechanical re-verification at HEAD 9d882c3ea0: `CHAIN-CURRENCY-RUNBOOK.md` § Worked Examples confirms Run 1 (2026-08-26) landed correctly as the validation entry, matching CAP-4/CAP-5's evidence. The CAP's core claim — that the record compounds across runs, one line per later run — is genuinely unverifiable right now: `grep -n "^## Worked Examples" -A 30 CHAIN-CURRENCY-RUNBOOK.md` shows only Run 1 exists; no second sweep run has happened yet to test whether the Land step actually appends. Not a failure — there is nothing to fail — but not a demonstrated PASS either; re-verify once a Run 2 exists.
 
 ## Constraints
 
