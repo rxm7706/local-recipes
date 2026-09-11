@@ -483,6 +483,8 @@ pyforge-mason = { path = "src/shared/packages/pyforge-mason" }  # -> built conda
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/conftest.py + tests/meta/*.py (test-time only; not a package run-dep)
 pyyaml = ">=6.0.3"                # PyYAML -- Story 4.4's engines/condalock.py::check() metadata.content_hash parser (also a package run-dep; mirrors [feature.pyforge-doctor.dependencies]'s identical line)
+truststore = ">=0.10.4"           # Story 16.1: CFE_IMPORT_FLOOR (`cfe.py`) -- mirrors [feature.python.dependencies]'s identical floor (OS trust store for corporate CA / JFrog TLS)
+conda-forge-metadata = ">=2026.9.5"  # Story 16.1: CFE_IMPORT_FLOOR (`cfe.py`) -- mirrors [feature.vuln-db.dependencies]'s identical floor
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
