@@ -2,7 +2,7 @@
 title: 'The Containerfile convention guard derives its file list'
 type: 'fix'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '3aada76d39921c8951520906ec5bc543fd22f77f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -131,3 +131,27 @@ empty or partial glob cannot pass vacuously.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 1 findings — high 0, medium 1, low 0, false 0, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` I/O matrix row "Untracked scratch Containerfile" had no covering test — added `test_discover_containerfiles_excludes_untracked_scratch` mocking `git ls-files` to prove scratch files on disk are excluded from the derived set.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Replaced the hard-coded three-entry `CONTAINERFILES` tuple with `_discover_containerfiles()` — git-tracked paths whose basename matches `Containerfile*`. Added membership/count proof for all four files, mcp-host synthetic regression parametrization, and untracked-scratch exclusion test. Updated `spec-pixi-container-image` Constraints to reflect four governed Containerfiles.
+
+**Files changed:**
+- `tests/packaging/test_containerfile_base_layer_convention.py` — derived file list, discovery tests, mcp-host synthetic regressions, updated floor counts
+- `spec-pixi-container-image/SPEC.md` — resolved DISAGREE paragraph; guard now derives from tracked tree
+- `spec-16-4-…md` — story status and run metadata
+
+**Review:** 1 medium patch applied (untracked exclusion test). No deferrals. No rejected findings.
+
+**Follow-up review recommended:** false (single medium patch, no high findings)
+
+**Verification:** `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1579 passed, 3 deselected
+
+**Residual risks:** Module import calls `git ls-files` at load time; environments without git would fail at collection (consistent with other repo gates that require git).

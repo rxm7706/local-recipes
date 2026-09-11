@@ -233,6 +233,37 @@ def _env_directives() -> list[tuple[Path, int, str]]:
     return results
 
 
+def test_discover_containerfiles_excludes_untracked_scratch(monkeypatch, tmp_path):
+    """An untracked scratch Containerfile on disk must not enter the derived set."""
+    scratch = tmp_path / "scratch" / "Containerfile.local"
+    scratch.parent.mkdir(parents=True)
+    scratch.write_text("FROM ubuntu:24.04\n", encoding="utf-8")
+
+    tracked_only = "\n".join(
+        [
+            "Containerfile",
+            "src/platform/Containerfile",
+            "src/platform/compose/dbgpt/Containerfile",
+            "src/platform/compose/mcp-host/Containerfile",
+        ]
+    )
+
+    def _mock_ls_files(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=_args,
+            returncode=0,
+            stdout=tracked_only,
+            stderr="",
+        )
+
+    monkeypatch.setattr(subprocess, "run", _mock_ls_files)
+    _discover_containerfiles.cache_clear()
+
+    discovered = _discover_containerfiles()
+    assert scratch not in discovered
+    assert all(p.is_relative_to(REPO_ROOT) for p in discovered)
+
+
 def test_discover_containerfiles_finds_all_four():
     """The derivation must find every known Containerfile, including the
     previously-omitted mcp-host path -- an empty or partial glob must not
