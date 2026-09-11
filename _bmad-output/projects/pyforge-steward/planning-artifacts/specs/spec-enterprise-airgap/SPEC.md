@@ -42,6 +42,16 @@ code or committed configuration. Owner: Steward (the estate).
   artifacts a mirror can serve verbatim (e.g. `current_repodata.json` over
   the sharded protocol). Success: pipeline phases run against a JFrog
   remote-repo mirror unchanged.
+  - **verified:** 2026-09-11 — code-level: `conda_forge_atlas.py::_fetch_current_repodata`
+    (Phase B) resolves base URLs through the same `_resolve_conda_forge_urls()` chokepoint as
+    CAP-1 (JFrog env var/pixi config first, then prefix.dev, then anaconda.org) and fetches a
+    single-file `{base_url}/{subdir}/current_repodata.json` — "avoids the sharded msgpack
+    protocol" per its own docstring — mirror-servable verbatim. `dependency-checker.py` carries
+    the same `_REPODATA_CANDIDATES` preference (current_repodata.json[.bz2] before full
+    repodata.json[.bz2]) and a documented `--channel https://artifactory.corp/...` / `file://`
+    mirror flag. No live JFrog mirror run performed — per this Spec's own reciprocal-chain
+    note the mirror exercise stays unexercised and foundry-side; this verifies the data-path
+    shape, not a live mirror round-trip.
 
 ## Constraints
 
