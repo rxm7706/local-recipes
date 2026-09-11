@@ -1142,6 +1142,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # GATE_FAILED, so independent verification still VERIFIES and drain does
     # not transient-redispatch into the same unrelated repo-global red.
     "MRS-GATE-014": Verdict.WARN,
+    # Story 22.12 (shared-surface cross-suite gate, CAP-12): cross-surface
+    # verify command ran and failed -- GATE_FAILED, same rung as MRS-GATE-001,
+    # never WARN or downgraded to advisory.
+    "MRS-GATE-015": Verdict.GATE_FAILED,
     # Story 28.8 (derived context recomputes only on source change,
     # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
     # reason MRS-POLICY-001 is: marshal could not determine WHAT the

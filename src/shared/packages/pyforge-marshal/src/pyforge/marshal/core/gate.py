@@ -639,6 +639,32 @@ def check_scope_with_mode(
     )
 
 
+# --- Story 22.12: shared-surface cross-suite gate (CAP-12) -------------------
+
+SHARED_SURFACE_PREFIX = "src/platform/"
+CROSS_SURFACE_VERIFY_COMMAND = (
+    "pixi run -e local-recipes platform-ci-local -- --test"
+)
+CROSS_SURFACE_GATE_CODE = "MRS-GATE-015"
+
+
+def changed_files_touch_shared_surface(changed_files: tuple[str, ...]) -> bool:
+    """Return whether any changed path lies under the shared Django host."""
+    if not isinstance(changed_files, tuple) or not all(
+        isinstance(item, str) for item in changed_files
+    ):
+        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
+    prefix = SHARED_SURFACE_PREFIX
+    return any(
+        path == prefix.rstrip("/") or path.startswith(prefix) for path in changed_files
+    )
+
+
+def shared_surface_verify_command() -> str:
+    """The hardcoded cross-surface verify command (CAP-12, not per-station)."""
+    return CROSS_SURFACE_VERIFY_COMMAND
+
+
 # --- Story 2.7: a gate binds to the spec's Success signal (AD-4/AD-31/AD-49) -
 
 
