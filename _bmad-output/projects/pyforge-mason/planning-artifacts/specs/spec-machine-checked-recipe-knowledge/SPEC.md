@@ -27,10 +27,12 @@ pattern: auto-recipe's spec-generated 45-row catalog with lint-resolved
   `enforced_by:` pointer into the real CFE check/test surface, or an
   explicit `null`. *Success:* regeneration is deterministic; hand-editing
   the catalog is detectably wrong (derived-artifact discipline).
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD b36c8be118: live `pixi run -e local-recipes failure-catalog-check` reports `117 row(s)... null_rows=115 coverage=1.7%`, matching the Spec's own 2026-09-09 snapshot exactly (no unnoticed drift); `test_failure_catalog_freshness.py::test_failure_catalog_check_passes_against_live_skill_md` and 28/28 `test_failure_catalog_generator.py` unit tests passing, including `test_enforced_by_stale_code_is_null`.
 - **CAP-2 — the lint + drift gate.** Every non-null pointer resolves against
   the live check surface; catalog↔SKILL.md drift fails CI; the null-rows
   report is the prioritized machine-check backlog. *Success:* planting a
   bogus pointer or editing a gotcha without regenerating reds the suite.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD b36c8be118: `test_main_check_mode_in_sync_then_drift` (plants exactly this scenario -- in-sync then drifted) passing; `failure-catalog-check` scoped `repo`, auto-discovered by `scripts/detectors.py` per its own description text, confirmed live; 28/28 unit tests green.
 
 ## Constraints
 Prose stays authoritative (the catalog derives); Rules 1/2 govern (CFE

@@ -66,6 +66,18 @@ class TestSkillMdConsistency:
                 "*/tests/**/test_*.py"
             )
         }
+        # Station-package source modules (src/shared/packages/*/src/**). Same
+        # rationale: these are REAL files in this repo, not illustrative
+        # filenames, so they belong here rather than in `project_level`. A
+        # Version History entry may legitimately cite a station's own module
+        # -- e.g. the v8.90.3 entry names pyforge-mason's `cfe.py` as the file
+        # whose `CFE_IMPORT_FLOOR` the dependency fix satisfies.
+        existing |= {
+            p.name
+            for p in (PROJECT_ROOT / "src" / "shared" / "packages").glob(
+                "*/src/**/*.py"
+            )
+        }
 
         # Project-level scripts that SKILL.md is allowed to reference
         project_level = {
@@ -171,6 +183,11 @@ class TestSkillMdConsistency:
             "feedstock_context.py",
             "feedstock_enrich.py",
             "feedstock_lookup.py",
+            # FR-155 parity-gate library modules (mason Story 16.3): no
+            # __main__/argparse entry point, imported directly by
+            # tests/meta/test_cli_tool_parity.py, never run standalone.
+            "mcp_tools.py",
+            "mcp_parity.py",
         }
 
         content = PIXI_TOML.read_text()

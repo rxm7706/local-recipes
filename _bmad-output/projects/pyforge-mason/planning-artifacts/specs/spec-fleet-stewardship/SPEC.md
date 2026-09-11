@@ -31,14 +31,17 @@ without freezing a product line that changes by design.
   fork/feedstock. Success: the local-mirror-first rule holds (auto-memory
   `feedback_local_mirror_first_then_verify_then_push`); the repo-wide
   recipe.yaml parse audit stays green.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD b36c8be118: 72 commits touched `recipes/` since 2026-08-10 (Spec claims 70 -- still current, continuous activity); `test_recipe_yaml_parse_audit.py` 6/6 passing.
 - **CAP-2 — per-recipe internal metadata.** Intent: every local recipe
   carries the `cfe-*` block (identity, cached decisions, build record,
   cf-status), stripped on push (G60/G62). Success: the cfe meta-tests green;
   strip verified on pushed artifacts.
+  - **verified:** 2026-09-11 — PASS (meta-test half only; strip-on-push half not independently re-checked this pass) — mechanical re-verification at HEAD b36c8be118: `test_recipe_yaml_parse_audit.py` (incl. the `cfe-conda-name` duplicate-key guard) 6/6 passing. Did not re-fetch a real published feedstock file to confirm the `cfe-*` block is actually absent post-push this pass -- that half rests on SKILL.md step 8b's documented convention and prior sessions' worked examples, not independently re-verified live here.
 - **CAP-3 — the recurring campaigns.** Intent: refresh (Track A/B),
   platform expansion, and failure remediation run as parameterized waves per
   the three adopted workflow specs. Success: each wave's evidence lands in
   the owning spec's Worked Examples / Current State.
+  - **verified:** 2026-09-11 — PASS (historical; dormant today, matching the Spec's own 2026-09-09 realization-gate note) — mechanical re-verification at HEAD b36c8be118: confirmed all three adopted workflow specs' last-touch commits still match the documented dates exactly (`feedstock-refresh.md`/`feedstock-failure-remediation.md` at `1aeaf12cee` 2026-07-02, `feedstock-platform-expansion.md` at `1bdd5a2f02` 2026-06-28) -- the dormancy note is still accurate, not stale. The capability's own success criterion (evidence lands when a wave runs) held when waves DID run (Track A Waves B-F, recorded in `feedstock-refresh.md`'s own Current State) -- dormancy is a currency fact already self-documented, not a defect in the capability.
 
 ## Constraints
 
