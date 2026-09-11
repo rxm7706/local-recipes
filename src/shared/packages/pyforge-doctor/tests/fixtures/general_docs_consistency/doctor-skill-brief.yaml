@@ -1,0 +1,7 @@
+name: pyforge-doctor
+version: 0.1.0
+description: >
+  Pre-flight and fleet-watch diagnostics CLI. Agents use pyforge doctor
+  grammar (check / monitor / diagnose / backlog-intake) rather than
+  importing pyforge.doctor internals. Findings stay advisory — not a
+  second PR gate.

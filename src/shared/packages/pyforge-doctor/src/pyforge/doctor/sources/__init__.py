@@ -464,6 +464,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 21.7 -- sources/pixi_currency.py. CAP-4 advisory ledger
     # staleness vs ``pixi.toml`` commit history; WARN-only; fleet subject
     # (repo-wide ``pixi.toml`` surface, same rationale as SIBLING_DREAMS_DRIFT).
+    SourceRegistration(
+        source=Source.GENERAL_DOCS_CONSISTENCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 22.3 -- sources/general_docs_consistency.py. Human-facing
+    # documentation identity (README vs skill-brief, AGENTS.md vs Dream);
+    # WARN-only; fleet subject (general docs layer, not one station).
 )
 
 

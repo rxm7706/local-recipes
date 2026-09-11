@@ -1,0 +1,6 @@
+name: pyforge-warden
+version: 0.1.0
+description: >
+  Unified dependency-hygiene + vulnerability scanner. Agents use the warden
+  CLI (scan / scan --doctor) and FR-13 grammar `pyforge warden …`, never
+  importing pyforge.warden internals. The CLI is the sole PR-gate publisher.

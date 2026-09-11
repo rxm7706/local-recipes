@@ -981,6 +981,10 @@ cmd = "python -m pyforge.doctor.sources capability-effect"
 description = "Detector: terminal-tier Dream/Spec bodies contradict their declared status (Story 21.12–21.16, spec-status-body-consistency CAP-1..5). Progress phrases, open-questions/memlog drift, measured promissory language, and status-comment/ledger contradictions — warn-only, read-only, fail-open. Surfaces beside dream-vocab and spec-status-missing in one detectors run and fleet-picture ATTENTION. Contract: spec-21-16-the-status-body-check-renders-where-the-operator-already-looks."
 cmd = "python -m pyforge.doctor.sources status-body-consistency"
 
+[feature.local-recipes.tasks.general-docs-consistency-check]
+description = "Detector: human-facing documentation identity contradictions (Story 22.3, spec-general-docs-consistency CAP-3). Cross-references station README vs skill-brief and AGENTS.md vs station Dream claims — bounded, textual, evidence-based. Warn-only, read-only, fail-open — never a second PR gate. Contract: spec-22-3-a-repeatable-doctor-detector-catches-this-class-of-drift-going-forward."
+cmd = "python -m pyforge.doctor.sources general-docs-consistency"
+
 [feature.local-recipes.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
 cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"

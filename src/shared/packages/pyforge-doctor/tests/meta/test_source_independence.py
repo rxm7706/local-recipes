@@ -133,6 +133,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.CAPABILITY_EFFECT: "capability_effect.py",  # Story 21.10 (Epic 21)
     Source.STATUS_BODY_CONSISTENCY: "status_body_consistency.py",  # Story 21.12
     Source.PIXI_CURRENCY_LEDGER: "pixi_currency.py",  # Story 21.7
+    Source.GENERAL_DOCS_CONSISTENCY: "general_docs_consistency.py",  # Story 22.3
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``

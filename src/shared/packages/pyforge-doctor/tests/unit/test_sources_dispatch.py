@@ -33,6 +33,7 @@ from pyforge.doctor.sources import (
     deps,
     factory,
     frozen_path,
+    general_docs_consistency,
     ledger,
     marshal,
     pixi_currency,
@@ -64,6 +65,7 @@ _EXPECTED_DISPATCH = {
     "capability-effect": capability_effect.gather,
     "status-body-consistency": status_body_consistency.gather,
     "pixi-currency-ledger": pixi_currency.gather,
+    "general-docs-consistency": general_docs_consistency.gather,
 }
 
 

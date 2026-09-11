@@ -56,6 +56,7 @@ from . import (
     deps,
     factory,
     frozen_path,
+    general_docs_consistency,
     ledger,
     marshal,
     pixi_currency,
@@ -117,6 +118,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # ledger staleness vs ``pixi.toml`` commit history; same shape as
     # STATUS_BODY_CONSISTENCY above.
     Source.PIXI_CURRENCY_LEDGER.value: pixi_currency.gather,
+    # Story 22.3 (Epic 22) -- general-docs-consistency beside status-body-
+    # consistency in detectors; same shape as PIXI_CURRENCY_LEDGER above.
+    Source.GENERAL_DOCS_CONSISTENCY.value: general_docs_consistency.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
