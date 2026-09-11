@@ -1,12 +1,13 @@
 ---
 id: SPEC-marshal-single-story-dispatch
 spec: marshal-single-story-dispatch
-status: shipped
-updated: "2026-09-09"  # CAP-1..11 all decomposed and `done` (Epic 22 + Epic 29); all five open questions closed by the 2026-09-09 fleet-readiness batch.
+status: in-progress
+updated: "2026-09-11"  # CAP-1..11 all decomposed and `done` (Epic 22 + Epic 29); CAP-12 added 2026-09-11 (cross-surface verification gap), not yet decomposed.
 owner-dream: docs/dreams/marshal-single-story-dispatch.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py
@@ -232,6 +233,36 @@ mode beside `spin`, never a replacement.**
     produces zero new review commits and zero new `bmad-build-auto` launches;
     CAP-4 either lands or escalates. A second `done`+`true` follow-up is
     allowed at most once, then the flag is forced `false`.
+- **CAP-12** *(added 2026-09-11 — motivated by a live rescue of steward Story
+  49.14: it passed CAP-3's bound `pyforge-steward-test` gate and the harness's
+  own targeted pytest run, whose review pass explicitly considered and
+  rejected "verification command misses platform tests" as false, while
+  shipping four real defects — a `ModuleNotFoundError` masking an
+  unresolvable `twine`/`rich` conflict, a genuine portal client-only
+  boundary violation, a nested-`asyncio.run()` bug, and ruff findings — that
+  only surfaced under a full `platform-ci-local -- --test` run. GitHub
+  Actions, the intended backstop for exactly this class of gap, had been
+  down fleet-wide the entire session, so the bound per-station gate was the
+  only one running)*
+  - **intent:** CAP-3's bound verify command is a floor, not a ceiling: it
+    stays the fixed, anti-gaming per-station command (`MRS-GATE-010`/`011`
+    unchanged), but when a story's own diff surface (already computed for
+    CAP-3's frozen-surface check) touches a shared cross-station directory
+    — `src/platform/`, the one Django host every station's portal mounts
+    into — the driver additionally requires that surface's own broader
+    check (`pixi run -e local-recipes platform-ci-local -- --test`) to pass
+    before CAP-4 land. A failure is a loud non-landing verdict naming the
+    failed cross-surface gate, the same lattice CAP-3 already uses — never
+    a silent skip, and never a substitute for GitHub Actions' own full-CI
+    backstop.
+  - **success:** A story whose diff touches only its own station's package
+    lands exactly as today (CAP-3 unchanged, no new gate reached). A story
+    whose diff touches `src/platform/` is refused landing when
+    `platform-ci-local -- --test` fails, even though the station-bound
+    command passed — replaying the 49.14 fixture (bound gate green, full
+    platform suite red) produces a refusal naming the cross-surface gate,
+    not a landing. `MRS-GATE-011`'s byte-match binding on the station-bound
+    command is untouched by this CAP.
 
 ## Constraints
 
@@ -264,6 +295,16 @@ mode beside `spin`, never a replacement.**
 - **Always (CAP-11):** `done` + `followup_review_recommended: false` is a
   no-op HALT in the local `.claude/skills/bmad-build-auto/` copy. The
   vendored `bmad_loop` package is still unmodified.
+- **Always (CAP-12):** the station-bound `MRS-GATE-010`/`011` command always runs first and
+  must pass on its own — the cross-surface check is additive, never a replacement, and never
+  runs in place of it.
+- **Always (CAP-12):** the cross-surface check is gated purely on the story's own diff surface
+  touching the shared directory (`src/platform/` today) — never on which station dispatched
+  the story, so a steward-dispatched story and an atlas-dispatched story touching the same
+  shared surface are held to the same bar.
+- **Never (CAP-12):** a cross-surface failure is silently swallowed, downgraded to advisory, or
+  bypassed by narrowing the check (the same anti-gaming posture `MRS-GATE-011` already holds
+  for the station-bound command).
 
 - **HARD (fork prohibition, 2026-09-09):** a dispatched session is **never** launched from a
   fork subagent. `bmad-build-auto`'s mandatory subagents break inside a fork, so the launch uses
