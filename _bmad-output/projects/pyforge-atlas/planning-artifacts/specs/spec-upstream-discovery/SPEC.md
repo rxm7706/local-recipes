@@ -78,6 +78,13 @@ conventions — a Kedro node/pipeline, not a legacy phase — per the Dream's
   - **success:** A run produces a fresh trending snapshot dataset; a
     scrape-layout-break run leaves the prior snapshot intact and exits
     non-fatal (WARN), caught by a fixture-pinned parser test.
+  - **verified:** scrape-drift resilience (empty parse / layout break keeps
+    the last-good snapshot, non-fatal) live in
+    `tests/unit/datasets/test_upstream_discovery.py::test_parse_trending_html_layout_break_returns_empty_never_raises`
+    + `test_layout_break_all_empty_falls_back_then_keeps_last_good`; the
+    Search-API fallback path is separately exercised
+    (`test_layout_break_falls_back_to_search_api_and_persists_when_fallback_has_rows`);
+    all fixture-driven — a live GitHub scrape/API call is not exercised.
 - **CAP-2 — tier classification**
   - **intent:** A classifier node joins each ingested repo against existing
     atlas signals (on-conda-forge / feedstock enumeration, PyPI universe,
@@ -89,6 +96,14 @@ conventions — a Kedro node/pipeline, not a legacy phase — per the Dream's
     enumerated `skip_reason`; a fixture of hand-labeled repos classifies to
     the expected tiers, including one already-on-cf skip and one
     awesome-list skip.
+  - **verified:** the CAP-2 decision tree (`_classify_row`/
+    `classify_trending_candidates`, `pipelines/upstream_discovery/nodes.py`)
+    never silently drops a row — every degraded-input case reaches an
+    explicit `skip_reason`, live in
+    `tests/unit/pipelines/upstream_discovery/test_nodes.py` (`test_missing_intelligence_row_is_unclassified_needs_human`,
+    `test_ambiguous_packaging_shape_is_unclassified_needs_human`, +4 more
+    unclassified-degrade cases); already-on-cf and awesome-list skip paths
+    both covered.
 - **CAP-3 — operator surface**
   - **intent:** An operator or agent can query the tiered candidate list
     read-side, offline-safe, idempotent, filterable per
@@ -97,6 +112,16 @@ conventions — a Kedro node/pipeline, not a legacy phase — per the Dream's
   - **success:** The CLI and MCP tool return matching output for the same
     filters with zero network calls after ingest; JSON output validates
     against a documented schema.
+  - **verified:** CLI (`trending_candidates/__main__.py`) and MCP tool
+    (`mcp/tools.py::query_trending_candidates`) both delegate to the single
+    `query_trending_candidates` seam (`trending_candidates/query.py`) with
+    identical default filters, live in
+    `tests/unit/trending_candidates/test_surface_parity.py::test_cli_defaults_match_the_query_seam`
+    + `test_mcp_tool_defaults_match_the_query_seam` +
+    `test_server_tool_forwards_every_filter_to_the_same_named_keyword`;
+    zero-network-after-ingest is structural (the seam only reads a
+    materialized local dataset, no HTTP client in the call chain), not
+    proven by a network-isolation test.
 - **CAP-4 — fixed-source audit track**
   - **intent:** The same discover→triage→tier→wave-package shape
     generalizes from the moving trending feed to a fixed candidate source
@@ -106,6 +131,12 @@ conventions — a Kedro node/pipeline, not a legacy phase — per the Dream's
   - **success:** A fixed-source batch produces the same tiered/reasoned
     candidate shape as CAP-1/CAP-2's output, re-verified against live atlas
     data rather than a precedent's dated package list.
+  - **verified:** `load_org_audit_candidates` (`nodes.py`) feeds fixed-source
+    rows through the SAME `classify_trending_candidates` classifier CAP-1's
+    live trending rows use (not a frozen precedent list), live in
+    `tests/unit/pipelines/upstream_discovery/test_nodes.py::test_org_audit_candidates_malformed_entry_reaches_classifier_as_a_visible_skip_row`;
+    the shared-classifier structure is what makes re-verification-against-live-data
+    true, not a separate fixture proving the June-2026 org-audit list specifically.
 - **CAP-5 — downstream handoff**
   - **intent:** Every surviving candidate (tier 1 or 2) passes a
     pyforge-doctor-grade health screen (abandonment signal, license
@@ -114,6 +145,12 @@ conventions — a Kedro node/pipeline, not a legacy phase — per the Dream's
   - **success:** A candidate reaching packaging carries a recorded
     health-screen verdict; discovery output alone never opens a
     staged-recipes PR.
+  - **verified:** `hand_off_candidate` (`trending_candidates/handoff.py`)
+    requires a caller-supplied passing health-screen verdict and emits one
+    structured record — never a recipe or a PR — on success, and raises
+    `ValueError` with no catalog write on a failing/missing verdict, live in
+    `tests/unit/trending_candidates/test_handoff.py::test_happy_path_emits_one_record_never_a_recipe_or_pr`
+    + `test_verdict_fail_raises_value_error_no_catalog_touch`.
 
 ## Constraints
 
