@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "1a5b5ff53557ccc5179e8a87add53ea7a1653a44bbdc2e7373bb766f4e1eb94a"
+source_sha256: "3df2cec2a90b80c2be251ad710a163bf9d6c50bd38cfe510e3ca5f82a10ac36b"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
