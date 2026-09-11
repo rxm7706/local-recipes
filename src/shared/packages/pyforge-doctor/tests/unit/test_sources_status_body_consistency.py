@@ -65,6 +65,29 @@ def test_scan_body_fires_on_slash_form_with_context():
     assert matches[0].matched == "3/9"
 
 
+def test_scan_body_silent_on_dotted_story_id_pair():
+    # "Stories 20.4/20.5" reads as two dotted epic.story IDs, not a 4/20
+    # fraction, even though the bare digits satisfy n < m.
+    matches = sbc.scan_body_for_incomplete_progress(
+        "Stories 20.4/20.5 are `done`: they park the attempt.\n"
+    )
+    assert matches == ()
+
+
+def test_scan_body_silent_on_hyphenated_story_id_pair():
+    matches = sbc.scan_body_for_incomplete_progress(
+        "for Stories 11-2/11-3/11-4 — Pattern B demonstrated.\n"
+    )
+    assert matches == ()
+
+
+def test_scan_body_silent_on_slash_joined_id_list():
+    matches = sbc.scan_body_for_incomplete_progress(
+        "closes the sibling's own CAP-8/9/10 (Epic 9, in progress).\n"
+    )
+    assert matches == ()
+
+
 def test_scan_body_silent_when_n_equals_m():
     assert sbc.scan_body_for_incomplete_progress("All 9 of 9 stories done.\n") == ()
 

@@ -23,17 +23,23 @@ a thing the agent authors.
 
 ## What is real
 
-`marshal` (module `pyforge.marshal`) is 10/50 stories shipped — Epic 1
-(provisioned, verified loop homes) complete; Epics 2-6 in progress. The
-capability already exists as `bmad-loop` and has driven two sibling stations
-to full completion unattended: `pyforge-atlas` (38/38) and `pyforge-warden`
-(31/31). Ten real capabilities are contracted in `spec-pyforge-marshal`
-(CAP-1 loop homes and isolation · CAP-2 supervised unattended runs · CAP-3
-gates you can run · CAP-4 landing with a durable paper trail · CAP-5 fleet
-visibility · CAP-6 portability proven, not claimed · CAP-7 policy composition
-· CAP-8 one install yields the whole stack, plus CAP-9/CAP-10 from later
-decomposition), decomposed into FR-1 through FR-65 across 6 epics / 50
-stories.
+**Updated 2026-09-11 (this paragraph had frozen at the original 10/50-story
+snapshot).** `marshal` (module `pyforge.marshal`) has shipped 240 of 243
+tracked stories across 34 epics, per `fleet-picture`; Epic 1 (provisioned,
+verified loop homes) was the first to complete, and nearly all of the epics
+that followed are `done` as well, with 3 stories left structurally blocked
+(not waiting on an operator). The capability already exists as `bmad-loop`
+and has driven two sibling stations to full completion unattended:
+`pyforge-atlas` (38/38) and `pyforge-warden` (31/31). Ten real capabilities
+were originally contracted in `spec-pyforge-marshal` (CAP-1 loop homes and
+isolation · CAP-2 supervised unattended runs · CAP-3 gates you can run · CAP-4
+landing with a durable paper trail · CAP-5 fleet visibility · CAP-6
+portability proven, not claimed · CAP-7 policy composition · CAP-8 one
+install yields the whole stack, plus CAP-9/CAP-10 from later decomposition);
+the spec has since grown well past CAP-10 as later epics (token economy,
+parallel dispatch fan-out, single-story dispatch, and more) were decomposed
+in — see `spec-pyforge-marshal` directly for the current capability list
+rather than this paragraph, which predates most of them.
 
 The BMAD suite underneath: BMAD 6.10 (BMM 34+ workflows) + BMB/TEA/BMGD/CIS,
 web bundles for flat-rate planning, community plugins (skill-forge), and the
