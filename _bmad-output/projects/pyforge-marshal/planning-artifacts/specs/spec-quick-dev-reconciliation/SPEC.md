@@ -57,6 +57,7 @@ fact,* that a human already did.
   - **success:** Given a story merged to the integration branch with no corresponding
     bmad-loop journal/run record, the detection mechanism identifies it as completed outside
     the loop, naming the story key and the evidence it used.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `run_reconcile_completions` (`cli/deploy.py:3625`) intersects `corroborated_keys` (durable spec) with `full_merged_keys` (real git merge evidence) minus `marshal_native_keys` — a git match alone or a spec alone never triggers a write, confirmed by `test_reconcile_completions_git_match_without_corroborating_spec_is_silent` and `test_reconcile_completions_tracked_spec_alone_with_no_merge_evidence_never_advances`, both passing.
 - **CAP-2**
   - **intent:** A detected non-loop completion is folded into the tracked ledger -- the
     story's key advances out of `backlog` in `sprint-status-ledger.yaml` (or the mechanism
@@ -65,12 +66,14 @@ fact,* that a human already did.
   - **success:** `marshal status` / the fleet dashboard shows a quick-dev'd story as `done`
     with its completion path labelled, with no operator hand-edit to a generated file and no
     commit-subject archaeology required.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_reconcile_completions_advances_and_promotes_a_not_loop_native_story` and `test_reconcile_completions_excludes_a_marshal_native_landed_key` confirm a not-loop-native completion advances the ledger while a marshal-native one is correctly excluded — the two-way path distinction CAP-2 requires.
 - **CAP-3**
   - **intent:** A quick-dev'd story's spec receives the same durability guarantee Story 4.1
     already gives a loop-landed story's spec.
   - **success:** A quick-dev'd story's spec, once its story is detected as done, is
     promoted/tracked the same way a loop-landed story's spec is -- "promoted" means "will
     still exist next week" regardless of which path produced it.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `_scan_promotions` is reused verbatim for both the CAP-1 corroboration set and the actual promotion candidates (`cli/deploy.py:3655-3661`, no second diverging spec check); `test_reconcile_completions_already_promoted_spec_still_advances_the_ledger` and `test_reconcile_completions_closes_the_tier3_feed_divergence_after_a_successful_advance` both pass.
 - **CAP-4**
   - **intent:** An operator can hand-pick any backlog story for `bmad-quick-dev` while that
     station's `bmad-loop` run is between stories, or mid-run on a **different** story, and
@@ -78,6 +81,7 @@ fact,* that a human already did.
   - **success:** Reconciling a quick-dev completion around a live, unrelated loop run neither
     corrupts that run's own journal/state nor blocks the reconciliation -- both are provably
     true in the same test pass.
+  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `test_reconcile_completions_never_reads_or_writes_a_live_runs_own_journal` proves both halves in one test — a real file standing in for a live, unrelated run's journal is byte-identical before/after, AND `payload["data"]["advanced"] == ["5.9"]` with exit 0, confirming the reconciliation was not blocked.
 
 ## Constraints
 
