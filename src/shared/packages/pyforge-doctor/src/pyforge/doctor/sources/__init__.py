@@ -459,10 +459,11 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     SourceRegistration(
         source=Source.PIXI_CURRENCY_LEDGER,
         scope="repo",
-        subject_station="doctor",
+        subject_station="fleet",
         owning_station="doctor",
     ),  # Story 21.7 -- sources/pixi_currency.py. CAP-4 advisory ledger
-    # staleness vs ``pixi.toml`` commit history; WARN-only.
+    # staleness vs ``pixi.toml`` commit history; WARN-only; fleet subject
+    # (repo-wide ``pixi.toml`` surface, same rationale as SIBLING_DREAMS_DRIFT).
 )
 
 
