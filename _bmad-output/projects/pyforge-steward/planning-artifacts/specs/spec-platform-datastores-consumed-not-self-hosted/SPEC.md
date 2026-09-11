@@ -1,7 +1,7 @@
 ---
 id: SPEC-platform-datastores-consumed-not-self-hosted
 spec: platform-datastores-consumed-not-self-hosted
-status: ready
+status: shipped
 updated: "2026-09-11"
 owner-dream: docs/dreams/platform-datastores-consumed-not-self-hosted.md
 covers-dreams:
@@ -57,6 +57,9 @@ Processed via `bmad-correct-course`
     `postgres-backup-pvc.yaml` all render empty and the application's database URLs resolve to
     the external endpoint; with the overlay NOT applied, a `helm template` render is
     byte-identical to today's output. (Story 51.1.)
+  - **verified:** chart invariant tests confirm zero self-hosted postgres resources render with
+    the overlay applied and `DATABASE_URL` resolves via `secretKeyRef`; toggle-off render matches
+    the default self-hosted StatefulSet count; landed via `local-recipes#1259`.
 
 - **CAP-3** — A BYO-external-Redis deployment overlay exists, additive to the self-hosted default
   - **intent:** Same pattern as CAP-2 applied to Redis — a `.Values.redis.external.enabled`
@@ -65,6 +68,11 @@ Processed via `bmad-correct-course`
     `redis-broker-pvc.yaml` all render empty and the application's Redis URLs resolve to the
     external endpoint; with the overlay NOT applied, a `helm template` render is byte-identical
     to today's output. (Story 51.2.)
+  - **verified:** chart invariant tests confirm zero self-hosted redis resources render with the
+    overlay applied and `REDIS_BROKER_URL`/`REDIS_CACHE_URL`/`REDIS_URL` resolve to the
+    enterprise endpoints; toggle-off render matches the default; landed via
+    `local-recipes#1260`. Residual: `redis-networkpolicy.yaml` still renders (inert, not
+    functional) when external Redis is enabled — disclosed, not blocking.
 
 - **CAP-4** — The backup/PITR handoff is explicit when the BYO-PostgreSQL overlay is active
   - **intent:** `postgres-backup-cronjob.yaml` must not run a shadow backup of an instance
@@ -74,6 +82,9 @@ Processed via `bmad-correct-course`
     `deploy/README.md` names the enterprise database team as the owner of backup/PITR for the
     BYO path; with the overlay NOT applied, the backup CronJob still deploys exactly as today.
     (Story 51.3.)
+  - **verified:** chart invariant test confirms the backup CronJob renders absent with
+    `postgres.external.enabled: true`; `deploy/README.md` names the enterprise database team;
+    landed via `local-recipes#1261`.
 
 ## Constraints
 

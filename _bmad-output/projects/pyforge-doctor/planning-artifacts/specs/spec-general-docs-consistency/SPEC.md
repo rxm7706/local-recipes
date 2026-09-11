@@ -1,6 +1,6 @@
 ---
 id: SPEC-general-docs-consistency
-status: ready
+status: shipped
 owner-dream: docs/dreams/general-docs-consistency.md
 companions: []
 sources:

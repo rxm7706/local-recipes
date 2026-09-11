@@ -2,7 +2,7 @@
 title: Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
 type: dream
 owner: steward
-status: specified
+status: realized
 ---
 
 # Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
@@ -159,3 +159,12 @@ StatefulSet/Deployment as the *only* supported path.
   OCP cluster — a tenant workload, not the cluster's owner/operator.
   Non-structural (no capability or story changes) — folded into the Dream's
   own topology paragraph and the Spec's Why section for accuracy.
+- **2026-09-11 (later, same session)** — Epic 51 drained 3/3. Story 51.1: the
+  `external-postgres` Helm overlay + chart guards + invariant tests, default
+  render proven byte-identical (`local-recipes#1259`). Story 51.2: the
+  `external-redis` overlay, same pattern (`local-recipes#1260`). Story 51.3:
+  the backup CronJob guarded on Story 51.1's toggle, enterprise database team
+  named as backup/PITR owner in `deploy/README.md` (`local-recipes#1261`).
+  All four capabilities in `spec-platform-datastores-consumed-not-self-hosted/
+  SPEC.md` carry `verified:` lines; the Spec and this Dream both close as
+  `shipped`/`realized`. Status: `specified` → `realized`.

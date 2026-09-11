@@ -2,7 +2,7 @@
 title: General documentation stops contradicting itself, and stays that way
 type: dream
 owner: doctor
-status: specified
+status: realized
 ---
 
 # General documentation stops contradicting itself, and stays that way
@@ -163,4 +163,17 @@ scoped in its first finding.
   Decomposed into doctor Epic 22 (Stories 22.1-22.6), minted `backlog`, per
   the operator's own request to get this Dream dispatch-ready for `marshal`.
   Status: dreamt → specified.
+- **2026-09-11 (later, same session)** — Epic 22 drained 6/6, dispatched via
+  `marshal factory dispatch`. Story 22.1: the two identity contradictions
+  fixed at their source (`local-recipes#1251`). Story 22.2: the four
+  cross-cutting decay findings corrected (`local-recipes#1253`). Story 22.3:
+  the repeatable `general_docs_consistency` doctor detector, recovered from
+  an orphaned dispatch session and finished by hand (`local-recipes#1254`).
+  Story 22.4: the Diátaxis-adapted information architecture designed
+  (`local-recipes#1252`). Story 22.5: the Tutorials/How-to quadrants
+  populated (`local-recipes#1256`). Story 22.6: `README.md`/`CLAUDE.md`/
+  `AGENTS.md` repointed into the reorganized structure (`local-recipes#1257`).
+  All six capabilities in `spec-general-docs-consistency/SPEC.md` are done;
+  the Spec and this Dream both close as `shipped`/`realized`. Status:
+  `specified` → `realized`.
 
