@@ -1779,7 +1779,7 @@ hygiene-check contract
 **And** it fires against at least the Doctor/Herald cases (Story 22.1's fixtures) that
 motivated this Spec, plus a clean-station fixture proving it does not false-positive on
 consistent sources
-**Status:** backlog
+**Status:** done
 
 ### Story 22.4: A Diátaxis-adapted information architecture is designed for the general-facing docs layer
 

@@ -150,6 +150,15 @@ def test_doctor_source_tasks_include_status_body_beside_capability_effect():
     assert names.index("status-body-consistency") == names.index("capability-effect") + 1
 
 
+def test_doctor_source_tasks_include_general_docs_beside_pixi_currency():
+    """Story 22.3: general-docs-consistency must stay in the detectors sweep
+    immediately after pixi-currency-ledger."""
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["general-docs-consistency"] == "general-docs-consistency-check"
+    names = [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    assert names.index("general-docs-consistency") == names.index("pixi-currency-ledger") + 1
+
+
 def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):

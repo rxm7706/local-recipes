@@ -304,6 +304,11 @@ class Source(StrEnum):
     # ledger-staleness check for the Dream's four dependency ledgers vs
     # ``pixi.toml`` commit history. WARN-only; never gates.
     PIXI_CURRENCY_LEDGER = "pixi-currency-ledger"
+    # Story 22.3 (Epic 22 / spec-general-docs-consistency CAP-3): cross-
+    # references human-facing docs (station README vs skill-brief, AGENTS.md
+    # vs station Dream) for quotable identity contradictions. WARN-only,
+    # fail-open — never a second PR gate.
+    GENERAL_DOCS_CONSISTENCY = "general-docs-consistency"
 
 
 class Partition(StrEnum):

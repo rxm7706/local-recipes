@@ -2,8 +2,8 @@
 title: 'A repeatable Doctor detector catches this class of drift going forward'
 type: 'feature'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'a7752e7f91015b81d79a979bfca61a0dc8c8c8bb'
+status: 'done'
+baseline_revision: 'efabb6d912099eda55950f2d8c9d507e35545684'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -110,3 +110,42 @@ PR gate.
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green,
   including the new fixtures/tests.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 12 findings — high 0, medium 1, low 2, false 6, maybe-false 3
+- findings:
+  - `[medium]` `[patch]` Missing `_DOCTOR_SOURCE_TASKS` pin test for `general-docs-consistency` — added `test_doctor_source_tasks_include_general_docs_beside_pixi_currency` in `tests/scripts/test_detectors_doctor_sources.py`.
+  - `[low]` `[reject]` Stale “ten detector sources” prose in package README — pre-existing; out of Story 22.3 surface.
+  - `[low]` `[reject]` Stale `_run_doctor_sources` docstring count — cosmetic; not worth a guard in this story.
+  - `[false]` `[reject]` Diff omits core module/tests — files exist in worktree; diff was baseline-relative to committed tree only.
+  - `[false]` `[reject]` Diff not mergeable without module — same as above; full tree is complete.
+  - `[false]` `[reject]` Import fails without module — module is present in worktree.
+  - `[false]` `[reject]` Registration over-promises generic Dream cross-check — bounded to the two Story 22.1 contradiction classes per spec; station README↔skill-brief is generalized only for gate/advisory.
+  - `[false]` `[reject]` Three different orderings undocumented — pixi task order is not a contract; detectors tuple order is pinned by test.
+  - `[maybe-false]` `[defer]` Live-repo test fails after Story 22.1 lands — intentional: fixture tests remain authoritative; live test documents current drift until 22.1 merges.
+  - `[maybe-false]` `[defer]` Warden clean fixture is “no pair” not “aligned advisory” — matches I/O matrix “nothing comparable” row; silence is correct.
+  - `[maybe-false]` `[defer]` dreams-hygiene count 63→65 bundled — live re-measurement required for green suite; unrelated but blocking.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `general_docs_consistency.py` — a warn-only Doctor source that flags quotable identity contradictions between station README vs skill-brief (gate vs advisory) and `AGENTS.md` vs `docs/dreams/pyforge-herald.md` (Herald vs Marshal handoff ownership). Registered in `REGISTRY`, `DISPATCH`, report schema, pixi task, and `detectors.py`.
+
+Files changed:
+- `src/.../sources/general_docs_consistency.py` — new detector module
+- `src/.../sources/__init__.py`, `__main__.py`, `models.py`, `data/report-schema.json` — registration
+- `tests/fixtures/general_docs_consistency/**` — pre/post Story 22.1 + clean Warden fixtures
+- `tests/unit/test_sources_general_docs_consistency.py` — full I/O matrix coverage
+- `pixi.toml`, `scripts/detectors.py`, `environment.yaml` — task + sweep wiring
+- `tests/scripts/test_detectors_doctor_sources.py` — sweep membership pin test
+
+Review: 1 medium patch applied (detectors pin test); 3 deferred (live-test lifecycle, Warden fixture semantics, dreams-hygiene count re-measure); remainder rejected as false/low.
+
+Follow-up review recommendation: false (single medium patch, converged).
+
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1622 passed, 1 skipped.
+
+Residual risks: Live-repo integration test will need removal or rewrite once Story 22.1 fixes land at source; detector scope is intentionally limited to the two known contradiction patterns, not a general four-surface join engine.

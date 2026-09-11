@@ -86,7 +86,8 @@
             "frozen-path-changed",
             "capability-effect",
             "status-body-consistency",
-            "pixi-currency-ledger"
+            "pixi-currency-ledger",
+            "general-docs-consistency"
           ]
         },
         "check": { "type": "string" },

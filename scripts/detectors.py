@@ -246,6 +246,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 21.7 (Epic 21 / spec-pixi-candidate-currency CAP-4): pixi-currency
     # ledger staleness beside the other repo-scope doctor sources.
     ("pixi-currency-ledger", "pixi-currency-staleness-check"),
+    # Story 22.3 (Epic 22 / spec-general-docs-consistency CAP-3): human-facing
+    # documentation identity contradictions beside the other repo-scope sources.
+    ("general-docs-consistency", "general-docs-consistency-check"),
 )
 
 
