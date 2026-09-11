@@ -129,9 +129,8 @@ Review findings: 3 medium patches applied (main exit code test, pre-existing led
 Follow-up review recommendation: false (patched medium count = 3 but all closed in same pass with targeted verification green).
 
 Verification:
-- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py -k intake_entry -q` — 5 passed
-- `pixi run --frozen -e local-recipes pytest tests/scripts/test_deferred_work_intake.py -q` — 8 passed
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 2 failed pre-existing on baseline (`pixi-currency-ledger` schema/source drift), 1583 passed; failures unchanged by this diff
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1584 passed, 1 skipped
+- `pixi run --frozen -e local-recipes pytest tests/scripts/test_deferred_work_intake.py -q` — 9 passed
 
 Residual risks: Entries with backticked paths only in `summary`/`evidence` pass intake but may still lack an explicit `location:` ledger field (same as before 21.8). Fleet never-verified totals are halted at the intake boundary only — not re-measured in this story.
 
