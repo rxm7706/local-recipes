@@ -916,6 +916,7 @@ def test_every_branch_consumer_agrees_on_the_one_derivation(tmp_path: Path) -> N
     facts_vcs.branches.add(expected)
     gather_dispatch_git_facts(
         facts_vcs,
+        fs=FakeFs(),
         repo_root=tmp_path,
         worktree=dispatch_core.dispatch_worktree_path(
             tmp_path, _ATLAS, _SHARED_FEED_KEY
@@ -963,6 +964,7 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
 
     facts = gather_dispatch_git_facts(
         vcs,
+        fs=FakeFs(),
         repo_root=tmp_path,
         worktree=dispatch_core.dispatch_worktree_path(
             tmp_path, _ATLAS, _SHARED_FEED_KEY
@@ -979,6 +981,7 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
     fresh = RecordingVcs(tmp_path)
     fresh_facts = gather_dispatch_git_facts(
         fresh,
+        fs=FakeFs(),
         repo_root=tmp_path,
         worktree=dispatch_core.dispatch_worktree_path(
             tmp_path, _ATLAS, _SHARED_FEED_KEY
@@ -1033,6 +1036,7 @@ def test_branch_merged_ignores_ancestry_when_the_branch_has_not_diverged(
 
     facts = gather_dispatch_git_facts(
         vcs,
+        fs=FakeFs(),
         repo_root=tmp_path,
         worktree=dispatch_core.dispatch_worktree_path(
             tmp_path, _ATLAS, _SHARED_FEED_KEY
@@ -1065,6 +1069,7 @@ def test_branch_merged_trusts_ancestry_once_the_branch_has_diverged(
 
     facts = gather_dispatch_git_facts(
         vcs,
+        fs=FakeFs(),
         repo_root=tmp_path,
         worktree=dispatch_core.dispatch_worktree_path(
             tmp_path, _ATLAS, _SHARED_FEED_KEY
@@ -1076,6 +1081,127 @@ def test_branch_merged_trusts_ancestry_once_the_branch_has_diverged(
     )
 
     assert facts.branch_merged is True
+
+
+class _SubjectsVcs(RecordingVcs):
+    """``RecordingVcs`` whose ``commit_subjects`` returns caller-supplied
+    subjects, for exercising ``merged_story_keys``'s templated-shape path
+    end to end through ``gather_dispatch_git_facts``."""
+
+    def __init__(self, repo_root: Path, subjects: tuple[str, ...]) -> None:
+        super().__init__(repo_root)
+        self._subjects = subjects
+
+    def commit_subjects(self, _repo_root: Path, _ref: str):
+        return self._subjects
+
+
+def test_gather_dispatch_git_facts_does_not_leak_another_stations_templated_key(
+    tmp_path: Path,
+) -> None:
+    """Story 35.1 (spec-marshal-templated-merge-subject-cross-project-
+    collision CAP-1): reproduces the exact live false-positive class from
+    2026-09-11's doctor Epic 22 dispatch -- a bare "Merge {key} into main"
+    subject from ANOTHER station (here, marshal's own historical "22.11")
+    must not report `story_merged_on_main: True` for atlas's own,
+    never-merged "22.11". `_load_known_story_keys` reads atlas's own
+    tracked ledger from the fake filesystem; that ledger does not contain
+    "22.11", so the templated match is correctly excluded."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import gather_dispatch_git_facts
+
+    subjects = ("Merge 22.11 into main",)
+    vcs = _SubjectsVcs(tmp_path, subjects)
+
+    ledger_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / _ATLAS
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    fs = FakeFs()
+    fs.files[ledger_path] = (
+        "development_status:\n"
+        "  1-1-atlas-owns-story: done\n"
+        "  epic-1: done\n"
+    )
+
+    facts = gather_dispatch_git_facts(
+        vcs,
+        fs=fs,
+        repo_root=tmp_path,
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11"),
+        story_key="22.11",
+        project_slug=_ATLAS,
+        baseline_head_sha="baseline0001",
+        merge_subject_template="Merge {key} into main",
+    )
+
+    assert facts.story_merged_on_main is False
+
+
+def test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_key(
+    tmp_path: Path,
+) -> None:
+    """The corroboration signal must not become a blanket denial: once
+    atlas's own tracked ledger names "22.11" as one of ITS stories, the
+    identical templated merge subject IS trusted for atlas."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import gather_dispatch_git_facts
+
+    subjects = ("Merge 22.11 into main",)
+    vcs = _SubjectsVcs(tmp_path, subjects)
+
+    ledger_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / _ATLAS
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    fs = FakeFs()
+    fs.files[ledger_path] = "development_status:\n  22-11-atlas-owns-this-one: done\n"
+
+    facts = gather_dispatch_git_facts(
+        vcs,
+        fs=fs,
+        repo_root=tmp_path,
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11"),
+        story_key="22.11",
+        project_slug=_ATLAS,
+        baseline_head_sha="baseline0001",
+        merge_subject_template="Merge {key} into main",
+    )
+
+    assert facts.story_merged_on_main is True
+
+
+def test_gather_dispatch_git_facts_missing_ledger_fails_closed(
+    tmp_path: Path,
+) -> None:
+    """No ledger on disk (not yet provisioned, or an unrelated read
+    failure) must degrade to trusting NOTHING from the templated shape --
+    the safe direction, mirroring today's fix rather than reopening the
+    original unscoped bug as an error-path fallback."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import gather_dispatch_git_facts
+
+    subjects = ("Merge 22.11 into main",)
+    vcs = _SubjectsVcs(tmp_path, subjects)
+    fs = FakeFs()
+
+    facts = gather_dispatch_git_facts(
+        vcs,
+        fs=fs,
+        repo_root=tmp_path,
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11"),
+        story_key="22.11",
+        project_slug=_ATLAS,
+        baseline_head_sha="baseline0001",
+        merge_subject_template="Merge {key} into main",
+    )
+
+    assert facts.story_merged_on_main is False
 
 
 def test_branch_and_worktree_path_sanitize_the_key_identically(

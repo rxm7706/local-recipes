@@ -2,7 +2,7 @@
 title: The templated merge-subject shape never masquerades as a same-numbered story from another project
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # The templated merge-subject shape never masquerades as a same-numbered story from another project
@@ -158,3 +158,26 @@ field trusted as proof that turned out not to be").
   22.2, 22.3, 22.4) recovered and landed by hand this session
   (`local-recipes` PRs #1251–#1254); not hotfixed per this repo's
   Dream-first policy — captured as its own Dream for a real fix.
+- **2026-09-11 (later, same session)** — Specced via `bmad-spec`
+  (`spec-marshal-templated-merge-subject-cross-project-collision`, 1
+  capability, self-validate PASS both passes), decomposed into Epic 35
+  (Story 35.1), and fixed. `_classify_merge_subject`/`merged_story_keys`/
+  `marshal_native_merged_keys` (`core/promotion.py`) gain an optional
+  `known_keys` parameter — a templated-shape match is trusted only when
+  its key is a member of the querying project's own tracked story
+  catalog, corroboration the bare subject text cannot provide.
+  `dispatch_supervisor/__main__.py::gather_dispatch_git_facts` (the exact
+  function that produced this session's false verdicts) wired to load
+  `known_keys` from the project's own `sprint-status-ledger.yaml` via a
+  new `_load_known_story_keys` helper, failing closed (trusts nothing) on
+  a missing or malformed ledger. Re-running this Dream's own live
+  reproduction: the templated-shape match count for a `pyforge-doctor`
+  query drops from 79 to 30, with `22.11`/`22.12`/`23.x`/`28.x`/`39.x`–
+  `49.x` all excluded. Full `pyforge-marshal` test suite green (7,799
+  passed), including new regression tests reproducing the exact
+  2026-09-11 false positive against a fake filesystem/ledger. Named,
+  explicit residual (not closed by this story, mirroring the sibling
+  fix's own "not every caller" Non-goal): `cli/dispatch.py`'s wave/
+  reconcile paths, `dispatch_land.py`, `cli/status.py`, `cli/land.py`, and
+  `branch_story_merge_confirmed_by_grammar` remain unwired. Status:
+  `dreamt` → `realized`; the Spec closes as `shipped`.

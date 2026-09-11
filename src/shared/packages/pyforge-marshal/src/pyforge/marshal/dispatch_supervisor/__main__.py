@@ -9,6 +9,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
+
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -64,7 +66,7 @@ from ..core.journal import (
     prepare_for_write_offloading_fields,
     sidecar_texts_for_lines,
 )
-from ..core.identity import normalize, resolve_feed
+from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
@@ -275,9 +277,56 @@ def _journal_dispatch_preserve(
     return counter
 
 
+def _load_known_story_keys(
+    fs: FsPort, *, repo_root: Path, project_slug: str
+) -> frozenset[StoryKey]:
+    """Every ``StoryKey`` ``project_slug``'s OWN tracked ledger already
+    knows about (Story 35.1,
+    spec-marshal-templated-merge-subject-cross-project-collision CAP-1) --
+    the corroborating, project-scoped signal ``merged_story_keys``'s
+    templated-shape branch needs, since the bare "Merge {key} into main"
+    subject carries no station token of its own. Degrades to
+    ``frozenset()`` (no corroboration available -- fails CLOSED, trusting
+    nothing from the templated shape) on a missing or malformed ledger,
+    never raises: a ledger read failure must not crash dispatch
+    verification, and an empty result is the SAFE direction to degrade in
+    (excludes everything from the templated shape) rather than the
+    dangerous one (trusting everything, today's bug)."""
+    ledger_path = (
+        repo_root
+        / "_bmad-output"
+        / "projects"
+        / project_slug
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    text = fs.read_text(ledger_path)
+    if text is None:
+        return frozenset()
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return frozenset()
+    if not isinstance(data, dict):
+        return frozenset()
+    development_status = data.get("development_status")
+    if not isinstance(development_status, dict):
+        return frozenset()
+    keys: set[StoryKey] = set()
+    for raw_key in development_status:
+        if not isinstance(raw_key, str) or raw_key.startswith("epic-"):
+            continue
+        try:
+            keys.add(normalize(raw_key))
+        except MalformedStoryKeyError:
+            continue
+    return frozenset(keys)
+
+
 def gather_dispatch_git_facts(
     vcs: VcsPort,
     *,
+    fs: FsPort,
     repo_root: Path,
     worktree: Path,
     story_key: str,
@@ -323,8 +372,9 @@ def gather_dispatch_git_facts(
     )
     branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
     subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
+    known_keys = _load_known_story_keys(fs, repo_root=repo_root, project_slug=project_slug)
     merged_keys = promotion_core.merged_story_keys(
-        subjects, merge_subject_template, project_slug
+        subjects, merge_subject_template, project_slug, known_keys=known_keys
     )
     story_merged = normalize(story_key) in merged_keys
     return DispatchGitFacts(
@@ -503,6 +553,7 @@ def _run_supervisor_finalize_sequence(
     try:
         git_facts = gather_dispatch_git_facts(
             vcs,
+            fs=fs,
             repo_root=repo_root,
             worktree=worktree,
             story_key=story_key,
@@ -957,6 +1008,7 @@ def run_dispatch_supervisor(
         try:
             git_facts = gather_dispatch_git_facts(
                 vcs,
+                fs=fs,
                 repo_root=repo_root,
                 worktree=worktree,
                 story_key=story_key,
@@ -1040,6 +1092,7 @@ def run_dispatch_supervisor(
             try:
                 git_facts = gather_dispatch_git_facts(
                     vcs,
+                    fs=fs,
                     repo_root=repo_root,
                     worktree=worktree,
                     story_key=story_key,
@@ -1112,6 +1165,7 @@ def run_dispatch_supervisor(
                     try:
                         git_facts = gather_dispatch_git_facts(
                             vcs,
+                            fs=fs,
                             repo_root=repo_root,
                             worktree=worktree,
                             story_key=story_key,
@@ -1189,6 +1243,7 @@ def run_dispatch_supervisor(
             try:
                 git_facts = gather_dispatch_git_facts(
                     vcs,
+                    fs=fs,
                     repo_root=repo_root,
                     worktree=worktree,
                     story_key=story_key,

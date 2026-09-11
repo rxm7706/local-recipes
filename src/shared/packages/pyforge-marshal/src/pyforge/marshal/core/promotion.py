@@ -124,17 +124,44 @@ def extract_story_key_from_github_merge_subject(
     return _story_key_from_ref(ref)
 
 
-def _classify_merge_subject(subject: str, template: str, project_slug: str) -> StoryKey | None:
+def _classify_merge_subject(
+    subject: str,
+    template: str,
+    project_slug: str,
+    *,
+    known_keys: frozenset[StoryKey] | None = None,
+) -> StoryKey | None:
     """Classify one commit subject via the shared landing-evidence grammar.
 
     After the grammar's own merge-subject shapes, also tries branch-name
     grammars on the branch token embedded in a GitHub PR merge subject --
     recovery landings via ``land/<station>-<epic>-<seq>`` branches carry
     that shape in the merge commit even though
-    ``parse_github_pr_merge_subject`` scopes on ``<station>/`` prefixes."""
+    ``parse_github_pr_merge_subject`` scopes on ``<station>/`` prefixes.
+
+    ``known_keys`` (Story 35.1,
+    spec-marshal-templated-merge-subject-cross-project-collision CAP-1):
+    the AD-24 templated shape (``"Merge {key} into main"``) carries no
+    station token in its own text, unlike its four sibling parsers, which
+    all take and use ``project_slug`` -- ``parse_templated_merge_subject``
+    genuinely cannot prove a match belongs to ``project_slug`` from the
+    subject string alone. When ``known_keys`` is given, a templated-shape
+    match is trusted only if its key is a member -- the caller's own
+    tracked ledger is the corroborating, project-scoped signal git text
+    cannot provide. ``None`` (the default) preserves today's unscoped
+    behavior for callers that have not yet been updated to supply it."""
     match = classify_merge_subject(subject, template=template, project_slug=project_slug)
     if match is not None:
-        return _story_key_from_ref(match.key)
+        key = _story_key_from_ref(match.key)
+        if key is None:
+            return None
+        if (
+            known_keys is not None
+            and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+            and key not in known_keys
+        ):
+            return None
+        return key
     gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if gh_match is not None:
         branch_match = classify_branch_name(
@@ -159,6 +186,7 @@ def merged_story_keys(
     project_slug: str,
     *,
     commits: tuple[tuple[str, str], ...] = (),
+    known_keys: frozenset[StoryKey] | None = None,
 ) -> frozenset[StoryKey]:
     """Every ``StoryKey`` whose landing evidence appears in ``subjects`` or
     ``commits`` (Story 20.10 / FR-191 CAP-3).
@@ -167,10 +195,14 @@ def merged_story_keys(
     ``(sha, subject)`` pair in ``commits`` is additionally classified via
     ``pyforge.core.landing_evidence.classify_commit`` (the pre-convention
     recovery SHA allowlist lives there). A non-matching entry is silently
-    skipped, never raised. Pure: no I/O, no ``VcsPort``."""
+    skipped, never raised. Pure: no I/O, no ``VcsPort``.
+
+    ``known_keys`` (Story 35.1): forwarded verbatim to
+    ``_classify_merge_subject`` -- see its own docstring. ``None`` (the
+    default) preserves today's unscoped templated-shape behavior."""
     keys: set[StoryKey] = set()
     for subject in subjects:
-        key = _classify_merge_subject(subject, template, project_slug)
+        key = _classify_merge_subject(subject, template, project_slug, known_keys=known_keys)
         if key is not None:
             keys.add(key)
     for sha, subject in commits:
@@ -211,7 +243,11 @@ def branch_story_merge_confirmed_by_grammar(
 
 
 def marshal_native_merged_keys(
-    subjects: tuple[str, ...], template: str, project_slug: str
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    known_keys: frozenset[StoryKey] | None = None,
 ) -> frozenset[StoryKey]:
     """Story 5.9 ("a story finished by hand is not invisible to the
     ledger", AD-5/AD-24/AD-33): every ``StoryKey`` whose merge subject in
@@ -266,15 +302,30 @@ def marshal_native_merged_keys(
     documents. Pure: no I/O, no ``VcsPort`` -- ``subjects`` is the caller's
     already-gathered ``VcsPort.commit_subjects`` result (the SAME tuple
     ``merged_story_keys``/``_scan_promotions`` already gathered -- never a
-    second git read)."""
+    second git read).
+
+    ``known_keys`` (Story 35.1): the templated shape (the first of
+    ``_MARSHAL_NATIVE_SHAPES``) carries no station token in its own text --
+    see ``_classify_merge_subject``'s own docstring for the full
+    rationale. When given, a templated-shape match is trusted only if its
+    key is a member; the bmad-loop-native shape already carries real
+    ``project_slug`` scoping via ``parse_bmadloop_merge_subject`` and is
+    unaffected."""
     keys: set[StoryKey] = set()
     for subject in subjects:
         match = classify_merge_subject(subject, template=template, project_slug=project_slug)
         if match is None or match.shape not in _MARSHAL_NATIVE_SHAPES:
             continue
         key = _story_key_from_ref(match.key)
-        if key is not None:
-            keys.add(key)
+        if key is None:
+            continue
+        if (
+            known_keys is not None
+            and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+            and key not in known_keys
+        ):
+            continue
+        keys.add(key)
     return frozenset(keys)
 
 
