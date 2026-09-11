@@ -22,6 +22,7 @@ A pain to solve. A tracked deferred-work entry says `owner: Story 4.5` (or names
 - **CAP-1 — backlog-intake surfacing.**
   - **intent:** When a new story/spec is drafted for an epic, tracked deferred-work entries whose `owner:`/prose names that epic or a story within it are surfaced as candidate acceptance criteria, instead of staying inert prose only a human happens to notice by re-reading the ledger.
   - **success:** Given a story/spec draft naming epic E, tracked deferred-work entries across the fleet's ledgers whose `owner:`/prose names epic E or a story within it are surfaced to the drafting session as candidates.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: live `doctor backlog-intake "13"` scans every station's tracked ledger fleet-wide and returns 47 precisely-matched entries naming Epic/Story 13.x; `tests/unit/test_sources_backlog_intake.py::test_epic_1_query_does_not_match_epic_11_prose` (the exact substring-collision guard the Constraints section calls out) passing, 39/39 backlog-intake unit tests green.
 
 ## Constraints
 

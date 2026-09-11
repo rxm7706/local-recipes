@@ -47,6 +47,7 @@ rather than patch code out of turn.
   - **success:** Re-running `check_coverage` against the live `pyforge-marshal` tree no longer
     reports `spike-0-copier-api-fit-report.md` (or a future report following the same naming
     convention) as `uncovered`; `pixi run -e local-recipes detectors-ci` is clean for `bmad-drift`.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `factory.py:1152` carries the generalized rule (`re.fullmatch(r"planning-artifacts/spike-\d+-[a-z0-9-]+-report\.md", rel)` → `"archive:spike-report"`); live `bmad-drift-check --json` against the real tree shows 5 `uncovered` findings today, none of them `spike-0-copier-api-fit-report.md` (the 5 are unrelated later-landed shapes — see CAP-2's verification below).
 - **CAP-2**
   - **intent:** The fix ships as one classification rule, added in the same place and the same
     dated-comment convention the file already uses for its prior 14-shape (2026-07-28) and
@@ -54,6 +55,7 @@ rather than patch code out of turn.
     files the new rule genuinely does not match.
   - **success:** A file that still matches no rule at all -- including a spike-report look-alike
     that doesn't fit the agreed pattern -- still HARD-fails as `uncovered`, exactly as before.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: the fail-closed default demonstrably still holds — live `bmad-drift-check` reports 5 genuinely `uncovered` files today (`benchmarks/structure-graph-dispatch-28-31.json`, two root-level `spec-*.md`/`.memlog.md` files under `planning-artifacts/specs/` not matching any existing rule, `spec-33-9-...`, `spec-34-4-...`) — unrelated later-landed shapes, not a spike-report regression, and exactly the "hole, not a pass" behavior CAP-2 commits to; these are flagged separately, out of this Spec's scope (one confirmed shape, one confirmed rule).
 
 ## Constraints
 

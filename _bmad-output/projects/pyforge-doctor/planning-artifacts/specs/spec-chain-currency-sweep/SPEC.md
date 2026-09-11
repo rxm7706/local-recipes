@@ -26,22 +26,27 @@ A vision to realize on top of a proven pain: every Dream→Code chain on the boa
 - **CAP-1 — the sweep detector (SHIPPED)**
   - **intent:** Any agent can learn, in one command, whether the eight station planning spines are current — the per-project chain audit narrowed to the staleness + coherence checkpoints and looped across all eight station slugs.
   - **success:** `pixi run -e local-recipes chain-currency-sweep-check` (as-built: `scripts/chain_currency_sweep_check.py`, auto-discovered registry) exits 0 when all spines are current, 1 on any staleness/coherence finding, 2 when a station's audit could not run; supports `--json` and `--project <slug>`.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: live run exits 1 (2 genuine findings: pyforge-atlas + pyforge-scribe staleness checkpoints, correctly non-zero); `--json` returns a well-formed `{findings, errors}` document with `errors: []`; `--project pyforge-doctor` correctly scopes to one station ("all 1 station spine(s) current"). Exit-code contract (0/1/2) confirmed live for the 0 and 1 cases; the 2 (could-not-run) case not exercised this pass (no station audit is currently broken).
 
 - **CAP-2 — the runbook is the procedure of record**
   - **intent:** A red detector is dispatched straight into remediation from the tracked runbook — the audit's real mechanics (feeds cascade order, 2-day grace window, strict `updated:` frontmatter precedence), the finding→remedy map, and the dispatch/land rules — never re-reverse-engineered per run.
   - **success:** An agent given only `CHAIN-CURRENCY-RUNBOOK.md` and a red detector clears the findings without reading detector internals; the detector's failure output names the runbook.
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` exists (9.5 KB, tracked); live run's failure line reads `"FINDINGS: 2 across 2 station(s) — run the reconciler sweep (CHAIN-CURRENCY-RUNBOOK.md)"`, naming the runbook directly in the failure output.
 
 - **CAP-3 — triggered per-station cascades**
   - **intent:** The sweep runs on its trigger set — a fleet research wave, a spec re-stamp campaign, an epic close landing substantial code, or the detector going red — as eight independent per-station cascades (brief → PRD → arch → epics validation, plus a retro wherever code→retro fired), one commit per station, all inside one grace window.
   - **success:** After a sweep, `chain-currency-sweep-check` exits 0 across all 8 stations; each cascade was dispatched as single-story work.
+  - **verified:** 2026-09-11 — PASS (Run 1 evidence only) — mechanical re-verification at HEAD a0aba94b0a: `CHAIN-CURRENCY-RUNBOOK.md`'s Run 1 (2026-08-26) Worked Example confirms this shape was actually executed — eight parallel single-story station agents, one commit per station, all eight green on first iteration, `chain-currency-sweep-check` exiting 0 fleet-wide afterward. Demonstrates CAP-3 was built and holds for at least one real run; see CAP-6 below for a gap in whether later runs kept following the same discipline.
 
 - **CAP-4 — the grounding triple**
   - **intent:** Every artifact touched is reconciled against all three mandatory sources: (1) the upstream artifact that fired the edge, folded in rather than cited; (2) the Unifying Strategy pack (`spec-pyforge-unifying-strategy` + stack, console-parity inventory, architecture diagrams, resilience invariants) so the station's contract states its hub-and-spoke role; (3) the as-built `src/` code, with contract-vs-code divergence written down, never papered over.
   - **success:** Each reconciled artifact's dated addendum names all three grounding sources; when the strategy spec is itself `overtaken`, it is resolved before any station cascade grounds on it.
+  - **verified:** 2026-09-11 — PASS (Run 1 evidence only) — mechanical re-verification at HEAD a0aba94b0a: Run 1's own recorded lessons confirm genuine (not stamp-only) reconciliation happened — real defects surfaced and fixed in the process (atlas's brief had four shipped-reality overclaims, steward's arch spine had an unparseable frontmatter, herald found two stale `dashboard-check` remnants, mason's chain counts had drifted); Phase 0 explicitly resolved the strategy spec's `overtaken` status (three residual open questions) before any station cascade ran.
 
 - **CAP-5 — no stamp without reconcile**
   - **intent:** Every `updated:` frontmatter bump is accompanied by a dated reconciliation addendum in the same file — an `updated:` bump without a genuine reconcile is lying to the board and is forbidden.
   - **success:** In any sweep PR, every diff hunk that bumps `updated:` pairs with a dated addendum in that same file; a stamp-only diff fails review.
+  - **verified:** 2026-09-11 — PASS (Run 1 evidence only) — mechanical re-verification at HEAD a0aba94b0a: Run 1's Worked Example explicitly records genuine reconciliation content per station (see CAP-4's verification above), not a bare frontmatter bump — the same evidence backs this CAP's no-stamp-gaming claim.
 
 - **CAP-6 — Worked-Example accumulation**
   - **intent:** Each sweep run leaves a record in the runbook, timeless-workflow style, so the procedure compounds — proportionate to the run, not a fixed narrative cost.
