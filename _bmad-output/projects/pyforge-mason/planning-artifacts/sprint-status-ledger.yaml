@@ -40,7 +40,7 @@ development_status:
   14-1-bmad-eval-quality-builds-a-__win-variant: done
   15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors: blocked
   15-2-rule-2-retro-for-story-13-2-lands-in-the-cfe-skill: done
-  16-1-mason-s-own-env-satisfies-the-cfe-import-floor: backlog
+  16-1-mason-s-own-env-satisfies-the-cfe-import-floor: done
   16-2-a-first-estate-caller-of-mason-recipe: backlog
   16-3-mason-s-mcp-tool-surface-passes-the-cli-tool-parity-gate: backlog
   16-4-the-containerfile-convention-guard-derives-its-file-list: done
