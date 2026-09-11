@@ -201,6 +201,65 @@ is the same story re-entered as a “fresh review.”
 
 Lands as CAP-11 in `spec-marshal-single-story-dispatch`, Epic 29.
 
+## Addendum (2026-09-11): CAP-3's bound verify command can miss the story's real surface
+
+**The gap.** `MRS-GATE-010`/`011` bind CAP-3's "runs the story's real verify commands" to
+exactly **one** command per station, read from that station's `marshal-policy.toml`
+`verify_commands` — deliberately fixed, so a dispatched session cannot narrow its own
+verification to dodge coverage (the exact exploit `MRS-GATE-011` was hardened against,
+Story 49.3, this session). But `src/platform/` is a shared, cross-station surface — the one
+Django host every station's portal mounts into — and a station's bound command only exercises
+that station's own package (e.g. `pyforge-steward-test` never runs `src/platform/`'s own
+suite: Django system checks, ruff, mypy, the full `src/platform/tests/` tree). A story whose
+real diff lands in `src/platform/` can pass CAP-3's gate having never exercised the code it
+changed.
+
+**Why this is usually invisible.** The real backstop is GitHub Actions' `platform-ci.yml`,
+path-triggered on every PR, which *does* run the full surface — the narrow per-station gate is
+deliberately fast because that broader net is supposed to catch what it misses, before merge.
+
+**Live evidence (this session, 2026-09-10/11).** GitHub Actions has been down fleet-wide
+(account-wide billing outage) for the entire session, so the backstop has caught nothing —
+every PR this whole session was merged on local verification alone. Steward Story 49.14
+(CAP-10) passed its bound `pyforge-steward-test` gate and the harness's own targeted pytest
+run, and its own review pass explicitly considered and rejected "verification command misses
+platform tests" as false. A manual rescue pass running `platform-ci-local -- --test` (this
+repo's own local replay of `platform-ci.yml`) surfaced four real, live defects the bound gate
+never touched: a `ModuleNotFoundError` at Django startup masking a genuine, unresolvable
+`twine`/`rich` dependency conflict; a real architectural-boundary violation
+(`test_station_portal_shells.py`'s client-only portal rule); a nested-`asyncio.run()` bug in a
+new transport wrapper; and four ruff findings. Sibling stories 49.6/49.7 separately surfaced a
+smaller, structural instance of the same class: each dispatch worktree's own isolated
+`.pixi/envs/` lacked a `local-recipes` install, so an unrelated CLI-availability meta-test
+false-failed under the bound gate — not a `src/platform/` defect, but the same root cause
+(the bound command's fixed scope doesn't account for what a fresh dispatch worktree actually
+needs to exercise the real surface).
+
+**Approach.** One new CAP (CAP-12), composing CAP-3 rather than replacing it — the bound
+per-station command stays the anti-gaming floor, never removed or weakened:
+
+1. The dispatch driver already computes the story's diff surface for CAP-3's frozen-surface
+   check. Extend that computation: when the diff touches `src/platform/`, require
+   `pixi run -e local-recipes platform-ci-local -- --test` (or a documented, cheaper
+   equivalent that still exercises Django startup — the class of bug this addendum
+   documents is specifically an eager-import/startup failure a narrower pytest-only
+   invocation cannot see) to pass in addition to the station-bound command, before CAP-4
+   land. A failure there is a loud non-landing verdict naming the failed cross-surface gate —
+   same lattice CAP-3 already uses, never a silent skip.
+2. Generalize past `src/platform/` specifically: any station whose own policy names a
+   shared-surface prefix and a corresponding broader check gets the same treatment — this
+   addendum's own motivating case is `src/platform/`, but the mechanism is not steward-only
+   (every station's portal lives there).
+
+**Non-goals:** not replacing GitHub Actions as the authoritative backstop — this is a
+narrower, faster local supplement for exactly the cross-surface blind spot, not a claim to
+replicate full CI fidelity; not weakening or removing the per-station `MRS-GATE-011`
+byte-match binding (CAP-12 composes on top of it, never instead of it); not auto-detecting
+every possible shared surface fleet-wide in the first pass — `src/platform/` is the proven,
+motivating case.
+
+Lands as CAP-12 in `spec-marshal-single-story-dispatch`.
+
 ## Realization log
 
 - **2026-08-21** — Seeded `dreamt` (`a17626226b`); `spec-marshal-single-story-dispatch` derived under
@@ -227,3 +286,10 @@ Lands as CAP-11 in `spec-marshal-single-story-dispatch`, Epic 29.
   CAP-17 publishing seam must be one publisher (`spec-marshal-token-economy` CAP-18, Story 33.4).
   Batch:
   `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+
+- **2026-09-11** — Addendum: CAP-3's bound verify command can miss the story's real surface
+  when it crosses into a shared cross-station directory (`src/platform/`). Motivated by a live
+  rescue of steward Story 49.14, which passed its bound gate while shipping four real defects
+  a full `platform-ci-local -- --test` run caught — GitHub Actions' own backstop has been down
+  fleet-wide the entire session, so the narrow gate was the only one running. Contracted as
+  CAP-12 in the Spec. Spec status `shipped` → `in-progress` pending decomposition.
