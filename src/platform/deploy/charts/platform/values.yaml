@@ -237,6 +237,16 @@ postgres:
   fsGroup: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
+  # Story 51.1: BYO external PostgreSQL. When enabled, the three in-cluster
+  # postgres templates (StatefulSet, Service, backup PVC) render nothing;
+  # DATABASE_URL / MIGRATION_DATABASE_URL come from existingSecret (or
+  # postgres.external.secretName when set) pointing at the external instance.
+  external:
+    enabled: false
+    # Empty uses top-level existingSecret.
+    secretName: ""
+    databaseUrlKey: DATABASE_URL
+    migrationDatabaseUrlKey: MIGRATION_DATABASE_URL
   # Story 41.1: physical base backup + WAL archive to a separate RWX PVC.
   backup:
     enabled: true
