@@ -2,7 +2,8 @@
 title: "A first estate caller of mason recipe"
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'blocked'
+baseline_revision: 'e16443693d844e87fc473a90096ab6fac7a7258e'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -108,5 +109,18 @@ run with its command and output. The delegation boundary is unchanged — mason 
 ## Spec Change Log
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
+
+## Auto Run Result
+
+Status: blocked
+
+Blocking condition: Story 16.1 dependency not satisfied — `pixi run --frozen -e pyforge-mason mason doctor --format json` reports `unavailable_verbs: ['recipe']`, `cfe_import_floor_satisfied: false`, `cfe_import_floor_missing: ['truststore', 'conda-forge-metadata']`. The spec's I/O matrix row for `mason doctor` on the lane's env explicitly blocks this story until 16.1 propagates. Wiring a caller now would violate the spec's "no caller should be left pointing at a broken invocation" constraint (`mason recipe build` in the lean env returns `returncode: 127` — `rattler-build: command not found` — even when invoked).
+
+Pre-flight evidence (2026-09-11):
+- `pixi run --frozen -e pyforge-mason mason doctor --format json` → recipe verb unavailable, CFE import floor missing truststore + conda-forge-metadata
+- `[feature.pyforge-mason.dependencies]` in `pixi.toml` still lacks those two packages (Story 16.1 scope)
+- No code changes made; baseline revision `e16443693d844e87fc473a90096ab6fac7a7258e`
+
+Unblock: dispatch and land Story 16.1 first, then re-dispatch 16.2.
 
 ## Review Triage Log
