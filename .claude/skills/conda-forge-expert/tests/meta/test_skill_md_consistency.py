@@ -185,7 +185,8 @@ class TestSkillMdConsistency:
             "feedstock_lookup.py",
             # FR-155 parity-gate library modules (mason Story 16.3): no
             # __main__/argparse entry point, imported directly by
-            # tests/meta/test_cli_tool_parity.py, never run standalone.
+            # conda_forge_server.py and tests/meta/test_cli_tool_parity.py,
+            # never run standalone.
             "mcp_tools.py",
             "mcp_parity.py",
         }

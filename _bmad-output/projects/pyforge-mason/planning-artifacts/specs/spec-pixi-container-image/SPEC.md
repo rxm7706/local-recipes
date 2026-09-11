@@ -28,6 +28,7 @@ what remains is making the discipline uniform and auditable.
   *Success:* the convention doc exists; the guard test reds on a planted
   ENV-credential or unpinned base, **and the file list it checks is derived
   from the tracked tree, so a newly added Containerfile is governed on arrival.**
+  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD df260ed9ea: `docs/reference/container-base-layer-convention.md` exists (5830 bytes); `pixi run -e pyforge-ci python -m pytest tests/packaging/test_containerfile_base_layer_convention.py -q` — 25/25 passing, including `test_discover_containerfiles_finds_all_four` (asserts `>= 4`, non-vacuous) and `test_discovery_is_not_vacuous`; all 4 tracked Containerfiles confirmed present on disk (`./Containerfile`, `src/platform/Containerfile`, `src/platform/compose/mcp-host/Containerfile`, `src/platform/compose/dbgpt/Containerfile`); file-list discovery reads `git ls-files` for `Containerfile*`, not a hard-coded tuple (Story 16.4's residual, confirmed resolved).
 
 ## Constraints
 No new base image is BUILT (the official pixi image serves); the pixi
