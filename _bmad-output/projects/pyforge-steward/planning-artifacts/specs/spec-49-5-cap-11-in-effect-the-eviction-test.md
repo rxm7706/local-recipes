@@ -2,7 +2,7 @@
 title: 'CAP-11 in effect — the eviction test'
 type: 'test'
 created: '2026-09-11'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '6ae202c53f5213eb6faab857fbed1415d1c17f26'

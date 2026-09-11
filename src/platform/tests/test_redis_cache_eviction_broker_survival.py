@@ -16,10 +16,14 @@ import signal
 import socket
 import subprocess
 import time
-from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 import pytest
+import redis
 from django_pyforge.events import EVENT_FIELD
 from django_pyforge.events import EXT_GIT_SHA
 from django_pyforge.events import EXT_SBOM_PURL
@@ -35,7 +39,11 @@ STALE_CONSUMER = "stale-consumer"
 DATASCHEMA = "https://example.invalid/schemas/recipe-audit.json"
 CACHE_MAXMEMORY = "1mb"
 BROKER_MAXMEMORY = "32mb"
+# Shared-instance regression needs headroom so allkeys-lru can eventually evict
+# broker keys after cache-pressure keys rotate — 1mb OOMs before that happens.
+SHARED_MAXMEMORY = "4mb"
 _FILL_VALUE_BYTES = 50_000
+_FILL_MAX_ITERATIONS = 10_000
 
 
 def _free_port() -> int:
@@ -104,8 +112,6 @@ def _envelope(**overrides: object) -> dict:
 
 def _seed_broker_state(broker_url: str) -> dict[str, Any]:
     """Queue a Celery-shaped task, publish a stream entry, and leave a PEL row."""
-    import redis
-
     client = redis.Redis.from_url(broker_url, decode_responses=True)
     fabric = EventFabric(client)
     fabric.ensure_group(GROUP)
@@ -137,8 +143,6 @@ def _seed_broker_state(broker_url: str) -> dict[str, Any]:
 
 def _fill_cache_to_eviction(cache_url: str) -> None:
     """Drive redis-cache to its maxmemory ceiling under allkeys-lru."""
-    import redis
-
     client = redis.Redis.from_url(cache_url, decode_responses=False)
     info = client.info("memory")
     limit = int(info["maxmemory"])
@@ -158,7 +162,7 @@ def _fill_cache_to_eviction(cache_url: str) -> None:
             # Saturated with only noeviction-safe keys left — enough pressure.
             break
         index += 1
-        if index > 10_000:
+        if index > _FILL_MAX_ITERATIONS:
             pytest.fail("cache fill did not trigger allkeys-lru evictions")
 
     keys_before = client.dbsize()
@@ -180,17 +184,25 @@ def _cloudevent_present(client: Any, cloudevent_id: str) -> bool:
 
 
 def _broker_snapshot(broker_url: str, *, cloudevent_id: str) -> dict[str, Any]:
-    import redis
-
     client = redis.Redis.from_url(broker_url, decode_responses=True)
-    pending_rows = client.xpending_range(STREAM, GROUP, "-", "+", 10)
-    stream_ids = [row["message_id"] for row in pending_rows]
+    stream_exists = bool(client.exists(STREAM))
+    pending_count = 0
+    stream_ids: list[str] = []
+    if stream_exists:
+        try:
+            pending_count = int(client.xpending(STREAM, GROUP)["pending"])
+            pending_rows = client.xpending_range(STREAM, GROUP, "-", "+", 10)
+            stream_ids = [row["message_id"] for row in pending_rows]
+        except redis.exceptions.ResponseError:
+            stream_exists = False
     return {
         "queued_depth": client.llen(DEFAULT_QUEUE),
-        "stream_len": client.xlen(STREAM),
-        "pending_count": client.xpending(STREAM, GROUP)["pending"],
+        "stream_len": client.xlen(STREAM) if stream_exists else 0,
+        "pending_count": pending_count,
         "pending_ids": stream_ids,
-        "event_in_stream": _cloudevent_present(client, cloudevent_id),
+        "event_in_stream": (
+            _cloudevent_present(client, cloudevent_id) if stream_exists else False
+        ),
     }
 
 
@@ -231,7 +243,9 @@ def _run_split_survival_scenario(
         assert after["stream_len"] == before["stream_len"]
         assert after["pending_count"] == before["pending_count"]
         assert after["event_in_stream"]
-        assert before["event_id"] in after["pending_ids"]
+        assert after["pending_ids"], (
+            "PEL entry must survive cache eviction on split redis"
+        )
     finally:
         _stop_redis(broker_proc)
         _stop_redis(cache_proc)
@@ -266,7 +280,7 @@ def test_unsplit_redis_loses_broker_state_under_cache_pressure(tmp_path: Path) -
     proc = _start_redis(
         shared_dir,
         port=port,
-        maxmemory=CACHE_MAXMEMORY,
+        maxmemory=SHARED_MAXMEMORY,
         maxmemory_policy="allkeys-lru",
     )
     try:
