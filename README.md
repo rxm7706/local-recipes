@@ -150,11 +150,12 @@ local-recipes/
 │  ├─ <recipe>/recipe.yaml        # Rattler Build format (modern)
 │  └─ <recipe>/meta.yaml          # conda-build format (legacy)
 ├─ docs/                           # Project Documentation
-│  ├─ developer-guide.md           # Comprehensive build guide
+│  ├─ reference/developer-guide.md # Comprehensive build guide
 │  ├─ enterprise-deployment.md     # Air-gapped / JFrog deployment guide
 │  ├─ mcp-server-architecture.md   # FastMCP / BMAD architecture
-│  ├─ bmad-setup-plan.md           # BMAD installation + multi-project layout plan
 │  └─ specs/                       # Project tech-specs (e.g. copilot-bridge VSIX)
+├─ archive/
+│  └─ docs/bmad-setup-plan.md      # BMAD installation + multi-project layout plan
 ├─ _bmad/                          # BMAD configuration (installer-managed + custom overrides)
 ├─ _bmad-output/                   # BMAD artifacts, organized by project (see PROJECTS.md)
 │  ├─ PROJECTS.md                  # Multi-project index + add-a-project guide
@@ -180,11 +181,7 @@ scripts/bmad-switch --current          # print active project
 scripts/bmad-switch <slug>             # set active project
 ```
 
-**Active-project resolution priority** (`_bmad/scripts/resolve_config.py`):
-1. `--project <slug>` per-call CLI flag
-2. `BMAD_ACTIVE_PROJECT` environment variable
-3. `_bmad/custom/.active-project` marker file (managed by `scripts/bmad-switch`)
-4. None — only global config layers resolve
+**Active-project resolution priority** — see **`CLAUDE.md` § "Multi-Project Pattern"** for the complete resolution order, two-symlink mechanism, and parallel-agent guidance (`_bmad/scripts/resolve_config.py`).
 
 ## Style and linting
 - Python: `setup.cfg` configures flake8 with `max-line-length = 88`. Mirror nearby code style when editing helper scripts.
@@ -240,14 +237,46 @@ pixi run -e build python test-recipes.py --random 5 --dry-run
 
 ## GitHub Actions Workflows
 
-On-demand CI workflows for all platforms (manual trigger only to preserve quota):
+The repo ships **19** workflow files under `.github/workflows/`. They fall into automatic PR gates, push/schedule maintenance, and on-demand recipe builds — verified against each file's `on:` block.
+
+### Automatic PR gates
+
+These run on `pull_request` events (several also re-run on push to `main`):
+
+| Workflow | Triggers | Role |
+|----------|----------|------|
+| `detectors.yml` | `pull_request`, push to `main` | Repo health detectors (`detectors-ci` subset) |
+| `staged-recipes-linter.yml` | `pull_request` | Recipe lint (staged-recipes parity) |
+| `coverage-gates.yml` | `pull_request`, push to `main` | PyForge station coverage gates |
+| `pyforge-station-tests.yml` | `pull_request`, push to `main` (path-filtered) | PyForge station test matrix |
+| `platform-ci.yml` | `pull_request`, push to `main` (path-filtered) | Django platform CI |
+| `pyforge-pip-install.yml` | `pull_request` (path-filtered) | Pip-install smoke for PyForge packages |
+| `cfe-regression-net.yml` | `pull_request`, push to `main` (path-filtered) | CFE network regression tests |
+
+`test-{linux,macos,windows}.yml` are reusable `workflow_call` targets invoked by `test-all.yml`, not standalone entry points.
+
+### Push / schedule / other automatic triggers
+
+| Workflow | Triggers | Role |
+|----------|----------|------|
+| `dashboard.yml` | push to `main`, `workflow_dispatch` | Fleet dashboard Pages deploy |
+| `kedro-viz-publish.yml` | push to `main` (path-filtered), `workflow_dispatch` | Kedro viz publish |
+| `herald-live-demo.yml` | push to `main`, PR closed on `main`, weekly schedule | Herald live demo |
+| `linter_issue_comment.yml` | `issue_comment` | Re-runs linter on maintainer comment |
+
+`reusable-staged-recipes-linter.yml` is a reusable `workflow_call` target invoked only by `reusable-staged-recipes-linter-selftest.yml`.
+
+### On-demand / manual workflows
+
+Manual recipe CI to preserve quota — dispatch with `gh workflow run`:
 
 | Workflow | Command | Description |
 |----------|---------|-------------|
-| Test All | `gh workflow run test-all.yml -f recipes="NAME"` | All platforms |
-| Test Linux | `gh workflow run test-linux.yml -f recipes="NAME"` | Docker builds |
-| Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native builds |
-| Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | x86_64 + ARM64 |
+| Test All | `gh workflow run test-all.yml -f recipes="NAME"` | All platforms (dispatches `test-{linux,macos,windows}.yml`) |
+| Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native Windows builds |
+| Sync PyPI mappings | `gh workflow run sync-pypi-mappings.yml` | Refresh conda-forge-expert PyPI mappings |
+| Platform deploy | `gh workflow run platform-deploy.yml` | Deploy platform from a CI promotion artifact |
+| Linter self-test | `gh workflow run reusable-staged-recipes-linter-selftest.yml` | Self-test for the reusable linter workflow |
 
 For detailed documentation on local testing, see the [Developer Guide](docs/reference/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/reference/mcp-server-architecture.md).
 

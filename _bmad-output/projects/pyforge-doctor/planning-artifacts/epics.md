@@ -1756,7 +1756,7 @@ on-demand/manual ones, against the real `.github/workflows/*.yml` trigger types
 to it rather than duplicating it
 **And** `CLAUDE.md`'s SKF block and its 8-station list agree, with Mason's deliberate
 skill-omission noted rather than silent
-**Status:** backlog
+**Status:** done
 
 ### Story 22.3: A repeatable Doctor detector catches this class of drift going forward
 

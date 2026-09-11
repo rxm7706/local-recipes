@@ -291,6 +291,7 @@ This repo carries a checked-in team-memory index at `.claude/memory/MEMORY.md` �
 [SKF Skills]|7 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
+|Mason is the eighth PyForge Guild station but deliberately has no SKF skill — recipe work uses `conda-forge-expert` instead (see `AGENTS.md` governance-currency policy on never minting `.claude/skills/pyforge-mason/`).
 |
 |[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
 |IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 131
+# stories: 139
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -68,7 +68,7 @@ development_status:
   21-8-deferred-work-intake-refuses-an-entry-that-cites-nothing-checkable: done
   21-9-a-capability-with-no-caller-outside-its-own-tests-is-a-finding: done
   22-1-the-2-identity-contradictions-are-fixed-at-their-source: backlog
-  22-2-the-4-cross-cutting-decay-findings-are-corrected: backlog
+  22-2-the-4-cross-cutting-decay-findings-are-corrected: done
   22-3-a-repeatable-doctor-detector-catches-this-class-of-drift-going-forward: backlog
   22-4-a-diátaxis-adapted-information-architecture-is-designed-for-the-general-facing-docs-layer: backlog
   22-5-the-tutorials-getting-started-and-how-to-guides-quadrants-are-populated: backlog
@@ -137,7 +137,7 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: backlog
+  epic-22: in-progress
   epic-22-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
