@@ -34,10 +34,7 @@ class StationClientDegraded(StationClientError):
     """Outbound station call degraded because the circuit is open."""
 
 
-def _guarded_transport(
-    transport: Transport,
-    breaker: CircuitBreaker = station_outbound_breaker,
-) -> Transport:
+def _guarded_transport(transport: Transport) -> Transport:
     """Wrap a transport so outbound failures trip the shared async breaker."""
 
     def wrapped(
@@ -49,7 +46,7 @@ def _guarded_transport(
         def _call() -> bytes:
             return transport(method, url, headers, body)
 
-        result = asyncio.run(breaker.call_or_degrade(_call))
+        result = asyncio.run(station_outbound_breaker.call_or_degrade(_call))
         if isinstance(result, Degraded):
             raise StationClientDegraded(result.reason)
         return result

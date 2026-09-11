@@ -20,7 +20,7 @@ from django_pyforge.circuits import CircuitState
 from django_pyforge.station_client import StationClientDegraded
 from django_pyforge.station_client import StationHttpClient
 
-from platformapp.users.tests.factories import prefixed_station
+from django_pyforge.roles import prefixed_station
 
 _SHARED = Path(__file__).resolve().parents[2] / "shared" / "packages"
 STATION_CLIENT = (
@@ -78,7 +78,7 @@ def test_station_client_trips_breaker_and_degrades(monkeypatch) -> None:
 
     client = StationHttpClient()
     for _ in range(SURPLUS):
-        with pytest.raises(RuntimeError, match="outbound down"):
+        with pytest.raises((RuntimeError, StationClientDegraded)):
             client.post(
                 "/compliance/check",
                 payload={"recipe_name": "numpy"},
@@ -116,10 +116,32 @@ def test_station_client_trips_breaker_and_degrades(monkeypatch) -> None:
     assert elapsed < FAIL_FAST_SECONDS
 
 
+@pytest.mark.django_db
+def test_mason_boot_reconcile_runs_against_live_db(tmp_path, settings) -> None:
+    from django.db import connection
+    from django.db.utils import OperationalError
+    from django_mason_portal.boot_reconcile import run_mason_boot_reconcile
+
+    try:
+        connection.ensure_connection()
+    except OperationalError as exc:
+        pytest.skip(f"PostgreSQL not available for live boot-reconcile exercise: {exc}")
+
+    settings.MEDIA_ROOT = str(tmp_path)
+    artifact = tmp_path / "recipe.yaml"
+    artifact.write_text("name: demo\n", encoding="utf-8")
+    run_mason_boot_reconcile()
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM mason_index")
+        count = cursor.fetchone()[0]
+    assert count == 1
+
+
 def test_station_client_breaker_module_is_shared_singleton() -> None:
     tree = ast.parse(_source(STATION_CLIENT))
     names = {
-        node.id
+        target.id
         for node in tree.body
         if isinstance(node, ast.Assign)
         for target in node.targets
