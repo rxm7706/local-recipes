@@ -44,6 +44,12 @@ can retry without a pip seam.
     **solve failure**, not a Containerfile uninstall. The image interpreter imports
     `django_structlog` (and the other extras that are not conda-provided) without a pip
     layer RUN.
+  - **verified:** 2026-09-11 — live: `pixi run -e python-agent-platform python -c "import
+    django_structlog"` succeeds with no pip layer; `[feature.platform-image-pip]` is gone
+    from `pixi.toml` entirely (not merely retired); `tests/packaging/test_platform_image_
+    one_pixi_env.py` 3/3 pass. The planted-overlap → solve-failure claim itself (deliberately
+    breaking the lock to watch it fail) not re-exercised — would require mutating pixi.toml
+    and a full re-lock, disproportionate to a doc-hygiene sweep.
 
 - **CAP-2 — Containerfile drops the pip installer**
   - **intent:** The runtime image no longer runs `python3 -m pip install --no-deps` for
@@ -52,6 +58,9 @@ can retry without a pip seam.
   - **success:** `rg 'pip install --no-deps' src/platform/Containerfile` is empty; the
     16.1 emitter is unused by the Containerfile; platform-ci-test still exists as its own
     env.
+  - **verified:** 2026-09-11 — live: `rg 'pip install --no-deps' src/platform/Containerfile`
+    returns no match; `platform_image_pip_layer.py`'s own docstring reads "Retired... must
+    not come back as an installer"; `platform-ci-test` env still present at `pixi.toml:878`.
 
 - **CAP-3 — pixitainer-docker re-eval**
   - **intent:** Re-test the **Docker/Podman** pixitainer backend against the Story 10.3
@@ -60,6 +69,10 @@ can retry without a pip seam.
   - **success:** A dated Design Note lists each table row pass/fail with the CLI/package
     actually invoked. A fail does not reopen SIF-only `pixi-containerize`. Mason presenton
     pixitainer usage is untouched.
+  - **verified:** 2026-09-11 — `pixitainer-eval.md` carries a dated "Design Note — 2026-08-25
+    (`pixitainer-docker` 0.8.3)" section with per-row pass/fail and the CLI/package cited
+    (`docker-cli`, `ENTRYPOINT pixi run --locked`); the recorded outcome is Fail, and the hand-
+    rolled Containerfile was kept — consistent with the success clause.
 
 ## Constraints
 
