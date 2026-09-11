@@ -1303,6 +1303,22 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
     )
 
 
+def _assert_postgres_backup_cronjob_absent(docs: list[dict[str, Any]]) -> None:
+    """Story 51.3: external Postgres — no in-cluster backup CronJob."""
+    cronjobs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "CronJob"
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres-backup"
+    ]
+    assert not cronjobs, cronjobs
+
+
 def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
     """When backup is disabled, no CronJob/PVC and no archive args on postgres."""
     cronjobs = [doc for doc in docs if doc.get("kind") == "CronJob"]
@@ -1977,6 +1993,18 @@ def test_postgres_backup_disabled_omits_cronjob():
         release="platform",
     )
     _assert_postgres_backup_disabled(docs)
+
+
+@requires_helm
+def test_external_postgres_omits_backup_cronjob():
+    """AC (Story 51.3): BYO Postgres overlay skips in-cluster backup CronJob."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "postgres.external.enabled=true",
+        release="platform",
+    )
+    _assert_postgres_backup_cronjob_absent(docs)
 
 
 @requires_helm
