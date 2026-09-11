@@ -108,7 +108,7 @@ which also lets you verify (and compare) any framework's build against the *same
 
 **The one property to protect:** the Spec's acceptance criteria must stay
 framework-agnostic and machine-checkable (behavior + oracle — never "BMAD story 3.2 passed").
-Keeping the Dream → spec handoff portable across agents is **Herald's** job.
+Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 
 ## Dream-first workflow (MANDATORY — every agent, every framework)
 
