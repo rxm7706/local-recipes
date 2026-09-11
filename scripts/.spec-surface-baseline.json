@@ -542,6 +542,10 @@
   "files": {},
   "memlog": "ddd991c4f0e5def5714ad840fe23d4e05f378faa"
  },
+ "pyforge-doctor/spec-general-docs-consistency": {
+  "files": {},
+  "memlog": "8cdd3017858a1c7fcc1ccdf8443492b754c08a60"
+ },
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "7fd2d497b95b2b83662582f19639bb830f9c8c2f",
