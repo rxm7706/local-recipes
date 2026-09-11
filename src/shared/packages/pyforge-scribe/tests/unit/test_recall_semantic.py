@@ -1,4 +1,4 @@
-"""Story 28.2 — semantic recall hits a no-overlap target; lexical misses it."""
+"""Story 28.2 — opt-in bag-of-concepts recall hits a no-overlap target; lexical misses it."""
 
 from __future__ import annotations
 

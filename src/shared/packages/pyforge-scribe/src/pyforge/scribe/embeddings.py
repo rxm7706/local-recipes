@@ -1,7 +1,9 @@
-"""Deterministic synonym-cluster embeddings for semantic recall (Story 28.2).
+"""Deterministic 32-dim SHA-256 bag-of-concepts for opt-in recall (Story 28.2).
 
-No engine imports. Clusters map distinct surface forms (`canine` / `dog`)
-onto one concept so cosine is high while lexical token overlap is empty.
+Not an embedding model — a hardcoded 7-entry synonym map (`_CONCEPTS`) maps
+distinct surface forms (`canine` / `dog`) onto one concept so pgvector cosine
+can rank above zero lexical overlap. CAP-14 grades **lexical** recall; this
+module backs the opt-in ``mode="semantic"`` / ``--semantic`` path only.
 Bucket indices use SHA-256, never salted ``hash()``.
 """
 

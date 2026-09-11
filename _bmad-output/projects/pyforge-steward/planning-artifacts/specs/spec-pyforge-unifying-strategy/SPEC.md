@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-10"
+updated: "2026-09-11"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -399,13 +399,23 @@ they are why this is not merely a UI project.
 
 - **CAP-14 — Scribe's graph outlives one file.**
   - **intent:** The knowledge graph gains a durable, concurrent-safe backing store behind its
-    existing port, keeping a local-development path, and gains semantic recall.
-  - **success:** The same graph operations pass against both drivers, and semantic recall returns
-    a relevant result that lexical token-overlap recall does not.
-  - **verified:** GraphStore ops on flatfile+postgres + semantic>lexical live in
-    `pyforge-scribe/tests/unit/test_graph_store_operations.py:1-138` and
-    `test_recall_semantic.py:54-68`; synonym-map semantic at `embeddings.py:24-32` and
-    single-plugin selection at `graph_store_plugins.py:47-53`; dual-write unexercised.
+    existing port, keeping a local-development path, and an opt-in recall mode beyond pure
+    lexical token overlap.
+  - **success:** The same graph operations pass against both graph-store drivers (flat-file and
+    PostgreSQL/pgvector), and **lexical** token-overlap recall — the default at
+    `recall.py:114` and the CLI without `--semantic` — returns a grounded, cited answer for a
+    fixture query. The opt-in `semantic` mode (`--semantic` / `mode="semantic"`) is a 32-dim
+    SHA-256 bag-of-concepts over a hardcoded 7-entry synonym map (`embeddings.py:24-32`), not
+    embedding-model recall; it is documented honestly and is not the graded criterion.
+  - **graded mode:** `lexical` — CAP-14's recall success clause is exercised against lexical
+    token overlap only; semantic mode is opt-in and approximate.
+  - **verified:** GraphStore ops on flatfile+postgres live in
+    `pyforge-scribe/tests/unit/test_graph_store_operations.py:1-138` (dual-driver CI
+    parametrized at `conftest.py:119-138`); lexical default and cited retrieval in
+    `test_recall.py`; opt-in semantic synonym-map path in `test_recall_semantic.py:54-68`;
+    single-plugin selection at `graph_store_plugins.py:36-53` (AD-1/AD-5 — one owner per run,
+    not dual-write). *(Story 49.7, 2026-09-11: prior Spec wording "dual-write unexercised"
+    mis-described this correct dual-driver / single-plugin-selection design.)*
 
 - **CAP-15 — Every station teaches an agent its own work.**
   - **intent:** Each **03** station capability carries an agent-loadable domain skill encoding how
@@ -496,7 +506,8 @@ they are why this is not merely a UI project.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
     in-progress; rebuild is allowed. First slice shipped the same day:
     34.1–34.5 + 36.1–36.2. OQs closed 2026-08-26: both faces, one boot
-    script (Mosaic committed); named new pipeline; dual-write.
+    script (Mosaic committed); named new pipeline; single-plugin graph-store selection
+    (not dual-write — see CAP-14 Story 49.7).
     Not a ninth station. Atlas owns the
     engine; steward owns the through-line.)*
 
@@ -780,11 +791,12 @@ Reopened by the currency review; each line names its vessel.
   inline; `extends:` retired; `spec-python-agent-platform` superseded. Renaming
   `[feature.python-agent-platform]` remains a separate named story if ever.
 - **Story 43.7** `backlog` — sidecar runtime validation on Python 3.14 (added 2026-09-08).
-- **Four capabilities with an unexercised named criterion** → Epic 49: CAP-11 (no eviction test),
-  CAP-12 (`IDP_USERINFO = None` → next-login revocation), CAP-14 (7-entry synonym map as
-  "semantic"; no dual-write), CAP-17 (marshal never publishes to the supervisor). CAP-4 closed
-  2026-09-10 (Story 49.3); CAP-7 closed 2026-09-10 (Story 49.4 — fixture is the named
-  deliverable). Thirteen CAPs verify fully.
+- **Three capabilities with an unexercised named criterion** → Epic 49: CAP-11 (no eviction test),
+  CAP-12 (`IDP_USERINFO = None` → next-login revocation), CAP-17 (marshal never publishes to the
+  supervisor). CAP-4 closed 2026-09-10 (Story 49.3); CAP-7 closed 2026-09-10 (Story 49.4 —
+  fixture is the named deliverable); CAP-14 closed 2026-09-11 (Story 49.7 — `lexical` is the
+  graded recall mode; prior "dual-write" wording mis-described dual-driver single-plugin
+  selection). Fourteen CAPs verify fully.
 - **`realization-gate-home` precondition MET this pass (2026-09-09, fleet readiness C4).** The
   question binds Epic 49's re-home to `hub:CAP-*` on `spec-intelligence-hub` reaching `ready`;
   all nine of that Spec's open questions were answered as one operator-approved bundle and its
@@ -919,8 +931,10 @@ Reopened by the currency review; each line names its vessel.
   regression-gated shipped pipelines for no functional gain, since a downstream
   pipeline reads their outputs without modifying them. No silent `01_raw`.
 - ~~**query-plane-scribe-cutover**~~ — residual **answered 2026-08-26 (operator):
-  dual-write for now.** The plane (via the 34.5 store-port driver) is primary and
-  satisfies canopy:FR-36; `scribe_schema` pgvector stays written as the safety net until the
-  plane has operating history, then retirement becomes its own explicit decision.
-  Lexical recall may stay local. *(2026-09-09: superseded — `GraphStore` exists; § Residual.)* There is still no `GraphStore` class in
-  `pyforge-scribe`.
+  plane driver available alongside postgres/flat-file.** The plane (via the 34.5 store-port
+  driver) satisfies canopy:FR-36 as one selectable owner; `scribe_schema` pgvector remains a
+  separate driver until retirement becomes its own explicit decision. Lexical recall stays
+  local. *(2026-09-09: superseded — `GraphStore` exists at `graph_store.py:59` with three
+  drivers; § Residual.)* *(2026-09-11, Story 49.7: the 2026-08-26 "dual-write for now" ruling
+  mis-described the landed design — AD-5 single-plugin selection per run, dual-driver CI parity
+  only; see CAP-14.)*
