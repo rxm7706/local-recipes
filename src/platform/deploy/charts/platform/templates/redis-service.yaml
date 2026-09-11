@@ -1,3 +1,4 @@
+{{- if not .Values.redis.external.enabled }}
 {{- range $role := tuple "cache" "broker" }}
 ---
 apiVersion: v1
@@ -17,4 +18,5 @@ spec:
   selector:
     {{- include "platform.selectorLabels" $ | nindent 4 }}
     app.kubernetes.io/component: redis-{{ $role }}
+{{- end }}
 {{- end }}
