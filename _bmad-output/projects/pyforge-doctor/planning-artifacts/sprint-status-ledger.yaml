@@ -68,7 +68,7 @@ development_status:
   21-8-deferred-work-intake-refuses-an-entry-that-cites-nothing-checkable: done
   21-9-a-capability-with-no-caller-outside-its-own-tests-is-a-finding: done
   22-1-the-2-identity-contradictions-are-fixed-at-their-source: done
-  22-2-the-4-cross-cutting-decay-findings-are-corrected: backlog
+  22-2-the-4-cross-cutting-decay-findings-are-corrected: done
   22-3-a-repeatable-doctor-detector-catches-this-class-of-drift-going-forward: backlog
   22-4-a-diátaxis-adapted-information-architecture-is-designed-for-the-general-facing-docs-layer: done
   22-5-the-tutorials-getting-started-and-how-to-guides-quadrants-are-populated: backlog

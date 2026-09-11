@@ -2,8 +2,8 @@
 title: 'The 4 cross-cutting decay findings are corrected'
 type: 'fix'
 created: '2026-09-11'
-status: 'backlog'
-baseline_revision: 'a7752e7f91015b81d79a979bfca61a0dc8c8c8bb'
+status: 'done'
+baseline_revision: 'efabb6d912099eda55950f2d8c9d507e35545684'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -114,3 +114,43 @@ short note to `CLAUDE.md`'s SKF block explaining Mason's deliberate skill omissi
   corrected `README.md` section; `grep -rn "bmad-setup-plan.md\|developer-guide.md" README.md`
   shows only the correct paths; `grep -c "Active-project resolution priority" README.md
   CLAUDE.md` shows the list body exists once, not twice.
+
+## Review Triage Log
+
+### 2026-09-11 — Review pass
+- verdicts: 17 findings — high 0, medium 2, low 1, false 5, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Tree still lists wrong enterprise-deployment/mcp paths — intent excludes fixes beyond the two named paths; pre-existing decay outside story scope.
+  - `[false]` `[reject]` Workflow subtree still shows 4 files — pre-existing; not caused by this change.
+  - `[medium]` `[patch]` Reusable-workflow sentence grouped linter reusable with platform test reusables incorrectly — fixed by separating `test-{linux,macos,windows}.yml` (invoked by `test-all.yml`) from `reusable-staged-recipes-linter.yml` (selftest only).
+  - `[medium]` `[patch]` `herald-live-demo.yml` and `linter_issue_comment.yml` listed under PR gates despite non-`pull_request` triggers — moved to push/schedule/other automatic section; PR-gates intro narrowed to `pull_request` events.
+  - `[false]` `[reject]` Missing standalone test-linux/test-macos dispatch rows — both workflows are `workflow_call` only; direct `gh workflow run` is not valid.
+  - `[low]` `[patch]` On-demand section title said recipe builds but listed infra workflows — renamed to "On-demand / manual workflows".
+  - `[false]` `[reject]` Missing link to github-workflows.md — out of intent scope (surgical four-fix pass).
+  - `[false]` `[reject]` AGENTS.md SKF block lacks Mason note — spec scoped Mason explanation to CLAUDE.md only.
+  - `[low]` `[defer]` Ledger out of sync during review — resolved via Tier-3 feed + `sprint-ledger-sync` before finalize.
+  - `[false]` `[reject]` Omitted workflow_dispatch on detectors/dashboard — partial inventory acceptable; primary goal was correcting false manual-only claim.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Corrected four cross-cutting doc decay findings in `README.md` and `CLAUDE.md`: live-verified workflow trigger taxonomy (19 files), fixed two broken project-structure paths, collapsed duplicated BMAD priority list to a CLAUDE.md pointer, and explained Mason's deliberate SKF omission.
+
+**Files changed:**
+- `README.md` — workflow section rewrite, tree path fixes, priority-list dedupe, review patches for trigger categorization
+- `CLAUDE.md` — Mason SKF omission note in SKF block
+- `spec-22-2-…md` — status/baseline/review metadata
+- `sprint-status-ledger.yaml` — story 22.2 promoted to `done`
+
+**Review:** 3 patches applied (reusable-workflow wording, trigger categorization, section title); 1 item deferred then resolved (ledger sync); remaining findings rejected as false or out of intent scope.
+
+**Follow-up review recommended:** false (no high patches; one medium patch category)
+
+**Verification:**
+- `pixi run --frozen -e local-recipes dreams-hygiene-check` — exit 0
+- `ls .github/workflows/*.yml | wc -l` → 19 (matches README)
+- `grep` path checks — only correct developer-guide and bmad-setup-plan paths in README
+- `grep -c "Active-project resolution priority"` — README 1, CLAUDE 1
+
+**Residual risks:** Project-structure tree still shows `docs/enterprise-deployment.md` and `docs/mcp-server-architecture.md` without the `reference/` prefix (pre-existing, explicitly out of this story's scope).
