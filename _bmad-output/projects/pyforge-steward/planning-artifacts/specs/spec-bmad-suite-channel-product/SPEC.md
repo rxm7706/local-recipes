@@ -63,6 +63,11 @@ new capabilities.
   `wired` since 31.2. Known hole, relayed: for the installer-tree class the
   `installed` stage reads the pixi env's conda-meta, not the applied
   `_bmad/_config/manifest.yaml`.)*
+  - **verified:** 2026-09-11 — `steward suite pipeline-truth --json` live: 13/13 packages
+    reported, all 5 stages present per package, drift correctly named (`bmad-builder`/
+    `bmad-creative-intelligence-suite`: `upstream_npm_github_divergence`; `bmad-eval-quality`:
+    `installed` — the live, deliberate G115 pin cap from this session's own PR #1205). Offline
+    fail-open degrade not re-exercised (would require simulating a network outage).
 - **CAP-2 — End-to-end advance.** *Intent:* one command takes a stale package
   through autotick (tag-mode, or a new HEAD-advance mode for the six
   commit-pinned dev recipes) → build → test → publish → listing verified,
@@ -70,6 +75,14 @@ new capabilities.
   2026-08-21 seven-stage hand ritual for one package with zero improvised
   steps. *(Shipped: steward 15.2; `anaconda upload` stays the operator's
   step by design.)*
+  - **verified:** 2026-09-11 — `steward suite advance --help` confirms the chain
+    (autotick tag|head → build → test → publish → listing → reviewable PR, never
+    auto-merged); `tests/unit/test_suite_advance.py` (9/9 pass) directly covers the
+    never-auto-merged contract (`test_advance_dry_run_chain_tag_mode_never_merges`,
+    `test_advance_refuses_open_pr_hook_that_claims_merge`), HEAD-advance mode for
+    commit-pinned recipes, and the 13-package roster. A live end-to-end `advance` run
+    against a real stale package (real network/publish/PR) not re-exercised — disproportionate
+    to a doc-hygiene sweep.
 - **CAP-3 — Module wiring through the verb.** *Intent:*
   `steward provision --module` grows `_SUPPORTED_MODULES` from `{bmb}` to
   `{bmb, tea, cis, utility-skills, manticore}` — each addition
@@ -79,6 +92,10 @@ new capabilities.
   `bmad-ux`; retired from the roster 2026-09-05). *Success:* all five
   wire-decided modules provision through the verb and `.claude/skills`
   gains the expected skill sets. *(Shipped: steward 15.3.)*
+  - **verified:** 2026-09-11 — `steward provision --module` live at `provision.py`, confirmed
+    supporting exactly `{bmb, cis, manticore, tea, utility-skills}` (5, matches WDS-excluded
+    roster); same live check + 104-test coverage as `spec-bmad-module-provisioning` CAP-1
+    (that spec's own `verified:` line, this same sweep).
 - **CAP-4 — Dual-path contract.** *Intent:* the per-package install matrix
   (pixi command + native command with upstream citation + hazard flags,
   recounted 2026-09-05: npm-invisible ×6, npm-stale-GitHub-canonical ×3,
@@ -88,6 +105,12 @@ new capabilities.
   the matrix exists cited; a gate run exercises ≥1 command per class.
   *(Shipped: steward 15.4 + Epic 31; matrix re-verified 2026-09-05 against
   `pipeline-truth`.)*
+  - **verified:** 2026-09-11 — `install-matrix.md` (71 lines) exists, cites upstream READMEs
+    per package, cross-checked against a live `pipeline-truth` run per its own header; the
+    per-class gate spot-check is real code at `upgrade.py:3452` (`# CAP-4 dual-path
+    native-class advisory spot-checks`). Matrix content itself is a dated 2026-09-05/09
+    snapshot (a currency question, not this CAP's contract, which only requires the matrix
+    to exist and be cited).
 - **CAP-5 — Ambient drift, relayed to doctor.** *Intent:* channel-vs-recipe
   and recipe-vs-upstream join doctor's suite-drift surfaces (fail-open,
   warn-only), and the GitHub-releases fallback (doctor DW-14-1-1) unblinds
@@ -95,6 +118,10 @@ new capabilities.
   channel-drift; the fallback names bmad-loop's version from GitHub.
   *(Shipped: doctor 15.1/15.2 + 19.1. Known hole, relayed: suite drift maps
   7 of 13 members — commit-pinned members unmapped.)*
+  - **verified:** 2026-09-11 — `test_sources_bmad_method.py` 157/157 pass, including
+    `test_the_6_3_0_relic_fixture_fires_channel_drift_warn` (exact success-clause match) and
+    9 `fetch_latest_github_release_*` tests covering the fallback (404-falls-back-to-tags,
+    malformed/missing data folds to `None`, never raises).
 - **CAP-6 — Suite metapackage (2026-09-01).** *Intent:* one conda metapackage
   (`bmad-suite`) plus canonical manifest install all 13 channel products at
   upstream-aligned pins; the generator refreshes from the registry class per
@@ -103,6 +130,12 @@ new capabilities.
   suite-members.yaml}`, `generate-bmad-suite` / `build-bmad-suite`, opt-in
   `feature.bmad-suite-full`; `bmad-suite 2026.9.5` on the channel; doctor
   Epic 19 consumes the same manifest for its watched set.
+  - **verified:** 2026-09-11 — this session's own PR #1205 exercised the full chain live:
+    `generate-bmad-suite --dry-run` resolved live upstream pins per registry class, a real
+    `recipe-build recipes/bmad-suite` produced a green metapackage (`bmad-suite-2026.9.11`,
+    all anchor-CLI tests passed), and `feature.bmad-suite-full` is present at `pixi.toml:1989`.
+    Metapackage version is now `2026.9.11`, not `2026.9.5` — a currency fact, not a contract
+    break; the mechanism this CAP describes is what was just used to produce it.
 
 ## Constraints
 
