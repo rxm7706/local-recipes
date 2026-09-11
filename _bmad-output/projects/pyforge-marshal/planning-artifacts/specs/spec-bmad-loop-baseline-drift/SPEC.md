@@ -64,6 +64,7 @@ upstream-report path.
   - **success:** Replaying run `20260813-094919-bfcb`'s journal (story 9-6) fires the detector
     naming the story, both baselines (`523e938c7978` real vs `26102ea12c6d` drifted), and preserve
     ref `attempt-preserve/20260813-094919-bfcb-523e938c`; a clean run's feeds yield no finding.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `python scripts/bmad_loop_baseline_drift_check.py --json` runs clean (`[]`, exit 0) against the fleet's current live `~/.bmad-loops` journals; the specific 9-6 replay case is self-silenced now that the story reads `done` (by the pixi task's own documented design), so `tests/scripts/test_bmad_loop_baseline_drift_check.py` + `tests/scripts/fixtures/baseline_drift` (mechanized replay of the drift signature) are the live proof of the detection logic itself — 32/32 tests pass.
 - **CAP-2**
   - **intent:** This defer reason can no longer pass silently — loud-defer containment. The
     detector exits non-zero and the finding surfaces where the operator already looks
@@ -75,6 +76,7 @@ upstream-report path.
   - **success:** A future occurrence is surfaced by the containment within its watch window with
     recovery inputs named — not discovered via a dashboard-accuracy audit, the way this Dream was
     found; a run carrying such a defer cannot read healthy in the containment's output.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `tests/scripts/test_fleet_picture_baseline_drift_attention.py` (part of the same 32/32 green run) confirms a detected finding renders in `fleet-picture`'s ATTENTION block naming story/run/preserve-ref/both baselines — the loud-defer surface CAP-2 requires. `--json` exits non-zero on a genuine finding per the script's own argparse contract (read in `scripts/bmad_loop_baseline_drift_check.py`).
 - **CAP-3**
   - **intent:** The drafted upstream issue already in the Dream (lines ~125–201: journal timeline,
     `engine.py:1707` / `runs.py:872-908` / `verify.py:1220-1235` citations, impact) is filed
@@ -84,6 +86,7 @@ upstream-report path.
   - **success:** Both gates recorded as checked; then either the issue is filed (URL appended to
     the Dream's Realization log) or a duplicate found and linked instead — either outcome recorded.
     Until the gates clear, the draft stays unfiled by design.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `upstream-register.json`'s `baseline-commit-midflight-drift` entry records both gates checked and names `bmad-loop` issue #701; `gh api repos/bmad-code-org/bmad-loop/issues/701` confirms it's real and open ("task.baseline_commit can drift mid-flight...").
 
 ## Constraints
 

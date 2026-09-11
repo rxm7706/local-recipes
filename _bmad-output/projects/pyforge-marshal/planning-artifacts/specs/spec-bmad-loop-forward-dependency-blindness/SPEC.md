@@ -50,6 +50,7 @@ complete. Found 2026-08-03 setting Marshal up to run its own backlog unattended 
   > detector's own bookkeeping. Atlas reported UNMEASURED for an unrelated reason: its
   > alias-first headings (`### Story A1 (2.1):`) never matched `STORY_HEADING_RE`, so none of its
   > 46 stories parsed at all. Both are fixed; see § Refinements.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `pixi run -e local-recipes forward-dependency-check` sweeps all 8 stations live; 7 now report `no-dispatch` (0 actionable stories each, since the fleet is 97% done) and 1 `measured` — 1 measured / 0 partial / 7 no-dispatch / 0 unmeasured, none silently clean. The underlying grammar/classification mechanism this CAP built is exercised directly by `test_sources_deps_forward_dependency.py` (24/24 pass, incl. whole-epic and cross-station forms).
 - **CAP-2 — a found forward-dependent story is set to a non-actionable status.** *Intent:*
   make the engine structurally unable to dispatch the story early. *Success:* status `blocked`
   in both the loop-home's live Tier-3 feed and the tracked `sprint-status-ledger.yaml` twin;
@@ -58,17 +59,20 @@ complete. Found 2026-08-03 setting Marshal up to run its own backlog unattended 
   `STORY_STATUSES` enum (the same mechanism the pre-existing `optional` retrospective status
   already relies on) — confirmed directly: `next_actionable(epic=2)` now correctly returns 2.4,
   skipping both Epic-2 findings.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `test_forward_dep_on_actionable_story_is_a_fail` and `test_forward_dep_on_non_actionable_story_is_not_reported` (in `test_sources_deps_forward_dependency.py`, both pass) directly exercise the blocked-status-makes-it-invisible mechanism this CAP claims. Marshal's own original 3 findings (2.3/2.7/8.5) are now `done` in the tracked ledger — no longer live cases, but the mechanism they proved is still test-covered.
 - **CAP-3 — a permanent detector prevents recurrence.** *Intent:* a new story added later with
   an unmarked forward dependency is caught in CI, not discovered by a run burning compute on it.
   *Success:* `scripts/forward_dependency_check.py`, self-registered via `scripts/detectors.py`,
   scans every station's structured epics doc for forward-epic `**Deps:**`, cross-checks each
   against the tracked ledger, and fails if a forward-dependent story is still
   `backlog`/`ready-for-dev`.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `scripts/detectors.py:227` registers `("forward-dependency", "forward-dependency-check")`; the detector (now `pyforge.doctor.sources` per the frontmatter's 2026-08-09 Story 6.9 hand-off, invoked via the same pixi task) ran clean above. `test_coverage_finding_is_emitted_even_on_a_red_run` confirms it still reports even when failing, not just on success.
 - **CAP-4 — an unparseable epics format is reported honestly, never silently passed.**
   *Intent:* this repo's fidelity-enforcement doctrine (never claim green you didn't measure)
   applies to the detector itself. *Success:* stations whose `epics.md` uses an older narrative
   format with no structured `**Deps:**` field (confirmed: `pyforge-warden`) are reported as
   **not determinable from this format**, not as clean.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: live run above reports `no-dispatch`/`measured` per-station, never a bare "clean" for an unparseable format; `test_unparseable_heading_is_not_silently_clean` and `test_headings_without_deps_field_report_unmeasured` (both pass) pin this directly.
 
 ## Constraints
 

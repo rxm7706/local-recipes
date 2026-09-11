@@ -57,6 +57,7 @@ just doesn't act on that knowledge with a durable artifact.
   - **success:** After an intent-gap halt on a story with tracked changes, a preserve artifact
     exists in the loop home's git (branch or patch) whose content matches the reverted attempt;
     the worktree is still reverted clean per protocol.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `supervisor/intent_gap_preserve.py::park_preserve_artifact` is real, live code; `test_park_creates_attempt_preserve_branch_for_commits` and `test_park_writes_changes_patch_for_dirty_only` (both pass, part of 22/22 green) exercise exactly the branch-for-commits / patch-for-dirty-only split this CAP claims.
 - **CAP-2**
   - **intent:** The escalation surface names the artifact -- the "Auto Run Result" / escalation
     text, which already spells out the recommended contract fix in detail, ALSO names the exact
@@ -65,6 +66,7 @@ just doesn't act on that knowledge with a durable artifact.
   - **success:** Given only the escalation text of a post-fix intent-gap halt, `bmad-loop
     resolve --restore-patch` (or a human following the named ref) restores the reverted attempt
     with zero session-transcript access.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `append_preserve_notice` (same file) writes the preserve ref/patch path into the "Auto Run Result" escalation body; `test_append_preserve_notice_appends_auto_run_result` and `test_append_preserve_notice_extends_existing_auto_run_result` (both pass) confirm the notice lands and survives a pre-existing Auto Run Result block.
 - **CAP-3**
   - **intent:** A post-hoc detector makes any residual gap loud -- an intent-gap halt whose
     preserve artifact is missing (seam bypassed, upstream behavior shifted) is flagged as a
@@ -72,6 +74,7 @@ just doesn't act on that knowledge with a durable artifact.
     precedent of local detectors containing an upstream bmad-loop blind spot.
   - **success:** Simulating an intent-gap halt with no preserve artifact trips the detector;
     a halt with its artifact present passes clean.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `a0aba94b0a`: `tests/scripts/test_missing_preserve_check.py` (10/10 pass) exercises both the trip and clean-pass cases. Per the Residual note this spec already documents honestly, the live `~/.bmad-loops` observation plane it scans is currently empty (`Story 33.7`, not yet done), so the detector's current live report is a vacuous "OK" over zero cases — the mechanism is verified, the coverage gap is the spec's own already-recorded, still-open residual.
 
 ## Constraints
 
