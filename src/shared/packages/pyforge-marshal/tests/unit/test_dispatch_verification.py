@@ -11,7 +11,7 @@ from pyforge.marshal.dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
 )
-from pyforge.marshal.core import policy
+from pyforge.marshal.core import gate, policy
 from pyforge.marshal.core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
@@ -736,3 +736,165 @@ def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
     assert judge_dispatch_verification(
         DispatchVerificationInput(findings=envelope.findings)
     ) == DispatchVerificationVerdict.REFUSED
+
+
+# --- Story 22.12: shared-surface cross-suite gate (CAP-12) -------------------
+
+
+class CrossSurfaceProcess:
+    """Fake process that passes station verify but can fail platform-ci-local."""
+
+    def __init__(self, *, platform_exit: int = 0) -> None:
+        self._platform_exit = platform_exit
+        self.platform_invocations = 0
+
+    def run(self, tokens, *, cwd: Path):
+        joined = " ".join(tokens)
+        if "platform-ci-local" in joined:
+            self.platform_invocations += 1
+            return ProcessResult(
+                returncode=self._platform_exit,
+                stdout="",
+                stderr="platform fail" if self._platform_exit else "",
+            )
+        if tokens and tokens[0] == "false":
+            return ProcessResult(returncode=1, stdout="", stderr="fail")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_changed_files_touch_shared_surface_prefix() -> None:
+    assert gate.changed_files_touch_shared_surface(
+        ("src/platform/settings.py",)
+    )
+    assert not gate.changed_files_touch_shared_surface(
+        ("src/shared/packages/pyforge-marshal/leak.py",)
+    )
+
+
+def test_evaluate_dispatch_verification_station_only_diff_skips_cross_surface(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize(
+        "22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate"
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess()
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(
+            changed=(
+                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py",
+            )
+        ),
+    )
+    assert envelope.data["cross_surface_check"]["checked"] is False
+    assert process.platform_invocations == 0
+    assert "MRS-GATE-015" not in [f.code for f in envelope.findings]
+
+
+def test_evaluate_dispatch_verification_platform_diff_runs_cross_surface_pass(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize(
+        "22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate"
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess(platform_exit=0)
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(changed=("src/platform/tests/test_ws_events.py",)),
+    )
+    assert envelope.data["cross_surface_check"]["checked"] is True
+    assert process.platform_invocations == 1
+    assert "MRS-GATE-015" not in [f.code for f in envelope.findings]
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_evaluate_dispatch_verification_49_14_fixture_bound_green_platform_red(
+    tmp_path: Path,
+) -> None:
+    """49.14 replay: station-bound gate green, full platform suite red -> REFUSED."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize(
+        "22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate"
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-steward",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess(platform_exit=1)
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-steward",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(changed=("src/platform/host/urls.py",)),
+    )
+    assert process.platform_invocations == 1
+    assert any(f.code == "MRS-GATE-015" for f in envelope.findings)
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    ) == DispatchVerificationVerdict.REFUSED
+
+
+def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize(
+        "22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate"
+    )
+    changed = ("src/platform/middleware.py",)
+    for slug in ("pyforge-steward", "pyforge-atlas"):
+        process = CrossSurfaceProcess(platform_exit=1)
+        effective, _ = policy.compose(
+            project_slug=slug,
+            project={"verify_commands": ["true"]},
+            flags={},
+        )
+        envelope = evaluate_dispatch_verification(
+            project_slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            repo_root=tmp_path,
+            effective=effective,
+            spec_text=None,
+            process=process,
+            vcs=FakeVcs(changed=changed),
+        )
+        assert envelope.data["cross_surface_check"]["command"] == (
+            gate.shared_surface_verify_command()
+        )
+        assert any(f.code == "MRS-GATE-015" for f in envelope.findings)

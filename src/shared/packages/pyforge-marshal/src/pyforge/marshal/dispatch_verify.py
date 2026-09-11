@@ -28,6 +28,47 @@ _SCOPE_BASE = "origin/main"
 _SHELL_METACHARACTERS = frozenset("&|<>;()")
 
 
+def _run_verify_command(
+    command: str,
+    *,
+    process: ProcessPort,
+    worktree: Path,
+    failure_prefix: str = "verify command",
+) -> tuple[dict[str, object], Finding | None]:
+    """Run one tokenized verify command and classify its outcome."""
+    try:
+        tokens = shlex.split(command)
+    except ValueError as exc:
+        return gate.classify_outcome(
+            command,
+            None,
+            failure_code="MRS-GATE-003",
+            failure_reason=f"cannot parse {failure_prefix} {command!r}: {exc}",
+        )
+    shell_chars = _bare_shell_metacharacters(command)
+    if shell_chars:
+        return gate.classify_outcome(
+            command,
+            None,
+            failure_code="MRS-GATE-003",
+            failure_reason=(
+                f"{failure_prefix} {command!r} uses shell syntax "
+                f"({', '.join(repr(c) for c in shell_chars)}) "
+                "but verify commands are never run through a shell"
+            ),
+        )
+    try:
+        result = process.run(tokens, cwd=worktree)
+    except ProcessError as exc:
+        return gate.classify_outcome(
+            command,
+            None,
+            failure_code="MRS-GATE-002",
+            failure_reason=f"{failure_prefix} {command!r} could not be run: {exc}",
+        )
+    return gate.classify_outcome(command, result)
+
+
 def _bare_shell_metacharacters(command: str) -> list[str]:
     found: list[str] = []
     in_single = False
@@ -126,42 +167,9 @@ def evaluate_dispatch_verification(
             findings.append(gate.no_commands_configured_finding())
     else:
         for command in commands:
-            try:
-                tokens = shlex.split(command)
-            except ValueError as exc:
-                report, finding = gate.classify_outcome(
-                    command,
-                    None,
-                    failure_code="MRS-GATE-003",
-                    failure_reason=f"cannot parse verify command {command!r}: {exc}",
-                )
-            else:
-                shell_chars = _bare_shell_metacharacters(command)
-                if shell_chars:
-                    report, finding = gate.classify_outcome(
-                        command,
-                        None,
-                        failure_code="MRS-GATE-003",
-                        failure_reason=(
-                            f"verify command {command!r} uses shell syntax "
-                            f"({', '.join(repr(c) for c in shell_chars)}) "
-                            "but verify commands are never run through a shell"
-                        ),
-                    )
-                else:
-                    try:
-                        result = process.run(tokens, cwd=worktree)
-                    except ProcessError as exc:
-                        report, finding = gate.classify_outcome(
-                            command,
-                            None,
-                            failure_code="MRS-GATE-002",
-                            failure_reason=(
-                                f"verify command {command!r} could not be run: {exc}"
-                            ),
-                        )
-                    else:
-                        report, finding = gate.classify_outcome(command, result)
+            report, finding = _run_verify_command(
+                command, process=process, worktree=worktree
+            )
             command_reports.append(report)
             if finding is not None:
                 findings.append(finding)
@@ -278,6 +286,49 @@ def evaluate_dispatch_verification(
                 list(declared_commands) if declared_commands is not None else None
             ),
             "violations": len(binding_findings),
+        }
+
+    cross_surface_command = gate.shared_surface_verify_command()
+    cross_surface_touched = (
+        scope_check_completed
+        and gate.changed_files_touch_shared_surface(scope_changed_files)
+    )
+    if cross_surface_touched:
+        cross_report, cross_finding = _run_verify_command(
+            cross_surface_command,
+            process=process,
+            worktree=worktree,
+            failure_prefix="cross-surface verify command",
+        )
+        if cross_finding is not None:
+            if cross_finding.code == "MRS-GATE-001":
+                cross_finding = Finding(
+                    code=gate.CROSS_SURFACE_GATE_CODE,
+                    severity=cross_finding.severity,
+                    message=cross_finding.message.replace(
+                        "verify command", "cross-surface verify command"
+                    ),
+                )
+            findings.append(cross_finding)
+        data["cross_surface_check"] = {
+            "checked": True,
+            "command": cross_surface_command,
+            "touched_paths": [
+                path
+                for path in scope_changed_files
+                if path == gate.SHARED_SURFACE_PREFIX.rstrip("/")
+                or path.startswith(gate.SHARED_SURFACE_PREFIX)
+            ],
+            "report": cross_report,
+        }
+    else:
+        data["cross_surface_check"] = {
+            "checked": False,
+            "reason": (
+                "scope check incomplete"
+                if not scope_check_completed
+                else "diff does not touch shared surface"
+            ),
         }
 
     verdict_value = compute_verdict(findings)

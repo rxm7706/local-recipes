@@ -2,7 +2,8 @@
 title: 'A capability with no caller outside its own tests is a finding'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '38f4514e2b3d5a0da466ada4ed9e3fcd00df8186'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -106,3 +107,44 @@ surface path degrades to a named finding, never to silence.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
+
+### 2026-09-11 — Rescue verification (marshal dispatch stuck, harness sessions killed)
+- The dispatched harness sessions (`marshal factory dispatch pyforge-doctor 21.9`) completed
+  the implementation and self-updated the spec to `status: in-review`, but the campaign
+  supervisor re-dispatched repeatedly (8 `dispatch-runs/` entries in ~5 minutes) without
+  killing prior attempts, leaving two orphaned `cursor-agent` sessions (plus several
+  grandchild processes) running concurrently against the same worktree for 25+ minutes at
+  near-zero CPU — genuinely stuck, not making progress. Killed all of them (with operator
+  confirmation) once a standalone run of `capability_effect.gather_caller_reach()` proved
+  the code itself was correct and fast (9.4s against the live repo) and the full test file
+  passed in 11.44s in isolation, ruling out a code-level hang.
+- No formal adversarial review pass was run (the stuck sessions never reached one). In its
+  place: read the full diff by hand, confirmed edge-case coverage against the spec's own
+  I/O matrix (document-surface, absent-surface-path, unreadable-epics, no-surface-line,
+  synthetic no-caller, external-caller-suppression, test-only-reference,
+  station-relative-path resolution, and the live `risk-tiered-review-depth` fleet proof —
+  all ten present as tests). Ran `ruff check`/`ruff format` (4 findings: `RUF022`
+  unsorted `__all__`, `PIE810` mergeable `startswith`, `SIM103` inlineable return,
+  `I001` unsorted imports — all fixed) and the full station suite before landing.
+- verdicts: 0 findings beyond the ruff fixes above — high 0, medium 0, low 0
+
+## Auto Run Result
+
+Status: done
+Summary: `gather_caller_reach` joins on `(spec-slug, CAP-N)` via `board.py`'s existing
+parsers, resolves code reach from the citing story's `Surface:` line in `epics.md`
+(including a station-relative fallback under `src/shared/packages/<project>/src/pyforge/<station>/`),
+and reports a bounded whole-word scan (git-grep first, in-memory corpus fallback,
+both cached across the whole run) for symbols with no reference outside their own
+module and outside tests. Document-surfaced CAPs report "not applicable"; unreadable
+`epics.md`, an absent surface path, and a citing story with no `Surface:` line all
+degrade to named findings, never silence. Proves the `risk-tiered-review-depth` case
+live against the real fleet, not only a synthetic fixture (Story 21.3's caution).
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py` — `gather_caller_reach` and its helpers
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py` — 10 tests covering the full I/O matrix + the live fleet proof
+- `src/shared/packages/pyforge-doctor/tests/fixtures/capability_effect/` — new fixtures
+Review: rescue verification only (see Review Triage Log above) — 4 ruff findings fixed, 0 behavioral findings.
+Follow-up review recommended: false
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1595 passed, 1 skipped.
+Blocking condition: none
