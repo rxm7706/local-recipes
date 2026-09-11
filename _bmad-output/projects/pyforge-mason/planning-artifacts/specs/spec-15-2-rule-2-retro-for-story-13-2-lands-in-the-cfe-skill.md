@@ -145,6 +145,20 @@ mason meta-test is satisfied by construction rather than worked around.
 
 ## Review Triage Log
 
+### 2026-09-11 — Review pass (bmad-build-auto dispatch)
+- verdicts: 10 findings — high 0, medium 0, low 3, false 2, defer 3, reject 2
+- findings:
+  - `[low]` `[patch]` SKILL.md Version History lacked v8.90.2 bullet — added matching CHANGELOG TL;DR entry.
+  - `[low]` `[patch]` G26 extension header dated "Sep 2, 2026" conflated Story 13.1 ship date with Story 15.2 retro — clarified to "Story 13.2 shipped Sep 2, 2026; retro landed Sep 11, 2026".
+  - `[low]` `[patch]` CHANGELOG v8.90.2 Files footnote said deferred-work closure in "companion commit" while ledger hunk was same changeset — corrected file list.
+  - `[false]` `[reject]` failure-catalog regeneration required — `generate-failure-catalog --check` passes in sync (117 rows); Version History addition triggered source_sha256 refresh only, now regenerated.
+  - `[false]` `[reject]` CFE version triple lacks cross-file regression test — pre-existing gap; out of scope for docs-only retro.
+  - `[defer]` `[defer]` `test_portal_last_diagnose.py::test_django_mason_has_no_raw_http_pyforge_or_minio` fails pre-existing at baseline `e16443693d` — not introduced by this story.
+  - `[defer]` `[defer]` `sprint-status-ledger.yaml` 15-2 still `backlog` — needs `sprint-ledger-sync` per AGENTS.md; not hand-edited here.
+  - `[defer]` `[defer]` Spec Verification section omits CFE meta tests — spec improvement deferred; cannot edit spec verification without separate planning pass.
+  - `[reject]` `[reject]` Add version-alignment meta test — out of scope for Story 15.2 chore retro.
+  - `[reject]` `[reject]` Extend spec Verification Commands — rule forbids spec edit as patch fix in same build-auto pass.
+
 ### 2026-09-11 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 1, false 1, defer 2
 - findings:
