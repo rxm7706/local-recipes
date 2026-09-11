@@ -456,6 +456,13 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 21.12 -- sources/status_body_consistency.py. CAP-1
     # progress-phrase pass; CAP-2..4 land in 21.13–21.15; ``detectors`` /
     # ``__main__`` dispatch wiring in 21.16.
+    SourceRegistration(
+        source=Source.PIXI_CURRENCY_LEDGER,
+        scope="repo",
+        subject_station="doctor",
+        owning_station="doctor",
+    ),  # Story 21.7 -- sources/pixi_currency.py. CAP-4 advisory ledger
+    # staleness vs ``pixi.toml`` commit history; WARN-only.
 )
 
 

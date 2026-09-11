@@ -58,6 +58,7 @@ from . import (
     frozen_path,
     ledger,
     marshal,
+    pixi_currency,
     platform_policy,
     sibling_dreams,
     status_body_consistency,
@@ -112,6 +113,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 21.16 (Epic 21) -- status-body-consistency beside capability-effect
     # in detectors; same shape as CAPABILITY_EFFECT above.
     Source.STATUS_BODY_CONSISTENCY.value: status_body_consistency.gather,
+    # Story 21.7 (Epic 21 / spec-pixi-candidate-currency CAP-4) -- advisory
+    # ledger staleness vs ``pixi.toml`` commit history; same shape as
+    # STATUS_BODY_CONSISTENCY above.
+    Source.PIXI_CURRENCY_LEDGER.value: pixi_currency.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
