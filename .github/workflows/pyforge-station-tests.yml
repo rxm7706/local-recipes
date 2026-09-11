@@ -219,6 +219,13 @@ jobs:
           environments: pyforge-mason
           cache: true
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
+      # Story 16.2: the first real estate caller of `mason recipe build` --
+      # runs on every execution of this already-existing lane (not only on
+      # demand), against mason's own env, so `mason doctor`'s post-16.1
+      # "recipe verb available" claim is actually exercised here, not just
+      # decomposed and merged. Does not replace the local-recipes
+      # recipe-build route as the estate's primary path.
+      - run: pixi run --frozen -e pyforge-mason pyforge-mason-recipe-build-smoke
 
   scribe-test:
     needs: changes
