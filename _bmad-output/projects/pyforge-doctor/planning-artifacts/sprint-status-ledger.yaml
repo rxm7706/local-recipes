@@ -65,7 +65,7 @@ development_status:
   21-5-the-deferred-work-verifier-resolves-a-project-relative-source_spec-from-the-project-root: done
   21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced: done
   21-7-the-pixi-candidate-ledgers-get-their-staleness-check: done
-  21-8-deferred-work-intake-refuses-an-entry-that-cites-nothing-checkable: backlog
+  21-8-deferred-work-intake-refuses-an-entry-that-cites-nothing-checkable: done
   21-9-a-capability-with-no-caller-outside-its-own-tests-is-a-finding: backlog
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done
