@@ -1,5 +1,7 @@
 ---
 id: SPEC-general-docs-consistency
+status: ready
+owner-dream: docs/dreams/general-docs-consistency.md
 companions: []
 sources:
   - ../../../../../../docs/dreams/general-docs-consistency.md
