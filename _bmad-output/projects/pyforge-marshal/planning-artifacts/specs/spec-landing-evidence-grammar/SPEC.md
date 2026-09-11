@@ -60,6 +60,7 @@ landings by hand with `git log --all --grep` while one tool re-flags what anothe
     the FR-187 templated subject, and the `land/…` branch grammars — and a cross-package
     conformance surface exists that both doctor and marshal test against without doctor importing
     `pyforge.marshal`.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `b36c8be118`: the grammar lives at `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py`; all three recovery SHAs (`accc097e6a`/`5290c9bcd2`/`03d8fc8c86`) are present both in the SHA-prefix allowlist (lines 129-137) and as named fixture cases (lines 435-465, `expected_key`/`expected_shape` asserted); `grep` for `import pyforge.marshal` under `pyforge-doctor/src/` returns nothing — the HARD constraint holds; `pixi run -e pyforge-core python -m pytest src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py -q` → 25 passed; `pixi run -e pyforge-doctor python -m pytest .../pyforge-doctor/tests/unit/test_landing_evidence_conformance.py -q` → 15 passed; `pixi run -e pyforge-marshal python -m pytest .../pyforge-marshal/tests/unit/test_landing_evidence_conformance.py -q` → 14 passed — the cross-package conformance surface is real and green on both sides.
 - **CAP-2**
   - **intent:** Doctor-side adoption — `story-status`'s evidence routes (`sources/marshal.py:
     479-517`) consume the shared grammar instead of route 2/route 3's private dialects, widening
@@ -67,6 +68,7 @@ landings by hand with `git log --all --grep` while one tool re-flags what anothe
   - **success:** On the live repo, the three standing `story-status` false positives (marshal 8-2,
     marshal 10-1, mason 3-7) go green with **no per-story whitelist**; a genuinely-unlanded story
     still fails exactly as today.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `b36c8be118`: `sources/marshal.py` imports from `pyforge.core.landing_evidence` (line 53) and its Routes 2/3 delegate to it rather than the private route-2/route-3 dialects the Why section describes; `grep` for the three story keys (`8.2`/`8-2`, `10.1`/`10-1`, `mason` + `3.7`/`3-7`) across the live source finds none outside comments — confirming no per-story whitelist was added. Did not re-run a full `story-status` scan over the live 898-story tree to re-confirm the exact "3 false positives → green" transition (the fixture-pinned regression tests under CAP-1's `test_landing_evidence.py` are the durable proof of this; a full live rescan would only reproduce the Spec's own 2026-09-09 measurement, already recorded under Success signal).
 - **CAP-3**
   - **intent:** Marshal-side adoption — the promotion classifiers (`core/promotion.py:93-107`),
     MRS-STATUS-010's failed-patch classifier, and `marshal retire`'s patch-id matching consume the
@@ -75,6 +77,7 @@ landings by hand with `git log --all --grep` while one tool re-flags what anothe
     patches (its honest "UNCONFIRMED, not proof it never landed" wording at `core/status.py:
     836-861` retained); `marshal retire` proposes real retirements again on the live tree, where
     recovered branches are demonstrably merged.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `b36c8be118`: `core/promotion.py` imports `pyforge.core.landing_evidence` (line 58); `core/status.py` documents (lines 963-991) that the POSITIVE-confirmation direction is `core.promotion.merged_story_keys` and that "recovery and `land/` shapes are now recognized via `pyforge.core.landing_evidence` as of Story 20.10" while the hedge language ("not unqualified proof", "best-effort") is retained verbatim, not weakened; `cli/retire.py:399` calls `promotion_core.branch_story_merge_confirmed_by_grammar(...)`, whose own docstring (promotion.py:183-198) states it exists for exactly this purpose — "Used by `marshal retire` when `VcsPort.is_branch_merged` alone cannot confirm a recovered branch." Did not re-derive the live "26 → genuinely-unlanded" transition or re-run `marshal retire` against the current tree to count real proposals — the code path is confirmed to route through the shared grammar; the exact live count is a point-in-time measurement this Spec already dates to 2026-09-09.
 - **CAP-4** *(added 2026-08-28 — motivated by a live fleet-wide hygiene sweep that found 25
   standing `story-status` FAILs across doctor/marshal/mason/steward, all independently confirmed
   genuinely-landed via `git merge-base --is-ancestor`)*
@@ -95,6 +98,7 @@ landings by hand with `git log --all --grep` while one tool re-flags what anothe
     same bar CAP-2 itself set; a genuinely-unlanded story (wrong station, or a longer numeric key
     like "11.10" for a "11-1" search) still fails exactly as today, pinned by dedicated negative
     tests; zero changes to `pyforge.core.landing_evidence` or `pyforge.marshal.core.promotion`.
+  - **verified:** 2026-09-11 — CAP-effect sweep at HEAD `b36c8be118`: commit `79ff7da6b75` ("fix(doctor 20.11): close story-status's own landing-evidence adoption gap") states in its own message "never in pyforge.core.landing_evidence or pyforge.marshal.core.promotion, both confirmed unchanged" — matching the zero-changes claim verbatim; `sources/marshal.py` has both fixes live: the `classify_branch_name` fallback for `land/<station>-<epic>-<seq>` / `bmad-loop/<run>/<key>` (line 167) and a labeled "Route 4: loose station+key co-occurrence, last resort" (line 678); `test_sources_marshal_story_status.py` carries the exact negative tests this CAP names — a key-free branch that must NOT satisfy Route 4 (line 929), and a digit-boundary guard proving `"11.10"` does not satisfy key `"11-1"` (lines 981-991); `pixi run -e pyforge-doctor python -m pytest .../test_sources_marshal_story_status.py -q` → 40 passed.
 
 ## Constraints
 
