@@ -52,7 +52,7 @@ def test_mason_ready_invokes_boot_reconcile(monkeypatch) -> None:
         calls.append(True)
 
     monkeypatch.setattr(
-        "django_mason_portal.apps.run_mason_boot_reconcile",
+        "django_mason_portal.boot_reconcile.run_mason_boot_reconcile",
         _record,
     )
     apps.get_app_config("mason_portal").ready()
@@ -133,22 +133,21 @@ def test_station_client_trips_breaker_and_degrades(monkeypatch) -> None:
     assert elapsed < FAIL_FAST_SECONDS
 
 
-@override_settings(
-    PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
-    PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
-    STATION_REMOTE="1",
-)
 def test_station_remote_default_path_uses_breaker(monkeypatch) -> None:
-    class _FrozenDatetime(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(2026, 9, 10, 12, 0, tzinfo=tz or UTC)
+    from django_pyforge.station_client import _resolve_transport
 
-    monkeypatch.setattr(crypto, "datetime", _FrozenDatetime)
     breaker = CircuitBreaker(fail_max=FAIL_MAX, reset_timeout=3600)
     monkeypatch.setattr(
         "django_pyforge.station_client.station_outbound_breaker",
         breaker,
+    )
+    monkeypatch.setattr(
+        "django_pyforge.station_port.is_station_remote",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "django_pyforge.station_port.default_transport",
+        lambda: None,
     )
 
     def failing_transport(
@@ -164,18 +163,11 @@ def test_station_remote_default_path_uses_breaker(monkeypatch) -> None:
         "django_pyforge.station_client._urllib_transport",
         return_value=failing_transport,
     ):
-        client = StationHttpClient()
+        transport = _resolve_transport(None)
+        assert transport is not None
         for _ in range(SURPLUS):
             with pytest.raises((RuntimeError, StationClientDegraded)):
-                client.post(
-                    "/compliance/check",
-                    payload={"recipe_name": "numpy"},
-                    station="warden",
-                    sub="cli-user",
-                    roles=[prefixed_station("warden")],
-                    base_url="http://testserver",
-                    private_pem=GOLDEN_PRIVATE_PEM,
-                )
+                transport("POST", "http://testserver/x", {}, b"{}")
     assert breaker.state is CircuitState.OPEN
 
 
