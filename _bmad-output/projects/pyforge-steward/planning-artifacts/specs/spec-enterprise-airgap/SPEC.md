@@ -28,9 +28,16 @@ code or committed configuration. Owner: Steward (the estate).
   time; zero enterprise endpoints in tracked files. Success: the same
   checkout works behind Artifactory by setting env vars only; grep finds no
   committed enterprise URL/credential.
+  - **verified:** 2026-09-11 — `test_http_jfrog_host_gate.py` + `test_http_resolvers.py` +
+    `test_http_skip_auth.py` (135/135) cover the env-var-derived host gate; a repo grep for
+    real enterprise hostnames finds only illustrative placeholders in docstrings/help text
+    (`artifactory.corp`, `your-jfrog`), no committed live endpoint or credential.
 - **CAP-2 — offline-safe read side.** Intent: all atlas read-side CLIs
   answer from local state (cf_atlas.db, caches) with no network dependency.
   Success: read commands succeed with networking disabled.
+  - **verified:** 2026-09-11 — live: `staleness-report --json` run with `http_proxy`/
+    `https_proxy` pointed at an unreachable address (forcing any real network call to fail)
+    still returned complete, real JSON output against the local `cf_atlas.db`, exit 0.
 - **CAP-3 — mirror-friendly data paths.** Intent: bulk data acquisition uses
   artifacts a mirror can serve verbatim (e.g. `current_repodata.json` over
   the sharded protocol). Success: pipeline phases run against a JFrog
