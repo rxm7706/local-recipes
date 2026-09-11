@@ -73,6 +73,7 @@ class TestSkillMdConsistency:
             "setup.py",
             "script.py",          # rare, generic
             "conda_forge_server.py",  # MCP server, lives at .claude/tools/
+            "mcp_cli_parity.py",      # CLI<->tool parity primitive, lives at .claude/tools/ (Story 16.3)
             "post-tool-call.py",      # provenance hook, lives at .claude/hooks/ (AUD-CFE-009)
             # Universal Python conventions — appear in shell-example prose
             # (e.g. `tar tzf <sdist> | grep '__init__.py$'` in G7 gotcha) and

@@ -88,6 +88,7 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 - **`migrate_to_v1`** — preserves the original `meta.yaml`. Validate the converted `recipe.yaml` first, then remove `meta.yaml` manually. Never leave both files in the same recipe directory at build time.
 - **`check_dependencies` JFrog support** — for air-gapped or corporate environments, pass `channel="https://your-jfrog-host/conda-forge"` plus the `JFROG_API_KEY` env var (or `JFROG_USERNAME` + `JFROG_PASSWORD`). See `docs/enterprise-deployment.md`.
 - **`update_cve_database`** — runs offline-friendly (downloads OSV.dev's full database to `~/.cache/conda-forge-skill/`); use during initial setup or to refresh CVE feed. Not needed before each scan if the database is recent.
+- **CLI <-> tool parity (Story 16.3)** — `conda_forge_server.py`'s 46 `@mcp.tool()` registrations are checked against the pixi-task CLI surface by `.claude/tools/mcp_cli_parity.py`, which extends marshal's `pyforge.marshal.mcp.parity` gate engine rather than re-implementing it. Every deliberate CLI-only or tool-only asymmetry (e.g. `trigger_build` driving `rattler-build`/`build-locally.py` directly instead of a wrapper script) is declared with a one-line reason in that module's `CLI_ONLY_VERBS` / `TOOL_ONLY_NAMES`. Gated by `tests/meta/test_mcp_cli_tool_parity.py`.
 
 ## See also
 
