@@ -1039,11 +1039,6 @@ def run_supervisor(
         attach_story_key, attach_phase, attach_commit = active_task_from_snapshot(
             attach_snapshot,
         )
-        attach_usage = (
-            harness.usage_snapshot(home, harness_run_id)
-            if harness_run_id is not None
-            else None
-        )
         run_publish_handle = _publisher.publish(
             shape_loop_publish(
                 station_slug=slug,
@@ -1052,7 +1047,6 @@ def run_supervisor(
                 story_key=attach_story_key,
                 phase=attach_phase,
                 commit_sha=attach_commit,
-                layer_savings=attach_usage.layer_savings if attach_usage else None,
             )
         )
 
