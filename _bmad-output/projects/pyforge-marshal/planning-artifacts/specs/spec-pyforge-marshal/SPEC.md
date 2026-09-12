@@ -10,14 +10,13 @@ surface:
 companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
   - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against
-  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-65 / NFR-1..NFR-14 with testable consequences, incl. the folded-in Satellite: Genesis Installer PRD (FR1..FR62, own numbering)
-  - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in Satellite: Genesis Installer Architecture (AD-51..AD-65)
-  - ../../epics.md                                           # adopted (chain): 6 epics / 40 stories, FR coverage map, story DAG (marshal's own FR-1..65 range only)
-  - ../../epics-genesis-installer.md                         # adopted (chain, UNCHANGED / out of scope for this consolidation): the installer's own 6 epics / 36 stories (epics 7-12), still a SEPARATE document per explicit instruction
+  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-65 / NFR-1..NFR-14 with testable consequences, incl. the folded-in seed-installer PRD content (FR1..FR62, own numbering; retitled "Part II — The seed installer (`marshal seed`)" 2026-08-08)
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in seed-installer architecture content (AD-51..AD-65; section retitled 2026-08-08)
+  - ../../epics.md                                           # adopted (chain): the single, combined epics document (Epics 1-12 and beyond) — the former separate epics-genesis-installer.md was merged in and archived 2026-08-08 (genesis-installer-name-retirement CAP-1)
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
-  - ../../briefs/brief-pyforge-marshal-2026-07-25/brief.md    # incl. the folded-in Satellite: Genesis Installer section
+  - ../../briefs/brief-pyforge-marshal-2026-07-25/brief.md    # incl. the folded-in seed-installer brief content (section retitled "The seed installer (marshal seed)" 2026-09-12)
   - ../../../../../../docs/dreams/genesis-installer.md       # the genesis-installer Dream (unchanged; its downstream chain is what this consolidation folds in)
   - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/research/product-brief-pyforge-genesis.md  # archived original of the folded-in satellite brief
   # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
@@ -162,7 +161,7 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **No destructive default, no AI attribution.** Marshal never force-pushes; teardown refuses on unmerged work absent an explicit flag; mutating commands are idempotent and converge on re-run. No co-author trailer, model line or generated-with line is ever emitted — a commit trailer is part of the permanent authorship and blame record.
 - **Acceptance is deterministic and machine-checkable end to end.** Exit codes, journal entries, gate records and git history are the oracle — never an agent's assertion that it passed.
 
-- **Genesis-installer constraints, folded in 2026-08-02 (own architecture AD-51..AD-59; see the architecture doc's Satellite section).** Two are flagged as contradicting Marshal's own constraints above rather than silently resolved — see the two CONTRADICTION notes inline below; neither is decided by this consolidation:
+- **The seed installer's own constraints, folded in 2026-08-02 (own architecture AD-51..AD-59; see the architecture doc's "Part II — The seed installer" section).** Two are flagged as contradicting Marshal's own constraints above rather than silently resolved — see the two CONTRADICTION notes inline below; neither is decided by this consolidation:
 - **Five artifact classes, a closed set** — `referenced` · `copied-managed` · `copied-seeded` · `generated-derived` · `hybrid-managed-region`. REFERENCED is never materialized (version range only); COPIED·MANAGED is tool-owned and regenerated wholesale; COPIED·SEEDED is written once and repo-owned forever; GENERATED·DERIVED is recomputed every run; HYBRID·MANAGED-REGION is a repo-owned file with a tool-owned marker span, of which only the span is replaced. **Classification rule:** by *who must be able to change it* and *how an installed repo takes a later model upgrade for it*. The Dream's three-way split was one class short — "copied" must divide into MANAGED and SEEDED, because that is exactly what decides whether an upgrade may rewrite a file. Per-artifact V1 assignment: `extraction-manifest.md`.
 - **The never-write set is structural** — `docs/dreams/*.md` (except the one `init` seed), `**/planning-artifacts/**` (except the `init`-seeded `specs/README.md`), `**/implementation-artifacts/**`, `docs/specs/*.md` (legacy tier), and `_bmad/bmm/**` + `_bmad/core/**` (installer-owned). Upgrading the model can never touch the work made with it.
 - **The never-write guard lives at the lowest write primitive, not at call sites.** Every byte written to a target repo passes through one `fs` module holding an immutable path set frozen at construction; each write resolves to an absolute, symlink-resolved path and matches against the set *before* opening anything — unresolved matching would miss `_bmad-output/planning-artifacts`, which is a symlink into a project's Tier-2 tree. An AST meta-test enumerates write calls outside `fs`, so no future code path can route around the guard. Templates write through `fs` like everything else: a template that writes outside its declared paths is a hard error.
@@ -209,7 +208,7 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **Formal L1–L5 story-mode labelling beyond the gate-mode mapping.** Frontier.
 - **Claiming to be "the orchestrator."** Marshal is the station around one, and positioning must stay honest about it. *(Scope clarified 2026-07-31: this targets the engine claim — bmad-loop remains the dev/verify/review/commit orchestrator. It does not bar Marshal from sequencing on other stations' verdicts, which it consumes and never authors; see the sequencing constraint.)*
 
-- **Genesis-installer non-goals, folded in 2026-08-02:**
+- **The seed installer's own non-goals, folded in 2026-08-02:**
 - **Operating the machinery Genesis installs** — bmad-loop runs, quality gates, escalation, graduated autonomy, worktree lifecycle, and run-time project switching are Marshal's.
 - **Machine and toolchain health** — Genesis performs a minimal presence-and-floor probe of REFERENCED dependencies (so it works in a repo that has not adopted Doctor) and delegates to `doctor check` when available, rather than growing its own probe suite.
 - **Deck content, and the Dream's other two faces** — the Dream casts Genesis as three things: the master narrative, the alignment deck (`presentations/pyforge-genesis/`, already real), and the seed. **This contract covers only the seed.** Genesis lays down `presentations/<slug>/` and its conventions; Herald fills and round-trips them.
@@ -231,7 +230,7 @@ An operator launches a wave against an approved spec, goes to bed, and wakes to 
 
 Deliberately **not** optimized, and tracked as counter-metrics: raw story throughput (optimizing it reproduces the documented failure of agents spending days on impossible solutions), adapter count (two proven beat six claimed), and reduction in escalation count (fewer escalations is only good if precision holds — driving the number down by widening what the agent guesses at is the exact failure this product exists to prevent).
 
-**Genesis-installer's own success signal, folded in 2026-08-02** (a second, independent success criterion — the two are not merged into one statement because they measure different things: Marshal's above measures a wave of stories landing unattended; this one measures a second repository being installed and upgraded):
+**The seed installer's own success signal, folded in 2026-08-02** (a second, independent success criterion — the two are not merged into one statement because they measure different things: Marshal's above measures a wave of stories landing unattended; this one measures a second repository being installed and upgraded):
 
 A second repository, created by `marshal seed init`, runs a full Dream → spec → epics →
 loop-driven build and then **takes a later model upgrade via `marshal seed update` with no hand
@@ -260,8 +259,8 @@ stabilization gate was called too early.
 - 80% escalation precision is a first target absent a baseline.
 - **Live-evidence counts cited across the chain are point-in-time and were already stale at review** (4 loop homes exist today, not 7; 93 skill directories, not 92). No capability contract may hard-code these numbers.
 
-**Genesis-installer's own assumptions, folded in 2026-08-02:**
-- Genesis targets git repositories only; non-git targets forfeit the update story entirely.
+**The seed installer's own assumptions, folded in 2026-08-02:**
+- The seed installer targets git repositories only; non-git targets forfeit the update story entirely.
 - The operating model has genuinely stabilized — the Dream's own gate. Evidence: pyforge-atlas shipped 32 stories and pyforge-warden 31 through it; the durable-story-specs convention closed the last known hole on 2026-07-25.
 - Copier's `run_copy` / `run_update` / `run_recopy` signatures are stable across 9.x, and its answers-file path is template-configurable (the second is AD-52's fallback trigger). Both are gated by Spike-0, which is a critical gate on the materialization work rather than an accompanying task.
 - HTML-comment markers are unambiguous in the specific markdown files the manifest names.
@@ -270,7 +269,7 @@ stabilization gate was called too early.
 
 ## Open Questions
 
-**The chain's own architecture gate returned `BLOCKED-ON`** (adversarial review, 2026-07-25, against AD-25–AD-39: 6 CRITICAL · 12 HIGH · 11 MED · 3 LOW). The block was on six specific decisions, not on the design. **All six are closed as of 2026-09-09** — F-1, F-2, F-3 and F-6 resolved against shipped code by the disposition pass; F-4 and F-5 answered by the operator the same day — and each keeps its dated resolution below. Detail and the originally proposed remedies live in the adopted review companion. What remains open in this section is epic-scoped and installer-scoped: items 7, 8, 9 and the three folded genesis-installer questions, which belong to their own epics.
+**The chain's own architecture gate returned `BLOCKED-ON`** (adversarial review, 2026-07-25, against AD-25–AD-39: 6 CRITICAL · 12 HIGH · 11 MED · 3 LOW). The block was on six specific decisions, not on the design. **All six are closed as of 2026-09-09** — F-1, F-2, F-3 and F-6 resolved against shipped code by the disposition pass; F-4 and F-5 answered by the operator the same day — and each keeps its dated resolution below. Detail and the originally proposed remedies live in the adopted review companion. What remains open in this section is epic-scoped and installer-scoped: items 7, 8, 9 and the three folded seed-installer questions, which belong to their own epics.
 
 > **Disposition pass — 2026-09-09 (operator-approved, fleet-readiness batch row mars-B-B13).**
 > The `BLOCKED-ON` block had been carried in this body since 2026-08-02 and never dispositioned.
@@ -283,7 +282,7 @@ stabilization gate was called too early.
 > disposition — F-4 alone (an undeclared trust model behind operator-attributed journal entries)
 > is still a live property of shipped code.*
 >
-> **Items 7, 8, 9 and the three folded genesis-installer questions (K-03, "creates a repo or a
+> **Items 7, 8, 9 and the three folded seed-installer questions (K-03, "creates a repo or a
 > tree", "append-at-EOF as a safe anchor fallback") are NOT dispositioned by this pass** — they
 > are epic-scoped or installer-scoped and belong to their own epics. They stay in the body
 > unchanged.
@@ -348,7 +347,7 @@ stabilization gate was called too early.
 
 *Wrap-versus-absorb is deliberately absent here: it was resolved in the chain and is carried as the first Constraint, with the recorded fork triggers as its revisit path. Five further capability questions raised by the 2026-07-31 architecture audit (Tier-2 serialization, tool-surface brokering, escalation knowledge, the enterprise seam, inter-station sequencing) were resolved by operator ruling the same day and are rendered above as constraints, CAP-9, and non-goal reaffirmations — the memlog carries each decision.*
 
-**Genesis-installer's own open questions, folded in 2026-08-02** (distinct numbering `K-03`/`OQ-*`, not merged into the numbered list above):
+**The seed installer's own open questions, folded in 2026-08-02** (distinct numbering `K-03`/`OQ-*`, not merged into the numbered list above):
 
 - **K-03 has no quantified threshold in any source.** At what migrations-per-model-minor-version rate does the model become too volatile to install, and who makes that call?
 - **Does `marshal seed init` create a repository or only a tree?** Creation on a git host is scoped out, but a local `git init` and first commit are left unstated.
