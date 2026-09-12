@@ -83,6 +83,12 @@ module = ["tests.test_mcp_host_sidecar"]
 disable_error_code = ["arg-type"]
 
 [[tool.mypy.overrides]]
+# `idp_test_keys` (test_django_pyforge_assertion.py) returns dict[str, object]
+# by design (mirrors test_django_pyforge_assertion's own override below).
+module = ["tests.test_marshal_station_mint"]
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
 module = ["tests.test_oidc_identity"]
 disable_error_code = ["arg-type", "assignment"]
 

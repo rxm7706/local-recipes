@@ -129,6 +129,7 @@ from . import check as check_cli
 from . import config as config_cli
 from . import context as context_cli
 from . import deploy as deploy_cli
+from . import login as login_cli
 from . import gate as gate_cli
 from . import init as init_cli
 from . import land as land_cli
@@ -269,6 +270,7 @@ def _build_parser() -> argparse.ArgumentParser:
     chain_cli.add_chain_subparser(subparsers)
     planning_cli.add_planning_subparser(subparsers)
     context_cli.add_context_subparser(subparsers)
+    login_cli.add_login_subparser(subparsers)
     from . import benchmark as benchmark_cli
 
     benchmark_cli.add_benchmark_subparser(subparsers)

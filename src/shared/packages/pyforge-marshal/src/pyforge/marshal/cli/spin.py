@@ -392,6 +392,36 @@ def _prior_attempt_keys(home: Path) -> set[StoryKey]:
     re-globbing and re-parsing every prior run per resolved story -- the
     caller has N stories to check and this home may retain many runs."""
     flagged: set[StoryKey] = set()
+    slug = home.name.removeprefix("pyforge-") if home.name.startswith("pyforge-") else home.name
+    try:
+        from pyforge.core.published_loop import fetch_story_tasks
+
+        published = fetch_story_tasks(slug)
+    except Exception:  # noqa: BLE001 -- filesystem fallback below
+        published = None
+    if published is not None:
+        for raw_key, task in published.items():
+            if not isinstance(task, Mapping):
+                continue
+            attempt = task.get("attempt", 0)
+            phase = task.get("phase")
+            retried = (
+                isinstance(attempt, (int, float))
+                and not isinstance(attempt, bool)
+                and attempt >= 2
+            )
+            left_terminal = isinstance(phase, str) and phase in _PRIOR_ATTEMPT_PHASES
+            if not (retried or left_terminal):
+                continue
+            candidate = task.get("story_key")
+            if not isinstance(candidate, str):
+                candidate = raw_key
+            try:
+                flagged.add(normalize(candidate))
+            except ValueError:
+                continue
+        return flagged
+    # CAP-4: loop-home FILE read -- prior-attempt fallback when published plane is unreachable
     for state_path in home.glob(".bmad-loop/runs/*/state.json"):
         try:
             document = json.loads(state_path.read_text(encoding="utf-8"))

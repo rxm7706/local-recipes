@@ -418,6 +418,18 @@ def gather(target: Path) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
+def _published_story_tasks(slug: str) -> dict[str, dict] | None:
+    """Published-plane task records when reachable; None triggers filesystem fallback."""
+    try:
+        from pyforge.core.published_loop import fetch_story_tasks
+    except ImportError:
+        return None
+    try:
+        return fetch_story_tasks(slug)
+    except Exception:  # noqa: BLE001 -- degrade to loop-home fallback
+        return None
+
+
 def _harness_tasks(
     loop_root: Path | None,
     slug: str,
@@ -454,10 +466,14 @@ def _harness_tasks(
     a missing or corrupt ``state.json`` is silently skipped rather than
     raising, mirroring the script's own broad try/except-and-continue.
     """
+    published = _published_story_tasks(slug)
+    if published is not None:
+        return published
     out: dict[str, dict] = {}
     if loop_root is None:
         return out
     home = loop_root / f"pyforge-{slug}"
+    # CAP-4: loop-home FILE read -- story-status fallback when published plane is unreachable
     for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):
         # Only the READ+PARSE is guarded by try/except: an unreadable file or
         # invalid JSON makes the whole record unusable, so that file is skipped
@@ -541,6 +557,7 @@ def gather_story_status(
     """
     if loop_root is None:
         try:
+            # CAP-4: loop-home FILE read -- default harness root when published plane unavailable
             loop_root = Path.home() / ".bmad-loops"
         except RuntimeError:
             loop_root = None  # no resolvable home -- no harness records to read

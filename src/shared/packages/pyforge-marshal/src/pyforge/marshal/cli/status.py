@@ -670,6 +670,7 @@ def _latest_bmad_loop_run_id(home: Path) -> str | None:
     entries (``.retired-*``) and plain files are skipped. A plain
     ``Path.iterdir`` read, no ``FsPort`` routing (NFR-14; mirrors
     ``_discover_harness_run_id_by_filesystem``'s own precedent)."""
+    # CAP-4: loop-home FILE read -- recover harness_run_id from bmad-loop run dirs
     runs_dir = home / ".bmad-loop" / "runs"
     try:
         candidates = sorted(
@@ -771,6 +772,7 @@ def _discover_harness_run_id_by_filesystem(
     absent/unreadable."""
     if launched_at is None:
         return None
+    # CAP-4: loop-home FILE read -- correlate harness_run_id from bmad-loop run dirs
     runs_dir = home / ".bmad-loop" / "runs"
     try:
         candidates = [
@@ -942,6 +944,7 @@ def _gather_home_facts(
     journal_facts = _gather_run_journal_facts(fs, run_dir, run_id)
     if journal_facts.launch_pid is None:
         if journal_facts.journal_readable:
+            # CAP-4: loop-home FILE read -- bmad-loop run id when journal lacks launch pid
             harness_run_id = _latest_bmad_loop_run_id(home)
             if harness_run_id is not None:
                 verdict = harness.run_terminal_verdict(home, harness_run_id)
@@ -985,6 +988,7 @@ def _gather_home_facts(
     harness_run_id = (
         journal_facts.harness_run_id
         or resolve_harness_run_id(fs, run_dir, run_id)
+        # CAP-4: loop-home FILE read -- poisoned-journal harness_run_id recovery
         or _discover_harness_run_id_by_filesystem(home, journal_facts.launched_at)
     )
     snapshot = (
@@ -1196,6 +1200,7 @@ def _gather_unpushed_work_findings(
 # Story 4.14's own relative glob for bmad-loop's own on-disk shape (external
 # to this repo, defined by bmad-loop itself, never Marshal): a
 # session-timeout-killed story's preserved diff, one per failed attempt.
+# CAP-4: loop-home FILE read -- failed-story patch glob (durability signal, not run-state truth)
 _FAILED_PATCH_GLOB = ".bmad-loop/runs/*/failed/*/changes.patch"
 
 
@@ -1252,6 +1257,7 @@ def _gather_failed_patches(home: Path) -> tuple[tuple[Path, int], ...]:
     because a second stat could disagree with the first."""
     pairs: list[tuple[Path, int]] = []
     try:
+        # CAP-4: loop-home FILE read -- enumerate failed-story patch files
         candidates = sorted(home.glob(_FAILED_PATCH_GLOB))
     except OSError:
         return ()

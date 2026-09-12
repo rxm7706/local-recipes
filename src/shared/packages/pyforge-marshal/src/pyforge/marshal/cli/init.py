@@ -331,8 +331,22 @@ def add_homes_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=run_homes)
 
 
+def published_story_tasks(project_slug: str) -> dict[str, dict] | None:
+    """Published-plane per-story task records; None when the host plane is unreachable."""
+    slug = project_slug.removeprefix("pyforge-")
+    try:
+        from pyforge.core.published_loop import fetch_story_tasks
+    except ImportError:
+        return None
+    try:
+        return fetch_story_tasks(slug)
+    except Exception:  # noqa: BLE001 -- callers fall back to loop-home file reads
+        return None
+
+
 def _loop_home_root() -> Path:
     override = os.environ.get(ENV_LOOP_HOME_ROOT)
+    # CAP-4: loop-home FILE read -- loop-home worktree root, not run-state truth
     root = Path(override).expanduser() if override else Path.home() / ".bmad-loops"
     if not root.is_absolute():
         # Anchor once, here: `git -C <repo_root> worktree add` resolves a

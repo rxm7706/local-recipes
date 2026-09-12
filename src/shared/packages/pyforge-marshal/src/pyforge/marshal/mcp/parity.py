@@ -44,6 +44,8 @@ CLI_ONLY_VERBS: frozenset[str] = frozenset(
         "gate",
         "init",
         "land",
+        # Story 33.12 CAP-5: local-profile bearer writer; operator-only surface.
+        "login",
         "retire",
         "seed",
         "teardown",
