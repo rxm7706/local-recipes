@@ -27,6 +27,9 @@ def _default_host() -> str:
 def _read_bearer(path: str) -> str | None:
     if not path:
         return None
+    if path.startswith("ey"):
+        token = path.strip()
+        return token or None
     try:
         with open(path, encoding="utf-8") as handle:
             raw = handle.read()

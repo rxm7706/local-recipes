@@ -201,7 +201,10 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
     complete_payload = json.loads(transport.calls[2][3] or b"{}")
     assert heartbeat_payload["params"]["name"] == "heartbeat_loop_run"
     assert complete_payload["params"]["name"] == "complete_loop_run"
-    assert heartbeat_payload["params"]["arguments"] == shape_heartbeat("held-run-42")
+    assert heartbeat_payload["params"]["arguments"] == {
+        **shape_heartbeat("held-run-42"),
+        "assertion": "minted-assertion",
+    }
     assert findings == []
 
 
