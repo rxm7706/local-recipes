@@ -63,6 +63,15 @@ resources:
 #   REDIS_PASSWORD    -- Redis AUTH password (Story 12.6); consumed by the
 #                        redis container and wired into platform pods'
 #                        REDIS_URL via secretKeyRef + env expansion
+# Two more keys are wired OPTIONALLY (secretKeyRef optional: true -- their
+# absence never blocks a pod from starting): PYFORGE_ASSERTION_PRIVATE_KEY /
+# PYFORGE_ASSERTION_PUBLIC_KEY, the host's RS256 keypair for signing/verifying
+# CAP-18 service assertions (django_pyforge.assertion.crypto). Without them,
+# `mint_assertion()` raises `AssertionRefusedError`, which the mint view's
+# except clause maps to the SAME `{"error": "refused"}` 401 as a genuinely bad
+# IdP bearer -- there is no separate signal (found running the CAP-3 attended
+# CRC exercise: every mint attempt failed this way because this cluster's
+# existingSecret never had these two keys, 2026-09-12).
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).

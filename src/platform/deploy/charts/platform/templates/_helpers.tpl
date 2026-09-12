@@ -318,6 +318,23 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+{{- /* CAP-18 host assertion signing keypair -- optional: true so a pod
+       without them still boots; mint_assertion()/verify_assertion() raise
+       AssertionRefusedError until they're present (found running the CAP-3
+       attended CRC exercise, 2026-09-12: values.yaml's existingSecret
+       comment above has the full story). */}}
+- name: PYFORGE_ASSERTION_PRIVATE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PRIVATE_KEY
+      optional: true
+- name: PYFORGE_ASSERTION_PUBLIC_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PUBLIC_KEY
+      optional: true
 {{- if .Values.redis.external.enabled }}
 - name: REDIS_BROKER_URL
   value: {{ required "redis.external.brokerUrl is required when redis.external.enabled is true" .Values.redis.external.brokerUrl | quote }}
