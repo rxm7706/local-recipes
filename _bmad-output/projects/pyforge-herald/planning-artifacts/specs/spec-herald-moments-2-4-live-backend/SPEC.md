@@ -11,6 +11,14 @@ surface:
   - a real database (SQLite-with-locking or Postgres) replacing .herald/progress.json / claims.json / notices-index.json   # SATISFIED 2026-08-13 — .herald/herald.db via db.py
   - a webhook HTTP endpoint at /stations/herald/api/v1/webhooks/on-ship and /on-pr-close — CORRECTED 2026-09-09; the shipped /api/herald/... literals are a silent 404 under the platform seam
   - a cron/scheduled-job runner (weekly progress aggregation, 7-day evidence re-validation) — hosting undecided, foundry-side
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py   # also governed by pyforge-marshal/spec-pyforge-core
 companions:
   # ADOPTED 2026-08-09 — this Spec takes Steward's pattern instead of building its own
   # backend. Both are load-bearing: the Spec supplies the perimeter and identity contract,

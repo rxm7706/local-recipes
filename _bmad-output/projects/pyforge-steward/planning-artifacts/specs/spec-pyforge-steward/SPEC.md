@@ -24,6 +24,17 @@ surface:
   # sync-config.example.yaml above — not a blanket .steward/** (see the rationale note
   # immediately above this list).
   - .steward/repo-sets.example.yaml
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/routing.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py   # also governed by pyforge-marshal/spec-pyforge-core
 id: SPEC-steward
 owner-dream: docs/dreams/pyforge-steward.md
 companions:

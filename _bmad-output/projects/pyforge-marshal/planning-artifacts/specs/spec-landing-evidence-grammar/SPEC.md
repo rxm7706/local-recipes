@@ -8,6 +8,15 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py
   - src/shared/packages/pyforge-core/
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py   # also governed by pyforge-marshal/spec-pyforge-core
 sources:
   - ../../../../../../docs/dreams/landing-evidence-grammar.md
 open_questions: []

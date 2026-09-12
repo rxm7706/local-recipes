@@ -7,6 +7,32 @@ covers-dreams:
   - docs/dreams/genesis-installer.md   # folded in 2026-08-02 as CAP-10..CAP-18 (see below); satisfies INV-1 for this Dream
 surface:
   - src/shared/packages/pyforge-marshal/**    # the CLI this Spec builds (not yet created)
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/checkpoint.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/layer_savings_sources.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/structure_graph_dispatch_benchmark.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/worktree_checkpoint.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/cursor.toml   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/scope.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/files/model-ignores.gitignore.j2   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
 companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
   - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against
