@@ -14,6 +14,9 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py
