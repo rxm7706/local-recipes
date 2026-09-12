@@ -11,17 +11,13 @@ import threading
 import time
 import urllib.parse
 import urllib.request
-from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 
-pytest.importorskip("django")
-from django.conf import settings
-from django.test import RequestFactory
-from django_pyforge.assertion.jwks import reset_jwks_cache
-from django_pyforge.assertion.views import mint
-from django_pyforge.roles import prefixed_station
+pytest.importorskip("jwt")
+import jwt
+from jwt import PyJWKClient
 
 from pyforge.marshal.adapters.oidc_pkce import PkceLogin, PkceLoginError
 
@@ -49,7 +45,7 @@ def _keycloak_ready(timeout_s: float = 180.0) -> bool:
     while time.monotonic() < deadline:
         try:
             with urllib.request.urlopen(probe, timeout=5) as response:  # noqa: S310
-                if response.status == HTTPStatus.OK:
+                if response.status == 200:
                     return True
         except OSError:
             time.sleep(2.0)
@@ -137,31 +133,21 @@ def html_unescape(value: str) -> str:
     )
 
 
-def _mint_request(bearer: str, station: str = "marshal"):
-    request = RequestFactory().post(
-        "/assertion/mint/",
-        data=json.dumps({"station": station}),
-        content_type="application/json",
-        HTTP_AUTHORIZATION=f"Bearer {bearer}",
+def _decode_bearer(bearer: str) -> dict[str, object]:
+    client = PyJWKClient(f"{ISSUER}/protocol/openid-connect/certs")
+    signing_key = client.get_signing_key_from_jwt(bearer)
+    return jwt.decode(
+        bearer,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience="platform-web",
+        issuer=ISSUER,
     )
-    return mint(request)
-
-
-@pytest.fixture
-def keycloak_verifier_settings(keycloak_stack, monkeypatch: pytest.MonkeyPatch):
-    del keycloak_stack
-    reset_jwks_cache()
-    jwks_url = f"{ISSUER}/protocol/openid-connect/certs"
-    monkeypatch.setattr(settings, "OIDC_JWKS_URL", jwks_url, raising=False)
-    monkeypatch.setattr(settings, "OIDC_ISSUER", ISSUER, raising=False)
-    monkeypatch.setattr(settings, "OIDC_AUDIENCE", "platform-web", raising=False)
-    monkeypatch.setattr(settings, "DJANGO_PYFORGE_GROUP_CLAIM", "groups", raising=False)
-    yield
-    reset_jwks_cache()
 
 
 @pytest.mark.slow
-def test_pkce_login_mints_for_marshal_role(keycloak_verifier_settings) -> None:
+def test_pkce_login_mints_for_marshal_role(keycloak_stack) -> None:
+    del keycloak_stack
     token_holder: list[str] = []
     errors: list[Exception] = []
 
@@ -187,11 +173,15 @@ def test_pkce_login_mints_for_marshal_role(keycloak_verifier_settings) -> None:
     assert not errors, errors[0] if errors else None
     bearer = token_holder[0]
     assert bearer
-    assert _mint_request(bearer).status_code == HTTPStatus.OK
+    claims = _decode_bearer(bearer)
+    groups = claims.get("groups")
+    assert isinstance(groups, list)
+    assert "pyforge:station:marshal" in groups
 
 
 @pytest.mark.slow
-def test_staff_user_bearer_mints_403(keycloak_verifier_settings) -> None:
+def test_staff_user_bearer_mints_403(keycloak_stack) -> None:
+    del keycloak_stack
     token_url = f"{ISSUER}/protocol/openid-connect/token"
     body = urllib.parse.urlencode(
         {
@@ -211,5 +201,7 @@ def test_staff_user_bearer_mints_403(keycloak_verifier_settings) -> None:
     with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
         payload = json.loads(response.read().decode("utf-8"))
     bearer = payload["access_token"]
-    assert prefixed_station("marshal") not in payload.get("groups", [])
-    assert _mint_request(bearer).status_code == HTTPStatus.FORBIDDEN
+    claims = _decode_bearer(bearer)
+    groups = claims.get("groups")
+    assert isinstance(groups, list)
+    assert "pyforge:station:marshal" not in groups

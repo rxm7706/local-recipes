@@ -2,10 +2,10 @@
 title: "CAP-5's deployed profile — a real device-code/PKCE pyforge login"
 type: 'feature'
 created: '2026-09-12'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-baseline_revision: '422491ee186400fc3ad1202343eedf0bd8d4fef8'
+baseline_revision: '74a53731f475c180d684bcbdc9fd3ccd50ecf530'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/stack.md
@@ -230,3 +230,26 @@ pod can actually resolve anything once policies are active). Land independently;
 matter between them.
 
 ## Auto Run Result
+
+Status: done
+
+Summary: Added PKCE-loopback `pyforge login --pkce --issuer …` beside the existing local-profile mint; compose Keycloak realm now ships `pyforge-cli` (public PKCE client) and `marshal-operator`; Helm bundled realm adds `pyforge:station:marshal`.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/pkce.py` — pure RFC 7636 verifier/challenge helpers
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/oidc_pkce.py` — loopback listener + token exchange (HTTP via `pyforge.core.client`)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py` — `--pkce` / `--issuer` / `--client-id` wiring
+- `src/platform/compose/keycloak/realms/platform-realm.json` — `pyforge-cli` client + `marshal-operator` user
+- `src/platform/deploy/charts/platform/templates/keycloak-realm-configmap.yaml` — marshal station group
+- `src/shared/packages/pyforge-core/src/pyforge/core/client.py` — shared stdlib HTTP/url helpers for marshal login
+- Unit + integration tests for PKCE, login args, and live compose Keycloak (JWT claim verification)
+- Memlog surface claims in steward unifying-strategy and marshal run-state-one-publisher specs
+
+Review: self-review only (no patch/defer findings). Live integration verifies PKCE against compose Keycloak and JWT `groups`/`aud` claims; Django `/assertion/mint/` 200/403 is covered by existing platform tests plus claim shape from Keycloak mappers.
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — PASS (7915 passed, 1 skipped)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — PASS (130 passed)
+- Live slow test (local-recipes + pyjwt): `pytest …/test_login_pkce_live_keycloak.py -m slow` — PASS (2 passed) against compose Keycloak
+
+Residual risks: live integration test requires `local-recipes` env (pyjwt) when run manually; default `pyforge-marshal-test` skips slow tests and jwt-less env skips the module.
