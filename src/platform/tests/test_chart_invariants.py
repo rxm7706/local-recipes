@@ -115,6 +115,7 @@ _SECRET_ENV_NAMES = frozenset(
         "DBGPT_LLM_API_KEY",
         "COMPONENT_OIDC_CLIENT_SECRET",
         "KEYCLOAK_ADMIN_PASSWORD",
+        "PYFORGE_ASSERTION_PRIVATE_KEY",
     },
 )
 _SECRETISH_ENV_NAME = re.compile(
@@ -1719,6 +1720,39 @@ def test_redis_uses_existing_secret_password_and_wires_redis_url():
         broker_host=broker_host,
         cache_host=cache_host,
     )
+
+
+@requires_helm
+def test_platform_pods_wire_optional_assertion_signing_keypair():
+    """CAP-3 attended CRC exercise, 2026-09-12: `mint_assertion()` raised
+    `AssertionRefusedError` (mapped to the SAME `{"error": "refused"}` 401 as
+    a bad IdP bearer) because PYFORGE_ASSERTION_PRIVATE_KEY/_PUBLIC_KEY were
+    never wired from existingSecret into any platform pod's env at all --
+    the values.yaml comment documented them as consumed, but no template
+    actually referenced them. Both must be present, secretKeyRef'd against
+    the same existingSecret, and `optional: true` (a pod must still boot
+    when the keys are absent -- CAP-18 assertions are opt-in).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    for key_name in ("PYFORGE_ASSERTION_PRIVATE_KEY", "PYFORGE_ASSERTION_PUBLIC_KEY"):
+        for component in sorted(_PLATFORM_COMPONENTS):
+            env = _collect_env_by_name(by_component[component])
+            entry = env.get(key_name)
+            assert entry is not None, f"{component} missing {key_name}"
+            secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+            assert secret_ref.get("name") == secret_name, (
+                f"{component} {key_name} secretKeyRef name mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("key") == key_name, (
+                f"{component} {key_name} secretKeyRef key mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("optional") is True, (
+                f"{component} {key_name} must be optional: true, got {secret_ref!r}"
+            )
 
 
 @requires_helm
