@@ -17,14 +17,39 @@ from django_pyforge.assertion.exceptions import AssertionRefusedError
 
 _ALLOWED_SCHEMES = frozenset({"https", "file"})
 _JWT_COMPACT_SEGMENTS = 3
+# Kubernetes' own CoreDNS is the sole authority for these two suffixes inside
+# a pod's network namespace -- external DNS cannot register either one, so a
+# JWKS URL resolving to one of them is reachable only via same-cluster
+# Service DNS, never an attacker-controlled or public host. This is what
+# lets the "bundled" OIDC profile's in-cluster Keycloak call
+# (`http://<service>.<namespace>.svc.cluster.local:8080/...`) skip TLS
+# without weakening the scheme check for a BYO/external issuer, which still
+# needs `https://` or `file://` (found running the CAP-3 attended CRC
+# exercise: the bundled profile's JWKS URL has never actually verified
+# because of this, 2026-09-12).
+_INCLUSTER_SERVICE_SUFFIXES = (".svc", ".svc.cluster.local")
+
+
+def is_incluster_service_url(url: str) -> bool:
+    """Whether ``url``'s host is a same-cluster Kubernetes Service DNS name."""
+    host = urlparse(url).hostname or ""
+    return host.endswith(_INCLUSTER_SERVICE_SUFFIXES)
+
+
+def jwks_url_scheme_is_allowed(url: str) -> bool:
+    """``https``/``file`` always; plain ``http`` only for an in-cluster Service."""
+    scheme = urlparse(url).scheme
+    if scheme in _ALLOWED_SCHEMES:
+        return True
+    return scheme == "http" and is_incluster_service_url(url)
 
 
 class JWKSKeySet:
-    """Load signing keys from ``https://`` or ``file://`` JWKS documents."""
+    """Load signing keys from ``https://``/``file://`` JWKS documents, or
+    plain ``http://`` when the host is a same-cluster Kubernetes Service."""
 
     def __init__(self, jwks_url: str) -> None:
-        parsed = urlparse(jwks_url)
-        if parsed.scheme not in _ALLOWED_SCHEMES:
+        if not jwks_url_scheme_is_allowed(jwks_url):
             msg = "JWKS URL scheme is not allowed"
             raise ValueError(msg)
         self._jwks_url = jwks_url
