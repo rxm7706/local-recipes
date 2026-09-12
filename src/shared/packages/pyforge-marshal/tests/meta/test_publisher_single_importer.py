@@ -13,6 +13,7 @@ if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 PUBLISHER_ADAPTER = PACKAGE_DIR / "adapters" / "publisher_host.py"
+LOGIN_ADAPTER = PACKAGE_DIR / "adapters" / "oidc_pkce.py"
 
 
 def _module_paths() -> list[Path]:
@@ -33,7 +34,9 @@ def _imports_client_for_publishing(path: Path) -> bool:
 
 def test_exactly_one_pyforge_core_client_importer_for_publishing() -> None:
     importers = [path for path in _module_paths() if _imports_client_for_publishing(path)]
-    assert importers == [PUBLISHER_ADAPTER]
+    publish_importers = [path for path in importers if path != LOGIN_ADAPTER]
+    assert publish_importers == [PUBLISHER_ADAPTER]
+    assert LOGIN_ADAPTER in importers
 
 
 def test_no_django_pyforge_imports_under_marshal_src() -> None:
