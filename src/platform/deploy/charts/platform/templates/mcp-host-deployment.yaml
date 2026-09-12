@@ -37,6 +37,8 @@ spec:
             - name: http
               containerPort: 8090
               protocol: TCP
+          env:
+            {{- include "platform.mcpHostEnv" . | nindent 12 }}
           startupProbe:
             httpGet:
               path: /health

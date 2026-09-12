@@ -19,6 +19,12 @@ COPY --from=builder /app/.pixi/envs/mcp-host /app/.pixi/envs/mcp-host
 COPY --from=builder /app/shell-hook.sh /app/shell-hook.sh
 COPY src/platform/mcp_host /app/mcp_host
 COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
+# spec-mcp-host-real-station-tools CAP-1: marshal's held-loop tools need
+# django_pyforge's ORM (RunState/McpHandle), reachable only through a real
+# station portal AppConfig -- django_marshal_portal is the first (and, for
+# now, only) one this sidecar mounts. Add a station here only alongside its
+# own settings.py INSTALLED_APPS entry.
+COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal
 
 RUN printf '#!/bin/bash\nset -e\nsource /app/shell-hook.sh\nexport PYTHONPATH=/app\nexec -- "$@"\n' \
     > /app/entrypoint.sh \

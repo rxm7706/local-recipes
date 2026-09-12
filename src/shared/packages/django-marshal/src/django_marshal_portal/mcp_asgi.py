@@ -42,19 +42,33 @@ def ensure_marshal_runner() -> None:
 
 def _attach_held_loop_tools(server: Any) -> Any:
     @server.tool(name=LOOP_PUBLISH_TOOL)
-    def publish_loop_run(assertion: str, **payload: Any) -> dict[str, str]:
-        """Publish an externally owned loop run to the supervisor store."""
+    def publish_loop_run(
+        assertion: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, str]:
+        """Publish an externally owned loop run to the supervisor store.
+
+        `payload` is an explicit nested field, not `**kwargs` -- the MCP SDK's
+        own schema generation turns a `**kwargs`-style parameter into a
+        REQUIRED field named after it rather than "any extra keys allowed"
+        (found live, spec-mcp-host-real-station-tools: the real HostPublisher
+        client sent flat kwargs and every publish call failed schema
+        validation the moment this tool became reachable at all).
+        """
         handle = publish_held_loop_bounded(
             station=MARSHAL_STATION,
             assertion=assertion,
-            payload=dict(payload),
+            payload=payload,
         )
         return {"handle": handle}
 
     @server.tool(name=LOOP_HEARTBEAT_TOOL)
-    def heartbeat_loop_run(handle: str, **payload: Any) -> dict[str, str]:
-        """Keep a held loop run alive."""
-        heartbeat_held_run(handle, payload=dict(payload) if payload else None)
+    def heartbeat_loop_run(
+        handle: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, str]:
+        """Keep a held loop run alive. Same explicit-`payload` shape as publish."""
+        heartbeat_held_run(handle, payload=payload or None)
         return {"handle": handle}
 
     @server.tool(name=LOOP_COMPLETE_TOOL)

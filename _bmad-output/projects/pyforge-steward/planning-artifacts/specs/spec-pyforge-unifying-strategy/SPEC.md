@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-11"
+updated: "2026-09-12"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -457,8 +457,16 @@ they are why this is not merely a UI project.
     `pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py`) and doctor/`cli/init.py`/`cli/spin.py`
     read the published plane first, filesystem only as fallback when it's unreachable; the
     mechanism-tier proof (`platform-ci-local --test` publish→exit→timing-survives + egress guard +
-    no-hostPath invariant) and the deployed, egress-blocked CRC exercise remain unexercised —
-    both are `spec-run-state-one-publisher`'s own open CAP-3, not yet run.
+    no-hostPath invariant) is landed and passing (Story 33.13). **The deployed, egress-blocked CRC
+    exercise is DONE (2026-09-12, `spec-run-state-one-publisher/verification-2026-09-12.md`):** a real
+    `HostPublisher` process, run from a workstation against a real deployed CRC cluster with
+    `networkPolicy.enabled: true` live, published a run through `/stations/marshal/mcp`, heartbeat'd
+    and completed it, then exited; a completely separate process querying `/runs/` afterward showed
+    the run under "Completed timing" with its real duration — timing surviving the workstation that
+    produced it, proven live, not simulated. Closing this required fixing a genuinely un-specced gap
+    found along the way (the mcp-host sidecar had never hosted any station's real MCP tools;
+    `docs/dreams/mcp-host-real-station-tools.md` / `spec-mcp-host-real-station-tools`, shipped the
+    same day) plus a second, previously-unreachable client/server wire-contract bug it uncovered.
   - *(Added 2026-08-24 by operator ruling. The retired console read `~/.bmad-loops`, tmux sessions
     and journal files directly, so three of its surfaces degraded to `unavailable` when published.
     Choosing to keep those surfaces is what makes this a capability rather than an answered

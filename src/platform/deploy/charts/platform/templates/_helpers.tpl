@@ -459,6 +459,34 @@ db/liquibase_update.py, not by composing the URL here (AD-12).
 {{- end }}
 
 {{/*
+spec-mcp-host-real-station-tools CAP-1: a station's real in-process MCP app
+(currently marshal only) needs django_pyforge's ORM against the SAME
+Postgres the web pod uses -- the app-role DML URL (never MIGRATION_DATABASE_URL;
+this sidecar only reads/writes RunState/McpHandle rows, it never migrates).
+DJANGO_SECRET_KEY is required by Django itself even though this sidecar
+serves no Django views; PYFORGE_ASSERTION_PUBLIC_KEY is optional (absent
+means every publish call is refused, matching the web pod's own posture).
+*/}}
+{{- define "platform.mcpHostEnv" -}}
+- name: DJANGO_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: DJANGO_SECRET_KEY
+- name: DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: DATABASE_URL
+- name: PYFORGE_ASSERTION_PUBLIC_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: PYFORGE_ASSERTION_PUBLIC_KEY
+      optional: true
+{{- end }}
+
+{{/*
 Story 26.4: directory mount (not subPath) so ConfigMap updates are visible
 to the FILE provider poll without a new process.
 */}}

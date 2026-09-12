@@ -3951,12 +3951,15 @@
  },
  "pyforge-marshal/spec-run-state-one-publisher": {
   "files": {
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py": "8258a114e7c157e5e7ead09226637f8056707ff3",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "47e0813a8b81440c735c3d71f0567f137c441662",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py": "3c4f6b8b8b80af987b15c18ce6d2189445d7117c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py": "a19dcae62662b12f63b02693c63b76a5a1cc450d",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "45b02da4c8c5d4bf7cebff886418720e0c147e52",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py": "01d55188f015577ebe5f189392444495e5ae876a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__init__.py": "01f5122af0f350ff15543c0bb5da899b12b7235c",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "82a64a45ffcaae7b68492d62251df821b251ec0b"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "da610d4e2b60c09f0a72441e7b4b9eeee12b4ba1",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py": "b087231b02074495acd0d18e507ef816f1c9b13a"
   },
-  "memlog": "abc099f7aa6a7b15253f5ad825c3a710dcc8f112"
+  "memlog": "90a3a60c44cc50fc9d20ff48ba649691113695a9"
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
@@ -5132,13 +5135,19 @@
  },
  "pyforge-steward/spec-mcp-host-real-station-tools": {
   "files": {
-   "docs/dreams/mcp-host-real-station-tools.md": "3cdc2a58f9dcec266ebc38fb0dcc15d505cb8792",
-   "src/platform/compose/mcp-host/Containerfile": "53c776a142bb8fbfcd14ab0d3db6ea8e53b47110",
-   "src/platform/mcp_host/app.py": "d06b335006eec6aa497042ce21162f828e741dd0",
-   "src/shared/packages/django-pyforge/src/django_pyforge/mcp_dual_era.py": "9d59a83d07e31ea6213800f82b3ddf65f5addbe7",
-   "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py": "0863d1d2c847861adab93320c6aa5e4e0a0f6d3e"
+   "docs/dreams/mcp-host-real-station-tools.md": "5344e839a9c036038bdd7c47b255d72695c0d31d",
+   "pixi.toml": "c3eb302b59f699f42c2504699b1f856c79e6f7bc",
+   "src/platform/compose/mcp-host/Containerfile": "24c5f6bb937ed56f0e15f17cc7624d8ba9b60363",
+   "src/platform/deploy/charts/platform/templates/_helpers.tpl": "1db6424db3dbd49b28daecde90d54b1a90b335f0",
+   "src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml": "e3797b0b804f39d53375acb95290d151d41e58f2",
+   "src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml": "0ab4eb1b95bee716915e05bce11725f20709da68",
+   "src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml": "f50510d95acc0298de4e85e102b9be20d756803e",
+   "src/platform/mcp_host/app.py": "b077ff59c7871a83a803d3ef92b8513dec4a78c1",
+   "src/platform/mcp_host/settings.py": "a912bce6abcf2fffb8cd5266afdc7e2184a1fd63",
+   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "1c074eedd0570f6eb27256c4b232911e483fd091",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py": "3c4f6b8b8b80af987b15c18ce6d2189445d7117c"
   },
-  "memlog": "288501d1177ca7b07fa4e7a9d5dac852a9eda5cd"
+  "memlog": "c330cbeb31e451c0e45288d9e84e9ade2ab68fa7"
  },
  "pyforge-steward/spec-multi-repo-workspaces": {
   "files": {},
@@ -5336,7 +5345,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "45553938e65de54c51098e31028581375a429d81",
-   "pixi.toml": "5a68d4bd413c0b22db50ed25bd92d33ab0dc03b5",
+   "pixi.toml": "c3eb302b59f699f42c2504699b1f856c79e6f7bc",
    "recipes/liquibase/liquibase.bat": "ac190f5bc21c8d478c2d90d5ca4c82ced814caee",
    "recipes/liquibase/liquibase.sh": "9e5c72090c4afdb3dcf82bba291f3bb41c855066",
    "recipes/liquibase/recipe.yaml": "d5c96e89942e9582266681615d31c889b958d03f",
@@ -5360,7 +5369,7 @@
    "src/platform/compose/compose.yml": "7d4074edf17e817b5d40a0e217bd30fcc3ff8bcb",
    "src/platform/compose/dbgpt/Containerfile": "400d902d3a77d35a9ed5a2ada072c75b3ab1ad25",
    "src/platform/compose/keycloak/realms/platform-realm.json": "fdd2c0f7e132fa8befcbdc35e86d4f0f7b94da30",
-   "src/platform/compose/mcp-host/Containerfile": "53c776a142bb8fbfcd14ab0d3db6ea8e53b47110",
+   "src/platform/compose/mcp-host/Containerfile": "24c5f6bb937ed56f0e15f17cc7624d8ba9b60363",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
    "src/platform/config/asgi.py": "c72bc78726e865fb905d2cec2e57030b59cf66e6",
    "src/platform/config/authorization/__init__.py": "7ea6e73b863ae18929f8a2db7bb5381af5c2fcb2",
@@ -5450,7 +5459,7 @@
    "src/platform/deploy/charts/platform/.helmignore": "f0352cb42e145d9af6703e17d2498c57fc908d2e",
    "src/platform/deploy/charts/platform/Chart.yaml": "d046587d1991b393a8439de61162b5153c2b6413",
    "src/platform/deploy/charts/platform/templates/NOTES.txt": "28c33cdb463d24477ee09b4a033312f41e2f6671",
-   "src/platform/deploy/charts/platform/templates/_helpers.tpl": "4ce8ee1f31c96b2ec98297d9bfc7e6ff9d65dc34",
+   "src/platform/deploy/charts/platform/templates/_helpers.tpl": "1db6424db3dbd49b28daecde90d54b1a90b335f0",
    "src/platform/deploy/charts/platform/templates/beat-deployment.yaml": "913199f71496914040260fd7adc961ecf88719a1",
    "src/platform/deploy/charts/platform/templates/consume-events-deployment.yaml": "abe2ca281f97b707c8fcdd9e3dfadde1f6d4371a",
    "src/platform/deploy/charts/platform/templates/flags-configmap.yaml": "f44d853f73f8dc379ab62f2e7dd443a8007d8119",
@@ -5462,17 +5471,17 @@
    "src/platform/deploy/charts/platform/templates/keycloak-realm-configmap.yaml": "3df1e1b0030150bfd8f9754607c086a57b04ad35",
    "src/platform/deploy/charts/platform/templates/keycloak-service.yaml": "6d327d98476487d0c74b38a8b5f9b68fd353d173",
    "src/platform/deploy/charts/platform/templates/liquibase-job.yaml": "d52d3e855bdde00113b6c900669ea86167364a82",
-   "src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml": "af624a976832f9907b22500d16bd6d6322e9ac92",
+   "src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml": "e3797b0b804f39d53375acb95290d151d41e58f2",
    "src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml": "45a8c9a78a7c1fc6820da89bd2a59410b91f209f",
    "src/platform/deploy/charts/platform/templates/mcp-host-service.yaml": "51f1dbbc999a9edd277ea59148b35f9e6384c596",
    "src/platform/deploy/charts/platform/templates/media-pvc.yaml": "188509cb95ee408d44712081ba16b962aa406b93",
    "src/platform/deploy/charts/platform/templates/migrate-job.yaml": "121069aee4b22cbbac999901f869c6f45b8c5788",
    "src/platform/deploy/charts/platform/templates/networkpolicy-dbgpt-ingress.yaml": "4cbe742158e1dbcc0c197447fa06107d7e6dc8d4",
    "src/platform/deploy/charts/platform/templates/networkpolicy-default-deny.yaml": "77620c1ead2f24e7340b4f2ddc541544d0e2eef8",
-   "src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml": "0067308cb3df7a6fc7546f1bd3d6cb7e7a55c7e9",
+   "src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml": "0ab4eb1b95bee716915e05bce11725f20709da68",
    "src/platform/deploy/charts/platform/templates/networkpolicy-keycloak-db-init.yaml": "76f6c19d42cb9ddb3188a38cca4ccdb4b03f4285",
    "src/platform/deploy/charts/platform/templates/networkpolicy-keycloak.yaml": "f166fa8ecdec58ad9dcb00c857f7e8ad95e2a78c",
-   "src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml": "d5a84ea6ac40b891d9aa514494744d8aa67effe9",
+   "src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml": "f50510d95acc0298de4e85e102b9be20d756803e",
    "src/platform/deploy/charts/platform/templates/networkpolicy-web-ingress.yaml": "a0a0b56ddc90fb4fc34027c42265d7889265d08b",
    "src/platform/deploy/charts/platform/templates/observability-configmap.yaml": "96036effcb1d7f5ca27e33e123b4763326ced4f5",
    "src/platform/deploy/charts/platform/templates/pdb.yaml": "1fe9d79194e70745d2902458df7baf13c76ac734",
@@ -5492,7 +5501,7 @@
    "src/platform/deploy/charts/platform/templates/sidecar-service.yaml": "9681c93b9c48a946013a43963763a7459bbb1859",
    "src/platform/deploy/charts/platform/templates/worker-builds-deployment.yaml": "9603ea6c884269afccb34eec0a3b805394c32cd9",
    "src/platform/deploy/charts/platform/templates/worker-deployment.yaml": "800e5d839227b6ed6f966723ca62ad3393b6453a",
-   "src/platform/deploy/charts/platform/values.yaml": "28307acd5ea60072cf6d7d3ae16ad0c9104bfb60",
+   "src/platform/deploy/charts/platform/values.yaml": "ad3a337113cdfacc8517a99a30253a07665f6a23",
    "src/platform/deploy/overlays/eso/README.md": "3d36d2d8bd70db243c723e14b04874beb7940dac",
    "src/platform/deploy/overlays/eso/externalsecret-platform-secrets.example.yaml": "c0302db0b3ef872190daeeec1863c94e6a5b4ce2",
    "src/platform/deploy/overlays/eso/secretstore-vault.example.yaml": "347e87bc06a98d246b0a71111734e04c894dc9bb",
@@ -5534,7 +5543,8 @@
    "src/platform/locale/pt_BR/LC_MESSAGES/django.po": "6a9314a649f4cc73da0eea3b3ed8c702df0db980",
    "src/platform/manage.py": "afddd429aa5c12525b3cb3b9821b9907b0c5dfec",
    "src/platform/mcp_host/__init__.py": "7cd7c6040604c1c9621f943c251148d3602640b6",
-   "src/platform/mcp_host/app.py": "d06b335006eec6aa497042ce21162f828e741dd0",
+   "src/platform/mcp_host/app.py": "b077ff59c7871a83a803d3ef92b8513dec4a78c1",
+   "src/platform/mcp_host/settings.py": "a912bce6abcf2fffb8cd5266afdc7e2184a1fd63",
    "src/platform/platformapp/__init__.py": "7f899ec15c23f70fdc88a20aad17c3a72a7b8321",
    "src/platform/platformapp/conftest.py": "e65aba1fd54026f3b92d1df37615dd5d3ec931b5",
    "src/platform/platformapp/contrib/__init__.py": "ab7181546025f81e0d52ffcb7db3d58207554e44",
@@ -5643,7 +5653,7 @@
    "src/platform/tests/test_cap10_production_callers.py": "5e56a4a5a2147dc3e4586cc5a47d7bed596b4ae7",
    "src/platform/tests/test_cascades_halt_adapters_validate.py": "76d87544ff879bc5c6c30f9ed85d919f5c7f02cc",
    "src/platform/tests/test_celery_hardening_and_builds_pool.py": "1a603b3726f0858a2709e16ca82cb92ae1953234",
-   "src/platform/tests/test_chart_invariants.py": "69294f1a5f1f29bc06c648f1959f72ffacf6b000",
+   "src/platform/tests/test_chart_invariants.py": "80f7c9610ce640187cf015f0b616e2d62fa3cc98",
    "src/platform/tests/test_circuits_trip_on_async_too.py": "30aa8b836fb15b4dba9d0a51180cd833fd903bd6",
    "src/platform/tests/test_cloudevents_redis_broker.py": "4b6607613ff385769ce1b54e4d46daf78edca067",
    "src/platform/tests/test_console_parity_homes.py": "51dddc89c5db13e9ef6f2d03fab8bde0c02faffb",
@@ -5670,7 +5680,7 @@
    "src/platform/tests/test_marshal_station_mint.py": "9cbf68e55fbe1635aad0c4b567d666e7922998b9",
    "src/platform/tests/test_mason_portal_last_diagnose.py": "226bf0c8452e0335925415e3c8d63cff02af7aad",
    "src/platform/tests/test_mcp_disconnect_start_get.py": "de253353d2c3d6dacb7abec9fe4b37a490d7c26e",
-   "src/platform/tests/test_mcp_host_sidecar.py": "cc083cb1d962a01ea6bf2ceba50a3b2a08ac70c5",
+   "src/platform/tests/test_mcp_host_sidecar.py": "c8b85e4377115f55c599e3ee17137cd68d5a0bdd",
    "src/platform/tests/test_mcp_transport_auth.py": "877adb4c83bb352b48f7141999e20692139c65c1",
    "src/platform/tests/test_media_renditions_cache.py": "0a3b846711900e6f7ab64b9421eb66d5391db4cc",
    "src/platform/tests/test_object_storage_client.py": "01db596e01d23387ed55a4419476c873a044b286",
@@ -5739,7 +5749,7 @@
    "src/shared/packages/django-marshal/pyproject.toml": "ed243df755958057f3637139d77d586b1c891681",
    "src/shared/packages/django-marshal/src/django_marshal_portal/__init__.py": "c2563090dbb10844b181fea7b079a374e0114ccc",
    "src/shared/packages/django-marshal/src/django_marshal_portal/apps.py": "de803a2170fea8bd43b6fbbf4ae59de0df6b0b63",
-   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "d0f246fb7cbcc6950d8ee5e4c83a805a808a65f1",
+   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "1c074eedd0570f6eb27256c4b232911e483fd091",
    "src/shared/packages/django-marshal/src/django_marshal_portal/templates/marshal_portal/home.html": "1b3fa662de0a0032508ff5b0736ae9959af11579",
    "src/shared/packages/django-marshal/src/django_marshal_portal/urls.py": "8c62e86ce8e363788ebd78dd1bf61321620d43a8",
    "src/shared/packages/django-marshal/src/django_marshal_portal/views.py": "5ae0e697656e7c0d0b90322f56be59e9ed832047",
@@ -6290,7 +6300,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "13adaac3a4f0b230990bffc63fdd339f2928c5fe",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "ec6e6efc7e30f970e0a47b41390d85aa099247dd"
+  "memlog": "4c5cc7a646ef772f5bee6e4b340912633b2803a2"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {

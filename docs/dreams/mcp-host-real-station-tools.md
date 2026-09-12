@@ -2,7 +2,10 @@
 title: The sidecar that only says its own name
 type: dream
 owner: steward
-status: dreamt
+status: realized   # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools
+                    # shipped CAP-1..3 and all three were proven live on a real deployed
+                    # CRC cluster before this session ended (see the Spec's own Design
+                    # Notes + this file's Realization log)
 ---
 
 # The sidecar that only says its own name
@@ -123,3 +126,21 @@ would actually carry, and the one that found the gap).
   MCP app could run, and none run there today. Cross-checked against
   `spec-mcp-era-isolation`'s own three-slice sequence and `spec-mcp-factory-stdio-translator`:
   neither names this gap. Next act: `bmad-spec` derives the Spec under `pyforge-steward`.
+- **2026-09-12** — Realized, same day as seeding. Rather than leaving the two open
+  questions for a future pass, they were resolved by implementing CAP-1..3 directly and
+  proving them live: a minimal Django settings module (`django_pyforge` +
+  `django_marshal_portal` only, no Langflow, no Redis client — the sidecar's calls never
+  touch cache or the event broker) answered the ORM-access question; marshal's own lean
+  `PortalConfig.ready()` (no `pyforge.marshal` import, unlike mason's eager
+  `pyforge.mason.boot`) answered the scope question. `mcp_host/app.py` now discovers real
+  per-station apps through the same `iter_station_mcp_apps()` seam the web pod uses
+  in-process, falling back to the identity stub for every other station. A second,
+  previously-unreachable bug surfaced the moment the tool became callable at all: the
+  real MCP SDK turns a `**payload: Any` parameter into a REQUIRED, separately-named
+  `payload` field, not "any extra keys allowed" — `HostPublisher`'s client call sent flat
+  kwargs and failed schema validation; fixed on both the server (`django_marshal_portal`)
+  and client (`publisher_host.py`) sides. Landed PR #1285. A real `HostPublisher` process,
+  run from a workstation against the deployed CRC cluster, published a run, heartbeat'd it,
+  completed it, exited — and a separate `curl` call to `/runs/` afterward showed the run
+  under "Completed timing" with its real duration. CAP-17's own `verified:` line updated
+  on `spec-pyforge-unifying-strategy` in the same pass.

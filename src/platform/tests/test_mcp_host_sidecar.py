@@ -22,6 +22,7 @@ os.environ.setdefault("MCP_HOST_STATIONS", "atlas")
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
+import mcp_host.app as mcp_host_app_module  # noqa: E402
 from mcp_host.app import app as mcp_host_app  # noqa: E402
 
 
@@ -216,3 +217,14 @@ def test_dispatch_does_not_import_mcpserver_when_proxying() -> None:
     assert "MCP_HOST_SIDECAR_BASE_URL" in source
     assert "proxy_station_mcp" in source
     assert "from mcp.server.mcpserver import MCPServer" not in source
+
+
+def test_real_station_apps_falls_back_empty_when_django_setup_fails() -> None:
+    """spec-mcp-host-real-station-tools CAP-2: a Django setup failure (bad
+    settings, unreachable config -- anything) must never break a station
+    that only needs the generic identity stub. `_real_station_apps()` is the
+    isolation seam: it must swallow any exception and return {}, never
+    raise, so `_apps` falls back to `asgi_for_station` for every station.
+    """
+    with patch("django.setup", side_effect=RuntimeError("boom")):
+        assert mcp_host_app_module._real_station_apps() == {}  # noqa: SLF001 -- testing the isolation seam itself
