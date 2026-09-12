@@ -5,10 +5,13 @@ import importlib.util
 import json
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 from urllib.parse import quote
 
 import environ
+from django.http import HttpRequest
 from django.urls import reverse_lazy
 
 from config.authorization.claims import load_claims_contract
@@ -227,7 +230,7 @@ DJANGO_PYFORGE_IDP_CLAIMS_GETTER = (
     "config.authorization.current_claims.fetch_current_idp_claims"
 )
 IDP_CLAIMS_SNAPSHOT = None
-IDP_USERINFO = None
+IDP_USERINFO: Callable[[HttpRequest], dict[str, Any] | None] | None = None
 # steward 20.1 / canopy AD-13: Wagtail admin is IdP-only (not a URLconf override).
 WAGTAILADMIN_LOGIN_URL = LOGIN_URL
 WAGTAILUSERS_PASSWORD_ENABLED = False

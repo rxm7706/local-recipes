@@ -322,3 +322,61 @@ Status: done
 - Platform held-run tests require Postgres (platform CI)
 
 **Residual risks:** Deployed-profile login and CAP-3 CRC proof still open; platform Django-db tests not run in this dispatch environment; steward adoption-register pre-existing failure unrelated to this story.
+
+## Recovery Note (2026-09-12)
+
+This story's first dispatch attempt (run `pyforge-marshal-20260912T095631807Z-85c4ead2`) completed
+all the engineering above, including its own internal review pass (5 patches applied, 1 high) —
+but was refused at `MRS-GATE-015`, the fleet-wide cross-surface gate (Story 22.12, CAP-12) that
+requires `pixi run -e local-recipes platform-ci-local -- --test` to pass whenever a story's changed
+files touch `src/platform/**`, which this story's CAP-1/CAP-2/CAP-5 host-side work does. The dev
+session never ran that command itself (only its own two policy commands), so the refusal surfaced
+only at verification. The work was never at risk — marshal preserves a failed dispatch's diff as a
+worktree commit, not a lost changeset — and this worktree's own commit history (`a37e46b71a`) was
+intact throughout the recovery. Fixed directly in this worktree, then re-verified:
+
+- **This story's own bug:** `tests/test_marshal_station_mint.py` referenced an `idp_test_keys`
+  pytest fixture defined only in a sibling test module (`test_django_pyforge_assertion.py`) —
+  fixtures are file-scoped in pytest unless shared via `conftest.py`. Added a local
+  `idp_test_keys` + `_idp_verifier_settings` fixture pair to this file (mirroring the sibling
+  module's own implementation, matching this codebase's existing per-file-duplication convention
+  for IdP-bearer test helpers), plus one unused import (`pytest`) and two minor lint fixes (a
+  `TC003`-flagged top-level `Path` import, a `PLC0415` local `settings` import) in the same file.
+  Added a matching `[[tool.mypy.overrides]]` entry (`disable_error_code = ["arg-type"]`) for this
+  new module, mirroring the existing `tests.test_django_pyforge_assertion` override for the exact
+  same `dict[str, object]`-typed fixture pattern.
+- **Pre-existing, unrelated to this story** (verified against unmodified `main` at this story's own
+  `baseline_revision` before fixing, per the standing "fix pre-existing failures... no broken
+  windows... clean as you go" direction — also fixed directly on `main`, independent of this
+  story's own diff, since they block every future dispatch that touches `src/platform/**`):
+  - `config/authorization/idp_userinfo.py` imported `allauth.socialaccount.models.SocialToken` at
+    module level; `production.py` imports this module at Django-settings-load time, before the app
+    registry is ready, so any invocation that loads `config.settings.production` standalone (e.g. a
+    subprocess entrypoint check) crashed with `AppRegistryNotReady`. Fixed by deferring the model
+    import into the one function that uses it (`_access_token_for`, which only ever runs against an
+    authenticated request, i.e. after the app registry is ready) — the standard Django pattern for
+    this exact settings-module chicken-and-egg problem. This alone fixed 12 of the 14 test failures
+    the cross-surface gate first reported.
+  - `config/settings/base.py`'s `IDP_USERINFO = None` had no type annotation, so mypy inferred
+    `NoneType` and flagged `production.py`'s `IDP_USERINFO = fetch_current_userinfo` reassignment as
+    an incompatible-types error. Fixed with an explicit
+    `Callable[[HttpRequest], dict[str, Any] | None] | None` annotation matching
+    `fetch_current_userinfo`'s real signature.
+  - `tests/test_chart_invariants.py:723-731` had drifted from the currently-pinned `ruff format`'s
+    style for chained-method set comprehensions (a ruff version bump changed the wrap rule, not a
+    code change). Fixed with `ruff format` on that one file.
+
+**Verification (this recovery, full re-run from a clean worktree state):**
+- `pixi run -e local-recipes platform-ci-local -- --test` — PASS (Django checks, Ruff, Ruff
+  format, Mypy 169 files, Policy suite 84 passed, sqlmigrate extraction, full test suite 892
+  passed / 7 skipped)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7881 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` — empty
+- `python scripts/spec_surface_reconcile.py -core` — clean (after reconciling 13 drift findings
+  this story's own file set introduced, across `spec-fleet-status-supervisor-fallback`,
+  `spec-marshal-single-story-dispatch`, and `spec-pyforge-core` — see each spec's own memlog)
+
+**followup_review_recommended remains `true`** per the dev session's own Auto Run Result (the
+high-severity `complete_held_run` patch touched cross-package supervisor semantics) — this
+recovery pass did not touch that code path and defers to the dev session's own review triage on it.

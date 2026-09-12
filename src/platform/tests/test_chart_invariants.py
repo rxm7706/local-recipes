@@ -721,18 +721,14 @@ def _assert_self_hosted_redis_resources_present(docs: list[dict[str, Any]]) -> N
     services = _redis_services(docs)
     pvcs = _redis_broker_pvcs(docs)
     components = {
-        (doc.get("metadata") or {})
-        .get("labels", {})
-        .get("app.kubernetes.io/component")
+        (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component")
         for doc in deployments
     }
     assert components == _REDIS_COMPONENTS, (
         f"expected redis-cache and redis-broker Deployments, got {components!r}"
     )
     service_components = {
-        (doc.get("metadata") or {})
-        .get("labels", {})
-        .get("app.kubernetes.io/component")
+        (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component")
         for doc in services
     }
     assert service_components == _REDIS_COMPONENTS, (
