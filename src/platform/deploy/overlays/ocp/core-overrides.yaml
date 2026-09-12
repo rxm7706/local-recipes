@@ -46,8 +46,16 @@ redis:
 # actually exercised on a live OpenShift cluster. Fixed at the source
 # (values.yaml + _helpers.tpl now use scalar podLabelKey/podLabelValue,
 # which fully replace on override) rather than worked around here.
+#
+# Second recovery note (same exercise): even with the podLabels fix above,
+# DNS egress was STILL blocked -- OpenShift's own built-in `dns-default`
+# NetworkPolicy (openshift-dns namespace) has no ingress allow for port 53
+# from other namespaces at all, only port 5353 (Service port 53 DNATs to
+# pod targetPort 5353). This was wrong before Story 33.13 touched this
+# block; that story's own port-53 text simply inherited it unverified.
 networkPolicy:
   dns:
     namespace: openshift-dns
     podLabelKey: dns.operator.openshift.io/daemonset-dns
     podLabelValue: default
+    port: 5353

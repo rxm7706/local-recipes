@@ -139,6 +139,11 @@ _CHART_VALUE_SECRET_KEYS = frozenset(
     {"password", "secret", "secretkey", "apikey", "token", "clientsecret"},
 )
 _DNS_EGRESS_PORT = 53
+# OpenShift's dns-default pods only accept ingress on 5353 from other
+# namespaces (Service port 53 DNATs to pod targetPort 5353) -- see
+# test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod's
+# own docstring for the full story.
+_OCP_DNS_EGRESS_PORT = 5353
 
 # Story 43.4: deterministic digest for helm-gated core renders -- real
 # deploys pin the CI-recorded digest; tests inject this placeholder.
@@ -452,15 +457,19 @@ def _assert_no_hostpath_volumes(docs: list[dict[str, Any]]) -> None:
         )
 
 
-def _dns_egress_namespaces(docs: list[dict[str, Any]]) -> set[str]:
-    """Namespace metadata names targeted by DNS egress rules (port 53)."""
+def _dns_egress_namespaces(
+    docs: list[dict[str, Any]],
+    *,
+    port: int = _DNS_EGRESS_PORT,
+) -> set[str]:
+    """Namespace metadata names targeted by DNS egress rules on ``port``."""
     namespaces: set[str] = set()
     for doc in docs:
         if doc.get("kind") != "NetworkPolicy":
             continue
         for rule in doc.get("spec", {}).get("egress") or []:
             ports = rule.get("ports") or []
-            if not any(port.get("port") == _DNS_EGRESS_PORT for port in ports):
+            if not any(p.get("port") == port for p in ports):
                 continue
             for peer in rule.get("to") or []:
                 selector = peer.get("namespaceSelector", {}).get("matchLabels") or {}
@@ -2730,6 +2739,7 @@ def test_ocp_core_overrides_set_openshift_dns_egress_values():
     assert dns["namespace"] == "openshift-dns"
     assert dns["podLabelKey"] == "dns.operator.openshift.io/daemonset-dns"
     assert dns["podLabelValue"] == "default"
+    assert dns["port"] == 5353  # noqa: PLR2004 -- OpenShift's dns-default ingress port
 
 
 @requires_helm
@@ -2744,7 +2754,13 @@ def test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod():
     cluster. This test renders the ACTUAL merged NetworkPolicy (never just
     parses the override file in isolation, which passed even with the bug
     live) and asserts the DNS egress selector matches ONLY the OpenShift
-    label, with the vanilla `k8s-app: kube-dns` key genuinely absent.
+    label, with the vanilla `k8s-app: kube-dns` key genuinely absent, and
+    that the port is 5353 -- OpenShift's own built-in `dns-default`
+    NetworkPolicy in the openshift-dns namespace has no ingress allow for
+    port 53 from other namespaces at all, only port 5353 (the Service's
+    port 53 DNATs to pod targetPort 5353), so an egress rule naming port 53
+    is silently dropped on arrival regardless of how correct its selectors
+    are -- this was wrong before Story 33.13 touched this block at all.
     """
     docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
     egress_policies = [
@@ -2754,8 +2770,8 @@ def test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod():
         and "Egress" in doc.get("spec", {}).get("policyTypes", [])
     ]
     assert egress_policies, "OCP-overridden render produced no egress NetworkPolicy"
-    dns_selectors = [
-        rule["to"][0]["podSelector"]["matchLabels"]
+    dns_rules = [
+        rule
         for policy in egress_policies
         for rule in policy["spec"].get("egress", [])
         for target in rule.get("to", [])
@@ -2763,14 +2779,20 @@ def test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod():
         .get("matchLabels", {})
         .get("kubernetes.io/metadata.name")
         == "openshift-dns"
-        for _ in [target]
     ]
-    assert dns_selectors, "no DNS egress rule targets the openshift-dns namespace"
-    for selector in dns_selectors:
+    assert dns_rules, "no DNS egress rule targets the openshift-dns namespace"
+    for rule in dns_rules:
+        selector = rule["to"][0]["podSelector"]["matchLabels"]
         assert selector == {"dns.operator.openshift.io/daemonset-dns": "default"}, (
             f"DNS egress podSelector must match ONLY the real OpenShift CoreDNS "
             f"label, got {selector!r} -- a stray 'k8s-app: kube-dns' key means "
             f"the values merge bug is back"
+        )
+        ports = {(p["protocol"], p["port"]) for p in rule.get("ports", [])}
+        assert ports == {("UDP", 5353), ("TCP", 5353)}, (
+            f"DNS egress must target port 5353 on OpenShift (OpenShift's own "
+            f"dns-default NetworkPolicy has no ingress allow for port 53 from "
+            f"other namespaces), got {ports!r}"
         )
 
 
@@ -2804,8 +2826,8 @@ def test_no_hostpath_volumes_check_fails_on_synthetic_hostpath():
 def test_ocp_overrides_render_openshift_dns_egress():
     """Story 33.13: OCP-overridden render must egress to openshift-dns for DNS."""
     docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
-    assert "openshift-dns" in _dns_egress_namespaces(docs)
-    assert "kube-system" not in _dns_egress_namespaces(docs)
+    assert "openshift-dns" in _dns_egress_namespaces(docs, port=_OCP_DNS_EGRESS_PORT)
+    assert "kube-system" not in _dns_egress_namespaces(docs, port=_OCP_DNS_EGRESS_PORT)
 
 
 @requires_helm

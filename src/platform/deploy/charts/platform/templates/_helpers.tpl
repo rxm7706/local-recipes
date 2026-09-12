@@ -465,9 +465,9 @@ in-cluster Services.
           {{ .Values.networkPolicy.dns.podLabelKey }}: {{ .Values.networkPolicy.dns.podLabelValue | quote }}
   ports:
     - protocol: UDP
-      port: 53
+      port: {{ .Values.networkPolicy.dns.port }}
     - protocol: TCP
-      port: 53
+      port: {{ .Values.networkPolicy.dns.port }}
 {{- end }}
 
 {{- define "platform.networkPolicy.egressToPostgres" -}}
