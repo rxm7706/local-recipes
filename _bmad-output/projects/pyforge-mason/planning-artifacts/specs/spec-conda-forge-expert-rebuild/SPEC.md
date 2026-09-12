@@ -1,8 +1,8 @@
 ---
 id: SPEC-conda-forge-expert-rebuild
 spec: conda-forge-expert-rebuild
-status: in-progress
-updated: "2026-09-09"
+status: shipped
+updated: "2026-09-10"
 owner-dream: docs/dreams/conda-forge-expert-rebuild.md
 surface:
   - .claude/skills/conda-forge-expert/**      # the skill being rebuilt slice by slice (parallel-run target; flips at the end cutover)
@@ -291,3 +291,25 @@ re-worded, so the record of what was gated survives.
 **Sequencing that matters:** the campaign closes BEFORE steward S-44.6 (which moves the whole
 CFE cell to `skills/domain/conda-forge-expert/`), otherwise 44.6 has to re-point a live
 campaign's surface and slice map as well as move the cell.
+
+## Campaign closed — 2026-09-10 (mason Story 15.1)
+
+The closing story named above has landed. **Both slices are RETIRED, not cut over.** Mason's
+sole caller (`cfe.py`) resolves the CFE root via `resolve.py::resolve_cfe_root`, whose walk
+hard-codes the marker `.claude/scripts/conda-forge-expert` and joins `_CFE_SCRIPTS[key]` under
+it — Mason never touched either compiled mirror's directory. "Cutting over" would have meant
+rearchitecting that filesystem-marker contract to additionally resolve two of ten
+`_CFE_SCRIPTS` entries into a *different* directory shape (the mirrors have no
+`.claude/scripts/conda-forge-expert`-style wrapper layer), a real, non-trivial Mason
+architectural change (AD-3/AD-5) for **zero** behavioral gain, since both mirrors were
+byte-identical to what Mason already invokes via the wrapper today. Retiring was the
+lower-risk, lower-cost disposition the evidence actually supported.
+
+`.claude/skills/cfe-recipe-generation/` and `.claude/skills/cfe-recipe-lifecycle/` are deleted
+outright (OQ4, delete-on-cutover, no stub); `campaign-state.yaml` records both slices
+`status: "retired"` with `brief_path`/`brief_mirrored_through` nulled (permanently silencing
+CAP-3 clause (b)'s per-release byte-re-port obligation for these two slices) and a dated
+closure note under `campaign`; the now-pointless equivalence-harness tests
+(`test_slice1_equivalence.py`, `test_slice2_equivalence.py`) are deleted along with them.
+`scripts/cfe_rebuild_guard_check.py` runs clean. **The campaign is now closed** — this Spec's
+`status:` flips to `shipped` in the same story.

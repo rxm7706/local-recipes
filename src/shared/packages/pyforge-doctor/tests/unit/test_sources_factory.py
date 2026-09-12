@@ -735,6 +735,72 @@ def test_worktree_sweep_verdicts_are_classified_and_not_flagged_uncovered(
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_flat_spec_with_underscore_in_slug_is_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-12 shape (mason 15.1 recovery pass): a flat spec's slug
+    can carry an underscore verbatim when it names a real code symbol
+    (`...-dispatch-max_parallel-key.md`) -- the hyphen-only character class
+    rejected it and tripped `uncovered`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    specs = factory._plan(repo) / "specs"
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / "spec-33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max_parallel-key.md").write_text(
+        "x\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_flat_spec_memlog_sibling_is_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-12 shape (Story 33.3): a flat spec's OWN `.memlog.md`
+    sibling filed beside it (`spec-33-3-....md` + `spec-33-3-....memlog.md`)
+    rather than inside a `spec-<name>/` folder -- must be classified rather
+    than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    specs = factory._plan(repo) / "specs"
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / "spec-33-3-the-layers-are-enabled-on-factory-spin.memlog.md").write_text(
+        "x\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_benchmark_artifact_is_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-12 shape (Story 28.31): a measured comparison record
+    committed at `planning-artifacts/benchmarks/<slug>.json`, a sibling
+    convention to `reviews/` for one-off benchmark results -- must be
+    classified rather than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    benchmarks = factory._plan(repo) / "benchmarks"
+    benchmarks.mkdir(parents=True, exist_ok=True)
+    (benchmarks / "structure-graph-dispatch-28-31.json").write_text(
+        '{"story": "28.31"}\n', encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
