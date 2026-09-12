@@ -15,6 +15,8 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
+
+pytest.importorskip("django")
 from django.conf import settings
 from django.test import RequestFactory
 from django_pyforge.assertion.jwks import reset_jwks_cache

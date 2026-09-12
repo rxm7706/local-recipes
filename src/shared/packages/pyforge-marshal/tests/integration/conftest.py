@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[5]
+REPO_ROOT = Path(__file__).resolve().parents[6]
 _PLATFORM = REPO_ROOT / "src" / "platform"
 _EXTRA_PATHS = (
     REPO_ROOT / "src" / "shared" / "packages" / "django-pyforge" / "src",
