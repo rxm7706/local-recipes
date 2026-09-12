@@ -204,7 +204,7 @@ development_status:
   49-5-cap-11-in-effect-the-eviction-test: done
   49-6-cap-12-in-effect-revocation-on-the-next-request: done
   49-7-cap-14-in-effect-real-semantic-recall-or-the-criterion-says-lexical: done
-  49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor: blocked
+  49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor: backlog
   49-9-index-marshal-realization-gate-effect-stories: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done

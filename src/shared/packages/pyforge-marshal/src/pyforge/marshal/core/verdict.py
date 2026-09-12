@@ -853,6 +853,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-012": Verdict.WARN,
     "MRS-SUPV-008": Verdict.WARN,
     "MRS-SUPV-009": Verdict.WARN,
+    "MRS-SUPV-010": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,

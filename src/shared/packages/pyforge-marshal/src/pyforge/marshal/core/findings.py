@@ -1393,6 +1393,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-012",
         "MRS-SUPV-008",
         "MRS-SUPV-009",
+        "MRS-SUPV-010",
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",
