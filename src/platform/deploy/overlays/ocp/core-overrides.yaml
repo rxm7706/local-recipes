@@ -36,8 +36,18 @@ redis:
 # Story 33.13 / CAP-3: OpenShift CoreDNS lives in openshift-dns, not kube-system.
 # Verified live against CRC 4.22.7 (2026-09-12): namespace openshift-dns, pod label
 # dns.operator.openshift.io/daemonset-dns=default.
+#
+# Recovery note (2026-09-12, attended CRC exercise): the original version of
+# this override used a `podLabels:` MAP, which Helm deep-merges with the
+# chart default's own `podLabels: {k8s-app: kube-dns}` instead of replacing
+# it -- the rendered NetworkPolicy ended up requiring BOTH labels (AND
+# semantics), which no real DNS pod on either system satisfies, so DNS
+# egress was silently blocked the moment `networkPolicy.enabled: true` was
+# actually exercised on a live OpenShift cluster. Fixed at the source
+# (values.yaml + _helpers.tpl now use scalar podLabelKey/podLabelValue,
+# which fully replace on override) rather than worked around here.
 networkPolicy:
   dns:
     namespace: openshift-dns
-    podLabels:
-      dns.operator.openshift.io/daemonset-dns: default
+    podLabelKey: dns.operator.openshift.io/daemonset-dns
+    podLabelValue: default
