@@ -1,0 +1,103 @@
+---
+title: 'CAP-18 — one publisher: run state and savings telemetry reach the supervisor'
+type: 'feature'
+created: '2026-09-12'
+status: 'in-progress'
+review_loop_iteration: 0
+followup_review_recommended: false
+baseline_revision: 'b978aa9b2aa'
+context:
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/stack.md
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - src/shared/packages/pyforge-core/src/pyforge/core/client.py
+  - src/shared/packages/pyforge-core/src/pyforge/core/assertion.py
+warnings: []
+deferred: []
+declared_low_risk: false
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** Marshal imports `django_pyforge` zero times today, yet two supervisors write run
+state only to local journals and bmad-loop `state.json`; the front door `/runs/` board cannot see
+live loop or dispatch runs, and `cli/status.py` plus doctor scrape `~/.bmad-loops` for run truth.
+
+**Approach:** Introduce exactly one publisher module (`adapters/publisher_host.py`) that shapes
+records in `core/publish.py`, exposes `RunPublisherPort` in `ports/publisher.py`, and reaches
+`django_pyforge.supervisor` over the host's `/stations/marshal/mcp` face via
+`pyforge.core.client` + `pyforge.core.assertion` — never a direct `django_pyforge` import. Wire
+both `supervisor/__main__.py` and `dispatch_supervisor/__main__.py` to call the adapter on
+attach, heartbeat, and detach/completion; publish failures become journal findings, never loop
+stops (mirror `_publish_run_started_event` best-effort semantics).
+
+## Boundaries & Constraints
+
+**Always:** Exactly one module under `pyforge/marshal/adapters/` imports `pyforge.core.client`
+for publishing; `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` returns nothing;
+pure record shaping stays in `core/publish.py` (AD-4, no I/O); supervisor loops continue on
+publish/heartbeat/complete errors; MCP tool names are `publish_loop_run`, `heartbeat_loop_run`,
+`complete_loop_run` per `stack.md`; bearer comes from `PYFORGE_IDP_BEARER_FILE` env when set,
+host base from `PYFORGE_HOST` (default `http://127.0.0.1:8000`).
+
+**Never:** Import `django_pyforge` in marshal; add a second publisher module; wrap bmad-loop in
+Celery; block supervisor detach on publish failure; implement steward 49.8 host-side held-run
+functions in this story (adapter must tolerate missing tools via findings until 49.8 lands).
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| HAPPY_PUBLISH | Valid bearer file + host exposes MCP tools | Returns run handle; journal records publish attempt | No supervisor stop |
+| NO_BEARER | `PYFORGE_IDP_BEARER_FILE` unset or unreadable | Skip publish; journal finding names missing credential | Supervisor continues |
+| HOST_DOWN | Transport raises on MCP POST | Journal finding; heartbeat/complete also best-effort fail | Supervisor continues |
+| HEARTBEAT | Valid handle from prior publish | MCP heartbeat succeeds or finding on failure | Tick loop continues |
+| COMPLETE | Terminal detach/completion | MCP complete with status + timing payload | Detach proceeds |
+| RE_MINT | Assertion near 300s TTL | `HostMintClient.emit` refreshes before MCP call | Mint failure → finding |
+
+</intent-contract>
+
+## Code Map
+
+- `ports/publisher.py` — **CREATE** `RunPublisherPort` Protocol: `publish(record) -> str | None`, `heartbeat(handle) -> None`, `complete(handle, *, status, result) -> None`
+- `core/publish.py` — **CREATE** pure functions: `shape_loop_publish`, `shape_dispatch_publish`, `shape_heartbeat`, `shape_complete` — station slug, story key, phase, commit_sha, run_id, harness_run_id, CAP-7 savings dict
+- `adapters/publisher_host.py` — **CREATE** only `pyforge.core.client` publisher; `HostMintClient` re-mint; JSON-RPC MCP POST to `{base}/stations/marshal/mcp`; map errors to optional callback (supervisor passes journal append)
+- `supervisor/__main__.py:980-1007,1010,2417,2651` — **MODIFY** call publisher on attach, each heartbeat tick, detach
+- `dispatch_supervisor/__main__.py:987,1185,1295` — **MODIFY** call publisher on attach, heartbeat, completion
+- `tests/unit/test_publisher.py` — **CREATE** port/adapter/core tests with injected transports
+- `tests/meta/test_publisher_single_importer.py` — **CREATE** meta: one client importer, zero django_pyforge imports in marshal src
+- `cli/status.py:917-1063` — **READ ONLY this story** — run-state migration to published plane deferred until 49.8 payload exists; do not regress existing reads
+- `django_pyforge/supervisor.py:377-432` — **READ** best-effort model for publisher errors
+- `spec-run-state-one-publisher/stack.md` — contract for MCP tool names and payload fields
+
+## Tasks & Acceptance
+
+**Execution:**
+- `ports/publisher.py` — define `RunPublisherPort` and `PublishRecord` typed dict/dataclass — AD-11 port shape
+- `core/publish.py` — pure record shaping from supervisor context (story, phase, savings from budget-usage facts)
+- `adapters/publisher_host.py` — `HostPublisher` implementing port; MCP JSON-RPC helper; env config for host/bearer/mint URLs
+- `supervisor/__main__.py` — instantiate adapter once per sidecar run; publish on attach; heartbeat each tick; complete on detach
+- `dispatch_supervisor/__main__.py` — same pattern for dispatch attach/heartbeat/completion
+- `tests/unit/test_publisher.py` — matrix rows with mock transport returning tool results or errors
+- `tests/meta/test_publisher_single_importer.py` — enforce single importer + no django_pyforge
+
+**Acceptance Criteria:**
+- Given a clean marshal tree, when `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` runs, then it returns no matches
+- Given the meta-test suite, when `pyforge-marshal-test` runs, then exactly one module imports `pyforge.core.client` for publishing and all publisher matrix tests pass
+- Given both supervisors wired, when attach/heartbeat/detach journal entries are written locally, then the publisher adapter is invoked at each lifecycle point (provable via unit tests with mock port injected into supervisors or adapter-level integration tests)
+- Given host MCP unreachable, when publish is attempted, then a journal finding is recorded and the supervisor loop does not raise or abort
+
+## Spec Change Log
+
+## Review Triage Log
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-marshal pyforge-marshal-test -- tests/unit/test_publisher.py tests/meta/test_publisher_single_importer.py` — expect all pass
+- `pixi run -e pyforge-marshal pyforge-marshal-test` — expect full suite green
+- `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` — expect empty output
+
+**Manual checks (if no CLI):**
+- Confirm `adapters/publisher_host.py` is the sole `pyforge.core.client` import site used for publishing
