@@ -4004,6 +4004,12 @@
   },
   "memlog": "40501bb1994090e7463428f40ce6144e94087313"
  },
+ "pyforge-marshal/spec-surface-overlap-tolerance": {
+  "files": {
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "124f27922d1df43d2320304cca794005b227f2e0"
+  },
+  "memlog": "9c87027ca1b2db8c7f0087042c9155e7673834cf"
+ },
  "pyforge-mason/spec-conda-forge-expert-rebuild": {
   "files": {
    ".claude/scripts/conda-forge-expert/README.md": "a7372e54da10dfd0c897434b14c00061c11fa23d",
