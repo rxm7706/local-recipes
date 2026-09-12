@@ -57,8 +57,8 @@ graph is there; nobody writes it down.*
 ## What is real
 
 *Corrected 2026-09-09 (fleet readiness pass). The superseded 2026-07-25 reading
-was: "Epic 1 … is 3 of 5 stories done … Epic 2 (Knowledge Graph — Compile &
-Recall) … is untouched: all 4 stories backlog. **3 of 9 stories complete
+was: "Epic 1 … is three of five stories done … Epic 2 (Knowledge Graph — Compile &
+Recall) … is untouched: all four stories backlog. **Three of nine stories complete
 overall.**" Every clause of it is false — the station shipped 19/19 stories
 across seven epics while that paragraph stood.*
 
@@ -108,7 +108,7 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   station's planning chain is complete — read `sprint-status-ledger.yaml` under pyforge-scribe or
   `fleet-picture` for what, if anything, is left.
 - **2026-09-09 (fleet readiness pass — body re-grounded, status held)** — § *What is real* was
-  frozen at the 2026-07-25 chain derivation ("3 of 9 stories complete overall", "Epic 2 …
+  frozen at the 2026-07-25 chain derivation ("three of nine stories complete overall", "Epic 2 …
   untouched") while the station shipped 19/19 stories across seven epics; rewritten above with
   the superseded wording quoted. **Status held at `realized`** — capture, compile, recall and
   the transcript scan all execute, and `.claude/data/pyforge-scribe/` holds a real 1.67 MB

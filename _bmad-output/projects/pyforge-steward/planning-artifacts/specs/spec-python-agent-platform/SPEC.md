@@ -2,13 +2,20 @@
 spec: python-agent-platform
 status: superseded
 absorbed-into: spec-pyforge-unifying-strategy
-updated: "2026-09-10"
+updated: "2026-09-12"
 companions: [ARCHITECTURE-SPINE.md]
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
-  - src/platform/**
-  - pixi.toml
-  - environment.yaml
+  # `src/platform/**`, `pixi.toml`, `environment.yaml` REMOVED 2026-09-12: this
+  # spec's own memlog is frozen (superseded, no more entries expected), but
+  # `spec-pyforge-unifying-strategy` (the absorbing spec, `surface:` already
+  # claims `src/platform/**` + `pixi.toml` + `environment.yaml`) keeps
+  # reconciling against it continuously. Claiming the same live, wildcard
+  # surface from BOTH specs meant every ongoing platform change tripped a
+  # `drift-presumed` WARN against this one forever (60+ findings from one
+  # session's work alone) with no way to ever clear it short of reconciling a
+  # spec nobody writes to anymore. The five script paths below are NOT claimed
+  # by unifying-strategy, so they stay here rather than becoming `uncovered`.
   # CAP-6 realization, Story 12.3 (spec-12-3-air-gap-parity-is-a-failing-check,
   # pap:AD-13): the pixi-mirror builder the air-gap-parity CI job runs before
   # blocking egress. Never governed here until this reconciliation pass.

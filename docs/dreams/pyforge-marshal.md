@@ -136,7 +136,11 @@ Marshal's chain iff its Dream is `owner: marshal`.
   no ledger key (herald 34, doctor 4, atlas 3, scribe 1, steward 1).
 - **The governed tool surface** → **FR-153..156**. Shipped without one; the
   2026-07-28 audit found 2-of-6 station coverage with Marshal itself at zero,
-  inside a Dream marked `realized`. Coverage is measured now, not asserted.
+  inside a Dream marked `realized`. Coverage is measured now, not asserted:
+  `pyforge/marshal/mcp/coverage.py::tool_surface_coverage_report` is a live
+  function, not a stamped number, and it currently returns 3/6 — Story 18.1
+  gave Marshal its own 7-tool server, closing the practice-owner's own
+  zero-coverage gap the 2026-07-28 audit named (see [[agent-tool-surface]]).
 - **Retiring the installer's separate name** ([[genesis-installer-name-retirement]])
   → executed 2026-08-08, this session. One FR space (`FR-1..FR-163`, no gaps),
   one `epics.md` (Epics 1-12, 86 stories), one dashboard row, and the two

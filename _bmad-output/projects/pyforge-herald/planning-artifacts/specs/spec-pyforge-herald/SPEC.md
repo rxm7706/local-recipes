@@ -60,8 +60,9 @@ engineering* — Herald exists so nothing the factory does stays invisible. Re-s
 "first to touch a Dream and last to touch a release". Communication runs throughout, not at
 the ends.
 
-**Current state (re-grounded 2026-09-09; the 2026-08-02 text below it described a mid-build
-station and contradicted this Spec's own `status: shipped`).** The deck family (Moment 1
+**Current state (re-grounded 2026-09-09; the 2026-08-02 text below it was written while the
+station was still mid-build and no longer matched this Spec's own `status: shipped`).** The deck
+family (Moment 1
 content) is production-ready. HER-1's CLI mechanization shipped: Epics 1–5 are `done` and
 `seed`/`pull`/`status`/`watch` are wired (`cli.py:226-318`); `cli.py` is 1764 lines wiring 26
 subparsers. Moments 2–4 shipped too — Epics 8–10 landed 47 stories on 2026-08-08 — as the
@@ -156,15 +157,22 @@ complementary, non-overlapping constraints.
 
 A release goes out with a deck, an infographic and notables that no one hand-assembled.
 
-**Not yet true end to end — re-grounded 2026-09-09.** The 2026-08-02 text this replaces said
-the seed/pull CLI was mid-build and the notables had "no code"; both shipped (see § Why). What
-is actually still untrue is narrower and sharper: nothing *automatic* has ever fired. The
-live-backend triggers have never run green (`spec-herald-moments-2-4-live-backend`, LB-2/LB-3
-`foundry-side`), the deck-QA gate has no caller (`spec-deck-visual-qa`), and the `.pptx`
-pipeline has never rendered a real station deck (`spec-pptx-deck-generation`). A release today
-still goes out because a human ran each verb. Open drift, unchanged: the bridge's design intent
-runs on `claude-design`, an MCP outside the governed tool surface — recorded in
-[[agent-tool-surface]]'s coverage table.
+**Two of three closed, one genuinely still open — re-grounded 2026-09-12.** The 2026-09-09 text
+this replaces named three effect gaps; Epic 19 closed two of them the next day. The deck-QA gate
+now has a caller (Story 19.3, done 2026-09-10, PR #1150): a `deck-qa` pixi task runs the gate
+against `presentations/agentic-sdlc/`, and `presentation-deck.md`'s verify checklist names it as
+a step. The `.pptx` pipeline has rendered a real station deck (Story 19.4, done 2026-09-10, PR
+#1155): `presentations/pyforge-warden/src/content_plan.json` is the first real
+`content_plan.json` in the tree, filled through `pptx_pipeline.py` against the committed
+template. **Still genuinely open:** the live-backend triggers have never run green
+(`spec-herald-moments-2-4-live-backend`, LB-2/LB-3). Story 19.1 (done 2026-09-10, PR #1147)
+moved the webhook routes onto the station API seam, a prerequisite — but Story 19.2 ("one real
+ship records itself against a persistent store"), the story that would actually close this gap,
+is `blocked` on `DW-13-6-1`: `steward deploy perimeter` renders only a hardcoded
+`myproject.asgi:application` with no `--asgi-application` flag, so Herald has no perimeter to
+host a real, persistent listener on yet. A release today still goes out because a human ran
+each verb. Open drift, unchanged: the bridge's design intent runs on `claude-design`, an MCP
+outside the governed tool surface — recorded in [[agent-tool-surface]]'s coverage table.
 
 **Station-level effect residue, vesselled (2026-09-09).** Three of Herald's five Dreams fail
 the realization gate for exactly the three reasons above. Herald **Epic 19 ("Herald in

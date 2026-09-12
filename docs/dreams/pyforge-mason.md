@@ -48,15 +48,22 @@ mason environment lock                        # conflicting worlds -> one lockfi
 
 ## What is real
 
-- **Updated 2026-09-11 (this bullet had frozen at the original Epic-1-only
-  snapshot).** 66 of 67 tracked stories shipped across 15 of 16 epics, per
-  `fleet-picture` — the installable shell, its output contract, the full
-  recipe lifecycle, the dual-ship motion, environment locking, and the
+- **Updated 2026-09-12 (superseding the 2026-09-11 snapshot below, which
+  itself superseded the original Epic-1-only snapshot).** 67 of 67 tracked
+  stories shipped across all 16 epics, per `fleet-picture` (mason reads
+  `complete`) — the installable shell, its output contract, the full recipe
+  lifecycle, the dual-ship motion, environment locking, and the
   CFE-independence seam (Epic 5) are all built; the scope also grew past the
   original 5 epics / 38 stories as later work (the recipe-build MCP surface,
-  the CLI⇄tool parity gate, and more) was decomposed in. See
-  `spec-pyforge-mason` and `sprint-status-ledger.yaml` directly for the
-  current story-by-story state rather than this bullet.
+  the CLI⇄tool parity gate, the CFE rebuild-campaign retirement, and more)
+  was decomposed in. See `spec-pyforge-mason` and `sprint-status-ledger.yaml`
+  directly for the current story-by-story state rather than this bullet.
+- Superseded reading, kept for the record: *"66 of 67 tracked stories shipped
+  across 15 of 16 epics (2026-09-11) — the installable shell, its output
+  contract, the full recipe lifecycle, the dual-ship motion, environment
+  locking, and the CFE-independence seam (Epic 5) are all built."* The one
+  remaining story (15.1, closing the CFE rebuild-campaign mirrors) shipped
+  2026-09-12.
 - Superseded reading, kept for the record: *"4 of 38 stories shipped (~11%),
   all in Epic 1 (`S-1.1` workspace-member scaffold and dual-artifact build,
   `S-1.2` CLI noun-verb structure and global flags, `S-1.3` error taxonomy and

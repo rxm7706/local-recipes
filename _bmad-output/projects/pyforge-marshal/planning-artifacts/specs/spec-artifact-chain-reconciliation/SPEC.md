@@ -31,7 +31,9 @@ open_questions: []
 ## Why
 
 A pain to solve and a mandate the factory sets itself: the fleet paused at
-267/335 stories, and nearly every artifact in the dream-to-code chain (Dream →
+267/335 stories (2026-08-10 — the audit this Spec shipped has since closed
+that gap; see the owner-dream's Realization log for the final tally), and
+nearly every artifact in the dream-to-code chain (Dream →
 Deck → Spec → Research → Brief → PRD → UX → Architecture → Context → Epics →
 Sprint → TEA → Gates → Code → Tested → Retro → Status) was authored before most
 of that code existed. The 68 remaining stories will drive implementation the
