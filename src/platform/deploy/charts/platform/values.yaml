@@ -465,6 +465,17 @@ networkPolicy:
     # do not.
     podLabelKey: k8s-app
     podLabelValue: kube-dns
+    # Vanilla Kubernetes CoreDNS pods listen on port 53 directly. OpenShift's
+    # own dns-default pods do NOT: their own built-in `dns-default`
+    # NetworkPolicy (openshift-dns namespace) only has an ingress rule for
+    # port 5353 with no source restriction (Service port 53 DNATs to pod
+    # targetPort 5353) -- there is no ingress allow for port 53 from other
+    # namespaces at all. An egress rule naming port 53 is therefore silently
+    # dropped on arrival at a real OpenShift cluster regardless of how
+    # correct its podSelector/namespaceSelector are (confirmed live, CAP-3
+    # attended CRC exercise, 2026-09-12 -- this was wrong before Story
+    # 33.13 touched this block at all, not something that story introduced).
+    port: 53
   # Namespaces whose pods may reach web:8000 (Route/Ingress). Defaults cover
   # CRC/OCP (`openshift-ingress`) and vanilla nginx Ingress.
   webIngressFrom:
