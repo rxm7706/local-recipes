@@ -142,6 +142,17 @@ PrivateChannel conda channel) and marked as such. See § 6, question 1.
 
 ### 1.4 `OpenTeams-WFT-CDO/bmad-suite-package` — inaccessible; what this repo implies
 
+**Operator confirmation (2026-09-12, same day).** The operator pasted the suite's population
+verbatim; it is byte-identical to `recipes/bmad-suite/suite-members.yaml` at `b978aa9b2a`:
+the 13 active members listed in § 2.2 plus four `deprecated: true` rows
+(`bmad-method-wds-expansion`, `bmad-autopilot`, `bmad-dashboard-extension`, `bmalph`) and
+one retired-without-recipe note (`bmad-story-automator`, deleted 2026-08-21). The manifest's
+own `bmad-eval-quality` note ("tag-sourced since 1.3.0, 2026-09-09 — left the 0.2.0.dev0
+commit pin per CFE G109") confirms § 3.6: the adoption-register row is the stale one.
+What remains unverified about the OpenTeams repo is only its role (publishing home vs
+mirror) and its own layout — § 6 Q1 narrows to that.
+
+
 Everything in this repo treats "bmad-suite" as **13 conda packages on the SelfExplainML /
 "PrivateChannel" channel**, recipe-built from `recipes/bmad-*` here, plus a `bmad-suite`
 noarch metapackage (`recipes/bmad-suite/`, CalVer `2026.9.11`, manifest
@@ -365,10 +376,10 @@ gap list; § 4 A/B/D the shape).
 
 ## 6. Open questions for the operator
 
-1. **What is `OpenTeams-WFT-CDO/bmad-suite-package`?** The channel-side home of the 13
-   recipes (SelfExplainML/PrivateChannel), a mirror of `recipes/bmad-*`, or something else?
-   To read it from a session it must be the session's initial source (cross-owner attach is
-   refused), or its facts must be pasted here.
+1. **Role of `OpenTeams-WFT-CDO/bmad-suite-package`** — population confirmed (§ 1.4); still
+   open: is it the channel-side publishing home of these 13 recipes, a mirror of
+   `recipes/bmad-*`, or the consumer-facing install/README package? To read it from a session
+   it must be the session's initial source (cross-owner attach is refused).
 2. **Who owns the Dream in § 5** — scribe (knowledge surface; recommended), steward (owns
    the facts and the register), or marshal (owns the AGENTS.md family through genesis)?
 3. **Load path (option B):** fold `CLAUDE.md` into the `AGENTS.md` block via
