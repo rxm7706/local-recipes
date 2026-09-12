@@ -452,9 +452,13 @@ they are why this is not merely a UI project.
     with no access to any operator's home directory, and a completed run's timing survives the
     workstation that produced it.
   - **verified:** front-door `/runs/` from `RunState` + no home-dir literals live in
-    `src/platform/tests/test_front_door_queries_supervisor.py:57-243`; marshal loop homes still
-    filesystem-backed (`pyforge-marshal/src/pyforge/marshal/cli/init.py:336`); deployed
-    egress-blocked proof unexercised.
+    `src/platform/tests/test_front_door_queries_supervisor.py:57-243`; marshal's own publisher +
+    held-run lifecycle landed (Story 33.4, 33.12 — `pyforge-marshal/tests/meta/test_publisher_single_importer.py`,
+    `pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py`) and doctor/`cli/init.py`/`cli/spin.py`
+    read the published plane first, filesystem only as fallback when it's unreachable; the
+    mechanism-tier proof (`platform-ci-local --test` publish→exit→timing-survives + egress guard +
+    no-hostPath invariant) and the deployed, egress-blocked CRC exercise remain unexercised —
+    both are `spec-run-state-one-publisher`'s own open CAP-3, not yet run.
   - *(Added 2026-08-24 by operator ruling. The retired console read `~/.bmad-loops`, tmux sessions
     and journal files directly, so three of its surfaces degraded to `unavailable` when published.
     Choosing to keep those surfaces is what makes this a capability rather than an answered
