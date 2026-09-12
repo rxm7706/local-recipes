@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC
+from datetime import datetime
 from http import HTTPStatus
 
+import jwt
 import pytest
 from django.test import RequestFactory
 from django_pyforge.assertion.views import mint
 from django_pyforge.roles import prefixed_station
-
-from test_django_pyforge_assertion import _idp_bearer
 
 
 def _mint_request(bearer: str, station: str = "marshal"):
@@ -21,6 +22,29 @@ def _mint_request(bearer: str, station: str = "marshal"):
         HTTP_AUTHORIZATION=f"Bearer {bearer}",
     )
     return mint(request)
+
+
+def _idp_bearer(
+    sub: str,
+    roles: list[str],
+    *,
+    private_pem: bytes,
+    kid: str,
+) -> str:
+    now = int(datetime.now(tz=UTC).timestamp())
+    return jwt.encode(
+        {
+            "sub": sub,
+            "groups": roles,
+            "iss": "https://issuer.test/",
+            "aud": "pyforge-platform",
+            "iat": now,
+            "exp": now + 300,
+        },
+        private_pem,
+        algorithm="RS256",
+        headers={"kid": kid, "alg": "RS256"},
+    )
 
 
 def test_marshal_role_mints_200(idp_test_keys: dict[str, object]) -> None:
