@@ -17,7 +17,7 @@ from pyforge.core.assertion import HostMintClient, HostMintError, MAX_TTL_SECOND
 from pyforge.core.client import PyForgeStationClient, StationClientError, Transport
 
 from ..core.publish import shape_heartbeat
-from ..ports.publisher import PublishRecord, RunPublisherPort
+from ..ports.publisher import PublishRecord
 
 _DEFAULT_HOST = "http://127.0.0.1:8000"
 _BEARER_ENV = "PYFORGE_IDP_BEARER_FILE"
@@ -223,7 +223,7 @@ class HostPublisher:
         )
         try:
             raw = self._transport("POST", self._mcp_url(), headers, body)
-        except StationClientError as exc:
+        except Exception as exc:  # noqa: BLE001 -- transport failures are best-effort findings
             return None, f"MCP transport failed: {exc}"
         return _parse_jsonrpc_response(raw)
 
