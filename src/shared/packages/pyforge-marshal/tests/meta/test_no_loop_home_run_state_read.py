@@ -13,7 +13,7 @@ if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 MARSHAL_SRC = Path(_PACKAGE_FILE).resolve().parent
 DOCTOR_MARSHAL = (
-    Path(__file__).resolve().parents[4]
+    MARSHAL_SRC.parents[3]
     / "pyforge-doctor"
     / "src"
     / "pyforge"
@@ -94,15 +94,6 @@ def test_doctor_marshal_story_status_fallback_is_tagged() -> None:
     assert offenders == []
 
 
-def test_guard_catches_a_synthetic_offender() -> None:
-    sample = 'tasks = home.glob(".bmad-loop/runs/*/state.json")\n'
-    lines = sample.splitlines()
-    doc_lines = _docstring_lines(sample)
-    tagged = _tagged_lines(lines)
-    hit = False
-    for line_no, line in enumerate(lines, start=1):
-        if line_no in doc_lines or line_no in tagged:
-            continue
-        if any(p.search(line) for p in _FORBIDDEN):
-            hit = True
-    assert hit
+def test_forbidden_patterns_match_run_state_glob_line() -> None:
+    line = 'for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):'
+    assert any(pattern.search(line) for pattern in _FORBIDDEN)
