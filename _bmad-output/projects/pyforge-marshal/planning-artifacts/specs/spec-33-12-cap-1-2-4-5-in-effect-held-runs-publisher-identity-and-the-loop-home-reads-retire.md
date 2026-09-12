@@ -2,7 +2,7 @@
 title: 'CAP-1/2/4/5 in effect — held runs, publisher identity, and the loop-home reads retire'
 type: 'feature'
 created: '2026-09-12'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'fd331a54c43a3e27fcb493ec44a9ff02608da242'
