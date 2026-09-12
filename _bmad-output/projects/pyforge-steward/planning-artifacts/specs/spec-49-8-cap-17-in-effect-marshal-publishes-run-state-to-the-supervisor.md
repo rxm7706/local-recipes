@@ -2,8 +2,8 @@
 title: "Story 49.8: CAP-17 in effect — marshal publishes run state to the supervisor"
 type: story
 created: 2026-09-12
-baseline_revision: 40ec440c1f51c6fb319e6ab2dc2ed2271bb8accc
-status: backlog
+baseline_revision: fce083563b05269cebaaf6a62e726bc7a4b54a5a
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
