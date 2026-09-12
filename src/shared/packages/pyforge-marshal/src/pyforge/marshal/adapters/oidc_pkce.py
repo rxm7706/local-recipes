@@ -231,12 +231,30 @@ class PkceLogin:
             code_challenge=challenge,
             scope=self._scope,
         )
+        callback_holder: list[_CallbackResult] = []
+        error_holder: list[BaseException] = []
+
+        def wait_for_callback() -> None:
+            try:
+                callback_holder.append(
+                    capture_authorization_code(timeout_s=self._timeout_s, server=server)
+                )
+            except BaseException as exc:  # pragma: no cover - surfaced below
+                error_holder.append(exc)
+
+        waiter = threading.Thread(target=wait_for_callback, daemon=True)
+        waiter.start()
+        print(self._authorization_url)
         try:
             self._open_browser(self._authorization_url)
         except OSError:
             pass
-        print(self._authorization_url)
-        callback = capture_authorization_code(timeout_s=self._timeout_s, server=server)
+        waiter.join(timeout=self._timeout_s + 1.0)
+        if error_holder:
+            raise error_holder[0]
+        if not callback_holder:
+            raise PkceLoginError(f"login timed out after {int(self._timeout_s)} seconds")
+        callback = callback_holder[0]
         if callback.error:
             detail = callback.error_description or callback.error
             raise PkceLoginError(detail or callback.error)

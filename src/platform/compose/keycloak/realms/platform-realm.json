@@ -62,9 +62,67 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "pyforge-cli",
+      "name": "PyForge CLI (public PKCE)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "platform-web-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "platform-web",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups-claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [
+    {
+      "username": "marshal-operator",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Marshal",
+      "lastName": "Operator",
+      "email": "marshal-operator@localhost.invalid",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "marshal-operator",
+          "temporary": false
+        }
+      ],
+      "groups": ["/pyforge:station:marshal"]
+    },
     {
       "username": "staff-user",
       "enabled": true,

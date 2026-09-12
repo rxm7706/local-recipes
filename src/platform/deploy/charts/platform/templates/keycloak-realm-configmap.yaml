@@ -19,7 +19,8 @@ data:
       "duplicateEmailsAllowed": false,
       "groups": [
         {"name": {{ .Values.oidc.staffGroup | quote }}, "path": "/{{ .Values.oidc.staffGroup }}"},
-        {"name": {{ .Values.oidc.superuserGroup | quote }}, "path": "/{{ .Values.oidc.superuserGroup }}"}
+        {"name": {{ .Values.oidc.superuserGroup | quote }}, "path": "/{{ .Values.oidc.superuserGroup }}"},
+        {"name": "pyforge:station:marshal", "path": "/pyforge:station:marshal"}
       ],
       "clients": [
         {
