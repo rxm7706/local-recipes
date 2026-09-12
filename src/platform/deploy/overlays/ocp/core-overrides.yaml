@@ -32,3 +32,12 @@ postgres:
   fsGroup: null
 redis:
   runAsUser: null
+
+# Story 33.13 / CAP-3: OpenShift CoreDNS lives in openshift-dns, not kube-system.
+# Verified live against CRC 4.22.7 (2026-09-12): namespace openshift-dns, pod label
+# dns.operator.openshift.io/daemonset-dns=default.
+networkPolicy:
+  dns:
+    namespace: openshift-dns
+    podLabels:
+      dns.operator.openshift.io/daemonset-dns: default

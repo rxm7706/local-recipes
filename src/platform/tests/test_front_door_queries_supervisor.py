@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import time
-import urllib.request
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path

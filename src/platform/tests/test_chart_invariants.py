@@ -138,6 +138,7 @@ _SECRETS_HTTP_API_IMPORT = re.compile(
 _CHART_VALUE_SECRET_KEYS = frozenset(
     {"password", "secret", "secretkey", "apikey", "token", "clientsecret"},
 )
+_DNS_EGRESS_PORT = 53
 
 # Story 43.4: deterministic digest for helm-gated core renders -- real
 # deploys pin the CI-recorded digest; tests inject this placeholder.
@@ -420,6 +421,53 @@ def _assert_no_fixed_uid_keys(docs: list[dict[str, Any]]) -> None:
             f"{key} survives the OCP overrides at {fixed_paths} -- "
             f"restricted-v2 forbids fixing a UID/group"
         )
+
+
+def _assert_no_hostpath_volumes(docs: list[dict[str, Any]]) -> None:
+    """Story 33.13 / CAP-3: no rendered workload may declare a hostPath volume."""
+    assert docs, "empty render -- hostPath check would pass vacuously"
+    violations: list[str] = []
+    for doc in docs:
+        kind = doc.get("kind")
+        name = doc.get("metadata", {}).get("name", "?")
+        volume_lists: list[tuple[str, list[dict[str, Any]]]] = []
+        if kind in _WORKLOAD_KINDS:
+            pod_spec = doc.get("spec", {}).get("template", {}).get("spec", {})
+            volume_lists.append(
+                (f"{kind}/{name} template", pod_spec.get("volumes") or []),
+            )
+        if kind == "Pod":
+            pod_spec = doc.get("spec", {})
+            volume_lists.append((f"Pod/{name}", pod_spec.get("volumes") or []))
+        violations.extend(
+            f"{where}: {volume!r}"
+            for where, volumes in volume_lists
+            for volume in volumes
+            if "hostPath" in volume
+        )
+    if violations:
+        raise AssertionError(
+            "hostPath volumes are forbidden in the platform chart:\n"
+            + "\n".join(violations),
+        )
+
+
+def _dns_egress_namespaces(docs: list[dict[str, Any]]) -> set[str]:
+    """Namespace metadata names targeted by DNS egress rules (port 53)."""
+    namespaces: set[str] = set()
+    for doc in docs:
+        if doc.get("kind") != "NetworkPolicy":
+            continue
+        for rule in doc.get("spec", {}).get("egress") or []:
+            ports = rule.get("ports") or []
+            if not any(port.get("port") == _DNS_EGRESS_PORT for port in ports):
+                continue
+            for peer in rule.get("to") or []:
+                selector = peer.get("namespaceSelector", {}).get("matchLabels") or {}
+                name = selector.get("kubernetes.io/metadata.name")
+                if name is not None:
+                    namespaces.add(name)
+    return namespaces
 
 
 def _assert_route_targets_service(
@@ -2672,6 +2720,51 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
     _assert_no_fixed_uid_keys(docs)
     for component in sorted(_PLATFORM_IMAGE_COMPONENTS):
         _assert_restricted_v2_pod_spec(by_component[component], where=component)
+
+
+def test_ocp_core_overrides_set_openshift_dns_egress_values():
+    """Story 33.13: OCP overlay must target OpenShift CoreDNS, not kube-dns."""
+    yaml = _import_yaml()
+    overrides = yaml.safe_load(_CORE_OVERRIDES.read_text(encoding="utf-8"))
+    dns = overrides["networkPolicy"]["dns"]
+    assert dns["namespace"] == "openshift-dns"
+    assert dns["podLabels"] == {
+        "dns.operator.openshift.io/daemonset-dns": "default",
+    }
+
+
+@requires_helm
+def test_core_chart_renders_no_hostpath_volumes():
+    """Story 33.13 / CAP-3: the core chart must never emit hostPath volumes."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_no_hostpath_volumes(docs)
+
+
+def test_no_hostpath_volumes_check_fails_on_synthetic_hostpath():
+    """Guard removed: a synthetic hostPath volume must fail the helper."""
+    contaminated = [
+        {
+            "kind": "Deployment",
+            "metadata": {"name": "bad"},
+            "spec": {
+                "template": {
+                    "spec": {
+                        "volumes": [{"name": "host", "hostPath": {"path": "/"}}],
+                    },
+                },
+            },
+        },
+    ]
+    with pytest.raises(AssertionError, match="hostPath"):
+        _assert_no_hostpath_volumes(contaminated)
+
+
+@requires_helm
+def test_ocp_overrides_render_openshift_dns_egress():
+    """Story 33.13: OCP-overridden render must egress to openshift-dns for DNS."""
+    docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
+    assert "openshift-dns" in _dns_egress_namespaces(docs)
+    assert "kube-system" not in _dns_egress_namespaces(docs)
 
 
 @requires_helm
