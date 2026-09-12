@@ -137,4 +137,6 @@ def fetch_story_tasks(
     if error is not None:
         return None
     tasks = _extract_tasks(result)
-    return tasks if tasks is not None else {}
+    if tasks is None:
+        return None
+    return tasks

@@ -738,7 +738,14 @@ def complete_held_run(
 ) -> None:
     """Terminalize a held run referenced by ``handle``."""
     handle_row = _lookup_live_handle(handle)
-    complete_run(str(handle_row.run_id), status=status, result=result)
+    run = handle_row.run
+    existing = run.result if isinstance(run.result, dict) else {}
+    terminal = result if isinstance(result, dict) else {}
+    merged = {**existing, **terminal}
+    for key in ("publish", "tasks", "harness_run_id"):
+        if key in existing and key not in terminal:
+            merged[key] = existing[key]
+    complete_run(str(handle_row.run_id), status=status, result=merged)
 
 
 def list_published_story_tasks(*, station: str, project_slug: str) -> dict[str, Any]:
