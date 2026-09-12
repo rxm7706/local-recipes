@@ -174,7 +174,6 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
         responses=[
             _mint_result("minted-assertion"),
             _jsonrpc_result({"ok": True}),
-            _mint_result("minted-assertion"),
             _jsonrpc_result({"ok": True}),
         ],
     )
@@ -197,9 +196,9 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
             story_key="33.4",
         ),
     )
-    assert len(transport.calls) == 4
+    assert len(transport.calls) == 3
     heartbeat_payload = json.loads(transport.calls[1][3] or b"{}")
-    complete_payload = json.loads(transport.calls[3][3] or b"{}")
+    complete_payload = json.loads(transport.calls[2][3] or b"{}")
     assert heartbeat_payload["params"]["name"] == "heartbeat_loop_run"
     assert complete_payload["params"]["name"] == "complete_loop_run"
     assert heartbeat_payload["params"]["arguments"] == shape_heartbeat("held-run-42")
@@ -296,21 +295,25 @@ class RecordingPublisher:
 
 
 def test_run_supervisor_invokes_recording_publisher_lifecycle() -> None:
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
     from pyforge.marshal.supervisor.__main__ import run_supervisor
+
+    launch_line = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("spin-1", 1),
+            ts="2026-09-12T00:00:00.000Z",
+            run_id="run-1",
+            kind="run-launch",
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("spin-1", 0),
+            payload={"pid": 9999, "harness_run_id": "h-1"},
+        )
+    ).line
 
     class MinimalFs:
         def read_text(self, path: Path) -> str | None:
             del path
-            return json.dumps(
-                {
-                    "id": "w:0",
-                    "ts": "2026-09-12T00:00:00Z",
-                    "run_id": "run-1",
-                    "kind": "run-launch",
-                    "phase": "outcome",
-                    "payload": {},
-                }
-            ) + "\n"
+            return launch_line + "\n"
 
         def append_line(self, path: Path, line: str, *, fsync: bool = False) -> None:
             del path, line, fsync
