@@ -2,10 +2,10 @@
 title: 'CAP-18 — one publisher: run state and savings telemetry reach the supervisor'
 type: 'feature'
 created: '2026-09-12'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
-baseline_revision: 'b978aa9b2aa'
+baseline_revision: 'b978aa9b2aaa7cd9ba71fcef046c67216e1ae6fe'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/stack.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
