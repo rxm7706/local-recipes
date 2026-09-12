@@ -17,6 +17,14 @@ surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**
   - .github/workflows/kedro-viz-publish.yml
   - pixi.toml
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
 companions:
   - catalog-sources.md
   - identity-contract.md

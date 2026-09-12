@@ -1,6 +1,20 @@
 ---
 surface:
   - src/shared/packages/pyforge-doctor/**   # the CLI this Spec builds
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py   # also governed by pyforge-doctor/spec-sibling-dreams-drift
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/__init__.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/general_docs_consistency.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py   # also governed by pyforge-marshal/spec-pyforge-core
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-marshal/spec-pyforge-core
 id: SPEC-doctor
 status: shipped
 owner-dream: docs/dreams/pyforge-doctor.md

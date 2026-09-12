@@ -38,6 +38,27 @@ program: regenerable-factory
 surface:
   - src/shared/packages/pyforge-atlas/**               # the shipped package: conf/, src/pyforge/atlas/, tests/, wasm/
   - src/prototype/packages/pyforge-atlas-kedro-viz/**  # the generated dependency-free DAG mirror (tools/regenerate_from_atlas.py) — moves only when the real DAG moves
+surface-drift-exclude:
+  # 2026-09-12: also governed by the spec(s) named below, which already
+  # reconciles each of these files cleanly -- this kernel spec's own
+  # memlog does not move for routine story work anymore, so double-
+  # claiming them only produced permanent drift-presumed noise here.
+  # Coverage is unchanged (still listed under `surface:` above); only
+  # this spec's own drift tracking for these specific files is off.
+  - src/shared/packages/pyforge-atlas/pixi.toml   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/pyproject.toml   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/parity.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/catalog/test_no_inline_io.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/singularity/test_duckdb_sole_engine.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_app.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_identity_gist.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
+  - src/shared/packages/pyforge-atlas/tools/live_artifactory_transport.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
 companions:
   - signals.md               # the 23 ported phases -> nodes, the 3 additive riders, the Warden boundary on signals
   - catalog-contract.md      # 7 pipelines x 86 datasets, every declared TTL, the two freshness clocks, identity + join keys

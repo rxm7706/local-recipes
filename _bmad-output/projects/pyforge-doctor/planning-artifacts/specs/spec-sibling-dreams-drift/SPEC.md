@@ -5,6 +5,11 @@ owner-dream: docs/dreams/sibling-dreams-drift.md
 surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
+surface-drift-exclude:
+  # 2026-09-12: also governed by spec-pyforge-doctor (the station kernel,
+  # now clean), which reconciles this test file's routine changes. Coverage
+  # is unchanged; only this spec's own drift tracking for it is off.
+  - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py   # also governed by pyforge-doctor/spec-pyforge-doctor
 companions: []
 sources:
   - ../../../../../../docs/dreams/sibling-dreams-drift.md
