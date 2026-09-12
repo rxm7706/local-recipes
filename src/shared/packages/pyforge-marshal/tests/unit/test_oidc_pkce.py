@@ -32,6 +32,8 @@ class RecordingTransport:
 
 
 def test_build_authorization_url_shape() -> None:
+    from pyforge.core.client import parse_request_path
+
     verifier = generate_verifier()
     redirect_uri = "http://127.0.0.1:54321/callback"
     url = build_authorization_url(
@@ -40,9 +42,8 @@ def test_build_authorization_url_shape() -> None:
         redirect_uri=redirect_uri,
         code_challenge=challenge_for(verifier),
     )
-    parsed = urllib.parse.urlparse(url)
-    params = urllib.parse.parse_qs(parsed.query)
-    assert parsed.path.endswith("/protocol/openid-connect/auth")
+    path, params = parse_request_path(url.removeprefix("http://127.0.0.1:8080"))
+    assert path == "/realms/platform/protocol/openid-connect/auth"
     assert params["response_type"] == ["code"]
     assert params["client_id"] == ["pyforge-cli"]
     assert params["redirect_uri"] == [redirect_uri]

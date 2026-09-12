@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from typing import Any
@@ -117,3 +118,34 @@ class PyForgeStationClient:
                 return response.read()
         except urllib.error.URLError as exc:
             raise StationClientError from exc
+
+
+def urllib_request(
+    method: str,
+    url: str,
+    headers: dict[str, str],
+    body: bytes | None,
+) -> bytes:
+    """Perform one stdlib HTTP request (Story 33.14 shared transport)."""
+    request = urllib.request.Request(  # noqa: S310 -- URL is caller-configured
+        url,
+        data=body,
+        headers=headers,
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+            return response.read()
+    except urllib.error.URLError as exc:
+        raise StationClientError from exc
+
+
+def form_urlencode(params: dict[str, str]) -> str:
+    """URL-encode form fields for OIDC token exchange."""
+    return urllib.parse.urlencode(params)
+
+
+def parse_request_path(path: str) -> tuple[str, dict[str, list[str]]]:
+    """Split an HTTP path into its pathname and query parameters."""
+    parsed = urllib.parse.urlparse(path)
+    return parsed.path, urllib.parse.parse_qs(parsed.query)

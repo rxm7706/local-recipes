@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import json
 import threading
-import urllib.error
-import urllib.parse
-import urllib.request
 import webbrowser
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import ClassVar
+
+from pyforge.core.client import (
+    StationClientError,
+    form_urlencode,
+    parse_request_path,
+    urllib_request,
+)
 
 from ..core.pkce import challenge_for, generate_verifier
 
@@ -38,26 +41,22 @@ class _CallbackResult:
 
 
 class _CallbackHandler(BaseHTTPRequestHandler):
-    result: ClassVar[_CallbackResult | None] = None
-    shutdown_event: ClassVar[threading.Event | None] = None
+    result: _CallbackResult | None = None
+    shutdown_event: threading.Event | None = None
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A003
         del format, args
 
     def do_GET(self) -> None:  # noqa: N802
-        parsed = urllib.parse.urlparse(self.path)
-        if parsed.path != "/callback":
+        pathname, params = parse_request_path(self.path)
+        if pathname != "/callback":
             self.send_response(404)
             self.end_headers()
             return
-        params = urllib.parse.parse_qs(parsed.query)
-        code = _first_param(params, "code")
-        error = _first_param(params, "error")
-        error_description = _first_param(params, "error_description")
         type(self).result = _CallbackResult(
-            code=code,
-            error=error,
-            error_description=error_description,
+            code=_first_param(params, "code"),
+            error=_first_param(params, "error"),
+            error_description=_first_param(params, "error_description"),
         )
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -95,7 +94,7 @@ def build_authorization_url(
     scope: str = "openid",
 ) -> str:
     issuer_base = _normalize_issuer(issuer)
-    query = urllib.parse.urlencode(
+    query = form_urlencode(
         {
             "response_type": "code",
             "client_id": client_id,
@@ -109,16 +108,9 @@ def build_authorization_url(
 
 
 def _default_transport(url: str, headers: dict[str, str], body: bytes) -> bytes:
-    request = urllib.request.Request(  # noqa: S310 -- issuer URL is caller-configured
-        url,
-        data=body,
-        headers=headers,
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
-            return response.read()
-    except urllib.error.URLError as exc:
+        return urllib_request("POST", url, headers, body)
+    except StationClientError as exc:
         raise PkceLoginError("token exchange failed") from exc
 
 
@@ -133,7 +125,7 @@ def exchange_authorization_code(
 ) -> str:
     issuer_base = _normalize_issuer(issuer)
     token_url = f"{issuer_base}/protocol/openid-connect/token"
-    body = urllib.parse.urlencode(
+    body = form_urlencode(
         {
             "grant_type": "authorization_code",
             "code": code,

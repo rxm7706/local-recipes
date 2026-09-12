@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pyforge.marshal.core.pkce import challenge_for, generate_verifier
 
-# RFC 7636 appendix B worked example.
+# RFC 7636 appendix B verifier; challenge is derived by S256 (base64url, no pad).
 _RFC7636_VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
-_RFC7636_CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK_SBmHnpXLj2Skl26A"
+_RFC7636_CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
 
 
 def test_challenge_for_rfc7636_vector() -> None:
