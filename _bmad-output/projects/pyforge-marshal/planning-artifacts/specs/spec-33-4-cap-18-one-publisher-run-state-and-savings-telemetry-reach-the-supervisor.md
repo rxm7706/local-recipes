@@ -2,9 +2,10 @@
 title: 'CAP-18 — one publisher: run state and savings telemetry reach the supervisor'
 type: 'feature'
 created: '2026-09-12'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 1
 baseline_revision: 'b978aa9b2aaa7cd9ba71fcef046c67216e1ae6fe'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/stack.md
@@ -91,6 +92,46 @@ functions in this story (adapter must tolerate missing tools via findings until 
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-12 — Review pass
+- verdicts: 12 findings — high 0, medium 4, low 3, false 2, maybe-false 3
+- findings:
+  - `[medium]` `[patch]` heartbeat/complete skipped assertion refresh — fixed `_ensure_assertion()` on both paths
+  - `[medium]` `[patch]` dispatch complete after journal could orphan host handle — reordered complete before journal append
+  - `[medium]` `[patch]` loop supervisor FsError path skipped complete — added `finally` best-effort complete
+  - `[medium]` `[patch]` on_finding callback could abort publish path — wrapped in try/except in `_report`
+  - `[medium]` `[patch]` no supervisor lifecycle wiring test — added `test_run_supervisor_invokes_recording_publisher_lifecycle`
+  - `[medium]` `[patch]` RE_MINT on heartbeat untested — added `test_heartbeat_re_mints_when_assertion_stale`
+  - `[low]` `[reject]` shape_complete unused — complete payload inline is sufficient; shape_complete reserved for future consolidation
+  - `[low]` `[reject]` savings omitted on attach publish — intentional: savings on loop complete from final usage snapshot
+  - `[low]` `[reject]` MRS-SUPV-010 missing narrative in findings.py — registry entry sufficient for v1
+  - `[false]` `[reject]` graph_stats tuple length crash — `layer_savings_dict` already guards tuple length
+  - `[false]` `[reject]` meta-test flags any client import — test scans publisher_host module specifically
+  - `[maybe-false]` `[defer]` dispatch supervisor wiring test missing — defer until dispatch supervisor unit harness exists (medium unverified)
+  - `[maybe-false]` `[defer]` front door `/runs/` live proof — steward 49.8 joint landing (medium unverified)
+  - `[maybe-false]` `[defer]` cli/status.py published-plane reads — deferred per spec boundary until host payload live
+
+## Auto Run Result
+
+**Summary:** Landed marshal-side CAP-18 one publisher: `RunPublisherPort`, pure `core/publish.py` shapers, sole `HostPublisher` adapter reaching `/stations/marshal/mcp` via `pyforge.core.client` + `HostMintClient`, wired into loop and dispatch supervisors with best-effort `MRS-SUPV-010` journal findings.
+
+**Files changed:**
+- `ports/publisher.py`, `core/publish.py`, `adapters/publisher_host.py` — publisher stack (new)
+- `supervisor/__main__.py`, `dispatch_supervisor/__main__.py` — lifecycle publish/heartbeat/complete
+- `core/egress.py`, `core/findings.py`, `core/verdict.py` — registry + finding code
+- `tests/unit/test_publisher.py`, `tests/meta/test_publisher_single_importer.py` — matrix + meta gates
+- `tests/unit/test_supervisor.py` — autouse noop publisher for legacy fixtures
+- This spec — story contract + run result
+
+**Review:** 6 patches applied (assertion refresh, complete ordering, finally complete, finding callback guard, wiring test, heartbeat re-mint test). 3 rejected low/cosmetic. 3 deferred (dispatch wiring test harness, 49.8 host tools, status.py migration).
+
+**followup_review_recommended:** false (0 high patches; 4 medium patches but converged)
+
+**Verification:**
+- `pixi run -e pyforge-marshal pyforge-marshal-test` — 7850 passed
+- `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` — empty
+
+**Residual risks:** Host MCP tools (`publish_loop_run` / `heartbeat_loop_run` / `complete_loop_run`) land with steward Story 49.8; without them publish fails gracefully. CAP-5 bearer path requires `PYFORGE_IDP_BEARER_FILE`. Ledger row remains `blocked` pending joint 49.8 landing and operator flip.
 
 ## Verification
 
