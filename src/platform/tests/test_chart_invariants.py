@@ -2728,9 +2728,50 @@ def test_ocp_core_overrides_set_openshift_dns_egress_values():
     overrides = yaml.safe_load(_CORE_OVERRIDES.read_text(encoding="utf-8"))
     dns = overrides["networkPolicy"]["dns"]
     assert dns["namespace"] == "openshift-dns"
-    assert dns["podLabels"] == {
-        "dns.operator.openshift.io/daemonset-dns": "default",
-    }
+    assert dns["podLabelKey"] == "dns.operator.openshift.io/daemonset-dns"
+    assert dns["podLabelValue"] == "default"
+
+
+@requires_helm
+def test_ocp_overrides_dns_egress_matches_only_the_real_openshift_dns_pod():
+    """Recovery regression (2026-09-12, attended CRC exercise): the OCP
+    overlay's `networkPolicy.dns.podLabels` used to be a MAP, which Helm
+    deep-merges with the chart default's own `{k8s-app: kube-dns}` instead
+    of replacing it -- the rendered egress rule's `podSelector.matchLabels`
+    silently required BOTH labels (Kubernetes AND semantics), a selector no
+    real DNS pod on either system satisfies, so DNS egress was blocked the
+    moment `networkPolicy.enabled: true` was exercised on a live OpenShift
+    cluster. This test renders the ACTUAL merged NetworkPolicy (never just
+    parses the override file in isolation, which passed even with the bug
+    live) and asserts the DNS egress selector matches ONLY the OpenShift
+    label, with the vanilla `k8s-app: kube-dns` key genuinely absent.
+    """
+    docs = _render(_CORE_CHART, "-f", str(_CORE_OVERRIDES), release="platform")
+    egress_policies = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and "Egress" in doc.get("spec", {}).get("policyTypes", [])
+    ]
+    assert egress_policies, "OCP-overridden render produced no egress NetworkPolicy"
+    dns_selectors = [
+        rule["to"][0]["podSelector"]["matchLabels"]
+        for policy in egress_policies
+        for rule in policy["spec"].get("egress", [])
+        for target in rule.get("to", [])
+        if target.get("namespaceSelector", {})
+        .get("matchLabels", {})
+        .get("kubernetes.io/metadata.name")
+        == "openshift-dns"
+        for _ in [target]
+    ]
+    assert dns_selectors, "no DNS egress rule targets the openshift-dns namespace"
+    for selector in dns_selectors:
+        assert selector == {"dns.operator.openshift.io/daemonset-dns": "default"}, (
+            f"DNS egress podSelector must match ONLY the real OpenShift CoreDNS "
+            f"label, got {selector!r} -- a stray 'k8s-app: kube-dns' key means "
+            f"the values merge bug is back"
+        )
 
 
 @requires_helm

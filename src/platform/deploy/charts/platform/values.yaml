@@ -451,8 +451,20 @@ networkPolicy:
   enabled: true
   dns:
     namespace: kube-system
-    podLabels:
-      k8s-app: kube-dns
+    # A single scalar key/value pair, not a map -- Helm deep-merges nested
+    # maps across `-f` files/chart defaults (union of keys, not a replace),
+    # so an overlay setting `podLabels: {other-key: val}` would leave this
+    # default's `k8s-app: kube-dns` key alive alongside it, producing an
+    # AND-matched podSelector neither system's DNS pods actually satisfy
+    # (confirmed live: OCP's real CoreDNS carries only
+    # `dns.operator.openshift.io/daemonset-dns: default`, never `k8s-app:
+    # kube-dns`, so the merged selector matched nothing and silently
+    # blocked DNS egress on a real OpenShift cluster with `networkPolicy.
+    # enabled: true` -- found running the CAP-3 attended CRC exercise,
+    # 2026-09-12). Scalars fully replace on override; a map's sibling keys
+    # do not.
+    podLabelKey: k8s-app
+    podLabelValue: kube-dns
   # Namespaces whose pods may reach web:8000 (Route/Ingress). Defaults cover
   # CRC/OCP (`openshift-ingress`) and vanilla nginx Ingress.
   webIngressFrom:

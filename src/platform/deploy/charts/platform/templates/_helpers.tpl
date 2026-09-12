@@ -462,7 +462,7 @@ in-cluster Services.
           kubernetes.io/metadata.name: {{ .Values.networkPolicy.dns.namespace | quote }}
       podSelector:
         matchLabels:
-          {{- toYaml .Values.networkPolicy.dns.podLabels | nindent 10 }}
+          {{ .Values.networkPolicy.dns.podLabelKey }}: {{ .Values.networkPolicy.dns.podLabelValue | quote }}
   ports:
     - protocol: UDP
       port: 53
