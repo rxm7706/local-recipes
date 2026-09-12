@@ -36,3 +36,22 @@ def test_fetch_story_tasks_parses_mcp_content() -> None:
     )
     assert tasks == {"33-12": {"phase": "running", "commit_sha": "deadbeef"}}
     assert calls[0][0] == "POST"
+
+
+def test_fetch_story_tasks_returns_none_on_unparseable_mcp_result() -> None:
+    def transport(method: str, url: str, headers: dict[str, str], body: bytes | None) -> bytes:
+        if url.endswith("/assertion/mint/"):
+            return json.dumps({"assertion": "svc-token"}).encode("utf-8")
+        return json.dumps({"jsonrpc": "2.0", "id": 1, "result": {"content": []}}).encode(
+            "utf-8",
+        )
+
+    assert (
+        fetch_story_tasks(
+            "marshal",
+            base_url="http://127.0.0.1:8000",
+            bearer_file="eyJ.local",
+            transport=transport,
+        )
+        is None
+    )

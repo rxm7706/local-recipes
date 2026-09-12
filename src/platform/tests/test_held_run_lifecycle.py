@@ -126,3 +126,23 @@ def test_list_published_story_tasks_returns_merged_tasks() -> None:
     )
     tasks = list_published_story_tasks(station="marshal", project_slug="marshal")
     assert tasks["33-12-list"]["commit_sha"] == "abc123"
+
+
+@pytest.mark.django_db
+def test_complete_held_run_preserves_publish_envelope_for_readers() -> None:
+    handle = publish_held_run(
+        station="marshal",
+        assertion=_marshal_assertion(),
+        payload={
+            "station": "pyforge-marshal",
+            "story_key": "33-12-complete",
+            "phase": "running",
+            "commit_sha": "deadbeef",
+        },
+    )
+    complete_held_run(handle, status=RunState.Status.SUCCEEDED, result={"ok": True})
+    run = McpHandle.objects.get(handle=handle).run
+    assert isinstance(run.result, dict)
+    assert isinstance(run.result.get("publish"), dict)
+    tasks = list_published_story_tasks(station="marshal", project_slug="marshal")
+    assert tasks["33-12-complete"]["commit_sha"] == "deadbeef"

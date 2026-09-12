@@ -478,6 +478,26 @@ def test_non_dict_tasks_payload_is_skipped(tmp_path: Path) -> None:
 # --- Most-advanced run record selection ------------------------------------
 
 
+def test_harness_tasks_prefers_published_plane_over_loop_home(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        "warden",
+        "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    def _published(_slug: str) -> dict[str, dict]:
+        return {"1-1-foo": {"phase": "done", "commit_sha": "from-plane"}}
+
+    monkeypatch.setattr(marshal, "_published_story_tasks", _published)
+    tasks = marshal._harness_tasks(loop_root, "warden")
+    assert tasks["1-1-foo"]["commit_sha"] == "from-plane"
+
+
 def test_later_run_with_a_commit_sha_wins_over_an_earlier_deferral(
     tmp_path: Path,
 ) -> None:
