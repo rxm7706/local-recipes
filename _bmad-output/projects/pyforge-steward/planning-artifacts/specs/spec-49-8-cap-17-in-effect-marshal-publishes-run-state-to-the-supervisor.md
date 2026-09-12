@@ -72,7 +72,12 @@ declared_low_risk: true
 ## Verification
 
 **Commands:**
-- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — expected: the reworded comment is present at line 223
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`
+
+Additional checks (informal, not policy verify commands — kept out of the list above so
+MRS-GATE-011 never refuses on a byte-mismatch, per Story 33.4/33.12's own recovered lesson this
+story itself fell into on its first dispatch attempt):
+- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — expected: the reworded comment is present (line number is cosmetic; the dev session's own review pass found it at 226, not 223 — the comment content is what matters)
 - `python scripts/spec_surface_reconcile.py -core` — expected: clean
 - `pixi run -e pyforge-doctor pyforge-doctor-test` — expected: full suite green (no behavior change, comment-only edit)
 - Manual: start a bmad-loop story, confirm it renders at `/runs/`; let it finish, confirm the completed record and its timing are still queryable after closing the terminal that launched it
@@ -145,3 +150,28 @@ Status: done
 - Manual `/runs/` live check — NOT RUN (no deployed namespace in dispatch worktree; structural coverage via existing front-door supervisor tests)
 
 **Residual risks:** Live CAP-17 criterion at a deployed namespace with no operator-home access was not manually exercised in this unattended dispatch; marshal 33.4/33.12 merged artifacts and existing test suite provide structural evidence.
+
+## Recovery Note (2026-09-12)
+
+This story's first dispatch attempt (run `pyforge-steward-20260912T104535976Z-1d86e284`) completed
+all the work described above and passed its own internal review pass (0 patches, 8 rejected/false)
+— but was refused at `MRS-GATE-011` because this file's own original `## Verification`
+**Commands:** list (`grep -n "CAP-17" ...`, `python scripts/spec_surface_reconcile.py -core`,
+`pixi run -e pyforge-doctor pyforge-doctor-test`) never matched `marshal-policy.toml`'s actual
+declared `verify_commands` for pyforge-steward (`pixi run --frozen -e pyforge-steward
+pyforge-steward-test`). This was my own authoring bug from when I originally wrote this spec,
+carried through unnoticed until dispatch — the same mistake class Story 33.4 hit and Story 33.12's
+spec was written correctly against, but I never re-checked this earlier-authored file against it.
+Fixed by correcting the Verification section (moving the original three checks to an informal
+"Additional checks" list, matching the recovered pattern) and re-verifying independently. Also
+reverted one unrelated, incorrect edit the dev session's own tooling made to
+`sprint-status-ledger.yaml`'s header comment (`# stories: 324`, counting all `development_status`
+keys including epic rollups instead of stories alone — the real count is 222, confirmed by parsing
+the file directly); the `epic-51: in-progress` → `done` rollup fix in the same diff was verified
+correct (all three Epic 51 stories are independently `done`) and kept.
+
+**Verification (this recovery):**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 1210 passed
+- `pixi run -e pyforge-doctor pyforge-doctor-test` — 1626 passed, 1 skipped
+- `python scripts/spec_surface_reconcile.py -core` — clean
+- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — present at line 226
