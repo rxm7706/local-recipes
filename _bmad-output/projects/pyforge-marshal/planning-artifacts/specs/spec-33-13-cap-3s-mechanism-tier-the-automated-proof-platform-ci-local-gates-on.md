@@ -2,7 +2,7 @@
 title: "CAP-3's mechanism tier — the automated proof platform-ci-local gates on"
 type: 'feature'
 created: '2026-09-12'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '422491ee186400fc3ad1202343eedf0bd8d4fef8'
@@ -119,13 +119,13 @@ attended CRC exercise itself is explicitly out of scope — see Non-Goals.
 ## Tasks & Acceptance
 
 **Execution:**
-1. Add the publish→exit→timing-survives test to `test_front_door_queries_supervisor.py`.
-2. Add the socket guard on the `/runs/` render path to the same file.
-3. Add the `hostPath` chart invariant (helper + real test + guard-removed companion) to
+1. [x] Add the publish→exit→timing-survives test to `test_front_door_queries_supervisor.py`.
+2. [x] Add the socket guard on the `/runs/` render path to the same file.
+3. [x] Add the `hostPath` chart invariant (helper + real test + guard-removed companion) to
    `test_chart_invariants.py`.
-4. Add the `networkPolicy.dns` override to `overlays/ocp/core-overrides.yaml`.
-5. Record the incoming surface claim on `spec-pyforge-unifying-strategy/.memlog.md`.
-6. Append the plain landing note to `spec-run-state-one-publisher/.memlog.md`.
+4. [x] Add the `networkPolicy.dns` override to `overlays/ocp/core-overrides.yaml`.
+5. [x] Record the incoming surface claim on `spec-pyforge-unifying-strategy/.memlog.md`.
+6. [x] Append the plain landing note to `spec-run-state-one-publisher/.memlog.md`.
 
 **Acceptance Criteria:**
 - Given a published, completed `RunState`, when `/runs/` is re-queried on a fresh DB connection,
@@ -173,6 +173,11 @@ Stories 33.4/33.12/49.8):
 
 ## Review Triage Log
 
+### 2026-09-12 — Review pass
+- verdicts: 1 finding — high 0, medium 1, low 0, false 0, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` `test_does_not_add_loop_supervisor_ingest` flagged any edit to `test_front_door_queries_supervisor.py` because `supervisor` appears in the path — excluded existing `test_*.py` modules from the path heuristic so CAP-3 platform proofs can land in the file the spec names.
+
 ## Design Notes
 
 This story exists because Story 33.12's own Non-Goals explicitly named CAP-3 as "NOT this story's
@@ -182,3 +187,26 @@ CRC exercise once this and Story 33.14 (CAP-5's deployed-profile login, needed f
 own "credential flow" step) are both in.
 
 ## Auto Run Result
+
+Status: done
+
+**Summary:** Landed CAP-3's automated mechanism tier — three `platform-ci-local --test` proofs (publish→complete→fresh-connection timing on `/runs/`, socket guard on `/runs/` render, no-`hostPath` chart invariant) plus the OCP overlay DNS selector fix for OpenShift CoreDNS.
+
+**Files changed:**
+- `src/platform/tests/test_front_door_queries_supervisor.py` — timing-survives + socket-egress tests
+- `src/platform/tests/test_chart_invariants.py` — `_assert_no_hostpath_volumes`, OCP DNS values/render tests
+- `src/platform/deploy/overlays/ocp/core-overrides.yaml` — `networkPolicy.dns` OpenShift override
+- `src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py` — exclude `test_*.py` from supervisor-path ingest guard
+- `_bmad-output/projects/pyforge-steward/.../spec-pyforge-unifying-strategy/.memlog.md` — incoming surface claim
+- `_bmad-output/projects/pyforge-marshal/.../spec-run-state-one-publisher/.memlog.md` — mechanism-tier landing note
+
+**Review:** 1 medium patch applied (meta-test false positive on supervisor-named test module).
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `platform-ci-local -- --test` — PASS (898 passed, 7 skipped)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — PASS (7881 passed)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — PASS (130 passed)
+
+**Residual risks:** Attended CRC exercise and CAP-3/CAP-17 `verified:` rewrites remain explicitly out of scope per Non-Goals.
