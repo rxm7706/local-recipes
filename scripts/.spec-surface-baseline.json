@@ -5130,6 +5130,16 @@
   },
   "memlog": "a69adfeb73d5cfc00dfc1ac4d582796d17b852ab"
  },
+ "pyforge-steward/spec-mcp-host-real-station-tools": {
+  "files": {
+   "docs/dreams/mcp-host-real-station-tools.md": "3cdc2a58f9dcec266ebc38fb0dcc15d505cb8792",
+   "src/platform/compose/mcp-host/Containerfile": "53c776a142bb8fbfcd14ab0d3db6ea8e53b47110",
+   "src/platform/mcp_host/app.py": "d06b335006eec6aa497042ce21162f828e741dd0",
+   "src/shared/packages/django-pyforge/src/django_pyforge/mcp_dual_era.py": "9d59a83d07e31ea6213800f82b3ddf65f5addbe7",
+   "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py": "0863d1d2c847861adab93320c6aa5e4e0a0f6d3e"
+  },
+  "memlog": "288501d1177ca7b07fa4e7a9d5dac852a9eda5cd"
+ },
  "pyforge-steward/spec-multi-repo-workspaces": {
   "files": {},
   "memlog": "b9d9a896e744d9748cea460bd718f898a25e3c30"

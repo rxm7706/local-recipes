@@ -35,7 +35,8 @@ Helm: `helm upgrade platform src/platform/deploy/charts/platform -f overlays/ocp
 | **DNS reachable with policies active** | **PASS (after two fixes)** | The chart's DNS-egress rule had two independent bugs — a `podLabels` map that deep-merged with the vanilla default instead of replacing it, and the wrong port (53 instead of OpenShift's real 5353). Both fixed in PR #1279. Confirmed live: `kubernetes.default.svc.cluster.local` resolves from inside a pod after both fixes. |
 | **Real Authorization Code + PKCE login against deployed Keycloak** | **PASS** | Full flow driven by hand (GET auth endpoint → parse real Keycloak login form → POST credentials for a real realm user `marshal-operator` in group `/pyforge:station:marshal` → capture `code` from the 302 redirect → exchange for a token at the real token endpoint). Resulting JWT: `aud: [platform-web, account]`, `groups: [pyforge:station:marshal]`, correctly signed RS256. |
 | **`verify_idp_bearer()` accepts the real bearer** | **PASS (after fix)** | Bundled OIDC profile's JWKS URL used `http://` for its in-cluster Keycloak call; `django_pyforge`'s verifier rejected any non-`https`/`file` scheme, so the bundled profile had never been able to verify anything since its own introduction. Fixed narrowly (PR #1280): `http://` allowed only for a `.svc`/`.svc.cluster.local` host. Confirmed live: `verify_idp_bearer(<real bearer>)` called directly returns the correct `sub`/`roles`. |
-| **Live run appears on `/runs/`, timing survives teardown** | **NOT PROVEN** | See "What is not claimed." |
+| **Real assertion mint via HTTP (`/assertion/mint/`)** | **PASS (after fix)** | Root cause of the earlier "refused" mystery: `PYFORGE_ASSERTION_PRIVATE_KEY`/`PUBLIC_KEY` were never wired from `existingSecret` into any platform pod's env (documented as consumed, never templated) — `mint_assertion()` raised `AssertionRefusedError`, caught by the same except clause as a genuinely bad bearer, producing an identical `{"error": "refused"}` 401. Fixed: PR #1282. Confirmed live on the chart-native (Helm-tracked) redeploy: a fresh PKCE bearer mints a real signed assertion, HTTP 200. |
+| **Live run appears on `/runs/`, timing survives teardown** | **NOT PROVEN — root cause now identified** | See "What is not claimed." |
 
 ## Findings (not silent notes)
 
@@ -48,6 +49,8 @@ Helm: `helm upgrade platform src/platform/deploy/charts/platform -f overlays/ocp
 7. **No Route exists for Keycloak.** Only the web service has a Route in `overlays/ocp/chart`. Created `platform-keycloak` (host `platform-keycloak-platform.apps-crc.testing`) and `platform-keycloak-authhost` (host `auth.platform.internal`, matching the chart's own hardcoded `KC_HOSTNAME`/issuer value) by hand for this exercise — not landed as a chart addition; a future story would need to decide whether Keycloak gets a permanent Route or a different exposure story.
 8. **Chart's bundled realm has no CLI-loopback-capable client.** `platform-web` (the chart-templated realm's only client) only allows redirect URIs under `.Values.ingress.host` (`platform.internal`), not `http://127.0.0.1:*` — it's shaped for browser-based web login, not `pyforge login --pkce`'s loopback pattern. Created a `pyforge-cli` client by hand via `kcadm.sh` for this exercise (mirroring Story 33.14's own compose-realm client exactly) — not landed as a chart addition. A future story should decide whether this belongs in `keycloak-realm-configmap.yaml` permanently.
 9. **CRC's default resource preset (10.5GB/4 CPU) is now too small for this chart.** The chart has grown substantially since Story 12.7's original install (beat, two consume-events workers, worker-builds, mcp-host, and now Keycloak). Bumped to 24GB/8 CPU for this exercise; not a code change, but worth recording as a fact for the next attempt.
+10. **`PYFORGE_ASSERTION_PRIVATE_KEY`/`PUBLIC_KEY` were never wired into the chart's pod env at all.** `values.yaml` documented them as consumed `existingSecret` keys; no template referenced them. Fixed: PR #1282 (`optional: true` `secretKeyRef` entries in `platform.djangoEnv`, plus a render-through-Helm regression test).
+11. **The mcp-host sidecar has never hosted any station's real MCP tools.** Tracing WHY a real, correctly-signed, correctly-minted assertion still could not publish a run: `POST /stations/marshal/mcp` `publish_loop_run` returned `Unknown tool: publish_loop_run` from the real `mcp` library's own tool manager. `platform.djangoEnv` unconditionally sets `MCP_HOST_SIDECAR_BASE_URL`, so `dispatch_station_mcp` proxies *every* station's MCP call to the sidecar; the sidecar (`mcp_host/app.py`) builds each station's app with a generic one-tool identity stub (`station_face()`), never `django_marshal_portal.mcp_asgi`'s real held-loop tools. Confirmed the web pod's own interpreter still cannot import `mcp.server.mcpserver` (the sidecar is the only place a real per-station app could run) and that no existing spec covers wiring it up (`spec-mcp-era-isolation`'s own slice 2/3 sequence covers unrelated problems). This is genuinely un-specced, cross-station work, not a quick fix — seeded as `docs/dreams/mcp-host-real-station-tools.md` and derived to `spec-mcp-host-real-station-tools` (draft, owner `pyforge-steward`, two open questions) rather than improvised here. **This is the actual, now-precisely-identified blocker for this exercise's one remaining "not proven" item.**
 
 ## Contingency ladder (postgres/redis)
 
@@ -65,27 +68,28 @@ image has never had `pgvector` for `pyforge-scribe`'s own migration).
   correctly-signed, correct-claims bearer.
 - `django_pyforge.assertion.identity.verify_idp_bearer()` — called directly with that real bearer —
   correctly verifies it and returns the right subject and `pyforge:station:marshal` role.
-- Four genuine, previously-undiscovered bugs found and fixed, each independently verified via
-  `pixi run -e local-recipes platform-ci-local -- --test` (landed PRs #1278, #1279, #1280).
+- Five genuine, previously-undiscovered bugs found and fixed, each independently verified via
+  `pixi run -e local-recipes platform-ci-local -- --test` (landed PRs #1278, #1279, #1280, #1282).
+- A real host assertion minted via HTTP (`/assertion/mint/`) from a real IdP bearer, end to end,
+  on the chart-native (Helm-tracked, no ad-hoc patches) redeployed pod.
+- The precise, confirmed root cause of why a minted assertion still cannot publish a run: the
+  mcp-host sidecar never hosts any station's real MCP tools (finding 11) — a genuinely un-specced
+  gap, now captured as its own Dream and draft Spec rather than guessed at or hand-patched live.
 
 ## What is not claimed
 
 - **A live bmad-loop run appearing on `/runs/` end-to-end, or timing surviving workstation teardown.**
-  Driving a real run requires the SAME bearer to succeed through the actual `/assertion/mint/` HTTP
-  view (not just the direct `verify_idp_bearer()` call). It does not: the identical bearer, POSTed to
-  `/assertion/mint/` (both through the Route and directly to the pod's own `localhost:8000`), is
-  refused (`{"error": "refused"}`, 401), while calling `verify_idp_bearer()` directly with the exact
-  same token string succeeds. Ruled out as causes: token expiry (checked pod-vs-workstation clock —
-  identical; retried with tokens that had 200+ seconds of remaining TTL), clock skew, shell-escaping
-  artifacts in the diagnostic tooling (reproduced the discrepancy via clean `curl -v` + file-based
-  command substitution, no nested-shell risk), transport/header truncation (`curl -v` shows the
-  complete, correctly-formed `Authorization` header reaching the server), and `AssertionMiddleware`
-  (it only inspects `X-Forwarded-User`/`X-Remote-User`/`Remote-User`, none of which this request
-  carries). Root cause not identified. A live, in-pod diagnostic print was authorized by the operator
-  but blocked by the permission system's own remote-write classifier; a from-scratch local
-  reproduction (real gunicorn + uvicorn worker, local ephemeral postgres/redis, the same settings
-  shape) was attempted but stalled on LangFlow's own database-schema bootstrap requirements before
-  reaching the comparison point. This is the next concrete step for a future attempt.
+  The mint step now works fully (finding 10 fixed it). The publish step does not: `POST
+  /stations/marshal/mcp` `publish_loop_run`, with a real minted assertion, returns `Unknown tool:
+  publish_loop_run` from the real `mcp` library's own tool manager — a real `MCPServer` answers the
+  call but never had the tool registered, because the mcp-host sidecar (the only process that can
+  import `mcp.server.mcpserver` in this deployment) builds a generic one-tool identity stub for
+  every station instead of mounting `django_marshal_portal.mcp_asgi`'s real held-loop tools
+  (finding 11). This is not a bug in anything CAP-3 itself set out to fix — it is a separate,
+  previously-undocumented gap in the already-shipped `spec-mcp-era-isolation` slice 1, now tracked
+  as `docs/dreams/mcp-host-real-station-tools.md` / `spec-mcp-host-real-station-tools` (draft, two
+  open questions: the sidecar's ORM-access shape, and whether CAP-1 should scope to marshal alone
+  first). Closing it is that Spec's job, not a live-cluster patch during a verification exercise.
 - CAP-17's `verified:` line naming this exercise — not updated; the criterion ("a live bmad-loop run
   ... a completed run's timing queryable after the workstation is gone") is not met by what's proven
   here.
