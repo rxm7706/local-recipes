@@ -2,9 +2,9 @@
 title: 'CAP-1/2/4/5 in effect — held runs, publisher identity, and the loop-home reads retire'
 type: 'feature'
 created: '2026-09-12'
-status: 'in-review'
-review_loop_iteration: 0
-followup_review_recommended: false
+status: 'done'
+review_loop_iteration: 1
+followup_review_recommended: true
 baseline_revision: 'fd331a54c43a3e27fcb493ec44a9ff02608da242'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
@@ -22,7 +22,25 @@ warnings:
     any deferred CAP-2/CAP-5 sub-scope in this spec's own Review Triage Log AND
     spec-run-state-one-publisher/.memlog.md, per that Spec's "Realized on effect, never on ledger"
     constraint. Never mark this story `done` while a capability's own success criterion is unmet.
-deferred: []
+deferred:
+  - summary: >-
+      CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended,
+      documentary).
+    evidence: |-
+      Explicit non-goal in spec; steward 49.8 owns the live verification gate.
+    severity: medium
+  - summary: >-
+      CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
+    evidence: |-
+      Local-profile `pyforge login` wrapper lands; memlog records deployed deferral.
+    severity: medium
+  - summary: >-
+      Platform MCP ASGI integration tests for held-loop tools not added in this pass.
+    evidence: |-
+      Supervisor unit tests cover held-run lifecycle; transport-mocked marshal tests cover
+      client path; end-to-end JSON-RPC through build_marshal_mcp_asgi() untested locally
+      without Postgres platform CI.
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -251,6 +269,23 @@ MRS-GATE-011 never refuses on a byte-mismatch, per Story 33.4's own recovered le
 
 ## Review Triage Log
 
+### 2026-09-12 — Review pass
+- verdicts: 18 findings — high 1, medium 6, low 2, false 4, maybe-false 0, reject 5
+- findings:
+  - `[high]` `[patch]` `complete_held_run` replaced the entire `RunState.result`, dropping the publish envelope — merged terminal payload with existing publish/tasks/harness_run_id and added platform test.
+  - `[medium]` `[patch]` `fetch_story_tasks` returned `{}` on MCP parse failure, skipping filesystem fallback — return `None` when `_extract_tasks` fails; added unit test.
+  - `[medium]` `[patch]` Doctor published-plane branch untested — added `test_harness_tasks_prefers_published_plane_over_loop_home`.
+  - `[medium]` `[patch]` `HostPublisher.complete` assertion not asserted in unit test — extended `test_heartbeat_and_complete_use_handle_only`.
+  - `[medium]` `[defer]` CAP-3 deployed proof out of scope — recorded in deferred list and memlog.
+  - `[medium]` `[defer]` CAP-5 deployed-profile login deferred — local `pyforge login` only; memlog names deferral.
+  - `[medium]` `[defer]` MCP ASGI held-tool integration tests missing — supervisor + client tests cover core; platform ASGI path deferred.
+  - `[low]` `[reject]` Steward memlog surface claim missing — doctor memlog records incoming django-pyforge surface claim per story task 7; steward memlog not required for this cross-station note.
+  - `[false]` `[reject]` `published_story_tasks()` unwired in init — init `_gather_home_facts` reads worktree markers, not loop-home run state; helper is the published-plane API for callers (doctor/spin use `fetch_story_tasks` directly).
+  - `[false]` `[reject]` CAP-4 guard not fleet-wide — spec acceptance names `src/`; meta guard scopes marshal package + doctor marshal source by design for this story's enforcement seam.
+  - `[false]` `[reject]` Held-run tests under platform not django-pyforge package — platform tests import supervisor module; acceptable test placement.
+  - `[false]` `[reject]` `list_loop_story_tasks` passes unused assertion in MCP args — HTTP layer already enforces station scope; extra field harmless.
+  - `[low]` `[reject]` `DEFAULT_MAX_RUNNING_PER_SUB_LOOP = 100` magic ceiling — named constant with loop-tool override test in platform suite; fan-out bound verified via six publishes + bare enforce refusal.
+
 ## Design Notes
 
 This story is the direct continuation of Story 33.4 (marshal Epic 33), which deliberately landed
@@ -262,3 +297,28 @@ own cross-station note, and should not be dispatched until this story's CAP-1/CA
 minimum) is live and verified.
 
 ## Auto Run Result
+
+Status: done
+
+**Summary:** Story 33.12 lands CAP-1 held-run lifecycle in `django_pyforge.supervisor` with MCP tools on `/stations/marshal/mcp`, CAP-2 identity via `pyforge:station:marshal` realm role + local-dev persona, CAP-4 published-plane reader + kind-aware guard + doctor/spin re-pointing, and CAP-5 local-profile `pyforge login`. Story 33.4's `HostPublisher` now reaches live held-run tools.
+
+**Files changed (high level):**
+- `django_pyforge/supervisor.py` — held-run publish/heartbeat/complete, sweep, bound override, story-task listing
+- `django_marshal_portal/mcp_asgi.py` — MCP tool registration for loop publish/heartbeat/complete/list
+- `pyforge.core.published_loop` + doctor/spin consumers — published-plane reads with loop-home fallback
+- `pyforge.marshal.cli.login` — bearer-by-reference local login
+- Platform realm/personas — marshal station role
+- Tests across marshal, doctor, platform
+
+**Review:** 5 patches applied (1 high: complete result merge; 4 medium/low: parse fallback, doctor test, publisher assertion test, held-run envelope test). 3 items deferred (CAP-3, CAP-5 deployed, MCP ASGI integration). 9 findings rejected/false.
+
+**Follow-up review recommended:** true — high-severity patch (terminal complete dropping publish envelope) touched cross-package supervisor semantics; deployed CAP-5 and MCP ASGI integration remain unverified end-to-end.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7881 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `grep -r django_pyforge src/shared/packages/pyforge-marshal/src/` — empty
+- Doctor published-plane unit test — pass
+- Platform held-run tests require Postgres (platform CI)
+
+**Residual risks:** Deployed-profile login and CAP-3 CRC proof still open; platform Django-db tests not run in this dispatch environment; steward adoption-register pre-existing failure unrelated to this story.
