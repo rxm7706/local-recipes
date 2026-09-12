@@ -33,3 +33,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec node "${SCRIPT_DIR}/../lib/node_modules/eval-quality/dist/cli/main.js" "$@"
 WRAPPER
 chmod +x "${PREFIX}/bin/eval-quality"
+
+# Windows entry point, emitted from this SAME noarch build. The recipe is
+# noarch: generic, so it builds once on linux and build.bat never runs on any
+# platform -- without this the artifact has no Windows entry point at all.
+mkdir -p "${PREFIX}/Scripts"
+printf '@echo off\r\nSET "DIR=%%~dp0.."\r\nnode "%%DIR%%\\lib\\node_modules\\eval-quality\\dist\\cli\\main.js" %%*\r\n' \
+    > "${PREFIX}/Scripts/eval-quality.bat"

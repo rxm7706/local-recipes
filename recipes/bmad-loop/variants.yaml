@@ -1,0 +1,6 @@
+# Upstream pyproject declares requires-python >=3.11, so this overrides the
+# conda-forge 3.10 floor upward (as the recipe's own note describes).
+# On conda-forge this comes from conda-forge-pinning; this pipeline has no
+# global pinning, so it is supplied here.
+python_min:
+  - "3.11"

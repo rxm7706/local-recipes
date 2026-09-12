@@ -92,6 +92,12 @@ tests:
   - script:
       # All DB-free, so they run in CI without a Postgres cluster.
       - mybmad --help
+      # `up --help` locks the existence of the up subcommand and its options
+      # (--port, --db-port) without starting anything. Note --port belongs to
+      # `up`, not the top level: `mybmad --port 8080` is rejected, the valid
+      # form is `mybmad up --port 8080`. Actually binding a port is not a build
+      # test, since `up` provisions a Postgres cluster and runs the server.
+      - mybmad up --help
       - mybmad info --print-app-dir
       - mybmad info --print-server-js
 

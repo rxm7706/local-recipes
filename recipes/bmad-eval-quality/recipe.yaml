@@ -32,11 +32,11 @@ tests:
   - script:
       - if: not win
         then:
-          - test "$(eval-quality --version)" = "3.0.0"
+          - test "$(eval-quality --version)" = "${{ version }}"
           - eval-quality --help | grep -q "eval-quality score"
           - eval-quality compile --in "${PREFIX}/lib/node_modules/eval-quality/corpus/dev/contracts/satisfied-declarations.json" > /dev/null
         else:
-          - eval-quality.bat --version
+          - eval-quality.bat --version | findstr /C:"${{ version }}"
           - eval-quality.bat --help | findstr /C:"eval-quality score"
           - eval-quality.bat compile --in "%PREFIX%\lib\node_modules\eval-quality\corpus\dev\contracts\satisfied-declarations.json" > NUL
 
@@ -81,11 +81,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-09-11T10:20:26Z"
+  cfe-last-checked: "2026-09-09T07:05:21Z"
   cfe-generated-by-version: 8.85.2
   cfe-generated-at-datetime: "2026-09-05T13:29:57Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-09-11T10:20:26Z"
+  cfe-local-build-datetime: "2026-09-09T07:05:21Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -118,18 +118,6 @@ extra:
 #    # entries stay correct). build.sh/build.bat therefore unchanged; the
 #    # version moved, so build.number stays 0 (G113 increments only on a
 #    # same-version content change).
-#    # 2026-09-11: fleet-hygiene bump 1.4.1 -> 3.0.0 (two real major releases:
-#    # v1.4.2, v2.0.0, v3.0.0 all live tags on the default branch; not a G109
-#    # renumbering case). Diffed package.json across both endpoints per G110:
-#    # bin map, files array, engines, and the single prod dep (zod 4.4.3)
-#    # are byte-identical — build.sh/build.bat need no edit. Read v2.0.0's and
-#    # v3.0.0's CHANGELOG entries: every BREAKING note is a TypeScript API/port
-#    # contract change (CommandProbeRequest env-key typing, ProbeRequest's mcp
-#    # member, probe schemaVersion enforcement) — none touches the CLI surface
-#    # this recipe's tests exercise (--version, --help, `compile --in <path>`);
-#    # confirmed the compile fixture (corpus/dev/contracts/satisfied-
-#    # declarations.json) still exists at the same path at v3.0.0. Version
-#    # moved, so build.number stays 0 (G113).
 # build:
 #    # dist/ is gitignored upstream; prepack runs tsc, so the build does
 #    # npm ci (devDependencies) + npm run build, then a clean
@@ -138,7 +126,7 @@ extra:
 #    # Wrappers in bin/ (bash) and Scripts/ (.bat), never npm install -g
 #    # symlinks, per G6/G100 and the bmad-method feedstock pattern.
 # tests:
-#    # --version prints the bare package.json version, which now
+#    # --version prints the bare package.json version ('1.4.1'), which now
 #    # equals the conda version since the recipe is tag-sourced (under the
 #    # retired commit pin it was '0.2.0' vs conda '0.2.0.dev0' — re-check this
 #    # assertion on every bump, per G110's bin/metadata re-read rule).

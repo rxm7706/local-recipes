@@ -341,7 +341,9 @@ def _apply_migrations(db_port: int) -> None:
         # Run the migration and record it atomically in one transaction.
         script = (
             "BEGIN;\n"
-            f"\\i {sql_file}\n"
+            # psql's \i takes the rest of the line as the filename, so an
+            # unquoted path breaks as soon as the prefix contains a space.
+            f"\\i '{sql_file}'\n"
             f"INSERT INTO {_MIGRATIONS_TABLE}(name) VALUES ('{name}');\n"
             "COMMIT;\n"
         )

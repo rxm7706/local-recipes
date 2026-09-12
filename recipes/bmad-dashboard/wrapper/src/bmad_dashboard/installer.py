@@ -9,6 +9,7 @@ wire the extension into their editor.
 
 from __future__ import annotations
 
+import re
 import argparse
 import shutil
 import subprocess
@@ -40,7 +41,17 @@ def _bundled_vsix() -> Path:
             f"No .vsix found in {data_dir}. The conda package is malformed; "
             "please reinstall."
         )
-    candidates.sort()
+    # Sort on the parsed version, not the filename. A plain string sort is
+    # lexicographic, so "...-9.0.0.vsix" sorts above "...-10.0.0.vsix" and the
+    # newest build would be skipped once the major version reaches double
+    # digits. Unparseable trailing components sort lowest rather than raising.
+    def _version_key(path: Path) -> tuple[int, ...]:
+        match = re.search(r"-(\d+(?:\.\d+)*)\.vsix$", path.name)
+        if not match:
+            return (-1,)
+        return tuple(int(part) for part in match.group(1).split("."))
+
+    candidates.sort(key=_version_key)
     return candidates[-1]
 
 

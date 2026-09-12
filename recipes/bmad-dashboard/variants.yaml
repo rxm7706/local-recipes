@@ -1,0 +1,4 @@
+# conda-forge-pinning supplies python_min (3.10 floor) on conda-forge CI. This
+# pipeline has no global pinning, so the same default is supplied here.
+python_min:
+  - "3.10"

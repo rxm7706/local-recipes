@@ -8,6 +8,7 @@ import sys
 SKILLS = [
     "bmad-agent-builder",
     "bmad-bmb-setup",
+    "bmad-eval-runner",
     "bmad-module-builder",
     "bmad-workflow-builder",
 ]
