@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import jsonschema
+import pytest
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -42,6 +43,26 @@ from pyforge.marshal.ports.harness import (
 )
 from pyforge.marshal.supervisor import __main__ as supervisor_main
 from pyforge.marshal.supervisor.__main__ import main, run_supervisor
+
+
+@pytest.fixture(autouse=True)
+def _noop_run_state_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 33.4: keep legacy supervisor journal fixtures free of publish side-effects."""
+
+    class _NoOpPublisher:
+        def __init__(self, **kwargs: object) -> None:
+            del kwargs
+
+        def publish(self, record: object) -> None:
+            return None
+
+        def heartbeat(self, handle: str) -> None:
+            del handle
+
+        def complete(self, handle: str, *, status: str, result: object) -> None:
+            del handle, status, result
+
+    monkeypatch.setattr(supervisor_main, "HostPublisher", _NoOpPublisher)
 
 
 class FakeFs:
