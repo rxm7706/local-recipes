@@ -22,13 +22,17 @@ from pathlib import Path
 import pytest
 from pyforge.testing_kit import existed_at_ref
 
-# The mason-owned CFE-rebuild campaign (SPEC-conda-forge-expert-rebuild, Epic 12) adds one
+# The mason-owned CFE-rebuild campaign (SPEC-conda-forge-expert-rebuild) added one
 # equivalence-validation test file per compiled slice under CFE's own tests/integration/
 # directory by design (Story 6.3 landed test_slice1_equivalence.py; Story 12.7 landed
-# test_slice2_equivalence.py; slices 3-5 will add their own). These prove the compiled
-# replacement matches the live original -- they do not edit SKILL.md, scripts/, reference/,
-# guides/, or config/, so a NEWLY ADDED one is not a "CFE surface replaced" violation of
-# AD-15/FR-45 in the sense the two guards below exist to catch.
+# test_slice2_equivalence.py). Story 15.1 (2026-09-10) CLOSED the campaign: both compiled
+# mirrors (cfe-recipe-generation/cfe-recipe-lifecycle) were retired, not cut over, and both
+# equivalence tests were deleted with them -- slices 3-5 were never briefed and are now
+# permanently out of scope, so no further test_sliceN_equivalence.py file will ever be
+# added. This regex + helper are kept as a no-op historical guard: were such a file ever
+# resurrected, it would still not edit SKILL.md, scripts/, reference/, guides/, or config/,
+# so it still wouldn't be a "CFE surface replaced" violation of AD-15/FR-45 in the sense the
+# two guards below exist to catch.
 _CFE_REBUILD_EQUIVALENCE_TEST_RE = re.compile(
     r"^\.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py$"
 )

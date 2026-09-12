@@ -71,6 +71,12 @@ mason meta-test is satisfied by construction rather than worked around.
 | `DW-13-2-1` closure | Ledger entry currently open (`severity: medium`, "still-open" history) | Dated resolution note added, entry closed | N/A |
 | Mirror obligation | Retro touches a script mirrored into a compiled slice (`cfe-recipe-generation` / `cfe-recipe-lifecycle`) | Byte-re-port performed, `brief_mirrored_through` advanced, same PR | `pixi run -e local-recipes cfe-rebuild-guard-check` reds if left undone; a docs-only retro needs no re-port but that must be verified, not assumed |
 
+**Mirror obligation is now permanently moot (Story 15.1, 2026-09-10):** both `cfe-recipe-generation`
+and `cfe-recipe-lifecycle` were retired (deleted outright, not cut over) when the CFE rebuild
+campaign closed. There is no compiled slice left to byte-re-port into, and `brief_path`/
+`brief_mirrored_through` are nulled on both `campaign-state.yaml` slice entries — Story 15.2 needs
+no re-port regardless of which scripts this retro touches.
+
 </intent-contract>
 
 ## Code Map

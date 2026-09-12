@@ -1835,6 +1835,11 @@ two separate skill-surface PRs. Story 15.2 lands the Rule-2 retro that Story 13.
 (`DW-13-2-1`): CLAUDE.md Rule 2 says a conda-forge effort is **not done** until its retro lands,
 and that retro has now been unwritten across four CFE releases.
 
+**Batching plan superseded (2026-09-10).** Story 15.1 shipped its own independent CFE Rule-2
+retro (v8.90.2, PATCH) per its own spec's explicit instruction — the "single CFE release closes
+both" batching above did not hold. Story 15.2 lands its own separate version bump (v8.90.2+1 at
+whatever PATCH/MINOR the retro's findings warrant).
+
 ### Story 15.1: Close the CFE rebuild campaign — cut callers over to slices 1–2 or retire the mirrors
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-2 / CAP-3 / CAP-4 • CFE Rule 1 + Rule 2
 **Surface:** `.claude/skills/conda-forge-expert/**` (the two compiled slices `cfe-recipe-generation` and `cfe-recipe-lifecycle`), `.claude/scripts/conda-forge-expert/**` (wrapper redirects, if any caller flips), `.claude/tools/conda_forge_server.py` (MCP registrations, if any caller flips), `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/{campaign-state.yaml,slice-map.md}`

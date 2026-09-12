@@ -1075,12 +1075,28 @@ def classify(path: Path, target: Path) -> str:
         # + companions. The memlog is the decision-of-record and SPEC.md re-derives
         # from it (never hand-patched), so no pin gating here.
         return "tracked:spec"
-    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9-]+\.md", rel):
+    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9_-]+\.md", rel):
         # FLAT spec files directly under specs/ — the rule above only matched spec
         # FOLDERS, so a flat one fell through to UNKNOWN and failed coverage. Two
         # real shapes live here: per-story specs (the durable Tier-2 home) and
         # standalone effort specs such as the 2026-07-26 code-audit remediation
-        # record. Both are tracked, hand-authored, and not pin-gated.
+        # record. Both are tracked, hand-authored, and not pin-gated. Character
+        # class widened to `[a-z0-9_-]+` 2026-09-12 (mason 15.1 recovery landing,
+        # same fleet-hygiene pass as the sibling rule below): a story-title slug
+        # can carry an underscore verbatim when it names a real code symbol
+        # (`spec-33-8-...-dispatch-max_parallel-key.md`,
+        # `spec-34-4-...-station_state-sibling-has.md`) — the original hyphen-only
+        # class rejected both and tripped `uncovered`.
+        return "tracked:spec"
+    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9_-]+\.memlog\.md", rel):
+        # A flat spec's OWN `.memlog.md` sibling, filed beside it rather than
+        # inside a `spec-<name>/` folder (Story 33.3, 2026-09-12 recovery pass):
+        # `spec-33-3-....md` + `spec-33-3-....memlog.md` as flat siblings. The
+        # folder-shaped rule above only matches a memlog living INSIDE a
+        # `spec-<name>/` directory; this is the flat-file counterpart to it, same
+        # as the flat-spec rule just above is the flat counterpart to the
+        # folder-spec rule. Same append-only decision-of-record role, same
+        # tracked/hand-authored/not-pin-gated treatment.
         return "tracked:spec"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
@@ -1172,6 +1188,15 @@ def classify(path: Path, target: Path) -> str:
     # machine-written, never hand-edited, never pin-gated.
     if re.fullmatch(r"implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json", rel):
         return "local:sweep-verdicts"
+    # The benchmark-artifact shape (Story 28.31, 2026-09-12 recovery pass): the
+    # sixth instance of the spike-report lesson. Marshal's structure-graph
+    # dispatch benchmark landed its measured comparison as a committed JSON
+    # record at `planning-artifacts/benchmarks/<story-slug>.json`, a sibling
+    # convention to `reviews/` for one-off measurement results, and fell
+    # through to UNKNOWN. Frozen, dated-by-story, never re-derived, so it
+    # archives (no pin gating) like the other one-off record shapes above.
+    if re.fullmatch(r"planning-artifacts/benchmarks/[a-z0-9-]+\.json", rel):
+        return "archive:benchmark"
     return "UNKNOWN"
 
 

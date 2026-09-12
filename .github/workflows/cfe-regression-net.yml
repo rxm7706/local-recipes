@@ -1,35 +1,43 @@
-name: CFE regression + equivalence net
+name: CFE regression net
 
 # Story 12.2 (pyforge-mason, spec-conda-forge-expert-rebuild CAP-3 / re-scope
 # pre-condition (a)): before this workflow existed, NO CI ran the
-# conda-forge-expert regression suite or the slice-1 equivalence-harness test
-# at all — the only pytest in .github/workflows was platform-ci.yml's
-# unrelated Django suite (campaign-state.yaml GATHERED GAPS #2). Divergence
-# between the live skill and a parallel Skill-Forge-compiled replacement had
-# nowhere to turn red.
+# conda-forge-expert regression suite at all — the only pytest in
+# .github/workflows was platform-ci.yml's unrelated Django suite
+# (campaign-state.yaml GATHERED GAPS #2).
+#
+# CFE-rebuild-campaign closure (mason Story 15.1, 2026-09-10): the campaign's
+# two compiled Skill-Forge mirror packages (`.claude/skills/cfe-recipe-generation/`,
+# `.claude/skills/cfe-recipe-lifecycle/`) were retired — zero callers ever
+# flipped to either, and every CFE release paid a recurring byte-re-port tax
+# into both for zero behavioral change (see campaign-state.yaml and
+# spec-conda-forge-expert-rebuild/SPEC.md's "Endgame declared" section). The
+# equivalence-harness concern this workflow used to also cover (divergence
+# between the live skill and a parallel compiled replacement) is retired
+# along with the mirrors and their `test_slice{1,2}_equivalence.py` tests.
+# This workflow's REMAINING job — CI coverage for the legacy CFE skill's own
+# regression suite — stands on its own and is NOT retired: no other workflow
+# runs it, and `test_cve_manager.py` still carries `@pytest.mark.slow`, so
+# `test-ci`'s `not network` (not `not network and not slow`) marker selection
+# is still the correct one.
 #
 # WHAT RUNS: `pixi run --frozen -e local-recipes test-ci` — the CFE regression
-# suite (unit + integration + meta) INCLUDING the @pytest.mark.slow
-# slice-equivalence harness (test_slice1_equivalence.py) and EXCLUDING
-# network-marked tests (an offline runner must not flake on unreachable live
-# calls). Neither pre-existing task matched that selection: `test` is
-# 'not network and not slow' (equivalence harness never runs), `test-all` is
-# everything incl. network. See pixi.toml's test-ci task.
+# suite (unit + integration + meta), EXCLUDING network-marked tests (an
+# offline runner must not flake on unreachable live calls). Neither
+# pre-existing task matched that selection: `test` is
+# 'not network and not slow' (skips test_cve_manager.py's slow cases too),
+# `test-all` is everything incl. network. See pixi.toml's test-ci task.
 #
-# BLOCKING, deliberately: this job's exit code stands. A red here is the
-# anti-atlas guard doing its job — either a real regression in the skill, or
-# real divergence between the live original and a compiled replacement (the
-# campaign's dual-landing rule makes the live skill authoritative; a
-# replacement that falls behind must be re-ported, not ignored).
+# BLOCKING, deliberately: this job's exit code stands. A red here is a real
+# regression in the skill.
 #
 # PATH-FILTERED, deliberately: the local-recipes env is ~1102 packages
 # (~9.8 GB) — a poor trade on PRs that cannot change this suite's outcome
 # (cf. detectors.yml's "deliberately NOT pixi" note for its 10-second sweep).
-# Divergence can only be created by touching the live CFE tree, the compiled
-# replacement package (.claude/skills/cfe-recipe-generation/), the wrapper/MCP
-# layers, or the env/task definitions — exactly the paths below (scoped to
-# those two skill dirs, not all ~109 dirs under .claude/skills/). This same
-# `pixi run --frozen -e local-recipes test-ci` also reruns on workflow_dispatch.
+# The regression suite can only be affected by touching the live CFE tree,
+# the wrapper/MCP layers, or the env/task definitions — exactly the paths
+# below. This same `pixi run --frozen -e local-recipes test-ci` also reruns
+# on workflow_dispatch.
 #
 # This net is NEW GROUND on top of the existing offline pyforge-mason-test /
 # platform-ci.yml jobs (SPEC.md: "the test net is the safety rail") — it
@@ -39,7 +47,6 @@ on:
   pull_request:
     paths:
       - '.claude/skills/conda-forge-expert/**'
-      - '.claude/skills/cfe-recipe-generation/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
       - 'pixi.toml'
@@ -49,7 +56,6 @@ on:
     branches: [main]
     paths:
       - '.claude/skills/conda-forge-expert/**'
-      - '.claude/skills/cfe-recipe-generation/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
       - 'pixi.toml'
@@ -98,5 +104,5 @@ jobs:
       # A strictly read-only pytest invocation — the exit code stands (no
       # `|| true`, no trailing `exit 0`). The marker selection lives in the
       # pixi task, not here, so local runs and CI run the identical command.
-      - name: CFE regression suite + slice-equivalence harness
+      - name: CFE regression suite
         run: pixi run --frozen -e local-recipes test-ci

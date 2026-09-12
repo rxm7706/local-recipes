@@ -74,14 +74,13 @@ status_vocabulary:
 #                              free prose.
 
 campaign:
-  # The one slice actively being worked. A fresh session should start here.
-  current_focus: "slice-2-recipe-lifecycle"
-  # Not restated here -- see slices[current_focus].next_action, the single source of truth
-  # for "what's next" (avoids two independently-editable descriptions of the same fact).
-  # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
-  # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
-  # it is not forgotten either.
-  next_story: "ENDGAME DECLARED 2026-09-09 (operator, fleet-readiness-decision-batch-2026-09-09 section 2.3 C2) -- see campaign.endgame_declared's own comment for the ruling and its evidence. The campaign closes over slices 1-2; slice 3 (atlas-owned, Story 12.5) and slice 4 are NOT briefed and will not be. Next real work is the CLOSING story, mason Epic 15 / Story 15.1: cut the callers over to the two compiled slices or retire the mirrors (delete-on-cutover, no stubs -- OQ4), keep cfe-rebuild-guard-check clean, and land it BEFORE steward S-44.6 moves the CFE cell to skills/domain/conda-forge-expert/ (this Spec's surface is written against .claude/skills/conda-forge-expert/**). campaign.re_scope_gate_2 and its two 'open' pre-conditions are MOOT under the endgame -- they gated a slice-3/4 briefing that will not happen; they were deliberately left unedited as the historical record. Historical: 12.1-12.8 done (Story 12.8, 2026-08-28, second dated re-scope checkpoint, decision 'adjust'); Epic 12 ended at 12.8 with no slice-3/4 story minted (decompose-no-further discipline)."
+  # The campaign is CLOSED (mason Story 15.1, 2026-09-10) -- no slice is actively being
+  # worked. Retained as a resume-protocol pointer: a fresh session reading this file lands
+  # on `next_story` below, which states the campaign is closed and why.
+  current_focus: "campaign-closed"
+  # Not restated here -- see slices[*].next_action for any remaining per-slice detail
+  # (there is none load-bearing now; both slices 1-2 are retired).
+  next_story: "CAMPAIGN CLOSED 2026-09-10 (mason Story 15.1, the closing story ENDGAME DECLARED 2026-09-09 named). Disposition: RETIRE BOTH mirrors, not cut over -- see campaign's own new dated closure note below (after `callers`) and slices[0]/slices[1]'s `status`/`brief_path`/`brief_mirrored_through` fields for the full rationale and record. `python3 scripts/cfe_rebuild_guard_check.py` runs clean: clause (a) does not gate 'retired' (not in EQUIVALENCE_GATED_STATUSES); clause (b) is now permanently silenced for both slices (brief_path null on each); clause (c) is trivially satisfied (`callers` stays `[]`); clause (d) does not apply (no order>=2 slice has a non-null brief_path). Slice 3 (atlas-owned, Story 12.5) and slice 4 remain unbriefed and are now permanently out of scope -- the endgame never reached them. spec-conda-forge-expert-rebuild/SPEC.md's `status:` flips to `shipped` in the same story. No further story is queued under this campaign. Historical: ENDGAME DECLARED 2026-09-09 (operator, fleet-readiness-decision-batch-2026-09-09 section 2.3 C2) -- see campaign.endgame_declared's own comment for the ruling and its evidence. campaign.re_scope_gate_2 and its two 'open' pre-conditions were MOOT under the endgame and stay deliberately unedited as the historical record. 12.1-12.8 done (Story 12.8, 2026-08-28, second dated re-scope checkpoint, decision 'adjust'); Epic 12 ended at 12.8 with no slice-3/4 story minted (decompose-no-further discipline)."
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices
@@ -525,17 +524,46 @@ campaign:
   # Clause (c) is satisfied trivially while `callers` stays empty; the closing story
   # (mason Epic 15 / Story 15.1) populates or retires it.
   callers: []
+  # CLOSED 2026-09-10 (mason Story 15.1, the closing story `next_story` above names):
+  # both compiled mirrors (.claude/skills/cfe-recipe-generation/,
+  # .claude/skills/cfe-recipe-lifecycle/) are RETIRED, not cut over -- deleted outright,
+  # no dated stub (OQ4). Rationale: Mason's `cfe.py` never touches either mirror's
+  # directory today -- `resolve.py::resolve_cfe_root`'s walk hard-codes the
+  # `.claude/scripts/conda-forge-expert` marker and joins `_CFE_SCRIPTS[key]` under it,
+  # so "cutting over" would mean rearchitecting that filesystem-marker contract to
+  # additionally resolve two of ten `_CFE_SCRIPTS` entries into a *different* directory
+  # shape (the mirrors have no `.claude/scripts/conda-forge-expert`-style wrapper layer)
+  # -- a real, non-trivial Mason architectural change (AD-3/AD-5) for ZERO behavioral
+  # gain, since both mirrors are byte-identical to what Mason already invokes via the
+  # wrapper today. `callers` above stays `[]` -- retiring needs no caller-resolution
+  # entries; clause (c) was already trivially satisfied. The campaign is now CLOSED --
+  # `spec-conda-forge-expert-rebuild/SPEC.md`'s `status:` flips to `shipped` in the same
+  # story.
 
 slices:
   - id: "slice-1-recipe-generation"
     order: 1
     name: "Recipe Generation"
-    status: "compiled"   # Story 6.3 (gap-closure pass): brief produced, skf-create-skill
-                          # compiled the replacement, and the previously-open cross-slice gap is
-                          # now closed. Still "compiled", not "parallel"/"audited" -- Story 6.3
+    status: "retired"    # RETIRED 2026-09-10 (mason Story 15.1, closing the campaign per
+                          # SPEC.md's "Endgame declared -- 2026-09-09" section, operator OQ4
+                          # ruling): the compiled mirror at
+                          # .claude/skills/cfe-recipe-generation/ is deleted outright, no
+                          # dated stub. Retire, not cut-over: zero callers ever flipped to it
+                          # (Mason's cfe.py resolves the CFE root via
+                          # resolve.py::resolve_cfe_root's hardcoded
+                          # `.claude/scripts/conda-forge-expert` marker and never touched this
+                          # mirror's directory), and cutting over would require
+                          # rearchitecting that filesystem-marker contract for zero behavioral
+                          # gain, since the mirror is byte-identical to what Mason already
+                          # invokes via the wrapper today. Prior status "compiled" -- Story
+                          # 6.3 (gap-closure pass): brief produced, skf-create-skill compiled
+                          # the replacement, and the previously-open cross-slice gap is now
+                          # closed. Still "compiled", not "parallel"/"audited" -- Story 6.3
                           # only closed CAP-2's success bar; it did not put the replacement in
-                          # front of live traffic. Story 12.3 (2026-08-28) flipped `equivalence`
-                          # off "green" to "stale" -- see that field's own note below.
+                          # front of live traffic. Story 12.3 (2026-08-28) flipped
+                          # `equivalence` off "green" to "stale" -- see that field's own note
+                          # below (equivalence is left as historical record, unedited by this
+                          # retirement).
     equivalence: "green"  # RE-VERIFIED 2026-09-05 (CFE v8.86.0 retro 4825cc426b, PR #1059):
                           # github_updater.py (--head increments build.number) and the lagging
                           # recipe-generator.py docstring re-ported byte-for-byte -- all 5 slice-1
@@ -626,13 +654,17 @@ slices:
                           # Drift check (file-hash comparison) is unaffected by that gap -- it
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
-    brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "90537c239116143faaba43a4c1c6625065c80933"
-                                    # ADVANCED 2026-09-11 from 2fca30c6b0 to
-                                    # 90537c2391 (follow-up retro: Version History
-                                    # v8.90.2 bullet, G26 date clarification,
-                                    # failure-catalog source_sha256 refresh).
-                                    # DOCS + derived config only; no script changed.
+    brief_path: null   # RETIRED 2026-09-12 (mason Story 15.1, recovered from a
+                        # 2026-09-10 attempt blocked by an unrelated spec-surface
+                        # gate) -- was:
+                        # "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
+                        # Nulling this permanently silences cfe_rebuild_guard_check.py's
+                        # clause (b) for this slice (clause (b) checks any slice with a
+                        # non-null brief_path, regardless of status) -- the standing
+                        # per-release byte-re-port obligation ends with it.
+    brief_mirrored_through: null   # RETIRED 2026-09-12 -- was:
+                                    # "90537c239116143faaba43a4c1c6625065c80933"
+                                    # (last advanced 2026-09-11, 2fca30c6b0 -> 90537c2391)
     coverage:
       scripts: 3
       wrappers: 3
@@ -644,14 +676,25 @@ slices:
   - id: "slice-2-recipe-lifecycle"
     order: 2
     name: "Recipe Lifecycle"
-    status: "compiled"   # Story 12.7 (2026-08-28): skf-create-skill compiled the brief into
-                         # .claude/skills/cfe-recipe-lifecycle/1.0.0/ (+ active symlink) --
-                         # 25 scripts (22 canonical + 3 sanctioned Slice-5 shared-infra deps),
+    status: "retired"    # RETIRED 2026-09-10 (mason Story 15.1, closing the campaign per
+                         # SPEC.md's "Endgame declared -- 2026-09-09" section, operator OQ4
+                         # ruling): the compiled mirror at
+                         # .claude/skills/cfe-recipe-lifecycle/ is deleted outright, no dated
+                         # stub. Retire, not cut-over: zero callers ever flipped to it (Mason's
+                         # cfe.py resolves the CFE root via resolve.py::resolve_cfe_root's
+                         # hardcoded `.claude/scripts/conda-forge-expert` marker and never
+                         # touched this mirror's directory), and cutting over would require
+                         # rearchitecting that filesystem-marker contract for zero behavioral
+                         # gain, since the mirror is byte-identical to what Mason already
+                         # invokes via the wrapper today. Prior status "compiled" -- Story 12.7
+                         # (2026-08-28): skf-create-skill compiled the brief into
+                         # .claude/skills/cfe-recipe-lifecycle/1.0.0/ (+ active symlink) -- 25
+                         # scripts (22 canonical + 3 sanctioned Slice-5 shared-infra deps),
                          # sha256-verified byte-identical to source. Still "compiled", not
-                         # "parallel"/"audited" -- no caller has flipped (verified: grep of
-                         # cfe.py's _CFE_SCRIPTS and pixi tasks/MCP tools finds zero references
+                         # "parallel"/"audited" -- no caller had flipped (verified: grep of
+                         # cfe.py's _CFE_SCRIPTS and pixi tasks/MCP tools found zero references
                          # to cfe-recipe-lifecycle), matching slice 1's own precedent that a
-                         # clean audit alone does not advance status past "compiled".
+                         # clean audit alone did not advance status past "compiled".
     equivalence: "green"  # RE-VERIFIED 2026-09-05 (CFE v8.86.0 retro 4825cc426b, PR #1059): the
                          # retro touched none of the five audited scripts; the shipped
                          # github_updater.py + recipe-generator.py copies re-ported byte-for-byte;
@@ -784,13 +827,17 @@ slices:
                          # scope. gen_yml_reference.py's own separate, also-documented
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
-    brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "90537c239116143faaba43a4c1c6625065c80933"
-                                    # ADVANCED 2026-09-11 from 2fca30c6b0 to
-                                    # 90537c2391 (follow-up retro: Version History
-                                    # v8.90.2 bullet, G26 date clarification,
-                                    # failure-catalog source_sha256 refresh).
-                                    # DOCS + derived config only; no script changed.
+    brief_path: null   # RETIRED 2026-09-12 (mason Story 15.1, recovered from a
+                        # 2026-09-10 attempt blocked by an unrelated spec-surface
+                        # gate) -- was:
+                        # "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
+                        # Nulling this permanently silences cfe_rebuild_guard_check.py's
+                        # clause (b) for this slice (clause (b) checks any slice with a
+                        # non-null brief_path, regardless of status) -- the standing
+                        # per-release byte-re-port obligation ends with it.
+    brief_mirrored_through: null   # RETIRED 2026-09-12 -- was:
+                                    # "90537c239116143faaba43a4c1c6625065c80933"
+                                    # (last advanced 2026-09-11, 2fca30c6b0 -> 90537c2391)
     coverage:
       scripts: 22
       wrappers: 17
