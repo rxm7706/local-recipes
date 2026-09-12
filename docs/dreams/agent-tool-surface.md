@@ -30,29 +30,38 @@ how it went unnoticed for so long.
   tools** over stdio, each a thin subprocess wrapper over the Tier-1 scripts so
   the CLI and the tool surface can never diverge.
 - **`pyforge-atlas`'s own 11-tool FastMCP server** — additive, not a
-  replacement. The factory now runs **two** servers.
+  replacement.
+- **`pyforge-marshal`'s own 7-tool FastMCP server** (`pyforge/marshal/mcp/server.py`,
+  console-script `marshal-mcp`, Story 18.1) — same atlas pattern, closing the
+  practice-owner's own zero-coverage gap named below. The factory now runs
+  **three** servers.
 - Registration is **manual**, in `~/.claude.json` under
   `mcpServers.conda_forge_server`, with machine-absolute paths into
   `.pixi/envs/local-recipes/`. There is deliberately no `.mcp.json` in the repo.
 
-## Coverage — measured 2026-07-28
+## Coverage — measured 2026-07-28, updated 2026-09-12
 
 The Dream's headline is *"every capability the factory has is reachable."* Measured
-against the eleven realized Dreams, it holds for **two stations of six**:
+against the eleven realized Dreams, it originally held for **two stations of six**;
+Story 18.1 (marshal's own 7-tool server, landed since) brings current coverage to
+**three stations of six**:
 
 | Station | Realized capability | On the governed surface |
 |---|---|---|
 | mason | packaging-factory · fleet-stewardship | ✅ 21 tools |
 | atlas | pyforge-atlas | ✅ 21 tools |
+| marshal | agent-tool-surface · factory-console · pyforge-marshal · regenerable-factory | ✅ 7 tools (Story 18.1: `marshal_status`/`marshal_check`/`marshal_homes`/`marshal_preflight`/`marshal_upstream`/`marshal_refresh`/`list_marshal_tools`) |
 | warden | pyforge-warden | ⚠️ 2 scanning tools — `warden scan` itself is CLI-only |
 | herald | design-code-bridge · modernist-identity | ❌ 0 — the bridge runs on an **external** MCP the factory does not govern |
 | steward | enterprise-airgap | ❌ 0 |
-| marshal | agent-tool-surface · factory-console · pyforge-marshal · regenerable-factory | ❌ 0 — bmad-loop and dashboard-gen are CLI / pixi tasks |
 
-**Marshal, which owns this practice, has none of its own capabilities on it.** That is
-the sharpest evidence for the reclassification to `type: practice` (2026-07-28): a
-surface at 2-of-6 coverage is not a finished thing that shipped, it is a standing
-concern that is tended. The 46 + 11 tools are real; *"every capability"* is not yet true.
+**Marshal, which owns this practice, had none of its own capabilities on it as of the
+original 2026-07-28 measurement.** That was the sharpest evidence for the
+reclassification to `type: practice` the same day: a surface at 2-of-6 coverage was not
+a finished thing that shipped, it was a standing concern that is tended — and Story
+18.1 landing marshal's own tools since is exactly that tending in action, not a
+one-time fix. herald and steward remain at zero; the 46 + 21 + 7 tools are real,
+*"every capability"* is still not yet true.
 
 Herald's case is the most interesting: `design-code-bridge` is **realized** and works —
 through `claude-design`, an MCP registered outside the repo. So the capability is

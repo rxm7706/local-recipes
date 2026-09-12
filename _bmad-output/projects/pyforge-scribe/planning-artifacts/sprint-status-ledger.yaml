@@ -33,7 +33,7 @@ development_status:
   6-2-the-cocoindex-incremental-ingest-extra: done
   6-3-the-graph-node-staleness-flag: done
   7-1-three-docs-skills-are-scribe-wielded: done
-  8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired: backlog
+  8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -48,5 +48,5 @@ development_status:
   epic-6-retrospective: done
   epic-7: done
   epic-7-retrospective: optional
-  epic-8: backlog
+  epic-8: done
   epic-8-retrospective: optional

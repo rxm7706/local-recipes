@@ -19,7 +19,8 @@ status: realized
 
 ## The Dream
 
-The fleet paused at **267/335 stories, 53/64 epics**, by choice. Behind those
+The fleet paused at **267/335 stories, 53/64 epics** (2026-08-10 — since
+resolved; see Realization log), by choice. Behind those
 267 stories stands the full dream-to-code chain — Dream, Deck, Spec, Research,
 Brief, PRD, UX, Architecture, Context, Epics, Sprint, TEA, Gates, Code, Tested,
 Retro, Status — and almost all of it was authored **before most of that code
@@ -53,8 +54,10 @@ to correct.
 
 ## What is real (measured 2026-08-10, on `main` at `dfeb565231`)
 
-- **267/335 stories · 53/64 epics · 0/8 stations running** (`fleet-picture`;
-  liveness verified against `ps`, not `engine.pid`). All eight loop homes
+- **267/335 stories · 53/64 epics · 0/8 stations running** — the 2026-08-10
+  starting snapshot this audit measured against, since fully resolved (the
+  audit itself closed the gap; see Realization log for the final tally)
+  (`fleet-picture`; liveness verified against `ps`, not `engine.pid`). All eight loop homes
   fast-forwarded to `main`; zero unlanded loop merges; zero open PRs.
 - **The remaining 68:** marshal 35 (+1 blocked — story 8-5, not 10-1/FR-157 as
   a prior session's note suggested), mason 28, steward 4. Steward's stop is a
