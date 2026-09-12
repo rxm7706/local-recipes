@@ -7,6 +7,8 @@ owner-dream: docs/dreams/platform-object-storage-kind.md
 covers-dreams:
   - docs/dreams/platform-object-storage-kind.md
 companions: []
+surface:
+  - scripts/platform_object_storage.py
 sources:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md
 ---

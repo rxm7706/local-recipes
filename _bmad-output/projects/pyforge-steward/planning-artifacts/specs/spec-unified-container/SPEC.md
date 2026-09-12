@@ -18,6 +18,7 @@ surface:
   - .dockerignore                     # build-context exclusions (credentials/state-leak + arm64/size gaps closed in 7.1's review pass)
   - pixi.toml                         # new composed `pyforge-container` env (pyforge-ci precedent)
   - scripts/container-gates           # image gates: keys audit --secrets over rootfs; provision --verify + per-station --help smoke
+  - scripts/guild_image_ci.sh         # Story 48.10: CI builds the root Containerfile so the image proves itself at build time
 companions:
   # Settles what may ENTER the image (AD-1: the ASGI stack is a
   # `pyforge-steward[dashboard]` extra, never a base dep) and fixes the Mode L / Mode I

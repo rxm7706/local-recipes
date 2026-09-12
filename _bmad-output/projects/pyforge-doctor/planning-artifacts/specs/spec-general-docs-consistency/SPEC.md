@@ -3,6 +3,11 @@ id: SPEC-general-docs-consistency
 status: shipped
 owner-dream: docs/dreams/general-docs-consistency.md
 companions: []
+surface:
+  - docs/MAP.md
+  - docs/how-to/**
+  - docs/tutorials/**
+  - docs/explanation/**
 sources:
   - ../../../../../../docs/dreams/general-docs-consistency.md
 ---
