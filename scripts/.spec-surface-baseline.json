@@ -3911,6 +3911,15 @@
   },
   "memlog": "e3c395d320392913cdc39a5d52e7d7195b0018c1"
  },
+ "pyforge-marshal/spec-run-state-one-publisher": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py": "8258a114e7c157e5e7ead09226637f8056707ff3",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "47e0813a8b81440c735c3d71f0567f137c441662",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__init__.py": "01f5122af0f350ff15543c0bb5da899b12b7235c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "82a64a45ffcaae7b68492d62251df821b251ec0b"
+  },
+  "memlog": "abc099f7aa6a7b15253f5ad825c3a710dcc8f112"
+ },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
    "scripts/promote_sprint_status.py": "79b8d756aee4fb1fd57df856309199782ea6c219",
