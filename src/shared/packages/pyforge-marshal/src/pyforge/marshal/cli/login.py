@@ -1,4 +1,4 @@
-"""``pyforge login`` — local-profile bearer file writer (Story 33.12, CAP-5)."""
+"""``pyforge login`` — local-profile and PKCE bearer file writer (Story 33.12/33.14)."""
 
 from __future__ import annotations
 
@@ -8,11 +8,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ..adapters.oidc_pkce import PkceLogin, PkceLoginError
 from ..core.verdict import EXIT_OK, EXIT_USAGE
 
 _BEARER_ENV = "PYFORGE_IDP_BEARER_FILE"
 _DEFAULT_BEARER_PATH = Path.home() / ".pyforge" / "idp-bearer"
 _PLATFORM_SRC = "src/platform"
+_DEFAULT_PKCE_CLIENT_ID = "pyforge-cli"
 
 
 def add_login_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -22,7 +24,25 @@ def add_login_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     parser.add_argument(
         "persona",
+        nargs="?",
+        default=None,
         help="Local-dev persona key (for example marshal-operator).",
+    )
+    parser.add_argument(
+        "--pkce",
+        action="store_true",
+        help="Use PKCE authorization-code flow against a real OIDC issuer.",
+    )
+    parser.add_argument(
+        "--issuer",
+        default=None,
+        help="OIDC issuer base URL (required with --pkce).",
+    )
+    parser.add_argument(
+        "--client-id",
+        dest="client_id",
+        default=_DEFAULT_PKCE_CLIENT_ID,
+        help=f"OIDC client id for --pkce (default: {_DEFAULT_PKCE_CLIENT_ID}).",
     )
     parser.add_argument(
         "--bearer-file",
@@ -70,10 +90,45 @@ def _mint_local_token(repo_root: Path, persona: str) -> str:
     return token
 
 
+def _write_bearer_file(bearer_path: Path, token: str) -> None:
+    bearer_path.parent.mkdir(parents=True, exist_ok=True)
+    bearer_path.write_text(token + "\n", encoding="utf-8")
+    os.chmod(bearer_path, 0o600)
+
+
+def _resolve_bearer_path(args: argparse.Namespace) -> Path:
+    return Path(
+        args.bearer_file
+        or os.environ.get(_BEARER_ENV, "")
+        or _DEFAULT_BEARER_PATH,
+    ).expanduser()
+
+
 def run_login(args: argparse.Namespace) -> int:
-    persona = args.persona.strip()
+    persona = (args.persona or "").strip()
+    if args.pkce:
+        if persona:
+            print("persona cannot be used with --pkce", file=sys.stderr)
+            return EXIT_USAGE
+        issuer = (args.issuer or "").strip()
+        if not issuer:
+            print("--issuer is required with --pkce", file=sys.stderr)
+            return EXIT_USAGE
+        bearer_path = _resolve_bearer_path(args)
+        try:
+            token = PkceLogin(
+                issuer=issuer,
+                client_id=args.client_id.strip() or _DEFAULT_PKCE_CLIENT_ID,
+            ).run()
+        except PkceLoginError as exc:
+            print(str(exc), file=sys.stderr)
+            return EXIT_USAGE
+        _write_bearer_file(bearer_path, token)
+        print(bearer_path)
+        return EXIT_OK
+
     if not persona:
-        print("persona is required", file=sys.stderr)
+        print("persona is required unless --pkce is set", file=sys.stderr)
         return EXIT_USAGE
     repo_root = _repo_root(Path.cwd())
     if repo_root is None:
@@ -82,18 +137,12 @@ def run_login(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return EXIT_USAGE
-    bearer_path = Path(
-        args.bearer_file
-        or os.environ.get(_BEARER_ENV, "")
-        or _DEFAULT_BEARER_PATH,
-    ).expanduser()
+    bearer_path = _resolve_bearer_path(args)
     try:
         token = _mint_local_token(repo_root, persona)
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_USAGE
-    bearer_path.parent.mkdir(parents=True, exist_ok=True)
-    bearer_path.write_text(token + "\n", encoding="utf-8")
-    os.chmod(bearer_path, 0o600)
+    _write_bearer_file(bearer_path, token)
     print(bearer_path)
     return EXIT_OK
