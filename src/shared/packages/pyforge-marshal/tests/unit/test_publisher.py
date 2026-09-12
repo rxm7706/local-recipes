@@ -27,6 +27,10 @@ def _jsonrpc_result(result: object) -> bytes:
     return json.dumps({"jsonrpc": "2.0", "id": 1, "result": result}).encode("utf-8")
 
 
+def _mint_result(assertion: str) -> bytes:
+    return json.dumps({"assertion": assertion}).encode("utf-8")
+
+
 class RecordingTransport:
     def __init__(self, *, responses: list[bytes] | None = None, fail: bool = False) -> None:
         self.calls: list[tuple[str, str, dict[str, str], bytes | None]] = []
@@ -46,6 +50,14 @@ class RecordingTransport:
         if self.responses:
             return self.responses.pop(0)
         return _jsonrpc_result({"handle": "host-handle-1"})
+
+
+class RecordingMintTransport:
+    def __init__(self, station_transport: RecordingTransport) -> None:
+        self._station_transport = station_transport
+
+    def __call__(self, url: str, headers: dict[str, str], body: bytes) -> bytes:
+        return self._station_transport("POST", url, headers, body)
 
 
 def test_shape_loop_publish_includes_savings_fields() -> None:
@@ -87,18 +99,18 @@ def test_happy_publish_returns_handle(tmp_path: Path, monkeypatch: pytest.Monkey
     bearer.write_text("idp-token", encoding="utf-8")
     transport = RecordingTransport(
         responses=[
-            _jsonrpc_result({"assertion": "minted-assertion"}),
+            _mint_result("minted-assertion"),
             _jsonrpc_result({"handle": "held-run-42"}),
         ],
     )
     findings: list[tuple[str, str]] = []
 
     publisher = HostPublisher(
-        on_finding=findings.append,
+        on_finding=lambda op, msg: findings.append((op, msg)),
         base_url="http://127.0.0.1:8000",
         bearer_file=str(bearer),
         transport=transport,
-        mint_transport=transport,
+        mint_transport=RecordingMintTransport(transport),
         monotonic=lambda: 1000.0,
     )
     handle = publisher.publish(
@@ -125,10 +137,10 @@ def test_no_bearer_skips_publish_and_reports_finding(
     transport = RecordingTransport()
     findings: list[tuple[str, str]] = []
     publisher = HostPublisher(
-        on_finding=findings.append,
+        on_finding=lambda op, msg: findings.append((op, msg)),
         bearer_file=str(missing),
         transport=transport,
-        mint_transport=transport,
+        mint_transport=RecordingMintTransport(transport),
     )
     assert publisher.publish(
         PublishRecord(station="pyforge-marshal", run_id="run-1"),
@@ -145,15 +157,15 @@ def test_host_down_reports_finding_and_does_not_raise(tmp_path: Path) -> None:
     transport = RecordingTransport(fail=True)
     findings: list[tuple[str, str]] = []
     publisher = HostPublisher(
-        on_finding=findings.append,
+        on_finding=lambda op, msg: findings.append((op, msg)),
         bearer_file=str(bearer),
         transport=transport,
-        mint_transport=transport,
+        mint_transport=RecordingMintTransport(transport),
     )
     assert publisher.publish(
         PublishRecord(station="pyforge-marshal", run_id="run-1"),
     ) is None
-    assert any(call[0] == "publish" for call in findings)
+    assert findings[0][0] == "publish"
 
 
 def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
@@ -167,10 +179,10 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
     )
     findings: list[tuple[str, str]] = []
     publisher = HostPublisher(
-        on_finding=findings.append,
+        on_finding=lambda op, msg: findings.append((op, msg)),
         bearer_file=str(bearer),
         transport=transport,
-        mint_transport=transport,
+        mint_transport=RecordingMintTransport(transport),
     )
     publisher.heartbeat("held-run-42")
     publisher.complete(
@@ -198,9 +210,9 @@ def test_re_mint_before_publish_when_assertion_stale(tmp_path: Path) -> None:
     bearer.write_text("idp-token", encoding="utf-8")
     transport = RecordingTransport(
         responses=[
-            _jsonrpc_result({"assertion": "first"}),
+            _mint_result("first"),
             _jsonrpc_result({"handle": "h1"}),
-            _jsonrpc_result({"assertion": "second"}),
+            _mint_result("second"),
             _jsonrpc_result({"handle": "h2"}),
         ],
     )
@@ -213,7 +225,7 @@ def test_re_mint_before_publish_when_assertion_stale(tmp_path: Path) -> None:
         base_url="http://127.0.0.1:8000",
         bearer_file=str(bearer),
         transport=transport,
-        mint_transport=transport,
+        mint_transport=RecordingMintTransport(transport),
         monotonic=monotonic,
     )
     assert publisher.publish(PublishRecord(station="pyforge-marshal", run_id="r1")) == "h1"

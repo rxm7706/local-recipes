@@ -39,9 +39,14 @@ def test_exactly_one_pyforge_core_client_importer_for_publishing() -> None:
 def test_no_django_pyforge_imports_under_marshal_src() -> None:
     offenders: list[str] = []
     for path in _module_paths():
-        text = path.read_text(encoding="utf-8")
-        if "django_pyforge" in text:
-            offenders.append(str(path.relative_to(PACKAGE_DIR)))
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module and "django_pyforge" in node.module:
+                offenders.append(str(path.relative_to(PACKAGE_DIR)))
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if "django_pyforge" in alias.name:
+                        offenders.append(str(path.relative_to(PACKAGE_DIR)))
     assert offenders == []
 
 

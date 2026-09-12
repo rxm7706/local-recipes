@@ -204,6 +204,9 @@ EGRESS_PORTS: Mapping[str, bool] = {
     # launch only -- no network egress from marshal itself.
     "BuildHarnessPort": False,
     "SkillInvokePort": False,
+    # Story 33.4 (CAP-18): host run-state publish -- network lives in the adapter,
+    # not the port; ``PublishRecord`` carries shaped facts, not redacted egress text.
+    "RunPublisherPort": False,
 }
 
 

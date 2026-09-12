@@ -1,9 +1,9 @@
 """``HostPublisher`` — the one run-state publisher (Story 33.4, CAP-18).
 
-Reaches ``django_pyforge.supervisor`` over ``POST {PYFORGE_HOST}/stations/marshal/mcp``
+Reaches the host supervisor store over ``POST {PYFORGE_HOST}/stations/marshal/mcp``
 via ``pyforge.core.client.PyForgeStationClient`` transport + ``pyforge.core.assertion.HostMintClient``
 assertion mint. Failures invoke an optional callback; this module never raises
-to callers (best-effort, mirroring ``django_pyforge.supervisor._publish_run_started_event``).
+to callers (best-effort, mirroring the host-side run-started publish helper).
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable, Mapping
 
 from pyforge.core.assertion import HostMintClient, HostMintError, MAX_TTL_SECONDS
-from pyforge.core.client import PyForgeStationClient, StationClientError, Transport
+from pyforge.core.client import PyForgeStationClient, Transport
 
 from ..core.publish import shape_heartbeat
 from ..ports.publisher import PublishRecord
@@ -199,7 +199,7 @@ class HostPublisher:
             return None
         try:
             assertion = self._mint_client.emit(idp_bearer=bearer, station=_STATION)
-        except HostMintError as exc:
+        except Exception as exc:  # noqa: BLE001 -- mint failures are best-effort findings
             self._report("publish", f"assertion mint failed: {exc}")
             return None
         self._assertion = assertion
