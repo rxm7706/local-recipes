@@ -124,6 +124,12 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 3. **Autonomy.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch `docs/dreams/`, run `bmad-spec`
    on a new Dream, and drive the build unattended — so "a Dream is written" can trigger "BMAD
    creates the spec" with no human in the loop.
+4. **Gap-closure and realization work are not exempt.** Closing a realization gap, realizing a
+   capability, or fixing an effort whose stories already exist still starts with a **Dream seed**
+   (`status: dreamt`, an owning station, Kinships to every chain it binds) and `bmad-spec`
+   deriving the Spec from it — never with "draft the story specs and dispatch". Operator ruling
+   2026-09-12, minted on the CAP-17 run-state gap
+   ([`docs/dreams/run-state-one-publisher.md`](docs/dreams/run-state-one-publisher.md)).
 
 ## The tiers (do not cross them)
 
