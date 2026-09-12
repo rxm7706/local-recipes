@@ -3,6 +3,9 @@ id: SPEC-sprint-status-promotion-regression-guard
 status: shipped   # added 2026-09-10 (marshal Class-B): the key was absent, which silently
                   # exempted this Spec from chain-completeness; CAP-1 landed in PR #1142
                   # (scripts/promote_sprint_status.py widened done->* regression guard).
+owner-dream: docs/dreams/marshal-launch-environment-integrity.md
+covers-dreams:
+  - docs/dreams/marshal-launch-environment-integrity.md
 companions: []
 sources: []
 ---
