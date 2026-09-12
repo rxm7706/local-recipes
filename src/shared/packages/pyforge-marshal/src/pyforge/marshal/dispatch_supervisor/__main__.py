@@ -14,6 +14,7 @@ import yaml
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
@@ -55,6 +56,7 @@ from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_journaled,
     supervisor_should_finalize_harness_work,
 )
+from ..core.publish import dispatch_complete_result, shape_dispatch_publish
 from ..core.model import Finding, Severity
 from ..core.journal import (
     JournalEntryId,
@@ -74,6 +76,7 @@ from ..dispatch_verify import (
 )
 from ..dispatch_land import execute_dispatch_land
 from ..ports.fs import FsPort
+from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
 
 _JOURNAL_FILENAME = "journal.jsonl"
@@ -943,6 +946,7 @@ def run_dispatch_supervisor(
     fs: FsPort | None = None,
     vcs: VcsPort | None = None,
     process: ProcessPort | None = None,
+    publisher: RunPublisherPort | None = None,
 ) -> int:
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
@@ -970,6 +974,33 @@ def run_dispatch_supervisor(
 
     writer_id = _writer_id()
     counter = 0
+    run_publish_handle: str | None = None
+
+    def _journal_publish_finding(operation: str, message: str) -> None:
+        nonlocal counter
+        finding = Finding(
+            code="MRS-SUPV-010",
+            severity=Severity.WARN,
+            message=f"run-state {operation} failed: {message}",
+        )
+        entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind="run-state-publish",
+            phase=Phase.OBSERVATION,
+            payload={"operation": operation, "finding": finding.to_json_dict()},
+        )
+        counter += 1
+        try:
+            _append_entry(fs, run_dir, entry, fsync=False)
+        except FsError:
+            pass
+
+    _publisher = publisher if publisher is not None else HostPublisher(
+        on_finding=_journal_publish_finding,
+    )
+
     attach_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
@@ -991,6 +1022,15 @@ def run_dispatch_supervisor(
             file=sys.stderr,
         )
         return 1
+
+    run_publish_handle = _publisher.publish(
+        shape_dispatch_publish(
+            station_slug=slug,
+            run_id=run_id,
+            story_key=story_key,
+            commit_sha=baseline_head_sha,
+        )
+    )
 
     try:
         vcs.fetch(repo_root, "origin", "main")
@@ -1200,6 +1240,8 @@ def run_dispatch_supervisor(
                     _append_entry(fs, run_dir, heartbeat, fsync=False)
                 except FsError:
                     pass
+                if run_publish_handle is not None:
+                    _publisher.heartbeat(run_publish_handle)
                 time.sleep(_TICK_SECONDS)
                 continue
 
@@ -1303,6 +1345,20 @@ def run_dispatch_supervisor(
             return 1
         ended_at = _format_entry_ts(_now_utc())
         started_at = _launch_story_started_ts(folded, run_id) or ended_at
+        if run_publish_handle is not None:
+            _publisher.complete(
+                run_publish_handle,
+                status=verdict.value,
+                result=dispatch_complete_result(
+                    verdict=verdict.value,
+                    stop_reason=stop_reason,
+                    baseline_head_sha=git_facts.baseline_head_sha,
+                    current_head_sha=git_facts.current_head_sha,
+                    story_key=story_key,
+                    started_at=started_at,
+                    ended_at=ended_at,
+                ),
+            )
         counter = _journal_dispatch_timing(
             fs=fs,
             run_dir=run_dir,

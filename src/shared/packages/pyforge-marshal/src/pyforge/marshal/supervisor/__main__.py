@@ -338,6 +338,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.publisher_host import HostPublisher
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
@@ -367,11 +368,17 @@ from ..core.supervise import (
     rung_at,
     rung_index,
 )
+from ..core.publish import (
+    active_task_from_snapshot,
+    loop_complete_result,
+    shape_loop_publish,
+)
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot, UsageSnapshot
 from ..ports.notify import NotifyPort
+from ..ports.publisher import RunPublisherPort
 from ..ports.observer import SessionObserverPort
 from ..ports.vcs import VcsPort
 from .durability import PushTrigger, classify_push_triggers
@@ -771,6 +778,7 @@ def run_supervisor(
     observer: SessionObserverPort | None = None,
     harness: HarnessPort | None = None,
     notify: NotifyPort | None = None,
+    publisher: RunPublisherPort | None = None,
     vcs: VcsPort | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
@@ -1006,8 +1014,47 @@ def run_supervisor(
     ) -> None:
         _write_entry(kind, Phase.OUTCOME, payload, intent_id=intent_id, fsync=False)
 
+    def _journal_publish_finding(operation: str, message: str) -> None:
+        finding = Finding(
+            code="MRS-SUPV-010",
+            severity=Severity.WARN,
+            message=f"run-state {operation} failed: {message}",
+        )
+        _append(
+            "run-state-publish",
+            {"operation": operation, "finding": finding.to_json_dict()},
+        )
+
+    _publisher = publisher if publisher is not None else HostPublisher(
+        on_finding=_journal_publish_finding,
+    )
+    run_publish_handle: str | None = None
+
     try:
         _append("supervisor-attach", {"pid": pid, "watched_pid": watched_pid})
+
+        attach_snapshot: RunStatusSnapshot | None = None
+        if harness_run_id is not None:
+            attach_snapshot = harness.run_status_snapshot(home, harness_run_id)
+        attach_story_key, attach_phase, attach_commit = active_task_from_snapshot(
+            attach_snapshot,
+        )
+        attach_usage = (
+            harness.usage_snapshot(home, harness_run_id)
+            if harness_run_id is not None
+            else None
+        )
+        run_publish_handle = _publisher.publish(
+            shape_loop_publish(
+                station_slug=slug,
+                run_id=run_id,
+                harness_run_id=harness_run_id,
+                story_key=attach_story_key,
+                phase=attach_phase,
+                commit_sha=attach_commit,
+                layer_savings=attach_usage.layer_savings if attach_usage else None,
+            )
+        )
 
         # --- Story 3.5: resolve the ladder's real session/log target, or --
         # journal once that it cannot act at all for this run.
@@ -2422,6 +2469,8 @@ def run_supervisor(
                     "sampled_at": _format_entry_ts(moment),
                 },
             )
+            if run_publish_handle is not None:
+                _publisher.heartbeat(run_publish_handle)
 
         if retry_verify_pending and not watched_alive:
             # The resumed engine never survived a tick -- see
@@ -2649,6 +2698,30 @@ def run_supervisor(
         if detach_finding is not None:
             detach_payload["finding"] = detach_finding
         _append("supervisor-detach", detach_payload)
+        if run_publish_handle is not None:
+            complete_story_key = (
+                _feed_key_form(current_story_key) if current_story_key is not None else None
+            )
+            complete_commit: str | None = None
+            if harness_run_id is not None:
+                final_snapshot = harness.run_status_snapshot(home, harness_run_id)
+                _, _, complete_commit = active_task_from_snapshot(final_snapshot)
+            final_usage = (
+                harness.usage_snapshot(home, harness_run_id)
+                if harness_run_id is not None
+                else None
+            )
+            complete_status = detach_reason or "watched-process-exited"
+            _publisher.complete(
+                run_publish_handle,
+                status=complete_status,
+                result=loop_complete_result(
+                    detach_reason=complete_status,
+                    story_key=complete_story_key,
+                    commit_sha=complete_commit,
+                    layer_savings=final_usage.layer_savings if final_usage else None,
+                ),
+            )
     except (FsError, ValueError) as exc:
         # AD-30's own journal is unwritable -- looping forever against it
         # would spin this process indefinitely with zero further signal.
