@@ -361,7 +361,14 @@ profile computes issuer/JWKS from in-cluster Keycloak; BYO reads values.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{- $issuerHost := required "keycloak.ingress.host is required when oidc.profile=bundled" .Values.keycloak.ingress.host }}
 {{- $issuer := printf "https://%s/realms/%s" $issuerHost .Values.keycloak.realm }}
-{{- $jwks := printf "http://%s:8080/realms/%s/protocol/openid-connect/certs" (include "platform.keycloak.fullname" .) .Values.keycloak.realm }}
+{{/*
+The full in-cluster Service FQDN (not the bare short name) so
+django_pyforge's JWKS verifier can recognize this as a same-cluster
+Service DNS name and allow the scheme to stay http:// -- Kubernetes'
+own CoreDNS is the sole authority for the .svc.cluster.local zone, so
+this is not a spoofable trust signal (see jwks.py's own comment).
+*/}}
+{{- $jwks := printf "http://%s.%s.svc.cluster.local:8080/realms/%s/protocol/openid-connect/certs" (include "platform.keycloak.fullname" .) .Release.Namespace .Values.keycloak.realm }}
 - name: COMPONENT_IDENTITY_CLAIM
   value: {{ .Values.oidc.identityClaim | quote }}
 - name: COMPONENT_GROUP_CLAIM

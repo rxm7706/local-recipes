@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
 import jwt
 from django.conf import settings
 from jwt.exceptions import PyJWTError
@@ -11,9 +9,9 @@ from jwt.exceptions import PyJWTError
 from django_pyforge.assertion.exceptions import AssertionRefusedError
 from django_pyforge.assertion.exceptions import VerifierNotConfiguredError
 from django_pyforge.assertion.jwks import get_jwks_key_set
+from django_pyforge.assertion.jwks import jwks_url_scheme_is_allowed
 from django_pyforge.assertion.schema import CLAIM_SUB
 
-_ALLOWED_JWKS_SCHEMES = frozenset({"https", "file"})
 _JWT_COMPACT_SEGMENTS = 3
 
 
@@ -21,7 +19,7 @@ def _jwks_url_is_usable(url: str) -> bool:
     cleaned = url.strip()
     if not cleaned:
         return False
-    return urlparse(cleaned).scheme in _ALLOWED_JWKS_SCHEMES
+    return jwks_url_scheme_is_allowed(cleaned)
 
 
 def _require_verifier_settings() -> tuple[str, str, str, list[str], float]:
