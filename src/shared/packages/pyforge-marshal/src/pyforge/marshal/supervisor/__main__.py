@@ -1029,6 +1029,7 @@ def run_supervisor(
         on_finding=_journal_publish_finding,
     )
     run_publish_handle: str | None = None
+    run_publish_completed = False
 
     try:
         _append("supervisor-attach", {"pid": pid, "watched_pid": watched_pid})
@@ -2716,6 +2717,7 @@ def run_supervisor(
                     layer_savings=final_usage.layer_savings if final_usage else None,
                 ),
             )
+            run_publish_completed = True
     except (FsError, ValueError) as exc:
         # AD-30's own journal is unwritable -- looping forever against it
         # would spin this process indefinitely with zero further signal.
@@ -2736,6 +2738,13 @@ def run_supervisor(
         # matching detach AD-9 says must never happen.
         print(f"supervisor: cannot append to journal {journal_path}: {exc}", file=sys.stderr)
         return 1
+    finally:
+        if run_publish_handle is not None and not run_publish_completed:
+            _publisher.complete(
+                run_publish_handle,
+                status="supervisor-exited",
+                result=loop_complete_result(detach_reason="supervisor-exited"),
+            )
 
     return 0
 

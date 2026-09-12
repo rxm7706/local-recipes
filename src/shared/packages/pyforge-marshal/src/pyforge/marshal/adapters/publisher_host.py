@@ -176,8 +176,12 @@ class HostPublisher:
         )
 
     def _report(self, operation: str, message: str) -> None:
-        if self._on_finding is not None:
+        if self._on_finding is None:
+            return
+        try:
             self._on_finding(operation, message)
+        except Exception:  # noqa: BLE001 -- finding callback must never abort publish path
+            return
 
     def _mcp_url(self) -> str:
         return f"{self._base_url}{_MCP_PATH}"
@@ -254,6 +258,8 @@ class HostPublisher:
     def heartbeat(self, handle: str) -> None:
         if not handle:
             return
+        if self._ensure_assertion() is None:
+            return
         self._call_tool("heartbeat", _HEARTBEAT_TOOL, shape_heartbeat(handle))
 
     def complete(
@@ -264,6 +270,8 @@ class HostPublisher:
         result: Mapping[str, object],
     ) -> None:
         if not handle:
+            return
+        if self._ensure_assertion() is None:
             return
         arguments: dict[str, object] = {
             "handle": handle,

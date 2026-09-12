@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -18,9 +19,7 @@ from pyforge.marshal.core.publish import (
     shape_loop_publish,
 )
 from pyforge.marshal.ports.harness import LayerSavings, RunStatusSnapshot, TaskPhaseSnapshot
-from pyforge.marshal.ports.publisher import PublishRecord
-
-pytestmark = pytest.mark.unit
+from pyforge.marshal.ports.publisher import PublishRecord, RunPublisherPort
 
 
 def _jsonrpc_result(result: object) -> bytes:
@@ -173,7 +172,9 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
     bearer.write_text("idp-token", encoding="utf-8")
     transport = RecordingTransport(
         responses=[
+            _mint_result("minted-assertion"),
             _jsonrpc_result({"ok": True}),
+            _mint_result("minted-assertion"),
             _jsonrpc_result({"ok": True}),
         ],
     )
@@ -196,13 +197,42 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
             story_key="33.4",
         ),
     )
-    assert len(transport.calls) == 2
-    heartbeat_payload = json.loads(transport.calls[0][3] or b"{}")
-    complete_payload = json.loads(transport.calls[1][3] or b"{}")
+    assert len(transport.calls) == 4
+    heartbeat_payload = json.loads(transport.calls[1][3] or b"{}")
+    complete_payload = json.loads(transport.calls[3][3] or b"{}")
     assert heartbeat_payload["params"]["name"] == "heartbeat_loop_run"
     assert complete_payload["params"]["name"] == "complete_loop_run"
     assert heartbeat_payload["params"]["arguments"] == shape_heartbeat("held-run-42")
     assert findings == []
+
+
+def test_heartbeat_re_mints_when_assertion_stale(tmp_path: Path) -> None:
+    bearer = tmp_path / "bearer"
+    bearer.write_text("idp-token", encoding="utf-8")
+    transport = RecordingTransport(
+        responses=[
+            _mint_result("first"),
+            _jsonrpc_result({"handle": "h1"}),
+            _mint_result("second"),
+            _jsonrpc_result({"ok": True}),
+        ],
+    )
+    clock = {"t": 0.0}
+
+    def monotonic() -> float:
+        return clock["t"]
+
+    publisher = HostPublisher(
+        bearer_file=str(bearer),
+        transport=transport,
+        mint_transport=RecordingMintTransport(transport),
+        monotonic=monotonic,
+    )
+    assert publisher.publish(PublishRecord(station="pyforge-marshal", run_id="r1")) == "h1"
+    clock["t"] = 400.0
+    publisher.heartbeat("h1")
+    mint_calls = [call for call in transport.calls if call[1].endswith("/assertion/mint/")]
+    assert len(mint_calls) == 2
 
 
 def test_re_mint_before_publish_when_assertion_stale(tmp_path: Path) -> None:
@@ -238,3 +268,97 @@ def test_re_mint_before_publish_when_assertion_stale(tmp_path: Path) -> None:
 def test_layer_savings_dict_omits_empty_layers() -> None:
     assert layer_savings_dict(LayerSavings()) == {}
     assert layer_savings_dict(None) == {}
+
+
+class RecordingPublisher:
+    """Minimal ``RunPublisherPort`` for supervisor wiring tests."""
+
+    def __init__(self) -> None:
+        self.publish_calls: list[object] = []
+        self.heartbeat_calls: list[str] = []
+        self.complete_calls: list[tuple[str, str, dict[str, object]]] = []
+
+    def publish(self, record: PublishRecord) -> str:
+        self.publish_calls.append(record)
+        return "held-run-test"
+
+    def heartbeat(self, handle: str) -> None:
+        self.heartbeat_calls.append(handle)
+
+    def complete(
+        self,
+        handle: str,
+        *,
+        status: str,
+        result: Mapping[str, object],
+    ) -> None:
+        self.complete_calls.append((handle, status, dict(result)))
+
+
+def test_run_supervisor_invokes_recording_publisher_lifecycle() -> None:
+    from pyforge.marshal.supervisor.__main__ import run_supervisor
+
+    class MinimalFs:
+        def read_text(self, path: Path) -> str | None:
+            del path
+            return json.dumps(
+                {
+                    "id": "w:0",
+                    "ts": "2026-09-12T00:00:00Z",
+                    "run_id": "run-1",
+                    "kind": "run-launch",
+                    "phase": "outcome",
+                    "payload": {},
+                }
+            ) + "\n"
+
+        def append_line(self, path: Path, line: str, *, fsync: bool = False) -> None:
+            del path, line, fsync
+
+        def write_text_atomic(self, path: Path, content: str) -> None:
+            del path, content
+
+    class DeadProcess:
+        def is_alive(self, pid: int) -> bool:
+            del pid
+            return False
+
+    class MinimalHarness:
+        def run_status_snapshot(self, home: Path, harness_run_id: str) -> RunStatusSnapshot:
+            del home, harness_run_id
+            return RunStatusSnapshot(
+                paused_stage=None,
+                paused_story_key=None,
+                paused_reason=None,
+                escalated_spec_file=None,
+                escalated_task_phase=None,
+                deferred=(),
+                tasks=(),
+            )
+
+        def usage_snapshot(self, home: Path, harness_run_id: str) -> None:
+            del home, harness_run_id
+            return None
+
+    recording = RecordingPublisher()
+    rc = run_supervisor(
+        Path("/tmp/home"),
+        "pyforge-marshal",
+        "run-1",
+        9999,
+        Path("/tmp/log"),
+        25.0,
+        1000,
+        5000,
+        60.0,
+        120.0,
+        fs=MinimalFs(),
+        process=DeadProcess(),
+        harness=MinimalHarness(),
+        publisher=recording,
+    )
+    assert rc == 0
+    assert len(recording.publish_calls) == 1
+    assert recording.heartbeat_calls == []
+    assert len(recording.complete_calls) == 1
+    assert recording.complete_calls[0][0] == "held-run-test"

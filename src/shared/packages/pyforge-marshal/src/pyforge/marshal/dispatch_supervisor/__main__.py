@@ -1334,15 +1334,6 @@ def run_dispatch_supervisor(
             intent_id=intent_entry.id,
             payload={"verdict": verdict.value, "stop_reason": stop_reason, "ok": True},
         )
-        try:
-            _append_entry(fs, run_dir, intent_entry, fsync=True)
-            _append_entry(fs, run_dir, outcome_entry, fsync=False)
-        except FsError as exc:
-            print(
-                f"dispatch supervisor: cannot journal completion for {run_id!r}: {exc}",
-                file=sys.stderr,
-            )
-            return 1
         ended_at = _format_entry_ts(_now_utc())
         started_at = _launch_story_started_ts(folded, run_id) or ended_at
         if run_publish_handle is not None:
@@ -1359,6 +1350,15 @@ def run_dispatch_supervisor(
                     ended_at=ended_at,
                 ),
             )
+        try:
+            _append_entry(fs, run_dir, intent_entry, fsync=True)
+            _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        except FsError as exc:
+            print(
+                f"dispatch supervisor: cannot journal completion for {run_id!r}: {exc}",
+                file=sys.stderr,
+            )
+            return 1
         counter = _journal_dispatch_timing(
             fs=fs,
             run_dir=run_dir,
