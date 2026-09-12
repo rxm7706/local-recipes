@@ -252,7 +252,14 @@ class HostPublisher:
     def publish(self, record: PublishRecord) -> str | None:
         if self._ensure_assertion() is None:
             return None
-        result = self._call_tool("publish", _PUBLISH_TOOL, _record_to_payload(record))
+        # publish_loop_run(assertion, payload=...) -- payload is a nested
+        # field on the real tool's schema, not spread kwargs (see
+        # django_marshal_portal.mcp_asgi's own docstring).
+        result = self._call_tool(
+            "publish",
+            _PUBLISH_TOOL,
+            {"payload": _record_to_payload(record)},
+        )
         if result is None:
             return None
         handle = _extract_handle(result)
@@ -266,7 +273,11 @@ class HostPublisher:
             return
         if self._ensure_assertion() is None:
             return
-        self._call_tool("heartbeat", _HEARTBEAT_TOOL, shape_heartbeat(handle))
+        # heartbeat_loop_run(handle, payload=...) -- same nested-payload
+        # shape as publish_loop_run; this heartbeat never carries extra data.
+        arguments = shape_heartbeat(handle)
+        arguments["payload"] = {}
+        self._call_tool("heartbeat", _HEARTBEAT_TOOL, arguments)
 
     def complete(
         self,

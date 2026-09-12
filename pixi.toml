@@ -358,6 +358,16 @@ mcp = ">=2.1.1"
 mcp-types = ">=2.1.1"
 uvicorn = ">=0.52.4"
 starlette = ">=1.6.0"
+# spec-mcp-host-real-station-tools: a station's real in-process MCP app
+# (e.g. django_marshal_portal.mcp_asgi) needs Django's ORM against the SAME
+# shared Postgres the web pod uses -- no Langflow, no Redis client (the
+# functions this sidecar calls never touch django.core.cache or the event
+# broker; both degrade to a silent no-op when unconfigured, by design).
+django = ">=5.1,<6"          # matches django-pyforge's own pin
+psycopg = ">=3.2.10"         # Django sync driver against the shared Postgres
+pyjwt = ">=2.10.1,<3"        # django-pyforge's own dependency (assertion verify)
+cryptography = ">=50.0.1"    # django-pyforge's own dependency; python 3.14-compatible build (matches other python-3.14 envs in this file -- the <45 pin django-pyforge itself carries targets an older python)
+django-environ = ">=0.14.0"  # DATABASE_URL -> DATABASES via env.db(), matches the web image's own parsing
 
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---

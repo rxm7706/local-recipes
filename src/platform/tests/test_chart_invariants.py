@@ -1576,6 +1576,36 @@ def test_mcp_host_deployment_and_service_restricted_v2():
 
 
 @requires_helm
+def test_mcp_host_wires_django_orm_env_for_real_station_tools():
+    """AC (spec-mcp-host-real-station-tools CAP-1): mcp-host carries the
+    minimal Django/ORM env its real per-station apps (marshal's held-loop
+    tools) need -- DJANGO_SECRET_KEY and DATABASE_URL required, the host
+    assertion public key optional (matches the web pod's own posture).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    env = _collect_env_by_name(by_component[_MCP_HOST_COMPONENT])
+
+    for key_name in ("DJANGO_SECRET_KEY", "DATABASE_URL"):
+        entry = env.get(key_name)
+        assert entry is not None, f"mcp-host missing {key_name}"
+        secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+        assert secret_ref.get("name") == secret_name
+        assert secret_ref.get("key") == key_name
+        assert not secret_ref.get("optional"), f"{key_name} must be required"
+
+    public_key_entry = env.get("PYFORGE_ASSERTION_PUBLIC_KEY")
+    assert public_key_entry is not None, "mcp-host missing PYFORGE_ASSERTION_PUBLIC_KEY"
+    public_key_ref = public_key_entry.get("valueFrom", {}).get("secretKeyRef", {})
+    assert public_key_ref.get("name") == secret_name
+    assert public_key_ref.get("key") == "PYFORGE_ASSERTION_PUBLIC_KEY"
+    assert public_key_ref.get("optional") is True
+
+
+@requires_helm
 def test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service():
     """AC: web/worker resolve MCP_HOST_SIDECAR_BASE_URL to the mcp-host Service."""
     docs = _render(_CORE_CHART, release="platform")
@@ -2374,7 +2404,9 @@ def test_story_48_3_web_worker_mcp_host_dbgpt_egress_peers():
         for p in _network_policies_for_component(docs, "mcp-host")
         if "Egress" in (p["spec"].get("policyTypes") or [])
     )
-    assert _egress_peer_components(mcp_egress) == set()
+    # spec-mcp-host-real-station-tools CAP-1: marshal's held-loop tools reach
+    # django_pyforge's ORM directly, so mcp-host is no longer DNS-only.
+    assert _egress_peer_components(mcp_egress) == {"postgres"}
 
     dbgpt_egress = next(
         p

@@ -203,6 +203,7 @@ def test_heartbeat_and_complete_use_handle_only(tmp_path: Path) -> None:
     assert complete_payload["params"]["name"] == "complete_loop_run"
     assert heartbeat_payload["params"]["arguments"] == {
         **shape_heartbeat("held-run-42"),
+        "payload": {},
         "assertion": "minted-assertion",
     }
     assert complete_payload["params"]["arguments"]["handle"] == "held-run-42"

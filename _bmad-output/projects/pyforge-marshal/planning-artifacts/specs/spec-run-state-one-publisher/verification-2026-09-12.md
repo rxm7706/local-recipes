@@ -3,7 +3,7 @@ title: 'CAP-3 attended CRC verification, 2026-09-12'
 type: 'verification'
 created: '2026-09-12'
 updated: '2026-09-12'
-status: 'partial'
+status: 'complete'
 cluster: 'CRC 2.63.0 / OpenShift 4.22.7 (apps-crc.testing)'
 ---
 
@@ -36,7 +36,7 @@ Helm: `helm upgrade platform src/platform/deploy/charts/platform -f overlays/ocp
 | **Real Authorization Code + PKCE login against deployed Keycloak** | **PASS** | Full flow driven by hand (GET auth endpoint → parse real Keycloak login form → POST credentials for a real realm user `marshal-operator` in group `/pyforge:station:marshal` → capture `code` from the 302 redirect → exchange for a token at the real token endpoint). Resulting JWT: `aud: [platform-web, account]`, `groups: [pyforge:station:marshal]`, correctly signed RS256. |
 | **`verify_idp_bearer()` accepts the real bearer** | **PASS (after fix)** | Bundled OIDC profile's JWKS URL used `http://` for its in-cluster Keycloak call; `django_pyforge`'s verifier rejected any non-`https`/`file` scheme, so the bundled profile had never been able to verify anything since its own introduction. Fixed narrowly (PR #1280): `http://` allowed only for a `.svc`/`.svc.cluster.local` host. Confirmed live: `verify_idp_bearer(<real bearer>)` called directly returns the correct `sub`/`roles`. |
 | **Real assertion mint via HTTP (`/assertion/mint/`)** | **PASS (after fix)** | Root cause of the earlier "refused" mystery: `PYFORGE_ASSERTION_PRIVATE_KEY`/`PUBLIC_KEY` were never wired from `existingSecret` into any platform pod's env (documented as consumed, never templated) — `mint_assertion()` raised `AssertionRefusedError`, caught by the same except clause as a genuinely bad bearer, producing an identical `{"error": "refused"}` 401. Fixed: PR #1282. Confirmed live on the chart-native (Helm-tracked) redeploy: a fresh PKCE bearer mints a real signed assertion, HTTP 200. |
-| **Live run appears on `/runs/`, timing survives teardown** | **NOT PROVEN — root cause now identified** | See "What is not claimed." |
+| **Live run appears on `/runs/`, timing survives teardown** | **PASS (after two more fixes)** | Fixed the mcp-host sidecar (never hosted any station's real MCP tools -- landed as `spec-mcp-host-real-station-tools` CAP-1, no longer draft) and a client/server wire-contract mismatch in the publish/heartbeat tools. `HostPublisher.publish()`/`.heartbeat()`/`.complete()` driven from a real workstation-side Python process against the live cluster: `publish_loop_run` returns a real handle, `heartbeat_loop_run` and `complete_loop_run` both succeed, the process exits, and a completely separate `curl` call to `/runs/` afterward shows `<li data-run-id="dbba4820-..." data-duration-ms="1057">marshal 1057ms</li>` under "Completed timing" -- the run's timing, queried from a client that has no relationship to the process that published it. |
 
 ## Findings (not silent notes)
 
@@ -50,7 +50,8 @@ Helm: `helm upgrade platform src/platform/deploy/charts/platform -f overlays/ocp
 8. **Chart's bundled realm has no CLI-loopback-capable client.** `platform-web` (the chart-templated realm's only client) only allows redirect URIs under `.Values.ingress.host` (`platform.internal`), not `http://127.0.0.1:*` — it's shaped for browser-based web login, not `pyforge login --pkce`'s loopback pattern. Created a `pyforge-cli` client by hand via `kcadm.sh` for this exercise (mirroring Story 33.14's own compose-realm client exactly) — not landed as a chart addition. A future story should decide whether this belongs in `keycloak-realm-configmap.yaml` permanently.
 9. **CRC's default resource preset (10.5GB/4 CPU) is now too small for this chart.** The chart has grown substantially since Story 12.7's original install (beat, two consume-events workers, worker-builds, mcp-host, and now Keycloak). Bumped to 24GB/8 CPU for this exercise; not a code change, but worth recording as a fact for the next attempt.
 10. **`PYFORGE_ASSERTION_PRIVATE_KEY`/`PUBLIC_KEY` were never wired into the chart's pod env at all.** `values.yaml` documented them as consumed `existingSecret` keys; no template referenced them. Fixed: PR #1282 (`optional: true` `secretKeyRef` entries in `platform.djangoEnv`, plus a render-through-Helm regression test).
-11. **The mcp-host sidecar has never hosted any station's real MCP tools.** Tracing WHY a real, correctly-signed, correctly-minted assertion still could not publish a run: `POST /stations/marshal/mcp` `publish_loop_run` returned `Unknown tool: publish_loop_run` from the real `mcp` library's own tool manager. `platform.djangoEnv` unconditionally sets `MCP_HOST_SIDECAR_BASE_URL`, so `dispatch_station_mcp` proxies *every* station's MCP call to the sidecar; the sidecar (`mcp_host/app.py`) builds each station's app with a generic one-tool identity stub (`station_face()`), never `django_marshal_portal.mcp_asgi`'s real held-loop tools. Confirmed the web pod's own interpreter still cannot import `mcp.server.mcpserver` (the sidecar is the only place a real per-station app could run) and that no existing spec covers wiring it up (`spec-mcp-era-isolation`'s own slice 2/3 sequence covers unrelated problems). This is genuinely un-specced, cross-station work, not a quick fix — seeded as `docs/dreams/mcp-host-real-station-tools.md` and derived to `spec-mcp-host-real-station-tools` (draft, owner `pyforge-steward`, two open questions) rather than improvised here. **This is the actual, now-precisely-identified blocker for this exercise's one remaining "not proven" item.**
+11. **The mcp-host sidecar had never hosted any station's real MCP tools.** Tracing WHY a real, correctly-signed, correctly-minted assertion still could not publish a run: `POST /stations/marshal/mcp` `publish_loop_run` returned `Unknown tool: publish_loop_run` from the real `mcp` library's own tool manager. `platform.djangoEnv` unconditionally sets `MCP_HOST_SIDECAR_BASE_URL`, so `dispatch_station_mcp` proxies *every* station's MCP call to the sidecar; the sidecar (`mcp_host/app.py`) built each station's app with a generic one-tool identity stub (`station_face()`), never `django_marshal_portal.mcp_asgi`'s real held-loop tools. Confirmed the web pod's own interpreter still cannot import `mcp.server.mcpserver` (the sidecar is the only place a real per-station app could run) and that no existing spec covered wiring it up (`spec-mcp-era-isolation`'s own slice 2/3 sequence covers unrelated problems). Seeded as `docs/dreams/mcp-host-real-station-tools.md`, derived to `spec-mcp-host-real-station-tools`, then **implemented in this same pass** rather than left parked: a minimal Django settings module (`src/platform/mcp_host/settings.py` — `django_pyforge` + `django_marshal_portal` only, no Langflow, no Redis client) plus a new `pixi.toml` `[feature.mcp-host]` dependency set (django, psycopg, django-environ, pyjwt, cryptography); `mcp_host/app.py` now discovers real per-station apps through the SAME `django_pyforge.mcp_http.iter_station_mcp_apps()` seam the web pod uses in-process, falling back to the identity stub for every other station (CAP-2's compatibility guarantee, covered by a mocked-`django.setup()`-failure unit test); the Containerfile copies `django_marshal_portal` in; the chart gained `platform.mcpHostEnv` (`DJANGO_SECRET_KEY`/`DATABASE_URL` required, `PYFORGE_ASSERTION_PUBLIC_KEY` optional) and egress-to-postgres (mcp-host was DNS-only before) plus a postgres-ingress allow entry. Landed: PR #1285.
+12. **`HostPublisher`'s wire shape didn't match the real tool's schema — a second bug the first one had always hidden.** Once finding 11 made `publish_loop_run`/`heartbeat_loop_run` reachable at all, both immediately failed schema validation: `Field required ... payload`. The MCP SDK turns a `**payload: Any` parameter into a REQUIRED, separately-named `payload` field on the generated tool schema, not "arbitrary extra keys allowed" — so the real tool contract is `{"assertion": ..., "payload": {...}}`, a nested object, while `HostPublisher.publish()`/`.heartbeat()` sent the record fields flattened at the top level. This bug could not have been caught before finding 11 shipped, because the tool was never reachable to validate against. Fixed both sides for clarity: the server tools (`django_marshal_portal/mcp_asgi.py`) now declare `payload: dict[str, Any] | None = None` explicitly instead of `**payload: Any`; the client (`publisher_host.py`) nests `_record_to_payload(record)`/`shape_heartbeat(handle)`'s extra content under an explicit `"payload"` key. `complete_loop_run` was already correct (its parameters are named explicitly, no `**kwargs`). Landed: PR #1285 (same PR as finding 11 — one coherent fix, discovered and closed in the same live-verification pass).
 
 ## Contingency ladder (postgres/redis)
 
@@ -68,31 +69,23 @@ image has never had `pgvector` for `pyforge-scribe`'s own migration).
   correctly-signed, correct-claims bearer.
 - `django_pyforge.assertion.identity.verify_idp_bearer()` — called directly with that real bearer —
   correctly verifies it and returns the right subject and `pyforge:station:marshal` role.
-- Five genuine, previously-undiscovered bugs found and fixed, each independently verified via
-  `pixi run -e local-recipes platform-ci-local -- --test` (landed PRs #1278, #1279, #1280, #1282).
+- Seven genuine, previously-undiscovered bugs found and fixed, each independently verified via
+  `pixi run -e local-recipes platform-ci-local -- --test` (landed PRs #1278, #1279, #1280, #1282,
+  #1285) plus the full `pyforge-marshal` unit suite (7,915 passed).
 - A real host assertion minted via HTTP (`/assertion/mint/`) from a real IdP bearer, end to end,
   on the chart-native (Helm-tracked, no ad-hoc patches) redeployed pod.
-- The precise, confirmed root cause of why a minted assertion still cannot publish a run: the
-  mcp-host sidecar never hosts any station's real MCP tools (finding 11) — a genuinely un-specced
-  gap, now captured as its own Dream and draft Spec rather than guessed at or hand-patched live.
+- **A live run, published from a real workstation-side `HostPublisher` process against the deployed
+  cluster, appearing on `/runs/`, with its timing queryable from a completely separate process after
+  the publishing process has exited.** `publish_loop_run` → real handle; `heartbeat_loop_run` →
+  success; `complete_loop_run` → success; the Python process exits; a fresh, unrelated `curl` call
+  to `/runs/` shows the run under "Completed timing" with its real duration. This is CAP-3's own
+  success criterion, met in full.
+- `spec-mcp-host-real-station-tools` CAP-1 and CAP-2 both proven live: marshal's real tools are
+  reachable through the sidecar, and every other station (verified: `atlas`) still gets the
+  identity-stub fallback unchanged.
 
 ## What is not claimed
 
-- **A live bmad-loop run appearing on `/runs/` end-to-end, or timing surviving workstation teardown.**
-  The mint step now works fully (finding 10 fixed it). The publish step does not: `POST
-  /stations/marshal/mcp` `publish_loop_run`, with a real minted assertion, returns `Unknown tool:
-  publish_loop_run` from the real `mcp` library's own tool manager — a real `MCPServer` answers the
-  call but never had the tool registered, because the mcp-host sidecar (the only process that can
-  import `mcp.server.mcpserver` in this deployment) builds a generic one-tool identity stub for
-  every station instead of mounting `django_marshal_portal.mcp_asgi`'s real held-loop tools
-  (finding 11). This is not a bug in anything CAP-3 itself set out to fix — it is a separate,
-  previously-undocumented gap in the already-shipped `spec-mcp-era-isolation` slice 1, now tracked
-  as `docs/dreams/mcp-host-real-station-tools.md` / `spec-mcp-host-real-station-tools` (draft, two
-  open questions: the sidecar's ORM-access shape, and whether CAP-1 should scope to marshal alone
-  first). Closing it is that Spec's job, not a live-cluster patch during a verification exercise.
-- CAP-17's `verified:` line naming this exercise — not updated; the criterion ("a live bmad-loop run
-  ... a completed run's timing queryable after the workstation is gone") is not met by what's proven
-  here.
 - Any chart changes for findings 6-8 (Keycloak Secret key, Keycloak Route, `pyforge-cli` realm
   client) — all three were done by hand on this disposable cluster for the exercise, not landed to
   the tracked chart. A future story should decide which (if any) become permanent chart features.
@@ -114,10 +107,17 @@ oc exec platform-postgres-0 -- curl -m 5 -o /dev/null -w 'HTTP_CODE:%{http_code}
 oc get pods -n platform -o json  # parsed for spec.volumes[].hostPath
 curl -sk https://platform.apps-crc.testing/runs/
 # real Authorization Code + PKCE flow: auth endpoint GET -> Keycloak login form POST -> code exchange -> POST /assertion/mint/
+# real live run, driven from a workstation-side Python process against the deployed cluster:
+#   HostPublisher(base_url="https://platform.apps-crc.testing", bearer_file=...).publish(record)
+#   .heartbeat(handle); .complete(handle, status="succeeded", result={...})
+# then, from a separate process, after the publishing process exited:
+#   curl -sk https://platform.apps-crc.testing/runs/   # -> "Completed timing" lists the run
 ```
 
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes platform-ci-local -- --test` — full PASS (912 passed), covers all four
+- `pixi run -e local-recipes platform-ci-local -- --test` — full PASS (915 passed), covers all
   landed fixes' own regression tests.
+- `pixi run -e pyforge-marshal pyforge-marshal-test` — full PASS (7,915 passed, 1 skipped), covers
+  the `HostPublisher` wire-shape fix (finding 12).
