@@ -220,8 +220,10 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 6.4 -- ported from scripts/story_status_check.py; scope stays
     # "repo" per the original script's own DETECTOR declaration even though
-    # gather_story_status reads host state (~/.bmad-loops) -- preserve, don't
-    # redesign (see the story spec's Design Notes).
+    # gather_story_status reads the published plane FIRST (marshal Story 33.12
+    # re-pointed sources/marshal.py _harness_tasks/gather_story_status) and
+    # falls back to ~/.bmad-loops only when the plane is unreachable -- the
+    # CAP-17 retirement is landed, not merely scheduled.
     SourceRegistration(
         source=Source.CHAIN_COMPLETENESS,
         scope="repo",

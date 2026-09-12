@@ -2,8 +2,8 @@
 title: "Story 49.8: CAP-17 in effect — marshal publishes run state to the supervisor"
 type: story
 created: 2026-09-12
-baseline_revision: 40ec440c1f51c6fb319e6ab2dc2ed2271bb8accc
-status: backlog
+baseline_revision: fce083563b05269cebaaf6a62e726bc7a4b54a5a
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -72,7 +72,12 @@ declared_low_risk: true
 ## Verification
 
 **Commands:**
-- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — expected: the reworded comment is present at line 223
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`
+
+Additional checks (informal, not policy verify commands — kept out of the list above so
+MRS-GATE-011 never refuses on a byte-mismatch, per Story 33.4/33.12's own recovered lesson this
+story itself fell into on its first dispatch attempt):
+- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — expected: the reworded comment is present (line number is cosmetic; the dev session's own review pass found it at 226, not 223 — the comment content is what matters)
 - `python scripts/spec_surface_reconcile.py -core` — expected: clean
 - `pixi run -e pyforge-doctor pyforge-doctor-test` — expected: full suite green (no behavior change, comment-only edit)
 - Manual: start a bmad-loop story, confirm it renders at `/runs/`; let it finish, confirm the completed record and its timing are still queryable after closing the terminal that launched it
@@ -99,8 +104,74 @@ now landed, so this story is no longer blocked and dispatches standalone.
 
 ## Review Triage Log
 
+### 2026-09-12 — Review pass
+- verdicts: 13 findings — high 0, medium 0, low 1, false 8, maybe-false 4
+- findings:
+  - `[false]` `[reject]` Ledger out of sync with spec status — fixed via Tier-3 feed + sprint-ledger-sync; ledger now reads `done`
+  - `[false]` `[reject]` grep verification expects CAP-17 at line 223 — grep finds CAP-17 at line 226; command succeeds, line anchor in spec is cosmetic only
+  - `[low]` `[defer]` Non-Goals still says "All CAP-17 engineering is marshal 33.4's" — pre-existing stale prose; Intent correction block is authoritative
+  - `[false]` `[reject]` Intent Problem still says ledger-blocked — superseded by Spec Change Log correction dated same day
+  - `[false]` `[reject]` Surface claim missing on unifying-strategy memlog — incoming claim recorded at line 209 before 33.12 landed; story Boundaries confirm this satisfies the gate
+  - `[false]` `[reject]` Task 1/4 lack evidence — recorded in Auto Run Result below with command outputs
+  - `[false]` `[reject]` Empty Review Triage Log / Auto Run Result — filled by this pass
+  - `[false]` `[reject]` Spec Change Log baseline_revision stale — frontmatter carries current baseline; no second changelog entry needed for dispatch baseline capture
+  - `[false]` `[reject]` epics.md not updated — Code Map explicitly says "no edit expected"
+  - `[false]` `[reject]` Doctor memlog uses past tense "landed" while in-progress — acceptable completion narrative at closeout; status now `done`
+  - `[maybe-false]` `[defer]` No scoped --write-baseline stamp on memlog entries — comment-only surface touch; spec_surface_reconcile -core passed clean without baseline stamp
+  - `[maybe-false]` `[defer]` Manual /runs/ live verification not in diff — operational check requires deployed namespace; structural coverage verified via existing test_front_door_queries_supervisor.py and marshal meta-tests; residual risk noted in Auto Run Result
+  - `[maybe-false]` `[defer]` Cross-station note on spec-pyforge-core not steward memlog — required co-governance because pyforge-core surface glob covers doctor src/**
+
 ## Design Notes
 
 Steward's Story 49.9 ("Index — marshal realization-gate effect stories") is a separate index row that flips once marshal's Epic 33 lands its effect stories broadly — do not conflate it with this story, which is specifically CAP-17's own joint-landing half.
 
 ## Auto Run Result
+
+Status: done
+
+**Summary:** Steward Story 49.8 joint-landing acceptance for Unifying CAP-17. Reworded doctor `sources/__init__.py:223` comment to document published-plane-first read (marshal 33.12 retirement landed). Appended reconciling memlog lines on `spec-pyforge-doctor` and cross-station note on `spec-pyforge-core`. Confirmed marshal 33.4/33.12 prerequisite artifacts present. Ledger promoted to `done`.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — CAP-17 comment reword (comment-only)
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — reconcile entry + timestamp
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — cross-station surface touch
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — 49.8 → done
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-*.md` — status + run result
+
+**Review:** 0 patches applied; 4 deferred (pre-existing spec prose, manual /runs/ check, baseline stamp convention); 8 rejected as false; 1 low deferred.
+
+**Follow-up review recommended:** false
+
+**Verification performed:**
+- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — PASS (line 226)
+- `python scripts/spec_surface_reconcile.py -core` — PASS (clean after pyforge-core memlog reconcile)
+- `pixi run -e pyforge-doctor pyforge-doctor-test` — PASS (full suite green)
+- Marshal meta-tests `test_publisher_single_importer.py` + `test_no_loop_home_run_state_read.py` — PASS (6 passed)
+- Manual `/runs/` live check — NOT RUN (no deployed namespace in dispatch worktree; structural coverage via existing front-door supervisor tests)
+
+**Residual risks:** Live CAP-17 criterion at a deployed namespace with no operator-home access was not manually exercised in this unattended dispatch; marshal 33.4/33.12 merged artifacts and existing test suite provide structural evidence.
+
+## Recovery Note (2026-09-12)
+
+This story's first dispatch attempt (run `pyforge-steward-20260912T104535976Z-1d86e284`) completed
+all the work described above and passed its own internal review pass (0 patches, 8 rejected/false)
+— but was refused at `MRS-GATE-011` because this file's own original `## Verification`
+**Commands:** list (`grep -n "CAP-17" ...`, `python scripts/spec_surface_reconcile.py -core`,
+`pixi run -e pyforge-doctor pyforge-doctor-test`) never matched `marshal-policy.toml`'s actual
+declared `verify_commands` for pyforge-steward (`pixi run --frozen -e pyforge-steward
+pyforge-steward-test`). This was my own authoring bug from when I originally wrote this spec,
+carried through unnoticed until dispatch — the same mistake class Story 33.4 hit and Story 33.12's
+spec was written correctly against, but I never re-checked this earlier-authored file against it.
+Fixed by correcting the Verification section (moving the original three checks to an informal
+"Additional checks" list, matching the recovered pattern) and re-verifying independently. Also
+reverted one unrelated, incorrect edit the dev session's own tooling made to
+`sprint-status-ledger.yaml`'s header comment (`# stories: 324`, counting all `development_status`
+keys including epic rollups instead of stories alone — the real count is 222, confirmed by parsing
+the file directly); the `epic-51: in-progress` → `done` rollup fix in the same diff was verified
+correct (all three Epic 51 stories are independently `done`) and kept.
+
+**Verification (this recovery):**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 1210 passed
+- `pixi run -e pyforge-doctor pyforge-doctor-test` — 1626 passed, 1 skipped
+- `python scripts/spec_surface_reconcile.py -core` — clean
+- `grep -n "CAP-17" src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py` — present at line 226
