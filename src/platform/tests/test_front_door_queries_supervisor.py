@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import time
+import urllib.request
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
@@ -91,6 +92,59 @@ def test_run_from_other_connection_is_visible_on_runs(client) -> None:
     body = client.get("/runs/").content.decode()
     assert str(run.id) in body
     assert 'data-board="current"' in body
+
+
+@pytest.mark.django_db(transaction=True)
+def test_completed_run_timing_survives_fresh_db_connection(client) -> None:
+    run = RunState.objects.create(
+        station="marshal",
+        status=RunState.Status.RUNNING,
+        started_at=timezone.now() - timedelta(seconds=3),
+    )
+    complete_run(str(run.id), status=RunState.Status.SUCCEEDED, result={"ok": True})
+
+    connection.close()
+    replica = connections.create_connection("default")
+    try:
+        runs_table = replica.ops.quote_name("run_state")
+        with replica.cursor() as cursor:
+            cursor.execute(
+                f"SELECT completed_at, duration_ms FROM {runs_table} WHERE id = %s",  # noqa: S608
+                [str(run.id)],
+            )
+            row = cursor.fetchone()
+        assert row is not None
+        completed_at, duration_ms = row
+        assert completed_at is not None
+        assert duration_ms is not None
+    finally:
+        replica.close()
+
+    body = client.get("/runs/").content.decode()
+    run.refresh_from_db()
+    assert str(run.id) in body
+    assert run.completed_at is not None
+    assert run.duration_ms is not None
+    assert f'data-duration-ms="{run.duration_ms}"' in body
+
+
+@pytest.mark.django_db
+def test_runs_render_makes_no_socket_egress(monkeypatch, client) -> None:
+    RunState.objects.create(
+        station="atlas",
+        status=RunState.Status.RUNNING,
+        started_at=timezone.now(),
+        heartbeat_at=timezone.now(),
+    )
+
+    def _blocked(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("egress during /runs/ render")
+
+    monkeypatch.setattr("socket.create_connection", _blocked)
+    monkeypatch.setattr("urllib.request.urlopen", _blocked)
+    response = client.get("/runs/")
+    assert response.status_code == HTTPStatus.OK
+    assert 'data-board="current"' in response.content.decode()
 
 
 @pytest.mark.django_db
