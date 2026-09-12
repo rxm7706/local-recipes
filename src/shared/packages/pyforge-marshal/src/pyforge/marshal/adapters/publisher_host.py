@@ -231,13 +231,19 @@ class HostPublisher:
             return None, f"MCP transport failed: {exc}"
         return _parse_jsonrpc_response(raw)
 
+    def _tool_arguments(self, arguments: Mapping[str, object]) -> dict[str, object]:
+        payload = dict(arguments)
+        if self._assertion and "assertion" not in payload:
+            payload["assertion"] = self._assertion
+        return payload
+
     def _call_tool(
         self,
         operation: str,
         tool_name: str,
         arguments: Mapping[str, object],
     ) -> object | None:
-        result, error = self._post_mcp(tool_name, arguments)
+        result, error = self._post_mcp(tool_name, self._tool_arguments(arguments))
         if error is not None:
             self._report(operation, error)
             return None

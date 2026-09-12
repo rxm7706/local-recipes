@@ -15,6 +15,10 @@
     {
       "name": "platform-superuser",
       "path": "/platform-superuser"
+    },
+    {
+      "name": "pyforge:station:marshal",
+      "path": "/pyforge:station:marshal"
     }
   ],
   "clients": [

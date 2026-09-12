@@ -73,6 +73,14 @@ PERSONAS: Final[tuple[Persona, ...]] = (
         name="Editor Persona",
         groups=(DESIGNATED_WAGTAIL_ADMIN,),
     ),
+    Persona(
+        key="marshal-operator",
+        subject="local-dev:persona:marshal-operator",
+        username="marshal-operator",
+        email="marshal-operator@localhost.invalid",
+        name="Marshal Operator",
+        groups=("pyforge:station:marshal",),
+    ),
 )
 
 _BY_KEY: Final[dict[str, Persona]] = {persona.key: persona for persona in PERSONAS}

@@ -975,22 +975,24 @@ def sweep_lost_runs(
     }
     if not stale:
         return report
-    try:
-        held = live_task_ids(inspector)
-    except InspectUnavailableError as exc:
-        logger.exception(
-            "supervisor.sweep_inspect_unavailable",
-            extra={
-                "event": "supervisor.sweep_inspect_unavailable",
-                "stale": len(stale),
-                "error": str(exc),
-            },
-        )
-        report["error"] = str(exc)
-        return report
-    report["inspected"] = True
     held_only = [item for item in stale if not item[0]["celery_task_id"]]
     celery_stale = [item for item in stale if item[0]["celery_task_id"]]
+    held: frozenset[str] = frozenset()
+    if celery_stale:
+        try:
+            held = live_task_ids(inspector)
+        except InspectUnavailableError as exc:
+            logger.exception(
+                "supervisor.sweep_inspect_unavailable",
+                extra={
+                    "event": "supervisor.sweep_inspect_unavailable",
+                    "stale": len(stale),
+                    "error": str(exc),
+                },
+            )
+            report["error"] = str(exc)
+            return report
+        report["inspected"] = True
     for row, limit, last_seen in held_only:
         run_id = str(row["id"])
         idle = int((moment - last_seen).total_seconds())
