@@ -565,6 +565,19 @@ files must not join as a glob.
 **And** `backlog` rows, a missing ledger, and folder `SPEC.md` are not this surface
 **And** a missing tree is zero nodes and no warning
 
+## Epic 11: Recall withholds what landed after last night's compile
+
+**Spec binding.** `spec-scribe-recall-stale-between-nightlies` CAP-1
+(hoisted parked CAP-9). Compile-time stale (Story 8.4) is unchanged.
+
+### Story 11.1: Recall withholds sources committed after compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-2.4 • **FR/AD:** `spec-scribe-recall-stale-between-nightlies` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py`, `compile.py`, `recall.py`
+**Given** a compiled flat-file store **When** a cited source file is committed after `compiled_at` **Then** `answer()` skips that node
+**And** reloading `graph.json` still exposes `compiled_at`
+**And** commit/transcript nodes stay eligible
+**And** a store with no `compiled_at` uses only the stored `stale` bit
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

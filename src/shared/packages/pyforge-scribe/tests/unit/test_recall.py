@@ -4,12 +4,16 @@
 
 from __future__ import annotations
 
+import os
 import socket
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
+from pyforge.scribe.capture import capture
+from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import GraphNode
 from pyforge.scribe.recall import _answer_semantic, answer
@@ -604,3 +608,68 @@ def test_unscoped_recall_still_sees_every_fact_ledger(repo_with_fact_ledgers: Pa
     )
     assert result.grounded is True
     assert result.citation == "presentations/pyforge-warden/facts.yaml"
+
+
+def test_recall_withholds_source_committed_after_compiled_at(tmp_path: Path) -> None:
+    memory_root = tmp_path / ".claude" / "memory"
+    memory_root.mkdir(parents=True)
+    (memory_root / "MEMORY.md").write_text(
+        "# Team Memory Index\n\n## Feedback\n\n## Project\n\n## Reference\n",
+        encoding="utf-8",
+    )
+    capture(
+        memory_root,
+        "project",
+        "We dropped Kuzu because it was archived upstream after an acquisition.",
+        slug="kuzu-drop",
+    )
+
+    def _git(*args: str, env: dict[str, str] | None = None) -> None:
+        merged = os.environ.copy()
+        if env:
+            merged.update(env)
+        subprocess.run(
+            ["git", *args],
+            cwd=str(tmp_path),
+            check=True,
+            capture_output=True,
+            text=True,
+            env=merged,
+        )
+
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    first = {
+        "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+        "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+    }
+    _git("add", "-A", env=first)
+    _git("commit", "-q", "-m", "capture", env=first)
+
+    store_path = tmp_path / "graph.json"
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=tmp_path / "no-transcripts",
+        compiled_at=datetime(2026, 1, 2, tzinfo=timezone.utc),
+    )
+
+    reloaded = FlatFileGraphStore(store_path)
+    assert reloaded.compiled_at == datetime(2026, 1, 2, tzinfo=timezone.utc)
+    before = answer("why did we drop Kuzu", reloaded, repo_root=tmp_path)
+    assert before.grounded is True
+
+    cited = next(n for n in reloaded.iter_nodes() if n.id == "memory:project/kuzu-drop")
+    source = tmp_path / cited.citation
+    source.write_text(source.read_text(encoding="utf-8") + "\n# noon landing\n", encoding="utf-8")
+    later = {
+        "GIT_AUTHOR_DATE": "2026-01-03T00:00:00+00:00",
+        "GIT_COMMITTER_DATE": "2026-01-03T00:00:00+00:00",
+    }
+    _git("add", "-A", env=later)
+    _git("commit", "-q", "-m", "after compile", env=later)
+
+    after = answer("why did we drop Kuzu", FlatFileGraphStore(store_path), repo_root=tmp_path)
+    assert after.grounded is False

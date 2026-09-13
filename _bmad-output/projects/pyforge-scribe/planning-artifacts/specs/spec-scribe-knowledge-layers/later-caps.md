@@ -21,7 +21,7 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 | **CAP-6** | Compile **in-flight story specs.** Hoisted 2026-09-13 to `spec-scribe-in-flight-story-specs` CAP-1 / Story 10.1 (ledger filter, not frontmatter). | Was parked so the session would not lose it. | Session agents asking about the story they are on |
 | **CAP-7** | **Pointer or extract** nodes for Brief / PRD / Architecture / `epics.md`: title + path + status, or FR/AD/spine list only. Never the wholesale body. | Documents stay SoT; Marshal already forbids `*prd*`/`*epic*` wholesale loads. A pointer does not recreate CAP-6’s token failure. | “Where is the PRD?” without serving 46k tokens |
 | **CAP-8** | Explicit **graphify target list** (`src/platform/`, `scripts/` in addition to `src/shared/packages/`). Still not `recipes/` or repo root. | Cost + Story 8.2 currency must stay green first. Needs a target-list CAP, not a bigger hardcoded default. | Code map of host + factory scripts |
-| **CAP-9** | Persist **`compiled_at` on the store** and recompute stale **at recall time** so a day-old `graph.json` withholds sources committed after that compile. | CAP-1 only fixes full-rebuild false positives. Between 02:30 runs the stored `stale` bit stays false. | Marshal CAP-13 meaning between nightlies |
+| **CAP-9** | Persist **`compiled_at`.** Hoisted 2026-09-13 to `spec-scribe-recall-stale-between-nightlies` CAP-1 / Story 11.1. | Was parked so the session would not lose it. | Marshal CAP-13 meaning between nightlies |
 | **CAP-10** | **Fact ledgers visible to Marshal retrieve.** Hoisted 2026-09-13 to `spec-scribe-marshal-fact-visibility` CAP-1 / Story 9.1 (identity citation rule). | Was parked here so the session would not lose it. | Decks and dispatch citing the same numbers |
 | **CAP-11** | First-class recall **modes** (`planning` / `memory` / `code`), not only `--kind`. | `--kind` is enough for CAP-4. Modes are the PyForge wiring shape. | Portal + agents without inventing argv |
 | **CAP-12** | **Portal / harness wiring** (django-scribe, `.cursor/rules` if needed) calls kind-filtered recall. CAP-5 is `AGENTS.md` only. | Inherit CLI defaults first; do not redesign the portal. | “Wiring this into PyForge” |
@@ -30,6 +30,6 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 
 ## Recorded, not scheduled
 
-CAP-10 is Story 9.1. CAP-6 is Story 10.1
-(`spec-scribe-in-flight-story-specs`). No story is minted here for
-CAP-7–CAP-9 or CAP-11–CAP-14.
+CAP-10 is Story 9.1. CAP-6 is Story 10.1. CAP-9 is Story 11.1
+(`spec-scribe-recall-stale-between-nightlies`). No story is minted
+here for CAP-7–CAP-8 or CAP-11–CAP-14.

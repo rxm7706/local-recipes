@@ -223,6 +223,8 @@ def compile_graph(
         warnings: list[str] = []
         compile_started = compiled_at or datetime.now(timezone.utc)
         store.reset()
+        if hasattr(store, "compiled_at"):
+            store.compiled_at = compile_started
 
         memory_nodes = _read_memory_surface(memory_root, repo_root, warnings)
         for node in memory_nodes:
@@ -973,6 +975,21 @@ def _apply_staleness(
             store.upsert_node(node.model_copy(update={"stale": True}))
             flagged += 1
     return flagged
+
+
+def source_committed_after(
+    repo_root: Path, node: GraphNode, compiled_at: datetime
+) -> bool:
+    """True when this node's git-trackable source has a commit after
+    `compiled_at` (Story 11.1). Missing git or no history is False."""
+    relpath = _staleness_source_path(node)
+    if relpath is None:
+        return False
+    git_bin = shutil.which("git")
+    if git_bin is None:
+        return False
+    latest = _git_latest_commit_time(repo_root, relpath, git_bin)
+    return latest is not None and latest > compiled_at
 
 
 def _git_latest_commit_time(repo_root: Path, relpath: str, git_bin: str) -> datetime | None:
