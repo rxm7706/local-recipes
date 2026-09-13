@@ -36,6 +36,7 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E10** | Moment 4 — operations notices | 6 | 6 |
 | **E11** | Integration testing & automation reliability | 4 | 4 |
 | **E12** | Documentation & operator experience | 4 | 4 |
+| **E20** | The deck family stays current (spec-deck-family-currency) | 14 | 14 |
 | **Total** | | **47** | **47** |
 
 

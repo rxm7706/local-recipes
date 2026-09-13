@@ -2,10 +2,11 @@
 title: The deck family stays current — infographics re-derived from the ledgers, not remembered
 type: dream
 owner: herald
-status: specified   # 2026-09-13 — spec-deck-family-currency is `ready` (CAP-1..5, open_questions []),
-                    # derived the same day the Dream was seeded by operator direction (Dream-first,
-                    # gap-closure included). Every fact below was measured this date against disk, the
-                    # tracked ledgers and the Design projects (DesignSync list_files / get_file).
+status: realized    # 2026-09-13 — Epic 20 closed 14/14 the day the Dream was seeded. The standard
+                    # exists, all ten PyForge posters meet it, 833 marked facts resolve to tracked
+                    # rows, the Design mirror reads back byte-identical 10/10, `herald deck status`
+                    # reports the family linked, and CAP-6 repaired the first real decay on its
+                    # first use. Realized on effect, not on ledger rows — see the Realization log.
 ---
 
 # The deck family stays current — infographics re-derived from the ledgers, not remembered
@@ -137,4 +138,13 @@ density and visual-form reference) · [[pyforge-charter]] (the Genesis deck this
   without hand edits, so `deck-facts --refresh` (Story 20.14) rewrites stale marked literals from
   the ledger. The Unifying Strategy Design project now exists (`1e4020bc`, seeded with the
   family). Wave B (20.11 genesis, 20.12 the Canopy) in flight; 20.13 and the closeout follow.
-
+- **2026-09-13 (closeout)** — **Realized.** Epic 20 closed 14/14 in twelve PRs. The standard has one
+  home and floors that can be checked; every PyForge poster meets them (112,847–295,083 B, six acts
+  each, 21–33 sections, 4–26 inline diagrams); 833 facts across the ten carry a `data-fact` mark over
+  a tracked `facts.yaml` row and every deck reports `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced`;
+  each poster was pushed to its Design project and **read back byte-identical, 10 of 10**; and
+  `herald deck status` reports the ten linked where it reported none this morning. The decay this
+  Dream named turned out to be faster than expected — a poster goes stale on its own merge — so CAP-6
+  was minted mid-epic and its first sweep refreshed 96 stale literals across nine posters in one
+  pass. Deliberately left: the trio lockstep, the four chain decks, and Design-side polish. Retro:
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/retros/retro-epic-20-2026-09-13.md`.
