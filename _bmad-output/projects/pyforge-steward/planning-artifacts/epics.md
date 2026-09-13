@@ -3386,9 +3386,8 @@ the opt-in marshal VS Code surface. Does not flip any Epic 44 `blocked` key.
 
 ### Story 52.1: Module-template is authoring-only and mybmad is an isolated sidecar never the console
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle
-CAP-1 (register rows 11 and 13); 2026-09-13 memlog superseding the 2026-09-06
-skip pair
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-suite-scaffold-and-mybmad-sidecar
+CAP-1..3; spec-bmad-suite-lifecycle CAP-1 (register rows 11 and 13)
 **Note:** Wielded path is consume, not isolate. Same `DATABASE_URL` host as
 the platform (self-hosted or Epic 51 BYO), `?schema=mybmad`. Same
 `COMPONENT_OIDC_*` / Keycloak issuer. Forbidden: second cluster as the

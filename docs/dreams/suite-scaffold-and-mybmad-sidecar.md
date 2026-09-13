@@ -2,7 +2,7 @@
 title: Module-template stays an authoring tool; mybmad joins as a sidecar, never the console
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # Module-template stays an authoring tool; mybmad joins as a sidecar, never the console
