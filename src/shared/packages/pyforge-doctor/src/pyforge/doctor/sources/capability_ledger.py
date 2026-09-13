@@ -28,12 +28,25 @@ __all__ = (
     "extract_caps",
     "gather",
     "iter_live_specs",
+    "load_case_list_ids",
+    "parse_case_list_ids",
 )
 
 _CHECK = "capability-ledger"
 _LIVE_STATUSES = frozenset({"ready", "in-progress"})
 _LEDGER = Path("docs") / "foundry" / "capability-ledger.yaml"
 _SPEC_GLOB = "_bmad-output/projects/*/planning-artifacts/specs/*/SPEC.md"
+_CASE_LIST = (
+    Path("_bmad-output")
+    / "projects"
+    / "pyforge-steward"
+    / "planning-artifacts"
+    / "specs"
+    / "spec-foundry-regenerate-not-fold"
+    / "case-list.md"
+)
+_CASE_ID_RE = re.compile(r"^\|\s*(k-[a-z0-9-]+)\s*\|", re.MULTILINE)
+_FRAME_CLAIM_RE = re.compile(r"(?:docs/foundry/frames/|\.frame\.md)", re.IGNORECASE)
 
 # Story 55.2 AC-1: fixture Why text the extract must drop.
 UNIQUE_WHY_FIXTURE_SENTENCE = (
@@ -173,6 +186,41 @@ def _row_matches(row: dict, extracted: CapExtract) -> bool:
     return rspec == extracted.spec and rid.endswith(f":CAP-{extracted.cap_n}")
 
 
+def parse_case_list_ids(text: str) -> frozenset[str]:
+    """54.1 case-list ids — first column of the thin-oracle table."""
+    return frozenset(_CASE_ID_RE.findall(text))
+
+
+def load_case_list_ids(target: Path) -> frozenset[str]:
+    path = target / _CASE_LIST
+    if not path.is_file():
+        return frozenset()
+    return parse_case_list_ids(path.read_text(encoding="utf-8", errors="replace"))
+
+
+def _claim_verified(row: dict) -> bool:
+    state = str(row.get("state") or "").strip()
+    if state == "verified-in-foundry":
+        return True
+    flag = row.get("verified_in_foundry")
+    if flag is True:
+        return True
+    if isinstance(flag, str) and flag.strip():
+        return True
+    return False
+
+
+def _claim_case_id(row: dict) -> str:
+    for key in ("case_id", "case-list", "case_list_id"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    flag = row.get("verified_in_foundry")
+    if isinstance(flag, str) and flag.strip():
+        return flag.strip()
+    return ""
+
+
 def _added_after_pin(target: Path, pin_sha: str) -> set[str]:
     if not pin_sha:
         return set()
@@ -219,6 +267,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     added = _added_after_pin(target, pin)
     extracted = iter_live_specs(target)
     findings: list[Finding] = []
+    case_ids = load_case_list_ids(target)
 
     for row in rows:
         if not isinstance(row, dict):
@@ -232,6 +281,28 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                     {"kind": "undated-a-only", "id": row.get("id")},
                 )
             )
+        if _claim_verified(row):
+            case_id = _claim_case_id(row)
+            if not case_id:
+                findings.append(
+                    _finding(
+                        DoctorStatus.FAIL,
+                        f"{row.get('id')}: verified-in-foundry without a case-list id",
+                        {"kind": "verified-missing-case", "id": row.get("id")},
+                    )
+                )
+            elif _FRAME_CLAIM_RE.search(case_id) or case_id not in case_ids:
+                findings.append(
+                    _finding(
+                        DoctorStatus.FAIL,
+                        f"{row.get('id')}: verified-in-foundry {case_id!r} is not a 54.1 case-list id",
+                        {
+                            "kind": "verified-unknown-case",
+                            "id": row.get("id"),
+                            "case_id": case_id,
+                        },
+                    )
+                )
 
     classified_paths: set[str] = set()
     for row in rows:
