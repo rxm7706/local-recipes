@@ -8,7 +8,7 @@ history, retros, CHANGELOGs (PRD Open Question 2, resolved here),
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
 as a compile source in Story 3.2), and Herald deck fact ledgers
 (`presentations/<slug>/facts.yaml`, Story 8.3), in-flight story specs
-(Story 10.1) -- and writes one `GraphNode`
+(Story 10.1), planning pointers (Story 13.1) -- and writes one `GraphNode`
 per source item through the `GraphStore` port (Story 2.1), never a specific
 storage engine's client library directly (AD-5).
 
@@ -151,6 +151,17 @@ _EXCLUDED_DIR_NAMES = frozenset(
 
 _DEFAULT_MAX_COMMITS = 100
 _MAX_DOC_TEXT_CHARS = 20_000  # bound lexical-scan/serialization cost per node
+#: Pointer nodes (Story 13.1) never carry the source body. Keep the
+#: extract well under the general doc bound so a PRD cannot sneak in
+#: through truncation.
+_MAX_POINTER_TEXT_CHARS = 4_000
+_MAX_POINTER_IDS = 60
+_MAX_POINTER_HEADINGS = 40
+_FR_TOKEN_RE = re.compile(r"\bFR-\d+\b")
+_AD_TOKEN_RE = re.compile(r"\bAD-\d+\b")
+_POINTER_HEADING_RE = re.compile(
+    r"^#{1,3}\s+(?P<label>(?:Epic\s+\d+|Story\s+\d+\.\d+)\b.*)$"
+)
 
 
 class CompileInProgressError(PyforgeError, RuntimeError):
@@ -249,6 +260,9 @@ def compile_graph(
             store.upsert_node(node)
 
         for node in _read_story_spec_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_planning_pointer_surface(repo_root):
             store.upsert_node(node)
 
         for node in _read_git_surface(repo_root, max_commits, warnings):
@@ -570,6 +584,119 @@ def _read_story_spec_surface(repo_root: Path) -> list[GraphNode]:
                 continue
             nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
     return nodes
+
+
+def _read_planning_pointer_surface(repo_root: Path) -> list[GraphNode]:
+    """Named Brief / PRD / Architecture-spine / ``epics.md`` pointers
+    (Story 13.1). Documents stay SoT as files; the graph stores title,
+    path, status, and an FR/AD/heading extract — never the body."""
+    projects = repo_root / "_bmad-output" / "projects"
+    if not projects.is_dir():
+        return []
+    nodes: list[GraphNode] = []
+    for project_dir in sorted(p for p in projects.iterdir() if p.is_dir()):
+        planning = project_dir / "planning-artifacts"
+        if not planning.is_dir():
+            continue
+        for path, role in _planning_pointer_candidates(planning):
+            if _is_excluded(path.relative_to(repo_root).parts):
+                continue
+            nodes.append(_node_from_planning_pointer(path, role=role, repo_root=repo_root))
+    return nodes
+
+
+def _planning_pointer_candidates(planning: Path) -> list[tuple[Path, str]]:
+    """Named globs only — not a walk of ``planning-artifacts/``."""
+    found: list[tuple[Path, str]] = []
+    seen: set[Path] = set()
+
+    def _add(path: Path, role: str) -> None:
+        resolved = path.resolve()
+        if resolved in seen or not path.is_file():
+            return
+        seen.add(resolved)
+        found.append((path, role))
+
+    for name, role in (
+        ("epics.md", "epics"),
+        ("prd.md", "prd"),
+        ("PRD.md", "prd"),
+        ("architecture.md", "architecture"),
+    ):
+        _add(planning / name, role)
+    for path in sorted(planning.glob("prds/*/prd.md")):
+        _add(path, "prd")
+    for path in sorted(planning.glob("briefs/*/brief.md")):
+        _add(path, "brief")
+    for path in sorted(planning.glob("architecture/*/ARCHITECTURE-SPINE.md")):
+        _add(path, "architecture")
+    return found
+
+
+def _unique_tokens(text: str, pattern: re.Pattern[str], *, limit: int) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for match in pattern.finditer(text):
+        token = match.group(0)
+        if token in seen:
+            continue
+        seen.add(token)
+        out.append(token)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _pointer_headings(text: str) -> list[str]:
+    headings: list[str] = []
+    for line in text.splitlines():
+        match = _POINTER_HEADING_RE.match(line.strip())
+        if match is None:
+            continue
+        headings.append(match.group("label").strip()[:120])
+        if len(headings) >= _MAX_POINTER_HEADINGS:
+            break
+    return headings
+
+
+def _node_from_planning_pointer(
+    path: Path, *, role: str, repo_root: Path
+) -> GraphNode:
+    relpath = path.relative_to(repo_root).as_posix()
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    status = _frontmatter_status(raw) or "-"
+    title = next(
+        (line.strip("# ").strip() for line in raw.splitlines() if line.startswith("#")),
+        f"pointer:{role}:{relpath}",
+    )
+    ids = _unique_tokens(raw, _FR_TOKEN_RE, limit=_MAX_POINTER_IDS)
+    remaining = _MAX_POINTER_IDS - len(ids)
+    if remaining:
+        ids.extend(_unique_tokens(raw, _AD_TOKEN_RE, limit=remaining))
+    headings = _pointer_headings(raw)
+    lines = [
+        f"pointer:{role}",
+        f"path:{relpath}",
+        f"status:{status}",
+        f"title:{title}",
+    ]
+    if ids:
+        lines.append("ids: " + " ".join(ids))
+    if headings:
+        lines.append("headings:")
+        lines.extend(f"- {item}" for item in headings)
+    text = "\n".join(lines)
+    if len(text) > _MAX_POINTER_TEXT_CHARS:
+        text = text[:_MAX_POINTER_TEXT_CHARS]
+    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    return GraphNode(
+        id=f"doc:{relpath}",
+        kind="doc",
+        title=title or relpath,
+        text=text,
+        citation=relpath,
+        valid_from=mtime,
+    )
 
 
 def _is_excluded(parts: tuple[str, ...]) -> bool:

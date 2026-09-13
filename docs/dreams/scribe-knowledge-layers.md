@@ -72,3 +72,6 @@ fleet truth.
 - **2026-09-13** — Parked CAP-12 hoisted to Dream
   `scribe-portal-recall-defaults` / Spec
   `spec-scribe-portal-recall-defaults` (Story 12.1).
+- **2026-09-13** — Parked CAP-7 hoisted to Dream
+  `scribe-planning-pointers` / Spec
+  `spec-scribe-planning-pointers` (Story 13.1).

@@ -1646,3 +1646,120 @@ def test_missing_ledger_adds_no_story_spec_nodes_or_warning(
 
     assert not any("spec-10-1-in-flight" in n.citation for n in store.iter_nodes())
     assert not any("story spec" in w.lower() for w in result.warnings)
+
+
+def test_planning_pointers_extract_ids_and_omit_wholesale_body(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    planning = (
+        tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
+    )
+    prd = planning / "prds" / "prd-demo" / "prd.md"
+    brief = planning / "briefs" / "brief-demo" / "brief.md"
+    spine = planning / "architecture" / "architecture-demo" / "ARCHITECTURE-SPINE.md"
+    epics = planning / "epics.md"
+    prd.parent.mkdir(parents=True)
+    brief.parent.mkdir(parents=True)
+    spine.parent.mkdir(parents=True)
+    marker = "WHOLESALEBODYMARKERUNIQUE"
+    prd.write_text(
+        "---\nstatus: final\n---\n# PRD: demo\n\n"
+        f"{marker} " + ("lorem " * 4000) + "\n\nFR-1 and later FR-2.\n",
+        encoding="utf-8",
+    )
+    brief.write_text(
+        "---\nstatus: complete\n---\n# Product Brief: demo\n\nintro only\n",
+        encoding="utf-8",
+    )
+    spine.write_text(
+        "---\nstatus: final\n---\n# Architecture Spine\n\nAD-1 holds. AD-2 follows.\n",
+        encoding="utf-8",
+    )
+    epics.write_text(
+        "---\nstatus: canonical\n---\n# demo epics\n\n"
+        "## Epic 1: First slice\n\n### Story 1.1: Land it\n\nlong story body\n",
+        encoding="utf-8",
+    )
+    (planning / "epics-deckcraft.md").write_text(
+        "# Chain epics novel\n" + marker + "\n", encoding="utf-8"
+    )
+    (planning / "architecture-cf-atlas.md").write_text(
+        "# Architecture novel\nAD-99\n", encoding="utf-8"
+    )
+    (planning / "prds" / "prd-demo" / "addendum.md").write_text(
+        "# Addendum\nFR-99\n", encoding="utf-8"
+    )
+    (planning / "research").mkdir()
+    (planning / "research" / "note.md").write_text("# Research\nFR-88\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    pointers = {
+        n.citation: n
+        for n in store.iter_nodes()
+        if n.kind == "doc" and n.citation.startswith("_bmad-output/projects/demo/")
+    }
+    prd_cite = "_bmad-output/projects/demo/planning-artifacts/prds/prd-demo/prd.md"
+    assert prd_cite in pointers
+    assert marker not in pointers[prd_cite].text
+    assert "FR-1" in pointers[prd_cite].text
+    assert "FR-2" in pointers[prd_cite].text
+    assert "pointer:prd" in pointers[prd_cite].text
+    assert pointers[prd_cite].text.startswith("pointer:")
+    assert "status:final" in pointers[prd_cite].text
+    assert len(pointers[prd_cite].text) <= 4_000
+
+    brief_cite = (
+        "_bmad-output/projects/demo/planning-artifacts/briefs/brief-demo/brief.md"
+    )
+    assert brief_cite in pointers
+    assert "pointer:brief" in pointers[brief_cite].text
+    assert "status:complete" in pointers[brief_cite].text
+
+    spine_cite = (
+        "_bmad-output/projects/demo/planning-artifacts/architecture/"
+        "architecture-demo/ARCHITECTURE-SPINE.md"
+    )
+    assert spine_cite in pointers
+    assert "AD-1" in pointers[spine_cite].text
+    assert "pointer:architecture" in pointers[spine_cite].text
+
+    epics_cite = "_bmad-output/projects/demo/planning-artifacts/epics.md"
+    assert epics_cite in pointers
+    assert "Epic 1: First slice" in pointers[epics_cite].text
+    assert "Story 1.1: Land it" in pointers[epics_cite].text
+    assert "long story body" not in pointers[epics_cite].text
+
+    citations = set(pointers)
+    assert not any("epics-deckcraft" in c for c in citations)
+    assert not any("architecture-cf-atlas" in c for c in citations)
+    assert not any("addendum.md" in c for c in citations)
+    assert not any("/research/" in c for c in citations)
+    assert not any("planning pointer" in w.lower() for w in result.warnings)
+
+
+def test_missing_planning_tree_adds_no_pointer_nodes_or_warning(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+    assert not any(
+        "planning-artifacts/epics.md" in n.citation
+        or "ARCHITECTURE-SPINE" in n.citation
+        or "/prd.md" in n.citation
+        for n in store.iter_nodes()
+    )
+    assert not any("pointer" in w.lower() and "planning" in w.lower() for w in result.warnings)

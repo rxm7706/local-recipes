@@ -5,6 +5,7 @@ written alongside Stories 2.1/2.2; this file proves the full contract.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -111,12 +112,14 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
     store_path = tmp_path / "graph.json"
     no_transcripts = tmp_path / "no-transcripts"
+    pinned = datetime(2026, 9, 13, tzinfo=timezone.utc)
 
     compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     first_bytes = store_path.read_bytes()
 
@@ -125,6 +128,7 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     second_bytes = store_path.read_bytes()
 
