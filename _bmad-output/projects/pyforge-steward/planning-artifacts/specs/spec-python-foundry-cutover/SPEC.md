@@ -59,11 +59,14 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     archive. No Containerfile `COPY` of package source. Host boot is not a Launch success
     criterion. `apply --phase 1a` is not the realization path.
 
-- **CAP-3 — CFE comes home (Phase 2).**
-  - **intent:** The authoritative conda-forge-expert skill, scripts and tools
-    resolve from `skills/domain/conda-forge-expert` in foundry, and retros land there.
-  - **success:** No `MASON_CFE_ROOT` (flag, env, or cwd walk) resolves to
-    `local-recipes`; `mason-cfe-surface-check` and `cfe-rebuild-guard-check` pass.
+- **CAP-3 — CFE on foundry (Phase 2).**
+  - **intent:** Foundry gains conda-forge-expert by **rebuild from Specs**, using
+    `local-recipes` as the legacy oracle — not a cell move of
+    `.claude/skills/conda-forge-expert`.
+  - **success:** A foundry-born CFE (when that Story runs) matches the rebuilt
+    Spec and the archived suite; until then factory island may resolve CFE on
+    `local-recipes`. Story 44.6 (file-move the cell) is parked. Do not require
+    `MASON_CFE_ROOT` to stop pointing at local-recipes for Launch.
 
 - **CAP-4 — Factory island (Phase 3).**
   - **intent:** Recipe work runs from `factory/` with its own `pixi.toml` and lock
@@ -195,7 +198,7 @@ and `mason recipe build factory/recipes/<r>` builds a recipe there with the
 publish path a SelfExplainML upload — not an agent-opened conda-forge PR
 (operator 2026-09-13 D2). Host boot is not a Launch signal. Two git roots stay
 live; archive (CAP-7 / 44.10) is out. Launch stories: 44.3 / 44.7 / 44.12 done;
-Epic 54 kernel; 44.4 / 44.5 parked file-move. Later: 44.6, 44.8, 44.14, 44.15.
+Epic 54 kernel; 44.4 / 44.5 / 44.6 parked file-move. Later: CFE rebuild-from-spec, 44.8, 44.14, 44.15.
 Out: 44.9, 44.10, 44.11.
 
 ## Assumptions

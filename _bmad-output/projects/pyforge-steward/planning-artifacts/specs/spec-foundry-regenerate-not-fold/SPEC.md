@@ -78,6 +78,7 @@ regenerated from contracts; local-recipes stays the invention root.
 - conda-forge / staged-recipes / feedstock PRs (44.9).
 - Copying the recipe universe (44.8) or archiving local-recipes (44.10).
 - Waiting for a complete 44.14 oracle before the kernel exists.
+- Moving the CFE cell (44.6). Foundry CFE is rebuilt from Specs; local-recipes is the oracle.
 
 ## Success signal
 

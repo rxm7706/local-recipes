@@ -2655,6 +2655,7 @@ So that no `MASON_CFE_ROOT` resolves to `local-recipes` and retros land in the l
 **Given** `pyforge/mason/resolve.py`'s chain (flag → `MASON_CFE_ROOT` → cwd walk) **When** it runs in a foundry checkout **Then** the whole CFE cell (skill, `scripts/`, `tools/conda_forge_server.py`, the 76 `pixi.toml` references) lives under `skills/domain/conda-forge-expert/`, `_CFE_MARKER` and both detectors' path literals are rewritten, `MASON_CFE_ROOT` resolves there as a repo root, recipe build / submit / update are `pixi run --manifest-path factory/pixi.toml` subprocesses, and `mason-cfe-surface-check` + `cfe-rebuild-guard-check` pass **with the foundry epoch as their range floor** (a zero-commit range is exit 2, never clean)
 **And** the story invokes `conda-forge-expert` and closes with a Rule-2 CFE retro
 **And** — reciprocal note, not a `Deps:` token: **mason Story 15.1 (close the CFE rebuild campaign; delete-on-cutover) must land BEFORE this story moves the CFE cell to `skills/domain/`.** The rebuild Spec's surface and slice map are written against `.claude/skills/conda-forge-expert/**`; moving the cell first leaves that Spec pointing at a path that no longer exists and makes this story intractable (fleet readiness 2026-09-09, mason-E2 / § 2.3 C2)
+**Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch as a cell move. Foundry CFE is rebuilt from Specs; local-recipes is the oracle. Ledger stays `backlog`.
 **Status:** backlog
 
 ### Story 44.7: The factory island

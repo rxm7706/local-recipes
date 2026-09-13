@@ -82,11 +82,12 @@ core/steward/marshal tests as the gate.
 - Do not flip `cutover_root` in this Dream’s first epic.
 - Do not flip 44.9, 44.10, or archive local-recipes.
 - Do not copy the recipe universe (44.8).
+- Do not move the CFE cell (44.6). Rebuild from Specs; local-recipes is the oracle.
 - Full 44.14 oracle later; thin slice now.
 
 ## Realization log
 
 - **2026-09-13** — Dreamt and specified the same day. Operator accepted
   regenerate-not-fold, A + thin oracle, CLI+MCP Launch. Epic 54 mints the
-  kernel Stories. 44.4 / 44.5 parked as file-move. Ledger keys stay
-  `backlog`; they are not dispatched.
+  kernel Stories. 44.4 / 44.5 / 44.6 parked as file-move. Ledger keys stay
+  `backlog`; they are not dispatched. CFE is rebuild-from-spec, not cargo.

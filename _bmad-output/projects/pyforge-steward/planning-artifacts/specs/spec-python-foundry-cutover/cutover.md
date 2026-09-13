@@ -23,7 +23,7 @@ The plan has two layers. The **capability ledger** has one row per capability (f
 | Capability area | Mode | Why |
 |---|---|---|
 | `pyforge-core` dispatch, hooks, station port | rebuild | 2026-09-13 regenerate-not-fold; Epic 54 / `fnd:CAP-11`; do not fold |
-| CFE cell (`conda-forge-expert` skill, scripts, MCP server) | move | origin craft, irreplaceable tests; placement → `skills/domain/` (44.6 later) |
+| CFE cell (`conda-forge-expert` skill, scripts, MCP server) | rebuild | operator 2026-09-13: not a 44.6 move; Specs + local-recipes as oracle |
 | Atlas pipelines and the query plane | later | Kedro data; not Launch |
 | Steward, Marshal engines | rebuild | kernel first; thin archived-test oracle; CLI + MCP |
 | Warden, Herald engines | rebuild | after kernel; Warden when foundry PRs need an in-repo verdict |
