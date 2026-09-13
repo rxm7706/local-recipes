@@ -35,7 +35,7 @@ platforms = [
 [feature.python.dependencies]
 python = ">=3.14.7,3.14.*"        # Python language interpreter
 pixi = ">=0.80.0"                 # Pixi package & environment manager
-gh = ">=2.100.0"                   # GitHub CLI for PR / issue / repo automation
+gh = ">=2.100.0"                  # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.62"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 bmad-method = ">=6.12.0"          # BMAD agent-driven dev framework (planning + dev skills)
@@ -220,9 +220,9 @@ elevenlabs = ">=1.52.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs
 # whole fix; psycopg 3 supports SQLAlchemy's async engine natively.
 # Floor 3.2 is the PostgreSQL 17 / libpq 17 line (encrypted cancel, chunked
 # results); conda-forge current is 3.3.x.
-psycopg = ">=3.2.10"
+psycopg = ">=3.2.10"              #
 httpx = ">=0.28.1"                # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
-boto3 = ">=1.43.0"                # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client -- same client construction works against Story 50.2's local Silo/Garage or real StorageGRID; no consumer wired in yet
+boto3 = ">=1.43.91"               # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client -- same client construction works against Story 50.2's local Silo/Garage or real StorageGRID; no consumer wired in yet
 dlt = ">=1.30.0"                  # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 48.11 (warden-B7 / fleet readiness C7): django_warden_fabric/tasks.py lazy-imports pyforge.warden.cli — platform image must ship the engine it calls
@@ -235,50 +235,50 @@ wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on t
 # on conda-forge. Provider must stay 0.5.0 (protobuf 6.x): 0.5.2 needs
 # protobuf 7 and cannot solve with langflow's a2a-sdk (protobuf <7).
 # FILE provider / flags.json is Story 26.4.
-openfeature-sdk = ">=0.10.0"
-openfeature-flagd-api = ">=1.0.0"
-openfeature-flagd-core = ">=1.0.0"
-openfeature-provider-flagd = ">=0.5.0,<0.5.1"
-cachebox = ">=5.2.3,<6"
+openfeature-sdk = ">=0.10.0"      #
+openfeature-flagd-api = ">=1.0.0"  #
+openfeature-flagd-core = ">=1.0.0"  #
+openfeature-provider-flagd = ">=0.5.0,<0.5.1"  #
+cachebox = ">=5.2.3,<6"           #
 # Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
 # image consumes. Do not author recipes — liquibase 5.0.4 and
 # liquibase-postgresql 42.7.13 (vendored JDBC) are on SelfExplainML.
 # Helm Job / DML role is Story 27.2.
-liquibase = ">=5.0.4"
-liquibase-postgresql = ">=42.7.13"
+liquibase = ">=5.0.4"             #
+liquibase-postgresql = ">=42.7.13"  #
 # Host extras formerly pip / pypi-dependencies (spec-platform-image-one-pixi-env).
 # All of these have conda-forge feedstocks; overlap with Langflow fails at lock.
 # Not folded: mcp-types / httpx2 (would pull mcp 2.x; FastMCP 3.x still mcp<2).
 # django-allauth MFA extras are conda run-deps listed here (fido2, qrcode).
 # whitenoise: cookiecutter 6.9.0 was never on conda-forge (6.7 → 6.11).
-python-slugify = ">=8.0.4"
+python-slugify = ">=9.0.0"        #
 rcssmin = ">=1.2.2"               # django-compressor CSS filter; the former `build = "py312*"` pin (3.12 era) locked a cp312 build into this 3.14 env, so it never imported
-whitenoise = ">=6.12.0"
-hiredis = ">=3.4.1"
-django-celery-beat = ">=2.8.1"
-django-environ = ">=0.14.0"
-django-model-utils = ">=5.0.0"
-django-allauth = ">=65.19.2"
-django-crispy-forms = ">=2.6"
-crispy-bootstrap5 = ">=2026.9"
-django-compressor = ">=4.6.0"
-django-redis = ">=7.0.0"
-django-anymail = ">=15.2"
-django-structlog = ">=10.1.0"
-django-ipware = ">=7.0.1"
-python-ipware = ">=3.0.0"
-opentelemetry-instrumentation-django = ">=0.65b0"
-opentelemetry-instrumentation-wsgi = ">=0.65b0"
-opentelemetry-instrumentation-celery = ">=0.65b0"
-django-timezone-field = ">=7.2.2"
-python-crontab = ">=3.4.0"
-cron-descriptor = ">=2.1.0"
-django-appconf = ">=1.2.0"
+whitenoise = ">=6.12.0"           #
+hiredis = ">=3.4.1"               #
+django-celery-beat = ">=2.8.1"    #
+django-environ = ">=0.14.0"       #
+django-model-utils = ">=5.0.0"    #
+django-allauth = ">=65.19.2"      #
+django-crispy-forms = ">=2.6"     #
+crispy-bootstrap5 = ">=2026.9"    #
+django-compressor = ">=4.6.0"     #
+django-redis = ">=7.0.0"          #
+django-anymail = ">=15.2"         #
+django-structlog = ">=10.1.0"     #
+django-ipware = ">=7.0.1"         #
+python-ipware = ">=3.0.0"         #
+opentelemetry-instrumentation-django = ">=0.65b0"  #
+opentelemetry-instrumentation-wsgi = ">=0.65b0"  #
+opentelemetry-instrumentation-celery = ">=0.65b0"  #
+django-timezone-field = ">=7.2.2"  #
+python-crontab = ">=3.4.0"        #
+cron-descriptor = ">=2.1.0"       #
+django-appconf = ">=1.2.0"        #
 rjsmin = ">=1.2.5"                # django-compressor JS filter; same dead cp312 pin -- `manage.py compress` in the image died "rjsmin.jsmin couldn't be imported" (Platform CI, 2026-09-04)
-text-unidecode = ">=1.3"
-fido2 = ">=2.2.1"
-qrcode = ">=8.2"
-uvicorn-worker = ">=0.4.0"
+text-unidecode = ">=1.3"          #
+fido2 = ">=2.2.1"                 #
+qrcode = ">=8.2"                  #
+uvicorn-worker = ">=0.4.0"        #
 
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
@@ -307,7 +307,7 @@ channels = ">=4.3.2,<5.0"         # Story 48.6: host `/ws/events/` delegates to 
 daphne = ">=4.2.3,<5.0"           # Story 48.6: ASGI websocket termination for the dashboard extra face
 asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels load-bearing adapter (matches pyforge-steward `[dashboard]` extra)
 channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer backend when the dashboard relay is exercised locally
-kubernetes-helm = ">=4.2.4"       # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
+kubernetes-helm = ">=4.3.0"       # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
 kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 
 [feature.dbgpt-sidecar]
@@ -353,21 +353,21 @@ psycopg2 = ">=2.9.12"  # matches python-agent-platform (PostgreSQL 17 / psycopg2
 platforms = ["linux-64"]
 
 [feature.mcp-host.dependencies]
-python = "3.14.*"
-mcp = ">=2.1.1"
-mcp-types = ">=2.1.1"
-uvicorn = ">=0.52.4"
-starlette = ">=1.6.0"
+python = "3.14.*"                 #
+mcp = ">=2.2.0"                   #
+mcp-types = ">=2.2.0"             #
+uvicorn = ">=0.52.4"              #
+starlette = ">=1.6.0"             #
 # spec-mcp-host-real-station-tools: a station's real in-process MCP app
 # (e.g. django_marshal_portal.mcp_asgi) needs Django's ORM against the SAME
 # shared Postgres the web pod uses -- no Langflow, no Redis client (the
 # functions this sidecar calls never touch django.core.cache or the event
 # broker; both degrade to a silent no-op when unconfigured, by design).
-django = ">=5.1,<6"          # matches django-pyforge's own pin
-psycopg = ">=3.2.10"         # Django sync driver against the shared Postgres
-pyjwt = ">=2.10.1,<3"        # django-pyforge's own dependency (assertion verify)
-cryptography = ">=50.0.1"    # django-pyforge's own dependency; python 3.14-compatible build (matches other python-3.14 envs in this file -- the <45 pin django-pyforge itself carries targets an older python)
-django-environ = ">=0.14.0"  # DATABASE_URL -> DATABASES via env.db(), matches the web image's own parsing
+django = ">=5.2.17,<6"            # matches django-pyforge's own pin
+psycopg = ">=3.3.4"               # Django sync driver against the shared Postgres
+pyjwt = ">=2.13.0,<3"             # django-pyforge's own dependency (assertion verify)
+cryptography = ">=50.0.1"         # django-pyforge's own dependency; python 3.14-compatible build (matches other python-3.14 envs in this file -- the <45 pin django-pyforge itself carries targets an older python)
+django-environ = ">=0.14.0"       # DATABASE_URL -> DATABASES via env.db(), matches the web image's own parsing
 
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---
@@ -385,93 +385,93 @@ pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host i
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # herald Epic 19.1: station_api mounts webhook_host on the herald v1 seam
 python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
-python-slugify = ">=8.0.4"
-pillow = ">=12.3.0"
-rcssmin = ">=1.2.2"
-argon2-cffi = ">=25.1.0"
-whitenoise = ">=6.12.0"
+python-slugify = ">=9.0.0"        #
+pillow = ">=12.3.0"               #
+rcssmin = ">=1.2.2"               #
+argon2-cffi = ">=25.1.0"          #
+whitenoise = ">=6.12.0"           #
 redis-py = ">=8.1.0"              # PyPI name `redis`; imports as `redis`
-hiredis = ">=3.4.1"
-celery = ">=5.6.3"
-django-celery-beat = ">=2.9.0"
-uvicorn = ">=0.52.4"
+hiredis = ">=3.4.1"               #
+celery = ">=5.6.3"                #
+django-celery-beat = ">=2.9.0"    #
+uvicorn = ">=0.52.4"              #
 httptools = ">=0.8.0"             # uvicorn[standard]
 uvloop = ">=0.22.1"               # uvicorn[standard]
 websockets = ">=17.1"             # uvicorn[standard]
-uvicorn-worker = ">=0.4.0"
-fastapi = ">=0.141.1"
-django-health-check = ">=4.5.1"
+uvicorn-worker = ">=0.4.0"        #
+fastapi = ">=0.141.1"             #
+django-health-check = ">=4.5.1"   #
 django = ">=5.2.17,<6"            # steward 20.1: wagtail 7.4.3 requires django>=5.2 (was 5.1.11)
-django-environ = ">=0.14.0"
-django-model-utils = ">=5.0.0"
-django-allauth = ">=65.19.2"
+django-environ = ">=0.14.0"       #
+django-model-utils = ">=5.0.0"    #
+django-allauth = ">=65.19.2"      #
 fido2 = ">=2.2.1"                 # django-allauth[mfa]
 qrcode = ">=8.2"                  # django-allauth[mfa]
-django-crispy-forms = ">=2.6"
-crispy-bootstrap5 = ">=2026.9"
-django-compressor = ">=4.6.0"
-django-redis = ">=7.0.0"
+django-crispy-forms = ">=2.6"     #
+crispy-bootstrap5 = ">=2026.9"    #
+django-compressor = ">=4.6.0"     #
+django-redis = ">=7.0.0"          #
 # formerly requirements/production.txt (now pixi-owned)
-gunicorn = ">=26.2.0"
-django-anymail = ">=15.2"
+gunicorn = ">=26.2.0"             #
+django-anymail = ">=15.2"         #
 # formerly requirements/local.txt (now pixi-owned)
-werkzeug = ">=3.1.8"
+werkzeug = ">=3.1.8"              #
 watchdog = ">=6.0.0"              # werkzeug[watchdog]
-ipdb = ">=0.13.13"
+ipdb = ">=0.13.13"                #
 psycopg = ">=3.3.4"               # psycopg 3; 3.2+ for PostgreSQL 17 / libpq 17. Conda ships the C extension (PyPI extra [binary]).
-watchfiles = ">=1.2.0"
-mypy = ">=2.3.1"
+watchfiles = ">=1.2.0"            #
+mypy = ">=2.3.1"                  #
 django-stubs = ">=6.1.0"          # compatible-mypy extra is mypy, already pinned
-pytest = ">=9.1.1"
-pytest-sugar = ">=1.1.1"
-sphinx = ">=9.1.0"
-sphinx-autobuild = ">=2025.8.25"
-ruff = ">=0.16.6"
-coverage = ">=7.16.0"
-djlint = ">=1.46.1"
-pre-commit = ">=4.6.2"
-import-linter = ">=2.15"
-httpx = ">=0.28.1"
+pytest = ">=9.1.1"                #
+pytest-sugar = ">=1.1.1"          #
+sphinx = ">=9.1.0"                #
+sphinx-autobuild = ">=2025.8.25"  #
+ruff = ">=0.16.7"                 #
+coverage = ">=7.16.0"             #
+djlint = ">=1.46.1"               #
+pre-commit = ">=4.6.2"            #
+import-linter = ">=2.15"          #
+httpx = ">=0.28.1"                #
 factory_boy = ">=3.3.3"           # conda-forge name; 3.3.2 was PyPI-only
-django-debug-toolbar = ">=8.0.0"
-django-extensions = ">=4.1"
-django_coverage_plugin = ">=3.2.2"
-pytest-django = ">=4.13.0"
+django-debug-toolbar = ">=8.0.0"  #
+django-extensions = ">=4.1"       #
+django_coverage_plugin = ">=3.2.2"  #
+pytest-django = ">=4.13.0"        #
 # CAP-1 / steward 16.5 — local JWT minting for OIDC mapper tests
-pyjwt = ">=2.13.0"
-cryptography = ">=50.0.1"
+pyjwt = ">=2.13.0"                #
+cryptography = ">=50.0.1"         #
 # CAP-2 / steward 16.3 — structlog + OTel (django-15-factor-base pattern)
-structlog = ">=26.1.0"
-django-structlog = ">=10.1.0"
-django-ipware = ">=7.0.1"
-python-ipware = ">=3.0.0"
-opentelemetry-api = ">=1.44.0"
-opentelemetry-sdk = ">=1.44.0"
-opentelemetry-exporter-otlp-proto-http = ">=1.44.0"
-opentelemetry-instrumentation-django = ">=0.65b0"
-opentelemetry-instrumentation-asgi = ">=0.65b0"
-opentelemetry-instrumentation-wsgi = ">=0.65b0"
-opentelemetry-instrumentation-celery = ">=0.65b0"
-opentelemetry-instrumentation-psycopg = ">=0.65b0"
-opentelemetry-instrumentation-redis = ">=0.65b0"
-prometheus_client = ">=0.22.1"
+structlog = ">=26.1.0"            #
+django-structlog = ">=10.1.0"     #
+django-ipware = ">=7.0.1"         #
+python-ipware = ">=3.0.0"         #
+opentelemetry-api = ">=1.44.0"    #
+opentelemetry-sdk = ">=1.44.0"    #
+opentelemetry-exporter-otlp-proto-http = ">=1.44.0"  #
+opentelemetry-instrumentation-django = ">=0.65b0"  #
+opentelemetry-instrumentation-asgi = ">=0.65b0"  #
+opentelemetry-instrumentation-wsgi = ">=0.65b0"  #
+opentelemetry-instrumentation-celery = ">=0.65b0"  #
+opentelemetry-instrumentation-psycopg = ">=0.65b0"  #
+opentelemetry-instrumentation-redis = ">=0.65b0"  #
+prometheus_client = ">=0.26.0"    #
 # steward 20.1 / canopy AD-13: Lane 1 CMS (pytest must import wagtail)
 wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host # Pin to LTS version for Django
 # steward 21.2 / canopy AD-5: official MCP SDK 2.x (dual-era). This env has no
 # fastmcp, so unlike [feature.local-recipes] it can take mcp 2.0.0.
-mcp = ">=2.1.1"
-mcp-types = ">=2.1.1"
-httpx2 = ">=2.12.0"
-sse-starlette = ">=3.4.11"
-python-multipart = ">=0.0.32"
+mcp = ">=2.2.0"                   #
+mcp-types = ">=2.2.0"             #
+httpx2 = ">=2.12.0"               #
+sse-starlette = ">=3.4.11"        #
+python-multipart = ">=0.0.32"     #
 # steward 26.4 / FR-34 — FILE provider for Platform CI pytest (image gets
 # these from python-agent-platform conda; do not loosen the 0.5.0 pin).
 # OpenFeature packages are SelfExplainML-only.
-openfeature-sdk = ">=0.10.0"
-openfeature-flagd-api = ">=1.0.0"
-openfeature-flagd-core = ">=1.0.0"
-openfeature-provider-flagd = ">=0.5.2"
-cachebox = ">=5.2.3,<6"
+openfeature-sdk = ">=0.10.0"      # Standardizing Feature Flagging for Everyone
+openfeature-flagd-api = ">=1.0.0"  # OpenFeature flagd evaluator API definition
+openfeature-flagd-core = ">=1.0.0"  # OpenFeature flagd evaluator core implementation
+openfeature-provider-flagd = ">=0.5.2"  # OpenFeature provider for the flagd flag evaluation engine
+cachebox = ">=5.2.3,<6"           # The fastest caching Python library written in Rust
 channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests import pyforge.steward.dashboard
 daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)
 asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels adapter layer
@@ -494,12 +494,13 @@ pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/conftest.py + tests/meta/*.py (test-time only; not a package run-dep)
 pyyaml = ">=6.0.3"                # PyYAML -- Story 4.4's engines/condalock.py::check() metadata.content_hash parser (also a package run-dep; mirrors [feature.pyforge-doctor.dependencies]'s identical line)
 truststore = ">=0.10.4"           # Story 16.1: CFE_IMPORT_FLOOR (`cfe.py`) -- mirrors [feature.python.dependencies]'s identical floor (OS trust store for corporate CA / JFrog TLS)
-conda-forge-metadata = ">=2026.9.5"  # Story 16.1: CFE_IMPORT_FLOOR (`cfe.py`) -- mirrors [feature.vuln-db.dependencies]'s identical floor
+conda-forge-metadata = ">=2026.9.10"  # Story 16.1: CFE_IMPORT_FLOOR (`cfe.py`) -- mirrors [feature.vuln-db.dependencies]'s identical floor
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 rattler-build = ">=0.76.0"        # Story 16.2: the build engine `native-build.sh` (CFE's own script, invoked by `recipe.py::build()` via `bash`) shells out to bare `rattler-build` on PATH -- mason's own env must carry it for `mason recipe build` to actually run, not just for `mason doctor` to report the verb available (mirrors [feature.local-recipes.dependencies]'s identical pin).
+packaging = ">=26.3"              # spec-library-catalog-manifest-sync CAP-1: mirrors this station's own pixi.toml [package.run-dependencies] pin; engines/pep517.py + package.py + engines/__init__.py's own run-dep, undocumented in root pixi.toml until 2026-09-12
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."
@@ -637,6 +638,11 @@ python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 19.3 / FR-131: coverage JSON for named-module gates
 import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
+# spec-library-catalog-manifest-sync CAP-1: mirror this station's own pixi.toml
+# [package.run-dependencies] pins, undocumented in root pixi.toml until 2026-09-12.
+packaging = ">=26.3"              # seed/engine/copier.py, seed/detect/referenced_deps.py
+jsonschema = ">=4.26.0"           # seed/state/store.py
+psutil = ">=7.2.2"                # process introspection
 
 [feature.pyforge-marshal.target.linux-64.dependencies]
 # tmux: bmad-loop's session multiplexer backend for `marshal factory spin`
@@ -647,10 +653,12 @@ import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contrac
 # package that spin had been relying on. linux-64/osx-arm64 only, same
 # shape as pyforge-atlas's duckdb-server scoping above: conda-forge doesn't
 # ship tmux for win-64.
-tmux = ">=3.4"
+tmux = ">=3.7c_"                  # tmux is a terminal multiplexer. It lets you switch easily between several programs in one terminal, detach them (they keep running in the background) and reattach them to a different terminal.
+#psmux = ">=3.3.8"                 # The Native tmux for Windows. Built in Rust. Zero WSL. Full tmux compatibility.
 
 [feature.pyforge-marshal.target.osx-arm64.dependencies]
-tmux = ">=3.4"
+tmux = ">=3.7c_"                  # tmux is a terminal multiplexer. It lets you switch easily between several programs in one terminal, detach them (they keep running in the background) and reattach them to a different terminal.
+#psmux = ">=3.3.8"                 # The Native tmux for Windows. Built in Rust. Zero WSL. Full tmux compatibility.
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
 description = "Build the pyforge-marshal conda package via pixi-build-python. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
@@ -772,7 +780,7 @@ cmd = "python -m pytest tests/scripts -q"
 # where pixi cannot be set up.
 [feature.detectors.dependencies]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg; its run-deps bring python, jsonschema, pyyaml, mcp, pyforge-core
-"ruamel.yaml" = ">=0.19.1"       # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
+"ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
 playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -> cannot-measure, never a false green)
 
 [environments]
@@ -1533,7 +1541,7 @@ platforms = ["linux-64", "osx-arm64-min", "win-64"]
 
 [feature.vuln-db.dependencies]
 python = "3.14.*"                 # Python language interpreter
-conda-forge-metadata = ">=2026.9.5"  # so --deep also works in this env
+conda-forge-metadata = ">=2026.9.10"  # so --deep also works in this env
 pyarrow = ">=25.0.0"              # Phase F S3 parquet reads when build-cf-atlas runs from vuln-db
 apsw = ">=3.53.4.0"               # SQLite bindings for Python (vdb backend)
 appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
@@ -1644,10 +1652,10 @@ setuptools-scm = ">=10.2.3"       # Version metadata from VCS tags
 hatchling = ">=1.32.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.6.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=7.0.0"                 # PyPI artifact uploader
-uv = ">=0.12.10"                   # Fast Rust-based Python package installer / resolver
+uv = ">=0.12.13"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.48.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=12.4.0"                # Fast disk-efficient Node package manager
+pnpm = ">=12.4.1"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
@@ -1705,8 +1713,8 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #caveman = "*"                     # moved to [feature.local-recipes.target.linux-64.dependencies] 2026-08-30 (SelfExplainML build is linux-64-only, like codegraph)
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
 headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
-cocoindex = ">=1.0.21"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.56"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+cocoindex = ">=1.0.22"            # Incremental engine for long horizon agents
+graphifyy = ">=0.9.58"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ppt-master = ">=5.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
 pptxgenjs = ">=4.0.1"             # JavaScript library for creating PowerPoint presentations (used by ppt-master)
 pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.node >=24). NODE_PATH=$CONDA_PREFIX/lib/node_modules
@@ -1715,9 +1723,9 @@ pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.no
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
 #pyarrow = ">=13.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=24.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.21"             # The data orchestration platform built for productivity.
-dagster-pipes = ">=1.13.21"       # Toolkit for Dagster integrations with transform logic outside of Dagster
-dagster-webserver = ">=1.13.21"   # Web UI for dagster.
+dagster = ">=1.13.22"             # The data orchestration platform built for productivity.
+dagster-pipes = ">=1.13.22"       # Toolkit for Dagster integrations with transform logic outside of Dagster
+dagster-webserver = ">=1.13.22"   # Web UI for dagster.
 dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 # --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
 # dbt trio: UNBLOCKED 2026-08-30. Was blocked by a `click` conflict inside THIS
@@ -1741,14 +1749,14 @@ dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
 # now ships linux-64, linux-aarch64, osx-64, osx-arm64 and win-64. Platform is no
 # longer the issue; the py314 gap is.
 #dlt = ">=1.28.1"                  # dlt is an open-source python-first scalable data loading library that does not require any backend to run.
-great-expectations = ">=1.22.0"   # GE data contracts in Kedro nodes
+great-expectations = ">=1.23.0"   # GE data contracts in Kedro nodes
 pandera = ">=0.32.1"              # Statistical data validation for Pandas, Dask, and Spark
 duckdb = ">=1.5.5"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
 gql = ">=4.0.0"                   # GraphQL client (v4.0.0+ has no websockets dependency)
 ibis-framework = ">=12.0.0"       # The portable Python dataframe library
 boring-semantic-layer = ">=0.2.0" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis. SelfExplainML (conda-forge tops out at 0.2.0).
-kedro = ">=1.5.0"                 # Kedro helps you build production-ready data and analytics pipelines.
+kedro = ">=1.6.0"                 # Kedro helps you build production-ready data and analytics pipelines.
 kedro-mcp = ">=0.1.2"             # An MCP (Model Context Protocol) server that helps AI assistants (such as VS Code Copilot or Cursor) work consistently with Kedro projects. No conda-forge fastmcp build works with mcp >=2.0 (3.x hard-requires mcp<2.0; 2.14.3 has no upper bound but is runtime-broken against mcp 2.x -- ImportError: cannot import name 'McpError') and kedro-org/kedro discussion #5387 confirms MCP support stays out of Kedro core indefinitely, so recipes/kedro-mcp carries a local source patch replacing its `fastmcp` import with the official `mcp` SDK's `mcp.server.mcpserver.MCPServer` (built + SelfExplainML-published 2026-08-29). The patched package's own run: no longer needs fastmcp; it's kept below as a forward-looking placeholder only.
 kedro-skills = ">=0.1.1"          # Distribute AI coding skills to Kedro projects.
 kedro-dagster = ">=0.8.0"         # Kedro-Dagster makes it easy to deploy Kedro projects to Dagster # TODO PY314 conda-forge compat check;
@@ -1756,7 +1764,7 @@ kedro-datasets = ">=9.6.0"        # Kedro-Datasets is where you can find all of 
 graphviz = ">=14.1.2"             # Graph layout engine (the `dot` binary) — drives the kedro-viz prototype's regenerate-kedro-viz-proto DAG-image (SVG) emitter
 python-graphviz = ">=0.21"        # Python interface to graphviz (imports as `graphviz`) — used by the prototype's DAG-image generator
 numpy = ">=2.5.3"                 # Numerical computing
-polars = ">=1.44.1"               # Rust-backed columnar DataFrame library
+polars = ">=1.44.2"               # Rust-backed columnar DataFrame library
 tablib = ">=3.10.0"               # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
 # Category 8: Visualization & Dashboards
@@ -1777,11 +1785,11 @@ vizro-e2e-flow = ">=0.1.7"        # Claude Code plugin: 6 skills, 2-phase Vizro 
 #django-pygwalker = ">=0.0.9,<1"   # Needs Update, only supports django 4.2
 ## Document processing & Deckcraft additions (markitdown + charts + ML for local image gen + LLM backends + Python bindings)
 # mark                            # Interact with LLMs using markdown and images
-accelerate = ">=1.14.0"           # Hugging Face accelerate (distributed/training helpers)
+accelerate = ">=1.15.0"           # Hugging Face accelerate (distributed/training helpers)
 d2 = ">=0.7.1"                    # Terrastruct D2 diagram-as-code compiler
 defusedxml = ">=0.7.1"            # XXE-resistant safe XML parser
 hf-transfer = ">=0.1.9"           # 3x faster GGUF/safetensors downloads at first-run model fetch (cross-platform)
-lxml = ">=6.1.2"                  # Fast XML / HTML parser (libxml2 bindings)
+lxml = ">=6.1.3"                  # Fast XML / HTML parser (libxml2 bindings)
 mammoth = ">=1.12.1"              # Focused .docx → Markdown converter (used in markitdown's Word loader)
 markitdown = ">=0.1.7"            # Microsoft's document → Markdown converter
 marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering. conda-forge's marp-cli-feedstock tops out here (nodejs 22/24 builds only). 4.5.0 built locally against nodejs 26.6.0 and published to SelfExplainML (recipes/marp-cli) -- NOT adopted as this env's floor yet: nodejs 26 forces libabseil >=20260526.0, which conflicts with a2a-sdk's protobuf (max libabseil epoch ~20260107 across its whole build matrix). Bump once that ecosystem gap closes.
@@ -1810,7 +1818,7 @@ plotly = ">=7.0.0"                # Interactive web-based plotting library
 poppler = ">=26.9.0"              # PDF rendering library (pdf2image backend)
 pydub = ">=0.25.1"                # Audio processing library for Python (used in speechrecognition for audio manipulation)
 pymupdf = ">=1.28.0"              # MuPDF Python bindings — fast PDF text/layout extraction
-pypdf = ">=6.18.0"                # Pure-Python PDF reader / writer / splitter
+pypdf = ">=6.18.1"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
@@ -1830,10 +1838,20 @@ ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
 ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
 ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 #pydantic = ">=2.13.4"             # type-hint-driven data validation
-ruff = ">=0.16.6"                 # fast Rust-based Python linter + formatter
-pyright = ">=1.1.411"             # Microsoft's static type checker for Python
+ruff = ">=0.16.7"                 # fast Rust-based Python linter + formatter
+pyright = ">=1.1.414"             # Microsoft's static type checker for Python
 mypy = ">=2.3.1"                  # static type checker for Python
-pyrefly = ">=1.2.0"               # Meta's fast Rust-based Python type checker
+pyrefly = ">=1.3.0"               # Meta's fast Rust-based Python type checker
+# spec-library-catalog-manifest-sync CAP-1: station mirrors -- each already a direct
+# run-dep of the named station's own src/shared/packages/pyforge-<station>/pixi.toml
+# [package.run-dependencies] (undocumented in root pixi.toml until 2026-09-12).
+packaging = ">=26.3"              # pyforge-marshal (seed/detect/referenced_deps.py), pyforge-mason (engines/pep517.py), pyforge-warden (hygiene.py, engines.py, extract/*.py)
+jsonschema = ">=4.26.0"           # pyforge-doctor (__main__.py), pyforge-marshal (seed/state/store.py), pyforge-warden (report.py)
+psutil = ">=7.2.2"                # pyforge-marshal process introspection
+attrs = ">=26.1.0"                # pyforge-atlas (observability.py)
+packageurl-python = ">=0.17.6"    # pyforge-warden SBOM/purl parsing (sbom.py, sources.py, eligibility_sbom.py); imports as `packageurl`
+license-expression = ">=30.4.4"   # pyforge-warden SPDX license-expression parsing (license.py); imports as `license_expression`
+filelock = ">=3.32.0"             # pyforge-atlas (duckdb_writer.py, admission.py); found via CAP-2's own new station-manifest scan -- a CAP-1 scoping miss (conflated with the separate marshal/scribe filelock *adoption* question in pyforge-unifying-strategy's Estate leverage table, which this is not)
 pytest = ">=9.1.1"                # Python test framework
 pytest-mock = ">=3.15.1"          # pytest fixture wrapper around `unittest.mock`
 pytest-cov = ">=7.1.0"            # coverage.py plugin for pytest
@@ -1843,9 +1861,9 @@ playwright = ">=1.63.0"           # Node binary for browser automation (CLI)
 #aichat = ">=0.30.0"
 agno = ">=2.6.22"                 # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
 a2a-sdk = ">=1.1.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
-google-genai = ">=2.22.0"         # Google GenAI API client library
+google-genai = ">=2.23.0"         # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.75.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.76.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=2.0.0"               # FastAPI-style implementation of the A2A protocol
@@ -1863,7 +1881,7 @@ langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 #langflow = ">=1.10.3"             # LangChain visual workflow builder,   name: bcrypt > "5.0.0", #setuptools = ">=81.0.0", #rich = ">=14.3.4"
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=2.1.1"                   # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
+mcp = ">=2.2.0"                   # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
 ollama = ">=0.32.15"              # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=2.42.0"          # Pydantic-AI agent framework
 "llama.cpp" = ">=10751"           # llama.cpp local LLM inference engine
@@ -1930,7 +1948,7 @@ mlx = ">=0.32.0"                  # Apple's array framework (Linux build via lib
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 bmad-module-skill-forge = ">=2.1.0"  # Skill Forge npx-wrapper CLI (the skf module itself installs into _bmad via bmad-method). linux-64 only here: the SelfExplainML build is linux-64 (spec-bmad-suite-channel-product — the suite's one pixi-installability gap, closed 2026-08-22)
-ocrmypdf = ">=17.11.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
+ocrmypdf = ">=17.11.0"            # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
 pixitainer = ">=0.8.3"            # Containerize your Pixi workspace with a single command. linux-64 only here:
@@ -2007,7 +2025,7 @@ channels = ["conda-forge", "SelfExplainML"]
 
 [feature.bmad-suite-full.dependencies]
 python = ">=3.14.7,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
-bmad-suite = ">=2026.9.5"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
+bmad-suite = ">=2026.9.9"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
 
 [feature.local-recipes.pypi-dependencies]
 #crewai = ">=1.14.7"               # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
@@ -2018,7 +2036,7 @@ python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.80.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.2.1"                  # Python package installer
-uv = ">=0.12.10"                   # fast Rust-based Python package installer / resolver
+uv = ">=0.12.13"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
@@ -2134,9 +2152,15 @@ hatchling = ">=1.32.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
-py-rattler = ">=0.25.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep
+py-rattler = ">=0.26.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep
 py-rattler-build = ">=0.72.2"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
 conda-build = ">=25.3.1"          # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
+# spec-library-catalog-manifest-sync CAP-1: mirror this station's own pixi.toml
+# [package.run-dependencies] pins, undocumented in root pixi.toml until 2026-09-12.
+packaging = ">=26.3"              # hygiene.py, engines.py, extract/_identity.py, extract/pyproject.py
+jsonschema = ">=4.26.0"           # report.py
+packageurl-python = ">=0.17.6"    # sbom.py, sources.py, eligibility_sbom.py; imports as `packageurl`
+license-expression = ">=30.4.4"   # license.py; imports as `license_expression`
 
 [feature.pyforge-warden.tasks.warden-scan]
 description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"
@@ -2192,6 +2216,8 @@ hatchling = ">=1.32.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner (kedro-test)
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+attrs = ">=26.1.0"                # spec-library-catalog-manifest-sync CAP-1: mirrors this station's own pixi.toml [package.run-dependencies] pin; observability.py's own run-dep, undocumented in root pixi.toml until 2026-09-12
+filelock = ">=3.32.0"             # spec-library-catalog-manifest-sync CAP-1 (scoping correction): duckdb_writer.py + admission.py's own run-dep, undocumented in root pixi.toml until 2026-09-12 -- distinct from the separate marshal/scribe filelock *adoption* question tracked in pyforge-unifying-strategy's Estate leverage table
 kedro-viz = ">=12.4.0"            # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
 # AUD-ATLAS-010 (2026-07-27): G1 `wasm-smoke` + the D2 dashboard e2e test drive headless
 # Chromium. TEST-ONLY — deliberately NOT package run-deps (the shipped package never drives
@@ -2214,7 +2240,7 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # the no-inline-IO scan root, so package code still imports no HTTP client — AC-2). Named here
 # so pruning the starlette test never takes this declaration with it and breaks the bring-up.
 httpx = ">=0.28.1"                # A next-generation HTTP client for Python.
-mcp = ">=2.1.1"                   # steward 21.2: official SDK for atlas MCP host face (no fastmcp in this env)
+mcp = ">=2.2.0"                   # steward 21.2: official SDK for atlas MCP host face (no fastmcp in this env)
 # Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
 # pyproject.toml runtime dep. SelfExplainML conda (not conda-forge). Same floor
 # as [feature.local-recipes.dependencies]. See
@@ -2344,13 +2370,14 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # run-deps) into the dedicated lean `pyforge-doctor` env. Spec:
 # _bmad-output/projects/pyforge-doctor/planning-artifacts/.
 [feature.pyforge-doctor.dependencies]
-prometheus_client = ">=0.22.1"
+prometheus_client = ">=0.26.0"    # Python client for the Prometheus monitoring system.
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-3/CAP-4: verdict.py's Lattice + __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...) -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: first non-seed consumer station imports the shared kit (test-time only; not a package run-dep)
-mcp = ">=2.1.1"                   # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
+mcp = ">=2.2.0"                   # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
 pyyaml = ">=6.0.3"                # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
+jsonschema = ">=4.26.0"           # spec-library-catalog-manifest-sync CAP-1: mirrors this station's own pixi.toml [package.run-dependencies] pin; __main__.py's own run-dep, undocumented in root pixi.toml until 2026-09-12
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -2367,7 +2394,7 @@ pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
-cocoindex = ">=1.0.20"            # Story 28.28: the `compile_surface` incremental extra (pyforge-scribe's own optional `[cocoindex]` pyproject extra, floor matched here) -- without it here, `scribe index refresh`'s `--declare`/on-mode paths always degrade via CocoindexUnavailableError, since marshal's ScribeCli resolves the `pyforge-scribe` env's own binary before ever falling back to `local-recipes` (which already carries cocoindex for unrelated reasons)
+cocoindex = ">=1.0.22"            # Story 28.28: the `compile_surface` incremental extra (pyforge-scribe's own optional `[cocoindex]` pyproject extra, floor matched here) -- without it here, `scribe index refresh`'s `--declare`/on-mode paths always degrade via CocoindexUnavailableError, since marshal's ScribeCli resolves the `pyforge-scribe` env's own binary before ever falling back to `local-recipes` (which already carries cocoindex for unrelated reasons)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 psycopg = ">=3.3.4"               # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); 3.2+ for PostgreSQL 17 / libpq 17
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
@@ -2441,8 +2468,9 @@ platforms = ["linux-64"]  # only platform with both silo (SelfExplainML, Story 5
 
 [feature.platform-object-storage.dependencies]
 python = "3.14.*"                 # standalone env (no-default-feature) needs its own interpreter for the up/down/status script
-silo = ">=20260903131801.0.0"    # default backend -- Story 50.1's own conda-forge-expert recipe (SelfExplainML channel)
-garage = ">=2.4.0"                # alternative backend -- already on conda-forge; no win-64 build (live-verified 2.4.1 config/CLI shape)
+silo = ">=20260903131801.0.0"     # default backend -- Story 50.1's own conda-forge-expert recipe (SelfExplainML channel)
+garage = ">=2.4.1"                # alternative backend -- already on conda-forge; no win-64 build (live-verified 2.4.1 config/CLI shape)
+seaweedfs = ">=4.46"              # alternative backend -- already on conda-forge; SeaweedFS is a distributed storage system for object storage (S3), file systems, and Iceberg tables, designed to handle billions of files with O(1) disk access and effortless horizontal scaling.
 
 [feature.platform-object-storage.tasks.platform-object-storage-up]
 description = "Start a real local S3-compatible object-storage server -- Silo (default) or Garage (PYFORGE_OBJECT_STORAGE_BACKEND=garage) -- on the fixed contract endpoint 127.0.0.1:9000. Idempotent: re-running against a live server re-asserts (prints ready) rather than restarting it. Server state lives under gitignored var/platform-object-storage/<backend>/. Garage refuses cleanly on Windows (no win-64 build) rather than silently no-op'ing."
@@ -2460,7 +2488,7 @@ cmd = "python scripts/platform_object_storage.py status"
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
-mcp = ">=2.1.1"                   # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
+mcp = ">=2.2.0"                   # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
 httpx2 = ">=2.12.0"               # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
