@@ -85,7 +85,7 @@ Dream-to-Code tiers, the autonomy gradient, the Master Pipeline relay, the seed 
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Genesis Infographic standalone.html` | 142,316 B · 28 sections (27 numbered + creed) · 6 acts · 4 SVG · 14 tables · facts 94/94 | `PENDING-PUSH` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 24046 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Genesis Infographic standalone.html` | 142,316 B · 28 sections (27 numbered + creed) · 6 acts · 4 SVG · 14 tables · facts 94/94 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789308322821013` · 142,316 B on both sides · read back via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed against the day's ledgers before the push (`deck-facts pyforge-genesis --refresh`, 9 literals)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 24046 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ (27) · inline SVG ≥ 3 ✓ (4) ·
 bytes ≥ 90,000 ✓ (142,316) · tables ≥ 3 ✓ (14) · cast cards full for all eight stations ✓ ·

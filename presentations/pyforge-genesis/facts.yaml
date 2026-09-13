@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-genesis
 persona: "PyForge Genesis"
-derived_at: "2026-09-13T08:53:52-05:00"
-tree: "bc8ae85dd16e5a96d2ca5713a92af3d519d37cac"
+derived_at: "2026-09-13T09:02:48-05:00"
+tree: "1d13ba47daded278fd6089faa2212cd60ee7dd15"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -72,10 +72,10 @@ facts:
     method: "sum over the guild-roster stations of done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["190/197", "190 of 197"]
   - id: fleet_stories_done_total
-    value: "870/892"
+    value: "871/892"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["870/892", "870 of 892"]
+    shown_as: ["871/892", "871 of 892"]
   - id: groundtruth_atlas_phases
     value: "22"
     source: "pixi run -e local-recipes bmad-groundtruth"
@@ -117,10 +117,10 @@ facts:
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["18/20", "18 of 20"]
   - id: herald_stories_done_total
-    value: "78/82"
+    value: "79/82"
     source: "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["78/82", "78 of 82"]
+    shown_as: ["79/82", "79 of 82"]
   - id: marshal_epics_done_total
     value: "34/36"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
@@ -142,10 +142,10 @@ facts:
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
     shown_as: ["67/67", "67 of 67"]
   - id: poster_last_commit_date
-    value: "2026-07-25"
+    value: "2026-09-13"
     source: "presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html"
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
-    shown_as: ["2026-07-25"]
+    shown_as: ["2026-09-13"]
   - id: recipes_count
     value: "7864"
     source: "recipes/ (git ls-files)"
