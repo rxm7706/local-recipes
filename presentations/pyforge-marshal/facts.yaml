@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-marshal
 persona: "PyForge Marshal"
-derived_at: "2026-09-13T03:04:34-05:00"
-tree: "04d73cac387c922dc56fd2835afcfe6b540e73b8"
+derived_at: "2026-09-13T03:32:37-05:00"
+tree: "ce12de0974c1391be6ee7b29b2ccd665cc530776"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -182,15 +182,15 @@ facts:
     method: "project.version"
     shown_as: ["0.1.0"]
   - id: poster_last_commit_date
-    value: "2026-08-01"
+    value: "2026-09-13"
     source: "presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html"
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
-    shown_as: ["2026-08-01"]
+    shown_as: ["2026-09-13"]
   - id: recipes_count
-    value: "7872"
+    value: "7864"
     source: "recipes/"
     method: "count of recipes/*/ directories, excluding the staged-recipes templates recipes/example/ and recipes/examples/"
-    shown_as: ["7872"]
+    shown_as: ["7864"]
   - id: scribe_epics_done_total
     value: "8/8"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
@@ -226,6 +226,11 @@ facts:
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
     shown_as: ["248/249", "248 of 249"]
+  - id: tests_collected
+    value: "7932"
+    source: "pixi run -e pyforge-marshal pytest --collect-only -q src/shared/packages/pyforge-marshal/tests"
+    method: "N from the trailing `N tests collected` line"
+    shown_as: ["7932"]
   - id: tree_commit_date
     value: "2026-09-13"
     source: "git log -1 --format=%cs"
