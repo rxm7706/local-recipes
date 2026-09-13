@@ -1,5 +1,7 @@
 ---
-type: frame [0.2]
+type: frame [0.3]
+identifier: pyforge-steward
+license: https://www.apache.org/licenses/LICENSE-2.0
 name: pyforge-steward
 description: Station Frame for Steward — provisioner of keys, deploy, provision, budget, workspace, upgrade, and suite. Load when running estate duties or opening worktrees.
 visibility: private

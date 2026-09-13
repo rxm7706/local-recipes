@@ -1,5 +1,7 @@
 ---
-type: frame [0.2]
+type: frame [0.3]
+identifier: pyforge
+license: https://www.apache.org/licenses/LICENSE-2.0
 name: pyforge
 description: Company Frame for the PyForge estate — Dream-first recipe factory and eight stations. Load when work must follow owned context, Warden as sole PR verdict, and foundry path rules.
 visibility: private
