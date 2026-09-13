@@ -614,6 +614,84 @@ its own test file"*; `herald-live-demo.yml` stays disabled (a green run against 
 **Given** `pptx_pipeline.py` (1057 lines) ships `extract_spec` / `fill_template` and the shape API (`add_card` / `add_metric_box` / `add_table` / `add_section_label` + Pillow `fit_text` autofit) behind `herald deck pptx-spec` / `pptx-fill` (`cli.py:342-386`), while every `.pptx` under `presentations/*/src/pptx/` is a dated Marp export from 2026-07/08 and no `content_plan.json` exists — **When** one station deck is authored as a `content_plan.json` and filled through the pipeline against the committed interim template (`templates/pyforge-deck-template.pptx`) **Then** the resulting `.pptx` opens with real, editable text runs (not background-image slides), at least one dense slide exercises the shape API, and the file is the pipeline's output rather than a Marp export
 **And** the deck follows the canonical six-act framework with the Warden standalone deck as the shape exemplar; a PyForge-branded `.potx` stays deferred work reachable by a `--template` flag, not a blocker for this story
 
+## Epic 20: The deck family stays current (spec-deck-family-currency)
+
+**Spec binding.** `spec-deck-family-currency` CAP-1..5 (herald; Dream `docs/dreams/deck-family-currency.md`,
+`specified` 2026-09-13). Every `presentations/pyforge-*/project/<Persona> Infographic standalone.html` is
+re-derived to one codified standard from a per-deck fact ledger, pushed byte-exact to its Design project, and
+made checkable for staleness. Measured 2026-09-13: eleven of fourteen posters are the 2026-07-24/25
+six-section stubs; the deep ones quote July's tooling and fleet (marshal: `bmad-method 6.10.0`, "128/333
+fleet-wide"). **HARD boundaries (Spec constraints):** facts come from tracked ledgers and manifests, never a
+prior poster or memory — no number ships without a `facts.yaml` row; never restrict size at authoring; the
+standalone leads this epic (dated exception to trio lockstep — head and Infographic Deck marked "standalone
+ahead"); repo-side authoring with a DesignSync `localPath` push, no Design-chat authoring or polish; one PR
+per deck with the `maintenance` label; four worktree agents per wave, physical paths, never `bmad-switch`;
+the facts check is advisory (exit 0), never a second gate. **Standard:** the Spec companion
+`infographic-standard.md` — Unifying Strategy is the structure/acts/length reference, Warden the
+density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20.13 closes the bridge view.
+
+### Story 20.1: The standard has one home and the deck spec points to it
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** `spec-deck-family-currency` CAP-1
+**Surface:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md` (the home — unchanged by this story), `docs/specs/presentation-deck.md` (§ *Artifact dependency tree* "Exemplar for form" sentence; the verify checklist), `presentations/README.md` (pointer line)
+**Given** the standard lives in `infographic-standard.md` while `presentation-deck.md` still names "the warden family" as the sole form exemplar and its verify checklist is run-shaped and never names a floor — **When** the deck spec's editing-surfaces section and verify checklist point at the standard and name its floors (six act bands, ≥ 18 sections, ≥ 3 inline SVGs, ≥ 90 KB, every fact a ledger row, full-page PNG reviewed) — **Then** a reader of `presentation-deck.md` reaches the standard in one hop and no second copy of the floors exists anywhere in the tree
+**And** the legacy `docs/specs/` tier gains a pointer only — never a second standard
+
+### Story 20.2: `deck-facts` derives a per-deck fact ledger and checks a poster against it
+**Type:** feature • **Effort:** M • **Deps:** S-20.1 • **FR/AD:** `spec-deck-family-currency` CAP-2, CAP-5 • companion `facts-ledger.md`
+**Surface:** `scripts/deck_facts.py` (new; the `scripts/deck_export.py` precedent — one script, one pixi task), `pixi.toml` (`[feature.local-recipes.tasks.deck-facts]`), `presentations/pyforge-*/facts.yaml` (first derivations for the ten decks), `docs/specs/presentation-deck.md` (one line naming the task)
+**Given** no poster cites a source for any number it shows and nothing detects poster staleness — **When** `pixi run -e local-recipes deck-facts <slug>` emits `presentations/<slug>/facts.yaml` per `facts-ledger.md` (sprint ledgers through the real `parse_sprint_status`, versions from `pyproject.toml` and `_bmad/_config/manifest.yaml`, CAP counts from `SPEC.md`, counts from `bmad-groundtruth`, CLI verbs from the station's subparsers, test counts from `pytest --collect-only` in the station's own env) and `deck-facts <slug> --check` tokenizes the poster and reports unresolved tokens, drifted rows and unshown rows — **Then** re-deriving on an unchanged tree is byte-identical, a mutated ledger value is named by `--check`, and the marshal poster's known-stale claims (`6.10.0`, `0.9.0`, `128/333`, `4/27`) are each reported on the first run
+**And** the check always exits 0 and never joins `detectors` / `detectors-ci` as a gate — advisory by construction
+
+### Story 20.3: PyForge Atlas poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-atlas/project/PyForge Atlas Infographic standalone.html`, `presentations/pyforge-atlas/facts.yaml`, `presentations/pyforge-atlas/README.md` (sync ledger) • Design project `2acb0575-9997-442b-bb0e-6207d78f6648`
+**Given** the poster is a 2026-07-24 stub (15,678 B / 6 sections / 0 acts / 0 SVG) — **When** it is authored repo-side to `infographic-standard.md` from `facts.yaml` (six act bands, ≥ 18 sections, ≥ 3 inline SVGs, ≥ 90 KB, every count/version/status/date a ledger row), rendered headless to a full-page PNG and reviewed, pushed to the Design project through DesignSync `finalize_plan` → `write_files` (`localPath`), and read back — **Then** the README ledger carries the measured values against the floors, the Design etag and byte count, the render date and page height, and "standalone ahead" for the head and Infographic Deck; `deck-facts pyforge-atlas --check` reports every token resolved
+**And** the PR carries the `maintenance` label, touches only this deck's folder, and is one of at most four in flight for the wave
+### Story 20.4: PyForge Doctor poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-doctor/project/PyForge Doctor Infographic standalone.html`, `presentations/pyforge-doctor/facts.yaml`, `presentations/pyforge-doctor/README.md` • Design project `46dbbdea-6f8d-45c6-9309-15d1f297beeb`
+**Given** the poster today measures 14,419 B / 5 / 0 / 0 — **When / Then / And** exactly as Story 20.3, for PyForge Doctor
+### Story 20.5: PyForge Herald poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html`, `presentations/pyforge-herald/facts.yaml`, `presentations/pyforge-herald/README.md` • Design project `ff879a32-9741-4cf5-948f-d67040481d24`
+**Given** the poster today measures 16,720 B / 6 / 0 / 0 — **When / Then / And** exactly as Story 20.3, for PyForge Herald
+### Story 20.6: PyForge Marshal poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html`, `presentations/pyforge-marshal/facts.yaml`, `presentations/pyforge-marshal/README.md` • Design project `ad84d4f6-c292-42c8-98bf-ede78a567773`
+**Given** the poster today measures 91,340 B / 19 / 6 / 3 — six-act already; every stat is a July 2026 claim — **When / Then / And** exactly as Story 20.3, for PyForge Marshal
+### Story 20.7: PyForge Mason poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-mason/project/PyForge Mason Infographic standalone.html`, `presentations/pyforge-mason/facts.yaml`, `presentations/pyforge-mason/README.md` • Design project `a7a2c3b1-5718-49fa-8c90-71d44d57eae9`
+**Given** the poster today measures 14,404 B / 6 / 0 / 0 — **When / Then / And** exactly as Story 20.3, for PyForge Mason
+### Story 20.8: PyForge Scribe poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html`, `presentations/pyforge-scribe/facts.yaml`, `presentations/pyforge-scribe/README.md` • Design project `a1e42dac-7cee-438b-9acc-2523985b5253`
+**Given** the poster today measures 15,978 B / 6 / 0 / 0 — **When / Then / And** exactly as Story 20.3, for PyForge Scribe
+### Story 20.9: PyForge Steward poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-steward/project/PyForge Steward Infographic standalone.html`, `presentations/pyforge-steward/facts.yaml`, `presentations/pyforge-steward/README.md` • Design project `573d6554-0095-4126-b13f-cd537279ff8a`
+**Given** the poster today measures 14,475 B / 6 / 0 / 0 — **When / Then / And** exactly as Story 20.3, for PyForge Steward
+### Story 20.10: Warden poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave A
+**Surface:** `presentations/pyforge-warden/project/Warden Infographic standalone.html`, `presentations/pyforge-warden/facts.yaml`, `presentations/pyforge-warden/README.md` • Design project `100ca8cc-8daa-409a-8564-1f8d79c579d2`
+**Given** the poster today measures 411,764 B / 18 / 0 acts / 15 SVG — the visual reference: keep its form, add the six-act arc, re-derive every stat — **When / Then / And** exactly as Story 20.3, for Warden
+### Story 20.11: PyForge Genesis poster rebuilt to the standard from its ledger
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave B
+**Surface:** `presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html`, `presentations/pyforge-genesis/facts.yaml`, `presentations/pyforge-genesis/README.md` • Design project `6af4c28d-d510-4e9b-b788-6c0e5d651183`
+**Given** the poster today measures 47,877 B / 9 sections / 0 acts / 0 SVG and carries the Charter's guild-wide facts (eight Smiths, the Dream count, fleet totals) — **When / Then / And** exactly as Story 20.3, for the Genesis (Charter) deck; guild-wide facts come from `docs/governance/guild-roster.json`, `docs/dreams/*.md` frontmatter and `fleet-picture`
+
+### Story 20.12: The Canopy poster re-derived and its Design project created
+**Type:** feature • **Effort:** M • **Deps:** S-20.1, S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-3, CAP-4 • Wave B • requires the claude-design MCP connected
+**Surface:** `presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html`, `presentations/pyforge-unifying-strategy/facts.yaml`, `presentations/pyforge-unifying-strategy/README.md` (`## Design project` section written in the canonical two-line shape via `registry.register`)
+**Given** the poster is the structure reference (128,783 B / 21 sections / 6 acts / 9 SVG) yet quotes 2026-08-26 facts ("CAP-1..18 closed", "40/40 five-tier") and has no Design project — **When** its facts are re-derived from `spec-pyforge-unifying-strategy/SPEC.md` and steward's ledger, a Design project "PyForge Unifying Strategy deck" is created through the claude-design MCP `create_project` bound to Modernist `fbc1d6c8-b35f-4df6-9044-a64d2675427b` per the bridge seed protocol (`finalize_plan`, `create_support_js`, `copy_files` `deck-stage.js` from the marshal pilot), and the poster is pushed and read back — **Then** the README carries the project id, etag and measured values, and `herald deck status pyforge-unifying-strategy` reports it linked
+**And** the structure reference's arc and section order are preserved — this story changes facts and the mirror, not the shape
+
+### Story 20.13: The bridge sees the family — `herald deck status` reports all ten linked
+**Type:** fix • **Effort:** S • **Deps:** S-20.3–S-20.12 • **FR/AD:** `spec-deck-family-currency` CAP-4 • `spec-pyforge-herald` HER-3 (status)
+**Surface:** `presentations/pyforge-*/README.md` (`## Design project` sections normalized to the canonical two-line shape through `registry.register`), the `.herald/bridge-state.json` bootstrap (gitignored — its derivation documented in `docs/specs/presentation-deck.md`), and `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` only if `_status_for_slug` is found not to read the README registry fallback
+**Given** `herald deck status --repo-root .` reported all fifteen decks `linked: false` on 2026-09-13 because no bridge state exists and every README section predates the canonical shape (DW-1-5-1) — **When** the ten README sections are registered canonically and the state is bootstrapped from them — **Then** `herald deck status` lists the ten PyForge-branded decks `linked: true` with their project ids, and a fresh clone reproduces that answer from the READMEs alone
+**And** no second registry is invented — the README section stays the human-readable record and `bridge-state.json` the operational one, exactly as `registry.py` and `state.py` already divide them
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.
