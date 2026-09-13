@@ -6,7 +6,7 @@
  "pyforge-atlas/spec-atlas-kedro-catalog-expansion": {
   "files": {
    ".github/workflows/kedro-viz-publish.yml": "35c6ed88cfd0af33e552c6840fda0cc063ec4e11",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "cc950947eea01299f83eb05b084fcabe2a0a3ad9",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "dee386e59e06bdd7a3dd520e9a549ff29460612c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "665e5b4a9501570618788f76d9170d654f5bcddc",
@@ -542,7 +542,7 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "0e10deba3f1bc62fc5fa538b8afb67bd03c17d05",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "86a1c543ff6ef92c3162ef9375db059771575c75",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "f539182c862f8f957ca7c60b634e9a289ac63721",
@@ -733,31 +733,42 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "docs/specs/presentation-deck.md": "bd3f4889702564ce863a5236acd614bdc30fc196",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "docs/specs/presentation-deck.md": "d5a031d546affb834fca1702960ea757e765c8a5",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "presentations/README.md": "260bc5f31cc5cb21ffd8507b3d119b3b55713e83",
    "presentations/pyforge-atlas/README.md": "db6d47b8d54c4ecfc0415ec4bde710c967adf85e",
+   "presentations/pyforge-atlas/facts.yaml": "a84990597a691da7f341c7687fe58096de261fbf",
    "presentations/pyforge-atlas/project/PyForge Atlas Infographic standalone.html": "22f9e8c02578ff1deee1cdfe856f57d1eea35e48",
    "presentations/pyforge-doctor/README.md": "36e889752b71728bb675e032b517ade1af75c0eb",
+   "presentations/pyforge-doctor/facts.yaml": "a840f5c6d25c5bd9589a640fd44b9eaf6e310f80",
    "presentations/pyforge-doctor/project/PyForge Doctor Infographic standalone.html": "104c97f8931610c7f5deca1c29356a0bb7fc1d47",
    "presentations/pyforge-genesis/README.md": "52ccceb704b1980c3f9efab8d732c521af91fd59",
+   "presentations/pyforge-genesis/facts.yaml": "5a1cc812db02c47cdcc21c1033d1da2e57c1dae7",
    "presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html": "2b0e5b6a17a26d5553232a419046a148950d0359",
    "presentations/pyforge-herald/README.md": "3919ec54f9993764a8b2c05f04fa705a2e750432",
+   "presentations/pyforge-herald/facts.yaml": "249465e38fbd16e7024fc45d8e5a284ea85e4acf",
    "presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html": "0828e5c78609cb09cf8e7f2de47d3fc3ed77a751",
    "presentations/pyforge-marshal/README.md": "28ffd9692e7d9691b1b7a3b812b073c2266e0103",
+   "presentations/pyforge-marshal/facts.yaml": "e4b2e413ef096bac56ac26949fd3c8dcf3c06292",
    "presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html": "820cf9c24d38a9ce71b94547c5d8691d814ba0b7",
    "presentations/pyforge-mason/README.md": "d38ef40e64d026a52019bbe2d2017fa8d35177ac",
+   "presentations/pyforge-mason/facts.yaml": "fd65937e578f97f03b8ebc9b0a868d4192d6c454",
    "presentations/pyforge-mason/project/PyForge Mason Infographic standalone.html": "a0014dadf29c99225f99ce905b1bf5ad4ad6ac3d",
    "presentations/pyforge-scribe/README.md": "9eba761b7658d50ad380430ad929ca39f6539510",
+   "presentations/pyforge-scribe/facts.yaml": "6cd901db8f14847a5359444432561fddb055450e",
    "presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html": "1203c6f5e7986e0b530da5d7b69861d7e0f11428",
    "presentations/pyforge-steward/README.md": "fea2a1144cdc7d8e682ce33d6e71711e68538859",
+   "presentations/pyforge-steward/facts.yaml": "20462ed3995ff78d5b7be29a55e1e028c35a52d4",
    "presentations/pyforge-steward/project/PyForge Steward Infographic standalone.html": "0f6368f72c585c4548866b56807da70245b3989c",
    "presentations/pyforge-unifying-strategy/README.md": "8534cd8cec84e1762b09dd5f857ee6cb2ef2035d",
+   "presentations/pyforge-unifying-strategy/facts.yaml": "1e06d0476bd2e42b860c81153ceeb6a199bd6b72",
    "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html": "28dcd528db83fa9decb4a8d0f2acc5bb71ff56e5",
    "presentations/pyforge-warden/README.md": "c12c1aa21e8983619ca5a04d917607fb7da0dd14",
-   "presentations/pyforge-warden/project/Warden Infographic standalone.html": "4aaa06d1ae501607cefcc0a6bf169c0c20cc33d5"
+   "presentations/pyforge-warden/facts.yaml": "1c44b4579d1f8176b2b8dd55af7b4a9d98d0febf",
+   "presentations/pyforge-warden/project/Warden Infographic standalone.html": "4aaa06d1ae501607cefcc0a6bf169c0c20cc33d5",
+   "scripts/deck_facts.py": "0bed46593b3bcc6986f4a455997801a7bc4d297a"
   },
-  "memlog": "1fad09ee9949e002dc938ce5be2ad98e1d454699"
+  "memlog": "2b05d989ee3447f59cd2f6787fde7e759364c52a"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -1600,7 +1611,6 @@
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
-   "presentations/README.md": "260bc5f31cc5cb21ffd8507b3d119b3b55713e83",
    "presentations/agentic-sdlc/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/agentic-sdlc/README.md": "533f06ca816883b03e0b716db5a907c8b924f885",
    "presentations/agentic-sdlc/index.html": "8f980ba03b85e80061001a4bb5cf8737f2298322",
@@ -1793,6 +1803,7 @@
    "presentations/presenton-pixi-image/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-atlas/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-atlas/README.md": "db6d47b8d54c4ecfc0415ec4bde710c967adf85e",
+   "presentations/pyforge-atlas/facts.yaml": "a84990597a691da7f341c7687fe58096de261fbf",
    "presentations/pyforge-atlas/index.html": "ebc20c5a5d01f59417aed47745b14405fb1687c6",
    "presentations/pyforge-atlas/package-lock.json": "85008083778c504b34626057819d8afcb6f3c7ab",
    "presentations/pyforge-atlas/package.json": "6531643ba4b91a0db53fef8e50c460b1aaf82578",
@@ -1856,6 +1867,7 @@
    "presentations/pyforge-atlas/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-doctor/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-doctor/README.md": "36e889752b71728bb675e032b517ade1af75c0eb",
+   "presentations/pyforge-doctor/facts.yaml": "a840f5c6d25c5bd9589a640fd44b9eaf6e310f80",
    "presentations/pyforge-doctor/index.html": "064caeaff7be4f652e9ee5d9319fac38834c35fa",
    "presentations/pyforge-doctor/package-lock.json": "2a2f154d5c45e36051fa916ce8170fbe43d4e79f",
    "presentations/pyforge-doctor/package.json": "a7f08853c65b64e9b27e7bb9924bdcba42cb97f9",
@@ -1901,6 +1913,7 @@
    "presentations/pyforge-doctor/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-genesis/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-genesis/README.md": "52ccceb704b1980c3f9efab8d732c521af91fd59",
+   "presentations/pyforge-genesis/facts.yaml": "5a1cc812db02c47cdcc21c1033d1da2e57c1dae7",
    "presentations/pyforge-genesis/index.html": "b4adaae3503b4eccfee8b2bac73f4abd84df1f96",
    "presentations/pyforge-genesis/package-lock.json": "3a8a63b54b1cc749d8a707003ef185de795730db",
    "presentations/pyforge-genesis/package.json": "33191fe2efe55d446d825dd371a8271d9f8f380d",
@@ -1951,6 +1964,7 @@
    "presentations/pyforge-genesis/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-herald/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-herald/README.md": "3919ec54f9993764a8b2c05f04fa705a2e750432",
+   "presentations/pyforge-herald/facts.yaml": "249465e38fbd16e7024fc45d8e5a284ea85e4acf",
    "presentations/pyforge-herald/index.html": "c1266cd07b9b86d913c03af7f16e3a666d58b23c",
    "presentations/pyforge-herald/package-lock.json": "774f66f085e2c0693c42a54ec3e8765ca72aeda0",
    "presentations/pyforge-herald/package.json": "0a9376a158f6513f0c92d4464399e84e32bc4716",
@@ -1996,6 +2010,7 @@
    "presentations/pyforge-herald/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-marshal/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-marshal/README.md": "28ffd9692e7d9691b1b7a3b812b073c2266e0103",
+   "presentations/pyforge-marshal/facts.yaml": "e4b2e413ef096bac56ac26949fd3c8dcf3c06292",
    "presentations/pyforge-marshal/index.html": "72ad7643b5f7084079913fce1b937f196c5f98c6",
    "presentations/pyforge-marshal/package-lock.json": "ce2d3dbc8600b2b238c20012cfe54bb58040d204",
    "presentations/pyforge-marshal/package.json": "b9aa3805dbcb1c66891649f93652524ecdbbead4",
@@ -2063,6 +2078,7 @@
    "presentations/pyforge-marshal/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-mason/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-mason/README.md": "d38ef40e64d026a52019bbe2d2017fa8d35177ac",
+   "presentations/pyforge-mason/facts.yaml": "fd65937e578f97f03b8ebc9b0a868d4192d6c454",
    "presentations/pyforge-mason/index.html": "a495d154088523260cc87c9b544a7d35ec465ccf",
    "presentations/pyforge-mason/package-lock.json": "192f73cec7b394903e743acc907372a6ab5edf98",
    "presentations/pyforge-mason/package.json": "c7fe60509957ca48a96a5d377904dad53ecc886c",
@@ -2108,6 +2124,7 @@
    "presentations/pyforge-mason/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-scribe/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-scribe/README.md": "9eba761b7658d50ad380430ad929ca39f6539510",
+   "presentations/pyforge-scribe/facts.yaml": "6cd901db8f14847a5359444432561fddb055450e",
    "presentations/pyforge-scribe/index.html": "676e62f3987af6e0bff46af7f42e3fc41d702231",
    "presentations/pyforge-scribe/package-lock.json": "bb27c860cf9f22b099738d8834db4cbee4ad662a",
    "presentations/pyforge-scribe/package.json": "dbef6010d83062c059ee2b159ab1d9037eed8acf",
@@ -2153,6 +2170,7 @@
    "presentations/pyforge-scribe/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-steward/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-steward/README.md": "fea2a1144cdc7d8e682ce33d6e71711e68538859",
+   "presentations/pyforge-steward/facts.yaml": "20462ed3995ff78d5b7be29a55e1e028c35a52d4",
    "presentations/pyforge-steward/index.html": "acef5e715b7219609eeff3e15882cff8cee370c6",
    "presentations/pyforge-steward/package-lock.json": "3c9f8219e238c15d5f1734c0cbc1d4f6e5481ded",
    "presentations/pyforge-steward/package.json": "3c1affb5adc34fbb02581cf6d61fa60b74b6d862",
@@ -2197,6 +2215,7 @@
    "presentations/pyforge-steward/src/slides/manifest.json": "60517ed8630e4db2733122e1ce58dead691355e2",
    "presentations/pyforge-steward/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/pyforge-unifying-strategy/README.md": "8534cd8cec84e1762b09dd5f857ee6cb2ef2035d",
+   "presentations/pyforge-unifying-strategy/facts.yaml": "1e06d0476bd2e42b860c81153ceeb6a199bd6b72",
    "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Executive Summary.dc.html": "d79aa934c48d1d4146bfc556fe9d66022494ec6f",
    "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Infographic Deck.dc.html": "dc803a5ddafdd3dee2954b1c047f967823c97dee",
    "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Infographic.dc.html": "59d8bfba2bb54b69ee2b977f550f6826d4462f0b",
@@ -2210,6 +2229,7 @@
    "presentations/pyforge-unifying-strategy/src/pptx/pyforge-unifying-strategy_infographic_deck-2026-08-26.pptx": "ec4c23cb422fe76432bba43b60d930c1a3603d6e",
    "presentations/pyforge-warden/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/pyforge-warden/README.md": "c12c1aa21e8983619ca5a04d917607fb7da0dd14",
+   "presentations/pyforge-warden/facts.yaml": "1c44b4579d1f8176b2b8dd55af7b4a9d98d0febf",
    "presentations/pyforge-warden/index.html": "4d92eeb2401254a1c68cad0f493cf39661a80be7",
    "presentations/pyforge-warden/package-lock.json": "ea5430b9b7418e23a3cc0029482b82e07ff9eb62",
    "presentations/pyforge-warden/package.json": "47fafbe2dbd0d48ad4d7b440c24fe3e3a8affeb2",
@@ -2486,7 +2506,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "57455c09700b9df9d593c3b5b82f9f9ff4a43262"
+  "memlog": "b59e58192beeb35a317ab5fc0c21910f6838d64b"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
@@ -2894,7 +2914,7 @@
   "files": {
    "docs/reference/library-llms-full.md": "3a3a7e06689e7d70135b79d85dd9b5494df7faca",
    "environment.yaml": "2ff33759670cfb763b1bc6e72e96f931b1cfcdc3",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "scripts/llms_full_check.py": "a4d1b10b2fdece0cf547af6877b21f5ebc7bf672"
   },
   "memlog": "bd9ced4ed2e8df6de25d413ce793a68647b893d4"
@@ -3064,7 +3084,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "8a93e5e51a08423391a0da2cfb4b65cee68a3e3c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "9d9485c06b1708568247d4eb1184a55b406a3d00",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -5180,7 +5200,7 @@
  "pyforge-steward/spec-mcp-era-isolation": {
   "files": {
    "docs/dreams/mcp-era-isolation.md": "b7676b6d86609d1a91fd300ff33eb219161c9df4",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py": "0863d1d2c847861adab93320c6aa5e4e0a0f6d3e"
   },
   "memlog": "df6afdd0c65a8b81cab1806719bc655dff875fb2"
@@ -5195,7 +5215,7 @@
  "pyforge-steward/spec-mcp-host-real-station-tools": {
   "files": {
    "docs/dreams/mcp-host-real-station-tools.md": "5344e839a9c036038bdd7c47b255d72695c0d31d",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "src/platform/compose/mcp-host/Containerfile": "24c5f6bb937ed56f0e15f17cc7624d8ba9b60363",
    "src/platform/deploy/charts/platform/templates/_helpers.tpl": "1db6424db3dbd49b28daecde90d54b1a90b335f0",
    "src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml": "e3797b0b804f39d53375acb95290d151d41e58f2",
@@ -5407,7 +5427,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "2ff33759670cfb763b1bc6e72e96f931b1cfcdc3",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "recipes/liquibase/liquibase.bat": "ac190f5bc21c8d478c2d90d5ca4c82ced814caee",
    "recipes/liquibase/liquibase.sh": "9e5c72090c4afdb3dcf82bba291f3bb41c855066",
    "recipes/liquibase/recipe.yaml": "d5c96e89942e9582266681615d31c889b958d03f",
@@ -6393,7 +6413,7 @@
   "files": {
    ".dockerignore": "ab927fa27b132c499fef1cda0e0ac30b097b25ad",
    "Containerfile": "d67518eb4c2b0f62f403b1f076057d891331fcd7",
-   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "pixi.toml": "ac0f0aca8cc5c48ee4cdfc600ee5eb4d5e298905",
    "scripts/container-gates": "e963665a0bc5868c07d964669a026bb0fc151f41",
    "scripts/guild_image_ci.sh": "8db176c101cd6384e1b95f47e0dfabce085c9a49"
   },
