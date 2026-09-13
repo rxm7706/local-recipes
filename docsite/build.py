@@ -54,28 +54,6 @@ CONTENT = SITE / "content"
 TEMPLATES = SITE / "templates"
 ASSETS = SITE / "assets"
 
-# The scorecard lens copy lives here rather than in the content file because it
-# is presentation chrome, not findings.
-LENS_COPY = {
-    "ceo": {
-        "label": "CEO — strategic sequencing",
-        "sub": "Blocked-by-design gates, irreversible one-way-door decisions, and what gates what.",
-    },
-    "cfo": {
-        "label": "CFO — cost & effort",
-        "sub": "Cheapest, highest-leverage fixes surfaced first; expensive committed bets flagged, not hidden.",
-    },
-    "cdao": {
-        "label": "CDAO — data integrity",
-        "sub": "Epics that fix measurement or reporting itself, or that every other decision depends on trusting.",
-    },
-    "eng": {
-        "label": "Eng Risk — technical & security",
-        "sub": "Cross-station dependencies and real security or correctness findings.",
-    },
-}
-
-
 # ------------------------------------------------------------------ inline markdown
 
 _ESCAPED = re.compile(r"\\(.)", re.S)
@@ -275,7 +253,7 @@ def build(out_dir: Path, repo_root: Path) -> dict:
             "   whole page into a horizontal scroll on a phone. minmax(0,1fr) lets the\n"
             "   column shrink so the wrapper scrolls instead of the document. */\n"
             "@media (max-width:880px){.layout{grid-template-columns:minmax(0,1fr);}}\n"
-            ".table-wrap,.sc-table-wrap{max-width:100%;}\n"
+            ".table-wrap{max-width:100%;}\n"
             "/* .rel-list is a flex column, so every <li> is a flex item with a\n"
             "   min-width:auto (min-content) floor — one long code span inside was\n"
             "   enough to stop the list shrinking on a phone. */\n"
@@ -301,7 +279,6 @@ def build(out_dir: Path, repo_root: Path) -> dict:
         "infographics": infographics,
         "built_at": built_at,
         "commit": commit,
-        "lens_copy": LENS_COPY,
     }
 
     # Clean only what this build owns. The output directory may be a shared

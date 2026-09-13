@@ -120,70 +120,6 @@
         </div>
 {%- endmacro %}
 
-{%- macro scorecards(b) %}
-        <div class="lens-bar" role="tablist" aria-label="Scorecard lens">
-          {%- for l in b.lenses %}
-          <button type="button" class="lens-btn" data-lens="{{ l.key }}" role="tab" aria-selected="false">{{ l.label | md }}</button>
-          {%- endfor %}
-        </div>
-        <p class="lens-sub" id="lens-sub" aria-live="polite"></p>
-
-        <div class="sc-table-wrap">
-          <table class="sc-table">
-            <thead><tr><th>Station</th><th>Epic</th><th>Open</th><th>What it delivers</th><th>Signal</th></tr></thead>
-            <tbody id="sc-body">
-              {%- for r in b.rows %}
-              <tr class="sc-row" data-open="{{ r.open }}"{% for k, lens in r.lenses.items() %} data-{{ k }}="{{ 1 if lens.hit else 0 }}" data-{{ k }}-note="{{ lens.note | e }}"{% endfor %}>
-                <td class="sc-station"><span class="dot" style="background:{{ v(r.accent) }}"></span>{{ r.station | md }}</td>
-                <td class="sc-epic"><b>{{ r.epic_num | e }}</b>{{ r.epic | md }}</td>
-                <td class="sc-counts">{{ r.counts_html }}</td>
-                <td class="sc-deliver">{{ r.delivers | md }}</td>
-                <td class="sc-note"></td>
-              </tr>
-              {%- endfor %}
-            </tbody>
-          </table>
-        </div>
-        {%- if b.footnote %}
-        <p class="sc-proto-note">{{ b.footnote | md }}</p>
-        {%- endif %}
-
-        <script>
-        (function(){
-          var LENSES = {{ lens_copy | tojson }};
-          var tbody = document.getElementById('sc-body');
-          var sub = document.getElementById('lens-sub');
-          var buttons = Array.prototype.slice.call(document.querySelectorAll('.lens-btn'));
-          if (!tbody || !sub || !buttons.length) return;
-          var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
-
-          function apply(lens) {
-            buttons.forEach(function (b) {
-              var on = b.dataset.lens === lens;
-              b.classList.toggle('active', on);
-              b.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
-            sub.textContent = LENSES[lens].sub;
-            rows.sort(function (a, b) {
-              var ah = a.dataset[lens] === '1' ? 0 : 1;
-              var bh = b.dataset[lens] === '1' ? 0 : 1;
-              if (ah !== bh) return ah - bh;
-              return (+a.dataset.open) - (+b.dataset.open);
-            });
-            rows.forEach(function (r) {
-              r.classList.toggle('sc-hit', r.dataset[lens] === '1');
-              r.querySelector('.sc-note').textContent = r.getAttribute('data-' + lens + '-note') || '';
-              tbody.appendChild(r);
-            });
-          }
-          buttons.forEach(function (b) {
-            b.addEventListener('click', function () { apply(b.dataset.lens); });
-          });
-          apply({{ b.lenses[0].key | tojson }});
-        })();
-        </script>
-{%- endmacro %}
-
 {#- dispatcher: render any block by its declared type -#}
 {%- macro render(b) -%}
 {%- if   b.type == 'lede'       %}{{ lede(b) }}
@@ -200,7 +136,6 @@
 {%- elif b.type == 'relations'  %}{{ relations(b) }}
 {%- elif b.type == 'lattice'    %}{{ lattice(b) }}
 {%- elif b.type == 'engines'    %}{{ engines(b) }}
-{%- elif b.type == 'scorecards' %}{{ scorecards(b) }}
 {%- else %}{{ raise_unknown(b.type) }}
 {%- endif -%}
 {%- endmacro -%}

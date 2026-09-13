@@ -28,12 +28,6 @@
       <p>{% if infographics %}{{ infographics | length }} standalone visual{{ '' if infographics | length == 1 else 's' }}, each published as its own page and kept in step with the code they describe.{% else %}Standalone visuals, published as their own pages alongside the dossier.{% endif %}</p>
       <span class="card-go">{% if infographics %}Open the gallery{% else %}Nothing published yet{% endif %} &rarr;</span>
     </a>
-    <a class="card" href="dossier/index.html#scorecards">
-      <span class="card-eyebrow">Open work</span>
-      <h3>Fleet scorecards</h3>
-      <p>The same open epics re-sorted through four different leaders' priorities &mdash; strategic sequencing, cost, data integrity, and engineering risk.</p>
-      <span class="card-go">Switch the lens &rarr;</span>
-    </a>
     {%- for n in site.neighbours | default([]) %}
     <a class="card" href="{{ n.href }}">
       <span class="card-eyebrow">{{ n.eyebrow }}</span>

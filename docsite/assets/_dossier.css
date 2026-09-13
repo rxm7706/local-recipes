@@ -173,27 +173,3 @@
   .engine p + p { margin-top: 8px; }
 
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--border); font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; color: var(--rail); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-
-  /* fleet scorecards (lens toggle) */
-  .lens-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
-  .lens-btn { font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; letter-spacing: 0.03em; padding: 9px 16px; border: 1px solid var(--border); border-radius: 999px; background: var(--paper-raised); color: var(--ink-soft); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
-  .lens-btn:hover { border-color: var(--amber); color: var(--ink); }
-  .lens-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .lens-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .lens-sub { font-size: 0.98rem; color: var(--ink-soft); max-width: 70ch; margin: 0 0 22px; min-height: 1.6em; }
-  .sc-table-wrap { overflow-x: auto; margin: 8px 0 10px; }
-  .sc-table { border-collapse: collapse; width: 100%; min-width: 820px; font-size: 0.87rem; }
-  .sc-table th { text-align: left; font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rail); font-weight: 500; padding: 8px 16px 8px 0; border-bottom: 2px solid var(--ink); }
-  .sc-table td { padding: 13px 16px 13px 0; vertical-align: top; border-bottom: 1px solid var(--border); }
-  .sc-row { transition: background .2s; }
-  .sc-row.sc-hit { background: var(--amber-soft); }
-  .sc-station { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-  .sc-station .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .sc-epic b { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; color: var(--rail); margin-right: 6px; }
-  .sc-counts { font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; }
-  .sc-counts b { color: var(--ink); }
-  .sc-counts .blocked { color: var(--red); }
-  .sc-deliver { font-size: 0.85rem; color: var(--ink-soft); max-width: 32ch; }
-  .sc-note { font-size: 0.87rem; color: var(--ink-soft); max-width: 34ch; }
-  .sc-hit .sc-note { color: var(--ink); font-weight: 500; }
-  .sc-proto-note { font-size: 0.85rem; color: var(--rail); max-width: 68ch; margin: 14px 0 0; font-style: italic; }
