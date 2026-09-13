@@ -16,14 +16,13 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Re-derived 2026-09-13 from `.memlog.md` (operator D1–D3
-> campaign lock: Launch the Foundry / Adopt Frames / Build the Intelligence Hub /
-> Wire every BMAD-suite component). Invent in `local-recipes`; foundry copies a
-> working estate. Extends `spec-pyforge-unifying-strategy`; it does not re-mint any
-> Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44** (Stories
-> 44.1–44.15) under the cutover spine (`fnd:AD-1..23`). This pass does **not** flip
-> any 44.x ledger `blocked` key. The cutover is regenerative: Dreams and memlogs
-> seed foundry; every capability is rebuilt or moved per the capability ledger.
+> **Canonical contract.** Re-derived 2026-09-13 from `.memlog.md` (D1–D3 plus
+> regenerate-not-fold). Invent in `local-recipes`; foundry receives proven
+> capability as **regenerated** packages, not a fold of `src/shared/packages/`.
+> Extends `spec-pyforge-unifying-strategy`; cite this file as `fnd:CAP-1..11`.
+> Decomposed as steward **Epic 44** (44.1–44.15) plus **Epic 54** (kernel).
+> 44.4 / 44.5 are parked file-move stories — do not dispatch. The cutover is
+> regenerative: Dreams and memlogs seed foundry.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -52,12 +51,13 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 
 - **CAP-2 — Realize the estate (Phase 1).**
   - **intent:** Every capability of the estate reaches foundry by rebuild or by move per the
-    capability ledger, with `pyforge-core`, the eight `pyforge-<station>`, `pyforge-testing-kit`,
-    `django-pyforge` and the `django-<station>` packages under `src/packages/`, skills under
-    `skills/` with generated adapters, and the BMAD chain seeded from Dreams and memlogs.
-  - **success:** Every capability row is `verified-in-foundry` under its mode's gate; every
-    station env solves and the host boots from workspace members; no `sys.path` insert and
-    no Containerfile `COPY` of package source remain; no `src/shared/` exists.
+    capability ledger. Launch engines (core, steward, marshal) are **rebuild-from-Frame**
+    under `src/packages/`. The BMAD chain is seeded from Dreams and memlogs. Host and
+    `django-*` are out of Launch.
+  - **success:** Each Launch kernel row is `verified-in-foundry` under its rebuild gate
+    (thin archived suite, `fnd:CAP-11`). `src/shared/` may remain on `local-recipes` until
+    archive. No Containerfile `COPY` of package source. Host boot is not a Launch success
+    criterion. `apply --phase 1a` is not the realization path.
 
 - **CAP-3 — CFE comes home (Phase 2).**
   - **intent:** The authoritative conda-forge-expert skill, scripts and tools
@@ -107,6 +107,13 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     that preserves `moved` rows; `steward cutover apply --phase <n>` is idempotent;
     flipping `pyforge.cutover_root` switches the ledger of record, Mason's targets and the
     loop-home remotes without a redeploy, and flipping back restores them.
+
+- **CAP-11 — Foundry kernel regenerate.**
+  - **intent:** The operator can regenerate `pyforge-core`, steward, and marshal in
+    foundry `src/packages/` from Frames and Specs against a thin archived-test oracle.
+  - **success:** CLI + MCP for those three are green on a python-foundry checkout; one
+    marshal dispatch against the foundry remote passes; 44.4 / 44.5 stay undispatched
+    file-move stories. Full contract: `spec-foundry-regenerate-not-fold`.
 
 - **CAP-10 — Metered minutes budget.**
   - **intent:** `steward budget` knows the account's GitHub Actions-minutes spend and
@@ -182,13 +189,14 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 
 ## Success signal
 
-A fresh clone of `rxm7706/python-foundry` boots Foundry Platform and every station
-env, and `mason recipe build factory/recipes/<r>` builds a recipe there with the
-publish path a SelfExplainML upload — not an agent-opened conda-forge /
-staged-recipes / feedstock PR (operator 2026-09-13 D2). Two git roots stay live
-in Launch; archive (CAP-7 / 44.10) is out of this campaign (D3). Launch stories
-are 44.12 + 44.3–44.7; later 44.8 / 44.14 / 44.15; out of campaign 44.9 / 44.10 /
-44.11.
+A fresh clone of `rxm7706/python-foundry` runs the regenerated kernel (core,
+steward, marshal CLI + MCP) against the thin oracle (`fnd:CAP-11` / Epic 54)
+and `mason recipe build factory/recipes/<r>` builds a recipe there with the
+publish path a SelfExplainML upload — not an agent-opened conda-forge PR
+(operator 2026-09-13 D2). Host boot is not a Launch signal. Two git roots stay
+live; archive (CAP-7 / 44.10) is out. Launch stories: 44.3 / 44.7 / 44.12 done;
+Epic 54 kernel; 44.4 / 44.5 parked file-move. Later: 44.6, 44.8, 44.14, 44.15.
+Out: 44.9, 44.10, 44.11.
 
 ## Assumptions
 

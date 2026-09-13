@@ -22,16 +22,18 @@ The plan has two layers. The **capability ledger** has one row per capability (f
 
 | Capability area | Mode | Why |
 |---|---|---|
-| `pyforge-core` dispatch, hooks, station port | move | the spine everything binds to; verified; only its path changes |
-| CFE cell (`conda-forge-expert` skill, scripts, MCP server) | move | origin craft, 7,600 tests, irreplaceable; placement → `skills/domain/` |
-| Atlas pipelines and the query plane | move | Kedro projects with data and cache; thin specs, heavy data |
-| Warden, Marshal, Steward, Herald engines | move | large, verified, low debt; supervisor and chart are proofs |
-| Scribe | rebuild | small; its store is being re-pointed to the plane anyway |
-| Doctor detectors | rebuild | detectors are what regeneration drills prove; the rebuilt set becomes foundry's gate |
-| The seven `django-*` portals | rebuild | each needs a new shape: workspace member, no `COPY`, projections only |
-| Host GitHub Projects ingest | rebuild (into `pyforge-steward`, behind the station port) | it is the `pap:AD-2` breach |
-| Skills tree, adapters, runtime-state home | rebuild | generated artifacts; nothing to move |
+| `pyforge-core` dispatch, hooks, station port | rebuild | 2026-09-13 regenerate-not-fold; Epic 54 / `fnd:CAP-11`; do not fold |
+| CFE cell (`conda-forge-expert` skill, scripts, MCP server) | move | origin craft, irreplaceable tests; placement → `skills/domain/` (44.6 later) |
+| Atlas pipelines and the query plane | later | Kedro data; not Launch |
+| Steward, Marshal engines | rebuild | kernel first; thin archived-test oracle; CLI + MCP |
+| Warden, Herald engines | rebuild | after kernel; Warden when foundry PRs need an in-repo verdict |
+| Scribe | rebuild | later; store re-point |
+| Doctor detectors | rebuild | later; regeneration drill |
+| The seven `django-*` portals | later UX Dream | out of Launch; never a fold |
+| Host GitHub Projects ingest | later | `pap:AD-2` breach; not Launch |
+| Skills tree, adapters, runtime-state home | rebuild | re-provision from the register; not `apply --phase 1b` as a tree copy |
 | Azure, staged-recipes CI, `compliance_face`, `services/` | retire | no Dream wants them |
+| `src/shared/packages/` brownfield | stays on local-recipes | 44.4 fold parked; do not `apply --phase 1a` |
 
 ## Envelope and CI evidence (iteration 4)
 

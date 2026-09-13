@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 333
+# stories: 339
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -219,6 +219,10 @@ development_status:
   53-2-company-and-eight-station-frames-pass-in-repo-preflight: done
   53-3-one-tracked-track-json-per-run: done
   53-4-guards-as-a-library-without-a-second-verdict: done
+  54-1-thin-oracle-for-the-foundry-kernel: backlog
+  54-2-rebuild-pyforge-core-in-foundry: backlog
+  54-3-rebuild-steward-in-foundry: backlog
+  54-4-rebuild-marshal-in-foundry: backlog
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -339,6 +343,8 @@ development_status:
   epic-52-retrospective: optional
   epic-53: done
   epic-53-retrospective: optional
+  epic-54: backlog
+  epic-54-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done
