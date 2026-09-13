@@ -15,6 +15,20 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py
   - _bmad-output/projects/*/planning-artifacts/marshal-policy.toml
+surface-drift-exclude:
+  # 2026-09-12: also governed by spec-dispatch-tier-routing-fails-safe (the
+  # freshly-reconciled owner of the FR-51 model_tier_map fix + fleet-wide
+  # marshal-policy.toml revert). Coverage is unchanged; only this spec's
+  # own drift tracking for these files is off.
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
 sources:
   - ../../../../../../docs/dreams/marshal-parallel-dispatch-fanout.md
 related:

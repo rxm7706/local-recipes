@@ -33,6 +33,7 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py   # also governed by pyforge-marshal/spec-pyforge-core
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py   # also governed by pyforge-marshal/spec-pyforge-core
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
 sources:
   - ../../../../../../docs/dreams/marshal-token-economy.md
   - ../../../../../../docs/dreams/marshal-dependency-aware-dispatch.md

@@ -21,6 +21,12 @@ surface:
   - .claude/skills/bmad-sprint-planning/sprint-status-template.yaml
   - .claude/skills/bmad-retrospective/scripts/sprint_status.py
   - .claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py
+surface-drift-exclude:
+  # 2026-09-12: also governed by spec-dispatch-tier-routing-fails-safe (the
+  # freshly-reconciled owner of the FR-51 model_tier_map fix, incl. the
+  # dispatch-engine's own provider-mismatch guard in cli/dispatch.py).
+  # Coverage is unchanged; only this spec's own drift tracking is off.
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
 companions:
   - fleet-drain-playbook.md
 sources:

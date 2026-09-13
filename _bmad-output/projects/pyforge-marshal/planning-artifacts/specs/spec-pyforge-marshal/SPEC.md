@@ -33,6 +33,18 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
 companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
   - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against

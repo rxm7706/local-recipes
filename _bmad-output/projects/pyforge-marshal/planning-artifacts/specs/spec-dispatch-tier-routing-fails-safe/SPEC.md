@@ -6,8 +6,18 @@ updated: "2026-09-12"
 owner-dream: docs/dreams/dispatch-tier-routing-fails-safe.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_findings.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
