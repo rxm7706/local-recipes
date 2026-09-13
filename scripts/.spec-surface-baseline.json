@@ -3510,7 +3510,7 @@
    "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py": "3469d7f05d75ce0d309ddc67962f493e13d12498",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "6432f08ce9af50bcf98309dcef119a8e68564f92",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
@@ -3524,7 +3524,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py": "7b858936c0f6e2132a521258122e42b0c5a51a40",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/promote.py": "526a79d8b3cc313fa0c71c29cc0d7dbe5c2e0cc8",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "45e99b90d1c5c5fba56048b68fafc35897fc0d01",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__init__.py": "6662d5141eac5ccbe563b90e2a7e8c03c66df84c",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
@@ -3604,7 +3604,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "b64a702e6657c0be95b7a466b6e6a9b977847f46"
+  "memlog": "c1a841bf51ad2232650eeb6e86bba818cdbd8b80"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5032,7 +5032,7 @@
    "src/shared/packages/pyforge-scribe/pyproject.toml": "a401e9c8f0db8b579c8179e0250c045b36fb7c05",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "6432f08ce9af50bcf98309dcef119a8e68564f92",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
@@ -5046,14 +5046,14 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py": "7b858936c0f6e2132a521258122e42b0c5a51a40",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/promote.py": "526a79d8b3cc313fa0c71c29cc0d7dbe5c2e0cc8",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "45e99b90d1c5c5fba56048b68fafc35897fc0d01",
    "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "28ce9e87caee8a1d7db65ed01e65bc5e31b88652",
    "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": "0f58ab596067bd6cfc9bee500795adfd4b3165bd",
    "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": "01f2a3d0b16c4e64cf51ac58a4a6529e4f501e6e",
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "7ef280c26107a31fe00d96b5df708c192926fc58",
    "src/shared/packages/pyforge-scribe/tests/unit/test_capture.py": "86b4a884f5342c51a16d351281b5e583486dd436",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "eb9ac99d3ac3e0c3ed97f2cb5fef2d3a6887ec0d",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "13f8d831289e4932efd086e05b72fb586ac5a2ba",
    "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "0e7c383ecf1c582fb001a2012efcc9b9e897e1df",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py": "92dc82f0d9a078ce0705e25f3c3bbd4334aef686",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_graphify.py": "4f408dabd963536d139f9b9987985b1606a581f4",
@@ -5064,12 +5064,12 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py": "c59af223dd5c0dd62a58bc10b6b13c6be1e7f93d",
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py": "b6b1d5c2157514f982f9a73a31de2ed45efd6dc3",
    "src/shared/packages/pyforge-scribe/tests/unit/test_promote.py": "fcd978e2603a9d5b5581d30c38c8ff058c094c68",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py": "03cc383abcad1cd9673ab8738a933527717a438b",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py": "19ba60464c89a608c6aeea1728ed7cda2386d6b0",
    "src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py": "0bc7c5deb8369e30fcdb5ea7cb356cd4aa77f16c",
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "b3eb135cbf4ad3c1dc86ab0faa0b61be3532f2dd"
+  "memlog": "4491b3a9525fa75c100616ff4a4caceabb9160b6"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
@@ -5098,19 +5098,19 @@
  },
  "pyforge-scribe/spec-scribe-knowledge-layers": {
   "files": {
-   "AGENTS.md": "4e36e13328d56c7ec03341532e15ccf30cec96b9",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "6432f08ce9af50bcf98309dcef119a8e68564f92",
+   "AGENTS.md": "51230ce4b8e2a494cd4525a207b4b54323d938c2",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f"
   },
-  "memlog": "aea66ab30bd2ff8cfbd551500cd8d17cbaac9817"
+  "memlog": "6931b4ad40e0c437fa6e66d519f3ae95170eeda6"
  },
  "pyforge-scribe/spec-scribe-marshal-fact-visibility": {
   "files": {
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "6432f08ce9af50bcf98309dcef119a8e68564f92",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f"
   },
-  "memlog": "ed3f4077dad0bbcd7d9cac7c554dec3a258777f4"
+  "memlog": "b3abdcfe656047c1c7e6ee54bda1d9b09a1c7c77"
  },
  "pyforge-scribe/spec-scribe-mines-raw-session-transcripts": {
   "files": {},
@@ -5133,15 +5133,22 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "f56dfb8367d59e66179c699e3f77337904a319cb",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "92bebb16203e7053e679ca861295ac7eea768241"
   },
-  "memlog": "30c4f801530b78af875d6386e93559f68b6ef490"
+  "memlog": "8ad2caefe0d1da743f32bb4e267097817403b537"
+ },
+ "pyforge-scribe/spec-scribe-recall-modes": {
+  "files": {
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f"
+  },
+  "memlog": "4d12c3c2c6f758a1808934a126ead6f8f4d61710"
  },
  "pyforge-scribe/spec-scribe-recall-stale-between-nightlies": {
   "files": {
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py": "663f55b14c4c9a43e4eea33bde45b5284b5610bc",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f"
   },
-  "memlog": "4081247ba922e3537e79bca015594244f34c001b"
+  "memlog": "21d8b34aa985ee939e230ed01ffb63196dfd3b81"
  },
  "pyforge-scribe/spec-sentinel": {
   "files": {},
@@ -5475,7 +5482,7 @@
    ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/metadata.json": "9887269f73aca3ce8c46ed8ac0010a5b0bb43a31",
    ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/provenance-map.json": "d377f83c4754dc1019d98bd08e3c0183529b45b7",
    ".claude/skills/pyforge-marshal/skill-brief.yaml": "71db3b7153b30693a109f21e74e79021df18a6ad",
-   ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md": "44d6b81bb644ae9a26f937f93e76f5a5c670e168",
+   ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md": "5a6c72565aca9ba33377ff7dfa147e45badf1e19",
    ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/context-snippet.md": "7e3962869748d37bebec65a519fcb64350dae606",
    ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/metadata.json": "71b015c07f45072439881da105d2af5db3cc7a94",
    ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/provenance-map.json": "4adf17bd8a64eef1dff233f53b4c9e353c6c3f1d",
@@ -6409,7 +6416,7 @@
    "src/shared/packages/pyforge-scribe/pyproject.toml": "a401e9c8f0db8b579c8179e0250c045b36fb7c05",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "6432f08ce9af50bcf98309dcef119a8e68564f92",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "ec64391fad50b2c7ab139da1b17c1363f9fb5694",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
@@ -6423,14 +6430,14 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py": "7b858936c0f6e2132a521258122e42b0c5a51a40",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/promote.py": "526a79d8b3cc313fa0c71c29cc0d7dbe5c2e0cc8",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "45e99b90d1c5c5fba56048b68fafc35897fc0d01",
    "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "28ce9e87caee8a1d7db65ed01e65bc5e31b88652",
    "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": "0f58ab596067bd6cfc9bee500795adfd4b3165bd",
    "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": "01f2a3d0b16c4e64cf51ac58a4a6529e4f501e6e",
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "7ef280c26107a31fe00d96b5df708c192926fc58",
    "src/shared/packages/pyforge-scribe/tests/unit/test_capture.py": "86b4a884f5342c51a16d351281b5e583486dd436",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "eb9ac99d3ac3e0c3ed97f2cb5fef2d3a6887ec0d",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "13f8d831289e4932efd086e05b72fb586ac5a2ba",
    "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "0e7c383ecf1c582fb001a2012efcc9b9e897e1df",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py": "92dc82f0d9a078ce0705e25f3c3bbd4334aef686",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_graphify.py": "4f408dabd963536d139f9b9987985b1606a581f4",
@@ -6441,12 +6448,12 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py": "c59af223dd5c0dd62a58bc10b6b13c6be1e7f93d",
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py": "b6b1d5c2157514f982f9a73a31de2ed45efd6dc3",
    "src/shared/packages/pyforge-scribe/tests/unit/test_promote.py": "fcd978e2603a9d5b5581d30c38c8ff058c094c68",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py": "03cc383abcad1cd9673ab8738a933527717a438b",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py": "19ba60464c89a608c6aeea1728ed7cda2386d6b0",
    "src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py": "0bc7c5deb8369e30fcdb5ea7cb356cd4aa77f16c",
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "3561b7deaed8ac876dd8364ac1fec5f43c9b6867"
+  "memlog": "ff8cf0e437a9765d2d4bbc4ac740dc99dfdbd603"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {

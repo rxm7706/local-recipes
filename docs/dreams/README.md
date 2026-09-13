@@ -186,6 +186,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`scribe-planning-pointers.md`](scribe-planning-pointers.md) | specified | Compile Brief/PRD/Architecture-spine/`epics.md` as pointer nodes (title, path, status, FR/AD/headings) — never the wholesale body. |
 | [`scribe-named-docs.md`](scribe-named-docs.md) | specified | Named docs extras: how-tos plus a library-catalog heading extract — never `docs/**`. |
 | [`scribe-graphify-target-list.md`](scribe-graphify-target-list.md) | specified | Extra-on graphify ingest walks packages + platform + scripts — never `recipes/` or the repo root. |
+| [`scribe-recall-modes.md`](scribe-recall-modes.md) | specified | First-class `--mode planning|memory|code` bags, exclusive with `--kind`. |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**

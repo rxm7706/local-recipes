@@ -722,6 +722,22 @@ def test_recall_unknown_kind_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert "unknown recall kind" in _combined_output(result)
 
 
+def test_recall_mode_and_kind_together_exit_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["recall", "why", "--mode", "planning", "--kind", "doc"])
+    assert result.exit_code == 2
+    assert "exclusive" in _combined_output(result)
+
+
+def test_recall_unknown_mode_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["recall", "why", "--mode", "lexical"])
+    assert result.exit_code == 2
+    assert "unknown recall mode" in _combined_output(result)
+
+
 # --- Story 6.1: `scribe index build|report|move-list` -----------------------
 
 
