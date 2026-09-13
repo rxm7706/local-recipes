@@ -496,3 +496,111 @@ def test_unknown_recall_kind_raises() -> None:
 
     with pytest.raises(ValueError, match="unknown recall kind"):
         resolve_recall_kinds(frozenset({"nope"}))
+
+
+@pytest.fixture()
+def repo_with_fact_ledgers(tmp_path: Path) -> Path:
+    for slug in ("pyforge-scribe", "pyforge-warden"):
+        ledger = tmp_path / "presentations" / slug
+        ledger.mkdir(parents=True)
+        (ledger / "facts.yaml").write_text(
+            f"deck: {slug}\nuniqueledger{slug.replace('-', '')}: 1\n",
+            encoding="utf-8",
+        )
+        nested = ledger / "nested"
+        nested.mkdir()
+        (nested / "facts.yaml").write_text("deck: nested-ignored\n", encoding="utf-8")
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-scribe" / "planning-artifacts").mkdir(
+        parents=True
+    )
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-scribe" / "planning-artifacts" / "notes.md").write_text(
+        "planning only", encoding="utf-8"
+    )
+    return tmp_path
+
+
+def test_scope_admits_same_slug_fact_ledger(repo_with_fact_ledgers: Path) -> None:
+    store = FlatFileGraphStore(repo_with_fact_ledgers / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="doc:presentations/pyforge-scribe/facts.yaml",
+            kind="doc",
+            title="scribe facts",
+            text="uniqueledgerscribepyforgescribe poster number",
+            citation="presentations/pyforge-scribe/facts.yaml",
+        )
+    )
+    store.upsert_node(
+        _node(
+            id="doc:presentations/pyforge-warden/facts.yaml",
+            kind="doc",
+            title="warden facts",
+            text="uniqueledgerwardenpyforgewarden denser epic planning context constraints",
+            citation="presentations/pyforge-warden/facts.yaml",
+        )
+    )
+    store.commit()
+
+    scoped = answer(
+        "uniqueledgerscribepyforgescribe poster number",
+        FlatFileGraphStore(repo_with_fact_ledgers / "graph.json"),
+        repo_root=repo_with_fact_ledgers,
+        scope="pyforge-scribe",
+    )
+    assert scoped.grounded is True
+    assert scoped.citation == "presentations/pyforge-scribe/facts.yaml"
+
+    other = answer(
+        "uniqueledgerwardenpyforgewarden denser epic planning context constraints",
+        FlatFileGraphStore(repo_with_fact_ledgers / "graph.json"),
+        repo_root=repo_with_fact_ledgers,
+        scope="pyforge-scribe",
+    )
+    assert other.grounded is False
+
+
+def test_scope_excludes_nested_facts_yaml(repo_with_fact_ledgers: Path) -> None:
+    store = FlatFileGraphStore(repo_with_fact_ledgers / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="doc:presentations/pyforge-scribe/nested/facts.yaml",
+            kind="doc",
+            title="nested",
+            text="nestedledger token unique",
+            citation="presentations/pyforge-scribe/nested/facts.yaml",
+        )
+    )
+    store.commit()
+
+    result = answer(
+        "nestedledger token unique",
+        FlatFileGraphStore(repo_with_fact_ledgers / "graph.json"),
+        repo_root=repo_with_fact_ledgers,
+        scope="pyforge-scribe",
+    )
+    assert result.grounded is False
+
+
+def test_unscoped_recall_still_sees_every_fact_ledger(repo_with_fact_ledgers: Path) -> None:
+    store = FlatFileGraphStore(repo_with_fact_ledgers / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="doc:presentations/pyforge-warden/facts.yaml",
+            kind="doc",
+            title="warden facts",
+            text="uniqueledgerwardenpyforgewarden",
+            citation="presentations/pyforge-warden/facts.yaml",
+        )
+    )
+    store.commit()
+
+    result = answer(
+        "uniqueledgerwardenpyforgewarden",
+        FlatFileGraphStore(repo_with_fact_ledgers / "graph.json"),
+        repo_root=repo_with_fact_ledgers,
+    )
+    assert result.grounded is True
+    assert result.citation == "presentations/pyforge-warden/facts.yaml"

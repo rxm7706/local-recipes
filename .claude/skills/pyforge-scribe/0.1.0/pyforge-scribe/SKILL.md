@@ -61,7 +61,9 @@ their own non-graph path instead of serving it.
 
 **Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
-Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--scope` is unchanged.
+Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--scope`
+admits that project's planning tree plus `presentations/<scope>/facts.yaml`
+(Story 9.1).
 
 **Index** (`scribe index build|report|move-list`, Story 6.1) -- the graphify
 `compile_surface` extra's explicit verbs:

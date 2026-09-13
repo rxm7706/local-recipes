@@ -344,10 +344,11 @@ def recall_cmd(
         None,
         "--scope",
         help=(
-            "Restrict candidates to one project's own citation tree "
-            "(_bmad-output/projects/<scope>/) before scoring -- lexical "
-            "token-overlap alone has no notion of project (marshal Story "
-            "28.27)."
+            "Restrict candidates to one project's planning tree "
+            "(_bmad-output/projects/<scope>/) plus that slug's Herald "
+            "fact ledger (presentations/<scope>/facts.yaml). Lexical "
+            "token-overlap alone has no notion of project (marshal "
+            "Story 28.27; scribe Story 9.1)."
         ),
     ),
     kind: list[str] = typer.Option(

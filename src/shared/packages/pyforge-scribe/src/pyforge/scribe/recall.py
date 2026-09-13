@@ -100,20 +100,30 @@ def _scope_prefix(scope: str) -> str:
     return f"_bmad-output/projects/{scope}/"
 
 
+#: Herald fact ledger compiled by Story 8.3. Scoped retrieve admits the
+#: ledger whose directory name equals `--scope` (Story 9.1 / CAP-1).
+_FACTS_LEDGER_CITATION_RE = re.compile(
+    r"^presentations/(?P<slug>[^/]+)/facts\.yaml$"
+)
+
+
 def _citation_in_scope(citation: str, scope: str | None) -> bool:
     """Whether `citation` belongs to `scope` (a project slug).
 
     `scope=None` admits every citation -- today's unscoped behavior,
-    unchanged. A given `scope` admits only citations under that project's
-    own `_bmad-output/projects/<scope>/` tree; every other citation shape
-    (`commit:<sha>`, a transcript `<jsonl>:L<n>`, or a bare code path) has
-    no reliable per-project attribution in the citation string itself, so
-    it is excluded rather than guessed at -- a scoped caller asked for THIS
-    project's planning facts, not an arbitrary commit or code line that
-    happens to score well lexically."""
+    unchanged. A given `scope` admits citations under that project's
+    own `_bmad-output/projects/<scope>/` tree, plus exactly
+    `presentations/<scope>/facts.yaml` (Story 9.1). Every other citation
+    shape (`commit:<sha>`, a transcript `<jsonl>:L<n>`, a bare code path,
+    another deck's ledger, or the presentations export tree) has no
+    reliable per-project attribution, so it is excluded rather than
+    guessed at."""
     if scope is None:
         return True
-    return citation.startswith(_scope_prefix(scope))
+    if citation.startswith(_scope_prefix(scope)):
+        return True
+    match = _FACTS_LEDGER_CITATION_RE.fullmatch(citation)
+    return bool(match and match.group("slug") == scope)
 
 
 def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:

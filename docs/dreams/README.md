@@ -179,6 +179,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`pyforge-scribe.md`](pyforge-scribe.md) | realized | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
 | [`scribe-graphify-nightly-currency.md`](scribe-graphify-nightly-currency.md) | specified | Nightly compile keeps the graphify code surface — adapter works against live graphifyy; 02:30 does not drop `code:` nodes. |
 | [`scribe-knowledge-layers.md`](scribe-knowledge-layers.md) | specified | Compile and recall are layered knowledge (hygiene, named Dreams/SPECs/facts, default recall omits `code:`), not one lexical bag. |
+| [`scribe-marshal-fact-visibility.md`](scribe-marshal-fact-visibility.md) | specified | Scoped Marshal retrieve can cite that project's own `presentations/<slug>/facts.yaml` (identity, not a presentations/ leak). |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**
