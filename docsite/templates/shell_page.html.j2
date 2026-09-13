@@ -1,0 +1,39 @@
+{%- import "blocks.html.j2" as B with context -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ page_title }}</title>
+<meta name="description" content="{{ page_description | e }}">
+<meta property="og:title" content="{{ page_title | e }}">
+<meta property="og:description" content="{{ page_description | e }}">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{ site.favicon }}</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ rel }}assets/site.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a class="site-brand" href="{{ rel }}index.html"><span class="spark"></span>{{ site.short_name }}</a>
+    <ul>
+      {%- for item in site.nav %}
+      <li><a class="nav-link" href="{{ rel }}{{ item.href }}"{% if item.key == page_key %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+      {%- endfor %}
+      {%- for n in site.neighbours | default([]) %}
+      <li><a class="nav-link nav-neighbour" href="{{ rel }}{{ n.href }}">{{ n.label }}</a></li>
+      {%- endfor %}
+    </ul>
+    <span class="nav-spacer"></span>
+    <span class="stamp">Built {{ built_at }}{% if commit %} · {{ commit }}{% endif %}</span>
+  </div>
+</header>
+
+{% block body %}{% endblock %}
+
+</body>
+</html>

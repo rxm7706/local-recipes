@@ -1,0 +1,59 @@
+{% extends "shell_page.html.j2" %}
+{%- import "blocks.html.j2" as B with context -%}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>{{ site.eyebrow }}</div>
+    <h1>{{ site.name }}</h1>
+    <p class="blurb">{{ site.blurb }}</p>
+
+    <div class="hero-stats">
+      {%- for s in doc.stats %}
+      <div class="hero-stat"><span class="n">{{ s.value | md }}</span><span class="l">{{ s.label | md }}</span></div>
+      {%- endfor %}
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <a class="card" href="dossier/index.html">
+      <span class="card-eyebrow">Full fleet</span>
+      <h3>The Dossier</h3>
+      <p>{{ doc.summary | md }}</p>
+      <span class="card-go">Read all {{ doc.sections | length }} sections &rarr;</span>
+    </a>
+    <a class="card" href="infographics/index.html">
+      <span class="card-eyebrow">Standalone</span>
+      <h3>Infographics</h3>
+      <p>{% if infographics %}{{ infographics | length }} standalone visual{{ '' if infographics | length == 1 else 's' }}, each published as its own page and kept in step with the code they describe.{% else %}Standalone visuals, published as their own pages alongside the dossier.{% endif %}</p>
+      <span class="card-go">{% if infographics %}Open the gallery{% else %}Nothing published yet{% endif %} &rarr;</span>
+    </a>
+    <a class="card" href="dossier/index.html#scorecards">
+      <span class="card-eyebrow">Open work</span>
+      <h3>Fleet scorecards</h3>
+      <p>The same open epics re-sorted through four different leaders' priorities &mdash; strategic sequencing, cost, data integrity, and engineering risk.</p>
+      <span class="card-go">Switch the lens &rarr;</span>
+    </a>
+    {%- for n in site.neighbours | default([]) %}
+    <a class="card" href="{{ n.href }}">
+      <span class="card-eyebrow">{{ n.eyebrow }}</span>
+      <h3>{{ n.label }}</h3>
+      <p>{{ n.blurb }}</p>
+      <span class="card-go">Open {{ n.label }} &rarr;</span>
+    </a>
+    {%- endfor %}
+  </div>
+
+  <div class="station-rail">
+    {%- for s in doc.sections if s.kind == 'station' %}
+    <a class="station-pill" href="dossier/index.html#{{ s.id }}" style="color:{{ B.v(s.accent) }}"><span class="dot" style="background:{{ B.v(s.accent) }}"></span>{{ s.title | md }}</a>
+    {%- endfor %}
+  </div>
+
+  <footer>
+    <span>{{ doc.footer.note | md }}</span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+{% endblock %}

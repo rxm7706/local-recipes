@@ -1,0 +1,76 @@
+{% extends "shell_page.html.j2" %}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>Standalone visuals</div>
+    <h1>Infographics</h1>
+    <p class="blurb">Each of these is a self-contained page, authored separately and published here unmodified. They are rebuilt straight from the files in the repository, so whatever is committed is what appears.</p>
+  </div>
+
+  {% if infographics %}
+  <div class="gallery">
+    {%- for ig in infographics %}
+    <a class="shot" href="{{ ig.out_name }}">
+      <div class="shot-frame" data-preview="{{ ig.out_name }}">
+        <span class="shot-placeholder" aria-hidden="true">{{ ig.title }}</span>
+      </div>
+      <div class="shot-meta">
+        <h3>{{ ig.title }}</h3>
+        {%- if ig.description %}
+        <p>{{ ig.description }}</p>
+        {%- endif %}
+        <span class="shot-file">{{ ig.source }}</span>
+      </div>
+    </a>
+    {%- endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No infographics found yet</h3>
+    <p>The build resolved {{ site.infographics.include | length }} glob{{ '' if site.infographics.include | length == 1 else 's' }} and matched no <code>.html</code> files, so the gallery is empty rather than broken.</p>
+    <p>Adjust <code>infographics.include</code> in <code>site/content/site.yml</code> so the patterns match where the standalone HTML files actually live, then rebuild. Every matched file is published as its own page and listed here; titles come from each file's own <code>&lt;title&gt;</code> tag unless overridden in that same config.</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    <span>Published unmodified from the repository &mdash; a thin back-link bar is the only thing this build adds.</span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+
+<script>
+// Each infographic is 110-290KB of self-contained HTML. Mounting ten of them
+// as eager iframes costs ~1.5MB and locks the page up before first paint, so
+// a preview is only attached once its card is near the viewport — and never
+// at all where IntersectionObserver is missing, which leaves a titled
+// placeholder rather than a broken frame.
+(function () {
+  var frames = Array.prototype.slice.call(document.querySelectorAll('.shot-frame[data-preview]'));
+  if (!frames.length || typeof IntersectionObserver === 'undefined') return;
+
+  function mount(frame) {
+    if (frame.dataset.mounted) return;
+    frame.dataset.mounted = '1';
+    var f = document.createElement('iframe');
+    f.setAttribute('title', '');
+    f.setAttribute('aria-hidden', 'true');
+    f.setAttribute('tabindex', '-1');
+    f.setAttribute('scrolling', 'no');
+    f.setAttribute('loading', 'lazy');
+    f.addEventListener('load', function () { frame.classList.add('is-loaded'); });
+    f.src = frame.dataset.preview;
+    frame.appendChild(f);
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { mount(e.target); io.unobserve(e.target); }
+    });
+  }, { rootMargin: '300px 0px' });
+
+  frames.forEach(function (f) { io.observe(f); });
+})();
+</script>
+{% endblock %}

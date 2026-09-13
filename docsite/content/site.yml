@@ -1,0 +1,118 @@
+# Site-level configuration for the PyForge Pages build.
+# The dossier's own content lives in site/content/dossier.yml.
+
+name: PyForge
+short_name: PyForge
+eyebrow: Internal dossier — full fleet
+favicon: "🏭"
+blurb: >-
+  The factory this repository builds for itself — eight stations, one shared
+  leaf package, and an honest account of where the code and its own
+  documentation disagree. Everything here is generated from the repository, so
+  it stays in step with what actually ships.
+
+nav:
+  - key: index
+    label: Overview
+    href: index.html
+  - key: dossier
+    label: Dossier
+    href: dossier/index.html
+  - key: gallery
+    label: Infographics
+    href: infographics/index.html
+
+# Things that live in the same publish root but are produced by something else.
+# This site is built into docs/dashboard/, which also carries the Kedro-Viz
+# export staged by kedro-viz-publish.yml. Listing them keeps them reachable
+# from the landing page now that it is the Pages root.
+neighbours:
+  - label: Kedro-Viz
+    href: kedro-viz/
+    eyebrow: Atlas DAG
+    blurb: >-
+      The real pyforge-atlas Kedro pipeline graph, exported straight from the
+      DAG and republished on every push that touches its pipelines.
+
+infographics:
+  # Globs, relative to the repo root, resolved in order. Every matching .html
+  # file is published as its own page and listed in the gallery.
+  #
+  # These are the ten PyForge posters refreshed in the 2026-09-13 currency
+  # sweep. Four more infographics exist under presentations/ for unrelated
+  # projects (deckcraft, presenton-pixi-image, unity-data-stack,
+  # wasm-analytics-stack) — to publish those too, replace this whole list with
+  # the single line:
+  #
+  #     - "presentations/*/project/*Infographic standalone.html"
+  #
+  include:
+    - "presentations/pyforge-genesis/project/*Infographic standalone.html"
+    - "presentations/pyforge-unifying-strategy/project/*Infographic standalone.html"
+    - "presentations/pyforge-atlas/project/*Infographic standalone.html"
+    - "presentations/pyforge-doctor/project/*Infographic standalone.html"
+    - "presentations/pyforge-herald/project/*Infographic standalone.html"
+    - "presentations/pyforge-marshal/project/*Infographic standalone.html"
+    - "presentations/pyforge-mason/project/*Infographic standalone.html"
+    - "presentations/pyforge-scribe/project/*Infographic standalone.html"
+    - "presentations/pyforge-steward/project/*Infographic standalone.html"
+    - "presentations/pyforge-warden/project/*Infographic standalone.html"
+
+  exclude: []
+
+  # Inject a small "back to gallery" bar at the top of each published
+  # infographic. The source files themselves are never modified.
+  inject_backbar: true
+
+  # Optional per-item overrides, keyed by repo-relative path (or bare
+  # filename). Titles default to each file's own <title>; `order` controls
+  # gallery position (lower first, default 500).
+  overrides:
+    "presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html":
+      title: PyForge Genesis
+      description: How the operating model is delivered into a repository that doesn't have it yet.
+      order: 10
+    "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html":
+      title: PyForge Unifying Strategy
+      description: The whole-fleet strategy the individual stations are built to serve.
+      order: 20
+    "presentations/pyforge-atlas/project/PyForge Atlas Infographic standalone.html":
+      title: Atlas
+      description: The intelligence layer — data, not verdicts.
+      order: 30
+    "presentations/pyforge-doctor/project/PyForge Doctor Infographic standalone.html":
+      title: Doctor
+      description: Advisory diagnostics, and the one station that judges Marshal.
+      order: 40
+    "presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html":
+      title: Herald
+      description: The Dream-to-deck bridge and the fleet's comms desk.
+      order: 50
+    "presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html":
+      title: Marshal
+      description: Deterministic BMAD-loop supervisor across two dispatch engines.
+      order: 60
+    "presentations/pyforge-mason/project/PyForge Mason Infographic standalone.html":
+      title: Mason
+      description: The artisan builder — a CLI front door onto conda-forge-expert.
+      order: 70
+    "presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html":
+      title: Scribe
+      description: The append-only write path for checked-in team memory.
+      order: 80
+    "presentations/pyforge-steward/project/PyForge Steward Infographic standalone.html":
+      title: Steward
+      description: The provisioner — credentials, deployment, and the platform layer.
+      order: 90
+    "presentations/pyforge-warden/project/Warden Infographic standalone.html":
+      title: Warden
+      description: The compliance gate — dependency hygiene, licenses, and CVEs.
+      order: 100
+
+artifact:
+  # The published artifact this build re-renders. Keeping the URL here means a
+  # refresh updates the dossier link you already share, instead of minting a
+  # new one.
+  url: https://claude.ai/code/artifact/c75b7fa4-4e57-48b5-98fd-e04fe015b843
+  title: The PyForge Dossier
+  favicon: "🏭"
