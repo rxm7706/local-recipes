@@ -56,8 +56,11 @@ when the estate cluster is absent — not the wielded register path.
 
 The adoption register records row 11 as **wield (authoring tool only)** and
 row 13 as **wield (sidecar on estate Postgres + OIDC, schema `mybmad`)**.
-`mybmad` is not `/console/` and not a PR gate. `bmad-spec` re-derives the
-lifecycle Spec so Non-goals name this consume contract, not a skip.
+`mybmad` is not `/console/` and not a PR gate. The host **shows** it in
+django-pyforge chrome (switcher / embed) after the same OIDC session, as a
+surface — not station nine. Stations keep talking through `station_port`;
+they do not import mybmad. `bmad-spec` re-derives the lifecycle Spec so
+Non-goals name this consume contract, not a skip.
 
 ## Realization log
 

@@ -71,4 +71,5 @@ Prisma confined to schema `mybmad`, same Keycloak/OIDC as `/console/`.
 4. Prisma applies only in schema `mybmad` on the estate cluster.
 5. mybmad estate login is Keycloak/OIDC, not Better Auth passwords.
 6. `pipeline-truth` `wired` agrees with the register.
-7. Ledger key `52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console` exists; this Story does not self-close as `done` in the mint commit.
+7. django-pyforge chrome can show mybmad (switcher and/or embed) under the same OIDC session; it is not a ninth station and not `/console/`.
+8. Ledger key `52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console` exists; this Story does not self-close as `done` in the mint commit.

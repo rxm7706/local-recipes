@@ -3415,4 +3415,7 @@ email/password Better Auth); a Keycloak client id for the sidecar is config,
 not a new IdP
 **And** `pipeline-truth`'s `wired` column still agrees with the register
 (template remains unwired-as-module; mybmad remains a sidecar process)
+**And** django-pyforge chrome can **show** mybmad (switcher tile and/or
+embed) after the same OIDC session, as a surface — not station nine, not
+`/stations/mybmad/`, not `/console/`; the process stays the sidecar
 **Status:** backlog
