@@ -227,7 +227,7 @@ development_status:
   54-5-a-b-protocol-and-pin-on-foundry: done
   55-1-tracked-capability-ledger: done
   55-2-extract-detector-in-detectors-ci: done
-  55-3-verified-in-foundry-joins-the-case-list: backlog
+  55-3-verified-in-foundry-joins-the-case-list: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -350,7 +350,7 @@ development_status:
   epic-53-retrospective: optional
   epic-54: done
   epic-54-retrospective: optional
-  epic-55: in-progress
+  epic-55: done
   epic-55-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
