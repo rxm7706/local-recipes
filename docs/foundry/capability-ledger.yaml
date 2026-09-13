@@ -1294,3 +1294,10 @@ capabilities:
     mode: A-only
     expiry: 2026-12-31
     path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md
+  - id: platform-dev-boots-local:CAP-1
+    spec: platform-dev-boots-local
+    station: pyforge-steward
+    heading: Local leaf on platform-dev.
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-dev-boots-local/SPEC.md

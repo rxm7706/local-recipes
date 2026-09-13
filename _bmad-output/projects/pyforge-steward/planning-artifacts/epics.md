@@ -3669,3 +3669,30 @@ CAP-3
 case-list id **When** the detector runs **Then** the finding is HARD
 **And** a row that cites a listed id is not HARD for this reason
 **Status:** done
+
+## Epic 56: platform-dev boots the local leaf (spec-platform-dev-boots-local pdl:CAP-1)
+
+Minted 2026-09-13 from `docs/dreams/platform-dev-boots-local.md`.
+pap:AD-16 names `platform-dev` as the containerless local baseline.
+`config.settings.local` always loads `debug_toolbar`; that package
+was only on `platform-ci-test`. Image feature stays clean.
+
+### Story 56.1: django-debug-toolbar on platform-dev only
+
+As a platform operator,
+I want `platform-dev` to load `config.settings.local`,
+So that mint and `manage.py` do not require a second pixi env.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-dev-boots-local
+CAP-1
+**Surface:** `pixi.toml` `[feature.platform-dev.dependencies]`;
+`pixi.lock`; `src/platform/tests/policy/test_platform_dev_local_leaf.py`.
+**Given** `platform-dev` python cannot import `debug_toolbar`
+**When** `django-debug-toolbar` is pinned on the `platform-dev` feature
+at the same floor as `platform-ci-test` (`>=8.0.0`)
+**Then** that env imports `debug_toolbar` and can `django.setup()` under
+`DJANGO_SETTINGS_MODULE=config.settings.local`
+**And** `[feature.python-agent-platform]` does not declare the package
+**And** a policy test fails if either pin is wrong
+**And** the proof does not use Docker or CRC
+**Status:** done

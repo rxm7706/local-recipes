@@ -8454,6 +8454,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-celery-beat-2.8.1-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-compressor-4.6.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-crispy-forms-2.6-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/django-debug-toolbar-8.0.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-environ-0.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-extensions-4.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-filter-26.1-pyhc364b38_0.conda
@@ -8815,6 +8816,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-celery-beat-2.8.1-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-compressor-4.6.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-crispy-forms-2.6-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/django-debug-toolbar-8.0.0-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-environ-0.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-extensions-4.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-filter-26.1-pyhc364b38_0.conda

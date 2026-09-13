@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 346
+# stories: 349
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -228,6 +228,7 @@ development_status:
   55-1-tracked-capability-ledger: done
   55-2-extract-detector-in-detectors-ci: done
   55-3-verified-in-foundry-joins-the-case-list: done
+  56-1-django-debug-toolbar-on-platform-dev-only: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -352,6 +353,8 @@ development_status:
   epic-54-retrospective: optional
   epic-55: done
   epic-55-retrospective: optional
+  epic-56: done
+  epic-56-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

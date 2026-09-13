@@ -76,7 +76,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
 | `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (`marshal seed` verbs) via **copier** (NFR-C2, `>=9.17,<10`); `import-linter` enforces AD-3/AD-4 as build-breaking contracts. Tasks: `pyforge-marshal-test`, `pyforge-marshal-build{,-conda,-dist}`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
 | `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
-| `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`) ONTO `python-agent-platform` — one env for the full local Tier-1 dev baseline (engines + the PostgreSQL/Redis/k8s-CLI processes they need), zero containers or managed services. `pixi install -e platform-dev` alone provisions everything Epic 11's schema-isolation work needs. |
+| `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1 + 56.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`/`django-debug-toolbar`) ONTO `python-agent-platform` — one env for the full local Tier-1 baseline including `config.settings.local`, zero containers or managed services. |
 | `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 | `bmad-suite-full`| bmad-suite-full (no-default-feature)                | **linux-64 only.** CAP-4 greenfield one-pin proof env (`spec-bmad-suite-metapackage`, story 39.4): composes only `bmad-suite` (>=2026.9.1, SelfExplainML) + a minimal `python` floor — solver smoke without pulling the fat `local-recipes` graph. Not composed into `local-recipes`, which keeps its own 11 explicit `bmad-*` pins for pipeline-truth / doctor drift granularity. Docs: `install-matrix.md`'s Greenfield one-pin section. |
 
@@ -737,6 +737,8 @@ PROCESSES, not containers or managed services):
   sub-posture note: `fakeredis` + eager-Celery stand in there, or WSL2/a remote.
 - **kubernetes-helm** (>=4.3.0) — the `helm` CLI, for Epic 12 chart work.
 - **kubernetes-client** (>=1.34.3) — `kubectl`, for the same chart/deploy work.
+- **django-debug-toolbar** (>=8.0.0) — Story 56.1 / pdl:CAP-1. Required because
+  `config.settings.local` always imports `debug_toolbar`. Not on the image env.
 
 Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.45.0) — `from google.cloud import bigquery`;
@@ -859,7 +861,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **django-celery-beat** (>=2.9.0) — periodic Celery tasks in Django DB.
 - **django-compressor** (>=4.6.0) — compress JS/CSS in Django.
 - **django-crispy-forms** (>=2.6) — Django form rendering.
-- **django-debug-toolbar** (>=8.0.0) — Django debug panel (`platform-ci-test` / local).
+- **django-debug-toolbar** (>=8.0.0) — Django debug panel (`platform-dev` / `platform-ci-test` / local). Not on `python-agent-platform` (image).
 - **django-environ** (>=0.14.0) — 12-factor env → Django settings.
 - **django-extensions** (>=4.1) — Django management extras.
 - **django-ipware** (>=7.0.1) — client IP from request (wraps python-ipware).

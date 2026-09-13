@@ -17,6 +17,7 @@ Dreams (`spec-unified-container/SPEC.md`, `spec-bmad-module-provisioning/SPEC.md
 `spec-python-foundry-cutover/SPEC.md` (`ready`; `fnd:CAP-1..11`, Epic 44 cutover; Epic 54 kernel),
 `spec-foundry-regenerate-not-fold/SPEC.md` (`ready`; `fnr:CAP-1..5`, regenerate-not-fold),
 `spec-foundry-capability-ledger/SPEC.md` (`ready`; `fcl:CAP-1..3`, strangler ledger + extract),
+`spec-platform-dev-boots-local/SPEC.md` (`ready`; `pdl:CAP-1`, toolbar on `platform-dev` only; Epic 56),
 `spec-build-league-scorecard/SPEC.md` (`draft`, Q5 parked),
 `spec-htap-query-plane/SPEC.md` (`archived` / absorbed — retirement record;
 query plane is unifying CAP-19 / Epic 34),
