@@ -62,7 +62,7 @@ poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyfor
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Doctor Infographic standalone.html` | 135,606 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 9 tables · facts 85/85 | `PENDING-PUSH` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 20012 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Doctor Infographic standalone.html` | 135,606 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 9 tables · facts 85/85 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 20012 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
