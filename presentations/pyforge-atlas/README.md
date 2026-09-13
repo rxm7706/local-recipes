@@ -121,7 +121,7 @@ it goes stale on the very commit that lands the poster).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `PENDING-PUSH (operator pushes via DesignSync after review)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Against the floors: acts 6/6 · sections 22 ≥ 18 · inline SVG 4 ≥ 3 · bytes 132,410 ≥ 90,000 ·
 tables 8 ≥ 3 · cast: eight full station cards (role, motto, paragraph, CLI verbs, ledger chips) ·
