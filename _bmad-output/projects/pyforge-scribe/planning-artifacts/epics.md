@@ -11,8 +11,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-09"
-currency_review: "Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+updated: "2026-09-13"
+currency_review: "Reviewed 2026-09-13 (Stories 8.4–8.6: layered knowledge — stale vs compiled_at, compile hygiene, named Dreams/SPECs/facts, default recall omits code, AGENTS session path; contract spec-scribe-knowledge-layers. Story 8.3: Herald fact ledgers. Story 8.2: nightly graphify extra). Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -498,6 +498,43 @@ night and prove nothing); the graph stays a derived artifact, never a source of 
 **And** a freshness signal exists and is checkable: the age of `.claude/data/pyforge-scribe/graph.json` is reportable, and a store older than the schedule's own period surfaces as an **advisory** finding — never a PR gate and never a second verdict
 **And** the boundary is honoured explicitly: the story records **why** this is not a GitHub Actions workflow (runbook § *Scope note*), so the next pass does not re-propose one
 **And** the durable-driver path is not silently required — the default `FlatFileGraphStore` needs no service; if a scheduled run is ever pointed at the PostgreSQL driver it needs the local cluster up (`scribe-pg-up`), which the trigger must either start or refuse cleanly, never fail red on a machine without it
+
+### Story 8.2: The nightly compile keeps the graphify code surface
+**Type:** feature • **Effort:** S • **Deps:** S-6.1 • S-8.1 • **FR/AD:** `spec-scribe-graphify-nightly-currency` CAP-1 • CAP-2 • AD-6
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py`, `scripts/scribe_nightly_trigger.py`, `pixi.toml` `[feature.pyforge-scribe.dependencies]`
+**Given** live graphifyy exposes `extract` as a package submodule after `collect_files` **When** `scribe index build` or a compile with the extra on calls `ingest_repo` **Then** ingest uses the callable (`graphify.extract.extract` when the attribute is a module) and writes `code:` nodes through `open_graph_store`
+**And** the nightly trigger sets `SCRIBE_GRAPHIFY_EXTRA=1` when the operator has not set the variable, so the 02:30 full rebuild keeps those nodes; an explicit `0` stays off
+**And** the `pyforge-scribe` pixi feature declares `graphifyy` so that env can import `graphify` (lazy, adapter-only); a missing or failing extra still degrades on compile and never fails the scheduled run red
+**And** an interactive `scribe graph compile` with the extra unset is unchanged — zero code nodes from graphify
+
+### Story 8.3: Herald fact ledgers join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-2.2 • S-8.2 • **FR/AD:** `spec-scribe-graphify-nightly-currency` CAP-3 • `spec-deck-family-currency` CAP-2
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** `presentations/<slug>/facts.yaml` files exist (Herald's derived fact ledgers) **When** `scribe graph compile` runs **Then** each file is one `kind=doc` `GraphNode` written through `open_graph_store`, citation `presentations/<slug>/facts.yaml`
+**And** a repo with no `presentations/` directory compiles with zero fact-ledger nodes and no warning
+**And** `project/*.dc.html`, `src/slides/fragments/`, dated Marp sources, and copied `src/deck/` engines are not compile sources
+**And** the ingest is the existing text-file `doc` path (`_node_from_text_file`), not the graphify extra
+
+### Story 8.4: The compile keeps knowledge layers honest
+**Type:** feature • **Effort:** M • **Deps:** S-6.3 • S-8.3 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-1 • CAP-2 • CAP-3
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** a full rebuild **When** a source file's working-tree mtime is older than its latest git commit **Then** that node is not flagged stale; stale requires the commit author date after this compile's `compiled_at`
+**And** memlog/changelog/retro walks skip `archive/`, `implementation-artifacts/`, and any `tests/` path segment
+**And** retros are only `_bmad-output/projects/*/planning-artifacts/retros/*.md`
+**And** `docs/dreams/*.md` with status `dreamt`|`pitched`|`specified`, folder `SPEC.md` with status `ready`|`in-progress`, and `presentations/*/facts.yaml` each become one `kind=doc` node
+
+### Story 8.5: Default recall omits the code surface
+**Type:** feature • **Effort:** S • **Deps:** S-2.4 • S-8.4 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-4
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`
+**Given** an unscoped `scribe recall` **When** the only token overlap is a `kind=code` node **Then** the result is `no grounded answer found`
+**And** `scribe recall --kind code` (or `answer(..., kinds={"code"})`) may return that node
+**And** Marshal `--scope` behavior is unchanged
+
+### Story 8.6: Session path names scribe recall
+**Type:** docs • **Effort:** XS • **Deps:** S-8.5 • **FR/AD:** `spec-scribe-knowledge-layers` CAP-5
+**Surface:** `AGENTS.md` (outside `bmad:context`)
+**Given** any coding agent reading `AGENTS.md` **When** it needs a team decision or contract fact **Then** it is instructed to run `scribe recall` (default omits `code:`)
+**And** graphify AST and Marshal `codegraph` are named as different products, not the default recall bag
 
 ## Platform floor addendum — 2026-09-07
 

@@ -11126,6 +11126,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-xxhash-3.7.0-py314hc7863f8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pytokens-0.4.1-py314h0f05182_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidfuzz-3.14.6-py314hf3b331d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rattler-build-0.76.0-hf01adef_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/re2-2025.11.05-h5301d42_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
@@ -11145,6 +11146,32 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/sqlalchemy-2.0.52-py314h0f05182_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tmux-3.7c_-hd13ee6d_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-bash-0.25.1-py314hfe1a184_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-0.24.2-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-sharp-0.23.5-py314hfe1a184_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-cpp-0.23.4-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-elixir-0.3.5-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-fortran-0.6.0-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-go-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-groovy-0.1.2-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-java-0.23.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-javascript-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-json-0.24.8-py314h0f05182_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-julia-0.23.1-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-kotlin-1.1.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-lua-0.5.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-objc-3.0.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-php-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-powershell-0.26.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-python-0.25.0-py314h0f05182_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-ruby-0.23.1-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-rust-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-scala-0.26.2-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-swift-0.7.3-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-typescript-0.23.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-verilog-1.0.3-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-zig-1.1.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree_sitter-0.25.2-py314h0f05182_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ujson-6.0.0-py314hf3b331d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/uvloop-0.22.1-py314h5bd0f2a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/watchdog-6.0.0-py314h9e666f3_4.conda
@@ -11315,6 +11342,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-4.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-with-requests-4.0.0-hd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphene-3.4.3-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-core-3.2.12-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-relay-3.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/grpcio-health-checking-1.78.1-pyhcf101f3_0.conda
@@ -11672,6 +11700,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-4.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-with-requests-4.0.0-hd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphene-3.4.3-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-core-3.2.12-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-relay-3.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/grpcio-health-checking-1.78.1-pyhcf101f3_0.conda
@@ -12066,6 +12095,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-xxhash-3.7.0-py314hffd33fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pytokens-0.4.1-py314ha14b1ff_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rapidfuzz-3.14.6-py314hb1fb86d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rattler-build-0.76.0-h74d5219_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/re2-2025.11.05-ha480c28_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
@@ -12085,6 +12115,32 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tapi-1600.0.11.8-hb561403_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tmux-3.7c_-hf586bf8_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-bash-0.25.1-py314hd98292b_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-0.24.2-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-sharp-0.23.5-py314hd98292b_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-cpp-0.23.4-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-elixir-0.3.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-fortran-0.6.0-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-go-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-groovy-0.1.2-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-java-0.23.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-javascript-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-json-0.24.8-py314h5583935_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-julia-0.23.1-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-kotlin-1.1.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-lua-0.5.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-objc-3.0.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-php-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-powershell-0.26.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-python-0.25.0-py314ha14b1ff_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-ruby-0.23.1-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-rust-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-scala-0.26.2-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-swift-0.7.3-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-typescript-0.23.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-verilog-1.0.3-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-zig-1.1.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree_sitter-0.25.2-py314h9d33bd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uvloop-0.22.1-py314h0612a62_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchdog-6.0.0-py314haae224a_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchfiles-1.2.0-py314he1d1ac0_1.conda
@@ -12248,6 +12304,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-4.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/gql-with-requests-4.0.0-hd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphene-3.4.3-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-core-3.2.12-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/graphql-relay-3.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/grpcio-health-checking-1.78.1-pyhcf101f3_0.conda
@@ -12620,6 +12677,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-312-py314hf700ef7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-ctypes-0.2.3-py314h86ab7b2_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyyaml-6.0.3-py314h2359020_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.6-py314hb98de8c_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/rattler-build-0.76.0-he94b42d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/re2-2025.11.05-ha104f34_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/regex-2026.9.10-py314h5a2d7ad_0.conda
@@ -12635,6 +12693,32 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/sqlalchemy-2.0.52-py314hc5dbbe4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2023.1.0-hdcfe883_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-bash-0.25.1-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-c-0.24.2-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-c-sharp-0.23.5-py314hc5dbbe4_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-cpp-0.23.4-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-elixir-0.3.5-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-fortran-0.6.0-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-go-0.25.0-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-groovy-0.1.2-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-java-0.23.5-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-javascript-0.25.0-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-json-0.24.8-py314hc5dbbe4_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-julia-0.23.1-py310h659089f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-kotlin-1.1.0-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-lua-0.5.0-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-objc-3.0.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-php-0.24.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-powershell-0.26.5-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-python-0.25.0-py314hc5dbbe4_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-ruby-0.23.1-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-rust-0.24.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-scala-0.26.2-py310h659089f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-swift-0.7.3-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-typescript-0.23.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-verilog-1.0.3-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-zig-1.1.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree_sitter-0.25.2-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/twisted-iocpsupport-25.10.1-py314h5a2d7ad_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ujson-6.0.0-py314hb98de8c_0.conda
@@ -14346,8 +14430,35 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.5-py314h7e8cd81_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidfuzz-3.14.6-py314hf3b331d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-bash-0.25.1-py314hfe1a184_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-0.24.2-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-sharp-0.23.5-py314hfe1a184_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-cpp-0.23.4-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-elixir-0.3.5-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-fortran-0.6.0-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-go-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-groovy-0.1.2-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-java-0.23.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-javascript-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-json-0.24.8-py314h0f05182_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-julia-0.23.1-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-kotlin-1.1.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-lua-0.5.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-objc-3.0.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-php-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-powershell-0.26.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-python-0.25.0-py314h0f05182_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-ruby-0.23.1-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-rust-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-scala-0.26.2-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-swift-0.7.3-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-typescript-0.23.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-verilog-1.0.3-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-zig-1.1.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree_sitter-0.25.2-py314h0f05182_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/watchdog-6.0.0-py314h9e666f3_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/yaml-0.2.5-hebe6cf0_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
@@ -14361,11 +14472,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.7-py314hd8ed1ab_106.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.6.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -14408,11 +14521,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.7-py314hd8ed1ab_106.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.6.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -14477,8 +14592,35 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.5-py314hc05cd11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rapidfuzz-3.14.6-py314hb1fb86d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-bash-0.25.1-py314hd98292b_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-0.24.2-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-sharp-0.23.5-py314hd98292b_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-cpp-0.23.4-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-elixir-0.3.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-fortran-0.6.0-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-go-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-groovy-0.1.2-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-java-0.23.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-javascript-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-json-0.24.8-py314h5583935_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-julia-0.23.1-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-kotlin-1.1.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-lua-0.5.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-objc-3.0.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-php-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-powershell-0.26.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-python-0.25.0-py314ha14b1ff_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-ruby-0.23.1-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-rust-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-scala-0.26.2-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-swift-0.7.3-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-typescript-0.23.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-verilog-1.0.3-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-zig-1.1.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree_sitter-0.25.2-py314h9d33bd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchdog-6.0.0-py314haae224a_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
@@ -14496,11 +14638,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.7-py314hd8ed1ab_106.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.6.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -14561,8 +14705,35 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.46.5-py314h9f07db2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.7-h53f6dd8_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyyaml-6.0.3-py314h2359020_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.6-py314hb98de8c_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2023.1.0-hdcfe883_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-bash-0.25.1-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-c-0.24.2-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-c-sharp-0.23.5-py314hc5dbbe4_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-cpp-0.23.4-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-elixir-0.3.5-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-fortran-0.6.0-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-go-0.25.0-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-groovy-0.1.2-py314hc5dbbe4_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-java-0.23.5-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-javascript-0.25.0-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-json-0.24.8-py314hc5dbbe4_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-julia-0.23.1-py310h659089f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-kotlin-1.1.0-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-lua-0.5.0-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-objc-3.0.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-php-0.24.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-powershell-0.26.5-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-python-0.25.0-py314hc5dbbe4_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-ruby-0.23.1-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-rust-0.24.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-scala-0.26.2-py310h659089f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-swift-0.7.3-py310h659089f_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-typescript-0.23.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-verilog-1.0.3-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree-sitter-zig-1.1.2-py310h659089f_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tree_sitter-0.25.2-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
@@ -14627,8 +14798,35 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.5-py314h7e8cd81_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.7-hcd007b5_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidfuzz-3.14.6-py314hf3b331d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-bash-0.25.1-py314hfe1a184_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-0.24.2-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-c-sharp-0.23.5-py314hfe1a184_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-cpp-0.23.4-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-elixir-0.3.5-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-fortran-0.6.0-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-go-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-groovy-0.1.2-py314h0f05182_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-java-0.23.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-javascript-0.25.0-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-json-0.24.8-py314h0f05182_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-julia-0.23.1-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-kotlin-1.1.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-lua-0.5.0-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-objc-3.0.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-php-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-powershell-0.26.5-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-python-0.25.0-py314h0f05182_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-ruby-0.23.1-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-rust-0.24.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-scala-0.26.2-py310h88ea430_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-swift-0.7.3-py310h88ea430_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-typescript-0.23.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-verilog-1.0.3-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree-sitter-zig-1.1.2-py310h88ea430_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tree_sitter-0.25.2-py314h0f05182_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tzcode-2026c-h280c20c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/watchdog-6.0.0-py314h9e666f3_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/yaml-0.2.5-hebe6cf0_3.conda
@@ -14643,11 +14841,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.7-py314hd8ed1ab_106.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.6.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -14690,11 +14890,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.7-py314hd8ed1ab_106.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/graphifyy-0.9.58-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.32.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-9.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/networkx-3.6.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
@@ -14766,8 +14968,35 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.5-py314hc05cd11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.7-h0ae1c2c_106_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rapidfuzz-3.14.6-py314hb1fb86d_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/readline-8.3-h8b90a29_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-bash-0.25.1-py314hd98292b_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-0.24.2-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-c-sharp-0.23.5-py314hd98292b_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-cpp-0.23.4-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-elixir-0.3.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-fortran-0.6.0-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-go-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-groovy-0.1.2-py314h5583935_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-java-0.23.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-javascript-0.25.0-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-json-0.24.8-py314h5583935_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-julia-0.23.1-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-kotlin-1.1.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-lua-0.5.0-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-objc-3.0.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-php-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-powershell-0.26.5-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-python-0.25.0-py314ha14b1ff_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-ruby-0.23.1-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-rust-0.24.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-scala-0.26.2-py310h28d811c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-swift-0.7.3-py310h28d811c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-typescript-0.23.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-verilog-1.0.3-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree-sitter-zig-1.1.2-py310h28d811c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tree_sitter-0.25.2-py314h9d33bd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026c-h1a92334_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchdog-6.0.0-py314haae224a_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
