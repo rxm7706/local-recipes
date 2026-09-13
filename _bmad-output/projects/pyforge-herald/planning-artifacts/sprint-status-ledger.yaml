@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 135
+# stories: 138
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -84,6 +84,7 @@ development_status:
   21-7-wasm-analytics-stack-rebuilt-to-the-standard: backlog
   21-8-deckcraft-rebuilt-to-the-standard: backlog
   21-9-presenton-pixi-image-rebuilt-to-the-standard: backlog
+  22-1-the-dossier-is-the-source-and-pages-is-a-render: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -135,6 +136,8 @@ development_status:
   epic-20-retrospective: optional
   epic-21: backlog
   epic-21-retrospective: optional
+  epic-22: backlog
+  epic-22-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done
