@@ -2628,6 +2628,7 @@ So that station envs solve and the host boots in foundry from workspace members.
 **And** the `src/platform/ingest/github_projects/*` import of `pyforge.steward.keys` has its successor landed per `ingest-keys-import` (never deleted without one)
 **And** distribution and import names are byte-identical to before the fold (package fold only — nothing from Story 44.5 rides along)
 **And** the fold is `steward cutover apply --phase 1a`, re-runnable into foundry after every `--regenerate` or `--append` until the flag flips (`fnd:AD-18`)
+**Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch. File-move story superseded by Epic 54 / `fnd:CAP-11`. Ledger stays `backlog`. Never `apply --phase 1a` as how packages appear.
 **Status:** backlog
 
 ### Story 44.5: Move the estate
@@ -2641,6 +2642,7 @@ So that agents and loops resolve everything from the lasting root.
 **And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
 **And** the open question `planning-history-scope` is answered before dispatch
 **And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (fnd:AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
+**Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch as a tree copy. Suite/skills appear by re-provision from the register (Epic 54 + later). Ledger stays `backlog`. Flag flip remains attended and after the kernel is verified, not after this file-move.
 **Status:** backlog
 
 ### Story 44.6: CFE comes home
@@ -2653,6 +2655,7 @@ So that no `MASON_CFE_ROOT` resolves to `local-recipes` and retros land in the l
 **Given** `pyforge/mason/resolve.py`'s chain (flag → `MASON_CFE_ROOT` → cwd walk) **When** it runs in a foundry checkout **Then** the whole CFE cell (skill, `scripts/`, `tools/conda_forge_server.py`, the 76 `pixi.toml` references) lives under `skills/domain/conda-forge-expert/`, `_CFE_MARKER` and both detectors' path literals are rewritten, `MASON_CFE_ROOT` resolves there as a repo root, recipe build / submit / update are `pixi run --manifest-path factory/pixi.toml` subprocesses, and `mason-cfe-surface-check` + `cfe-rebuild-guard-check` pass **with the foundry epoch as their range floor** (a zero-commit range is exit 2, never clean)
 **And** the story invokes `conda-forge-expert` and closes with a Rule-2 CFE retro
 **And** — reciprocal note, not a `Deps:` token: **mason Story 15.1 (close the CFE rebuild campaign; delete-on-cutover) must land BEFORE this story moves the CFE cell to `skills/domain/`.** The rebuild Spec's surface and slice map are written against `.claude/skills/conda-forge-expert/**`; moving the cell first leaves that Spec pointing at a path that no longer exists and makes this story intractable (fleet readiness 2026-09-09, mason-E2 / § 2.3 C2)
+**Parked 2026-09-13 (regenerate-not-fold):** do **not** dispatch as a cell move. Foundry CFE is rebuilt from Specs; local-recipes is the oracle. Ledger stays `backlog`.
 **Status:** backlog
 
 ### Story 44.7: The factory island
@@ -3493,3 +3496,101 @@ categories it lacks
 mints a second verdict
 **And** Source-Grounding is the first category added to the library
 **Status:** done
+
+## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
+
+Minted 2026-09-13 from `docs/dreams/foundry-regenerate-not-fold.md`. Operator
+accepted regenerate-not-fold, A + thin oracle, Launch = CLI + MCP, CFE
+rebuild-not-move, and **fnr:CAP-5** (Dream+Frame+Spec shared; A/B behavior;
+BMAD-on-B clean). CAP-2..4 land in a **python-foundry** worktree. 54.5 lands
+the A/B protocol on B (docs). Does not dispatch 44.4, 44.5, or 44.6. Does
+not flip any Epic 44 `blocked` key. Does not flip `pyforge.cutover_root`.
+Public CLI verbs stay.
+
+### Story 54.1: Thin oracle for the foundry kernel
+
+As a platform operator,
+I want a frozen list of existing core, steward, and marshal tests that the
+foundry kernel must pass,
+So that regenerate is gated by behavior, not Frame frontmatter.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-1; fnd:CAP-11
+**Surface:** tracked list under
+`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/`
+(about 20–40 tests: CLI, exit codes, `station_port`, cutover-root reader,
+no-host). Implementation of the packages is 54.2–54.4.
+**Given** Frame preflight is schema-only **When** this story lands **Then** a
+named archived-test list exists and is the kernel gate
+**And** the list cites existing tests in local-recipes; it does not wait for
+44.14
+**And** 44.4 / 44.5 remain undispatched
+**Status:** backlog
+
+### Story 54.2: Rebuild pyforge-core in foundry
+
+As a platform operator,
+I want `pyforge-core` born under foundry `src/packages/` from the port /
+hooks / cutover-root contracts,
+So that later stations have a leaf that was not folded from
+`src/shared/packages/`.
+
+**Type:** feature • **Effort:** M • **Deps:** S-54.1 • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-2; fnd:CAP-11
+**Note:** Commits go to `rxm7706/python-foundry`. Planning stays here.
+**Given** CAP-1 list exists **When** this story lands **Then** foundry has a
+core leaf whose CAP-1 core slice is green
+**And** no `apply --phase 1a` copy of `pyforge-core` is the source
+**Status:** backlog
+
+### Story 54.3: Rebuild steward in foundry
+
+As a platform operator,
+I want `pyforge steward` regenerated in foundry with CLI and MCP
+(provision, workspace, frames, guards, cutover, suite register path),
+So that the lasting root can provision the suite without folding the
+brownfield engine.
+
+**Type:** feature • **Effort:** L • **Deps:** S-54.2 • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-3; fnd:CAP-11
+**Given** foundry core is green **When** this story lands **Then**
+`pyforge steward` on a foundry checkout passes the CAP-1 steward slice
+**And** public verb `pyforge steward` is unchanged
+**Status:** backlog
+
+### Story 54.4: Rebuild marshal in foundry
+
+As a platform operator,
+I want `pyforge marshal` regenerated in foundry with cursor-native
+dispatch, CLI and MCP,
+So that one foundry-remote dispatch proves the kernel.
+
+**Type:** feature • **Effort:** L • **Deps:** S-54.3 • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-4; fnd:CAP-11
+**Given** foundry steward is green **When** this story lands **Then** one
+marshal dispatch against the foundry remote plus the CAP-1 marshal slice
+are green
+**And** `MRS-DISP-*` corners not in the thin list stay on local-recipes
+until 44.14
+**And** `pyforge.cutover_root` is still `local-recipes`
+**And** the CAP-1 marshal cases have an A/B row that is not `diverge` (`ab-sync.md`)
+**Status:** backlog
+
+### Story 54.5: A/B protocol and pin on foundry
+
+As a platform operator,
+I want the dual-root protocol, a SHA pin file, and a short case-list stub
+on `python-foundry`,
+So that a new builder treats B as the clean BMAD tree and A as control,
+without copying A's comments.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-5
+**Note:** Implementation is a **python-foundry** PR: rewrite README/AGENTS
+as greenfield; add `docs/foundry/PIN.md`; add the case-list stub. This
+repo keeps the Spec companion. Do not rsync `_bmad-output`.
+**Given** `ab-sync.md` exists on A **When** this story lands **Then** B
+has `PIN.md` pointing at this Spec SHA, a case-list stub, and operator
+docs that do not say "replay 44.4"
+**And** A does not receive a copy of B's slim chain
+**Status:** backlog
