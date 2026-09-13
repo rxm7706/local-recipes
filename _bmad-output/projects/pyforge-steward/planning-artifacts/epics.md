@@ -3668,4 +3668,4 @@ CAP-3
 **Given** a ledger row claims `verified-in-foundry` without a 54.1
 case-list id **When** the detector runs **Then** the finding is HARD
 **And** a row that cites a listed id is not HARD for this reason
-**Status:** backlog
+**Status:** done

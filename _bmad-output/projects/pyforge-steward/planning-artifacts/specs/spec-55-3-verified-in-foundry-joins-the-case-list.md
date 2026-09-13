@@ -2,7 +2,7 @@
 title: 'verified-in-foundry joins the case list'
 type: 'docs'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 context: []
 warnings: []
 deferred: []
