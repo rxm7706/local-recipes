@@ -89,7 +89,7 @@ kept in full: no section of the standard's set was dropped.
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Marshal Infographic standalone.html` | 112,843 B · 19 sections (21 `<section` incl. doctrine + creed bands) · 6 acts · 4 SVG · 6 tables · facts 128/128 | `PENDING-PUSH` (operator pushes via DesignSync after review) | rendered 2026-09-13 at 1240 px, page 16,427 px, no clipped or blank region; `deck-facts pyforge-marshal --check` → `0 unmarked, 0 mismatch, 0 drifted, 1 unsourced (tests_collected, --with-tests only), 0 unshown`; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Marshal Infographic standalone.html` | 112,843 B · 19 sections (21 `<section` incl. doctrine + creed bands) · 6 acts · 4 SVG · 6 tables · facts 128/128 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13 at 1240 px, page 16,427 px, no clipped or blank region; `deck-facts pyforge-marshal --check` → `0 unmarked, 0 mismatch, 0 drifted, 1 unsourced (tests_collected, --with-tests only), 0 unshown`; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors: act bands 6/6 · sections 19 ≥ 18 · inline SVGs 4 ≥ 3 · bytes 112,843 ≥ 90,000 · tables
 6 ≥ 3 · cast cards 8/8 full (role, motto, paragraph, verbs, stories + epics chips) · render
