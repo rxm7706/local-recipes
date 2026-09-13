@@ -2,7 +2,7 @@
 title: 'Extract detector in detectors-ci'
 type: 'feature'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 context: []
 warnings: []
 deferred: []
