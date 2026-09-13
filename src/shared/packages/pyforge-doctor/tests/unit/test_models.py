@@ -213,6 +213,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "status-body-consistency",
         "pixi-currency-ledger",
         "general-docs-consistency",
+        "capability-ledger",
     }
 
 

@@ -87,7 +87,8 @@
             "capability-effect",
             "status-body-consistency",
             "pixi-currency-ledger",
-            "general-docs-consistency"
+            "general-docs-consistency",
+            "capability-ledger"
           ]
         },
         "check": { "type": "string" },

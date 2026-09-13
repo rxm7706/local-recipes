@@ -249,6 +249,8 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # Story 22.3 (Epic 22 / spec-general-docs-consistency CAP-3): human-facing
     # documentation identity contradictions beside the other repo-scope sources.
     ("general-docs-consistency", "general-docs-consistency-check"),
+    # Story 55.2 (fcl:CAP-2): CAP extract vs capability-ledger.yaml.
+    ("capability-ledger", "capability-ledger-check"),
 )
 
 

@@ -474,6 +474,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 22.3 -- sources/general_docs_consistency.py. Human-facing
     # documentation identity (README vs skill-brief, AGENTS.md vs Dream);
     # WARN-only; fleet subject (general docs layer, not one station).
+    SourceRegistration(
+        source=Source.CAPABILITY_LEDGER,
+        scope="repo",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 55.2 -- sources/capability_ledger.py. subject_station=
+    # "steward": A authors the tracked capability ledger; doctor judges it.
+    # A DISPATCH member; CAN FAIL (unclassified / undated A-only).
 )
 
 
