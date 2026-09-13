@@ -1646,3 +1646,36 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   status: open
 
   verified: 2026-09-08 — still-open — CONFIRMED, and the entry's cross-station scope claim independently re-measured and upheld. `bmad-agent-doctor/SKILL.md:14` routes `bmad-os-root-cause-analysis` as advisory-only, but the `## Allowed actions (CAP-16)` section at `:67` names no mechanism for consulting it. Re-checked all six wielding personas mechanically (warden, marshal, herald, steward, scribe, doctor): every one mentions a routed `bmad-os-*` skill outside CAP-16, and **0 of 6** name one inside their CAP-16 section — so this is steward 46.2's fleet-wide pattern exactly as the entry claims, neither narrower nor wider. A `location:` was added to this entry in the same sweep: it had none, which is why the churn filter could never reach it.
+
+### DW-FU-21-6: Refresh docs/dreams/README.md Phase-2b prose to describe file-driven reconciliation and the three new finding classes.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced.md`
+  summary: Refresh docs/dreams/README.md Phase-2b prose to describe file-driven reconciliation and the three new finding classes.
+  evidence: README still describes hygiene as README-row-only reconciliation; behavior changed in chain.py but tier doc not updated in this story.
+  location: docs/dreams/README.md
+  origin: spec-deferred 36dd62536e4a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-6: README Quick start, Common Commands, and Pixi tasks sections still carry full operational text until Story 22.5 populates docs/tutorials/ and docs/how-to/.
+
+- source_spec: `planning-artifacts/specs/spec-22-6-readme-md-claude-md-and-agents-md-point-cleanly-into-the-reorganized-structure.md`
+  summary: README Quick start, Common Commands, and Pixi tasks sections still carry full operational text until Story 22.5 populates docs/tutorials/ and docs/how-to/.
+  evidence: docs/MAP.md lists those README sections as Story 22.5 relocation targets; the quadrant scaffolds are empty README stubs only. Replacing with pointers now would send newcomers to unpopulated homes.
+  location: README.md
+  origin: spec-deferred 9eea4f81fe33 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-6-2: Wire the three new dreams-hygiene classes into detectors-ci after steward confirms live-tier volume is acceptable.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced.md`
+  summary: Wire the three new dreams-hygiene classes into detectors-ci after steward confirms live-tier volume is acceptable.
+  evidence: Spec scopes measurement before joining detectors; checks run only via dream-chain --dreams and pyforge-doctor-test live-count tests today. The three classes live in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`; the CI gate list is `scripts/detectors.py`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  origin: spec-deferred ac5c2efd1d11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

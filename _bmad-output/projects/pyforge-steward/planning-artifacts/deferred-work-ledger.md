@@ -4385,3 +4385,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   status: open
 
   verified: 2026-09-08 — resolved — RESOLVED HERE. Verified the premise first: all three producers read `done` in their tracked ledgers — marshal `30-2-the-project-context-surface-follows-6-12-d1` and `30-5-the-harness-and-every-live-caller-follow-the-shim-retirement`, and steward `14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims` — while `cutover-readiness.md` rows P11 and P12 still read **not done**. Both cells are corrected in this commit to record producer-done, each keeping an explicit 're-confirm the live count before the flip' caveat so a corrected cell is not mistaken for a fresh measurement.
+
+### DW-FU-23-1-2: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
+  summary: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+  evidence: Story 23.1 ACs and canopy:FR-16 name same-URL row isolation via filter_by_role / AccessDeclaration. Audit and build_navigation are already in pyforge.steward.dashboard from Epic 9 and were not wired onto /stations/atlas/board/.
+  location: src/shared/packages/django-atlas/src/django_atlas_portal/board.py
+  origin: spec-deferred 93ba6e43a00d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

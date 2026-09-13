@@ -27,19 +27,28 @@ deferred:
       CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended,
       documentary).
     evidence: |-
-      Explicit non-goal in spec; steward 49.8 owns the live verification gate.
+      Explicit non-goal in spec; steward 49.8 owns the live verification gate at
+      `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md`.
+    location: >-
+      _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md
     severity: medium
   - summary: >-
       CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
     evidence: |-
-      Local-profile `pyforge login` wrapper lands; memlog records deployed deferral.
+      Local-profile `pyforge login` wrapper lands at
+      `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py`;
+      memlog records deployed deferral.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py
     severity: medium
   - summary: >-
       Platform MCP ASGI integration tests for held-loop tools not added in this pass.
     evidence: |-
       Supervisor unit tests cover held-run lifecycle; transport-mocked marshal tests cover
-      client path; end-to-end JSON-RPC through build_marshal_mcp_asgi() untested locally
+      client path; end-to-end JSON-RPC through `build_marshal_mcp_asgi()` untested locally
       without Postgres platform CI.
+    location: >-
+      src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
     severity: medium
 declared_low_risk: false
 ---

@@ -6203,3 +6203,36 @@ status: open
   status: open
 
   verified: 2026-09-12 — re-ran the manual check this entry names: `marshal status --project pyforge-steward` reports `state: stopped` (not `unknown`), confirming Story 5.11's fix holds against the real, live pyforge-steward home, not only the synthetic `tmp_path` fixtures the meta-tests use. Stays `open`/manual-check by design — the operator-local loop home this entry names cannot be encoded in CI, so this is a periodic re-confirmation, not a resolution.
+
+### DW-FU-33-12: CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended, documentary).
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: CAP-3 deployed egress-blocked CRC proof exercise remains separate (attended, documentary).
+  evidence: Explicit non-goal in spec; steward 49.8 owns the live verification gate at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md`.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor.md
+  origin: spec-deferred 6a53678fc552 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-33-12-2: CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: CAP-5 deployed-profile device-code/PKCE login against a real IdP not implemented.
+  evidence: Local-profile `pyforge login` wrapper lands at `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py`; memlog records deployed deferral.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/login.py
+  origin: spec-deferred facc9c2dba3b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-33-12-3: Platform MCP ASGI integration tests for held-loop tools not added in this pass.
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: Platform MCP ASGI integration tests for held-loop tools not added in this pass.
+  evidence: Supervisor unit tests cover held-run lifecycle; transport-mocked marshal tests cover client path; end-to-end JSON-RPC through `build_marshal_mcp_asgi()` untested locally without Postgres platform CI.
+  location: src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
+  origin: spec-deferred 95cdd089b14f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

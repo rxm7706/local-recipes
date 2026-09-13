@@ -1562,3 +1562,26 @@ status: open
     Worse than an import: `services/icon_finder_service.py:134` runs `ICON_FINDER_SERVICE = IconFinderService()` at MODULE SCOPE, and that `__init__` evaluates `FastembedEmbeddingModel.AllMiniLML6V2` — so the package's API is exercised at import time, not merely bound. Dropping it from the locked environment therefore fails the import of the whole `/api/v1/ppt` router, taking down presentation generation, not just icon search. The service's own `_initialized` / `_initialization_failed` flags are RUNTIME resilience after a successful import and do not help here.
 
     CONSEQUENCE FOR AD-7 / AD-23: the architecture holds and needs no rework — AD-7 pre-wired both branches and said explicitly "if it requires a source patch instead, this AD's default-OFF shape still holds, the patch just becomes part of the presenton-export-node/pptx-assembler patch set already in scope." The trace simply selects that branch. The remaining 6(b) decision is now a steering call on known facts (add ONE recipe, `fastembed-vectorstore`, or carry a patch that makes the icon subsystem import-optional) rather than an open investigation. It stays `open` because the Dream is archived and no Epic-1 story may be promoted while exits 1, 2, 4 and 5 are unresolved.
+
+### DW-16-3-1: `pyforge-mason-test` still fails on pre-existing portal meta `test_django_mason_has_no_raw_http_pyforge_or_minio` (boot_reconcile.py imports pyforge.mason.boot); present on baseline before Story 16.3.
+
+- source_spec: `planning-artifacts/specs/spec-16-3-mason-s-mcp-tool-surface-passes-the-cli-tool-parity-gate.md`
+  summary: `pyforge-mason-test` still fails on pre-existing portal meta `test_django_mason_has_no_raw_http_pyforge_or_minio` (boot_reconcile.py imports pyforge.mason.boot); present on baseline before Story 16.3.
+  evidence: Reproduced on e16443693d before any 16.3 edits; unrelated to parity gate.
+  location: src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py
+  origin: spec-deferred 17b9964347f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-15-1-1: pyforge-marshal/.sync-baseline.json's skill_version field is now one version behind this story's CFE retro bump (8.90.1 -> 8.90.2).
+
+- source_spec: `planning-artifacts/specs/spec-15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors.md`
+  summary: pyforge-marshal/.sync-baseline.json's skill_version field is now one version behind this story's CFE retro bump (8.90.1 -> 8.90.2).
+  evidence: Confirmed via `git log -- _bmad-output/projects/pyforge-marshal/.sync-baseline.json` that re-stamping this file is an established, separate periodic-reconciliation task (2 dedicated "chore(bmad-drift)"/"reconcile" commits found historically), not something bundled into individual CFE retro commits — the 15 most recent CFE retro commits (v8.86.1 through v8.90.1, including yesterday's) did not bundle a sync-baseline update either. The detector this baseline backs is advisory/integrity-only, not a PR gate.
+  location: _bmad-output/projects/pyforge-marshal/.sync-baseline.json
+  origin: spec-deferred a4d0004994b8 — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-7), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-7" cannot collide with it
+  severity: low
+  reason: Settle by running the next scheduled `python scripts/bmad_drift_check.py --write-baseline` sweep, which will pick up 8.90.2 along with any other accumulated drift.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open

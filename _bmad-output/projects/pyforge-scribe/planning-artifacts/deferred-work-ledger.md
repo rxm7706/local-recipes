@@ -203,3 +203,27 @@ sibling ledgers and the detector both use.
   close_when: a second consumer repo exists AND it keeps `docs/adr/`-style records — otherwise this stays a hypothetical and closes as a Non-goal
 
   verified: 2026-09-11 — still-open — mechanical re-verification at HEAD 3ff14108f1 (operator-directed fleet coverage sweep 2026-09-11): source_spec present; location path present; docs/adr/ still absent at HEAD (evidence claim holds); compile.py still enumerates six named surfaces (see file header); ledger status mapped to still-open; agent judgment not applied — the close_when trigger (a second consumer repo keeping docs/adr/-style records) has not occurred
+
+### DW-8-1-1: scribe_graph_freshness_check.py's SCHEDULE_PERIOD_HOURS (24) is a hand-maintained duplicate of the .timer unit's OnCalendar=*-*-* 02:30:00 cadence, with no test asserting the two stay in sync.
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired.md`
+  summary: scribe_graph_freshness_check.py's SCHEDULE_PERIOD_HOURS (24) is a hand-maintained duplicate of the .timer unit's OnCalendar=*-*-* 02:30:00 cadence, with no test asserting the two stay in sync.
+  evidence: If a future change edits the timer's schedule without also updating the hardcoded 24 in scripts/scribe_graph_freshness_check.py, the detector silently reports the wrong freshness window. The module's own comment already documents this as a deliberate trade-off ("no cheap runtime value for one nightly cadence"), and the detector is advisory-only (never a PR gate), so the blast radius is a briefly wrong label rather than a red gate.
+  location: scripts/scribe_graph_freshness_check.py:176
+  origin: spec-deferred 99da4d682388 — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-5), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-5" cannot collide with it
+  severity: low
+  reason: Settling this properly would need a test parsing the .timer's OnCalendar= value and asserting it equals SCHEDULE_PERIOD_HOURS.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open
+
+### DW-8-1-2: The "four consecutive scheduled runs are recorded" half of the Trigger-fires-on-schedule matrix row cannot be closed by this diff — it requires real elapsed time on an operator's own machine.
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-nightly-compile-gets-a-trigger-the-estate-owns-and-a-freshness-signal-that-proves-it-fired.md`
+  summary: The "four consecutive scheduled runs are recorded" half of the Trigger-fires-on-schedule matrix row cannot be closed by this diff — it requires real elapsed time on an operator's own machine.
+  evidence: No repo-local test or diff can assert that scheduled firings actually occurred over multiple nights; this is only observable on the operator machine that installs the trigger and lets it run.
+  location: spec-8-1 I/O & Edge-Case Matrix, row "Trigger fires on schedule"
+  origin: spec-deferred fcd967ca9b2b — promoted from Tier-3 (`implementation-artifacts/deferred-work.md` DW-6), renamed from bmad-loop's own generic damped id to this ledger's DW-<story>-<n> convention on promotion so a future damped story minting its own "DW-6" cannot collide with it
+  severity: low (unverified — no severity recorded in the original Tier-3 entry)
+  reason: Per this dispatch's own instructions, this becomes an operator_actions item at HALT (status: awaiting-operator) rather than a code defect. Only real elapsed time on an operator's own machine, running the installed trigger across four consecutive scheduled firings, can close it.
+  promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
+  status: open
