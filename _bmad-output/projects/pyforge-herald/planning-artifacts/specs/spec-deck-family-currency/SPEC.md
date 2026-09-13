@@ -1,7 +1,7 @@
 ---
 id: SPEC-deck-family-currency
 spec: deck-family-currency
-status: in-progress
+status: shipped
 owner-dream: docs/dreams/deck-family-currency.md
 companions:
   - infographic-standard.md

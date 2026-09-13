@@ -36,6 +36,8 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E10** | Moment 4 — operations notices | 6 | 6 |
 | **E11** | Integration testing & automation reliability | 4 | 4 |
 | **E12** | Documentation & operator experience | 4 | 4 |
+| **E20** | The deck family stays current (spec-deck-family-currency) | 14 | 14 |
+| **E21** | The whole deck family moves together (spec-deck-family-lockstep) | 11 | 0 |
 | **Total** | | **47** | **47** |
 
 
@@ -697,6 +699,85 @@ density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20
 **Surface:** `scripts/deck_facts.py` (`--refresh`), `tests/scripts/test_deck_facts.py`, `docs/specs/presentation-deck.md` (one line in the poster sub-step)
 **Given** the four round-1 posters landed and their own landings moved the fleet and station counts they print (`848/878` → `852/878`, herald `69/81` → `73/81`), so `deck-facts <slug> --check` reads `mismatch` on those marks the moment the reconcile merged — detected by CAP-5, repairable only by hand — **When** `deck-facts <slug> --refresh` re-derives the ledger and rewrites each `data-fact` mark whose text differs from its row, choosing the replacement by the old literal's shape (the row's `value`, or the `shown_as` variant at the same index, keeping a leading `v`) — **Then** the poster is byte-identical outside the rewritten spans, `--check` reports 0 `mismatch` for every rewritten mark, each rewrite is printed as `refreshed  <id>  "<old>" -> "<new>"`, nested marks and marks with no row are printed as `skipped` with the reason, and the exit code is 0
 **And** the verb never touches prose, unmarked tokens, `facts.yaml` rows it did not derive, or any other file; a `--with-tests` flag combines as for derive so a poster that prints `tests_collected` keeps its row
+
+## Epic 21: The whole deck family moves together (spec-deck-family-lockstep)
+
+**Spec binding.** `spec-deck-family-lockstep` CAP-1..5 (herald; Dream `docs/dreams/deck-family-lockstep.md`).
+Epic 20 made one surface of ten decks true; this epic finishes the rest. Measured on main at Epic 20's
+closeout (2026-09-13): every deck README says its head and Infographic Deck are **"standalone ahead"**;
+the heads are 14–48 KB against posters of 112–295 KB; every marp source and both PPTX per deck are
+dated 2026-07/08; four chain decks never entered the wave (15–19 KB stubs, no `facts.yaml`, registry
+sections `registry.read` cannot parse); `herald deck status` sees 10 of 15. **HARD boundaries (Spec
+constraints):** derive, never re-author — the head's body *is* the standalone's body, so a transform
+replaces the divergence rather than re-checking it; the marked-fact contract and the three hazards
+`--refresh` cannot cover stay in force; never restrict size at authoring; one PR per deck with the
+`maintenance` label; worktrees and physical paths, never `bmad-switch` in a parallel agent; checks stay
+advisory; no new engine and no change to `deck_export.py`'s semantics. **Order:** 21.1–21.3 are tooling
+every later story leans on; 21.4–21.5 sweep the ten; 21.6–21.9 are the four chain decks (independent,
+four agents); 21.10–21.11 close the registry and the Design proof.
+
+### Story 21.1: `deck-trio` derives the Infographic head from the standalone
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-deck-family-lockstep` CAP-1
+**Surface:** `scripts/deck_trio.py` (new), `pixi.toml` (a `deck-trio` task), `tests/scripts/test_deck_trio.py`, `docs/specs/presentation-deck.md` (§ *Artifact dependency tree* — the head becomes derived)
+**Given** the trio's own definition says the standalone is the head's body with no `x-dc` wrapper and its styles moved into `<head>` (`presentation-deck.md` § *Artifact dependency tree*), while on main the two have diverged by 100 KB and a README flag ("standalone ahead") tracks the fact by hand — **When** `deck-trio <slug> --head` transforms the current standalone into `project/<Persona> - Infographic.dc.html` (wrap the body in `<x-dc>`, move the `<style>` block into `<helmet>`, add the `support.js` script tag and the `data-dc-script` block with a `$preview` sized to the measured page) — **Then** the head's body is byte-identical to the standalone's modulo those three mechanical differences, it renders, and a second run changes nothing
+**And** the verb refuses rather than guesses when the standalone is missing or its `<head>` style block cannot be located, and it never edits the standalone
+
+### Story 21.2: `deck-trio` derives the Infographic Deck from the standalone
+**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** `spec-deck-family-lockstep` CAP-1
+**Surface:** `scripts/deck_trio.py` (`--deck`), `tests/scripts/test_deck_trio.py`, `docs/specs/presentation-deck.md`
+**Given** the Infographic Deck is defined as "the same sections re-laid as 1920×1080 slides" and today's copies are the July stubs — **When** `deck-trio <slug> --deck` emits `project/<Persona> - Infographic Deck.dc.html` with one `<section data-label>` per numbered section of the standalone plus the act bands as section dividers, honouring the prototype contract the extractor reads — **Then** the slide count equals the standalone's numbered-section count plus its act bands, every slide carries a `data-label`, the file renders, and a second run changes nothing
+**And** no content is invented: a section that will not fit a slide is split mechanically, never summarised
+
+### Story 21.3: `deck-facts` refreshes every marked surface, not just the poster
+**Type:** feature • **Effort:** M • **Deps:** S-21.1, S-21.2 • **FR/AD:** `spec-deck-family-lockstep` CAP-2
+**Surface:** `scripts/deck_facts.py` (surface discovery for `--check` / `--refresh`), `tests/scripts/test_deck_facts.py`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md` (the sweep's definition)
+**Given** `--refresh` walks only `project/<Persona> Infographic standalone.html`, so a ledger move leaves the head, Infographic Deck, exec summary and marp sources stale and unreported — **When** both verbs walk every marked surface of the deck and report per surface — **Then** one `--refresh` after a tracked ledger changes leaves every surface at 0 `mismatch`, `--check` names the surface on every finding, and a deck whose extra surfaces carry no marks behaves exactly as today
+**And** the `unvisited` cross-check and every skip reason apply per surface, so no surface can be silently missed
+
+### Story 21.4: The ten decks' trios re-derived, refreshed and pushed
+**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2, S-21.3 • **FR/AD:** CAP-1, CAP-2
+**Surface:** `presentations/pyforge-*/project/*- Infographic.dc.html`, `*- Infographic Deck.dc.html`, `presentations/pyforge-*/README.md` (the "standalone ahead" note retires)
+**Given** ten READMEs carry a "standalone ahead" flag that exists only because the surfaces diverged — **When** `deck-trio` re-derives both surfaces for each of the ten and `deck-facts --refresh` brings their marks current, each pushed to its Design project and read back — **Then** every head and Infographic Deck matches its standalone, every surface reports 0 `mismatch`, each README records the new etags, and **no README says "standalone ahead"**
+**And** each deck lands as its own PR with the `maintenance` label, at most four in flight
+
+### Story 21.5: The exec summaries and the export set follow the same ledger
+**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** CAP-3
+**Surface:** `presentations/pyforge-*/project/*- Executive Summary.dc.html`, `presentations/pyforge-*/src/marp/*`, `presentations/pyforge-*/src/pptx/*`
+**Given** every exec summary and marp source is dated 2026-07/08 and both PPTX derive from them, so the Standard export set is stale in every format — **When** the exec summary and marp sources are brought to the current ledger with marked facts and `deck-export <slug>` regenerates the standalone HTML and both PPTX — **Then** all six companions per deck are current and dated the rebuild day, and `deck-facts <slug> --check` reports the exec summary and marp surfaces clean
+**And** the derived artifacts are regenerated, never hand-edited — the rule `deck_export.py`'s own docstring states
+
+### Story 21.6: unity-data-stack rebuilt to the standard
+**Type:** feature • **Effort:** M • **Deps:** S-21.3 • **FR/AD:** CAP-4 • Wave C
+**Surface:** `presentations/unity-data-stack/project/Unity Data Stack Infographic standalone.html`, `presentations/unity-data-stack/facts.yaml`, `presentations/unity-data-stack/README.md` • Design project `0494e2b0-7132-43b7-8ff2-4b4b42fa8384`
+**Given** an 18,588 B July stub with 7 sections, no act bands, no inline diagram and no fact ledger, for a chain whose Spec lives under `pyforge-atlas` — **When** it is rebuilt to `infographic-standard.md` from a derived `facts.yaml` (the chain's own Spec, Dream and the tracked ledgers; a chain deck has no station package, so package and CLI rows are absent by design) — **Then** it meets every floor, reports 0 unmarked / 0 mismatch, renders clean at 1240 px, and is pushed and read back byte-identical
+**And** facts with no derivable row are enumerated by name rather than guessed
+
+### Story 21.7: wasm-analytics-stack rebuilt to the standard
+**Type:** feature • **Effort:** M • **Deps:** S-21.3 • **FR/AD:** CAP-4 • Wave C
+**Surface:** `presentations/wasm-analytics-stack/{project/Wasm Analytics Stack Infographic standalone.html,facts.yaml,README.md}` • Design project `45c841c6-e807-4fee-a92a-f8e89cb890b4`
+**Given** an 18,713 B July stub (6 sections, 0 acts, 0 SVG, no ledger) — **When / Then / And** exactly as Story 21.6, for the Wasm analytics chain
+
+### Story 21.8: deckcraft rebuilt to the standard
+**Type:** feature • **Effort:** M • **Deps:** S-21.3 • **FR/AD:** CAP-4 • Wave C
+**Surface:** `presentations/deckcraft/{project/Deckcraft Infographic standalone.html,facts.yaml,README.md}` • Design project `59c42e9c-7c90-431d-adae-b0021dd3f727`
+**Given** a 15,774 B July stub (6 sections, 0 acts, 0 SVG, no ledger) for the chain that is Herald's own editable-PPTX engine — **When / Then / And** exactly as Story 21.6, for deckcraft
+
+### Story 21.9: presenton-pixi-image rebuilt to the standard
+**Type:** feature • **Effort:** M • **Deps:** S-21.3 • **FR/AD:** CAP-4 • Wave C
+**Surface:** `presentations/presenton-pixi-image/{project/Presenton Conda-Native Infographic standalone.html,facts.yaml,README.md}` • Design project `c824a332-8e43-4b17-bf84-f38307085289`
+**Given** a 19,028 B July stub (7 sections, 0 acts, 0 SVG, no ledger) for Mason's air-gapped Presenton chain — **When / Then / And** exactly as Story 21.6, for presenton-pixi-image
+
+### Story 21.10: The registry sees all fourteen decks
+**Type:** fix • **Effort:** S • **Deps:** S-21.6, S-21.7, S-21.8, S-21.9 • **FR/AD:** CAP-4
+**Surface:** `presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/README.md`, the `.herald/bridge-state.json` bootstrap documented in `docs/specs/presentation-deck.md`
+**Given** Story 20.13 registered the ten PyForge decks and left the four chain decks unlinked with sections `registry.read` cannot parse (it raises on deckcraft's 24-line body) — **When** each is re-registered through `registry.register` with history preserved under `### Provenance`, and the bootstrap is re-run — **Then** `herald deck status --repo-root .` reports **all fourteen** decks linked with their project ids, and a fresh clone reproduces it from the READMEs alone
+**And** `agentic-sdlc` stays unlinked by design (BMAD-branded, no poster in `project/`) and the story says so
+
+### Story 21.11: One deck proves the Design loop end to end
+**Type:** feature • **Effort:** M • **Deps:** S-21.4 • **FR/AD:** CAP-5
+**Surface:** one deck's `project/` artifacts, its `README.md` ledger, `docs/specs/presentation-deck.md` (§ *The MCP bridge* — the worked pull)
+**Given** every push this far has been repo→Design, so the bridge's editing half is unexercised on current content and no rebuilt deck carries a Design-side improvement — **When** one deck is opened in Claude Design, visually improved there by a human, and pulled back byte-exact (`render_preview` → curl → strip the `data-omelette-injected` harness and the blank line the serve layer inserts after `<head>`) — **Then** git holds the improved bytes, the read-back is byte-identical, the README records the etag and the date, and `deck-facts <slug> --check` still reports 0 `mismatch` (the visual pass must not break a mark)
+**And** the pull is the closing act: no Design-side edit is complete until git holds it
 
 ## Platform floor addendum — 2026-09-07
 
