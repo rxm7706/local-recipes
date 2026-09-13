@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 321
+# stories: 322
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -196,6 +196,7 @@ development_status:
   33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire: done
   33-13-cap-3s-mechanism-tier-the-automated-proof-platform-ci-local-gates-on: done
   33-14-cap-5s-deployed-profile-a-real-device-code-pkce-pyforge-login: done
+  33-15-the-tier-map-names-cursor-models-before-any-unattended-drain: done
   33-2-the-layers-are-enabled-on-factory-dispatch: done
   33-3-the-layers-are-enabled-on-factory-spin-or-spin-is-declared-a-two-layer-engine: done
   33-4-cap-18-one-publisher-run-state-and-savings-telemetry-reach-the-supervisor: done
@@ -311,7 +312,7 @@ development_status:
   epic-3-retrospective: done
   epic-30: done
   epic-30-retrospective: optional
-  epic-31: in-progress
+  epic-31: done
   epic-31-retrospective: optional
   epic-32: done
   epic-32-retrospective: done

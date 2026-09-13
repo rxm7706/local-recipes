@@ -240,24 +240,18 @@ enabled = true
 [context.output]
 enabled = true
 
-# 2026-09-12 (dispatch-tier-routing-fails-safe): dev/review reverted to the
-# same models the plain [adapter]/[adapter.review] baseline already uses.
-# Cursor's composer-2.5/-fast is confirmed permanently dead for headless
-# dispatch (spec-28-29-wire-is-dead-for-cursor-...) and this fleet's own
-# harness_preference is cursor-only with no bmad-loop counterpart, so every
-# heavy/medium/easy dispatch was silently launching claude with an invalid
-# model string. render_policy_toml now refuses that mismatch outright
-# (provider_declaring_model), so this revert is belt-and-suspenders: it
-# keeps the config honest about what actually runs, not just safe by
-# accident of a runtime filter.
+# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
+# ladder as explicit {harness, model} tables so a Cursor id cannot land
+# on claude --model (fails-safe CAP-1). Unattended drain stays off until
+# 28.29 is separately proven. This IDE drives the wave.
 [model_tier_map.heavy]
-dev = "sonnet"
-review = "opus"
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = "sonnet"
-review = "opus"
+dev = { harness = "cursor", model = "grok-4.6" }
+review = { harness = "cursor", model = "grok-4.6" }
 
 [model_tier_map.easy]
-dev = "sonnet"
+dev = { harness = "cursor", model = "composer-2.5" }
 

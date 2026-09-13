@@ -5078,6 +5078,17 @@ fork subagent is used to dispatch any story here.
 **Then** the bearer is written to `PYFORGE_IDP_BEARER_FILE` at 0600 with nothing else printed but the file path, no token value appears in stdout/stderr/any journal line, and a mint for station `marshal` using that bearer returns 200 against the repo's own docker-composed Keycloak stack (`src/platform/compose/keycloak/`, per operator direction 2026-09-12 — verification target is the local compose stack, not a customer-owned IdP)
 **And** `pyforge:station:marshal` exists as a real realm group in both the compose realm export and the chart's bundled realm template (the deployed-profile half of CAP-5's own success wording), so the CRC exercise (Story 33.13's own deferred half, run separately) can mint against it without further chart changes; if the full live end-to-end PKCE round-trip cannot complete in one dispatch, land the PKCE mechanics with mocked-transport unit coverage and document the deferred live-Keycloak integration test explicitly in this story's Review Triage Log and `spec-run-state-one-publisher/.memlog.md`, per that Spec's "Realized on effect, never on ledger" constraint
 
+### Story 33.15: The tier map names Cursor models before any unattended drain
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-cursor-native-tier-map CAP-1, CAP-2 • spec-dispatch-tier-routing-fails-safe CAP-1 (unchanged)
+**Surface:** the eight `planning-artifacts/marshal-policy.toml` files; `spec-cursor-native-tier-map/`
+**difficulty:** medium
+**Given** harness_preference is `["cursor"]` and the maps still say bare `sonnet`/`opus` after the 2026-09-12 fail-safe revert
+**When** this story lands
+**Then** every easy/medium/heavy stage is an inline table `{ harness = "cursor", model = "…" }` with model in `{composer-2.5, composer-2.5-fast, grok-4.6}`; stations that already carry a Cursor cost catalog also declare `grok-4.6` from the 2026-08-30 snapshot
+**And** no bare Cursor model string remains in those maps
+**And** existing provider-mismatch tests stay green
+**And** this story is implemented from Cursor (this IDE), not via `marshal factory drain`
+
 ## Epic 34: Launch-environment integrity — no silent-success failure and no orphaned worktree
 
 **Goal:** every finding from `docs/dreams/marshal-launch-environment-integrity.md`'s 2026-09-10
