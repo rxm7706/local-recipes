@@ -3377,36 +3377,42 @@ Minted 2026-09-13 from `docs/dreams/suite-scaffold-and-mybmad-sidecar.md`. The
 2026-09-06 operator verdict on `spec-bmad-suite-lifecycle` left
 `bmad-module-template` and `mybmad-dashboard` at `skip`. This epic flips those
 two register rows by Story, not by silent edit: template = authoring tool
-beside `bmad-builder`; mybmad = isolated opt-in sidecar. It does **not** make
-mybmad `/console/`. The host stays django-pyforge + Keycloak/OIDC;
-`retired-console-check` still fails a second Guildhall-class console.
-`bmad-dashboard` (member 12) stays the opt-in marshal VS Code surface under the
-same never-console rule. Does not flip any Epic 44 `blocked` key.
+beside `bmad-builder`; mybmad = opt-in sidecar on **our Postgres + our OIDC**.
+Operator lock the same day: one cluster, **schema `mybmad`** for Prisma; same
+Keycloak plane as `/console/`; `src/platform/` grows no second login; mybmad
+is not `/console/`. Launcher-local `pg_ctl` + Better Auth is a dev fallback
+only. `retired-console-check` stays green. `bmad-dashboard` (member 12) stays
+the opt-in marshal VS Code surface. Does not flip any Epic 44 `blocked` key.
 
 ### Story 52.1: Module-template is authoring-only and mybmad is an isolated sidecar never the console
 
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle
 CAP-1 (register rows 11 and 13); 2026-09-13 memlog superseding the 2026-09-06
 skip pair
-**Note:** The *why mybmad is not the console* belongs in the register hazard
-cell and the Dream, not as a footnote: own Postgres + own auth would be a
-second identity and datastore plane against `/console/`'s Keycloak and
-`DATABASE_URL`. A later Dream that *replaces* the host is out of scope.
+**Note:** Wielded path is consume, not isolate. Same `DATABASE_URL` host as
+the platform (self-hosted or Epic 51 BYO), `?schema=mybmad`. Same
+`COMPONENT_OIDC_*` / Keycloak issuer. Forbidden: second cluster as the
+register path; Prisma in Django's schema; Better Auth passwords as estate
+login; new login code under `src/platform/`; mount at `/console/`.
 **Surface:** `adoption-register.md` rows 11 and 13; lifecycle `.memlog.md` +
-`bmad-spec` re-derive of Non-goals; steward docs beside `bmad-builder` for the
-template path; `mybmad` launcher docs that name isolation (no `/console/`
-mount, no platform OIDC, not a PR gate). Never `steward provision --module`
-for the template.
+`bmad-spec` re-derive of Non-goals; chart/Liquibase (or equivalent) creates
+schema `mybmad` only; launcher overlay env for `DATABASE_URL` + OIDC client;
+steward docs beside `bmad-builder`. Never `steward provision --module` for
+the template.
 **Given** rows 11 and 13 still read `skip` on the 2026-09-06 verdict **When**
 this story lands **Then** row 11 is `wield (authoring tool only)` with wielder
-steward / `bmad-builder`, provisioning path documented and proven never to
-install into `.claude/skills/`, and row 13 is `wield (isolated opt-in sidecar)`
-with the `mybmad` launcher as the only entry, hazard text naming own Postgres
-+ auth vs `/console/` + OIDC
-**And** `bmad-spec` has re-derived `spec-bmad-suite-lifecycle` so Non-goals no
-longer treat those two as skips; the new contract is authoring-tool + sidecar
-**And** no route, reverse-proxy, or Django include mounts mybmad at `/console/`
-or joins it to platform OIDC; `retired-console-check` stays green
+steward / `bmad-builder`, and row 13 is `wield (sidecar: estate Postgres
+schema mybmad + estate OIDC)` with hazard text naming the consume contract
+**And** `bmad-spec` has re-derived `spec-bmad-suite-lifecycle` so Non-goals
+name authoring-tool + consume-sidecar, not skips
+**And** no route or Django include mounts mybmad at `/console/`;
+`src/platform/` gains no second login; `retired-console-check` stays green
+**And** Prisma migrations apply only in schema `mybmad` on the estate
+Postgres; Django/Liquibase objects in `public` (or their existing schema)
+are unchanged
+**And** mybmad authenticates via the estate Keycloak/OIDC client (no estate
+email/password Better Auth); a Keycloak client id for the sidecar is config,
+not a new IdP
 **And** `pipeline-truth`'s `wired` column still agrees with the register
-(template remains unwired-as-module; mybmad remains launcher-only)
+(template remains unwired-as-module; mybmad remains a sidecar process)
 **Status:** backlog
