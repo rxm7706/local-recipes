@@ -15,3 +15,28 @@ Prototype lives in Claude Design project **"PyForge Steward deck"** (`573d6554-0
 https://claude.ai/design/p/573d6554-0095-4126-b13f-cd537279ff8a?file=PyForge+Steward.dc.html
 Pull it with the MCP bridge ("pull steward") — see
 `docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.9)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-3) from
+`facts.yaml` re-derived at tree `fbefe6eea6`. Every count, version, status and date the
+poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyforge-steward
+--check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 83/83` (the one
+unshown row is `poster_last_commit_date`, deliberately not printed).
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Steward Infographic standalone.html` | 163,529 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 10 tables · facts 83/83 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 25069 px (full-page PNG; DOM scrollHeight 24899 px); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
+tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
+full-page PNG at 1240 px reviewed by eye in ten ~2500 px tiles
+(`.herald/deck-qa/pyforge-steward/`, gitignored) ✓ · offline apart from the Google Fonts
+`<link>` ✓ · no `<x-dc>`, no `support.js`, no scripts, no raster images ✓. No section of the
+standard's set was dropped; the Warden "sub-agent team" slot is filled by Steward's registered
+duty set (§06), and the Canopy — Steward's flagship chain — carries the contract-at-a-glance
+table (§04). Left out for lack of a fact row: the unifying-strategy Spec's capability count and
+its dated realization-log entries, the five-tier `n/n` figure, the registered-duty count, all
+two-part and third-party versions (interpreter, Django, PostgreSQL, Redis, MCP SDK, Liquibase),
+the deploy-profile plugin count, test counts, and every exit code as a count (exit codes appear
+as code literals in their own table cells).
