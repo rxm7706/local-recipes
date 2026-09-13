@@ -181,7 +181,7 @@ development_status:
   31-3-tea-test-review-is-a-marshal-review-lens: done
   31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: done
   31-5-loop-home-readiness-is-defined-for-the-cutover-flip: done
-  31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: blocked
+  31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: done
   32-1-the-operating-model-standard-is-6-12-accurate-and-derives-what-it-can: done
   32-2-declared-python-floor-equals-the-tested-floor: done
   32-3-dated-planning-artifacts-are-machine-classifiable: done

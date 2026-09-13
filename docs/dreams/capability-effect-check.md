@@ -2,9 +2,8 @@
 title: A capability is not done until something exercises it
 type: dream
 owner: doctor
-status: dreamt   # 2026-09-09 — relayed from steward Story 49.2 by the fleet-readiness
-                 # decision batch (§ 2.3 C8); the criterion stays on the Unifying Spec,
-                 # the implementation comes home to doctor's own chain
+status: realized   # 2026-09-13 — doctor Stories 21.9/21.10/21.11 shipped the Source;
+                    # see Realization log
 ---
 
 # A capability is not done until something exercises it
@@ -110,3 +109,12 @@ Source).
   first test — "has a caller outside its own test file" — comes from the readiness pass's
   marshal-B report § E-6, which found three of marshal's four dormant capabilities visible
   by no other means.
+- **2026-09-13** — Realized. Shipped via doctor Stories 21.9 (`c27e8386d8`, the caller-reach
+  check), 21.10, and 21.11 (`2bb7bc58f5`, wired beside `story-status-check`), plus a
+  surface-path resolver fix (`b2e5b9e948`). `sources/capability_effect.py` walks every
+  project under `_bmad-output/projects/` (not a hardcoded station list), joining on
+  `(spec-slug, CAP-N)` exactly as specced. Live run against the real fleet: 396 findings
+  across steward/warden/marshal/doctor Specs, `pixi run -e local-recipes
+  capability-effect-check` exit 0 (advisory, as constrained). `pyforge-doctor-test -k
+  capability_effect`: 30/30 pass. This unblocks steward Stories 49.2 and 49.8 (49.8 already
+  closed separately, `96387a0730`).
