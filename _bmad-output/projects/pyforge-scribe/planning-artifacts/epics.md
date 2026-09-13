@@ -578,6 +578,19 @@ files must not join as a glob.
 **And** commit/transcript nodes stay eligible
 **And** a store with no `compiled_at` uses only the stored `stale` bit
 
+## Epic 12: Every recall door uses the same default bag
+
+**Spec binding.** `spec-scribe-portal-recall-defaults` CAP-1 (hoisted
+parked CAP-12). CAP-5 stays `AGENTS.md`.
+
+### Story 12.1: Portal and Marshal inherit default recall
+**Type:** feature • **Effort:** S • **Deps:** S-8.5 • S-8.6 • **FR/AD:** `spec-scribe-portal-recall-defaults` CAP-1
+**Surface:** `django-pyforge` `_grammar_recall`, `planning_graph.render_scribe_recall_argv`, `.cursor/rules/scribe-recall.mdc`
+**Given** the portal job or Marshal retrieve **When** they build `scribe recall` argv **Then** they do not pass `--kind`
+**And** Marshal may still pass `--scope`
+**And** `.cursor/rules/scribe-recall.mdc` names the AGENTS session path
+**And** django-scribe is not redesigned and does not import `pyforge.scribe`
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

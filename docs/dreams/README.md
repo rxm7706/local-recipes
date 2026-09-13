@@ -182,6 +182,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`scribe-marshal-fact-visibility.md`](scribe-marshal-fact-visibility.md) | specified | Scoped Marshal retrieve can cite that project's own `presentations/<slug>/facts.yaml` (identity, not a presentations/ leak). |
 | [`scribe-in-flight-story-specs.md`](scribe-in-flight-story-specs.md) | specified | Compile in-flight story specs only; the sprint ledger is the filter, not stale frontmatter. |
 | [`scribe-recall-stale-between-nightlies.md`](scribe-recall-stale-between-nightlies.md) | specified | Persist `compiled_at`; recall withholds sources committed after that compile. |
+| [`scribe-portal-recall-defaults.md`](scribe-portal-recall-defaults.md) | specified | Portal and Marshal inherit default recall (no `--kind`); Cursor names the session path. |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**

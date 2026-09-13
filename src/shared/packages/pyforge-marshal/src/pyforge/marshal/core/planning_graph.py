@@ -105,7 +105,8 @@ def render_scribe_recall_argv(
     by another project's more lexically-dense document (``pyforge`` alone
     matches every project; the slug's own discriminating suffix is one
     token among several). Always passed when the caller has a resolved
-    project slug -- ``run_context_retrieve`` never calls this unscoped."""
+    project slug -- ``run_context_retrieve`` never calls this unscoped.
+    Story 12.1: never pass ``--kind``; inherit scribe's default bag."""
     argv = (binary_path, *SCRIBE_RECALL_ARGV, query)
     if scope:
         argv = (*argv, "--scope", scope)

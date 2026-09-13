@@ -69,3 +69,6 @@ fleet truth.
 - **2026-09-13** — Parked CAP-9 hoisted to Dream
   `scribe-recall-stale-between-nightlies` / Spec
   `spec-scribe-recall-stale-between-nightlies` (Story 11.1).
+- **2026-09-13** — Parked CAP-12 hoisted to Dream
+  `scribe-portal-recall-defaults` / Spec
+  `spec-scribe-portal-recall-defaults` (Story 12.1).

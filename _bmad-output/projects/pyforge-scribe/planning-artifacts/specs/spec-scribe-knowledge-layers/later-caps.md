@@ -24,12 +24,11 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 | **CAP-9** | Persist **`compiled_at`.** Hoisted 2026-09-13 to `spec-scribe-recall-stale-between-nightlies` CAP-1 / Story 11.1. | Was parked so the session would not lose it. | Marshal CAP-13 meaning between nightlies |
 | **CAP-10** | **Fact ledgers visible to Marshal retrieve.** Hoisted 2026-09-13 to `spec-scribe-marshal-fact-visibility` CAP-1 / Story 9.1 (identity citation rule). | Was parked here so the session would not lose it. | Decks and dispatch citing the same numbers |
 | **CAP-11** | First-class recall **modes** (`planning` / `memory` / `code`), not only `--kind`. | `--kind` is enough for CAP-4. Modes are the PyForge wiring shape. | Portal + agents without inventing argv |
-| **CAP-12** | **Portal / harness wiring** (django-scribe, `.cursor/rules` if needed) calls kind-filtered recall. CAP-5 is `AGENTS.md` only. | Inherit CLI defaults first; do not redesign the portal. | “Wiring this into PyForge” |
+| **CAP-12** | **Portal / harness wiring.** Hoisted 2026-09-13 to `spec-scribe-portal-recall-defaults` CAP-1 / Story 12.1. | Was parked so the session would not lose it. | “Wiring this into PyForge” |
 | **CAP-13** | Named extra **`docs/` surfaces** (e.g. how-tos, `library-llms-full.md`) — never `docs/**`. | FR-9 named Dreams (CAP-3). Other docs are catalog, not contract. | Library/how-to questions |
 | **CAP-14** | **One navigation owner:** graphify `code:` vs Marshal `codegraph.db`. Not both as recall peers. | Non-goal on this Spec is “do not replace codegraph.” A later decision can pick. | Agents asking “where is this symbol?” |
 
 ## Recorded, not scheduled
 
-CAP-10 is Story 9.1. CAP-6 is Story 10.1. CAP-9 is Story 11.1
-(`spec-scribe-recall-stale-between-nightlies`). No story is minted
-here for CAP-7–CAP-8 or CAP-11–CAP-14.
+CAP-6/9/10/12 are Stories 10.1 / 11.1 / 9.1 / 12.1. No story is
+minted here for CAP-7–CAP-8, CAP-11, or CAP-13–CAP-14.

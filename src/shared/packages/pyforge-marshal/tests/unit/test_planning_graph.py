@@ -97,3 +97,9 @@ class TestRecallArgvScope:
     def test_empty_scope_omits_flag(self):
         argv = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="")
         assert argv == ("/bin/scribe", "recall", "a query")
+
+    def test_never_passes_kind(self):
+        scoped = planning.render_scribe_recall_argv(
+            "/bin/scribe", "a query", scope="pyforge-scribe"
+        )
+        assert "--kind" not in scoped

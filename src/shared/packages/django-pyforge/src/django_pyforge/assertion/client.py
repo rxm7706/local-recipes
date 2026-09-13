@@ -52,6 +52,7 @@ def parse_recall_cli(stdout: str) -> dict[str, Any]:
 def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
     query = str(payload.get("query", ""))
     pyforge = shutil.which("pyforge")
+    # Story 12.1: inherit CLI default kinds (no --kind). CAP-4 lives on answer().
     argv = [pyforge, "scribe", "recall", query] if pyforge else ["scribe", "recall", query]
     completed = subprocess.run(
         argv,
