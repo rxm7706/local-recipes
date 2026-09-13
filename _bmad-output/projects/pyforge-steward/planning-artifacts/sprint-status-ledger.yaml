@@ -217,7 +217,7 @@ development_status:
   52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: done
   53-1-the-charter-carries-the-hub-vocabulary-map: done
   53-2-company-and-eight-station-frames-pass-in-repo-preflight: done
-  53-3-one-tracked-track-json-per-run: backlog
+  53-3-one-tracked-track-json-per-run: done
   53-4-guards-as-a-library-without-a-second-verdict: backlog
   6-1-provision-module-name: done
   6-2-provision-list-modules: done

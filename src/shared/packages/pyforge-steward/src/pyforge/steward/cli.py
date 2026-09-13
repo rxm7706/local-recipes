@@ -55,6 +55,7 @@ DUTIES: tuple[str, ...] = (
     "validate-fast",
     "restore",
     "revoke",
+    "track",
 )
 
 _HELP = {
@@ -114,6 +115,10 @@ _HELP = {
         "stop one runaway subject — revoke its queued Celery tasks and cancel "
         "its live supervisor runs (Story 42.2)"
     ),
+    "track": (
+        "assemble one tracked track.json per run from journal/gate-record/state "
+        "(Story 53.3 / hub:CAP-3); not a detector"
+    ),
 }
 
 
@@ -163,6 +168,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_restore_subparsers(duty_parser)
         elif name == "revoke":
             _add_revoke_arguments(duty_parser)
+        elif name == "track":
+            _add_track_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -309,6 +316,27 @@ def _add_revoke_arguments(revoke_parser: argparse.ArgumentParser) -> None:
             "interpreter that can import the platform's Django "
             "(default: the one running steward)"
         ),
+    )
+
+
+def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
+    """Story 53.3: ``assemble`` is the only verb (same shape as ``budget``)."""
+    track_subs = track_parser.add_subparsers(dest="track_verb", metavar="{assemble}")
+    assemble = track_subs.add_parser(
+        "assemble",
+        help="write one track.json from a run dir (journal, gate-record, state)",
+    )
+    assemble.add_argument(
+        "--run-dir",
+        required=True,
+        metavar="DIR",
+        help="dispatch-run or fixture directory containing journal/gate-record/state",
+    )
+    assemble.add_argument(
+        "--out",
+        required=True,
+        metavar="PATH",
+        help="destination track.json path",
     )
 
 
@@ -995,6 +1023,10 @@ def resolve_duty(name: str) -> Duty:
         from .revoke import RevokeDuty
 
         return RevokeDuty()
+    if name == "track":
+        from .track import TrackDuty
+
+        return TrackDuty()
     return NullDuty(name)
 
 

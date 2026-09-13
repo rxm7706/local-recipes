@@ -3474,7 +3474,7 @@ retention: Track indefinite, raw payload 90 days
 **Then** one structured Track record lists Guards, Gates, enumerated fields,
 and the stated retention
 **And** Guards/Gates are readable from the record, not inferred from policy TOML
-**Status:** backlog
+**Status:** done
 
 ### Story 53.4: Guards as a library without a second verdict
 
