@@ -3418,3 +3418,72 @@ not a new IdP
 embed) after the same OIDC session, as a surface — not station nine, not
 `/stations/mybmad/`, not `/console/`; the process stays the sidecar
 **Status:** backlog
+
+## Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..4)
+
+Minted 2026-09-13 from `docs/dreams/intelligence-hub.md` / `spec-intelligence-hub`
+after D4 (Non-goals vs adopt-anytime later-caps). Owner steward; **marshal**
+relays `hub:CAP-3` Track field enumeration; **scribe** relays CAP-2 Frame-store
+pointers — name them, do not implement marshal/scribe code here unless a
+one-line pointer is required. CAP-5 stays mason lane (green local build, no
+external PR); do not mint mason stories on this epic. First nine Frames are
+Company + eight stations in git; Community Frame and registry are later-caps.
+Does not flip any Epic 44 `blocked` key. Does not implement Story 52.1.
+
+### Story 53.1: The Charter carries the Hub vocabulary map
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-intelligence-hub
+CAP-1; Charter CAP-4 (external terms never join the seven Lexicon words)
+**Note:** Recording document is `docs/dreams/pyforge-charter.md` § The Lexicon
+(guild-E3 closed the Unifying Strategy branch). Reverse walk: Lexicon nouns
+with no Hub counterpart plus the Cogs collision. Companion
+`vocabulary-map.md` stays the working table.
+**Surface:** `docs/dreams/pyforge-charter.md`; `docs/governance/spec-pyforge-charter/`
+(memlog + re-derive if the Charter Spec must record the amendment); `spec-intelligence-hub/vocabulary-map.md`
+**Given** the Hub map lives only in the Spec companion **When** this story lands
+**Then** the Charter Lexicon carries the whitepaper→PyForge map and the reverse
+block, and states the rented-model / owned-context tension
+**And** Frames / Cogs / Ops / Guards / Gates / Tracks / Organizational Memory
+do not become an eighth Lexicon word
+**Status:** done
+
+### Story 53.2: Company and eight station Frames pass in-repo preflight
+
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
+CAP-2 (B9/B11; D4 later-caps)
+**Note:** Relay — scribe owns Frame-store half as pointer, not as Lexicon owner.
+First nine artifacts only. Community Frame and registry stay later-caps.
+**Surface:** Company + eight station `.frame.md` (git store); in-repo four-field
+preflight (`type`, `name`, `description`, `visibility` + owner). Do not bind
+acceptance to upstream `tools/validate_frames.py`.
+**Given** B11 says author now **When** this story lands **Then** one Company
+Frame and eight station Frames that `inherits` it exist in git
+**And** each passes the in-repo four-field preflight and names its owner
+**And** no Community Frame or registry is required for success
+**Status:** backlog
+
+### Story 53.3: One tracked track.json per run
+
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
+CAP-3 (B8)
+**Note:** Relay — marshal supplies Track field enumeration. Do not implement
+marshal code in this steward story unless a one-line pointer is required.
+**Surface:** one tracked `track.json` per bmad-loop / `marshal factory spin` run;
+retention: Track indefinite, raw payload 90 days
+**Given** a run emits split gitignored evidence today **When** this story lands
+**Then** one structured Track record lists Guards, Gates, enumerated fields,
+and the stated retention
+**And** Guards/Gates are readable from the record, not inferred from policy TOML
+**Status:** backlog
+
+### Story 53.4: Guards as a library without a second verdict
+
+**Type:** feature • **Effort:** M • **Deps:** 53.1 • **FR/AD:** spec-intelligence-hub
+CAP-4 (B7)
+**Given** Source-Grounding exists only at scribe recall AD-8 and Outcome is
+absent **When** this story lands **Then** a Spec can name which paper Guard
+categories it lacks
+**And** Warden stays the sole PR verdict and doctor stays advisory — no Guard
+mints a second verdict
+**And** Source-Grounding is the first category added to the library
+**Status:** backlog

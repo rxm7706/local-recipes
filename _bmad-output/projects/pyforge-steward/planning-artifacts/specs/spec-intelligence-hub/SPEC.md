@@ -12,28 +12,20 @@ status: ready   # 2026-09-09 (operator, fleet-readiness decision batch § 2.3 C4
                 # This flip is the precondition `spec-pyforge-unifying-strategy`'s own
                 # `realization-gate-home` question names: Epic 49 re-homes to `hub:CAP-*` once this
                 # Spec reaches `ready`.
-updated: "2026-09-09"
+updated: "2026-09-13"
 owner-dream: docs/dreams/intelligence-hub.md
 surface: []
 companions:
   - vocabulary-map.md
+  - later-caps.md
 sources:
   - ../../../../../../docs/dreams/intelligence-hub.md
 open_questions: []
-  # ALL ANSWERED 2026-09-09 (operator, batch § 2.3 C4 bundle) — full text in § Decisions:
-  #  - Owner (B6)                 -> STEWARD, with relays to marshal (Track) and scribe (Frame store).
-  #  - Missing Guard categories (B7) -> exactly two: Source-Grounding and Outcome; source-grounding first.
-  #  - Track + retention (B8)     -> a run is NOT yet a Track; assemble one tracked `track.json`
-  #                                  per run; Track kept indefinitely, raw payload 90 days.
-  #  - Publish context as Frames (B9) -> YES, minimally and privately; git is the store; no
-  #                                  Community Frame and no registry.
-  #  - Package NIC / frames client (B10) -> question was STALE (both recipes landed 2026-09-07);
-  #                                  rewritten as "when do they go to conda-forge?" -> NOT NOW.
-  #  - Author the first `.frame.md` now (B11) -> NOW.
-  #  - D-1 which reading of "align" -> reading 2 with reading 1 folded in; reading 3 deferred.
-  #  - D-2 `NebariApp` template + NIC kind profile -> not now, foundry-side.
-  #  - D-3 `nebi push` before the cutover -> no; foundry-side, after the flag.
-  # RB-1 and RB-2 closed earlier, on 2026-09-06, with dated evidence in the Dream.
+  # ALL ANSWERED 2026-09-09 (operator, batch § 2.3 C4 bundle) — full text in § Decisions.
+  # 2026-09-13 D4: Non-goals split — Community Frame, Frame registry, marketplace,
+  # NIC-as-substrate, semantic-as-default, wholesale Scribe graph, nebi push, and
+  # NebariApp template move to later-caps.md (adopt-anytime). CRC smoke stays a
+  # Constraint. B9/B11 first nine Frames stay in-scope; registry is not a hard ban.
 ---
 
 > **Canonical contract.** This SPEC and `vocabulary-map.md` are the complete contract for
@@ -62,9 +54,9 @@ matters most. Owner: **steward** (the estate) — settled 2026-09-09 (§ Decisio
 
 *Chosen 2026-09-09 (§ Decisions). The reading of "align" is **reading 2** — adopt the artifact
 model on the existing stack — with reading 1 (the vocabulary cross-walk) folded in because the
-cross-walk is free. Reading 3 (NIC as substrate) is deferred behind the cutover flag, so the
-Dream's candidate shapes 6 and 7 are not in this contract. All five CAPs below are in scope; none
-was dropped.*
+cross-walk is free. Reading 3 (NIC as substrate) is an **adopt-anytime later-cap** (D4,
+2026-09-13), not a Non-goal and not Launch. All five CAPs below are in scope; none was dropped.
+CAP-5 stays the mason lane — do not mint mason stories on the steward Hub epic.*
 
 - **CAP-1 — Vocabulary alignment only.**
   - **intent:** the Charter's Lexicon and the station roster map once to Frames / Cogs / Ops /
@@ -77,8 +69,9 @@ was dropped.*
   of its scope).*
   - **intent:** the repo's own context — the `AGENTS.md` verified block, the station personas —
     published as Frame-shaped artifacts with named accountable owners: **one Company Frame plus
-    eight station Frames that `inherits` it, with git as the store** (decided 2026-09-09, B9;
-    no Community Frame, no registry).
+    eight station Frames that `inherits` it, with git as the store** (decided 2026-09-09, B9/B11).
+    A Community Frame and a Frame registry are **later-caps** (D4, 2026-09-13) — not this
+    story's first nine Frames, and not a hard ban.
   - **success:** each artifact passes an **IN-REPO four-field preflight** implementing Frame Spec
     v0.2's required fields (`type`, `name`, `description`, `visibility`) and names its owner.
     Upstream's `tools/validate_frames.py` is an **optional cross-check only** — `openteams-ai/frame-spec`
@@ -135,29 +128,28 @@ was dropped.*
 
 ## Non-goals
 
-- Building a marketplace or a Desktop / Web Application.
-- Replacing the Foundry with a Nebari deployment, or `conda-forge-expert` with anything.
+- Replacing the Foundry with a Nebari deployment.
+- Replacing `conda-forge-expert` with anything.
 - Endorsing or marketing OpenTeams — an architecture-and-vocabulary seed only.
 - Reproducing the whitepaper; readers who need the text go to the source.
+- **Submitting `nebari-infrastructure-core` or `nebari-frames` to conda-forge** *(2026-09-09,
+  B10 — "not now"; D2/D4 keep)*. Revisit on first real consumption. Local recipes stay mason
+  lane; green local build ends the task; no external PR without an ask.
 - Re-packaging `nebari` or `nebi` — both are on conda-forge (RB-2); version bumps there are
   PRs to feedstocks rxm7706 does not maintain, not this chain's work.
-- **A Community Frame, or any Frame registry** *(2026-09-09, B9)*. `openteams-ai/frame-spec` has
-  no LICENSE file and no git tag, and `nebari-frames` is beta on single-writer SQLite with
-  `replicaCount: 1` — a fourth infra kind against the lock. Frames stay private, in git.
-- **Submitting `nebari-infrastructure-core` or `nebari-frames` to conda-forge** *(2026-09-09,
-  B10 — "not now")*. Revisit on first real consumption.
-- **A `NebariApp` template in the Foundry chart, and the NIC kind profile** *(2026-09-09, D-2)* —
-  not now, foundry-side; the chart's Ingress/Route stays primary (`pap:AD-11`).
-- **`nebi push` of the station workspaces to OCI before the cutover** *(2026-09-09, D-3)* —
-  foundry-side, after the flag.
+- Building a Desktop / Web Application as a product replacement.
+
+*Moved 2026-09-13 (D4) to `later-caps.md` (adopt-anytime, may land before or after 44.3):
+Community Frame, Frame registry, Skills/Agent Marketplace, NIC-as-substrate, semantic-as-default,
+wholesale docs/recipes in the Scribe graph, `nebi push`, `NebariApp` template. Not Launch.*
 
 ## Success signal
 
 *Reached 2026-09-09 for the choosing half:* the operator has chosen among CAP-1..5 (each choice a
-memlog decision; nothing dropped silently — the deferred readings are recorded as non-goals), RB-1
+memlog decision; nothing dropped silently — later readings live in `later-caps.md` after D4), RB-1
 and RB-2 closed in the Dream with dated evidence (2026-09-06), every remaining question is
 answered, and this Spec is `ready` — so it leaves doctor's `DEFERRED_SPECS` and decomposes into
-steward epics.
+steward epics. D4 (2026-09-13) re-derived Non-goals vs later-caps without flipping Epic 44.
 
 *The signal that remains:* the Charter carries the vocabulary cross-walk and its reverse block;
 one Company Frame plus eight station Frames pass the in-repo four-field preflight; one bmad-loop
@@ -219,11 +211,12 @@ supplies the field enumeration (relay). Evidence in a gitignored tree is the sam
 
 **B9 — Publish the repo's context as Frames: YES, minimally and privately.** One Company Frame
 derived from the `AGENTS.md` verified block, plus eight station Frames that `inherits` it, with
-**git as the store**. No Community Frame and no registry (see § Non-goals for why). Conformance is
-four frontmatter fields with a free-form body (frame-spec PR #25, merged 2026-09-07), and the eight
-`bmad-agent-<station>` persona `SKILL.md` files already are that shape. **Prerequisite: refresh the
-`AGENTS.md` managed block via `bmad-project-context` first** — it is stamped "Verified 2026-09-06
-against `99e595cc6a`" and main is `fe4025ea90`.
+**git as the store**. Community Frame and registry are **later-caps** after D4 (2026-09-13), not
+this story's first nine Frames. Conformance is four frontmatter fields with a free-form body
+(frame-spec PR #25, merged 2026-09-07), and the eight `bmad-agent-<station>` persona `SKILL.md`
+files already are that shape. **Prerequisite: refresh the `AGENTS.md` managed block via
+`bmad-project-context` first** — it is stamped "Verified 2026-09-06 against `99e595cc6a`" and
+main is `fe4025ea90`.
 
 **B10 — Package NIC / the frames client: the question was STALE AS WRITTEN**, and is rewritten
 before it is answered. Both recipes landed 2026-09-07, two days before the Dream recorded the lane:
@@ -243,13 +236,19 @@ check. **Contract fix in the same ruling:** CAP-2's success must not bind to ups
 
 **D-1 — Which reading of "align": READING 2** (adopt the artifact model on the existing stack) with
 reading 1 (the vocabulary cross-walk) folded in, because the cross-walk is free. **Reading 3** (NIC
-as substrate) is **deferred behind the cutover flag**.
+as substrate) is an adopt-anytime later-cap (D4), not a Non-goal.
 
-**D-2 — `NebariApp` template + NIC kind profile: NOT NOW, foundry-side.** The chart's Ingress/Route
-stays primary (`pap:AD-11`). Any `hub:` NIC-profile story is gated on the first green
-`ocp-portability-smoke` run — see § Constraints.
+**D-2 — `NebariApp` template: later-cap, not Launch** (D4). The chart's Ingress/Route stays
+primary (`pap:AD-11`). A NIC **kind profile** still requires the first green
+`ocp-portability-smoke` run — see § Constraints (not a Non-goal).
 
-**D-3 — `nebi push` before the cutover: NO** — foundry-side, after the flag.
+**D-3 — `nebi push`: later-cap, not Launch** (D4) — still not the Launch campaign.
+
+**D4 — 2026-09-13 Non-goals split.** True Non-goals stay the D2 bans (no Foundry←Nebari
+replacement, no CFE replacement, no OpenTeams marketing, no whitepaper reproduction, no
+conda-forge PRs for NIC/frames). Adopt-anytime later-caps: Community Frame, Frame registry,
+Skills/Agent Marketplace, NIC-as-substrate, semantic-as-default, wholesale docs/recipes in the
+Scribe graph, `nebi push`, `NebariApp` template.
 
 **guild-E3 — Charter amendment shape for CAP-1:** close the "or the Unifying Strategy" branch **in
 the Charter's favour** — the vocabulary map lands in `pyforge-charter.md`, not the Unifying

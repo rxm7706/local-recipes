@@ -5176,7 +5176,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/cocoindex_flow.py": "dbd3ae6c66b63d41715bcde49005c435132b1aa7",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "5642ba48b3293b7950eaf77bc1773d87bf8877c0",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "b68edaafc78b69839e646070d350d6ac545c429e",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/move_list.py": "aa846e5381b1b2676de652be945107c98671db07",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py": "663f55b14c4c9a43e4eea33bde45b5284b5610bc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py": "5ba454d5227967e0d5a196376bf94cc06eb03ddf",
@@ -5187,7 +5187,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py": "45e99b90d1c5c5fba56048b68fafc35897fc0d01",
-   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "28ce9e87caee8a1d7db65ed01e65bc5e31b88652",
+   "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": "6a05a00bd4046171a4563a0c85f8c7008e184043",
    "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": "0f58ab596067bd6cfc9bee500795adfd4b3165bd",
    "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": "01f2a3d0b16c4e64cf51ac58a4a6529e4f501e6e",
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "7ef280c26107a31fe00d96b5df708c192926fc58",
@@ -5202,32 +5202,42 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py": "4bcb226b93055cd774b6081829fbad8fc0cc3add",
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py": "c59af223dd5c0dd62a58bc10b6b13c6be1e7f93d",
    "src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py": "b6b1d5c2157514f982f9a73a31de2ed45efd6dc3",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py": "f2d3d47d8ceb9cc64c0fefe9422d8629f5f24d57",
    "src/shared/packages/pyforge-scribe/tests/unit/test_promote.py": "fcd978e2603a9d5b5581d30c38c8ff058c094c68",
    "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py": "19ba60464c89a608c6aeea1728ed7cda2386d6b0",
    "src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py": "0bc7c5deb8369e30fcdb5ea7cb356cd4aa77f16c",
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "4491b3a9525fa75c100616ff4a4caceabb9160b6"
+  "memlog": "994a2fbd4892c543ea88e59e42c7f3271bf25131"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
   "memlog": ""
+ },
+ "pyforge-scribe/spec-scribe-code-navigation-owner": {
+  "files": {
+   ".cursor/rules/scribe-recall.mdc": "8603c2df33cfbe298ae899ad0fdc4bbefdf78be7",
+   "AGENTS.md": "62cd47e19cef844ed36a47330b992e83556bf4f3",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "b68edaafc78b69839e646070d350d6ac545c429e",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py": "f2d3d47d8ceb9cc64c0fefe9422d8629f5f24d57"
+  },
+  "memlog": "ab8f72d59f44784c523cc3e0725da281465164a8"
  },
  "pyforge-scribe/spec-scribe-graphify-nightly-currency": {
   "files": {
    "pixi.toml": "ba2396814a5e8f6833c883b3c33eab7bd7e60e84",
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "3e7c6807a3ac2649f09dfb21c493bee9831a4f0a",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "5642ba48b3293b7950eaf77bc1773d87bf8877c0"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "b68edaafc78b69839e646070d350d6ac545c429e"
   },
-  "memlog": "23725085ae9369c199a7cf10a06e58d3ccbc72fa"
+  "memlog": "1aedbabff7f9388f027067bf60523668c2ee8698"
  },
  "pyforge-scribe/spec-scribe-graphify-target-list": {
   "files": {
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "5642ba48b3293b7950eaf77bc1773d87bf8877c0"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "b68edaafc78b69839e646070d350d6ac545c429e"
   },
-  "memlog": "468518039066fbb7f9effbb5be6bdc5cff4e3aa8"
+  "memlog": "d3ec34b0e0c29a551720413aec402817f2c57751"
  },
  "pyforge-scribe/spec-scribe-in-flight-story-specs": {
   "files": {
@@ -5269,10 +5279,11 @@
  },
  "pyforge-scribe/spec-scribe-portal-recall-defaults": {
   "files": {
-   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "f56dfb8367d59e66179c699e3f77337904a319cb",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "92bebb16203e7053e679ca861295ac7eea768241"
+   ".cursor/rules/scribe-recall.mdc": "8603c2df33cfbe298ae899ad0fdc4bbefdf78be7",
+   "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "369bce620626332ee9e297a5d87ce91060e4e1c0",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "0acf93517a421677421eab16977adfa495bcc652"
   },
-  "memlog": "8ad2caefe0d1da743f32bb4e267097817403b537"
+  "memlog": "b3fe0c49acc17855f2e83f1d52d853ac80f57667"
  },
  "pyforge-scribe/spec-scribe-recall-modes": {
   "files": {

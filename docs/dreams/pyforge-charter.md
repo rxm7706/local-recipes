@@ -598,6 +598,35 @@ every noun does exactly one job, and every job has exactly one noun.** That prop
 is the same discipline the architecture reviews enforce in code — sole ownership, one
 writer per contract, no dual homes — applied to the organization itself.
 
+### Intelligence Hub vocabulary — cross-walk, never an eighth noun
+
+*(Amended 2026-09-13 — steward Story 53.1 / `spec-intelligence-hub` CAP-1.
+Working table: `spec-intelligence-hub/vocabulary-map.md`.)*
+
+The whitepaper names Frames · Cogs · Ops · Guards · Gates · Tracks ·
+Organizational Memory. Those words **map onto** this Lexicon; they **do not
+join** it (Charter CAP-4). An external vocabulary is cross-walked and never
+enters the seven.
+
+| Hub term | Nearest Lexicon / estate surface |
+|---|---|
+| Intelligence Hub | the estate the Charter authorizes (Foundry + eight stations) |
+| Frames | context the Spec and `AGENTS.md` already bind (git-stored `.frame.md` is CAP-2) |
+| Cogs | Skills / personas — **collision:** Hub “Cog” ≠ Lexicon “Smith”; do not synonymize |
+| Ops | work bound by a Spec and executed at a station |
+| Guards / Gates | station verdicts; Warden stays the sole PR verdict |
+| Tracks | evidence a Guildhall can display; marshal relays `track.json` (CAP-3) |
+| Organizational Memory | Scribe compile + team memory (scribe relay) |
+
+**Reverse walk — Lexicon nouns with no Hub counterpart:** Charter, Guild,
+Stations. Those three stay ours. The Cogs/Skills collision is named so no
+agent treats “Cog” as a ninth Smith.
+
+**The rented-model / owned-context tension:** this factory rents the model
+and harness (Claude Code) while owning context, workflows, checks, and
+evidence — the split the paper says matters most, stated here so CAP-1
+does not assume it.
+
 ---
 
 ## Satellite: The Seed — the operating model, installed anywhere
@@ -842,3 +871,7 @@ herald broadcast slack,email --channel engineering-updates
     inside § The Lexicon carrying a reverse block (Charter, Guild, Stations have no Hub
     counterpart) and an explicit CAP-4 ruling that an external vocabulary is cross-walked and
     never enters the seven.
+  - **2026-09-13** — **§ The Lexicon** gained `### Intelligence Hub vocabulary`
+    (steward Story 53.1): the cross-walk, reverse block (Charter / Guild /
+    Stations; Cogs collision), CAP-4 ruling, and rented-model tension. External
+    terms still do not join the seven.

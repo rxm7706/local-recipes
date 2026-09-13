@@ -5,5 +5,7 @@ alwaysApply: true
 
 For a team decision, active Dream or SPEC, or a Herald fact-ledger number,
 run `pixi run -e pyforge-scribe scribe recall "…" --mode planning` — do
-not guess from chat memory. Default omits `kind=code`. Full contract:
+not guess from chat memory. Default omits `kind=code`. Marshal
+`codegraph` (`.codegraph/codegraph.db`) owns symbol navigation. Do not
+use `scribe recall --mode code` for symbols. Full contract:
 `AGENTS.md` § *Scribe recall (session path)*.

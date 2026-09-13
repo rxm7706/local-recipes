@@ -23,3 +23,8 @@ PyForge* on 2026-09-05; each gap is a candidate, not a commitment, until the Spe
 among the rented black boxes, and this factory runs on it. In the paper's own terms PyForge rents
 the model and the harness while owning the context, the workflows, the checks and the evidence —
 exactly the split the paper says matters most, so it is stated, not assumed.
+
+**D4 (2026-09-13):** Marketplace, Community Frame, Frame registry, NIC-as-substrate,
+semantic-as-default, and wholesale docs/recipes in the Scribe graph are **later-caps**,
+not current-story bans. Gap cells above still name the paper's gap; they do not forbid
+adopt-anytime work. Launch CAP-2 is Company + eight station Frames in git.
