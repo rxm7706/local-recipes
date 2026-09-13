@@ -37,6 +37,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.scribe.compile import source_committed_after
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import GraphNode, GraphNodeKind
 
@@ -201,6 +202,8 @@ def answer(
     scored.sort(key=lambda pair: (-pair[0], pair[1].id))
 
     for _score, node in scored:
+        if _withheld_as_stale(node, store, repo_root):
+            continue
         if _citation_is_resolvable(node.citation, repo_root):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
         # Unresolvable citation -- never surface an uncited/unverifiable answer; try the next candidate.
@@ -226,11 +229,23 @@ def _answer_semantic(
             continue
         if not _citation_in_scope(node.citation, scope):
             continue
+        if _withheld_as_stale(node, store, repo_root):
+            continue
         if _citation_is_resolvable(node.citation, repo_root):
             return RecallAnswer(
                 grounded=True, text=node.text, citation=node.citation, node_id=node.id
             )
     return _no_grounded_answer()
+
+
+def _withheld_as_stale(node: GraphNode, store: GraphStore, repo_root: Path) -> bool:
+    """Stored `stale` bit, plus recall-time compare to `compiled_at`."""
+    if node.stale:
+        return True
+    compiled_at = getattr(store, "compiled_at", None)
+    if compiled_at is None:
+        return False
+    return source_committed_after(repo_root, node, compiled_at)
 
 
 def _no_grounded_answer() -> RecallAnswer:

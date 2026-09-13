@@ -144,11 +144,13 @@ def test_rerun_with_no_source_activity_is_byte_identical(tmp_path: Path, memory_
     store_path = tmp_path / "graph.json"
     no_transcripts = tmp_path / "no-transcripts"
 
+    pinned = datetime(2026, 1, 2, tzinfo=timezone.utc)
     compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     first_bytes = store_path.read_bytes()
 
@@ -157,6 +159,7 @@ def test_rerun_with_no_source_activity_is_byte_identical(tmp_path: Path, memory_
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=no_transcripts,
+        compiled_at=pinned,
     )
     second_bytes = store_path.read_bytes()
 
@@ -537,11 +540,13 @@ def test_transcript_surface_idempotent_rerun_is_byte_identical(
     )
     store_path = tmp_path / "graph.json"
 
+    pinned = datetime(2026, 1, 2, tzinfo=timezone.utc)
     compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=transcript_root,
+        compiled_at=pinned,
     )
     first_bytes = store_path.read_bytes()
 
@@ -550,6 +555,7 @@ def test_transcript_surface_idempotent_rerun_is_byte_identical(
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=transcript_root,
+        compiled_at=pinned,
     )
     second_bytes = store_path.read_bytes()
 
@@ -908,11 +914,13 @@ def test_compile_writes_the_transcript_scan_cache_beside_the_store(
     )
     store_path = tmp_path / "graph.json"
 
+    pinned = datetime(2026, 1, 2, tzinfo=timezone.utc)
     compile_graph(
         memory_root=memory_root,
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=transcript_root,
+        compiled_at=pinned,
     )
 
     cache_path = tmp_path / "transcript-scan-cache.json"
@@ -928,6 +936,7 @@ def test_compile_writes_the_transcript_scan_cache_beside_the_store(
         repo_root=tmp_path,
         store=FlatFileGraphStore(store_path),
         transcript_root=transcript_root,
+        compiled_at=pinned,
     )
     assert store_path.read_bytes() == first_bytes
 
