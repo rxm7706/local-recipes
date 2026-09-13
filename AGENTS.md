@@ -70,6 +70,18 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 <!-- /bmad:context -->
 
+## Scribe recall (session path)
+
+When you need a **team decision**, an active Dream or SPEC, or a Herald fact
+ledger number — not a guess from chat memory — run:
+
+`pixi run -e pyforge-scribe scribe recall "…"`
+
+Default recall omits `kind=code` graphify AST nodes. Use `--kind code` only
+when you want that surface. Marshal `codegraph` (`.codegraph/codegraph.db`)
+owns symbol navigation. Do not treat the compiled graph as a substitute for
+this file or a station `SKILL.md`.
+
 ## Dream-driven: where work starts
 
 **Every deliverable starts as a Dream in `docs/dreams/*.md`** — the raw, pre-technical aspiration

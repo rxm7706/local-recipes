@@ -350,13 +350,29 @@ def recall_cmd(
             "28.27)."
         ),
     ),
+    kind: list[str] = typer.Option(
+        None,
+        "--kind",
+        help=(
+            "Restrict candidates to these GraphNode kinds (repeatable). "
+            "Default omits code. Pass --kind code to search AST nodes only; "
+            "combine kinds explicitly when you want more than one."
+        ),
+    ),
 ) -> None:
     """Answer from the compiled graph with a resolvable citation, or report
     no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
     repo_root = Path.cwd()
     store = open_graph_store(default_store_path(repo_root))
     mode = "semantic" if semantic else "lexical"
-    result = recall_answer(query, store, repo_root=repo_root, mode=mode, scope=scope)
+    kinds = frozenset(kind) if kind else None
+    try:
+        result = recall_answer(
+            query, store, repo_root=repo_root, mode=mode, scope=scope, kinds=kinds
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
     if result.grounded:
         typer.echo(result.text)
         typer.echo(f"[source: {result.citation}]")

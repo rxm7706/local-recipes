@@ -59,8 +59,9 @@ never serves a stale node; external consumers (e.g. marshal's planning-graph
 retrieval) reading `GraphNode.stale` from the compiled graph must fall back to
 their own non-graph path instead of serving it.
 
-**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py:L272-L285]:
+**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
+Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--scope` is unchanged.
 
 **Index** (`scribe index build|report|move-list`, Story 6.1) -- the graphify
 `compile_surface` extra's explicit verbs:
