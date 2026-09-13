@@ -8,17 +8,1108 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-block; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster helpers — the Unifying Strategy section / act-band shapes, named once. */
+.xp { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.sec { padding:36px 0 8px; }
+.sechead { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px; }
+.sechead .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sechead h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.lede { font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .lbl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .ttl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .cap { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.tint { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14.5px; line-height:1.5; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.kicker { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.bignum { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+table.tbl { border-collapse:collapse; width:100%; margin-top:18px; }
+table.tbl th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13.5px; }
+table.tbl td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.tbl tr.hi td { background:#fbe4de; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station.me { background:#fbe4de; border-color:var(--color-accent); }
+.card { border:2px solid var(--color-text); padding:20px 22px; }
+.card .k { font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14.5px; line-height:1.5; margin:10px 0 0; font-weight:500; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.chip { font-size:9.5px; font-weight:700; padding:1px 6px; background:var(--color-text); color:var(--color-bg); letter-spacing:.04em; text-transform:uppercase; }
+.chip.ok { background:var(--color-accent); }
+.rung { border-left:3px solid var(--color-accent); padding:4px 0 4px 16px; }
+.rung b { font-size:15px; }
+.rung div { font-size:13.5px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 72%, transparent); }
+.doctrine { background:var(--color-text); color:var(--color-bg); padding:26px 28px; }
+.doctrine .q { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:21px; line-height:1.2; }
+.doctrine .w { font-size:13.5px; line-height:1.5; margin-top:10px; opacity:0.82; }
+.tier { border-left:3px solid var(--color-text); padding:6px 0 10px 16px; }
+.tier b { font-size:15.5px; }
+.tier .p { font-size:13px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 70%, transparent); }
 </style>
 </head>
-<body>
-<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;"><header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;"><div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;"><span style="color:var(--color-accent-700);">PYFORGE CREW · THE MASTER DECK · DREAM TO CODE</span><span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Realized · this repo was the first</span></div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:86px; line-height:.94; letter-spacing:-0.02em; margin:0;">Genesis</h1><div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 55%, transparent);">pyforge-genesis</div><p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">One pipeline: <b>Dream → Pitch → Spec → Code → Proclaim.</b> Eight Smiths, one Modernist design system, machine-checkable tiers — <span style="color:var(--color-accent-700); font-weight:700;">zero vibes</span>. Genesis is both the model and the seed that plants it in any repo.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;"><span class="tag tag-accent">Dream-first</span><span class="tag tag-neutral">8 personas</span><span class="tag tag-neutral">Tiered artifacts</span><span class="tag tag-outline">docs/dreams/→code</span></div></header><div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);"><div style="padding:20px 20px 20px 0px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div><div style="font-size:18px; font-weight:700; margin-top:6px;">RXM</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Module</div><div style="font-size:18px; font-weight:700; margin-top:6px;">pyforge (master)</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Realized</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div><div style="font-size:18px; font-weight:700; margin-top:6px;">The whole AI factory</div></div><div style="padding:20px 20px 20px 20px; "><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Motto</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Write the Dream, Agents Realize it</div></div></div><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">01</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2></div><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">Great ideas die in translation: the aspiration lives in someone's head, the plan in a wiki, the code in a repo — and nothing checks they still agree. Genesis makes the <b>Dream a first-class, versioned artifact</b> and drives every downstream tier from it, with drift detection instead of good intentions.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">25</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Dreams on the board, each showing its furthest realized stage</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">9</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">spec kernels governing 4,000+ files with surface drift checks</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">02</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The pipeline, tier by tier</h2></div><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Tier</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Artifact</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Owner</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Lives at</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>0 · Dream</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the why — raw aspiration</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">You</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">docs/dreams/&lt;slug&gt;.md</span></td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Pitch</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">The Executive Summary, Infographic, The PowerPoint Decks</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Herald</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">presentations/&lt;slug&gt;/</span> + Claude Design</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Spec</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the machine contract (5-field kernel)</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Marshal · BMAD</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><span class="code">_bmad-output/…/planning-artifacts/specs/</span></td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Build</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">gated story loops</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Marshal · bmad-loop</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">loop homes · <span class="code">Merge bmad-loop/…</span></td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Realized</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">shipped + governed</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">The Entire AI Agent crew</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">surface manifests · <span class="code">spec-surface-check</span></td></tr></tbody></table><p style="font-size:15px; margin:14px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Every Dream shows at its <b>furthest stage</b> on the live console — deck ▤ · spec § · project ⚙ · n/n build on the chip.</p></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">03</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The crew — stations and verdicts</h2></div><p style="font-size:16px; line-height:1.5; margin:18px 0 0; max-width:1000px; font-weight:500;">Eight Smiths, one owner. Every station renders its own verdict — <span style="color:var(--color-accent-700); font-weight:700;">the hand that builds is never the gate that judges</span> — and Marshal alone owns execution. The crew grew 6 → 8 on 2026-07-23 when an ownership audit found two unowned stations: knowledge and operations.</p><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">01 · The Proclaimer</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Herald</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Visual Media Engine &amp; System Messenger</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Capture the dream. Illustrate the telemetry. Proclaim the release."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">First to touch the Dream and last to ship it: decks and the Claude Design bridge, telemetry infographics, weekly updates, and omnichannel broadcasts. Invisible engineering is failed engineering.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">herald deck seed · broadcast</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">02 · The Commander</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Marshal</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Build Factory Supervisor &amp; Orchestrator</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Enforce the spec. Guard the boundaries. Run the line."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The BMAD orchestrator: turns the Spec into validated code, drives gated story loops, mobilizes sub-agents, and contains context — no vibe coding. Owns monorepo operation and cross-agent portability.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">marshal factory spin · gate evaluate</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">03 · The Navigator</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Atlas</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Dependency Mapper &amp; Pipeline Architect</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Chart the dependencies. Map the world. Define the floor."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Maps the dependency terrain before anything is audited or packaged — graphing PyPI and Conda together, bridging naming and versions across registries, and refusing floating requirements.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">atlas map --ecosystem dual</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">04 · The Guardian</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Warden</div><div style="font-size:14px; font-weight:700; margin-top:4px;">6-Axis Security &amp; Hygiene Auditor</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Halt the threat. Clear the axes. Protect the perimeter."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">One CLI, zero trust. Audits six axes — hygiene, security, license, currency, provenance, maintenance — into a single actionable verdict, and hard-blocks CI when thresholds break.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">warden audit --axes … · scan</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">05 · The Artisan Builder</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Mason</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Package &amp; Release Craftsman</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"We forge the blocks. We bind the environment. We ship the structure."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Binds raw ingredients into shippable structures: authors v1 <span class="code">recipe.yaml</span>, resolves unified lockfiles, and publishes to PyPI wheels and conda-forge in one deterministic pass.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">mason package --ship pypi,conda-forge</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">06 · The Physician</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Doctor</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Ecosystem Health &amp; Diagnostics Officer</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Pre-flight self-check before the factory spins, then a continuous pulse on fleet and feedstock — freshness, drift, CVEs, abandonment — turned into ranked remediation worklists.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">doctor check · monitor · diagnose</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">07 · The Chronicler</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Scribe</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Knowledge Curator &amp; Team Memory Keeper</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Capture the decision. Keep the graph. Answer from memory."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Where Herald tells the world, Scribe tells the team. Captures every load-bearing decision, curates it, compiles the nightly knowledge graph, and answers for humans and agents alike.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">scribe capture · graph · recall</span></div></div><div style="border:2px solid var(--color-text); padding:22px; display:flex; flex-direction:column;"><span style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">08 · The Provisioner</span><div style="font-family:var(--font-heading); font-size:26px; font-weight:800; line-height:1.05; margin-top:6px;">Steward</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Platform, Deployment &amp; Operations Officer</div><p style="font-style:italic; font-size:14px; line-height:1.4; margin:11px 0 0; color:var(--color-accent-700); font-weight:600;">"Provision the line. Hold the keys. Keep the lights on."</p><p style="font-size:14.5px; line-height:1.45; margin:9px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Runs the estate the factory stands on: provisions runners and envs, deploys services, holds and rotates credentials, enforces budgets, and answers the pager.</p><div style="margin-top:auto; padding-top:14px;"><span class="code" style="display:inline-block; background:#e4e2e1; padding:6px 10px; font-size:12.5px; font-weight:700;">steward deploy · keys rotate · budget</span></div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">04</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The autonomy gradient — how far the leash goes</h2></div><p style="font-size:16px; line-height:1.5; margin:18px 0 0; max-width:1000px; font-weight:500;">Autonomy here is a <b>gradient, not a leap of faith</b>. Personas + skills + a deterministic harness carry the agentic SDLC at every level — up to fully autonomous <span style="color:var(--color-accent-700); font-weight:700;">when a human so chooses</span>.</p><div style="display:grid; grid-template-columns:5fr 4fr; gap:24px; margin-top:22px;"><div style="display:flex; flex-direction:column;"><div style="display:grid; grid-template-columns:64px 1fr; border-bottom:1px solid var(--color-divider); padding:12px 0;"><span style="font-family:var(--font-heading); font-weight:800; font-size:18px;">L1</span><div><b style="font-size:15px;">Assistive</b><span style="font-size:14.5px; color:color-mix(in srgb, var(--color-text) 72%, transparent);"> — AI support; the human stays the primary driver.</span></div></div><div style="display:grid; grid-template-columns:64px 1fr; border-bottom:1px solid var(--color-divider); padding:12px 0;"><span style="font-family:var(--font-heading); font-weight:800; font-size:18px;">L2</span><div><b style="font-size:15px;">Task-Based</b><span style="font-size:14.5px; color:color-mix(in srgb, var(--color-text) 72%, transparent);"> — the agent executes discrete tasks under explicit human approvals (per-story <span class="code">mode: ATTENDED</span>).</span></div></div><div style="display:grid; grid-template-columns:64px 1fr; padding:14px 12px; background:var(--color-accent); color:var(--color-bg); margin:2px 0;"><span style="font-family:var(--font-heading); font-weight:800; font-size:18px;">L3</span><div><b style="font-size:15px;">Conditional · Context Gates — the production ceiling, running here today.</b><span style="font-size:14.5px;"> Unattended loops inside machine-readable boundaries; anything the agent cannot safely decide escalates to a human instead of being guessed.</span></div></div><div style="display:grid; grid-template-columns:64px 1fr; border-bottom:1px solid var(--color-divider); padding:12px 0;"><span style="font-family:var(--font-heading); font-weight:800; font-size:18px;">L4</span><div><b style="font-size:15px;">High-Level</b><span style="font-size:14.5px; color:color-mix(in srgb, var(--color-text) 72%, transparent);"> — the human flips from driver to governance and policy setter.</span></div></div><div style="display:grid; grid-template-columns:64px 1fr; border-bottom:1px solid var(--color-divider); padding:12px 0;"><span style="font-family:var(--font-heading); font-weight:800; font-size:18px;">L5</span><div><b style="font-size:15px;">Self-Governance</b><span style="font-size:14.5px; color:color-mix(in srgb, var(--color-text) 72%, transparent);"> — full autonomy; the human governs intent alone.</span></div></div><p style="font-size:14px; line-height:1.45; margin:14px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Live L3 evidence: 32/32 Atlas stories shipped unattended-with-gates · CRITICAL escalation via <span class="code">bmad-loop-resolve</span> · a real Context-Gate escalation on 2026-07-23 · model-tier policy per story.</p></div><div style="display:flex; flex-direction:column; gap:12px;"><div style="border:2px solid var(--color-text); padding:16px 18px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Personas — who decides</div><div style="display:flex; flex-direction:column; gap:7px; margin-top:8px; font-size:14.5px; line-height:1.45;"><div><b>Human</b> — governs intent, sets each story's autonomy level, answers Context-Gate escalations.</div><div><b>Marshal</b> — the one owner of execution: every story, at every level, runs on his line.</div><div><b>BMAD team</b> — Mary · John · Winston · Sally · Amelia · Paige: Marshal's sub-agents on the floor.</div><div><b>Crew stations</b> — Herald · Atlas · Warden · Mason · Doctor · Scribe · Steward: independent verdicts + domain-specific skills.</div></div></div><div style="border:2px solid var(--color-text); padding:16px 18px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Skills — the unit of execution</div><p style="font-size:14.5px; line-height:1.45; margin:8px 0 0;"><b>BMM</b> 34+ workflows · <b>BMB</b> (BMad Builder) forges custom agents and workflows · <b>skill-forge</b> community plugins (Jira bridge) · the retro loop continuously re-forges domain skills. Everything agentic ships as a skill.</p></div><div style="border:2px solid var(--color-text); padding:16px 18px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Harness — the unit of governance</div><p style="font-size:14.5px; line-height:1.45; margin:8px 0 0;"><b>bmad-loop + bmad-dev-auto</b>: graduated gates, CRITICAL escalation, deferred-work ledger, one git worktree per concurrent loop. Deliberately <b>not a skill</b> — the thing that governs the agent cannot be a thing the agent authors.</p></div><p style="font-size:14px; font-style:italic; line-height:1.45; margin:2px 0 0; color:var(--color-accent-700); font-weight:600;">"Skills are the unit of execution; the harness is the unit of governance; station verdicts stay independent. That triad is the whole agentic SDLC, at every autonomy level."</p></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">05</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The SDLC, staffed — phase × persona × skills</h2></div><p style="font-size:16px; line-height:1.5; margin:18px 0 0; max-width:1000px; font-weight:500;">Every pipeline stage has an owner and a skill set — <b>today</b> (shipped and running) and <b>the frontier</b> (specced or dreamed, not yet built). Deployment &amp; Operations was the one orphaned stage until Steward joined the crew.</p><table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr><th style="border:1px solid var(--color-divider); background:var(--color-text); color:var(--color-bg); padding:9px 12px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; text-align:left;">Phase</th><th style="border:1px solid var(--color-divider); background:var(--color-text); color:var(--color-bg); padding:9px 12px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; text-align:left;">Personas</th><th style="border:1px solid var(--color-divider); background:var(--color-text); color:var(--color-bg); padding:9px 12px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; text-align:left;">Skills — today</th><th style="border:1px solid var(--color-divider); background:var(--color-text); color:var(--color-bg); padding:9px 12px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; text-align:left;">Skills — frontier</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Dream &amp; Pitch</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Human · Herald</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Dream files in <span class="code">docs/dreams/</span>; the Design bridge (<span class="code">deck seed / pull</span>); decks, infographics, exec summaries</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">herald CLI watch mode; CAP-5 export push-back into Design</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Plan &amp; Spec</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Marshal + BMAD team (Mary · John · Winston · Sally)</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">bmad-spec</span> 5-field kernel; BMM planning workflows; web bundles (Gems / Custom GPTs) for flat-rate planning</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Formal L1–L5 story labels; <span class="code">genesis init / adopt</span> installer</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Build</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Marshal + BMAD team (Amelia · Paige)</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">bmad-loop + bmad-dev-auto</span> gated story loops; TEA test strategy; BMB + skill-forge forge new skills; worktree-per-loop concurrency</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);"><span class="code">marshal</span> CLI as a named product; BMad Method UI dashboards</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Map dependencies</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Atlas</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">atlas map / graph</span> dual-ecosystem; Kedro / Dagster / DuckDB dataflow (waves 0–H shipped)</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Phase T upstream discovery — package it before it's asked for</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Audit</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Warden</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">warden audit</span> — six axes, one verdict, hard CI gate (25/31 built)</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Remaining 6 stories; the air-gapped registry perimeter</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Package &amp; Ship</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Mason</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">mason recipe / package / lock</span>; the CFE skill — 769 conda-forge feedstocks tended</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Multi-ecosystem autotick; smart test extractor</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Deploy &amp; Operate</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Steward</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">steward provision / deploy / keys / budget</span> — runners, envs, credential lifecycle, the $1500/mo ceiling</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Air-gap bundle installs; OpenShift service deploys (presenton)</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Monitor &amp; Heal</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Doctor</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">doctor check / monitor / diagnose</span> — pre-flight, fleet vitals, ranked prescriptions</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Fleet-health strip on the console; privilege-drift watch</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Proclaim</b></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Herald</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">herald updates compile · broadcast</span> — weekly briefs, release notables</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">Delivery feed on the program console</td></tr><tr><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><b>Remember</b> <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">(throughout)</span></td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;">Scribe</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4;"><span class="code">scribe capture / recall</span> — memlogs, ADRs, Dream realization logs</td><td style="border:1px solid var(--color-divider); padding:8px 12px; font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 65%, transparent);">The nightly knowledge graph — Sentinel's unbuilt core</td></tr></tbody></table></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">06</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The Master Pipeline relay</h2></div><p style="font-size:16px; line-height:1.5; margin:18px 0 0; max-width:1000px; font-weight:500;">One automation loop: the crew hands configurations and assets to one another in sequence — <b>supervised start to finish by Marshal, opened and closed by Herald</b>.</p><div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px;"><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">✓</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Pre-flight</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Doctor</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Verifies toolchain and environment are healthy before the run.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">doctor check --env --engines</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">1</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capture →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Herald</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Captures the raw Dream and generates the strategic vision deck.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">herald deck generate</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">2</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Build →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Marshal</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Spins the factory floor: code auto-generated from the Spec contract.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">marshal factory spin --method bmad</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">3</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Map →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Atlas</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Charts the multi-registry dependency map of the generated code.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">atlas map --ecosystem dual</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">4</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Audit →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Warden</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Executes the strict 6-axis audit on code and mapped packages.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">warden audit --axes …</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">5</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Ship →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Mason</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Binds the safe assets into platform structures and ships them.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">mason package --ship conda-forge</span></div><div style="border:2px solid var(--color-text); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">6</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Watch →</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Doctor</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Keeps monitoring fleet and feedstock health after the ship.</p><span class="code" style="display:inline-block; background:#e4e2e1; padding:5px 8px; font-size:11.5px; font-weight:700;">doctor monitor --fleet</span></div><div style="border:2px solid var(--color-text); background:var(--color-text); color:var(--color-bg); padding:16px 16px 14px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:800; font-size:17px; color:var(--color-accent);">7</span><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; opacity:.65;">Proclaim ⟲</span></div><div style="font-weight:800; font-size:17px; margin-top:6px;">Herald</div><p style="font-size:13.5px; line-height:1.4; margin:5px 0 10px; opacity:.8;">Harvests release telemetry and broadcasts the success notables.</p><span class="code" style="display:inline-block; background:color-mix(in srgb, var(--color-bg) 18%, transparent); color:var(--color-bg); padding:5px 8px; font-size:11.5px; font-weight:700;">herald updates compile · broadcast</span></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">07</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Proof the model runs</h2></div><div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:16px;"><div style="padding:20px 0px 4px 0px; "><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">32/32</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Atlas stories shipped end-to-end by bmad-loop (PRs #58–#105)</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">27/31</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Warden stories through an honest, never-false-green gate</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">10</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">decks in one Modernist system, 6-artifact family each</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">0</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">manual Design↔repo transfers — the bridge is mechanized</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">08</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Genesis is also the seed</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Greenfield</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Initialize a repo Dream-first: tiers, crew charters, BMAD wiring and the deck family from day zero — the factory arrives before the first feature.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Brownfield</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Adopt in place without disturbing what runs: backfill Dreams and spec kernels over the existing surface — <b>this repository was the first patient</b>.</p></div></div></section><section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;"><div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; opacity:.85;">The creed</div><div style="font-family:var(--font-heading); font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Write the Dream. The factory does the rest.</div><div style="font-size:18px; line-height:1.5; margin-top:18px; max-width:900px; opacity:.94;">Every artifact traces to an aspiration someone wrote down. Every stage is owned, gated and visible. That is the whole trick — and it runs today.</div><div class="code" style="font-size:13px; margin-top:26px; opacity:.85;">pyforge-genesis &nbsp;·&nbsp; PyForge crew &nbsp;·&nbsp; Dream to Code</div></section></div>
+<body style="margin:0; background:#eae9e9;">
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE CHARTER · THE MASTER DECK · SPEC-PYFORGE-CHARTER</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);"><span data-fact="guild_stations">8</span> stations · <span data-fact="dreams_total">154</span> Dreams · tree <span data-fact="tree_commit_date">2026-09-13</span></span>
+    </div>
+    <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Genesis</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-genesis · the Guild-wide deck · docs/dreams/pyforge-charter.md · docs/governance/spec-pyforge-charter/</div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">Great ideas die in translation. The aspiration lives in someone's head, the plan in a wiki, the code in a repo — and nothing checks that the three still agree. <b>The PyForge Charter answers that with a constitution, not a process document:</b> one pipeline from a human Dream to merged, governed code; <span data-fact="guild_stations">8</span> Smiths, each holding one station of the Agentic SDLC and rendering its own verdict; and one rule that makes the verdicts mean something — <span style="color:var(--color-accent-700); font-weight:700;">the hand that builds is never the gate that judges.</span> This poster is the master deck of that model: what it is, who runs it, how a Dream reaches production, and the receipts, read from the tracked ledgers at this tree.</p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">Dream → Spec → Stories → Build → Land</span>
+      <span class="tag tag-accent">Humans Dream, Agents Deliver — Governed</span>
+      <span class="tag tag-neutral">Eight Smiths · one accountable Guild</span>
+      <span class="tag tag-neutral">Autonomy is a gradient, never a leap</span>
+      <span class="tag tag-neutral">Never a green it did not earn</span>
+      <span class="tag tag-ink">Also the seed — greenfield and brownfield</span>
+    </div>
+  </header>
+
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">The Guild</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="guild_stations">8</span> Smiths · one roster</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dreams on the tier</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="dreams_total">154</span> tracked</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Fleet stories</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="fleet_stories_done_total">871/892</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Fleet epics</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="fleet_epics_done_total">190/197</span> done</div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Estate shipped</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="recipes_count">7864</span> recipes</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Forging the Agentic SDLC</div>
+    <h2 class="xp" style="font-weight:900; font-size:54px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1128px;">Humans Dream, Agents Deliver. <span style="color:var(--color-accent);">Governed. Auditable. Production-ready.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">The Charter</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The unit of legitimacy</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">does no work — it authorizes the workers: the mission, the offices, the doctrine, the branding law</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">The Spec</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The unit of contract</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">five fields — Why · Capabilities · Constraints · Non-goals · Success signal — everything downstream binds to it</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">The Stations</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The unit of accountability</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">a lifecycle stage plus its independent verdict — the post, not the person</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">The Guildhall</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Accountability made real</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">the hall is the price of the autonomy, paid in public — and the human's seat</div></div>
+    </div>
+  </div>
+
+  <!-- ACT I -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT I</span>
+      <span class="ttl">The aspiration, and the machine that keeps it true</span>
+    </div>
+    <span class="cap">The problem and the model</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section class="sec">
+    <div class="sechead" style="margin-bottom:26px;">
+      <span class="num">01</span>
+      <h2>The problem</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">Software is written from intentions nobody wrote down. The aspiration lives in a head, the plan in a wiki, the contract in a ticket, the code in a repo — four artifacts, four owners, and <b>nothing that fails when they stop agreeing.</b> Add agents to that and the failure mode does not change, it accelerates: a model happily produces plausible code against a plan it never read, and a build reports green because nothing in the pipeline is allowed to say no. The industry's answer has been "AI-assisted coding" — a faster hand on the same unguarded loop.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="dreams_total">154</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">Dreams tracked in <span class="code">docs/dreams/</span> — every one of them the versioned, human-written origin of a deliverable, not a ticket</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="fleet_stories_done_total">871/892</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">fleet stories done over stories tracked — the volume of work this model has actually carried from Dream to merge</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
+        <div class="bignum"><span data-fact="recipes_count">7864</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipes in the local mirror — the shipped estate the factory was built to tend, and the reason "it seemed fine" is not a review</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px;">
+      <div class="box"><b>The insight is organizational, not technical.</b> Autonomy does not fail on model capability; it fails on accountability. If no named post owns a stage, nothing can be asked to justify a green — and a system nobody can interrogate cannot be trusted with the keys. So the model starts by chartering an <i>organization</i>: eight stations, each a lifecycle stage <i>plus its independent verdict</i>, and one document that authorizes them all.</div>
+      <div class="tint"><b>The one rule everything else is built to protect:</b> <i>the hand that builds is never the gate that judges.</i> Mason's build does not pass because Mason says so; it passes when Warden's gate says so. Marshal runs the line but never authors the verdicts it sequences on. Doctor — and only Doctor — holds the verdict on Marshal's own conformance, because that is the one station that would otherwise grade itself.</div>
+    </div>
+  </section>
+
+  <!-- 02 · THE PIPELINE, TIER BY TIER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">02</span>
+      <h2>Dream to Code — the pipeline, tier by tier</h2>
+    </div>
+    <p class="lede">Each tier is a real directory with a real contract, and each one is derived from the tier above it rather than written beside it. The tiers are never crossed: a Dream is not a plan, a Spec is not a story, and execution output is never the record. <b>Nothing enters the factory except through a Dream</b> — gap-closure, realization work and fixes to efforts whose stories already exist included.</p>
+    <svg viewBox="0 0 1128 486" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrTa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+      <text x="0" y="18" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">TIER 0 — THE WHY</text>
+      <rect x="0" y="30" width="200" height="96" fill="#ec3013"/>
+      <text x="100" y="62" text-anchor="middle" fill="#f3f2f2" font-size="19" font-weight="900">Dream</text>
+      <text x="100" y="82" text-anchor="middle" fill="#ffe0d9" font-size="10.5" font-family="ui-monospace, Menlo, monospace">docs/dreams/</text>
+      <text x="100" y="100" text-anchor="middle" fill="#ffe0d9" font-size="10">raw human aspiration</text>
+      <text x="100" y="115" text-anchor="middle" fill="#ffe0d9" font-size="10">one owner station</text>
+
+      <text x="232" y="18" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">THE PITCH</text>
+      <rect x="232" y="30" width="200" height="96" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="332" y="62" text-anchor="middle" fill="#201e1d" font-size="19" font-weight="900">Deck</text>
+      <text x="332" y="82" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">presentations/</text>
+      <text x="332" y="100" text-anchor="middle" fill="#605d5d" font-size="10">Herald — the case, made</text>
+      <text x="332" y="115" text-anchor="middle" fill="#605d5d" font-size="10">deck · poster · exec summary</text>
+
+      <text x="464" y="18" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">THE CONTRACT</text>
+      <rect x="464" y="30" width="200" height="96" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="564" y="62" text-anchor="middle" fill="#201e1d" font-size="19" font-weight="900">Spec</text>
+      <text x="564" y="82" text-anchor="middle" fill="#ae1800" font-size="10.5" font-family="ui-monospace, Menlo, monospace">planning-artifacts/specs/</text>
+      <text x="564" y="100" text-anchor="middle" fill="#7c1405" font-size="10">five fields, one writer</text>
+      <text x="564" y="115" text-anchor="middle" fill="#7c1405" font-size="10">re-derived, never hand-patched</text>
+
+      <text x="696" y="18" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">THE DECOMPOSITION</text>
+      <rect x="696" y="30" width="200" height="96" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="796" y="62" text-anchor="middle" fill="#201e1d" font-size="19" font-weight="900">Stories</text>
+      <text x="796" y="82" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">epics.md · ledger</text>
+      <text x="796" y="100" text-anchor="middle" fill="#605d5d" font-size="10">PRD · architecture · epics</text>
+      <text x="796" y="115" text-anchor="middle" fill="#605d5d" font-size="10">never a substitute for the Spec</text>
+
+      <text x="928" y="18" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">THE WORK</text>
+      <rect x="928" y="30" width="200" height="96" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="1028" y="62" text-anchor="middle" fill="#201e1d" font-size="19" font-weight="900">Build</text>
+      <text x="1028" y="82" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">gated story loops</text>
+      <text x="1028" y="100" text-anchor="middle" fill="#605d5d" font-size="10">dev · review · land</text>
+      <text x="1028" y="115" text-anchor="middle" fill="#605d5d" font-size="10">one worktree per loop</text>
+
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arrT)">
+        <line x1="200" y1="78" x2="230" y2="78"/><line x1="432" y1="78" x2="462" y2="78"/><line x1="664" y1="78" x2="694" y2="78"/><line x1="896" y1="78" x2="926" y2="78"/>
+      </g>
+
+      <text x="0" y="182" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.6">WHAT EACH TIER OWES THE NEXT</text>
+      <line x1="0" y1="192" x2="1128" y2="192" stroke="#201e1d" stroke-width="2"/>
+      <text x="100" y="216" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">a named owner</text>
+      <text x="100" y="234" text-anchor="middle" fill="#605d5d" font-size="10.5">an unowned Dream is a finding</text>
+      <text x="332" y="216" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">alignment</text>
+      <text x="332" y="234" text-anchor="middle" fill="#605d5d" font-size="10.5">ten minutes to the whole model</text>
+      <text x="564" y="216" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">machine-checkable criteria</text>
+      <text x="564" y="234" text-anchor="middle" fill="#605d5d" font-size="10.5">behaviour plus an oracle</text>
+      <text x="796" y="216" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">a ledger key</text>
+      <text x="796" y="234" text-anchor="middle" fill="#605d5d" font-size="10.5">generated, never hand-edited</text>
+      <text x="1028" y="216" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">an earned verdict</text>
+      <text x="1028" y="234" text-anchor="middle" fill="#605d5d" font-size="10.5">never a green it did not earn</text>
+
+      <rect x="44" y="270" width="1084" height="82" fill="#eae7e7"/>
+      <text x="68" y="300" fill="#201e1d" font-size="14" font-weight="800">LAND</text>
+      <text x="68" y="322" fill="#605d5d" font-size="11">one PR per unit of work · the story spec promoted to the tracked record · the ledger flipped by its generator</text>
+      <text x="68" y="340" fill="#605d5d" font-size="11">Tier 3 execution output — run logs, sprint YAMLs, scratch worktrees — is local-only and never the record of what was agreed</text>
+      <rect x="900" y="282" width="204" height="56" fill="#ec3013"/>
+      <text x="1002" y="306" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Realized</text>
+      <text x="1002" y="325" text-anchor="middle" fill="#ffe0d9" font-size="10">it runs, and the Dream says so</text>
+
+      <path d="M1002 352 L1002 424 L20 424 L20 130" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="7 5" marker-end="url(#arrTa)"/>
+      <text x="564" y="452" text-anchor="middle" fill="#ae1800" font-size="11.5" font-weight="700">the Realization log closes the loop — every amendment dated, every superseded claim quoted, never a silent edit</text>
+      <text x="564" y="476" text-anchor="middle" fill="#605d5d" font-size="11">read forward it is authorization; read backward it is audit — and every Spec traces, in turn, to a human Dream</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="tier"><b>Tier 0 — the Dream</b><div class="p">Plain markdown, tracked, framework-neutral. Frontmatter carries <span class="code">type</span>, <span class="code">owner</span> and <span class="code">status</span>; <span class="code">owner:</span> is the through-line propagated onto every downstream row, and a Dream naming no station is a <span class="code">dream-unowned</span> finding rather than a blank cell.</div></div>
+      <div class="tier"><b>Tier 2 — the Spec and its chain</b><div class="p">The five-field contract distilled by <span class="code">bmad-spec</span>, plus the PRD, architecture spine, epics and stories that <i>decompose</i> it. A plan without a Spec is a plan, not a contract: nothing holds the five fields still while the plan moves.</div></div>
+      <div class="tier"><b>Tier 3 — execution output</b><div class="p">Story runs, sprint YAMLs, retro scratch, loop worktrees — gitignored by design. Durable per-story intent contracts are promoted out of it into the tracked record once the story merges, because in a spec-driven build the spec <i>is</i> the contract.</div></div>
+    </div>
+  </section>
+
+  <!-- 03 · THE LEXICON -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">03</span>
+      <h2>The Lexicon — one noun, one job</h2>
+    </div>
+    <p class="lede">The identity system is a constitutional model for autonomous delivery: each noun is a load-bearing separation of concerns, and the chain reads in both directions — forward as <b>authorization</b>, backward as <b>audit</b>. The discipline is the same one the architecture reviews enforce in code — sole ownership, one writer per contract, no dual homes — applied to the organization itself.</p>
+    <table class="tbl">
+      <thead><tr><th>Noun</th><th>The unit of</th><th>The one job it does</th><th>Why it cannot be merged into its neighbour</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>The Charter</b></td><td>legitimacy</td><td>authorizes the workers and does no work: the mission, the offices and mottos, the doctrine, the branding law</td><td>a document that governs work would be a Spec; this one governs <i>workers</i>, and no Smith may own the document that constitutes the Smiths</td></tr>
+        <tr><td><b>The Spec</b></td><td>contract</td><td>governs the work — five fields to which every downstream artifact is bound</td><td>the planning chain is its <i>decomposition</i>; without it there is a plan, but nothing holding the five fields still while the plan moves</td></tr>
+        <tr><td><b>The Guild</b></td><td>body</td><td>one accountable organization rather than eight freelancers — it pauses, resumes, and owns the pipeline end to end</td><td>the body outlived its own roster change (six posts became <span data-fact="guild_stations">8</span> when an ownership audit found knowledge and operations unowned)</td></tr>
+        <tr><td><b>The Smiths</b></td><td>identity</td><td>the eight, in three registers of one being — <i>Smith</i> (brand) = <i>agent</i> (category) = <i>persona</i> (technical)</td><td>the moment the registers drift into different things, accountability blurs; and each works one craft, not all</td></tr>
+        <tr class="hi"><td><b>The Stations</b></td><td>accountability</td><td>a lifecycle stage <i>plus its independent verdict</i> — the post, not the person</td><td>the being can change while the post persists: sessions were killed mid-story and the verdicts, contracts and exit codes did not blink</td></tr>
+        <tr><td><b>The Skills</b></td><td>execution</td><td>the armory — wielded, never worn; versioned, changelogged, re-forged by every retro</td><td>if a Smith <i>were</i> its skills the agent would author itself, and the harness — deliberately not a skill — would have nothing outside the agent to stand on</td></tr>
+        <tr><td><b>The Guildhall</b></td><td>accountability made real</td><td>the public console, and the human's seat: Dreams on the wall, lines forging, realized work proven — all derived from ledgers</td><td>visibility without consequence is decoration; the hall is the only place the whole chain is assembled, so it is the only place a break can be seen whole</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Forward — authorization.</b> The Charter <i>authorizes</i> the Guild → the Spec <i>binds</i> the work → the Guild <i>seats</i> Smiths → Smiths <i>hold</i> stations → stations <i>wield</i> Skills → the work <i>stands open</i> in the Guildhall. Nothing is allowed to happen that cannot be walked forward along that chain.</div>
+      <div class="box"><b>Backward — audit.</b> Anything visible in the Guildhall traces to a station's independent verdict → rendered by a named Smith → seated by the Guild → bound by a Spec → authorized by the Charter — and every Spec traces, in turn, to a human Dream. <span class="muted">Which is the mission mapped onto nouns: <b>Governed</b> = Charter + Spec + stations · <b>Auditable</b> = the Guildhall and the backward trace · <b>Production-ready</b> = Skills and verdicts that never false-green.</span></div>
+    </div>
+  </section>
+
+  <!-- 04 · THE DOCTRINE -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">04</span>
+      <h2>The Charter's doctrine — the lines that do not move</h2>
+    </div>
+    <p class="lede">A constitution is only worth the claims it can back. Each line below is a standing rule with a named consequence — and where a claim outlived the machine that enforced it, the Charter says so rather than quietly keeping the sentence. That admission is itself the doctrine applied to our own copy: <b>overstating our coverage is the one thing a never-false-green product cannot do in its own constitution.</b></p>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:20px;">
+      <div class="doctrine"><div class="q">The hand that builds is never the gate that judges.</div><div class="w">Mason's build passes when Warden's gate says so. Marshal sequences on verdicts it never authors — reading another station's durable, revision-pinned verdict artifact, never invoking the judging station and never re-deriving its answer.</div></div>
+      <div class="doctrine"><div class="q">Execution has one owner.</div><div class="w">Marshal alone runs the line. Skills are the unit of execution; the harness — gates, sandboxes, CI verify, no-LLM tools — is the unit of governance and is deliberately <i>not</i> a skill, so the thing that governs the agent is never a thing the agent authors.</div></div>
+      <div class="doctrine"><div class="q">Amendment, never silent edit.</div><div class="w">A constitutional change lands as a dated Realization-log entry naming what it superseded and why, with the superseded text quoted rather than deleted. A reader can reconstruct every change from the log alone.</div></div>
+      <div class="doctrine"><div class="q">The station is the post, not the person.</div><div class="w">Proven under fire: dev sessions were killed mid-story and the stations held — verdicts stayed valid, committed work was recoverable, the frozen contracts did not blink. Swapping the model swaps the being at the post; the obligations do not move.</div></div>
+      <div class="doctrine"><div class="q">Constants have exactly one home.</div><div class="w">The membership, the constitutive Dream and the Dream vocabulary are declared once in <span class="code">docs/governance/guild-roster.json</span> and read everywhere. A hardcoded copy is a finding on sight — after two mirrors agreed by luck until one drifted.</div></div>
+      <div class="doctrine"><div class="q">Every Dream is owned by exactly one station.</div><div class="w">Ownership is not a label on Tier 0; it is the through-line carried onto every downstream row. An unowned Dream is work with no accountable post — precisely the condition the station model exists to make impossible.</div></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Owning is becoming — at the planning tier, and only there.</b> A Dream's planning chain lives in its owner's project, but that never renames the package: what ships is declared by the Spec's own <span class="code">surface:</span>, independent of which planning tree hosts it. The earlier, superseded clause conflated <i>planning home</i> with <i>package identity</i> and forbade the first to protect the second; only the second needed protecting. Consequence: <span data-fact="guild_stations">8</span> Smiths, <span data-fact="guild_stations">8</span> projects, and no placeholder in the target state.</div>
+      <div class="tint"><b>Outcome and mechanism — where a story lives.</b> Because each Smith works one craft, work routinely spans two: the <i>outcome</i> belongs to one station, the <i>mechanism</i> that delivers it to another. The rule, written after four Specs stalled on the same unanswerable question: <b>the owner of the outcome writes the story; the owner of the mechanism owns the verb it calls.</b> Ownership follows what the work is <i>for</i>, not what it touches.</div>
+    </div>
+    <div class="box" style="margin-top:16px;"><b>And the one place the constitution currently marks itself unbacked.</b> The Charter's own Spec refuses to declare itself finished while two of its enforcement claims name machinery that no longer fails: the console that once gated on the ownership through-line has been retired with nothing put in its place, and one unguarded mirror of a constitutive constant still agrees with the roster by luck rather than by construction. Both are recorded in the open, routed to a station as ordinary work, and deliberately not rounded up. <span class="muted">A gate that prints a warning and exits clean is the inversion this doctrine exists to catch — including when the document doing the catching is this one.</span></div>
+  </section>
+
+  <!-- 05 · THE CONSTITUTIVE CONTRACT -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">05</span>
+      <h2>The constitutive contract at a glance</h2>
+    </div>
+    <p class="lede">A Spec for a constitution looks circular — and the circularity is the point. The Charter governs the <i>workers</i>; its own Spec governs the one thing the Charter cannot do for itself: <b>stay true.</b> Each capability below is a property of the document, not a feature of a product, and each carries a standing that is stated rather than assumed. <span class="muted">A charter nobody keeps current is not a constitution, it is a wall poster.</span></p>
+    <table class="tbl">
+      <thead><tr><th>Capability</th><th>What it demands</th><th>How it is judged</th><th>Standing today</th></tr></thead>
+      <tbody>
+        <tr><td><b>Amendment, never silent edit</b></td><td>every substantive change lands as a dated Realization-log entry naming what it superseded and why</td><td>a reader can reconstruct every constitutional change from the log alone</td><td>held — the superseded text is quoted, not deleted, on every amendment recorded</td></tr>
+        <tr class="hi"><td><b>Claims are backed</b></td><td>the Charter never asserts enforcement that does not exist</td><td>each "enforced, not merely asserted" claim names a check, and that check fails when the claim is violated</td><td>the binding constraint on everything below it — and the reason two capabilities are marked short rather than green</td></tr>
+        <tr><td><b>Constants have one home</b></td><td>the membership, the constitutive Dream and the Dream vocabulary are declared once and read everywhere</td><td>a hardcoded copy is a finding on sight — not a maintenance obligation</td><td>one unguarded mirror outstanding, agreeing by luck rather than by construction; routed as ordinary work</td></tr>
+        <tr><td><b>The Lexicon stays exhaustive</b></td><td>a new organizational concept either maps to an existing noun or the Lexicon gains an entry — never a synonym smuggled into prose</td><td>every noun does one job; every job has one noun</td><td>held, with a standing ruling that an overlapping outside vocabulary is cross-walked and never merged</td></tr>
+        <tr><td><b>Membership is legible</b></td><td>a reader can answer "who are the Smiths, and what does each own?" without reading code</td><td>the roster, each mandate, motto and craft, and the ownership through-line are readable from the Charter alone</td><td>held — and the source of §06 of this poster</td></tr>
+        <tr><td><b>The Dream tier is self-describing</b></td><td>the frontmatter contract and the lifecycle are documented where Dreams live</td><td>the vocabulary, the lifecycle order and the practice distinction match what the checks enforce</td><td>held; coverage of the checks across every Dream file is a known, recorded gap</td></tr>
+        <tr><td><b>Constitutive claims are enforced</b></td><td>an unowned Dream is a finding, and the hall refuses to publish an unattributable row</td><td>the ownership check fires; the roster's constitutive entry matches the one Dream the Charter names</td><td><b>half unbacked</b> — the ownership check is live, but the hall's refusal has no successor since the console retired</td></tr>
+        <tr class="hi"><td><b>The seed is recorded, and distinguished from its installer</b></td><td>the operating model is legible as something installable elsewhere, without drifting into the buildable machine that installs it</td><td>no constitutive document specifies installer behaviour</td><td>held — the record lives with the Charter, the installer is ordinary work owned by the post that runs the line</td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>Why the standing column is not all green, on purpose.</b> The Charter's own contract is deliberately held short of declaring itself finished, because two of its capabilities name enforcement that no longer fails. Advancing it would assert exactly the unbacked claim the second capability exists to refuse — <i>in the document that defines the refusal.</i> <span class="muted">This is the never-false-green doctrine turned on its own constitution, and it is the single best evidence that the doctrine is real rather than decorative.</span></div>
+  </section>
+
+  <!-- ACT II -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT II</span>
+      <span class="ttl">The cast — eight Smiths, one fire</span>
+    </div>
+    <span class="cap">The stations · the sub-agents on the floor · the armory</span>
+  </div>
+
+  <!-- 06 · THE EIGHT SMITHS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">06</span>
+      <h2>The Guild — <span data-fact="guild_stations">8</span> Smiths, one accountable body</h2>
+    </div>
+    <p class="lede">Everyone at the fire is a Smith, whatever they are working — and each masters one craft, not all. Herald works communication, not code; Warden works judgment, not building. <b>Nobody is a generalist, which is exactly why the verdicts mean something.</b> The chips carry each station's tracked sprint ledger: stories done over stories total, and epics done over epics total, read with the real parser and never from a prior poster.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">79/82</span> · <span data-fact="herald_epics_done_total">18/20</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">First to touch the Dream and last to ship it. Herald turns the raw aspiration into the visual alignment asset that lets a room agree before a line of code exists — the deck, the poster, the executive summary — then returns at the tail of the pipeline as the megaphone that says what the factory built. Owns the Design-to-code bridge that makes a design tool and the repository one surface, with no manual downloads in either direction, and the fact ledgers that make every number on a poster re-derivable. <b>Invisible engineering is failed engineering.</b> This poster is Herald's own work, built to Herald's own standard.</p>
+        <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">248/249</span> · <span data-fact="marshal_epics_done_total">34/36</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The one owner of execution. Marshal ingests the Spec, breaks it into isolated instruction blocks, mobilizes sub-agents, and drives gated story loops until the code matches the contract — with ruthless context containment, because a bloated context is how a model starts inventing. Anti-vibe by construction: "close enough" is a corrective iteration, not a merge. Also owns the multi-project machinery, one worktree per concurrent loop, and cross-agent portability — the method is never vendor-locked to the harness that happens to run it.</p>
+        <div class="verbs code">marshal factory spin · gate evaluate · run · land · deploy · seed</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span> · <span data-fact="atlas_epics_done_total">23/24</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Refuses to look at a project through a single lens: Atlas graphs how a pure-Python distribution on one index sits alongside heavy binary dependencies from another, normalizing names and version strings across registries into one intelligence surface. Despises floating requirements — strict, immutable trees that reproduce the same software state everywhere. Its pipelines feed almost every other station's signal: staleness, upstream lag, advisories, feedstock health, release cadence, adoption. The craft names no ecosystem; today's Python scope is implementation, not mandate.</p>
+        <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher · feedstock-health</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span> · <span data-fact="warden_epics_done_total">12/12</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Ecosystem Security &amp; Hygiene Auditor</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Zero trust, one verdict. Every artifact, vendored package and transitive dependency is interrogated against policy across a pluggable set of axes — hygiene, security, license and currency gating today; provenance and maintenance named as the Dream's vision tier and explicitly <i>not built</i>. Developers should not sift six tools for six findings, so Warden synthesizes the layers into one punchy, actionable answer and holds the single PR-gate verdict for the whole estate. Findings from other stations may be inputs; they are never a second gate.</p>
+        <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">67/67</span> · <span data-fact="mason_epics_done_total">16/16</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Once the map is drawn and the perimeter cleared, Mason binds raw ingredients into concrete, production-ready structures: authoring modern v1 <span class="code">recipe.yaml</span> recipes with platform selectors, multi-outputs and architecture skips; resolving conflicting pip and conda dependencies into one unyielding lockfile; publishing wheels and conda packages in the same deterministic pass. Sees the two ecosystems as complementary rather than rival, and rejects brittle runtime environments on principle. Alone among the eight, Mason wields a craft skill rather than a station skill.</p>
+        <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint · submit-pr</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/95</span> · <span data-fact="doctor_epics_done_total">22/22</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Preventive vigilance plus a continuous pulse. Before the factory spins, Doctor verifies every engine and environment is sound so a broken config fails in the first seconds, never mid-build; after the crew ships, it keeps a finger on freshness, drift, new advisories and abandonment across the shipped estate, and never stops at a finding — every diagnosis names a root cause and ships a ranked order of work. Holds, by Charter, the verdict on Marshal's own conformance: the one station that would otherwise grade itself. Reports operability, never policy.</p>
+        <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">33/33</span> · <span data-fact="scribe_epics_done_total">16/16</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The inward voice: where Herald tells the world, Scribe tells the team. It is the cure for a specific disease — knowledge is lossy, the graph is there, nobody writes it down. Every load-bearing decision, rejected tradeoff and small-hours runbook lands in the record as it happens, is deduplicated, superseded and linked so memory stays true rather than becoming a landfill, and is compiled into a graph any session can answer from. A grounded miss is explicit; recall never invents an uncited answer.</p>
+        <div class="verbs code">scribe capture · graph compile · recall</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">206/222</span> · <span data-fact="steward_epics_done_total">49/51</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Mason ships artifacts and stops at the registry; Doctor observes and prescribes; Steward <i>operates</i>. Runners and environments exist before Doctor's pre-flight ever runs; services — not just artifacts — are deployed to their platforms; credentials are issued, scoped, rotated and revoked so no privilege outlives its deployment; resource ceilings are machine-readable and alert on breach; and when the pager goes off, this is the post that answers. The answer to the orphaned lifecycle stage, and the cure for privilege drift.</p>
+        <div class="verbs code">steward provision · deploy · keys audit · keys rotate · budget enforce · workspace start</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>The whole fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">871/892</span> stories and <span data-fact="fleet_epics_done_total">190/197</span> epics done across the <span data-fact="guild_stations">8</span> roster stations — parsed with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">the Guild persisted while its membership changed — bodies outlive rosters</span></div>
+  </section>
+
+  <!-- 07 · THE TOPOLOGY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">07</span>
+      <h2>The topology — one body, eight posts, one hall</h2>
+    </div>
+    <p class="lede">Not a hierarchy and not a swarm. The Charter authorizes a single body; the body seats eight posts, each holding one lifecycle stage <i>and</i> the verdict over it; and every verdict surfaces in one hall where a human can govern intent without reading a log. Marshal is the only post that may run the others' work, and it is also the only post that does not judge its own.</p>
+    <svg viewBox="0 0 1128 600" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrGa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+
+      <rect x="329" y="0" width="470" height="46" fill="#201e1d"/>
+      <text x="564" y="21" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="800" letter-spacing="1.8">THE CHARTER — THE UNIT OF LEGITIMACY</text>
+      <text x="564" y="38" text-anchor="middle" fill="#f3f2f2" font-size="12" font-weight="700">authorizes the workers · does no work itself</text>
+      <line x1="564" y1="46" x2="564" y2="180" stroke="#201e1d" stroke-width="2" marker-end="url(#arrG)"/>
+
+      <circle cx="564" cy="265" r="82" fill="#ec3013"/>
+      <text x="564" y="252" text-anchor="middle" fill="#f3f2f2" font-size="22" font-weight="900">The Guild</text>
+      <text x="564" y="274" text-anchor="middle" fill="#ffe0d9" font-size="10.5">one accountable body</text>
+      <text x="564" y="290" text-anchor="middle" fill="#ffe0d9" font-size="10.5">bodies outlive rosters</text>
+
+      <g font-size="13" font-weight="900" fill="#201e1d">
+        <rect x="30" y="60" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="46" y="82">Herald</text><text x="46" y="101" font-size="10.5" font-weight="600" fill="#605d5d">The Proclaimer · comms</text><text x="46" y="120" font-size="10" font-weight="700" fill="#ae1800">verdict: the deck is true</text>
+        <rect x="30" y="165" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="46" y="187">Marshal</text><text x="46" y="206" font-size="10.5" font-weight="600" fill="#605d5d">The Commander · execution</text><text x="46" y="225" font-size="10" font-weight="700" fill="#ae1800">runs the line, judges none</text>
+        <rect x="30" y="270" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="46" y="292">Atlas</text><text x="46" y="311" font-size="10.5" font-weight="600" fill="#605d5d">The Navigator · the map</text><text x="46" y="330" font-size="10" font-weight="700" fill="#ae1800">verdict: the floor holds</text>
+        <rect x="30" y="375" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="46" y="397">Warden</text><text x="46" y="416" font-size="10.5" font-weight="600" fill="#605d5d">The Guardian · the perimeter</text><text x="46" y="435" font-size="10" font-weight="700" fill="#ae1800">verdict: the one PR gate</text>
+
+        <rect x="908" y="60" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="924" y="82">Mason</text><text x="924" y="101" font-size="10.5" font-weight="600" fill="#605d5d">The Artisan · the build</text><text x="924" y="120" font-size="10" font-weight="700" fill="#ae1800">verdict: it reproduces</text>
+        <rect x="908" y="165" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="924" y="187">Doctor</text><text x="924" y="206" font-size="10.5" font-weight="600" fill="#605d5d">The Physician · health</text><text x="924" y="225" font-size="10" font-weight="700" fill="#ae1800">verdict: on Marshal's row</text>
+        <rect x="908" y="270" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="924" y="292">Scribe</text><text x="924" y="311" font-size="10.5" font-weight="600" fill="#605d5d">The Chronicler · memory</text><text x="924" y="330" font-size="10" font-weight="700" fill="#ae1800">verdict: it is in the record</text>
+        <rect x="908" y="375" width="190" height="78" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="924" y="397">Steward</text><text x="924" y="416" font-size="10.5" font-weight="600" fill="#605d5d">The Provisioner · the estate</text><text x="924" y="435" font-size="10" font-weight="700" fill="#ae1800">verdict: the lights are on</text>
+      </g>
+
+      <g stroke="#9b9797" stroke-width="2" fill="none">
+        <path d="M220 99 C 360 99, 420 200, 486 232"/>
+        <path d="M220 204 C 360 204, 410 230, 482 252"/>
+        <path d="M220 309 C 360 309, 410 290, 482 280"/>
+        <path d="M220 414 C 360 414, 420 330, 486 298"/>
+        <path d="M908 99 C 768 99, 708 200, 642 232"/>
+        <path d="M908 204 C 768 204, 718 230, 646 252"/>
+        <path d="M908 309 C 768 309, 718 290, 646 280"/>
+        <path d="M908 414 C 768 414, 708 330, 642 298"/>
+      </g>
+
+      <line x1="564" y1="347" x2="564" y2="486" stroke="#ec3013" stroke-width="3" marker-end="url(#arrGa)"/>
+      <text x="580" y="400" fill="#ae1800" font-size="11" font-weight="700">every verdict, rendered</text>
+      <text x="580" y="416" fill="#605d5d" font-size="10.5">derived from ledgers, never hand-trusted</text>
+
+      <rect x="229" y="492" width="670" height="70" fill="#201e1d"/>
+      <text x="564" y="516" text-anchor="middle" fill="#ff9783" font-size="10.5" font-weight="800" letter-spacing="1.8">THE GUILDHALL — ACCOUNTABILITY MADE REAL</text>
+      <text x="564" y="536" text-anchor="middle" fill="#f3f2f2" font-size="12.5" font-weight="700">Dreams on the wall · lines forging · realized work proven · and the human's seat</text>
+      <text x="564" y="553" text-anchor="middle" fill="#bab6b6" font-size="10.5">a guild that works in secret cannot be trusted with autonomy — the hall is the price, paid in public</text>
+      <text x="564" y="586" text-anchor="middle" fill="#605d5d" font-size="11">a station is not a column on the board; it is the condition of appearing on it</text>
+    </svg>
+  </section>
+
+  <!-- 08 · THE BRANDING LAW -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">08</span>
+      <h2>The branding law — one brand, three registers, four senses of one word</h2>
+    </div>
+    <p class="lede">A naming convention looks like the least constitutional thing in a charter, right up to the moment two teams mean different things by the same word. The law below exists because each ambiguity it closes had already cost something: a register that drifted, a noun that named two artifacts, a technical form that a package index would have rejected outright.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+      <div class="box"><b>The brand and the technical form are different strings.</b> Written content — decks, docs, titles, dashboards — carries the brand case. Anything in a code context — distributions, modules, slugs, filenames, environments, branches, commands, URLs — carries the lowercase technical form. This is not a style preference: the packaging ecosystem normalizes names, which makes the split non-negotiable rather than tasteful.</div>
+      <div class="tint"><b>Three registers, one being.</b> <i>Smith</i> is the brand term a deck says; <i>agent</i> is the category the mission says; <i>persona</i> is the technical term a configuration says. Each audience needs a different word for the <b>same accountable thing</b> — and the moment the registers drift into different <i>things</i>, accountability blurs. There is deliberately no fourth register.</div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>The word</th><th>Which sense</th><th>Where it lives</th><th>What calling it the wrong thing costs</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td rowspan="4"><b>"Spec"</b></td><td><b>The Spec</b> — the five-field contract, the primary sense</td><td>the project's own spec folder</td><td>demoting the most load-bearing artifact in the ecosystem to a tool detail — which is exactly what calling it a "kernel" does</td></tr>
+        <tr class="hi"><td><b>The planning chain</b> — the Spec's decomposition</td><td>PRD, architecture spine, epics</td><td>treating the decomposition as the contract, so nothing holds the five fields still while the plan moves</td></tr>
+        <tr class="hi"><td><b>Story specs</b> — per-story intent contracts</td><td>tracked beside the Spec, promoted out of run scratch once the story merges</td><td>leaving them in gitignored execution output — which once lost a station most of two epics' worth of contracts to a worktree teardown</td></tr>
+        <tr class="hi"><td><b>Legacy intake specs</b> — the former hand-authored tier</td><td>kept for in-flight efforts; no new files</td><td>authoring a new one, which re-opens a tier the model has already replaced</td></tr>
+        <tr><td><b>"Station"</b></td><td>the post, not the person</td><td>the roster</td><td>tying a verdict to a session; when the session dies, the verdict should not</td></tr>
+        <tr><td><b>"Skill"</b></td><td>what a Smith <i>wields</i>, never what it <i>is</i></td><td>the armory</td><td>an agent that authors itself, and a harness with nothing outside the agent to stand on</td></tr>
+        <tr><td><b>"Guild"</b> vs <b>"Guildhall"</b></td><td>the body versus the hall its work stands open in</td><td>the Charter; the console</td><td>one noun doing two jobs — the exact failure the Lexicon's "one noun, one job" rule forbids</td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>Products in prose take their full form once, then the persona name.</b> The first mention in a document is the full brand form; every mention after it is the bare persona name; the package form appears only in code contexts. Small rule, large effect: it is what lets a reader of any one document know, unambiguously, whether a sentence is talking about a post, a person or a package.</div>
+  </section>
+
+  <!-- 09 · THE SUB-AGENT TEAM -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">09</span>
+      <h2>Two persona layers — the stations, and the team on the floor</h2>
+    </div>
+    <p class="lede">The eight Smiths are the factory's <i>stations</i>. Inside Marshal's line there is a second, narrower cast: the BMAD team — the planning and delivery personas Marshal mobilizes per story, each scoped to one task with only the context that task needs. Keeping the layers distinct is what stops "a persona" meaning two different things in the same sentence: a station holds a verdict for the whole estate; a sub-agent holds a task until it is done.</p>
+    <table class="tbl">
+      <thead><tr><th>Sub-agent</th><th>Craft on the floor</th><th>What it produces</th><th>Where its output lands</th></tr></thead>
+      <tbody>
+        <tr><td><b>The analyst</b></td><td>market, competitive and requirements research</td><td>the brief and the research that stops a Spec being written from assumption</td><td>product brief · research notes under the project's planning artifacts</td></tr>
+        <tr><td><b>The product manager</b></td><td>requirements discovery and the PRD</td><td>functional requirements decomposed from the Spec's capabilities — never invented beside them</td><td><span class="code">PRD.md</span></td></tr>
+        <tr><td><b>The architect</b></td><td>the technical spine</td><td>the decisions that keep separately built parts consistent — cited by id from every story that depends on one</td><td><span class="code">ARCHITECTURE-SPINE.md</span></td></tr>
+        <tr><td><b>The UX designer</b></td><td>the look and the behaviour</td><td>how the product presents and how it responds, held apart from how it is built</td><td><span class="code">DESIGN.md</span> · <span class="code">EXPERIENCE.md</span></td></tr>
+        <tr class="hi"><td><b>The developer</b></td><td>implementation under a frozen contract</td><td>the code for exactly one story, plus the evidence that its acceptance criteria hold</td><td>the story's branch, in its own worktree</td></tr>
+        <tr class="hi"><td><b>The reviewers</b></td><td>independent adversarial critique</td><td>parallel lenses — a blind cynical pass and an edge-case hunt — triaged into findings, run without shared context so they cannot agree by accident</td><td>the review record on the story, before the land</td></tr>
+        <tr><td><b>The test architect</b></td><td>risk-based test strategy</td><td>what must be proven, at which level, and what deliberately is not — so coverage is a decision rather than a number</td><td>the test design attached to the epic</td></tr>
+        <tr><td><b>The station personas</b></td><td>one per Smith, addressable by name</td><td>a station acting in its own grammar — its CLI and its own portal surface, never another station's internals</td><td>that station's own tree</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Why two layers and not one roster.</b> A sub-agent is disposable: spawn it, scope it, take its output, discard the context. A station is not — it carries a standing verdict that outlives every session. Collapsing them would make the verdict as disposable as the worker.</div>
+      <div class="box"><b>Why the reviewers run blind.</b> Two reviewers sharing context converge; two reviewers starting cold disagree, and the disagreement is the signal. The practice has been validated repeatedly on real changes, and the review pass has caught defects in work that had already reported itself finished.</div>
+      <div class="tint"><b>Where the human sits.</b> Not inside the loop. The human writes the Dream, sets each story's autonomy level, answers escalations the agents are forbidden to guess at, and governs intent through the hall. That is the whole job — and it is a promotion, not a demotion.</div>
+    </div>
+  </section>
+
+  <!-- 10 · THE ARMORY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">10</span>
+      <h2>The armory — Skills are wielded, never worn</h2>
+    </div>
+    <p class="lede">Skills are the unit of execution and they belong to the Guild, not to any one Smith. Three consequences follow, and all three are load-bearing. <b>Governance survives</b> — Smiths <i>author</i> skills, so if a Smith <i>were</i> its skills the agent would be authoring itself. <b>The armory is shared</b> — any Smith touching a craft wields that craft's skill without becoming that Smith, and a skill sharpened by one effort upgrades every future wielder. <b>Blades version; beings do not</b> — the Smith wielding the eighth major version of a craft is the same one who wielded the sixth.</p>
+    <table class="tbl">
+      <thead><tr><th>Family</th><th>What it holds</th><th>Wielded by</th><th>How it sharpens</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>The craft skill</b><div class="muted" style="font-size:12px;"><span class="code">conda-forge-expert</span> <span data-fact="cfe_skill_version">8.90.5</span></div></td><td>the whole recipe lifecycle — generate, validate, optimize, scan, build, debug, submit — plus a catalog of hard-won gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span></td><td>Mason by default; <b>any</b> Smith whose story touches packaging, by standing rule</td><td>every effort that used it closes with a retrospective that edits the skill and bumps its version — the finding lands in the craft, not in a person's memory</td></tr>
+        <tr><td><b>The method suite</b><div class="muted" style="font-size:12px;">BMAD core <span data-fact="bmad_core_version">6.12.0</span></div></td><td>the planning and delivery workflows — spec distillation, PRD, architecture, epics and stories, sprint planning, review, retrospective — plus the builder module that forges new skills</td><td>Marshal, through the sub-agent team</td><td>upstream releases, adopted deliberately and pinned; a version drift is a story, never a silent upgrade</td></tr>
+        <tr><td><b>The station skills</b></td><td>one content skill per Smith, teaching that station's own grammar: use the CLI, never the internals; never publish a second verdict where one already exists</td><td>each station, and any agent about to touch that station's code</td><td>re-compiled from the station's shipped source whenever the surface moves; a drift audit says when</td></tr>
+        <tr><td><b>The persona agents</b></td><td>the addressable voices — the planning cast and the eight stations — each bound to its own grammar and its own tool surface</td><td>the operator, by name</td><td>with the method suite they ride</td></tr>
+        <tr class="hi"><td><b>The harness</b><div class="muted" style="font-size:12px;"><span class="code">bmad-loop</span> <span data-fact="bmad_loop_version">0.11.1</span></div></td><td>graduated gates, escalation on anything the agent may not safely decide, the deferred-work ledger, one git worktree per concurrent loop, and the run-state that says what must be true now</td><td>Marshal alone</td><td><b>deliberately not a skill.</b> The thing that governs the agent cannot be a thing the agent authors — that is the whole reason the harness sits outside the armory</td></tr>
+      </tbody>
+    </table>
+    <div class="kicker" style="margin:26px 0 10px;">Ground truth — the surfaces the armory stands on, re-derived at this tree</div>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 8px 0;"><div class="bignum"><span data-fact="groundtruth_mcp_tools">46</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">tools on the packaging MCP server — recipe authoring, intelligence and project scanning, one call surface</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 8px;"><div class="bignum"><span data-fact="groundtruth_atlas_phases">22</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">pipeline phases in the intelligence layer, feeding freshness, threat, health and lifecycle signals</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 8px;"><div class="bignum"><span data-fact="groundtruth_pixi_envs">30</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">declared environments — one per station plus the shared craft envs, all from one task registry</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 8px;"><div class="bignum"><span data-fact="groundtruth_schema_version">29</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">schema versions shipped by the intelligence database — migrations, never a rewrite</div></div>
+      <div style="padding:18px 0 8px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="groundtruth_skill_version">8.90.5</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the craft skill's version as the ground-truth probe reports it — the same string the skill's own frontmatter carries</div></div>
+    </div>
+    <div class="box" style="margin-top:22px;"><b>The compounding-knowledge engine, stated plainly.</b> Identity cannot be shared; equipment can. That asymmetry is the entire reason a retro is mandatory rather than nice: a lesson written into a person is lost when the session ends, and a lesson written into a skill is held by everyone who picks it up afterwards. <span class="muted">Which is why "wielded, never worn" is not a metaphor — it keeps the sword issueable, and confiscatable.</span></div>
+  </section>
+
+  <!-- ACT III -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT III</span>
+      <span class="ttl">Running the line</span>
+    </div>
+    <span class="cap">One Dream's journey · the flows · the gradient · the relay</span>
+  </div>
+
+  <!-- 11 · ONE DREAM'S JOURNEY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">11</span>
+      <h2>One Dream's journey — from a paragraph to merged code</h2>
+    </div>
+    <p class="lede">The same path every time, whether the work is a new station or a one-line fix. Each stage has an artifact that must exist at the end of it, a post accountable for that artifact, and a specific way it can be stopped. <b>Gap-closure is not an exemption:</b> "we already know what to do, let us just do it" is precisely the request that skips the place where the review loop fires.</p>
+    <table class="tbl">
+      <thead><tr><th>Stage</th><th>What must exist when it ends</th><th>Who holds it</th><th>What stops it here</th></tr></thead>
+      <tbody>
+        <tr><td><b>Dreamt</b></td><td>a file in <span class="code">docs/dreams/</span> with a title, a type, an owning station and a status — narrative, not a task list</td><td>the human, with a named station</td><td>naming no owner: the work has no accountable post, and the check says so</td></tr>
+        <tr><td><b>Pitched</b></td><td>the case made — a deck, a poster, an executive summary that gets a room to the same model in ten minutes</td><td>Herald</td><td>nothing to align on: if the Dream cannot be told in six acts it is not yet one Dream</td></tr>
+        <tr class="hi"><td><b>Specified</b></td><td>the five-field contract with machine-checkable success criteria and <i>no</i> open questions left unanswered</td><td>Marshal, through spec distillation</td><td>an unanswered open question — a draft contract establishes the chain, not the contract, and nothing downstream may bind to it</td></tr>
+        <tr><td><b>Decomposed</b></td><td>a PRD, an architecture spine, epics and numbered stories, each with a ledger key generated by its own tool</td><td>Marshal and the planning cast</td><td>a story with no capability behind it, or a capability with no story — either way the decomposition does not cover its Spec</td></tr>
+        <tr class="hi"><td><b>Built</b></td><td>one story implemented in its own worktree against a frozen contract, with its acceptance evidence</td><td>Marshal's developer sub-agent</td><td>a contradiction the session may not resolve alone — it escalates to a human rather than guessing</td></tr>
+        <tr><td><b>Reviewed</b></td><td>independent findings, triaged, from reviewers that did not share the implementer's context</td><td>the review lenses, run in parallel</td><td>a finding the implementation cannot answer; the story goes back, it does not go forward</td></tr>
+        <tr><td><b>Audited</b></td><td>the one compliance verdict over hygiene, security, license and currency</td><td>Warden</td><td>a threshold breach — this is a hard gate, not advice</td></tr>
+        <tr><td><b>Landed</b></td><td>one pull request, merged; the ledger flipped by its generator; the story's intent contract promoted into the tracked record</td><td>Marshal</td><td>a ledger row that disagrees with what actually merged — proven by ancestry, never by a status field</td></tr>
+        <tr class="hi"><td><b>Realized</b></td><td>it runs; the Dream's own status says so, and its Realization log carries the dated entry that proves when</td><td>the owning station</td><td>an enforcement claim with no detector that fails — the status is held back rather than rounded up</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Status names the act that completed, never the artifact that proves it.</b> There is deliberately no "building" state: status declares what <i>exists</i> and the board <i>derives</i> what is happening from live build lines. Hand-maintained activity tracking rots — a station once read "in spec" while it had shipped every one of its stories.</div>
+      <div class="tint"><b>Status is not a proxy for work remaining, in either direction.</b> Two Dreams read as barely started while their epics were fully done and merged; the single largest block of unbuilt work in the fleet sits under a Dream that reads <i>archived</i>, because it was correctly consolidated elsewhere. For "what is left", read the ledger — never the status field.</div>
+    </div>
+  </section>
+
+  <!-- 12 · THE THREE WAYS WORK FLOWS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">12</span>
+      <h2>Three ways work flows — and when each is the right one</h2>
+    </div>
+    <p class="lede">The same contract, three different engines over it. Choosing wrongly is not a correctness failure — it is a waste failure: an unattended run costs setup, a worktree and a supervisor, and spending all of that on a single well-understood story is worse than doing it directly. The rule of thumb is the shape of the work, not its size.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">One — the unattended line</div>
+        <p><b>What it is:</b> a supervised loop that takes stories off the ledger in dependency order, runs a dev session and an independent review session per story, lands the ones that pass, and pauses on anything it may not decide.</p>
+        <p><b>Where it wins:</b> a sequence — an epic, a wave, a whole chain — where the contract is settled and the value is in <i>not</i> being in the room.</p>
+        <p><b>What it costs:</b> a run home, a worktree per loop, and a supervisor process; plus the discipline that a "killed" agent may still be alive.</p>
+        <p><b>Its safety property:</b> escalation is non-destructive. Work in flight is preserved and restored as a patch — never re-implemented from scratch, which is what an unguarded re-arm would do.</p>
+      </div>
+      <div class="card">
+        <div class="k">Two — the attended single story</div>
+        <p><b>What it is:</b> one story, implemented directly against its spec with a human present, reviewed the same way, landed the same way.</p>
+        <p><b>Where it wins:</b> a single story whose shape is already understood, an urgent fix, or work where the human wants to see each step — the loop's overhead buys nothing here.</p>
+        <p><b>What it costs:</b> attention. It does not scale past what one person can watch.</p>
+        <p><b>Its safety property:</b> identical. The same gates, the same independent review, the same ledger discipline — the engine changes, the contract does not.</p>
+      </div>
+      <div class="card">
+        <div class="k">Three — the retro loop</div>
+        <p><b>What it is:</b> the closeout pass. A finished effort is read back against its own evidence — diffs, failures, review findings — and the lessons are written into the <i>skill</i>, with a dated changelog entry and a version bump.</p>
+        <p><b>Where it wins:</b> everywhere, and it is not optional: an effort is not done until the retro lands. Even a clean effort produces an entry recording that existing guidance held.</p>
+        <p><b>What it costs:</b> one more pass at the end, every time.</p>
+        <p><b>Its safety property:</b> it is the only flow that makes the <i>next</i> effort cheaper. Corrections, refinements and additions all land in the armory, where the next wielder picks them up for free.</p>
+      </div>
+    </div>
+    <div class="box" style="margin-top:18px;"><b>A fourth path exists and is deliberately not a flow: course correction.</b> When something material changes mid-sprint, the answer is not to quietly re-scope the stories — it is an impact assessment across the PRD, the epics, the architecture and the UX, landing as a written change proposal. <span class="muted">Silent re-scoping is how a spec-driven build stops being spec-driven while every status field still reads green.</span></div>
+  </section>
+
+  <!-- 13 · THE AUTONOMY GRADIENT -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">13</span>
+      <h2>The autonomy gradient — how far the leash goes</h2>
+    </div>
+    <p class="lede">Autonomy here is a <b>gradient, never a leap of faith</b>. The ladder is a governance taxonomy, not a capability boast: each rung says who decides, not how clever the model is. The production ceiling is the conditional rung — unattended work inside machine-readable boundaries, where anything the agent cannot safely decide escalates to a human instead of being guessed. The rungs above it are real destinations, and they are reached by moving the boundary, not by removing it.</p>
+    <svg viewBox="0 0 1128 360" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker></defs>
+      <text x="700" y="30" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900" letter-spacing="1">TODAY'S PRODUCTION CEILING</text>
+      <text x="300" y="60" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">RUNNING HERE, EVERY DAY</text>
+      <text x="930" y="60" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="800" letter-spacing="1.5">REACHED BY MOVING THE BOUNDARY</text>
+      <line x1="700" y1="76" x2="700" y2="242" stroke="#201e1d" stroke-width="3" stroke-dasharray="8 6"/>
+      <rect x="40" y="150" width="1048" height="8" fill="#eae7e7"/>
+      <rect x="40" y="150" width="628" height="8" fill="#ec3013"/>
+
+      <circle cx="100" cy="154" r="18" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="100" y="160" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900">L1</text>
+      <text x="100" y="196" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Assistive</text>
+      <text x="100" y="214" text-anchor="middle" fill="#605d5d" font-size="10.5">AI supports; the human</text><text x="100" y="228" text-anchor="middle" fill="#605d5d" font-size="10.5">stays the primary driver</text>
+
+      <circle cx="300" cy="154" r="18" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="300" y="160" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900">L2</text>
+      <text x="300" y="196" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Task-based</text>
+      <text x="300" y="214" text-anchor="middle" fill="#605d5d" font-size="10.5">discrete tasks under</text><text x="300" y="228" text-anchor="middle" fill="#605d5d" font-size="10.5">explicit approvals</text>
+
+      <circle cx="520" cy="154" r="20" fill="#ec3013" stroke="#ec3013" stroke-width="3"/><text x="520" y="160" text-anchor="middle" fill="#f3f2f2" font-size="12" font-weight="900">L3</text>
+      <text x="520" y="198" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="900">Conditional</text>
+      <text x="520" y="216" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">context gates</text>
+
+      <circle cx="800" cy="154" r="18" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="800" y="160" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900">L4</text>
+      <text x="800" y="196" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">High-level</text>
+      <text x="800" y="214" text-anchor="middle" fill="#605d5d" font-size="10.5">the human flips from driver</text><text x="800" y="228" text-anchor="middle" fill="#605d5d" font-size="10.5">to governance and policy</text>
+
+      <circle cx="1020" cy="154" r="18" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="1020" y="160" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900">L5</text>
+      <text x="1020" y="196" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Self-governance</text>
+      <text x="1020" y="214" text-anchor="middle" fill="#605d5d" font-size="10.5">full autonomy; the human</text><text x="1020" y="228" text-anchor="middle" fill="#605d5d" font-size="10.5">governs intent alone</text>
+
+      <text x="564" y="262" text-anchor="middle" fill="#201e1d" font-size="11.5" font-weight="700">the production ceiling: unattended loops inside machine-readable boundaries —</text>
+      <text x="564" y="278" text-anchor="middle" fill="#605d5d" font-size="11.5">what the agent cannot safely decide escalates to a human instead of being guessed</text>
+
+      <line x1="60" y1="318" x2="660" y2="318" stroke="#ec3013" stroke-width="2" marker-end="url(#arrL)"/>
+      <text x="360" y="340" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">more of the decision moves to the agent — the boundary moves with it, and stays machine-readable</text>
+      <text x="900" y="340" text-anchor="middle" fill="#605d5d" font-size="11">the human's role rises: from writing software to architecting Dreams</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:20px;">
+      <div class="rung"><b>Per-story, not per-org</b><div>autonomy is a property of the <i>story</i>. The level is set when the work is planned, so one epic can mix an attended story with a dozen unattended ones.</div></div>
+      <div class="rung"><b>Escalation is a feature</b><div>a session that meets a contradiction the spec cannot settle stops and asks. The pause is the governance working, not the automation failing.</div></div>
+      <div class="rung"><b>The harness holds the line</b><div>gates, sandboxes and permission boundaries live outside the agent, so raising the level never means trusting the agent to police itself.</div></div>
+      <div class="rung"><b>Both extremes are governed</b><div>a tool-bounded remote surface and a sandboxed native terminal are both in production here — capability bounded by policy, at either end of the spectrum.</div></div>
+    </div>
+  </section>
+
+  <!-- 14 · PHASE x PERSONA x SKILLS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">14</span>
+      <h2>The SDLC, staffed — phase × persona × skills</h2>
+    </div>
+    <p class="lede">Every lifecycle stage has a named post, a grammar and a wielded skill. Read down the first column and the claim becomes checkable: there is no stage of this SDLC without an accountable owner. Deployment and operations was the last orphan, and the roster grew to close it rather than leaving the stage unowned.</p>
+    <table class="tbl">
+      <thead><tr><th>Phase</th><th>Post on the floor</th><th>What happens there</th><th>Grammar</th><th>Skill wielded</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>Dream</b></td><td>the human</td><td>the raw aspiration is written down, versioned and given an owning station — the only legal entry point into the factory</td><td><span class="code">docs/dreams/&lt;slug&gt;.md</span></td><td>none — this stage is deliberately unautomated</td></tr>
+        <tr><td><b>Pitch</b></td><td>Herald</td><td>the case is made visually: the deck, the poster, the executive summary, and the fact ledger that makes every number on them re-derivable</td><td><span class="code">herald deck seed · deck pull</span></td><td><span class="code">pyforge-herald</span> · the design bridge</td></tr>
+        <tr class="hi"><td><b>Spec</b></td><td>Marshal · the analyst and product manager</td><td>the Dream is distilled into the five-field contract; open questions are answered before anything binds to it</td><td><span class="code">bmad-spec</span></td><td>the method suite — spec, product brief, deep research</td></tr>
+        <tr><td><b>Decompose</b></td><td>Marshal · the product manager, architect and UX designer</td><td>PRD, architecture spine, epics and numbered stories, each tied back to a capability and forward to a ledger key</td><td><span class="code">bmad-prd</span> · <span class="code">bmad-architecture</span> · <span class="code">bmad-create-epics-and-stories</span></td><td>the method suite — planning chain</td></tr>
+        <tr class="hi"><td><b>Build</b></td><td>Marshal · the developer and reviewers</td><td>gated story loops: implement against a frozen contract, review blind and in parallel, land or send back</td><td><span class="code">marshal factory spin</span> · <span class="code">bmad-build</span></td><td>the method suite plus whatever craft the story touches</td></tr>
+        <tr><td><b>Map</b></td><td>Atlas</td><td>the dependency terrain of the generated code, across both registries, into one intelligence surface</td><td><span class="code">pyforge atlas run · read</span></td><td><span class="code">pyforge-atlas</span></td></tr>
+        <tr><td><b>Audit</b></td><td>Warden</td><td>the multi-axis compliance verdict — the single gate a change must clear to merge</td><td><span class="code">warden scan</span></td><td><span class="code">pyforge-warden</span></td></tr>
+        <tr><td><b>Ship</b></td><td>Mason</td><td>recipes authored, environments bound into lockfiles, artifacts published to both ecosystems</td><td><span class="code">recipe-build</span> · <span class="code">submit-pr</span></td><td><span class="code">conda-forge-expert</span> — the craft, not a station skill</td></tr>
+        <tr><td><b>Operate</b></td><td>Steward</td><td>runners, environments, services, credentials and budgets — the estate the factory stands on</td><td><span class="code">steward provision · deploy · keys</span></td><td><span class="code">pyforge-steward</span></td></tr>
+        <tr class="hi"><td><b>Monitor</b></td><td>Doctor</td><td>pre-flight before the line spins and a continuous pulse after the ship, turned into ranked prescriptions</td><td><span class="code">doctor check · monitor · diagnose</span></td><td><span class="code">pyforge-doctor</span></td></tr>
+        <tr><td><b>Proclaim</b></td><td>Herald</td><td>release telemetry harvested into notables, briefs and broadcasts — the loop's other bookend</td><td><span class="code">herald progress · success · notice</span></td><td><span class="code">pyforge-herald</span></td></tr>
+        <tr><td><b>Remember</b> <span class="muted">(throughout)</span></td><td>Scribe</td><td>decisions, rejected tradeoffs and realization entries captured as they happen and compiled into a graph any session can answer from</td><td><span class="code">scribe capture · graph compile · recall</span></td><td><span class="code">pyforge-scribe</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 15 · THE MASTER PIPELINE RELAY -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">15</span>
+      <h2>The Master Pipeline relay — one loop, eight hands</h2>
+    </div>
+    <p class="lede">Integrated into a single automation loop, the crew hands configurations and assets to one another in sequence — <b>supervised start to finish by Marshal, opened and closed by Herald, with Doctor holding the baton at both ends.</b> Each hand-off is a durable, schema-validated verdict artifact pinned to the revision it judged, so the next step reads an answer rather than asking the station to answer again.</p>
+    <svg viewBox="0 0 1128 210" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <g>
+        <rect x="8" y="44" width="122" height="74" fill="#ec3013"/><text x="69" y="70" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="800" letter-spacing="1">PRE-FLIGHT</text><text x="69" y="90" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Doctor</text><text x="69" y="107" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">check</text>
+        <rect x="149" y="44" width="122" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="210" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP ONE</text><text x="210" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="210" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deck generate</text>
+        <rect x="290" y="44" width="122" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="351" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP TWO</text><text x="351" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Marshal</text><text x="351" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+        <rect x="431" y="44" width="122" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="492" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP THREE</text><text x="492" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Atlas</text><text x="492" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">map</text>
+        <rect x="572" y="44" width="122" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="633" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP FOUR</text><text x="633" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Warden</text><text x="633" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">audit</text>
+        <rect x="713" y="44" width="122" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="774" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP FIVE</text><text x="774" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Mason</text><text x="774" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">package</text>
+        <rect x="854" y="44" width="122" height="74" fill="#ec3013"/><text x="915" y="70" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="800" letter-spacing="1">STEP SIX</text><text x="915" y="90" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Doctor</text><text x="915" y="107" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">monitor --fleet</text>
+        <rect x="995" y="44" width="125" height="74" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1057" y="70" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="1">STEP SEVEN</text><text x="1057" y="90" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="1057" y="107" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">broadcast</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arrR)">
+        <line x1="130" y1="81" x2="147" y2="81"/><line x1="271" y1="81" x2="288" y2="81"/><line x1="412" y1="81" x2="429" y2="81"/><line x1="553" y1="81" x2="570" y2="81"/><line x1="694" y1="81" x2="711" y2="81"/><line x1="835" y1="81" x2="852" y2="81"/><line x1="976" y1="81" x2="993" y2="81"/>
+      </g>
+      <text x="564" y="26" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="700">supervised start to finish by Marshal — sequencing on verdicts it never authors</text>
+      <path d="M210 118 C 210 170, 1057 170, 1057 118" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+      <text x="564" y="182" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">opened and closed by the same Proclaimer — the Dream goes in as a deck, the result comes out as a broadcast</text>
+      <text x="564" y="202" text-anchor="middle" fill="#605d5d" font-size="11">Scribe runs across the whole width: every decision along the way lands in the record as it happens</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-top:8px;">
+      <div>
+        <div class="relaystep"><span class="relaynum">&#10003;</span><div><b>Pre-flight · Doctor</b> — toolchain and environment verified sound before anything spins; a missing engine or an unconditionally injected credential fails in the first seconds, never mid-build. <span class="code">doctor check --env --engines</span></div></div>
+        <div class="relaystep"><span class="relaynum">1</span><div><b>Capture · Herald</b> — the raw Dream becomes the strategic vision deck and the poster a room can align on. <span class="code">herald deck generate</span></div></div>
+        <div class="relaystep"><span class="relaynum">2</span><div><b>Build · Marshal</b> — the factory floor spins code from the Spec contract through gated story loops, with sub-agents scoped to one task each. <span class="code">marshal factory spin --method bmad</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">3</span><div><b>Map · Atlas</b> — the multi-registry dependency map of the generated code, with the floor it must stand on. <span class="code">atlas map --ecosystem dual</span></div></div>
+      </div>
+      <div>
+        <div class="relaystep"><span class="relaynum">4</span><div><b>Audit · Warden</b> — the strict multi-axis audit over code and mapped packages; the one gate that may say no. <span class="code">warden audit --axes …</span></div></div>
+        <div class="relaystep"><span class="relaynum">5</span><div><b>Ship · Mason</b> — safe assets bound into platform structures and published to both ecosystems in one deterministic pass. <span class="code">mason package --ship conda-forge</span></div></div>
+        <div class="relaystep"><span class="relaynum">6</span><div><b>Pulse · Doctor</b> — fleet and feedstock health watched after the ship; a ranked prescription the moment something moves. <span class="code">doctor monitor --fleet --watch staleness,cve</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">7</span><div><b>Proclaim · Herald</b> — release telemetry harvested into notables and broadcast; the Dream's own Realization log gains its dated entry. <span class="code">herald updates compile · broadcast</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT IV -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT IV</span>
+      <span class="ttl">The product — what the model actually built</span>
+    </div>
+    <span class="cap">The eight surfaces · the doctrine · the stack · the ledgers</span>
+  </div>
+
+  <!-- 16 · WHAT SHIPPED -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">16</span>
+      <h2>What shipped — <span data-fact="guild_stations">8</span> stations, <span data-fact="guild_stations">8</span> surfaces</h2>
+    </div>
+    <p class="lede">The Charter is not a thought experiment with a deck attached. Each station is a real package with a real command grammar, its own environment, its own test suite and its own portal — and each declares, in its own words, what it refuses to do. The refusals matter more than the features: they are what keeps one station from quietly becoming a second copy of another.</p>
+    <table class="tbl">
+      <thead><tr><th>Station</th><th>What it ships</th><th>The verb it is reached by</th><th>What it refuses — in its own words</th></tr></thead>
+      <tbody>
+        <tr><td><b>Herald</b></td><td>the deck family and the design bridge: seeded prototypes, pulled byte-exact, posters built to a written standard from per-deck fact ledgers</td><td><span class="code">pyforge herald …</span></td><td>does not own the content management lane, and does not author decks in the design tool when the repo is the source of truth</td></tr>
+        <tr class="hi"><td><b>Marshal</b></td><td>the loop supervisor, the multi-project switch, the worktree-per-loop machinery, the policy composition that says how far a run may go</td><td><span class="code">pyforge marshal …</span></td><td>does not author the verdicts it sequences on, and does not implement the loop's own ingest inside its skill</td></tr>
+        <tr><td><b>Atlas</b></td><td>the intelligence pipelines and the graph behind them, plus the read-side command surface and the fleet dashboard</td><td><span class="code">pyforge atlas …</span></td><td>does not replace the packaging craft, and does not expose its internals — the pipeline names are the contract</td></tr>
+        <tr><td><b>Warden</b></td><td>the compliance engine over multiple axes, with a seven-rung status lattice and a frozen report schema</td><td><span class="code">warden scan</span></td><td>the command line is the sole gate; the self-check never exits failing, and it does not replace the packaging craft</td></tr>
+        <tr><td><b>Mason</b></td><td>the recipe estate itself — authored, built, linted and submitted through the craft skill</td><td>the craft's own tasks</td><td>deliberately has no station skill of its own: recipe work wields the craft, so the craft is the one place its lessons accumulate</td></tr>
+        <tr class="hi"><td><b>Doctor</b></td><td>the diagnostic facade over every existing instrument, a tri-state finding shape, ranked prescriptions and the source registry the repo's own gates dispatch through</td><td><span class="code">pyforge doctor …</span></td><td>findings stay advisory — never a second pull-request verdict; a warning never changes an exit code</td></tr>
+        <tr><td><b>Scribe</b></td><td>the team memory layer, the compiled knowledge graph and the recall surface every session can start from</td><td><span class="code">scribe …</span></td><td>recall never invents an uncited answer — a grounded miss is stated as a miss</td></tr>
+        <tr><td><b>Steward</b></td><td>the platform: the host, the station portals, provisioning, deployment, credential lifecycle, budgets, workspace lifecycle</td><td><span class="code">pyforge steward …</span></td><td>duties never exit the process themselves; a crash is distinguishable from a failure, and it does not replace the packaging craft</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>One grammar, eight stations.</b> Every station is reachable the same way — a top-level command, a station token, a verb — so an operator who learns one learns them all, and an agent that can call one can call any. The uniformity is not cosmetic: it is what makes the relay in §13 mechanical rather than bespoke.</div>
+      <div class="tint"><b>Mason is the deliberate exception, and it proves the rule.</b> Seven stations have a station skill; Mason has a craft skill instead, because recipe work is a domain with its own accumulated knowledge that <i>any</i> Smith may need to wield. Minting a station skill for it would split that knowledge in two — so the model chose one home over symmetry.</div>
+    </div>
+  </section>
+
+  <!-- 17 · THE DOCTRINE BAND -->
+  <section class="sec" style="padding-bottom:0;">
+    <div class="sechead">
+      <span class="num">17</span>
+      <h2>Never a green it did not earn</h2>
+    </div>
+    <p class="lede">Three claims the model makes about itself, each with the incident that forced it to be written down. A constitution earns its authority by surviving contact with its own failures — and by recording them rather than rounding them off.</p>
+  </section>
+  <div style="margin:8px -56px 0; background:var(--color-text); color:var(--color-bg); padding:44px 56px;">
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:36px;">
+      <div>
+        <div style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">Claim one</div>
+        <div class="xp" style="font-size:28px; font-weight:900; line-height:1.08; margin-top:12px;">We state our own coverage precisely, even when it flatters us less.</div>
+        <p style="font-size:14px; line-height:1.55; margin-top:14px; opacity:0.88;">The Charter billed one station as a flat multi-axis auditor while the shipped product gated a subset of those axes, with the remainder named as vision-tier and not built. The correction was made in the constitution itself, in the open. <b>Overstating our own coverage is the one thing a never-false-green product cannot do in its own founding document.</b></p>
+      </div>
+      <div>
+        <div style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">Claim two</div>
+        <div class="xp" style="font-size:28px; font-weight:900; line-height:1.08; margin-top:12px;">A gate that prints a warning and exits clean is not a gate.</div>
+        <p style="font-size:14px; line-height:1.55; margin-top:14px; opacity:0.88;">The console once failed publication on a rendering error but not on a governance hole: a cosmetic fault blocked the page while an unattributable row shipped silently. The answer computed the problem and threw it away. <b>Visibility without consequence is decoration</b> — so the hall was made to refuse the row, not merely to render it grey.</p>
+      </div>
+      <div>
+        <div style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">Claim three</div>
+        <div class="xp" style="font-size:28px; font-weight:900; line-height:1.08; margin-top:12px;">Constants that agree by luck will eventually disagree in production.</div>
+        <p style="font-size:14px; line-height:1.55; margin-top:14px; opacity:0.88;">Two files held the same constitutional constant. One was updated; the other was not; the board warned on a Dream the Charter explicitly permits. The fix was structural, not procedural — one declaration, every reader reading it. <b>A hardcoded copy is now a finding on sight, not a maintenance obligation.</b></p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:34px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13.5px; font-weight:600;">
+      <span>Every one of the three was found by this system, about this system, and recorded as a dated amendment with the superseded text quoted.</span>
+      <span style="opacity:0.75;">Amendment, never silent edit.</span>
+    </div>
+  </div>
+
+  <!-- 18 · THE STACK -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">18</span>
+      <h2>The stack every station stands on</h2>
+    </div>
+    <p class="lede">Deliberately shallow. The model's load-bearing parts are contracts and verdicts, not frameworks — so the stack is chosen to be boring, reproducible and inspectable, and every layer has exactly one owner. Where a layer could plausibly live in two places, the Charter's constants rule settles it: one declaration, every reader reading it.</p>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>What it is</th><th>Who owns it</th><th>Why it is this and not something else</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>The method</b><div class="muted" style="font-size:12px;">core <span data-fact="bmad_core_version">6.12.0</span></div></td><td>the planning and delivery workflow suite — spec distillation, the planning chain, sprint planning, review, retrospective</td><td>Marshal</td><td>it is the one place the spec-driven discipline is <i>executable</i> rather than merely documented; upgrades are adopted as stories, never silently</td></tr>
+        <tr><td><b>The harness</b><div class="muted" style="font-size:12px;">loop <span data-fact="bmad_loop_version">0.11.1</span></div></td><td>the unattended supervisor: gates, escalation, deferred work, worktree isolation, run state</td><td>Marshal</td><td>deterministic where determinism wins; and outside the armory on purpose, so governance is never a thing the agent can author</td></tr>
+        <tr><td><b>The craft</b><div class="muted" style="font-size:12px;">skill <span data-fact="cfe_skill_version">8.90.5</span></div></td><td>the packaging craft and its accumulated gotchas, plus the tool server that exposes it to any agent</td><td>Mason, wielded by all</td><td>domain knowledge compounds only if it has one home; a second copy would fork the lessons</td></tr>
+        <tr><td><b>The environment</b><div class="muted" style="font-size:12px;"><span data-fact="groundtruth_pixi_envs">30</span> envs</div></td><td>one declarative task-and-dependency registry producing every environment the estate uses, locked and reproducible</td><td>Steward</td><td>an environment that cannot be re-created identically is an unreviewable dependency; the lock is the contract</td></tr>
+        <tr><td><b>The intelligence layer</b><div class="muted" style="font-size:12px;">schema <span data-fact="groundtruth_schema_version">29</span></div></td><td>the dependency graph and the signal pipelines over it, plus the read-side surfaces every other station consumes</td><td>Atlas</td><td>every station needs the same facts about the outside world; deriving them once is the difference between one map and eight guesses</td></tr>
+        <tr><td><b>The tool surface</b><div class="muted" style="font-size:12px;"><span data-fact="groundtruth_mcp_tools">46</span> tools</div></td><td>the protocol-served tools an agent calls instead of shelling out — recipe authoring, intelligence, project scanning</td><td>Mason and Atlas</td><td>a bounded, typed call surface is auditable in a way an arbitrary shell is not; the sandboxed terminal remains for the cases it cannot cover</td></tr>
+        <tr class="hi"><td><b>The platform</b></td><td>the host every station portal mounts on, its database and its deployment overlays</td><td>Steward</td><td>eight portals on one host beats eight services nobody operates; the host is a mount, not a ninth station</td></tr>
+        <tr><td><b>The record</b></td><td>the tracked ledgers, the governance roster, the Dream tier and the team-memory graph</td><td>Scribe, with the Guild's own roster held in governance</td><td>everything a verdict cites has to survive a worktree teardown, or the audit trail is fiction</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 19 · WHICH STATION, WHEN -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">19</span>
+      <h2>Which station, when</h2>
+    </div>
+    <p class="lede">The routing question an operator or an agent actually asks, answered once. If two stations look plausible, the tiebreaker is the outcome/mechanism rule: whoever owns the <i>outcome</i> carries the work, and calls the other's shipped verb as an ordinary dependency.</p>
+    <table class="tbl">
+      <thead><tr><th>What you want</th><th>Go to</th><th>Why not the neighbour</th></tr></thead>
+      <tbody>
+        <tr><td>To start anything at all</td><td><b>a Dream</b>, then Marshal for the Spec</td><td>there is no other legal entry point; a prompt is not a contract, and a story without a Spec has nothing holding it still</td></tr>
+        <tr><td>To get a room aligned on an idea</td><td><b>Herald</b></td><td>Marshal can plan it, but nobody has agreed to it yet; the deck is how the case is made before the contract is drawn</td></tr>
+        <tr class="hi"><td>To turn a settled contract into code</td><td><b>Marshal</b></td><td>execution has exactly one owner; every other station's involvement is a verdict it renders, not work it runs</td></tr>
+        <tr><td>To know whether a dependency is safe to take</td><td><b>Warden</b> for the verdict, <b>Atlas</b> for the map</td><td>Atlas describes the terrain and refuses to judge it; Warden judges and refuses to re-derive the terrain</td></tr>
+        <tr><td>To know whether something is <i>getting worse</i></td><td><b>Doctor</b></td><td>Warden answers "may this merge"; Doctor answers "is the estate healthy" — operability, never policy, and never a second gate</td></tr>
+        <tr><td>To ship an artifact people can install</td><td><b>Mason</b></td><td>building is not shipping; Mason owns the recipe, the lockfile and the publish, and wields the craft skill to do it</td></tr>
+        <tr class="hi"><td>To run the thing you just shipped</td><td><b>Steward</b></td><td>Mason stops at the registry and Doctor only observes; deploying, holding credentials and answering the pager is a different craft</td></tr>
+        <tr><td>To find out why a past decision was made</td><td><b>Scribe</b></td><td>the answer is in the record if it was captured; if it was not, the honest answer is a stated miss, not a plausible reconstruction</td></tr>
+        <tr><td>To tell the world it happened</td><td><b>Herald</b></td><td>the loop's other bookend — the same post that captured the Dream closes it</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 20 · ESCALATION AND THE LEDGERS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">20</span>
+      <h2>Escalation and the ledgers — how a finding becomes work</h2>
+    </div>
+    <p class="lede">Autonomy without a way to say "I do not know" is just confident guessing. Three mechanisms carry the unknowns: an <b>escalation</b> pauses a run and asks a human; a <b>deferred-work entry</b> records something real that this story may not do; and the <b>sprint ledger</b> is the single generated statement of what is done. None of the three is hand-edited, and that is the point.</p>
+    <div style="display:grid; grid-template-columns:1.05fr 1fr; gap:22px; margin-top:18px;">
+      <div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>Mechanism</th><th>Fires when</th><th>Resolved by</th></tr></thead>
+          <tbody>
+            <tr class="hi"><td><b>Escalation</b></td><td>a session meets a contradiction or a gap its frozen contract cannot settle</td><td>a human, in an interactive session that disambiguates the spec so the story can be re-driven</td></tr>
+            <tr><td><b>Deferred work</b></td><td>a real finding surfaces that is outside this story's contract — recorded, never silently done and never silently dropped</td><td>a triage pass that verifies every open entry against the actual code before anything is bundled into a new story</td></tr>
+            <tr><td><b>The sprint ledger</b></td><td>always — it is the generated statement of every story's state</td><td>its own generator, from the feed; a status check then proves each claimed landing by ancestry</td></tr>
+            <tr><td><b>Course correction</b></td><td>something material changes mid-sprint and the plan no longer describes the work</td><td>a written impact assessment across the PRD, epics, architecture and UX — a proposal, not a quiet re-scope</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid; gap:14px; align-content:start;">
+        <div class="tint"><b>Escalation is non-destructive, fleet-wide.</b> Work in flight is preserved and handed back as a patch to be reconciled — never re-implemented from scratch. An unguarded re-arm defaults to starting over, which is how an escalation turns a pause into a loss.</div>
+        <div class="box"><b>The ledger is read with its real parser, never a regex.</b> A regex over a status file is how a fleet ends up reporting a number nobody can reproduce. Every count on this poster — including the fleet totals — comes through the parser that owns the format.</div>
+        <div class="box"><b>A merged story left un-promoted respawns forever.</b> The loop takes work from the ledger; a row that still says "not started" for code that already merged will be picked up again on the next drain. The ledger is not documentation of the work — it <i>is</i> the work queue.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT V -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT V</span>
+      <span class="ttl">Who it serves, where it runs</span>
+    </div>
+    <span class="cap">Per-leader value · the estate · the seams</span>
+  </div>
+
+  <!-- 21 · WHAT EACH LEADER GETS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">21</span>
+      <h2>What each leader gets</h2>
+    </div>
+    <p class="lede">The same architecture, read from five chairs. Note what is absent from all five: a promise about velocity. The model's claim is about <i>traceability</i> — and velocity is what traceability buys once nobody is re-litigating what was agreed.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;">
+      <div class="card">
+        <div class="k">The engineering leader</div>
+        <p>Every merged change walks backward to an aspiration a human wrote down, through a contract with machine-checkable criteria and an independent verdict. "Why is this in the codebase?" stops being an archaeology exercise.</p>
+        <p class="muted" style="font-size:13px;">And the fleet position is a number, not a feeling: <span data-fact="fleet_stories_done_total">871/892</span> stories and <span data-fact="fleet_epics_done_total">190/197</span> epics done, parsed from the tracked ledgers.</p>
+      </div>
+      <div class="card">
+        <div class="k">The platform leader</div>
+        <p>One declarative registry produces every environment; one host carries every station portal; credentials are issued, scoped and rotated by a named post rather than accumulating in whoever set them up. Air-gap parity is a failing check, not a migration project.</p>
+        <p class="muted" style="font-size:13px;"><span data-fact="groundtruth_pixi_envs">30</span> declared environments, all from the same registry, all reproducible from the lock.</p>
+      </div>
+      <div class="card">
+        <div class="k">The security leader</div>
+        <p>Exactly one gate renders the merge verdict, over hygiene, security, license and currency; everything else that finds something feeds it as an input. There is no second opinion to shop for, and a warning cannot be mistaken for a pass.</p>
+        <p class="muted" style="font-size:13px;">Separately and continuously, the health post watches the shipped estate for advisories, lag and abandonment — and ranks the order of work.</p>
+      </div>
+      <div class="card">
+        <div class="k">The product leader</div>
+        <p>Scope is a contract with five fields and an explicit non-goals section, so "that was always in scope" is a question with a written answer. A mid-sprint change lands as an impact assessment, not as a quietly redefined story.</p>
+        <p class="muted" style="font-size:13px;">And the roadmap is readable at the tier above the backlog: <span data-fact="dreams_total">154</span> Dreams, each at a stated act of its lifecycle.</p>
+      </div>
+      <div class="card">
+        <div class="k">The engineer</div>
+        <p>The context you are given is the context the task needs — no more, which is what keeps the output on contract. Review is adversarial and blind, so a finding is signal rather than politics. And every lesson you pay for once is written into the armory, where it is free for everyone after you.</p>
+        <p class="muted" style="font-size:13px;">The craft skill alone carries gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span> — each one a build failure somebody already ate.</p>
+      </div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">The human, at the top of the chain</div>
+        <p>The role rises from writing software to <b>architecting Dreams</b>: write the aspiration, set each story's autonomy level, answer the escalations the agents are forbidden to guess at, and govern intent through a hall that will not publish a row it cannot attribute.</p>
+        <p class="muted" style="font-size:13px;">That is the whole job description — and it is exactly as much governance as an autonomous factory is safe to run on.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 · ENTERPRISE AND AIR-GAP -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">22</span>
+      <h2>Enterprise and air-gap — the estate the Guild runs on</h2>
+    </div>
+    <p class="lede">A model that only works with an open internet connection is a demo. The estate is built so the same eight stations run behind a corporate proxy, against an internal mirror, or with no egress at all — and so that the difference is <b>a check that fails</b>, not a document that says it should be fine.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+      <div class="box"><b>Routing is runtime, never committed.</b> Internal registries, mirrors and proxies are resolved at run time from the environment and the system trust store — an authentication chain, not a checked-in config. No host name and no credential belongs in the tree, which is also why an unconditionally injected credential is a finding rather than a convenience.</div>
+      <div class="box"><b>Read-side surfaces are offline-safe by construction.</b> The intelligence layer's query commands answer from the local graph; a probe that cannot reach its source says so instead of reporting clean. The rule everywhere: an unauthenticated probe that fails <i>open</i> is worse than one that fails loudly, because it manufactures a green.</div>
+      <div class="box"><b>One host, eight portals.</b> The station faces mount on a single platform rather than sprouting a process tree of public services. Deployment overlays carry the cluster shape; the same image runs locally and in the cluster, and the host is a mount rather than a ninth station — the roster stays at <span data-fact="guild_stations">8</span>.</div>
+      <div class="tint"><b>Air-gap parity is a failing check.</b> The bundle installs, the environment resolves from the lock, and the tests run with no egress — or the check goes red. That is the only version of "supports air-gapped environments" that survives an auditor, and it is why the estate's dependency set is deliberately small and deliberately pinned.</div>
+    </div>
+  </section>
+
+  <!-- 23 · INTEGRATION SEAMS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">23</span>
+      <h2>Integration seams — every edge, and its direction</h2>
+    </div>
+    <p class="lede">Eight independent posts only stay independent if every edge between them is deliberate and one-way. Each row below names an edge, the direction it runs, and what would break if it ran the other way. There is no bidirectional row in this table, and that is by design.</p>
+    <table class="tbl">
+      <thead><tr><th>Edge</th><th>Direction</th><th>What crosses it</th><th>What breaks if it reverses</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>Marshal → every station</td><td>read-only</td><td>a durable, schema-validated verdict artifact pinned to the revision it judged</td><td>the supervisor starts authoring the verdicts it sequences on — the doctrine's single sharpest line, gone</td></tr>
+        <tr><td>Doctor → Warden</td><td>library call</td><td>the engine self-check, consumed as data; its exit code is information, never a gate</td><td>a second merge verdict appears, and "which gate said no" becomes a question with two answers</td></tr>
+        <tr><td>Doctor → Atlas</td><td>consume</td><td>the freshness, threat, health and lifecycle signals, normalized into one finding shape</td><td>the health post re-derives a graph somebody else already owns, and the two drift</td></tr>
+        <tr><td>Doctor → Marshal</td><td>verdict</td><td>the conformance verdict on the one station that would otherwise grade itself</td><td>the supervisor may weaken the check that judges the supervisor</td></tr>
+        <tr><td>Mason → the estate</td><td>publish</td><td>recipes, lockfiles and artifacts; everything shipped joins the estate the pulse watches</td><td>shipping and watching collapse into one post, and nothing independent notices decay</td></tr>
+        <tr class="hi"><td>Herald → the Dream</td><td>render</td><td>decks, posters and executive summaries — plus the fact ledger that makes every number on them re-derivable</td><td>a poster becomes its own source and the numbers drift silently, which is exactly the failure the ledgers exist to end</td></tr>
+        <tr><td>Scribe → everyone</td><td>capture, then answer</td><td>decisions and their reasons, compiled into a graph any session can start from</td><td>knowledge stays in sessions, and every new session re-learns what the last one paid for</td></tr>
+        <tr><td>Steward → the line</td><td>provision</td><td>runners, environments, credentials, budgets — present <i>before</i> the pre-flight runs</td><td>the factory discovers its own missing floor mid-build instead of before the spin</td></tr>
+        <tr><td>The Guildhall → the human</td><td>publish</td><td>the assembled chain: Dreams, lines, verdicts, realized work — with the owner on every row</td><td>a row appears that nobody is accountable for, which the hall is built to refuse</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ACT VI -->
+  <div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT VI</span>
+      <span class="ttl">Proof and road</span>
+    </div>
+    <span class="cap">Receipts · the seed · the tier · now, next, later</span>
+  </div>
+
+  <!-- 24 · PROOF -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">24</span>
+      <h2>Proof — the receipts, from the tracked ledgers</h2>
+    </div>
+    <p class="lede">Every number on this poster is a row in this deck's <span class="code">facts.yaml</span>, re-derived at tree <span data-fact="tree_commit_date">2026-09-13</span> from the tracked sprint ledgers, the governance roster, the Dream frontmatter and the live ground-truth probe — <b>never from a prior poster and never from memory.</b> Where no row could be derived, the poster names the thing instead of printing a number. That rule is the whole reason this page can be trusted a month from now.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="fleet_stories_done_total">871/892</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done across the <span data-fact="guild_stations">8</span> roster stations — retros excluded, read with the real parser</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="fleet_epics_done_total">190/197</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics closed — counted as epic keys in the same ledgers, never inferred from the story rows</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="dreams_total">154</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">Dreams tracked at Tier 0, each carrying an owning station and a stated act of its lifecycle</div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum"><span data-fact="recipes_count">7864</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">recipes in the shipped estate — the tracked mirror the packaging craft tends</div></div>
+    </div>
+    <div class="kicker" style="margin:0 0 8px;">The fleet, station by station — stories and epics done, per tracked ledger</div>
+    <table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">79/82</span></td><td><span data-fact="marshal_stories_done_total">248/249</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">67/67</span></td><td><span data-fact="doctor_stories_done_total">95/95</span></td><td><span data-fact="scribe_stories_done_total">33/33</span></td><td><span data-fact="steward_stories_done_total">206/222</span></td><td><b><span data-fact="fleet_stories_done_total">871/892</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">18/20</span></td><td><span data-fact="marshal_epics_done_total">34/36</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">16/16</span></td><td><span data-fact="doctor_epics_done_total">22/22</span></td><td><span data-fact="scribe_epics_done_total">16/16</span></td><td><span data-fact="steward_epics_done_total">49/51</span></td><td><b><span data-fact="fleet_epics_done_total">190/197</span></b></td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+      <div class="box"><b>Read the gaps, not just the totals.</b> Four stations are complete on both rows; the rest carry open work in the open. A fleet that reported every row closed would be the false green the doctrine forbids — the honest picture has remainders in it, and each remainder is a ledger key somebody can point at.</div>
+      <div class="tint"><b>The rule that makes these numbers durable.</b> Sprint status is read through the parser that owns the format, per project, with retro keys excluded and epic keys counted as epic keys. A regex over the same files would produce a number nobody could reproduce — and a poster quoting last quarter's number is exactly the decay this fact-ledger discipline was written to end.</div>
+    </div>
+  </section>
+
+  <!-- 25 · THE SEED -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">25</span>
+      <h2>The seed — the operating model, installed anywhere</h2>
+    </div>
+    <p class="lede">The model this Charter constitutes is not only <i>ours</i>. It is three things at once: the <b>master idea</b> — the umbrella narrative of the personas, the setup and the vision; the <b>alignment instrument</b> — one deck that onboards anyone into the whole model in ten minutes; and the <b>seed</b> — the operating model as something that can be planted in a repository that does not have it yet.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Greenfield — born Dream-first</div>
+        <p>A new repository stood up with the tier layout from day zero: <span class="code">docs/dreams/</span>, the governance roster, the cross-tool agent instructions, the multi-project planning wiring, the environment registry and the deck family — all before the first feature exists.</p>
+        <p>The point is ordering, not tooling. A repository that gains its Dream tier in month six has six months of untraceable work behind it; one that starts with it never has an artifact that cannot be walked back to an aspiration.</p>
+      </div>
+      <div class="card">
+        <div class="k">Brownfield — adopted in place</div>
+        <p>An existing repository gains the model without disturbing what already runs: Dreams and Specs are backfilled over the current surface, the chain is established from the code outward, and drift checks bind the two together from then on.</p>
+        <p><b>This repository was the first brownfield adoption</b> — a working conda-forge recipe factory that acquired a constitution, eight stations and a planning tier while continuing to ship. Everything on this poster is measured from that patient.</p>
+      </div>
+    </div>
+    <div class="box" style="margin-top:18px;"><b>The seed is what gets installed; the installer is what installs it — and they are different nouns.</b> The record of the model is constitutive and lives with the Charter; the machine that stands a repository up is ordinary buildable work, owned by the post that already runs the line. Conflating the two produced a Dream doing two jobs, an owner field that flipped twice, and a constitutional clause that contradicted its own detector for weeks. <span class="muted">The separation is the fix, and it is the reason this deck records a model rather than documenting a command.</span></div>
+  </section>
+
+  <!-- 26 · THE DREAM TIER BY STATUS -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">26</span>
+      <h2>The Dream tier, by status</h2>
+    </div>
+    <p class="lede">Tier 0 as it stands at this tree. Each status names <b>the act that completed</b>, never the artifact that proves it — and the counts below are derived from each file's own frontmatter, one file at a time, rather than from any summary table.</p>
+    <table class="tbl">
+      <thead><tr><th>Status</th><th>Count</th><th>The act that completed</th><th>What it does not mean</th></tr></thead>
+      <tbody>
+        <tr><td><b><span class="code">dreamt</span></b></td><td><span data-fact="dreams_dreamt">8</span></td><td>a human captured it, and the chain was started</td><td>not "nothing exists" — a contract may exist but still be open, and a Dream here may already have merged work behind it</td></tr>
+        <tr><td><b><span class="code">pitched</span></b></td><td class="muted">no row</td><td>the case was made; a deck exists</td><td>the derivation produced no count for this status at this tree, so the poster prints none — a status without a row is named, never guessed</td></tr>
+        <tr class="hi"><td><b><span class="code">specified</span></b></td><td><span data-fact="dreams_specified">50</span></td><td>the contract exists and is settled — a Spec past draft, with its open questions answered</td><td>not "a Spec file exists": every Dream carries one from birth, so existence cannot separate this from <span class="code">dreamt</span></td></tr>
+        <tr><td><b><span class="code">realized</span></b></td><td><span data-fact="dreams_realized">59</span></td><td>it runs</td><td>not exempt from the chain — work that shipped before the model existed gets its contract backfilled rather than grandfathered</td></tr>
+        <tr><td><b><span class="code">archived</span></b></td><td><span data-fact="dreams_archived">37</span></td><td>it ended — finished, superseded or consolidated into a parent</td><td>not "abandoned", and not "empty": the single largest block of unbuilt work in the fleet sits under an archived Dream that was correctly consolidated elsewhere</td></tr>
+        <tr><td><b>All Dreams</b></td><td><b><span data-fact="dreams_total">154</span></b></td><td>every file carrying a frontmatter status</td><td>the total is the tier, not the backlog — perpetual practices sit outside the lifecycle entirely, tended and never finished</td></tr>
+      </tbody>
+    </table>
+    <div class="box" style="margin-top:18px;"><b>Deliberately absent: a "building" state.</b> Status declares what <i>exists</i>, which is stable and honestly hand-declarable; what is <i>happening</i> is derived from live build lines by the board. A hand-maintained activity field goes stale the moment a line pauses or finishes — which is precisely how a fully shipped station once read as still being specified, and a Dream holding both a deck and a contract read as merely captured. Both were found and fixed; neither could have been, had the field been a matter of opinion.</div>
+  </section>
+
+  <!-- 27 · NOW, NEXT, LATER -->
+  <section class="sec">
+    <div class="sechead">
+      <span class="num">27</span>
+      <h2>Now · next · later</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — running, and measured</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li><span data-fact="guild_stations">8</span> stations shipped as real packages with real grammars, their own environments and their own portals</li>
+          <li><span data-fact="fleet_stories_done_total">871/892</span> stories and <span data-fact="fleet_epics_done_total">190/197</span> epics done, from the tracked ledgers</li>
+          <li><span data-fact="dreams_total">154</span> Dreams at Tier 0, each owned by a named station and carrying a stated act</li>
+          <li>Unattended, gated story loops as the production ceiling — with escalation instead of guessing</li>
+          <li>The whole chain checkable: chain completeness, Dream hygiene, ledger regression, story status, spec-surface drift</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Next — the constitution's own open questions</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li><b>The Guildhall referent.</b> The console that once gated on attribution is retired and no successor enforces it; because the hall is a Lexicon noun, naming its successor is a constitutional amendment, not a station decision</li>
+          <li><b>The last unguarded mirror.</b> One constitutive constant is still hardcoded beside the roster it should be reading — agreeing today by luck, and routed to the station whose verb owns the fix</li>
+          <li><b>Registering the constitutive chain.</b> A Spec with capabilities, no epics and no ledger keys is exempt from neither decomposition nor documented deferral; it gets a recorded reason either way</li>
+          <li><b>Formal autonomy labels</b> on every story, and the published mapping that makes the gradient auditable rather than asserted</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Later — named, deliberately not built</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li><b>A ninth station.</b> Closed by the Charter: the constitutive tier marks a Dream <i>above</i> the roster, never beside it</li>
+          <li><b>A second constitutive Dream.</b> Also closed — a second one would be an unassigned Dream hiding behind a collective noun</li>
+          <li><b>Rewriting the Charter into a Spec.</b> Different nouns: one governs the workers, the other governs the work</li>
+          <li><b>Gating amendments on tooling.</b> A constitutional change may precede its enforcement — but the gap is recorded in the open, exactly as two of them are today</li>
+          <li><b>Absorbing an external vocabulary into the Lexicon.</b> An outside model that overlaps is cross-walked and never merged; adopting one of its terms would take a dated amendment of its own</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1020px;">Humans Dream, Agents Deliver. Every artifact traces to an aspiration someone wrote down.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:980px; opacity:0.94;">Every lifecycle stage owned by a named, accountable post. Every artifact bound to a contract, and every contract to a human Dream. Autonomy as a governed gradient rather than a leap of faith — and no station reporting a green it did not earn. The human's role rises from writing software to architecting Dreams, and the forge makes them real. <b>That is the whole trick, and it runs today.</b></p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; gap:36px; flex-wrap:wrap; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Genesis</b> · the Guild-wide deck · <span class="code">docs/dreams/pyforge-charter.md</span></span>
+      <span><span data-fact="guild_stations">8</span> Smiths · <span data-fact="dreams_total">154</span> Dreams · tree <span data-fact="tree_commit_date">2026-09-13</span> · PyForge Guild · Dream to Code</span>
+    </div>
+  </section>
+
+</div>
 </body>
 </html>
