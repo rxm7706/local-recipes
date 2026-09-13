@@ -1,9 +1,11 @@
 # Source of truth for the PyForge Dossier.
 # Edit this file; `python site/build.py` re-renders the site and the artifact.
-# Originally imported from the published artifact by site/tools/import_artifact.py.
+# Figures re-verified against the working tree 2026-09-13; run
+# `python site/tools/verify_claims.py` to check them again.
+# A stat carrying `check:` is machine-verified against the source tree.
 
 title: The PyForge Dossier
-eyebrow: INTERNAL DOSSIER — FULL FLEET
+eyebrow: INTERNAL DOSSIER — FULL FLEET — REVERIFIED 2026-09-13
 heading: PyForge
 summary: 'A full-source investigation of every station in this repository''s own factory: the shared foundation
   they all build on, and what each of the eight — Atlas, Doctor, Herald, Marshal, Mason, Scribe, Steward,
@@ -11,14 +13,14 @@ summary: 'A full-source investigation of every station in this repository''s own
 stats:
 - value: '8'
   label: Stations
-- value: ~110K
+- value: ~200K
   label: Lines of source
 - value: '1'
   label: Shared leaf package
 - value: 4×
   label: Reuse the same verdict lattice
-- value: '4'
-  label: Stale/self-contradicting READMEs found
+- value: '10'
+  label: Claims this pass found stale
 toc:
 - id: foundation
   label: The shared spine
@@ -77,7 +79,9 @@ sections:
   - type: lede
     md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately
       pure-stdlib leaf. It doesn''t do any station''s job — it owns the mechanisms every station kept
-      reinventing separately, until seven of them were consolidated into one place each.'
+      reinventing separately, until seven of them were consolidated into one place each. The leaf rule
+      still holds exactly: `dependencies = []`, with an AST meta-test scanning every module for a non-stdlib
+      import and proving itself against synthetic violations.'
   - type: h3
     num: '00.1'
     text: One CLI, discovered at runtime
@@ -164,6 +168,23 @@ sections:
       a bearer token to a host view that signs RS256. `pyforge-testing-kit` is a deliberately *separate*
       leaf from `pyforge-core` (not `pyforge.core.testing`) specifically so test fixtures never couple
       into every station''s own runtime install.'
+  - type: h3
+    num: '00.3'
+    text: And a client layer the original framing didn't cover
+  - type: prose
+    body:
+    - '`pyforge-core` has grown from 9 modules to 13, and the three additions are not more consolidations
+      — they are a new *kind* of thing. `client.py` is a stdlib-only (`urllib`) HTTP client for host-relative
+      `/stations/<name>/api/v<N>/` routes, with an injectable transport so a caller wanting `httpx` supplies
+      its own and the leaf stays dependency-free. `station_port.py` is the in-process alternative: a co-located
+      portal calls a registered invoker instead of an HTTP loopback, with a `STATION_REMOTE` environment
+      variable choosing between them — and the host registers that invoker without importing `pyforge.<station>`
+      at all. `published_loop.py` consumes both, reading Marshal''s published per-story loop state over
+      an MCP JSON-RPC call and degrading to `None` on any failure rather than raising.'
+    - 'The consequence is worth stating plainly: the leaf every station depends on is no longer only a
+      box of shared mechanisms. It is also the client surface stations use to reach each other''s HTTP
+      APIs. That is a larger role than "owns the mechanisms everyone kept reinventing," and it deserves
+      the same scrutiny the seven consolidations got.'
 - id: atlas
   kind: station
   mark: A
@@ -176,16 +197,17 @@ sections:
       way." — the package''s own README'
   - type: stats
     stats:
-    - value: 24,184
-      label: Lines · 119 files
+    - value: 30,847
+      label: Lines · 115 files
+      check: src_lines
     - value: 8 / 11
       label: Pipelines wired to MCP
     - value: '13'
       label: MCP tools
     - value: py3.14
-      label: Floor — highest in the fleet
-    - value: 46 / 12
-      label: Stories / epics shipped
+      label: Floor — now the whole fleet's
+    - value: +6,663
+      label: Lines added since last pass
   - type: prose
     body:
     - 'Atlas is the Kedro/Dagster/DuckDB rewrite of what used to be a single SQLite-backed script (`cf_atlas.db`,
@@ -217,12 +239,13 @@ sections:
     body:
     - 'A "Boring Semantic Layer" (BSL) is the single translation interface over the canonical Parquet
       store — every metric a dashboard, agent, or MCP caller can ask for is declared once, in Ibis, resolved
-      to DuckDB. Atlas ships *two* dashboard code paths: a pure-Kedro `dashboard/` package (Vizro pages,
-      one per legacy CLI report — feedstock health, staleness, CVE watch) and a separate `views/` legacy-bridge
-      layer that calls the actual old CLI scripts as subprocesses and renders their output as embedded
-      Bokeh fragments when live Vizro/cf_atlas access isn''t available. The dashboard package also independently
-      reads the BMAD fleet''s own sprint ledger and epics status — a real overlap with what Marshal and
-      Steward''s own dashboards read, not confirmed whether from the same underlying source.'
+      to DuckDB. Atlas ships **one** dashboard code path today: a pure-Kedro `dashboard/` package (Vizro
+      pages, one per legacy CLI report — feedstock health, staleness, CVE watch), built so every page
+      routes through the BSL seam. A previous pass described a second `views/` legacy-bridge layer rendering
+      Bokeh fragments; that package no longer exists and `bokeh` appears nowhere in the source. The bridge
+      was removed, not merely bypassed. The dashboard package also independently reads the BMAD fleet''s
+      own sprint ledger and epics status — a real overlap with what Marshal and Steward''s own dashboards
+      read, not confirmed whether from the same underlying source.'
   - type: chips
     chips:
     - core
@@ -239,6 +262,20 @@ sections:
   - type: h3
     num: A.2
     text: Relationships
+  - type: h3
+    num: A.3
+    text: Four subsystems that arrived since the last pass
+  - type: prose
+    body:
+    - The +6,663 lines are not padding on what was already described. `a2a/` is a structured agent-to-agent
+      channel between cf_atlas and conda-forge-expert. `rag/` is a DuckDB `vss`-backed retrieval surface
+      that defaults to an offline `HashingEmbedder`. `factory/` is an "AI Software Factory" layer — five
+      personas, crews, a wiki tree over MinIO/Postgres, and Wagtail CMS sync. `orchestration/` is a dedicated
+      `kedro-dagster` glue package, and the only place permitted to import dagster.
+    - 'Smaller but load-bearing: `admission.py` adds cross-run write-admission control, closing a design-decision
+      claim a prior audit found to be false; `live_attach.py` federates a live Postgres read-only through
+      DuckDB''s `ATTACH`; and `artifactory/` is a JFrog AQL adapter backing the still-unregistered `artifactory_downloads`
+      pipeline.'
   - type: relations
     items:
     - glyph: →
@@ -270,26 +307,28 @@ sections:
       disable a check that judges the Marshal."'
   - type: stats
     stats:
-    - value: 16,830
-      label: Lines · ~26 files
-    - value: '4'
+    - value: 21,842
+      label: Lines · 36 files
+      check: src_lines
+    - value: '5'
       label: Commands
-    - value: '27'
+    - value: '34'
       label: Named finding sources
-    - value: 0,2,130
+    - value: 0,2
       label: Exit domain — subset of Warden's
-    - value: py3.14
-      label: Floor
+    - value: 4,964
+      label: Lines in `sources/chain.py` alone
   - type: prose
     body:
     - 'Doctor''s own description: *"Pre-flight + fleet-watch diagnostics CLI consolidating pyforge-warden
-      + cf_atlas signals into one schema-validated DoctorReport."* Four commands: `check` (pre-flight
+      + cf_atlas signals into one schema-validated DoctorReport."* Five commands: `check` (pre-flight
       — engine availability, env hygiene, plus opt-in-only network-touching categories), `monitor --fleet`
       (pulls cf_atlas Watch axes — staleness and CVE by default), `diagnose --target` (gather plus optional
-      root-cause ranking), and `backlog-intake` (scans every station''s deferred-work ledger for a given
-      epic/story). A finding is one of a closed three-state `OK/WARN/FAIL`; the exit domain deliberately
-      omits Warden''s policy-gate rung — Doctor reports operability, never policy, and a dedicated test
-      asserts its domain stays a strict subset of Warden''s.'
+      root-cause ranking), `backlog-intake` (scans every station''s deferred-work ledger for a given epic/story),
+      and `flags kill-switch` — a feature-flag actuator rather than a diagnostic verb, and the one command
+      here that does something to the fleet instead of reporting on it. A finding is one of a closed three-state
+      `OK/WARN/FAIL`; the exit domain deliberately omits Warden''s policy-gate rung — Doctor reports operability,
+      never policy, and a dedicated test asserts its domain stays a strict subset of Warden''s.'
   - type: finding
     label: Why Doctor is structured the way it is
     accent: --st-doctor
@@ -298,7 +337,7 @@ sections:
     - 'Six of Doctor''s own modules exist specifically to judge Marshal''s output — dashboard truthfulness,
       the Dream-to-Code chain, forward-dependency blindness in the story picker, project-doc currency,
       the tracked sprint ledger''s regression-freedom, and Marshal''s own durability record. The largest
-      of these, `sources/chain.py`, is 4,435 lines on its own — the single biggest module in the package.
+      of these, `sources/chain.py`, is 4,964 lines on its own — the single biggest module in the package.
       Every one of them was placed in Doctor *on purpose*, and verified structurally, not just by docstring
       claim: the module that judges Marshal''s durability doesn''t import `pyforge.marshal` at all — it
       reads only git history and journal files. Marshal has no code-level lever over its own verdict.'
@@ -307,7 +346,7 @@ sections:
     text: What it actually watches
   - type: prose
     body:
-    - 27 distinct finding sources are registered, each tagged with a *subject* station (whose artifact
+    - 34 distinct finding sources are registered, each tagged with a *subject* station (whose artifact
       is being judged) and an *owning* station (whose code does the judging) — the mechanism that makes
       the Marshal-oversight rule machine-checked rather than aspirational. `--bmad-core` and `--sibling-dreams`
       are the two categories requiring a genuine live network call (npm registry, GitHub Contents API)
@@ -326,10 +365,10 @@ sections:
     - glyph: →
       md: '**Atlas** — a read-only external signal source for fleet-watch axes.'
   - type: verify
-    md: 'The README undercounts — it states "28 stories shipped" while the code itself references stories
-      numbered into the 16s across features not reflected in that count. Not verified: the exact bodies
-      of `checks/registry.py`, `hygiene_definitions.py`, and `checks/env_hygiene.py` beyond their consumers''
-      docstrings.'
+    md: 'The README undercounts badly, and by more than the last pass found: it still states "all 28 stories
+      shipped (6 epics) … dispatches the 10 detector sources" while the code cites Story 48.5 and Epic
+      22, and the live registry holds 34 sources. Not verified: the exact bodies of `checks/registry.py`,
+      `hygiene_definitions.py`, and `checks/env_hygiene.py` beyond their consumers'' docstrings.'
 - id: herald
   kind: station
   mark: H
@@ -341,14 +380,17 @@ sections:
     md: '"Dream-to-deck bridge CLI — seeds, pulls, and syncs Claude Design decks via the herald deck subcommands."'
   - type: stats
     stats:
-    - value: 13,271
-      label: Lines · 24 files
+    - value: 13,303
+      label: Lines · 26 files
+      check: src_lines
     - value: '5'
       label: Top-level commands
     - value: 47 / 12
       label: Stories / epics shipped
     - value: '0'
       label: MCP server routes found in-source
+    - value: 6 / 6
+      label: Claims reverified, all holding
   - type: prose
     body:
     - 'Five top-level commands: `deck` (seed / pull / status / watch / push / qa / pptx-spec / pptx-fill),
@@ -405,16 +447,17 @@ sections:
       landing, fleet status, and adapter portability." — the package''s own `pyproject.toml`'
   - type: stats
     stats:
-    - value: 0.1.0
-      label: Version
+    - value: 81,864
+      label: Lines · 166 files — largest station
+      check: src_lines
     - value: '2'
       label: Dispatch engines
-    - value: ~40
-      label: CLI commands
-    - value: 64+
-      label: Named decisions
-    - value: '1'
-      label: Real BMAD dependency
+    - value: 21 / 55
+      label: Command groups / parsers
+    - value: '33'
+      label: Policy keys — closed vocabulary
+    - value: AD-72
+      label: Highest design decision
   - type: prose
     body:
     - 'Marshal supervises two independent, alternative ways to get a story implemented — neither wraps
@@ -482,18 +525,48 @@ sections:
   - type: prose
     body:
     - 'A four-layer policy fold (code default → repo defaults → project layer → invocation flags, last
-      wins, malformed layers skipped in place) governs a closed 29-key vocabulary. Landing rules are drawn
-      straight from this very repo''s own `CLAUDE.md` PR gates, in deliberately opposite directions: a
-      `maintenance-label` rule excludes anything outside `recipes/**`, an `environment-yaml-sync` rule
-      includes — ungated — any `pixi.toml` change.'
+      wins, malformed layers skipped in place) governs what the code itself now labels "the closed 33-key
+      vocabulary" — four keys wider than the last pass recorded, each carrying its own story provenance.
+      Landing rules are drawn straight from this very repo''s own `CLAUDE.md` PR gates, in deliberately
+      opposite directions: a `maintenance-label` rule excludes anything outside `recipes/**`, an `environment-yaml-sync`
+      rule includes — ungated — any `pixi.toml` change.'
   - type: h3
     num: M.2
     text: Genesis vs. operation
   - type: prose
     body:
     - '`marshal seed` is the installer, not the runtime — it delivers this repository''s own operating
-      model into another repo (six verbs: init/adopt/check/update/explain/version), and every managed
-      file carries one of five ownership classes so a repo owner always knows whether touching it is safe.'
+      model into another repo (seven verbs now: init/adopt/check/**kit**/update/explain/version, where
+      `kit` provisions the per-loop-home token-economy kit), and every managed file carries one of five
+      ownership classes so a repo owner always knows whether touching it is safe.'
+  - type: h3
+    num: M.3
+    text: What arrived since the last pass
+  - type: prose
+    body:
+    - Marshal is now the largest station in the fleet by a wide margin — 81,864 lines across 166 files,
+      roughly 2.7× Atlas and about 41% of all station source. A prior scale table that put Atlas at the
+      top is simply inverted now.
+    - 'The growth is concentrated in an entire **token-economy subsystem** the earlier pass never mentions:
+      `marshal context refresh` over a derived-context and planning-graph pair, wire compression wrapping
+      the dispatch harness, `marshal seed kit`, and `marshal benchmark` for wrapped-versus-unwrapped cost
+      comparison. Alongside it, the `bmad-build-auto` harness is no longer effectively single-vendor:
+      it is profile-driven across claude, cursor, gemini, copilot and devin, selected by a policy key,
+      with per-profile data files and room for overlays.'
+    - 'Three more surfaces are entirely new: `marshal factory drain` reads every station''s sprint-status
+      ledger and auto-chains dispatch fleet-wide, superseding a hand-driven coordinator; `marshal login`
+      writes a local PKCE bearer profile; and `marshal chain` / `marshal planning` regenerate the Dream-to-orphan-report
+      planning chain through a skill-invoke port. `marshal upstream` keeps a tracked register of bmad-loop
+      gaps and Marshal''s own compensating workarounds.'
+  - type: finding
+    label: Marshal now hosts an MCP server
+    accent: --st-marshal
+    alarm: false
+    body:
+    - '`mcp/server.py`, `mcp/tools.py` and a `marshal-mcp` console script expose Marshal''s tool surface
+      over FastMCP, with a separate policy key rendering per-home `.mcp.json`. This directly changes a
+      cross-fleet finding recorded below: MCP hosting is no longer "Atlas, and only Atlas." Two of eight
+      stations now host a real, confirmed MCP server in their own source.'
   - type: h3
     num: M.3
     text: Relationships
@@ -508,9 +581,11 @@ sections:
       md: '**Steward** — Steward''s own dashboard refuses to publish when Marshal''s sprint ledger is
         missing or stale, rather than deriving a status of its own.'
   - type: verify
-    md: The installed skill file documents 4 of ~40 subcommands. Full depth (all ~40 commands, the complete
-      AD registry, and the Genesis artifact-class detail) lives in the standalone Marshal Dossier — this
-      section is the fleet-comparable summary.
+    md: The installed skill file documents 4 subcommands out of 21 top-level groups and 55 total parser
+      registrations. 61 distinct `AD-N` identifiers appear in source, reaching AD-72, though the registry
+      is not contiguous — the previously stated "64+" is the right order of magnitude but was not independently
+      confirmable from this package alone. Full depth lives in the standalone Marshal Dossier; this section
+      is the fleet-comparable summary.
 - id: mason
   kind: station
   mark: Ma
@@ -523,14 +598,16 @@ sections:
       canonical… It is never forked." — the package''s own README'
   - type: stats
     stats:
-    - value: 9,052
-      label: Source lines
-    - value: 24,783
+    - value: 9,053
+      label: Source lines · 23 files
+      check: src_lines
+    - value: 24,671
       label: Test lines — 2.7×
+      check: test_lines
     - value: '13'
       label: CLI verbs, 4 nouns
-    - value: '0'
-      label: Dedicated content skills — by policy
+    - value: 12 / 12
+      label: Claims reverified, all holding
   - type: prose
     body:
     - 'Mason has no dedicated content skill the way its seven siblings do — and that''s a deliberate rule,
@@ -581,11 +658,12 @@ sections:
       for team-relevant decisions, ADRs, and project state."'
   - type: stats
     stats:
-    - value: 3,279
-      label: Lines — smallest station
-    - value: '3'
-      label: Commands
-    - value: '6'
+    - value: 5,024
+      label: Lines · 17 files
+      check: src_lines
+    - value: 4 / 7
+      label: Command groups / subcommands
+    - value: '12'
       label: Compile surfaces
     - value: '3'
       label: Swappable storage backends
@@ -593,16 +671,20 @@ sections:
     body:
     - 'A strict three-layer pipeline: **capture** (the only path allowed to write under `.claude/memory/`
       — append-only, no-clobber, one locked critical section) → **compile** (a full, non-incremental rebuild
-      every run, from six surfaces: the curated memory files themselves, repo-wide memlogs, changelogs,
-      retros, local `git log` — read-only, never fetch — and session transcripts) → **recall** (reads
+      every run — it resets the store and reconstructs from scratch, never incrementally — now across
+      twelve named surfaces, up from six: curated memory files, memlogs, changelogs, retros, a facts ledger,
+      dreams, specs, story specs, planning pointers, named docs, local `git log` — read-only, never fetch
+      — and session transcripts, plus an optional thirteenth behind a `code` extra) → **recall** (reads
       the compiled result only, never the raw log). Node identity is derived deterministically, so two
       compiles of unchanged sources are byte-identical.'
     - 'Despite the name, the compiled "graph" has no separate edge object — nodes are flat facts, and
       a bi-temporal-lite supersession mechanism (`valid_from`/`valid_until`) marks a superseded record
       ended rather than ever deleting it. `recall` is deliberately dumb by default: pure lexical token-overlap
-      scoring, no LLM, no network — and every ranked candidate is filtered by whether its citation can
-      actually be resolved *before* anything is returned. A query that resolves nothing gets an explicit,
-      honest "no grounded answer," never a fabricated one.'
+      scoring, no LLM, no network — an opt-in `--semantic` mode now sits alongside it, but it is a SHA-256
+      bag-of-concepts rather than model embeddings, so the no-LLM and no-network guarantees hold in both
+      modes — and every ranked candidate is filtered by whether its citation can actually be resolved
+      *before* anything is returned. A query that resolves nothing gets an explicit, honest "no grounded
+      answer," never a fabricated one.'
   - type: finding
     label: A genuine cross-station wiring, confirmed in code
     accent: --st-scribe
@@ -623,6 +705,13 @@ sections:
       their arguments, print a 'not yet implemented' notice, and exit 0" — a leftover pre-Epic-2 fragment
       never removed. The source code (extensively built, with story citations well past that point) confirms
       the header is right and the body paragraph is what's stale.
+  - type: prose
+    body:
+    - 'The station is no longer the fleet''s smallest by as clear a margin — 3,279 lines have become 5,024.
+      The additions are a `promote` path, transcript ingestion, an `index` group (`build` / `report` /
+      `move-list` / `refresh`), the three-backend storage registry, and the semantic-recall mode. The
+      three-layer discipline survived all of it: capture is still the only writer, compile still rebuilds
+      whole, recall still reads only what compile produced.'
   - type: h3
     num: S.2
     text: Relationships
@@ -646,23 +735,26 @@ sections:
     md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
   - type: stats
     stats:
-    - value: 15,756
-      label: Source lines
-    - value: 19,429
+    - value: 18,978
+      label: Source lines · 37 files
+      check: src_lines
+    - value: 25,570
       label: Test lines
-    - value: '13'
+      check: test_lines
+    - value: '15'
       label: Duties (README documents 6)
     - value: '70'
       label: Crash exit code
   - type: prose
     body:
-    - 'Thirteen "duties," each a structural (Protocol-conforming, not inherited) unit of platform work:
-      `keys` (credential lifecycle), `deploy` (dashboard/perimeter/static), `provision` (a flag-driven,
-      class-keyed install playbook — deliberately no nested verbs, routed to a documented playbook spec
-      rather than inline logic), `budget`, `sync` (bidirectional GitHub Projects ↔ Jira reconciliation),
-      `workspace`, `upgrade` (a five-stage BMAD-core upgrade pipeline — pre-flight, deliberate apply,
-      clobber detection, pin-fan-out, prove-landed — its largest single module at 2,639 lines), `suite`
-      (a 13-package pipeline-truth-and-advance chain that opens a reviewable PR and never auto-merges),
+    - 'Fifteen "duties," each a structural (Protocol-conforming, not inherited) unit of platform work
+      — two more than the last pass found, with `restore` and `revoke` added: `keys` (credential lifecycle),
+      `deploy` (dashboard/perimeter/static), `provision` (a flag-driven, class-keyed install playbook
+      — deliberately no nested verbs, routed to a documented playbook spec rather than inline logic),
+      `budget`, `sync` (bidirectional GitHub Projects ↔ Jira reconciliation), `workspace`, `upgrade` (a
+      five-stage BMAD-core upgrade pipeline — pre-flight, deliberate apply, clobber detection, pin-fan-out,
+      prove-landed — still the package''s largest module by a distance, and now 4,294 lines, up from 2,639),
+      `suite` (a 13-package pipeline-truth-and-advance chain that opens a reviewable PR and never auto-merges),
       plus a five-command machine-bootstrap group.'
     - Every duty's result is a frozen dataclass — "evidence, not a scratchpad" — and no duty may ever
       call `sys.exit` itself; the CLI dispatcher is the one place that catches every way a duty can end
@@ -676,11 +768,11 @@ sections:
     alarm: false
     body:
     - 'There is no literal CMS anywhere in Steward''s source. What it actually owns is **Lane 1 `/console/`**
-      — an operator dashboard, successor to this repo''s own retired GuildHall Pages console. And it doesn''t
-      compute its own status: a precondition guard refuses to publish the dashboard at all when Marshal''s
-      tracked sprint ledger is missing, unreadable, or malformed, and separately wraps Doctor''s own fleet-scan
-      output rather than deriving anything itself. Steward''s console performs zero status derivation
-      of its own — it''s a read surface over what Marshal and Doctor already produced.'
+      — an operator dashboard that replaced an earlier generator script. And it doesn''t compute its own
+      status: a precondition guard refuses to publish the dashboard at all when Marshal''s tracked sprint
+      ledger is missing, unreadable, or malformed, and separately wraps Doctor''s own fleet-scan output
+      rather than deriving anything itself. Steward''s console performs zero status derivation of its
+      own — it''s a read surface over what Marshal and Doctor already produced.'
   - type: h3
     num: St.1
     text: Relationships
@@ -707,23 +799,26 @@ sections:
       and acting as a strict CI/CD exit-code gate."'
   - type: stats
     stats:
-    - value: 17,767
-      label: Lines · 31 files
+    - value: 18,455
+      label: Lines · 34 files
+      check: src_lines
     - value: '7'
       label: Status rungs — the fleet's largest lattice
-    - value: '1'
-      label: Real subcommand — `scan`, ~20 flags
+    - value: '24'
+      label: Flags on its one real subcommand
     - value: 4 + 4
       label: Real engines + commercial stubs
+    - value: 18 / 18
+      label: Claims reverified, all holding
   - type: prose
     body:
-    - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by roughly
-      twenty flags — plus `--doctor` as a flag, not a subcommand, that only ever checks local operability,
-      never touches the network, and can never exit `1`: it "reports operability, not policy," the same
-      phrase Doctor''s own gotcha uses independently. Its `Status` lattice has seven ranked rungs (`CLEAN`,
-      `NOT_APPLICABLE`, `BYPASSED`, `WARN`, `INDETERMINATE`, `POLICY_VIOLATION`, `ERROR`) — the largest
-      in the fleet — built on the exact same shared `Lattice` primitive Marshal and Doctor also import,
-      confirmed directly against `pyforge-core`''s own source.'
+    - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by twenty-four
+      flags — plus `--doctor` as a flag, not a subcommand, that only ever checks local operability, never
+      touches the network, and can never exit `1`: it "reports operability, not policy," the same phrase
+      Doctor''s own gotcha uses independently. Its `Status` lattice has seven ranked rungs (`CLEAN`, `NOT_APPLICABLE`,
+      `BYPASSED`, `WARN`, `INDETERMINATE`, `POLICY_VIOLATION`, `ERROR`) — the largest in the fleet — built
+      on the exact same shared `Lattice` primitive Marshal and Doctor also import, confirmed directly
+      against `pyforge-core`''s own source.'
     - Four real compliance axes — hygiene (deptry), vulnerabilities (osv-scanner, gated on CVSS severity,
       CISA KEV, and a live EPSS exploit-probability threshold), license (SPDX allow/deny lists), and currency
       (staleness/LTS/EOL) — run in parallel worker threads but apply their results back in fixed registration
@@ -860,13 +955,17 @@ sections:
     tone: red
     label: Every station's own docs undercount its own surface
     body:
-    - 'Marshal''s installed skill documents 4 of ~40 real commands. Doctor''s README claims 28 shipped
-      stories while its own code cites numbers well past that. Steward''s README documents 6 of its 13
-      real duties. Scribe''s README *contradicts itself in adjacent paragraphs* — a shipped-header sitting
-      directly above a stale "not yet implemented" body. This isn''t four unrelated typos; it''s the same
-      failure mode recurring at every station that ships fast: the README is written once, near a milestone,
-      and never revisited as the surface keeps growing underneath it. Worth treating as a fleet-wide finding,
-      not eight separate bugs.'
+    - Marshal's installed skill documents 4 subcommands against 21 top-level groups and 55 parser registrations.
+      Doctor's README still claims "all 28 stories shipped … dispatches the 10 detector sources" while
+      its code cites Story 48.5 and its registry holds 34. Steward's README documents 6 duties; there
+      are now 15. Scribe's README *contradicts itself in adjacent paragraphs* — a shipped-header sitting
+      directly above a stale "not yet implemented" body, still uncorrected.
+    - 'This pass is the second data point, and it settles the question: the drift is not a backlog of
+      four typos, it is a rate. Every figure above moved further from the truth in the weeks between passes,
+      in the same direction, at every station that ships fast. The README is written once near a milestone
+      and never revisited while the surface keeps growing underneath it. The one countermeasure this repository
+      now has is mechanical: `site/tools/verify_claims.py` re-measures the source tree and fails loudly
+      when a stated figure drifts — including the figures in this dossier.'
   - type: h3
     num: '09.4'
     text: The convention gaps — ten found, each independently, none coordinated
@@ -884,9 +983,9 @@ sections:
     rows:
     - cells:
       - Decision tags
-      - '`AD-N` (Marshal 64+, Atlas 23, Mason 16, Steward some, Scribe 8 — five independent registries,
-        zero shared numbering) vs. Story-N.M / FR-N / NFR-N / single-letter D-codes (Warden, parts of
-        Steward). An `AD-8` in one station is unrelated to an `AD-8` in another.'
+      - '`AD-N` (Marshal 61 distinct, reaching AD-72, Atlas 23, Mason 16, Steward some, Scribe 8 — five
+        independent registries, zero shared numbering) vs. Story-N.M / FR-N / NFR-N / single-letter D-codes
+        (Warden, parts of Steward). An `AD-8` in one station is unrelated to an `AD-8` in another.'
       - '"Why was this built this way" has no single vocabulary to search for across the fleet.'
       mono:
       - true
@@ -928,11 +1027,12 @@ sections:
       - false
     - cells:
       - MCP hosting
-      - Atlas hosts a real, confirmed MCP server in its own source. Herald and Scribe host none — grepped,
-        zero server code in either — yet both have a documented `/stations/*/mcp` route, and the only
-        place that route's existence is even asserted is in *other* stations' test files.
-      - '"Does this station have an MCP server, and where" isn''t answerable from the station''s own code
-        for at least two of eight.'
+      - '**Two** stations now host a real, confirmed MCP server in their own source: Atlas, and Marshal
+        (`mcp/server.py` plus a `marshal-mcp` console script). Herald and Scribe still host none — grepped
+        again this pass, zero server code in either — yet both still have a documented `/stations/\*/mcp`
+        route whose existence is only ever asserted in *other* stations'' test files.'
+      - 'Improved but not resolved: the answer to "does this station host an MCP server" now differs per
+        station with no rule predicting which, and the phantom routes are unchanged.'
       mono:
       - true
       - false
@@ -974,9 +1074,11 @@ sections:
       - false
     - cells:
       - Python floor
-      - Marshal/Mason/Herald/Scribe/Warden require `>=3.12`; Doctor/Atlas require `>=3.14`. No stated
-        fleet-wide policy for when a station is allowed to raise its own floor.
-      - Minor today; becomes a real CI-matrix cost as more stations pick their own floor independently.
+      - '**Closed since the last pass.** Every station now requires `>=3.14` — Marshal, Mason, Herald,
+        Scribe and Warden all raised their floors to meet Doctor and Atlas. The fleet converged without
+        a stated policy forcing it.'
+      - No longer felt. Worth recording as the one gap in this table that closed on its own, and worth
+        asking whether it stays closed without a written rule.
       mono:
       - true
       - false
@@ -1015,20 +1117,20 @@ sections:
     - Shape
     rows:
     - cells:
-      - Atlas
-      - 24,184
-      - '119'
-      - Largest — a real Kedro project plus 11 pipeline packages
+      - Marshal
+      - 81,864
+      - '166'
+      - Largest by far — 41% of all station source; two dispatch engines plus a whole token-economy layer
       mono:
       - true
       - true
       - true
       - false
     - cells:
-      - Warden
-      - 17,767
-      - '31'
-      - Densest per-file — one CLI verb, four real engines
+      - Atlas
+      - 30,847
+      - '115'
+      - A real Kedro project plus 11 pipeline packages, now with a2a, rag and factory subsystems
       mono:
       - true
       - true
@@ -1036,9 +1138,9 @@ sections:
       - false
     - cells:
       - Doctor
-      - 16,830
-      - ~26
-      - Dominated by one 4,435-line Marshal-oversight module
+      - 21,842
+      - '36'
+      - Dominated by one 4,964-line Marshal-oversight module
       mono:
       - true
       - true
@@ -1046,9 +1148,19 @@ sections:
       - false
     - cells:
       - Steward
-      - 15,756
-      - ~20
-      - 13 duties; heaviest tested (1.2:1 test:source)
+      - 18,978
+      - '37'
+      - 15 duties; `upgrade.py` alone is 4,294 lines
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Warden
+      - 18,455
+      - '34'
+      - Densest per-file — one CLI verb, four real engines
       mono:
       - true
       - true
@@ -1056,9 +1168,9 @@ sections:
       - false
     - cells:
       - Herald
-      - 13,271
-      - '24'
-      - Deck bridge core + Four Moments + own dashboard
+      - 13,303
+      - '26'
+      - Deck bridge core + Four Moments + own React dashboard
       mono:
       - true
       - true
@@ -1066,8 +1178,8 @@ sections:
       - false
     - cells:
       - Mason
-      - 9,052
-      - '18'
+      - 9,053
+      - '23'
       - Heaviest test ratio of all (2.7:1)
       mono:
       - true
@@ -1076,9 +1188,9 @@ sections:
       - false
     - cells:
       - Scribe
-      - 3,279
-      - '13'
-      - Smallest — capture/compile/recall, nothing more
+      - 5,024
+      - '17'
+      - Smallest — capture/compile/recall, plus an index group
       mono:
       - true
       - true
@@ -1086,14 +1198,30 @@ sections:
       - false
     - cells:
       - pyforge-core
-      - —
-      - '9'
-      - The leaf every one of the above builds on
+      - 1,984
+      - '13'
+      - The leaf every one of the above builds on — and now their HTTP client layer too
       mono:
       - true
       - true
       - true
       - false
+  - type: h3
+    num: '09.7'
+    text: What the second pass changed
+  - type: prose
+    body:
+    - This dossier was first compiled on 2026-08-30 and re-verified against the working tree on 2026-09-13.
+      Three stations — Herald, Mason and Warden — came through with every checked claim intact. Five did
+      not, and the fleet's total source has gone from roughly 110,000 lines to roughly 200,000.
+    - 'Two corrections change conclusions rather than figures. Marshal now hosts its own MCP server, so
+      the MCP-hosting gap above is no longer "Atlas, and only Atlas." And Atlas''s second dashboard path
+      — the `views/` legacy bridge rendering Bokeh fragments — has been deleted outright; a previous pass
+      described code that no longer exists. A third correction is quieter but matters most: `pyforge-core`
+      picked up a host/portal client layer, which makes the leaf every station depends on something more
+      than the box of shared mechanisms it was introduced as.'
+    - 'The reason to record this rather than silently overwrite it: the drift *is* the finding. A dossier
+      that only ever shows current numbers would have hidden the one pattern both passes agree on.'
 - id: verified
   num: '10'
   title: What's verified, what isn't
@@ -1101,8 +1229,8 @@ sections:
   blocks:
   - type: lede
     md: Every claim above traces to a file, docstring, or dataclass read directly from source across eight
-      independent, parallel investigations. Each station section's own caveats are noted inline; the pattern
-      worth naming here is what recurs across all eight.
+      independent, parallel investigations, re-run in full on 2026-09-13. Each station section's own caveats
+      are noted inline; the pattern worth naming here is what recurs across all eight.
   - type: callout
     tone: amber
     label: Consistent gaps across every investigation
@@ -1114,6 +1242,16 @@ sections:
       safely). And several cross-station claims — Atlas→Mason's trending handoff, the exact shared meaning
       of "Lane" boundaries, whether Atlas's dashboard reads the same BMAD status source Marshal and Steward
       do — were named from one side only and not independently confirmed from the other.
+  - type: callout
+    tone: green
+    label: What is now checked mechanically
+    body:
+    - Line counts, file counts, test ratios and Python floors in this dossier are no longer hand-maintained
+      prose. `site/tools/verify_claims.py` measures the source tree, compares it against the stat rows
+      in this document's own content model, and reports anything that has drifted past a 5% tolerance.
+      It runs on every push. It is advisory — it annotates and never blocks a deploy — because deciding
+      what a number should *say* is editorial, but noticing that it is wrong no longer depends on anyone
+      remembering to look.
 - id: scorecards
   num: '11'
   title: Fleet scorecards
@@ -1488,5 +1626,6 @@ sections:
     md: ''
 footer:
   note: Compiled from direct, parallel source investigation of all 8 `src/shared/packages/pyforge-*` stations
-    plus `pyforge-core` — local-recipes repository.
-  date: '2026-08-30'
+    plus `pyforge-core` — local-recipes repository. Every figure re-verified against the working tree
+    on the date shown.
+  date: '2026-09-13'
