@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 121
+# stories: 122
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -60,18 +60,19 @@ development_status:
   2-3-marp-source-pull: done
   2-4-standalone-bundle-pull: done
   20-1-the-standard-has-one-home-and-the-deck-spec-points-to-it: done
-  20-10-warden-poster-rebuilt-to-the-standard-from-its-ledger: backlog
+  20-10-warden-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-11-pyforge-genesis-poster-rebuilt-to-the-standard-from-its-ledger: backlog
   20-12-the-canopy-poster-re-derived-and-its-design-project-created: backlog
   20-13-the-bridge-sees-the-family-herald-deck-status-reports-all-ten-linked: backlog
+  20-14-deck-facts-refresh-rewrites-stale-marked-literals-from-the-ledger: backlog
   20-2-deck-facts-derives-a-per-deck-fact-ledger-and-checks-a-poster-against-it: done
   20-3-pyforge-atlas-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-4-pyforge-doctor-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-5-pyforge-herald-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-6-pyforge-marshal-poster-rebuilt-to-the-standard-from-its-ledger: done
-  20-7-pyforge-mason-poster-rebuilt-to-the-standard-from-its-ledger: backlog
-  20-8-pyforge-scribe-poster-rebuilt-to-the-standard-from-its-ledger: backlog
-  20-9-pyforge-steward-poster-rebuilt-to-the-standard-from-its-ledger: backlog
+  20-7-pyforge-mason-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-8-pyforge-scribe-poster-rebuilt-to-the-standard-from-its-ledger: done
+  20-9-pyforge-steward-poster-rebuilt-to-the-standard-from-its-ledger: done
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done

@@ -45,7 +45,7 @@ not guessed.
 | Dates | the poster's own `git log -1`, HEAD's commit date, and every dated entry of the deck's Dream Realization log | `poster_last_commit_date`, `tree_commit_date`, one `dream_log_<date>` row per entry; a date outside the chain stays `unmarked` by design |
 | Feedstock / recipe counts (Mason) | `recipes/` directory and the atlas `my_feedstocks` surface | count; name the surface used |
 
-## Derivation and check
+## Derivation, check and refresh
 
 `pixi run -e local-recipes deck-facts <slug>` re-derives `presentations/<slug>/facts.yaml`
 (canonical implementation `scripts/deck_facts.py`, the `deck_export.py` precedent: one script,
@@ -58,3 +58,17 @@ derive), and `unshown` (a row neither marked nor shown). Bare integers and statu
 swept — mark them. Output is one line per finding plus a summary; exit code is always 0
 (advisory — SPEC.md constraint). The README
 ledger's "facts n/n" cell is the check's resolved-over-shown count on the day of the rebuild.
+
+`--refresh` (CAP-6, Story 20.14) re-derives the ledger, then rewrites every plain `data-fact`
+mark whose text is neither the fresh row's `value` nor one of its `shown_as` literals. The
+replacement keeps the OLD literal's shape: the previous ledger's `value` maps to the fresh
+`value`, its `shown_as[k]` to the fresh `shown_as[k]`; when the old text is in neither (the
+ledger was already re-derived, or the row is new) the first fresh literal with the same digit
+pattern is used (`848 of 878` → `852 of 878`), else the fresh `value` — the result is always one
+of the fresh row's own literals, never an invented one. A leading `v` is restored. Marks whose
+span holds another tag, sit inside comments / `<script>` / `<style>` / `<title>`, carry HTML
+entities, or have no row are reported as `skipped <id> <reason>` and left alone. Lines:
+`refreshed <id> "<old>" -> "<new>"`, `skipped <id> <reason>`, `summary <slug>: N refreshed, M
+skipped`; exit 0 always. `--refresh --check` runs the check afterwards. The standing currency
+sweep is: land a ledger-moving change → `deck-facts <slug> --refresh --check` per rebuilt deck →
+re-push the rewritten posters → commit.

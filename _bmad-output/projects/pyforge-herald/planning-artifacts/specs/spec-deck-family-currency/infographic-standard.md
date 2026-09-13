@@ -11,9 +11,18 @@ visual-form reference. Both are byte-exact on disk; measured 2026-09-13.
 
 | Poster | Bytes | Sections | Act bands | Inline SVGs | Role |
 |---|---|---|---|---|---|
-| Unifying Strategy | 128,783 | 21 | 6 | 9 | structure · acts · length |
-| Warden | 411,764 | 18 | 0 | 15 | density · visual form |
+| Unifying Strategy (2026-08-26 pilot) | 128,783 | 21 | 6 | 9 | structure · acts · length |
+| Warden, as rebuilt 2026-09-13 (Story 20.10) | 295,079 | 33 | 6 | 26 (4 diagrams + 22 glyphs) | density · visual form |
+| Warden, July original — plain content | 192,472 | 18 | 0 | 15 | the form this rebuild preserved |
 | Marshal (2026-07-31 rebuild) | 91,340 | 19 | 6 | 3 | the first six-act family member |
+
+**Correction (2026-09-13, found by Story 20.10):** the 411,764 B figure the July inventory carried
+for the Warden reference was a Claude Design *bundle* — 192,472 B of HTML JSON-encoded inside a
+`__bundler/template` script, plus ~205 KB of base64 fonts and Design runtime, an `<x-dc>` wrapper,
+and icon glyphs with mangled `viewBox`es. None of that is poster content and the standard forbids
+it. The honest reference is the plain content, and every measurement in this file is of plain
+content. The eight station posters rebuilt on 2026-09-13 (Stories 20.3–20.10) measure 112,843 –
+295,079 B, 21 – 33 sections, 4 – 26 SVGs, 6 – 11 tables — each recorded in its deck README ledger.
 
 ## Floors — a poster below any one of these is not current
 

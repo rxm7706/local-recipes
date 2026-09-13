@@ -132,7 +132,7 @@ the `dream_log_*` and `tree_commit_date` rows).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag; this file exceeds get_file's 256 KiB cap, so the MCP render_preview path is the read-back)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300517654592` · 295,079 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations with ledger chips ✓ · facts all resolved ✓ ·

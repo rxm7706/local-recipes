@@ -64,7 +64,7 @@ dropped; names were adapted per subject (23 numbered sections `01`–`23` plus t
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Herald Infographic standalone.html` | 137,557 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 6 tables · facts 53/53 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 17,802 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Herald Infographic standalone.html` | 137,557 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 6 tables · facts 53/53 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296209988819` · 137,557 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 17,802 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (`infographic-standard.md`): act bands 6/6 · sections 24 ≥ 18 · inline SVG 4 ≥ 3 ·
 bytes 137,557 ≥ 90,000 · tables 6 ≥ 3 · cast: eight full cards (role, motto, paragraph, CLI

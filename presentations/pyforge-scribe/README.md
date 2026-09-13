@@ -26,7 +26,7 @@ unshown row is `poster_last_commit_date`, deliberately not printed on the poster
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Scribe Infographic standalone.html` | 144,946 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 9 tables · facts 95/95 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 21684 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Scribe Infographic standalone.html` | 144,946 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 9 tables · facts 95/95 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300368983561` · 144,946 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 21684 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless

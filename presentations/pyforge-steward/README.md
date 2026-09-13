@@ -26,7 +26,7 @@ unshown row is `poster_last_commit_date`, deliberately not printed).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Steward Infographic standalone.html` | 163,529 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 10 tables · facts 83/83 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 25069 px (full-page PNG; DOM scrollHeight 24899 px); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Steward Infographic standalone.html` | 163,529 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 10 tables · facts 83/83 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300404919885` · 163,529 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 25069 px (full-page PNG; DOM scrollHeight 24899 px); head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
