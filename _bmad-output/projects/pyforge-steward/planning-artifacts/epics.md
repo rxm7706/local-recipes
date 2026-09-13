@@ -3638,7 +3638,7 @@ CAP-1
 each extract has a mode row
 **And** there is no `move` key
 **And** 44.1 remains `blocked`
-**Status:** backlog
+**Status:** done
 
 ### Story 55.2: Extract detector in detectors-ci
 
