@@ -122,6 +122,7 @@ def root(tmp_path, monkeypatch) -> Path:
     monkeypatch.setattr(deck_facts, "ROOT", tmp_path)
     monkeypatch.setattr(deck_facts, "head_info", lambda root: dict(HEAD))
     monkeypatch.setattr(deck_facts, "poster_commit_date", lambda root, poster: POSTER_DATE)
+    monkeypatch.setattr(deck_facts, "tracked_recipe_dirs", lambda root: ["r1", "r2"])  # git ls-files seam (the synthetic root is not a git repo)
     monkeypatch.setattr(deck_facts, "groundtruth",
                         lambda root: {"mcp_tools": 46, "atlas_phases": 22, "schema_version": None})
     return tmp_path
@@ -190,8 +191,8 @@ def test_counts_come_from_the_real_parser_and_tracked_sources(root):
     assert rows["bmad_loop_version"]["value"] == "0.11.1"
     assert rows["cfe_skill_version"]["value"] == "8.90.5"
     assert rows["groundtruth_mcp_tools"]["value"] == "46"
-    assert rows["recipes_count"]["value"] == "2"  # hidden dir, stray file, example/ + examples/ excluded
-    assert "recipes/example/" in rows["recipes_count"]["method"]
+    assert rows["recipes_count"]["value"] == "2"  # tracked dirs only (seam)
+    assert "git ls-files" in rows["recipes_count"]["method"]
     assert rows["spec_status"]["value"] == "ready"  # quotes and trailing comment stripped
     assert rows["spec_capabilities"]["value"] == "2"  # definition lines only; CAP-7 / CAP-9 prose ignored
     assert "CAP-1..2" in rows["spec_capabilities"]["shown_as"]
@@ -442,3 +443,25 @@ def test_deck_facts_is_not_a_detector():
     markers = [n for n in tree.body if isinstance(n, ast.Assign)
                and any(isinstance(t, ast.Name) and t.id == "DETECTOR" for t in n.targets)]
     assert markers == []
+
+
+def test_recipes_count_omitted_when_git_cannot_answer(root, monkeypatch, capsys):
+    monkeypatch.setattr(deck_facts, "tracked_recipe_dirs", lambda root: None)
+    deck_facts.main(["pyforge-alpha"])
+    assert "omitted recipes_count" in capsys.readouterr().err
+    assert "recipes_count" not in _rows(root, "pyforge-alpha")
+
+
+def test_tracked_recipe_dirs_reads_git_and_drops_templates_and_dotdirs(monkeypatch, tmp_path):
+    class P:  # a fake CompletedProcess
+        returncode = 0
+        stdout = ("recipes/a/recipe.yaml\0recipes/a/build.sh\0recipes/b/meta.yaml\0"
+                  "recipes/example/meta.yaml\0recipes/.scratch/x\0recipes/README.md\0")
+    monkeypatch.setattr(deck_facts.subprocess, "run", lambda *a, **k: P())
+    assert deck_facts.tracked_recipe_dirs(tmp_path) == ["a", "b"]
+
+    class F:
+        returncode = 128
+        stdout = ""
+    monkeypatch.setattr(deck_facts.subprocess, "run", lambda *a, **k: F())
+    assert deck_facts.tracked_recipe_dirs(tmp_path) is None

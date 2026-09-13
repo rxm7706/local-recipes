@@ -252,6 +252,26 @@ def poster_hits(root: Path, slug: str) -> list[Path]:
 
 # ------------------------------------------------------------------- derive
 
+def tracked_recipe_dirs(root: Path) -> list[str] | None:
+    """Sorted names of TRACKED ``recipes/<name>/`` directories (``git ls-files``),
+    minus dot-dirs and the staged-recipes templates -- or ``None`` when git
+    cannot answer. The working tree is not a source: an untracked local recipe
+    dir would otherwise inflate the count (7872 in a checkout with local scratch
+    recipes vs 7864 tracked, seen 2026-09-13)."""
+    proc = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--", "recipes"],
+                          capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        return None
+    templates = {"example", "examples"}
+    names: set[str] = set()
+    for path in proc.stdout.split("\0"):
+        parts = path.split("/")
+        if (len(parts) > 2 and parts[0] == "recipes" and parts[1] not in templates
+                and not parts[1].startswith(".")):
+            names.add(parts[1])
+    return sorted(names)
+
+
 def derive(root: Path, slug: str, with_tests: bool = False) -> tuple[dict, list[str], list[tuple[list[str], str]]]:
     """(facts.yaml document, stderr notes, omitted-fact reasons) for `slug`.
 
@@ -350,16 +370,14 @@ def derive(root: Path, slug: str, with_tests: bool = False) -> tuple[dict, list[
             else:
                 facts.append(fact(f"groundtruth_{key}", str(gt[key]), GROUNDTRUTH_SOURCE, f"JSON key {key}"))
 
-    recipes = root / "recipes"
-    if recipes.is_dir():
-        templates = {"example", "examples"}
-        n = sum(1 for p in recipes.iterdir()
-                if p.is_dir() and not p.name.startswith(".") and p.name not in templates)
-        facts.append(fact("recipes_count", str(n), "recipes/",
-                          "count of recipes/*/ directories, excluding the staged-recipes "
-                          "templates recipes/example/ and recipes/examples/"))
+    tracked = tracked_recipe_dirs(root)
+    if tracked is None:
+        omit("recipes_count", "git ls-files -- recipes failed (not a git checkout?)")
     else:
-        omit("recipes_count", "recipes/ not found")
+        facts.append(fact("recipes_count", str(len(tracked)), "recipes/ (git ls-files)",
+                          "count of TRACKED recipes/<name>/ directories (git ls-files -- recipes; "
+                          "untracked local dirs and dot-dirs never count), excluding the "
+                          "staged-recipes templates recipes/example/ and recipes/examples/"))
 
     # --- every deck: the date class
     head = head_info(root)
