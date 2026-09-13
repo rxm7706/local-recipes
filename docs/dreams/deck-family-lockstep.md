@@ -2,8 +2,10 @@
 title: The whole deck family moves together — every surface, every deck, one ledger
 type: dream
 owner: herald
-status: dreamt      # 2026-09-13 — seeded at Epic 20's closeout from the three slices that epic
-                    # deliberately deferred. Every fact below was measured on main that day.
+status: specified   # 2026-09-13 — seeded at Epic 20's closeout from the three slices that epic
+                    # deliberately deferred, and specified the same day: spec-deck-family-lockstep
+                    # is `ready` (CAP-1..5, open_questions []), Epic 21 carries its eleven stories.
+                    # Every fact below was measured on main that day.
 ---
 
 # The whole deck family moves together — every surface, every deck, one ledger
@@ -81,3 +83,10 @@ finishes the surfaces it deferred) · [[pyforge-herald]] (the station; the bridg
   ruling (trio lockstep, the four chain decks, Design-side polish). Every row of § *Why now* was
   measured on `main` that day, after all fourteen Epic 20 stories landed. Next act: `bmad-spec`
   derives the Spec under `pyforge-herald`.
+- **2026-09-13 (same day)** — Specified. `spec-deck-family-lockstep` is `ready` with
+  `open_questions: []` — the parent Spec and Epic 20's retro settled every decision this one would
+  otherwise have had to ask, so it mints only CAP-1..5 and binds the rest. Epic 21 carries eleven
+  stories with Given/When/Then and named surfaces, and eleven `backlog` rows sit in the tracked
+  sprint ledger. Nothing else is owed before dispatch: the standard, the fact ledger, the refresh
+  verb and the registry all shipped with Epic 20. Next act: drain Epic 21, starting with 21.1 —
+  21.2 through 21.5 depend on it.
