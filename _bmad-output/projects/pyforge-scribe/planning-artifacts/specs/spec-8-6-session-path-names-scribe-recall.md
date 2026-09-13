@@ -16,3 +16,8 @@ Durable session instruction: `scribe recall` for decisions; default omits `code:
 **Always:** write outside the `bmad:context` replace-block in `AGENTS.md`.
 
 </intent-contract>
+
+## Spec Change Log
+
+- **2026-09-13:** implemented — `AGENTS.md` § *Scribe recall (session path)*
+  sits after `<!-- /bmad:context -->`.

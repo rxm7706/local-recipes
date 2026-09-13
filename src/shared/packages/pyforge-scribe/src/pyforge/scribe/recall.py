@@ -38,7 +38,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.scribe.graph_store import GraphStore
-from pyforge.scribe.models import GraphNode
+from pyforge.scribe.models import GraphNode, GraphNodeKind
+
+#: Default `answer()` / `scribe recall` candidate kinds (Story 8.5 / CAP-4).
+#: `code` stays in the store for `index report` and `--kind code`; it is
+#: not a default lexical/semantic peer of memory, Dreams, or SPECs.
+DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset(
+    {"memory", "memlog", "commit", "doc", "transcript"}
+)
+_ALL_RECALL_KINDS: frozenset[str] = frozenset(
+    {"memory", "memlog", "commit", "doc", "transcript", "code"}
+)
 
 _STOPWORDS = frozenset(
     {
@@ -106,6 +116,20 @@ def _citation_in_scope(citation: str, scope: str | None) -> bool:
     return citation.startswith(_scope_prefix(scope))
 
 
+def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
+    """`None` is the default bag (no `code`). An explicit set is used as-is
+    after rejecting unknown kind tokens."""
+    if kinds is None:
+        return DEFAULT_RECALL_KINDS
+    unknown = kinds - _ALL_RECALL_KINDS
+    if unknown:
+        raise ValueError(
+            f"unknown recall kind(s) {sorted(unknown)!r}; "
+            f"expected one of {sorted(_ALL_RECALL_KINDS)}"
+        )
+    return kinds
+
+
 def answer(
     query: str,
     store: GraphStore,
@@ -113,6 +137,7 @@ def answer(
     repo_root: Path,
     mode: str = "lexical",
     scope: str | None = None,
+    kinds: frozenset[str] | None = None,
 ) -> RecallAnswer:
     """Deterministic, cited retrieval over the compiled graph (AD-6/AD-8).
 
@@ -133,10 +158,16 @@ def answer(
     node can outscore a correct-project node using less generic
     vocabulary. `scope` filters candidates to one project's own citation
     tree BEFORE scoring, closing that gap for both lexical and semantic
-    modes; `scope=None` is the prior, unscoped behavior, byte-for-byte.
+    modes;     `scope=None` is the prior, unscoped behavior, byte-for-byte.
+
+    `kinds` (Story 8.5): `None` omits `code`. An explicit frozenset is the
+    only candidate kinds — `--kind code` is opt-in, not additive.
     """
+    allowed = resolve_recall_kinds(kinds)
     if mode == "semantic":
-        return _answer_semantic(query, store, repo_root=repo_root, scope=scope)
+        return _answer_semantic(
+            query, store, repo_root=repo_root, scope=scope, kinds=allowed
+        )
     if mode != "lexical":
         raise ValueError(f"unknown recall mode {mode!r}; expected 'lexical' or 'semantic'")
 
@@ -147,6 +178,8 @@ def answer(
     scored: list[tuple[int, GraphNode]] = []
     for node in store.iter_nodes():
         if not node.is_current or node.stale:
+            continue
+        if node.kind not in allowed:
             continue
         if not _citation_in_scope(node.citation, scope):
             continue
@@ -166,12 +199,20 @@ def answer(
 
 
 def _answer_semantic(
-    query: str, store: GraphStore, *, repo_root: Path, scope: str | None = None
+    query: str,
+    store: GraphStore,
+    *,
+    repo_root: Path,
+    scope: str | None = None,
+    kinds: frozenset[str] | None = None,
 ) -> RecallAnswer:
+    allowed = resolve_recall_kinds(kinds)
     if not query.strip():
         return _no_grounded_answer()
     for node in store.query_similar(query, limit=16):
         if not node.is_current or node.stale:
+            continue
+        if node.kind not in allowed:
             continue
         if not _citation_in_scope(node.citation, scope):
             continue

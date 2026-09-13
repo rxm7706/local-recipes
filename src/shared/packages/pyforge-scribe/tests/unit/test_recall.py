@@ -280,7 +280,12 @@ def test_code_citation_with_line_is_resolvable(repo_with_citation: Path) -> None
     )
     store.commit()
 
-    result = answer("what does foo do", store, repo_root=repo_with_citation)
+    missed = answer("what does foo do", store, repo_root=repo_with_citation)
+    assert missed.grounded is False
+
+    result = answer(
+        "what does foo do", store, repo_root=repo_with_citation, kinds=frozenset({"code"})
+    )
 
     assert result.grounded is True
     assert result.citation == "src/example.py:L1"
@@ -455,3 +460,39 @@ def test_semantic_scope_excludes_other_projects(repo_with_two_project_citations:
     )
     assert scoped.grounded is True
     assert scoped.node_id == 'memory:warden/x'
+
+
+def test_default_recall_omits_code_even_when_it_is_the_only_overlap(
+    repo_with_citation: Path,
+) -> None:
+    (repo_with_citation / "src").mkdir(exist_ok=True)
+    (repo_with_citation / "src" / "example.py").write_text("x = 1\n", encoding="utf-8")
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="code:python:example",
+            kind="code",
+            title="example",
+            text="uniquegraphifytoken function example",
+            citation="src/example.py:L1",
+        )
+    )
+    store.commit()
+
+    assert answer("uniquegraphifytoken", store, repo_root=repo_with_citation).grounded is False
+    hit = answer(
+        "uniquegraphifytoken",
+        store,
+        repo_root=repo_with_citation,
+        kinds=frozenset({"code"}),
+    )
+    assert hit.grounded is True
+    assert hit.citation == "src/example.py:L1"
+
+
+def test_unknown_recall_kind_raises() -> None:
+    from pyforge.scribe.recall import resolve_recall_kinds
+
+    with pytest.raises(ValueError, match="unknown recall kind"):
+        resolve_recall_kinds(frozenset({"nope"}))

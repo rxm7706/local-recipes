@@ -37,8 +37,8 @@ development_status:
   8-2-the-nightly-compile-keeps-the-graphify-code-surface: done
   8-3-herald-fact-ledgers-join-the-compile: done
   8-4-the-compile-keeps-knowledge-layers-honest: done
-  8-5-default-recall-omits-the-code-surface: backlog
-  8-6-session-path-names-scribe-recall: backlog
+  8-5-default-recall-omits-the-code-surface: done
+  8-6-session-path-names-scribe-recall: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -53,5 +53,5 @@ development_status:
   epic-6-retrospective: done
   epic-7: done
   epic-7-retrospective: optional
-  epic-8: in-progress
+  epic-8: done
   epic-8-retrospective: optional

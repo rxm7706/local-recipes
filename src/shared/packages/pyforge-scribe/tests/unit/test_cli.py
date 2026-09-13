@@ -715,6 +715,13 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
     assert "[source: session-a.jsonl:L1]" in output
 
 
+def test_recall_unknown_kind_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["recall", "why", "--kind", "nope"])
+    assert result.exit_code == 2
+    assert "unknown recall kind" in _combined_output(result)
+
+
 # --- Story 6.1: `scribe index build|report|move-list` -----------------------
 
 

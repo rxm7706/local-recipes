@@ -58,3 +58,5 @@ fleet truth.
   `planning-artifacts/specs/spec-scribe-knowledge-layers/later-caps.md`
   (CAP-6–CAP-14). Not in the five-field contract; do not implement until
   hoisted + Story-minted.
+- **2026-09-13** — CAP-4/CAP-5 realized in Stories 8.5–8.6: default recall
+  omits `code:`; `AGENTS.md` session path (outside `bmad:context`).
