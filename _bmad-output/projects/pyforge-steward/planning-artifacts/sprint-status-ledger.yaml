@@ -214,7 +214,7 @@ development_status:
   51-1-a-byo-external-postgresql-deployment-overlay-exists-additive-to-the-self-hosted-default: done
   51-2-a-byo-external-redis-deployment-overlay-exists-additive-to-the-self-hosted-default: done
   51-3-the-backup-pitr-handoff-is-explicit-when-the-byo-postgresql-overlay-is-active: done
-  52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: backlog
+  52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: done
   53-1-the-charter-carries-the-hub-vocabulary-map: done
   53-2-company-and-eight-station-frames-pass-in-repo-preflight: backlog
   53-3-one-tracked-track-json-per-run: backlog
@@ -335,7 +335,7 @@ development_status:
   epic-50-retrospective: optional
   epic-51: done
   epic-51-retrospective: optional
-  epic-52: backlog
+  epic-52: done
   epic-52-retrospective: optional
   epic-53: in-progress
   epic-53-retrospective: optional

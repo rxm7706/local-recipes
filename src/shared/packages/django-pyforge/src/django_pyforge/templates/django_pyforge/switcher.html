@@ -5,5 +5,10 @@
         <a href="{{ portal.mount_token }}">{{ portal.station_name }}</a>
       </li>
     {% endfor %}
+    {% for sidecar in pyforge_sidecars %}
+      <li>
+        <a href="{{ sidecar.href }}" rel="noopener noreferrer">{{ sidecar.name }}</a>
+      </li>
+    {% endfor %}
   </ul>
 </nav>

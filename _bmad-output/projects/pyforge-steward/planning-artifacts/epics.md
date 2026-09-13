@@ -2613,7 +2613,7 @@ So that Phase 1 has a lasting root to move into.
 **Outward (`fnd:AD-9`):** creates a GitHub repository — held `blocked`; dispatched only on the operator's explicit confirmation, never by a drain.
 **Given** a fresh clone **When** CI runs on the empty estate **Then** it is green, no `recipes/` directory exists, `pixi.toml` is `name = "pyforge"` with no solver-farm tooling, and `environment.yaml` is either workflow-produced or absent
 **And** the repo envelope is set per `fnd:AD-14`: visibility private (permanently), `main` protected with merge commits only, secrets and vars re-provisioned through `steward keys` from manifest rows of kind `secret`, the foundry epoch SHA recorded, and `src/platform/config/flags.json` carries `pyforge.cutover_root: local-recipes` (`fnd:AD-17`)
-**And** CI evidence follows `fnd:AD-23`: the green run is a real workflow run on a registered runner (GitHub-hosted, or the remote host as self-hosted fallback); a documented fresh-clone run of the estate gates is provisional only; with no evidence path the story does not dispatch, and `steward budget check` (44.15) reports the minutes state at the operator's confirmation
+**And** CI evidence follows `fnd:AD-23` as amended 2026-09-13 (D1): authoritative proof is a fresh-clone local run of `detectors-ci` and `platform-ci-local` (plus CRC IFF the empty repo already carries the estate Helm chart). GHA is a twin and may stay red; force-merge after that local proof is the campaign gate. Fresh-clone local is not provisional. A registered GHA runner and `steward budget check` (44.15 / CAP-10) are not confirmation gates for this story
 
 ### Story 44.4: Fold the packages
 
@@ -2634,7 +2634,7 @@ As a platform operator,
 I want the skills tree, the BMAD chain, the decks and the Dreams in foundry with IDE directories as symlink adapters,
 So that agents and loops resolve everything from the lasting root.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.4, S-44.11, S-14.9 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15, fnd:AD-18, fnd:AD-19
+**Type:** feature • **Effort:** L • **Deps:** S-44.4, S-14.9 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15, fnd:AD-18, fnd:AD-19
 **Given** the manifest rows for `.claude/skills/**`, `_bmad/**`, `_bmad-output/projects/**`, `docs/dreams/**`, `presentations/**` **When** the move lands **Then** estate-authored skills — the eight station personas included — live under `skills/{stations,personas,domain}/` with SKF export writing there, no adapter is tracked (the 44.11 link step generates `.claude/skills/<x>` on every machine and `.cursor/skills/<x>` where Cursor is detected), installer-written `bmad-*` / `skf-*` dirs are untouched, the CFE cell is left in place for 44.6 (`fnd:AD-13`), and the BMAD chain resolves in foundry with the marker and planning links generated, never copied; the move is `steward cutover apply --phase 1b`, replayable until the flip
 **And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
 **And** the open question `planning-history-scope` is answered before dispatch
@@ -3417,7 +3417,7 @@ not a new IdP
 **And** django-pyforge chrome can **show** mybmad (switcher tile and/or
 embed) after the same OIDC session, as a surface — not station nine, not
 `/stations/mybmad/`, not `/console/`; the process stays the sidecar
-**Status:** backlog
+**Status:** done
 
 ## Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..4)
 

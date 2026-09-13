@@ -3,7 +3,7 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-09-04"
+updated: "2026-09-13"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-1..7 outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
@@ -16,13 +16,14 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Derived 2026-09-04 from the Dream § *Cutover to
-> `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
-> not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
-> (Stories 44.1–44.15) under the cutover spine (`fnd:AD-1..23`) — **solutioning iteration 4,
-> no open question remains; Phase 4 opened 2026-09-04 with 44.13 flipped to `backlog`,
-> every other story ledger `blocked`**. The cutover is regenerative: Dreams and
-> memlogs seed foundry; every capability is rebuilt or moved per the capability ledger.
+> **Canonical contract.** Re-derived 2026-09-13 from `.memlog.md` (operator D1–D3
+> campaign lock: Launch the Foundry / Adopt Frames / Build the Intelligence Hub /
+> Wire every BMAD-suite component). Invent in `local-recipes`; foundry copies a
+> working estate. Extends `spec-pyforge-unifying-strategy`; it does not re-mint any
+> Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44** (Stories
+> 44.1–44.15) under the cutover spine (`fnd:AD-1..23`). This pass does **not** flip
+> any 44.x ledger `blocked` key. The cutover is regenerative: Dreams and memlogs
+> seed foundry; every capability is rebuilt or moved per the capability ledger.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -42,11 +43,12 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - **CAP-1 — Open foundry (Phase 0).**
   - **intent:** The operator can create `rxm7706/python-foundry` as a fresh,
     recipe-free, lean-pixi estate with estate-only CI.
-  - **success:** The clone exists; CI is green on the empty estate; no `recipes/`
-    directory; the `environment.yaml` export is automated or absent, never by hand.
-    The green run is a real workflow run on a registered runner — GitHub-hosted, or the
-    remote host as self-hosted fallback (spine fnd:AD-23); a fresh-clone run of the estate
-    gates is provisional evidence only.
+  - **success:** The clone exists; no `recipes/` directory; the `environment.yaml`
+    export is automated or absent, never by hand. Authoritative proof is a
+    **fresh-clone local** run of `detectors-ci` and `platform-ci-local` (plus CRC
+    IFF the empty repo already carries the estate Helm chart). GHA is a twin and
+    may stay red; force-merge after that local proof is the campaign gate
+    (operator 2026-09-13 D1). Fresh-clone local is not provisional.
 
 - **CAP-2 — Realize the estate (Phase 1).**
   - **intent:** Every capability of the estate reaches foundry by rebuild or by move per the
@@ -78,8 +80,9 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - **CAP-6 — Mason talks to conda-forge (Phase 5).**
   - **intent:** From foundry, `submit` targets staged-recipes or the bot fork and
     `update` targets the feedstock maintainer-edit path.
-  - **success:** An agent-opened PR never targets `local-recipes` (asserted on the
-    submit path).
+  - **success:** Later Phase 5: an agent-opened PR never targets `local-recipes`
+    (asserted on the submit path). Out of this campaign; 44.9 stays blocked
+    (operator 2026-09-13 D2).
 
 - **CAP-7 — Archive `local-recipes` (Phase 6).**
   - **intent:** `local-recipes` is read-only history.
@@ -109,11 +112,13 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
   - **intent:** `steward budget` knows the account's GitHub Actions-minutes spend and
     ceiling, so the foundry dispatch, Marshal's drains and the rebuild harness never run
     blind into a billing block again.
-  - **success:** `steward budget check` returns a real under/over verdict against the
-    plan's included minutes and the declared ceiling from a metering source (the Actions
-    billing API through a `user`-scoped credential held in `steward keys`, never in the
-    manifest); the 44.3 confirmation, Marshal's foundry drains and the rebuild harness read
-    it as their ceiling; the honest-stub property is retired for this source only.
+  - **success:** Later, when GHA twins or Marshal drains spend minutes:
+    `steward budget check` returns a real under/over verdict against the plan's
+    included minutes and the declared ceiling from a metering source (the Actions
+    billing API through a `user`-scoped credential held in `steward keys`, never
+    in the manifest); those drains and the rebuild harness read it as their
+    ceiling; the honest-stub property is retired for this source only. Not a
+    Launch / 44.3 confirmation gate (operator 2026-09-13 D1b).
 
 ## Constraints
 
@@ -139,9 +144,11 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Foundry is private, permanently (operator 2026-09-04, iteration 4): Pages and the win-64
   leg ride the paid plan; Actions minutes are a standing budget; nothing Mason submits
   carries a foundry URL.
-- CI evidence is a real run (spine fnd:AD-23): GitHub-hosted, or the remote host as self-hosted
-  fallback; a fresh-clone run is provisional; with no evidence path 44.3 does not dispatch,
-  and `steward budget check` (CAP-10) reports the minutes state at the confirmation.
+- CI evidence is a real run (spine fnd:AD-23, operator 2026-09-13 D1): the
+  authoritative run is fresh-clone local `detectors-ci` + `platform-ci-local`
+  (plus CRC IFF the empty repo already carries the estate Helm chart). GHA is a
+  twin and may stay red; a registered runner and `steward budget check` (CAP-10)
+  are not confirmation gates for 44.3.
 - Fresh repo (operator 2026-09-04): no history import; source SHAs live in the
   move-list manifest.
 - The move-list manifest (Story 44.1) is derived from the spec-surface map and precedes
@@ -176,9 +183,12 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 ## Success signal
 
 A fresh clone of `rxm7706/python-foundry` boots Foundry Platform and every station
-env, `mason recipe build factory/recipes/<r>` builds a recipe there, and an
-agent-opened conda-forge PR originates from foundry, while `rxm7706/local-recipes`
-is archived with its last SHA pinned in the foundry manifest.
+env, and `mason recipe build factory/recipes/<r>` builds a recipe there with the
+publish path a SelfExplainML upload — not an agent-opened conda-forge /
+staged-recipes / feedstock PR (operator 2026-09-13 D2). Two git roots stay live
+in Launch; archive (CAP-7 / 44.10) is out of this campaign (D3). Launch stories
+are 44.12 + 44.3–44.7; later 44.8 / 44.14 / 44.15; out of campaign 44.9 / 44.10 /
+44.11.
 
 ## Assumptions
 
@@ -192,6 +202,7 @@ is archived with its last SHA pinned in the foundry manifest.
 
 ## Open Questions
 
-None. `actions-minutes` answered 2026-09-04 (iteration 4): the evidence ladder and the
-minutes guard are spine fnd:AD-23 and CAP-10 (Story 44.15). `repo-visibility` answered the same
-day: private, permanently (spine fnd:AD-14).
+None. `actions-minutes` answered 2026-09-04 (iteration 4) and amended 2026-09-13 (D1/D1b):
+authoritative CAP-1 evidence is fresh-clone local `detectors-ci` + `platform-ci-local`;
+CAP-10 / 44.15 is later metering for GHA twins and drains, not a 44.3 confirmation
+gate. `repo-visibility` answered 2026-09-04: private, permanently (spine fnd:AD-14).

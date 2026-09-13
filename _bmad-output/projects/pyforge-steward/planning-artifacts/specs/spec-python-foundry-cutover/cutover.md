@@ -1,6 +1,6 @@
 ---
 companion-of: spec-python-foundry-cutover
-updated: "2026-09-04"
+updated: "2026-09-13"
 ---
 
 # Cutover — phases, target tree, faces, order
@@ -35,7 +35,16 @@ The plan has two layers. The **capability ledger** has one row per capability (f
 
 ## Envelope and CI evidence (iteration 4)
 
-Foundry is **private, permanently** (`fnd:AD-14`): Pages and the win-64 leg ride the paid plan, so Actions minutes are a standing budget. CAP-1's CI evidence is a real green run on a registered runner — GitHub-hosted, then the `fnd:AD-19` remote Linux dev host as self-hosted fallback; a documented fresh-clone run of the estate gates is provisional only; with no evidence path 44.3 does not dispatch (`fnd:AD-23`). Story 44.15 gives `steward budget check` a metering source (the Actions billing API through a `user`-scoped key in `steward keys`) so the 44.3 confirmation, Marshal's drains and the rebuild harness read a real ceiling (`fnd:CAP-10`). Nothing Mason submits carries a foundry URL.
+Foundry is **private, permanently** (`fnd:AD-14`). CAP-1's authoritative CI
+evidence (operator 2026-09-13 D1) is a fresh-clone local run of `detectors-ci`
+and `platform-ci-local` (plus CRC IFF the empty repo already carries the estate
+Helm chart). GHA is a twin and may stay red; force-merge after that local proof
+is the campaign gate. Fresh-clone local is not provisional. Story 44.15 /
+`fnd:CAP-10` is later (D1b), not a Launch / 44.3 confirmation gate — it meters
+minutes when GHA twins or Marshal drains spend them. Nothing Mason submits
+carries a foundry URL. This campaign's publish path is SelfExplainML (D2);
+44.9 stays blocked. Launch = 44.12 + 44.3–44.7; later 44.8 / 44.14 / 44.15;
+out of campaign 44.9 / 44.10 / 44.11 (D3). Two git roots stay live in Launch.
 
 ## Phases → stories
 
@@ -43,9 +52,9 @@ Foundry is **private, permanently** (`fnd:AD-14`): Pages and the win-64 leg ride
 |---|---|---|---|---|---|
 | — | CAP-2 input, CAP-9 | 44.1 capability ledger + manifest | derive the capability ledger (mode, state, dependencies, four signals) from the Dreams and the owner map, and the file manifest under its `move` rows; never a hand list | every capability has one row and one mode; 100 % of tracked files under `move` rows resolve to one destination; source SHA recorded | deps 44.13 |
 | — | Constraints | 44.2 document fixes | R-23 `readOnlyRootFilesystem` + Windows / free-threading claims aligned to the Containerfile and `pixi.toml` platforms; R-24 Keycloak `26.4.0` pinned once; R-25 "no station-domain models on `django-<station>`"; `stack.md` / `convergence.md` floor `3.12.*` → `3.14.*` | edits land; `DW-RT-2026-09-02-7/-8/-9` resolved | — |
-| 0 — Open foundry | CAP-1 | 44.3 | create `rxm7706/python-foundry` (private), workspace `pyforge`, empty of recipes, lean `pixi.toml`, estate-only CI; env export automated or not carried (R-17a) | clone exists; CI green on the empty estate by a real run (`fnd:AD-23`) | **outward** — `blocked` until the operator flips; no dispatch without an evidence path |
+| 0 — Open foundry | CAP-1 | 44.3 | create `rxm7706/python-foundry` (private), workspace `pyforge`, empty of recipes, lean `pixi.toml`, estate-only CI; env export automated or not carried (R-17a) | clone exists; fresh-clone local `detectors-ci` + `platform-ci-local` green (CRC IFF Helm chart present); GHA twin may stay red | **outward** — ledger stays `blocked` until the operator flips; this pass does not flip it |
 | 1a — Fold the packages | CAP-2 | 44.4 | `src/shared/packages/` → `src/packages/`; a `pixi.toml` per `django-*`; drop `sys.path` inserts and Containerfile `COPY` of django src; `five_tier.py` `_packages_root` retargeted; package fold only | station envs solve; host boots in foundry | deps 44.1, 44.3 |
-| 1b — Move the estate | CAP-2 | 44.5 | skills → `skills/` (`stations/`, `personas/`, `domain/`) with `.claude/skills/` + `.cursor/skills/` as symlink adapters; BMAD, decks, dreams | adapters are symlinks; the BMAD chain resolves in foundry | deps 44.4; never blended with 44.4 |
+| 1b — Move the estate | CAP-2 | 44.5 | skills → `skills/` (`stations/`, `personas/`, `domain/`) with `.claude/skills/` + `.cursor/skills/` as symlink adapters; BMAD, decks, dreams | adapters are symlinks; the BMAD chain resolves in foundry | deps 44.4; never blended with 44.4; no Deps on 44.11 (win-64 out of campaign, D3) |
 | 2 — CFE comes home | CAP-3 | 44.6 | authoritative skill / scripts / tools → `skills/domain/conda-forge-expert`; retros land in foundry; `pyforge/mason/resolve.py` chain (flag → `MASON_CFE_ROOT` → cwd walk) retargeted | no `MASON_CFE_ROOT` resolves to `local-recipes`; CFE surface + rebuild guards pass | **Mason** (Rules 1 + 2); deps 44.5 |
 | 3 — Factory island | CAP-4 | 44.7 | `factory/pixi.toml` + own lock; `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml`; recipes-only CI on `paths: factory/**` (R-17b) | `mason recipe build factory/recipes/<r>` matches today's CFE wrap; `DW-RT-2026-09-02-1` resolved | deps 44.3 |
 | 4 — Working set | CAP-5 | 44.8 | move in-flight + sole-maintainer recipes only | `factory/recipes/` is the working set; universe not copied (count ceiling asserted) | deps 44.7 |
@@ -53,7 +62,7 @@ Foundry is **private, permanently** (`fnd:AD-14`): Pages and the win-64 leg ride
 | — | CAP-1..3 | 44.11 Windows-native estate | generated per-machine links (junctions on Windows), long-path preflight, no shell-only tasks, win-64 CI leg, `var/` state home | link check and detectors green on a Windows runner; a stock Windows clone runs recipes and station CLIs | deps 44.3 |
 | — | CAP-2 prerequisite | 44.13 memlog fidelity | in `local-recipes`: fold every hand-edit in a rendered SPEC.md (unifying strategy first) back into memlog entries; prove each Spec re-renders without loss | `bmad-spec` re-derive of every Spec is byte-equivalent to the rendered file, or the diff is recorded as memlog entries | none; before Phase 0 |
 | — | CAP-9 | 44.14 rebuild harness + oracle gate | Dream + memlog → re-derived Spec → spine → epics in foundry; Marshal drains under a budget; the archived suite runs as oracle; per-capability freeze + `--append` drift finding | one pilot capability (Scribe) rebuilt end to end and `verified-in-foundry` through the oracle gate | deps 44.12 |
-| — | CAP-10 | 44.15 Actions-minutes metering | `steward budget check` meters the account's Actions minutes (billing API through a `user`-scoped key in `steward keys`) against included minutes and the declared ceiling; `--json` for the 44.3 confirmation, Marshal and 44.14 | a real under/over verdict; a refused runner is a finding, never a cheap green | none; before 44.3 |
+| — | CAP-10 | 44.15 Actions-minutes metering | `steward budget check` meters the account's Actions minutes (billing API through a `user`-scoped key in `steward keys`) against included minutes and the declared ceiling; `--json` for Marshal drains and 44.14 when those spend minutes | a real under/over verdict; a refused runner is a finding, never a cheap green | later, not Launch; unhooked from 44.3 (D1b) |
 | — | CAP-8 | 44.12 cutover flag + replay harness | `pyforge.cutover_root` flag + `pyforge-core` reader; `steward cutover plan --regenerate\|--append` and `apply --phase` | both modes preserve `moved` rows; apply is idempotent; the flip switches ledger, Mason targets, loop homes | deps 44.1 |
 | 6 — Archive | CAP-7 | 44.10 | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered; 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
 
