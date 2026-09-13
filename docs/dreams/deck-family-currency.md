@@ -124,3 +124,17 @@ density and visual-form reference) · [[pyforge-charter]] (the Genesis deck this
   Dream `dreamt → specified` per README § status. Next act: Epic 20 and its ledger rows in
   `pyforge-herald`, then Story 20.1/20.2 before any file outside `docs/dreams/` or the Spec
   folder changes.
+- **2026-09-13 (later the same day)** — Wave A landed. Story 20.2 shipped `deck-facts`
+  (PR #1295; four-layer review, 45 findings, 32 patched); the eight station posters were rebuilt
+  to the standard from their ledgers by worktree agents, reviewed against the floors, the facts
+  check and a full-page render, pushed to their Design projects, merged (PRs #1297, #1298,
+  #1300, #1301, #1303–#1306) and read back byte-identical once the claude-design MCP
+  reconnected (etags in each README ledger). Two facts the wave corrected: the 411,764 B Warden
+  "reference" was a Design bundle (192,472 B of content; the rebuild is 295,079 B), and
+  `recipes_count` had read the working tree (now `git ls-files`). One capability the wave
+  minted: **CAP-6, mechanical refresh** — the moment round 1 merged, the posters read `mismatch`
+  on the fleet counts their own landings moved; CAP-5 detected it and nothing could repair it
+  without hand edits, so `deck-facts --refresh` (Story 20.14) rewrites stale marked literals from
+  the ledger. The Unifying Strategy Design project now exists (`1e4020bc`, seeded with the
+  family). Wave B (20.11 genesis, 20.12 the Canopy) in flight; 20.13 and the closeout follow.
+
