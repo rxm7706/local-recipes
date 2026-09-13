@@ -5,6 +5,15 @@ name: Dashboard (GitHub Pages)
 # kedro-viz/. Lane 1 /console/ is the operator console.
 # kedro-viz-publish.yml stages the export, then this workflow republishes
 # on push to main. No scheduled regen — there is no data.js to refresh.
+#
+# The PyForge dossier + infographic site is built here too, directly into
+# docs/dashboard/, so it IS the Pages landing page; Kedro-Viz stays at
+# kedro-viz/ and is linked from it. It deliberately does NOT deploy itself: a
+# repository has one Pages deployment, so a second workflow calling
+# deploy-pages would race this one and intermittently wipe the Kedro-Viz
+# export. Same reason kedro-viz-publish.yml stages rather than deploys.
+# build.py only ever deletes the outputs it owns (never a blanket rmtree of
+# docs/dashboard/), and nothing it builds is committed — see .gitignore.
 
 on:
   push:
@@ -35,6 +44,22 @@ jobs:
           locked: true
           cache: true
       - uses: actions/configure-pages@v6
+
+      # --- PyForge dossier + infographic site -> docs/dashboard/pyforge/ ---
+      # Its own python/deps rather than the pyforge-ci pixi env, which carries
+      # neither jinja2 nor pyyaml and has no reason to grow for a doc build.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install site build dependencies
+        run: python -m pip install --disable-pip-version-check jinja2 pyyaml
+      - name: Build the PyForge site
+        run: python docsite/build.py --out docs/dashboard --check
+      - name: Verify the dossier's numbers against the source tree
+        # Advisory: a stale figure belongs in the log, never blocking a deploy.
+        continue-on-error: true
+        run: python docsite/tools/verify_claims.py --format github
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/dashboard

@@ -783,6 +783,32 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built con
 "ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
 playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -> cannot-measure, never a false green)
 
+# --- PyForge dossier + infographic site -------------------------------------
+# Renders docsite/content/ into a static site. The published copy is built in CI
+# straight into docs/dashboard/ by dashboard.yml (a repo has ONE Pages
+# deployment, so this never deploys itself); these tasks are the local loop.
+[feature.site.dependencies]
+python = ">=3.12"
+jinja2 = ">=3.1.6"                # renders docsite/templates/*.j2
+pyyaml = ">=6.0.3"                # reads docsite/content/*.yml
+
+[feature.site.tasks.site]
+description = "Build the PyForge dossier + infographic site into dist/."
+cmd = "python docsite/build.py --out dist"
+
+[feature.site.tasks.site-check]
+description = "Build the site and verify its output (required pages, no stray template syntax, every infographic published intact)."
+cmd = "python docsite/build.py --out dist --check"
+
+[feature.site.tasks.site-verify]
+description = "Check the dossier's stated figures against the source tree; exits 1 on drift."
+cmd = "python docsite/tools/verify_claims.py"
+
+[feature.site.tasks.site-serve]
+description = "Build the site and serve it at http://localhost:8000 for preview."
+cmd = "python -m http.server 8000 --directory dist"
+depends-on = ["site-check"]
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -894,6 +920,8 @@ mcp-host = { features = ["mcp-host"], no-default-feature = true }
 # mirrors the retired requirements/{base,production,local}.txt pin set.
 # (Story 16.1: legacy pip backend removed — pixi platform-ci-test only.)
 platform-ci-test = { features = ["platform-ci-test"], no-default-feature = true }
+# site — the doc-site build loop: python + jinja2 + pyyaml, nothing else.
+site = ["site"]
 
 [environments.python-agent-platform]
 features = ["python-agent-platform"]

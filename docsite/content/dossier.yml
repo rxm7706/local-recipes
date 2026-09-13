@@ -1,0 +1,1492 @@
+# Source of truth for the PyForge Dossier.
+# Edit this file; `python site/build.py` re-renders the site and the artifact.
+# Originally imported from the published artifact by site/tools/import_artifact.py.
+
+title: The PyForge Dossier
+eyebrow: INTERNAL DOSSIER — FULL FLEET
+heading: PyForge
+summary: 'A full-source investigation of every station in this repository''s own factory: the shared foundation
+  they all build on, and what each of the eight — Atlas, Doctor, Herald, Marshal, Mason, Scribe, Steward,
+  Warden — actually does, verified directly from code.'
+stats:
+- value: '8'
+  label: Stations
+- value: ~110K
+  label: Lines of source
+- value: '1'
+  label: Shared leaf package
+- value: 4×
+  label: Reuse the same verdict lattice
+- value: '4'
+  label: Stale/self-contradicting READMEs found
+toc:
+- id: foundation
+  label: The shared spine
+  accent: --amber
+  group_start: false
+- id: atlas
+  label: Atlas
+  accent: --st-atlas
+  group_start: true
+- id: doctor
+  label: Doctor
+  accent: --st-doctor
+  group_start: false
+- id: herald
+  label: Herald
+  accent: --st-herald
+  group_start: false
+- id: marshal
+  label: Marshal
+  accent: --st-marshal
+  group_start: false
+- id: mason
+  label: Mason
+  accent: --st-mason
+  group_start: false
+- id: scribe
+  label: Scribe
+  accent: --st-scribe
+  group_start: false
+- id: steward
+  label: Steward
+  accent: --st-steward
+  group_start: false
+- id: warden
+  label: Warden
+  accent: --st-warden
+  group_start: false
+- id: synthesis
+  label: Cross-fleet synthesis
+  accent: --ink
+  group_start: true
+- id: verified
+  label: What's verified
+  accent: --rail
+  group_start: false
+- id: scorecards
+  label: Fleet scorecards
+  accent: --amber
+  group_start: false
+sections:
+- id: foundation
+  num: '00'
+  title: The shared spine
+  kind: section
+  blocks:
+  - type: lede
+    md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately
+      pure-stdlib leaf. It doesn''t do any station''s job — it owns the mechanisms every station kept
+      reinventing separately, until seven of them were consolidated into one place each.'
+  - type: h3
+    num: '00.1'
+    text: One CLI, discovered at runtime
+  - type: prose
+    body:
+    - '`pyforge <station> <command>` is a single console script (`pyforge.core.dispatch:main`) that does
+      no station work itself — it maps a station token to that station''s own primary console script and
+      forwards the rest of argv to it as a subprocess. The map is built by walking installed package metadata
+      first (`importlib.metadata.distributions()`), falling back to scanning sibling `pyproject.toml`
+      files directly when running from an editable checkout with nothing installed yet. `pyforge-core`
+      and `pyforge-testing-kit` are explicitly excluded from the station map — they''re infrastructure,
+      not stations.'
+    - 'One station is flagged as a known exception to a separate CI introspection check: Atlas''s CLI
+      can''t be AST-introspected the way the others can, tracked against a named waiver spec under Steward''s
+      own planning artifacts rather than silently ignored.'
+  - type: h3
+    num: '00.2'
+    text: Seven mechanisms, formerly seven copies
+  - type: table
+    headers:
+    - Module
+    - What it replaced
+    rows:
+    - cells:
+      - core.verdict.Lattice
+      - 'Warden, Marshal, and Doctor each hand-rolled their own rank/exit-domain dict comprehension; Herald
+        hand-rolled an `isinstance` dispatch loop. Now: one generic `Lattice` class every station''s own
+        enum builds on — confirmed imported by all four.'
+      mono:
+      - true
+      - false
+    - cells:
+      - core.atomic_write
+      - Twenty hand-written tmp-file-then-`os.replace` copies across six stations (Herald 6, Atlas 5,
+        Marshal 3, Steward 2, Scribe 1, Warden 3), three different naming conventions, none sharing code.
+        Now one callback-shaped primitive.
+      mono:
+      - true
+      - false
+    - cells:
+      - core.hooks
+      - No prior duplication — new in Story 32.1. The *one* plugin-registration surface, one entry-point
+        group (`pyforge.core.hooks`), stdlib `importlib.metadata` only, no pluggy. A plugin may only `publish_verdict`
+        for the spec it owns — a second attempt raises `SecondVerdictError`.
+      mono:
+      - true
+      - false
+    - cells:
+      - core.errors.PyforgeError
+      - Every station's own exception root re-parents onto this bare marker (Herald's `HeraldError`, Mason's
+        `CfeUnresolvedError`) without touching any subclass's own constructor.
+      mono:
+      - true
+      - false
+    - cells:
+      - core.process
+      - Moved **verbatim** from Marshal's own `ports/process.py` + `adapters/process_posix.py` — Marshal's
+        own subprocess abstraction became the fleet's shared primitive, chosen over Doctor's simpler two-function
+        pair specifically because it never raises on a non-zero exit.
+      mono:
+      - true
+      - false
+    - cells:
+      - core.report
+      - Shared report-envelope schema *data* plus a pure dict-merge — deliberately ships no `jsonschema.validate`
+        call (that would break the leaf's own no-third-party-imports rule); each station keeps its own
+        validation call site.
+      mono:
+      - true
+      - false
+    - cells:
+      - core.landing_evidence
+      - Every consumer asking "did story X land on main" — Doctor's `story-status`, Marshal's `merged_story_keys`
+        and `retire` — spoke a partial dialect of git-fact recognition. Now one shared grammar, importing
+        nothing from any station package.
+      mono:
+      - true
+      - false
+  - type: callout
+    tone: amber
+    label: Also present
+    body:
+    - '`core.assertion` — a host-mint service-assertion client; the CLI never signs locally, it POSTs
+      a bearer token to a host view that signs RS256. `pyforge-testing-kit` is a deliberately *separate*
+      leaf from `pyforge-core` (not `pyforge.core.testing`) specifically so test fixtures never couple
+      into every station''s own runtime install.'
+- id: atlas
+  kind: station
+  mark: A
+  accent: --st-atlas
+  title: Atlas
+  role: The intelligence layer — data, not verdicts
+  blocks:
+  - type: quote
+    md: '"Atlas provides data… Warden uses that data… the only code edge between them points the other
+      way." — the package''s own README'
+  - type: stats
+    stats:
+    - value: 24,184
+      label: Lines · 119 files
+    - value: 8 / 11
+      label: Pipelines wired to MCP
+    - value: '13'
+      label: MCP tools
+    - value: py3.14
+      label: Floor — highest in the fleet
+    - value: 46 / 12
+      label: Stories / epics shipped
+  - type: prose
+    body:
+    - 'Atlas is the Kedro/Dagster/DuckDB rewrite of what used to be a single SQLite-backed script (`cf_atlas.db`,
+      still documented inside the `conda-forge-expert` skill). It''s a genuine Kedro project — `pyforge-atlas
+      <command>` is, under a thin `--version` intercept, literally Kedro''s own CLI routing. There''s
+      no atlas-specific command tree to enumerate the way the other stations have one; the real, atlas-specific
+      surface is its 13 MCP tools: 8 pipeline triggers, dataset read/list, and two natural-language query
+      tools.'
+    - '`read_dataset` never hands back raw data — every result is wrapped in a provenance envelope recording
+      when the underlying data was actually built (a stored timestamp, a file mtime, or an honest "unavailable"
+      and why), deliberately never a read-time clock stand-in. Tool bodies are AST-scan-enforced to contain
+      zero business logic — no pandas, numpy, duckdb, or arithmetic is allowed to live at the MCP layer,
+      only thin delegation.'
+  - type: finding
+    label: The load-bearing finding
+    accent: --st-atlas
+    alarm: false
+    body:
+    - The legacy SQLite system is **still running, in parallel, right now** — by binding design decision,
+      not oversight. The rewrite is code-complete (46 stories, 8 live pipelines), but a documented rule
+      states the legacy orchestrator keeps running until a credentialed, human-signed parity event proves
+      exact row-count and value parity against the new stack — and the code's own retirement-eligibility
+      check currently, correctly, returns `allowed=False`. Parts of Atlas's own dashboard still read `cf_atlas.db`
+      directly today, as a live dependency, not a historical fallback.
+  - type: h3
+    num: A.1
+    text: The semantic layer and the two dashboards
+  - type: prose
+    body:
+    - 'A "Boring Semantic Layer" (BSL) is the single translation interface over the canonical Parquet
+      store — every metric a dashboard, agent, or MCP caller can ask for is declared once, in Ibis, resolved
+      to DuckDB. Atlas ships *two* dashboard code paths: a pure-Kedro `dashboard/` package (Vizro pages,
+      one per legacy CLI report — feedstock health, staleness, CVE watch) and a separate `views/` legacy-bridge
+      layer that calls the actual old CLI scripts as subprocesses and renders their output as embedded
+      Bokeh fragments when live Vizro/cf_atlas access isn''t available. The dashboard package also independently
+      reads the BMAD fleet''s own sprint ledger and epics status — a real overlap with what Marshal and
+      Steward''s own dashboards read, not confirmed whether from the same underlying source.'
+  - type: chips
+    chips:
+    - core
+    - vcs_health
+    - pypi_intelligence
+    - vulnerability
+    - seed_gaps
+    - universal_sbom
+    - derived_artifacts
+    - upstream_discovery
+  - type: note
+    md: The 8 MCP-triggerable pipelines. `semantic_packages`, `query_plane_cache`, and an enterprise-JFrog
+      `artifactory_downloads` pipeline exist on disk but aren't in the registry yet.
+  - type: h3
+    num: A.2
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: →
+      md: '**Warden** — the one optional code import (`[gate]` extra), one-directional only; no reverse
+        edge exists.'
+    - glyph: →
+      md: '**Mason** — a named "downstream handoff" from the trending-candidates engine, not independently
+        confirmed from Mason''s own side.'
+    - glyph: →
+      md: '**conda-forge-expert** (the legacy skill, not a station) — a dedicated agent-to-agent bridge
+        module hands the analytical layer''s alerts/insights to the recipe-authoring agent.'
+    - glyph: →
+      md: '**pyforge-core** — heavy, load-bearing: errors, atomic writes, and the shared hook registry
+        all confirmed in use across 15 distinct import sites.'
+  - type: verify
+    md: 'Not verified: the dashboard''s launch mechanism (pixi task name); whether its BMAD-status reads
+      share a source with Marshal''s/Steward''s own status reads; roughly a third of Atlas''s own tagged
+      design decisions (AD‑1/2/3/5/6/9–12/14–16/21) were seen but not glossed with confidence.'
+- id: doctor
+  kind: station
+  mark: D
+  accent: --st-doctor
+  title: Doctor
+  role: Advisory diagnostics — and the one station that judges Marshal
+  blocks:
+  - type: quote
+    md: '"Charter §6, ratified 2026-07-28: the Doctor holds the verdict on the Marshal''s own conformance
+      — the one station that would otherwise grade itself. The Marshal may not weaken, re-threshold, or
+      disable a check that judges the Marshal."'
+  - type: stats
+    stats:
+    - value: 16,830
+      label: Lines · ~26 files
+    - value: '4'
+      label: Commands
+    - value: '27'
+      label: Named finding sources
+    - value: 0,2,130
+      label: Exit domain — subset of Warden's
+    - value: py3.14
+      label: Floor
+  - type: prose
+    body:
+    - 'Doctor''s own description: *"Pre-flight + fleet-watch diagnostics CLI consolidating pyforge-warden
+      + cf_atlas signals into one schema-validated DoctorReport."* Four commands: `check` (pre-flight
+      — engine availability, env hygiene, plus opt-in-only network-touching categories), `monitor --fleet`
+      (pulls cf_atlas Watch axes — staleness and CVE by default), `diagnose --target` (gather plus optional
+      root-cause ranking), and `backlog-intake` (scans every station''s deferred-work ledger for a given
+      epic/story). A finding is one of a closed three-state `OK/WARN/FAIL`; the exit domain deliberately
+      omits Warden''s policy-gate rung — Doctor reports operability, never policy, and a dedicated test
+      asserts its domain stays a strict subset of Warden''s.'
+  - type: finding
+    label: Why Doctor is structured the way it is
+    accent: --st-doctor
+    alarm: false
+    body:
+    - 'Six of Doctor''s own modules exist specifically to judge Marshal''s output — dashboard truthfulness,
+      the Dream-to-Code chain, forward-dependency blindness in the story picker, project-doc currency,
+      the tracked sprint ledger''s regression-freedom, and Marshal''s own durability record. The largest
+      of these, `sources/chain.py`, is 4,435 lines on its own — the single biggest module in the package.
+      Every one of them was placed in Doctor *on purpose*, and verified structurally, not just by docstring
+      claim: the module that judges Marshal''s durability doesn''t import `pyforge.marshal` at all — it
+      reads only git history and journal files. Marshal has no code-level lever over its own verdict.'
+  - type: h3
+    num: D.1
+    text: What it actually watches
+  - type: prose
+    body:
+    - 27 distinct finding sources are registered, each tagged with a *subject* station (whose artifact
+      is being judged) and an *owning* station (whose code does the judging) — the mechanism that makes
+      the Marshal-oversight rule machine-checked rather than aspirational. `--bmad-core` and `--sibling-dreams`
+      are the two categories requiring a genuine live network call (npm registry, GitHub Contents API)
+      and are opt-in only, explicitly excluded from the zero-flag default run's speed budget.
+  - type: h3
+    num: D.2
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: →
+      md: '**Warden** — the one real code dependency, gated behind an optional extra, wraps Warden''s
+        own checks 1:1 into Doctor''s own finding shape.'
+    - glyph: ←
+      md: '**Marshal** — judged, not judging; Doctor reads Marshal''s output (files, git, journals), never
+        its code.'
+    - glyph: →
+      md: '**Atlas** — a read-only external signal source for fleet-watch axes.'
+  - type: verify
+    md: 'The README undercounts — it states "28 stories shipped" while the code itself references stories
+      numbered into the 16s across features not reflected in that count. Not verified: the exact bodies
+      of `checks/registry.py`, `hygiene_definitions.py`, and `checks/env_hygiene.py` beyond their consumers''
+      docstrings.'
+- id: herald
+  kind: station
+  mark: H
+  accent: --st-herald
+  title: Herald
+  role: The Dream-to-deck bridge, and the fleet's comms desk
+  blocks:
+  - type: quote
+    md: '"Dream-to-deck bridge CLI — seeds, pulls, and syncs Claude Design decks via the herald deck subcommands."'
+  - type: stats
+    stats:
+    - value: 13,271
+      label: Lines · 24 files
+    - value: '5'
+      label: Top-level commands
+    - value: 47 / 12
+      label: Stories / epics shipped
+    - value: '0'
+      label: MCP server routes found in-source
+  - type: prose
+    body:
+    - 'Five top-level commands: `deck` (seed / pull / status / watch / push / qa / pptx-spec / pptx-fill),
+      and what the code calls "the Four Moments" — `progress`, `success`, `notice`, and a `scheduler`
+      that composes the other two into one cron-triggered pass. The deck bridge core is transport-agnostic
+      by construction: an AST-walking test enforces that no composed deck operation can import a concrete
+      transport adapter, an LLM SDK, or dynamic-import machinery — its "determinism boundary" is mechanically
+      checked, not a convention. Two export pipelines coexist deliberately: the original Marp/HTML path
+      (whose `.pptx` output is background-image slides with zero editable text) and a purpose-built `pptx_pipeline.py`
+      that parses a template into a machine-readable spec and fills it via python-pptx''s real object
+      model.'
+    - '`progress`/`success`/`notice` consolidated onto one shared SQLite file (WAL mode) in a later story;
+      the deck bridge''s own state deliberately stayed on its separate JSON file, out of that consolidation''s
+      scope. Every write handler — never a read — passes through one auth gate that is explicitly a stub
+      today: an env-var-or-local-config role check, with no real credential or signature verification,
+      flagged as an open assumption in its own docstring.'
+  - type: finding
+    label: A correction, not a confirmation
+    accent: --st-herald
+    alarm: true
+    body:
+    - Herald's own source contains **no MCP server code at all** — zero `FastMCP`/server decorators anywhere
+      in the package. It's an MCP *client* (it calls out to Claude Design's endpoint), not a server. Whatever
+      actually answers the fleet's herald MCP route is not implemented in this package — it must live
+      in a shared gateway layer this investigation didn't locate. Treat any earlier assumption that herald
+      hosts its own MCP endpoint as unconfirmed.
+  - type: h3
+    num: H.1
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: ✗
+      md: '**Steward** — an explicit, documented *non*-dependency for secrets: Herald''s webhook layer
+        never imports Steward''s key module, because that module is provisioning-shaped, not a runtime
+        secret-fetch accessor.'
+    - glyph: ✗
+      md: '**Warden** — a deck export explicitly cannot be mistaken for a Warden PR verdict; a second
+        attempt to publish one onto Warden''s own spec raises a structural error.'
+    - glyph: —
+      md: Ships its own React/Vite dashboard listing all 8 stations — likely, not confirmed, the shared
+        front end other stations' dashboard mentions point at.
+  - type: verify
+    md: No direct source evidence was found for a "Lane 1 CMS belongs to Steward" rule from Herald's own
+      side — Steward's own investigation (below) resolves what that boundary actually is.
+- id: marshal
+  kind: station
+  mark: M
+  accent: --st-marshal
+  title: Marshal
+  role: Deterministic BMAD-loop supervisor
+  blocks:
+  - type: quote
+    md: '"Deterministic BMAD-loop supervisor: wraps bmad-loop with gates-as-objects, run supervision,
+      landing, fleet status, and adapter portability." — the package''s own `pyproject.toml`'
+  - type: stats
+    stats:
+    - value: 0.1.0
+      label: Version
+    - value: '2'
+      label: Dispatch engines
+    - value: ~40
+      label: CLI commands
+    - value: 64+
+      label: Named decisions
+    - value: '1'
+      label: Real BMAD dependency
+  - type: prose
+    body:
+    - 'Marshal supervises two independent, alternative ways to get a story implemented — neither wraps
+      the other. **bmad-loop** is a real, separate binary with its own review/retry/landing machinery;
+      Marshal''s job there is thin: render its policy file whole every time (gitignored, never hand-edited
+      — a past incident let one project''s edit ride a routine push onto every other project''s copy),
+      launch/attach/resume it, and read its journals. **bmad-build-auto** is not a binary at all — a workflow
+      prompt handed to a directly-launched coding-agent CLI session (Claude, Cursor, Copilot, Gemini,
+      or Devin, policy-ordered, each candidate live-authchecked after a real 2026-08-27 incident where
+      three dispatches died silently on an auth wall that a mere presence-probe couldn''t see). Because
+      that engine ships zero supervision of its own, Marshal built an entire parallel governance stack
+      specifically for it — six dedicated, side-effect-free modules covering completion detection, verification,
+      landing eligibility, work preservation, operator-survival timing, and fleet-wide campaign dispatch.
+      No equivalent layer exists for bmad-loop, because bmad-loop doesn''t need one.'
+  - type: engines
+    engines:
+    - name: bmad-loop
+      verb: '`factory spin / attach / resume`'
+      body:
+      - A real binary; ships its own review/retry/landing. Marshal renders its policy and reads its journals
+        — never hand-edits.
+    - name: bmad-build-auto
+      verb: '`factory dispatch / drain`'
+      body:
+      - Not a binary — a coding-agent CLI session. Marshal built 6 dedicated modules to supervise it,
+        because the engine itself has none.
+  - type: h3
+    num: M.1
+    text: The governing spine
+  - type: lattice
+    rungs:
+    - exit: '4'
+      name: ERROR
+      desc: unexpected failure
+      tone: --red-soft
+      exit_tone: --red
+    - exit: '3'
+      name: GATE_FAILED
+      desc: a verify command failed
+      tone: --amber-soft
+      exit_tone: --amber
+    - exit: '2'
+      name: SCOPE_VIOLATION
+      desc: outside declared bounds
+      tone: --amber-soft
+      exit_tone: --amber
+    - exit: '1'
+      name: UNEVALUABLE
+      desc: could not be judged
+      tone: --paper-sunken
+      exit_tone: --rail
+    - exit: '0'
+      name: WARN
+      desc: clean, with a caveat
+      tone: --green-soft
+      exit_tone: --green
+    - exit: '0'
+      name: CLEAN
+      desc: nothing to report
+      tone: --green-soft
+      exit_tone: --green
+    note: Six ranked verdicts, plus `EXIT_USAGE=2` and `EXIT_SIGINT=130` as boundary constants. Every
+      exit code Marshal ever emits is computed from this, never re-spelled — an AST-scanning meta-test
+      checks nothing invents a seventh.
+  - type: prose
+    body:
+    - 'A four-layer policy fold (code default → repo defaults → project layer → invocation flags, last
+      wins, malformed layers skipped in place) governs a closed 29-key vocabulary. Landing rules are drawn
+      straight from this very repo''s own `CLAUDE.md` PR gates, in deliberately opposite directions: a
+      `maintenance-label` rule excludes anything outside `recipes/**`, an `environment-yaml-sync` rule
+      includes — ungated — any `pixi.toml` change.'
+  - type: h3
+    num: M.2
+    text: Genesis vs. operation
+  - type: prose
+    body:
+    - '`marshal seed` is the installer, not the runtime — it delivers this repository''s own operating
+      model into another repo (six verbs: init/adopt/check/update/explain/version), and every managed
+      file carries one of five ownership classes so a repo owner always knows whether touching it is safe.'
+  - type: h3
+    num: M.3
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: →
+      md: '**bmad-loop** — the one real BMAD dependency in `pyproject.toml` (`>=0.11.0,<0.12`); no `bmad-method`
+        dependency exists anywhere.'
+    - glyph: ←
+      md: '**Doctor** — judged, structurally, per Doctor''s own §D above.'
+    - glyph: →
+      md: '**Steward** — Steward''s own dashboard refuses to publish when Marshal''s sprint ledger is
+        missing or stale, rather than deriving a status of its own.'
+  - type: verify
+    md: The installed skill file documents 4 of ~40 subcommands. Full depth (all ~40 commands, the complete
+      AD registry, and the Genesis artifact-class detail) lives in the standalone Marshal Dossier — this
+      section is the fleet-comparable summary.
+- id: mason
+  kind: station
+  mark: Ma
+  accent: --st-mason
+  title: Mason
+  role: The Artisan Builder — a CLI front door onto conda-forge-expert
+  blocks:
+  - type: quote
+    md: '"…wrap the conda-forge-expert craft by subprocess rather than reimplement it — the skill stays
+      canonical… It is never forked." — the package''s own README'
+  - type: stats
+    stats:
+    - value: 9,052
+      label: Source lines
+    - value: 24,783
+      label: Test lines — 2.7×
+    - value: '13'
+      label: CLI verbs, 4 nouns
+    - value: '0'
+      label: Dedicated content skills — by policy
+  - type: prose
+    body:
+    - 'Mason has no dedicated content skill the way its seven siblings do — and that''s a deliberate rule,
+      not a gap: its own persona skill explicitly forbids creating one, since a second compiled skill
+      would either duplicate conda-forge-expert''s craft or risk drifting from it. `mason recipe`''s eight
+      verbs (new/validate/build/diagnose/optimize/scan/submit/update) are 1:1 thin subprocess wrappers
+      over ten named CFE script adapters — literally the same MCP surface the `conda-forge-expert` skill
+      exposes, re-projected as a CLI. `package` (build/ship) and `environment` (lock/check) are genuinely
+      independent of CFE — PEP 517 + pixi builds, twine/channel/conda-forge shipping, conda-lock resolution.'
+  - type: callout
+    tone: amber
+    label: Enforced, not conventional
+    body:
+    - 'Capability tiering is real: `doctor.py`/`package.py`/`environment.py` must import cleanly with
+      zero CFE installed on the filesystem, checked by an AST meta-test — `recipe.py` is the only module
+      allowed to `import cfe` at module scope. And `engines/twine.py` never passes `env=` to its subprocess
+      call at all: publish credentials reach twine only through natural process-environment inheritance,
+      so the module can never itself hold a credential value it could leak or log — also structurally
+      tested.'
+  - type: prose
+    body:
+    - 'Already dogfoods itself: both a wheel/sdist and a `.conda` artifact for Mason exist in its own
+      `dist/`/`dist-conda/`, built with its own `package build`.'
+  - type: h3
+    num: Ma.1
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: →
+      md: '**conda-forge-expert** — the whole point; wraps, never replaces.'
+    - glyph: →
+      md: '**Steward** — two modules cite Steward story numbers and a Steward-owned concept ("Lane 1 media,"
+        an install-class registry pattern) directly inside Mason''s own code — an unusual, unresolved
+        coupling worth flagging rather than explaining away.'
+  - type: verify
+    md: 'One live discrepancy found: a module''s own docstring claims a shipping function "does not exist
+      in this branch''s lineage," but that function is present in the working tree at the line the docstring
+      implies shouldn''t have it — either stale documentation or a branch-state mismatch, not resolved.'
+- id: scribe
+  kind: station
+  mark: S
+  accent: --st-scribe
+  title: Scribe
+  role: The append-only write path for checked-in team memory
+  blocks:
+  - type: quote
+    md: '"Direct-capture CLI for checked-in team memory (.claude/memory/) — the append-only write path
+      for team-relevant decisions, ADRs, and project state."'
+  - type: stats
+    stats:
+    - value: 3,279
+      label: Lines — smallest station
+    - value: '3'
+      label: Commands
+    - value: '6'
+      label: Compile surfaces
+    - value: '3'
+      label: Swappable storage backends
+  - type: prose
+    body:
+    - 'A strict three-layer pipeline: **capture** (the only path allowed to write under `.claude/memory/`
+      — append-only, no-clobber, one locked critical section) → **compile** (a full, non-incremental rebuild
+      every run, from six surfaces: the curated memory files themselves, repo-wide memlogs, changelogs,
+      retros, local `git log` — read-only, never fetch — and session transcripts) → **recall** (reads
+      the compiled result only, never the raw log). Node identity is derived deterministically, so two
+      compiles of unchanged sources are byte-identical.'
+    - 'Despite the name, the compiled "graph" has no separate edge object — nodes are flat facts, and
+      a bi-temporal-lite supersession mechanism (`valid_from`/`valid_until`) marks a superseded record
+      ended rather than ever deleting it. `recall` is deliberately dumb by default: pure lexical token-overlap
+      scoring, no LLM, no network — and every ranked candidate is filtered by whether its citation can
+      actually be resolved *before* anything is returned. A query that resolves nothing gets an explicit,
+      honest "no grounded answer," never a fabricated one.'
+  - type: finding
+    label: A genuine cross-station wiring, confirmed in code
+    accent: --st-scribe
+    alarm: false
+    body:
+    - 'Scribe''s storage layer is swappable by an "owner" string through the shared plugin registry —
+      and the two non-default backends are attributed, in Scribe''s own code comments, to *other* stations:
+      a Postgres+pgvector backend is Steward''s to maintain, and a third backend reads and writes `atlas.duckdb`
+      directly — Atlas''s own database file. When configured, Scribe''s compiled memory can project straight
+      into the same DuckDB file Atlas''s Kedro pipelines and dashboard already own.'
+  - type: h3
+    num: S.1
+    text: A README that contradicts itself
+  - type: prose
+    body:
+    - The README's own status line says all 9 stories across 2 epics are shipped and `compile`/`recall`
+      are fully implemented. The paragraph directly beneath it still says those same two commands "parse
+      their arguments, print a 'not yet implemented' notice, and exit 0" — a leftover pre-Epic-2 fragment
+      never removed. The source code (extensively built, with story citations well past that point) confirms
+      the header is right and the body paragraph is what's stale.
+  - type: h3
+    num: S.2
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: →
+      md: '**Steward** — owns two of Scribe''s three storage backends.'
+    - glyph: →
+      md: '**Atlas** — the target of the DuckDB "query plane" backend.'
+    - glyph: —
+      md: A sibling `django-scribe` package provides the station's portal chrome shell — not investigated
+        in depth here.
+- id: steward
+  kind: station
+  mark: St
+  accent: --st-steward
+  title: Steward
+  role: The Provisioner — credentials, deployment, and the platform layer
+  blocks:
+  - type: quote
+    md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
+  - type: stats
+    stats:
+    - value: 15,756
+      label: Source lines
+    - value: 19,429
+      label: Test lines
+    - value: '13'
+      label: Duties (README documents 6)
+    - value: '70'
+      label: Crash exit code
+  - type: prose
+    body:
+    - 'Thirteen "duties," each a structural (Protocol-conforming, not inherited) unit of platform work:
+      `keys` (credential lifecycle), `deploy` (dashboard/perimeter/static), `provision` (a flag-driven,
+      class-keyed install playbook — deliberately no nested verbs, routed to a documented playbook spec
+      rather than inline logic), `budget`, `sync` (bidirectional GitHub Projects ↔ Jira reconciliation),
+      `workspace`, `upgrade` (a five-stage BMAD-core upgrade pipeline — pre-flight, deliberate apply,
+      clobber detection, pin-fan-out, prove-landed — its largest single module at 2,639 lines), `suite`
+      (a 13-package pipeline-truth-and-advance chain that opens a reviewable PR and never auto-merges),
+      plus a five-command machine-bootstrap group.'
+    - Every duty's result is a frozen dataclass — "evidence, not a scratchpad" — and no duty may ever
+      call `sys.exit` itself; the CLI dispatcher is the one place that catches every way a duty can end
+      and projects it to a documented code, so an unexpected crash lands on `70` — literally BSD's `sysexits.h`
+      `EX_SOFTWARE` — deliberately distinct from `1`, which means only "a duty ran and legitimately reported
+      failure." An undocumented bare crash landing on the same code as a real failure would be exactly
+      the false signal a gate must never emit.
+  - type: finding
+    label: A correction to the parent framing
+    accent: --st-steward
+    alarm: false
+    body:
+    - 'There is no literal CMS anywhere in Steward''s source. What it actually owns is **Lane 1 `/console/`**
+      — an operator dashboard, successor to this repo''s own retired GuildHall Pages console. And it doesn''t
+      compute its own status: a precondition guard refuses to publish the dashboard at all when Marshal''s
+      tracked sprint ledger is missing, unreadable, or malformed, and separately wraps Doctor''s own fleet-scan
+      output rather than deriving anything itself. Steward''s console performs zero status derivation
+      of its own — it''s a read surface over what Marshal and Doctor already produced.'
+  - type: h3
+    num: St.1
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: ←
+      md: '**Marshal** — the console''s precondition source; refuses rather than guesses.'
+    - glyph: ←
+      md: '**Doctor** — a second consumed status source, via fleet-scan.'
+    - glyph: →
+      md: '**Scribe** — maintains two of its three storage backends.'
+  - type: verify
+    md: No direct Herald coupling was found in Steward's own source in this pass — the two stations' "Lane"
+      boundary may be a documentation-level distinction rather than a code-level integration point.
+- id: warden
+  kind: station
+  mark: W
+  accent: --st-warden
+  title: Warden
+  role: The compliance gate — dependency hygiene, licenses, and CVEs
+  blocks:
+  - type: quote
+    md: '"Unified dependency-hygiene + vulnerability scanner… emitting one schema-validated ComplianceReport
+      and acting as a strict CI/CD exit-code gate."'
+  - type: stats
+    stats:
+    - value: 17,767
+      label: Lines · 31 files
+    - value: '7'
+      label: Status rungs — the fleet's largest lattice
+    - value: '1'
+      label: Real subcommand — `scan`, ~20 flags
+    - value: 4 + 4
+      label: Real engines + commercial stubs
+  - type: prose
+    body:
+    - 'Unlike every other station, Warden''s CLI is essentially one subcommand — `scan`, governed by roughly
+      twenty flags — plus `--doctor` as a flag, not a subcommand, that only ever checks local operability,
+      never touches the network, and can never exit `1`: it "reports operability, not policy," the same
+      phrase Doctor''s own gotcha uses independently. Its `Status` lattice has seven ranked rungs (`CLEAN`,
+      `NOT_APPLICABLE`, `BYPASSED`, `WARN`, `INDETERMINATE`, `POLICY_VIOLATION`, `ERROR`) — the largest
+      in the fleet — built on the exact same shared `Lattice` primitive Marshal and Doctor also import,
+      confirmed directly against `pyforge-core`''s own source.'
+    - Four real compliance axes — hygiene (deptry), vulnerabilities (osv-scanner, gated on CVSS severity,
+      CISA KEV, and a live EPSS exploit-probability threshold), license (SPDX allow/deny lists), and currency
+      (staleness/LTS/EOL) — run in parallel worker threads but apply their results back in fixed registration
+      order, so a crashing engine's effect on the final verdict is always deterministic regardless of
+      which thread finishes first. Four more entries are deliberate commercial-scanner *stubs* (Checkmarx,
+      SonarQube, Black Duck, GitHub Advanced Security) registered through the same shared plugin mechanism
+      — a default scan stays green with every one of them absent, by design.
+  - type: lattice
+    rungs:
+    - exit: '2'
+      name: ERROR
+      desc: ''
+      tone: --red-soft
+      exit_tone: --red
+    - exit: '1'
+      name: POLICY_VIOLATION
+      desc: ''
+      tone: --amber-soft
+      exit_tone: --amber
+    - exit: '1'
+      name: INDETERMINATE
+      desc: ''
+      tone: --amber-soft
+      exit_tone: --amber
+    - exit: 0\*
+      name: WARN
+      desc: \*unless --warn-as-error
+      tone: --paper-sunken
+      exit_tone: --rail
+    - exit: '0'
+      name: BYPASSED
+      desc: ''
+      tone: --green-soft
+      exit_tone: --green
+    - exit: '0'
+      name: NOT_APPLICABLE
+      desc: ''
+      tone: --green-soft
+      exit_tone: --green
+    - exit: '0'
+      name: CLEAN
+      desc: ''
+      tone: --green-soft
+      exit_tone: --green
+    note: 'Coercing an unrecognized future status value is fail-loud, never a silent downgrade to clean
+      — the same doctrine governs CVE match-confidence mapping: an unrecognized confidence level always
+      lands on `INDETERMINATE`, never `CLEAN`.'
+  - type: prose
+    body:
+    - 'A fix-PR actuator exists as the *one* module permitted forge-API network egress — strictly opt-in,
+      strictly run after the verdict is already final, and closed to exactly two remediation shapes (a
+      vulnerability becomes an upgrade PR, an unused dependency becomes a removal PR); it can never itself
+      influence the verdict it runs after. Fully offline at scan time otherwise — osv-scanner runs against
+      a locally provisioned database, KEV/EPSS enrichment is cache-only. Manifest support reaches further
+      than documented elsewhere in this repo: Python, Conda (including legacy `meta.yaml` v0), Pixi, *and*
+      conda-forge''s own `recipe.yaml` v1 directly.'
+  - type: h3
+    num: W.1
+    text: Relationships
+  - type: relations
+    items:
+    - glyph: ←
+      md: '**Doctor** and <<←>> **Atlas** — both consume Warden as an optional gate extra; Warden itself
+        has no reverse dependency on either.'
+    - glyph: —
+      md: Registers into the exact same shared plugin-hook group Marshal registers `bmad-loop` into —
+        a second, independent confirmation of the shared-mechanism pattern beyond the verdict lattice.
+  - type: verify
+    md: Warden tags its own decisions differently from the rest of the fleet — Story numbers, FR/NFR codes,
+      and single-letter design codes (D2, D8, D12), never `AD-N`. See the synthesis below.
+- id: synthesis
+  num: 09
+  title: Cross-fleet synthesis
+  kind: section
+  blocks:
+  - type: lede
+    md: Investigating all eight stations in one pass surfaces things no single-station read would — patterns
+      that only show up as repetition, or as a system quietly checking itself.
+  - type: h3
+    num: '09.1'
+    text: Who judges whom
+  - type: table
+    headers:
+    - Relationship
+    - Nature
+    rows:
+    - cells:
+      - Doctor → Marshal
+      - 'Binding governance ruling (Charter §6): Marshal cannot weaken a check that judges it. Structurally
+        enforced — the judging code never imports Marshal''s own package.'
+      mono:
+      - true
+      - false
+    - cells:
+      - Warden → Doctor, Atlas
+      - One-directional optional dependency, twice over. Warden never imports either back.
+      mono:
+      - true
+      - false
+    - cells:
+      - Steward ← Marshal, Doctor
+      - Steward's own console refuses to publish rather than compute a status Marshal or Doctor haven't
+        already certified.
+      mono:
+      - true
+      - false
+    - cells:
+      - Herald ✗ Warden
+      - 'An explicit refusal: publishing a second verdict onto Warden''s own spec is a structural error,
+        not just bad practice.'
+      mono:
+      - true
+      - false
+    - cells:
+      - Herald ✗ Steward
+      - An explicit non-dependency for secrets, named and reasoned about directly in Herald's own code.
+      mono:
+      - true
+      - false
+  - type: h3
+    num: '09.2'
+    text: The shared spine, confirmed four times over
+  - type: prose
+    body:
+    - 'The verdict-lattice claim in `pyforge-core`''s own docstring — that Warden, Marshal, and Doctor
+      each used to hand-roll this, and Herald hand-rolled something structurally similar — was independently
+      confirmed from *every one* of those four stations'' own source in this investigation, not just asserted
+      once and trusted. The same held for the shared plugin-hook group: Marshal, Doctor, Atlas, Mason,
+      Steward, Scribe, and Warden all register into it, none maintaining a station-specific alternative.'
+  - type: h3
+    num: '09.3'
+    text: A systemic documentation-drift pattern
+  - type: callout
+    tone: red
+    label: Every station's own docs undercount its own surface
+    body:
+    - 'Marshal''s installed skill documents 4 of ~40 real commands. Doctor''s README claims 28 shipped
+      stories while its own code cites numbers well past that. Steward''s README documents 6 of its 13
+      real duties. Scribe''s README *contradicts itself in adjacent paragraphs* — a shipped-header sitting
+      directly above a stale "not yet implemented" body. This isn''t four unrelated typos; it''s the same
+      failure mode recurring at every station that ships fast: the README is written once, near a milestone,
+      and never revisited as the surface keeps growing underneath it. Worth treating as a fleet-wide finding,
+      not eight separate bugs.'
+  - type: h3
+    num: '09.4'
+    text: The convention gaps — ten found, each independently, none coordinated
+  - type: prose
+    body:
+    - Every station was built well, on its own terms. What's missing is anything that made one station's
+      terms bind on the next one built. None of these are bugs in any single station — each is internally
+      consistent. The problem only appears once you've read all eight and try to carry a mental model
+      from one to the next.
+  - type: table
+    headers:
+    - Gap
+    - What actually varies
+    - Why an operator feels it
+    rows:
+    - cells:
+      - Decision tags
+      - '`AD-N` (Marshal 64+, Atlas 23, Mason 16, Steward some, Scribe 8 — five independent registries,
+        zero shared numbering) vs. Story-N.M / FR-N / NFR-N / single-letter D-codes (Warden, parts of
+        Steward). An `AD-8` in one station is unrelated to an `AD-8` in another.'
+      - '"Why was this built this way" has no single vocabulary to search for across the fleet.'
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Exit codes
+      - The same integer means different things per station. `3` is Mason's "CFE unavailable" and Steward's
+        reserved-but-inert "budget not configured." `70` exists only in Steward (BSD `EX_SOFTWARE`) —
+        no other station distinguishes "crashed" from "failed" at all. Doctor's domain is a deliberate
+        subset of Warden's; nothing says whether Marshal's or Mason's are meant to relate to either.
+      - A CI step scripted against one station's exit codes silently means something else when pointed
+        at another.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - CLI shape
+      - Noun-verb trees (Marshal ~40 commands/12 groups, Mason 4 nouns), a flat duty list (Steward, 13),
+        four flat subcommands (Doctor), one subcommand behind ~20 flags (Warden), and no custom CLI at
+        all — Kedro's own routing (Atlas).
+      - Learning one station's command grammar transfers to roughly half the fleet.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Hook-plugin naming
+      - 'The registration mechanism is genuinely shared (`pyforge.core.hooks`, confirmed fleet-wide) —
+        but entry-point names aren''t: Atlas/Doctor/Warden/Scribe prefix with the station name (`atlas-catalog-ttl`,
+        `warden-deptry`); Mason and Steward register bare names (`rattler-build`, `jira`) with no station
+        prefix at all.'
+      - Listing installed plugins fleet-wide can't tell which station owns an unprefixed one without opening
+        its source.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - MCP hosting
+      - Atlas hosts a real, confirmed MCP server in its own source. Herald and Scribe host none — grepped,
+        zero server code in either — yet both have a documented `/stations/*/mcp` route, and the only
+        place that route's existence is even asserted is in *other* stations' test files.
+      - '"Does this station have an MCP server, and where" isn''t answerable from the station''s own code
+        for at least two of eight.'
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Boundary concepts
+      - 'The "Lane 1 CMS stays Steward" framing exists only as skill-file prose — and it''s wrong: Steward''s
+        actual code has no CMS, it owns a `/console/` operator dashboard. Herald''s own source has zero
+        code-level acknowledgment of any "Lane" boundary at all.'
+      - An operator reading the skill docs forms an incorrect model of what's actually implemented where
+        — the docs describe a boundary the code doesn't have.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Fleet-status sources
+      - 'At least four separate surfaces read or show "how''s the fleet doing": Marshal''s own `status`
+        (journals, direct), Steward''s console (refuses to compute, reads Marshal + Doctor), Atlas''s
+        dashboard (reads the sprint ledger independently, not confirmed same source), and Herald''s own
+        React dashboard (a fourth, separate front end).'
+      - No single answer to "where do I look" — and no confirmation the four would ever agree if you checked
+        all of them at once.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - State storage
+      - Flat JSON (Marshal's rendered policy, Herald's deck-bridge state), SQLite (Herald's consolidated
+        \`.herald/herald.db\`), DuckDB (Atlas, "the one engine everywhere" by its own rule), journals
+        (Marshal's run state), and a genuinely pluggable Protocol (Scribe, alone) — five different answers
+        to "where does a station keep what it knows," four of them not pluggable at all.
+      - No shared operational playbook for backup, inspection, or migration works across more than one
+        or two stations at a time.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Python floor
+      - Marshal/Mason/Herald/Scribe/Warden require `>=3.12`; Doctor/Atlas require `>=3.14`. No stated
+        fleet-wide policy for when a station is allowed to raise its own floor.
+      - Minor today; becomes a real CI-matrix cost as more stations pick their own floor independently.
+      mono:
+      - true
+      - false
+      - false
+    - cells:
+      - Name collision
+      - Warden's own `scan --doctor` flag is a same-word, different-thing coincidence with the actual
+        `pyforge-doctor` station — Warden's `--doctor` is a local self-check that has nothing to do with
+        the Doctor station.
+      - 'A small, concrete, easy-to-fix instance of the same root cause as everything else in this table:
+        nobody''s checking new work against what the rest of the fleet already calls things.'
+      mono:
+      - true
+      - false
+      - false
+  - type: callout
+    tone: amber
+    label: The shared spine proves the fix is already the fleet's own idiom
+    body:
+    - '`pyforge-core`''s own history is the existence proof that this is fixable without a rewrite: the
+      verdict lattice, atomic writes, the exception root, and the process primitive were *all* independently
+      duplicated across stations before someone consolidated them into one leaf every station already
+      knows how to depend on. Nothing in this table needs new architecture — it needs the same consolidation
+      pass applied to conventions instead of code: one decision-tag registry, one exit-code domain contract,
+      one CLI-shape idiom doc, one naming rule for hook-plugin ids, one documented answer for where an
+      MCP server lives and where fleet status is read from. That''s the shape of the Dream this section
+      is written to feed.'
+  - type: h3
+    num: '09.6'
+    text: Scale, side by side
+  - type: table
+    headers:
+    - Station
+    - Source lines
+    - Files
+    - Shape
+    rows:
+    - cells:
+      - Atlas
+      - 24,184
+      - '119'
+      - Largest — a real Kedro project plus 11 pipeline packages
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Warden
+      - 17,767
+      - '31'
+      - Densest per-file — one CLI verb, four real engines
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Doctor
+      - 16,830
+      - ~26
+      - Dominated by one 4,435-line Marshal-oversight module
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Steward
+      - 15,756
+      - ~20
+      - 13 duties; heaviest tested (1.2:1 test:source)
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Herald
+      - 13,271
+      - '24'
+      - Deck bridge core + Four Moments + own dashboard
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Mason
+      - 9,052
+      - '18'
+      - Heaviest test ratio of all (2.7:1)
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Scribe
+      - 3,279
+      - '13'
+      - Smallest — capture/compile/recall, nothing more
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - pyforge-core
+      - —
+      - '9'
+      - The leaf every one of the above builds on
+      mono:
+      - true
+      - true
+      - true
+      - false
+- id: verified
+  num: '10'
+  title: What's verified, what isn't
+  kind: section
+  blocks:
+  - type: lede
+    md: Every claim above traces to a file, docstring, or dataclass read directly from source across eight
+      independent, parallel investigations. Each station section's own caveats are noted inline; the pattern
+      worth naming here is what recurs across all eight.
+  - type: callout
+    tone: amber
+    label: Consistent gaps across every investigation
+    body:
+    - No investigation fully read every module in its station — each prioritized the CLI surface, the
+      core domain model, and cross-station coupling, and named the modules it left unread rather than
+      inferring their contents. Design-decision registries were only partially glossed everywhere (roughly
+      a third to a half of tagged decisions per station had enough surrounding context captured to summarize
+      safely). And several cross-station claims — Atlas→Mason's trending handoff, the exact shared meaning
+      of "Lane" boundaries, whether Atlas's dashboard reads the same BMAD status source Marshal and Steward
+      do — were named from one side only and not independently confirmed from the other.
+- id: scorecards
+  num: '11'
+  title: Fleet scorecards
+  kind: section
+  blocks:
+  - type: lede
+    md: The Dossier above is what the fleet *is*. This is what's still open on it — read through four
+      different leaders' eyes. The same 15 open epics, re-sorted and re-read by whichever outcome you're
+      accountable for.
+  - type: scorecards
+    lenses:
+    - key: ceo
+      label: CEO
+    - key: cfo
+      label: CFO
+    - key: cdao
+      label: CDAO
+    - key: eng
+      label: Eng Risk
+    rows:
+    - station: Atlas
+      accent: --st-atlas
+      epic_num: '25'
+      epic: Turn on what is built
+      counts: '**2** backlog · 1 blocked'
+      counts_html: <b>2</b> backlog · <span class="blocked">1 blocked</span>
+      delivers: Proves Atlas's already-built pipelines and tools actually get used by something outside
+        their own tests, not just built and shelved.
+      open: 3
+      lenses:
+        ceo:
+          hit: false
+          note: No gating decisions — self-contained cleanup.
+        cfo:
+          hit: false
+          note: 3 stories; effort not sized in this pass.
+        cdao:
+          hit: true
+          note: Same "is it actually used" audit pattern as Doctor's own Epic 21 — usage-integrity, not
+            new capability.
+        eng:
+          hit: true
+          note: 25.2 needs an attended, credentialed run plus cross-Spec coordination — a real blocker,
+            not just unscheduled.
+    - station: Doctor
+      accent: --st-doctor
+      epic_num: '21'
+      epic: Realization-gate hygiene
+      counts: '**16** backlog'
+      counts_html: <b>16</b> backlog
+      delivers: The same "is it actually used" audit as Atlas's, applied to Doctor's own diagnostics —
+        plus a rule that a detector with nothing to observe must say so, never report a false green.
+      open: 16
+      lenses:
+        ceo:
+          hit: false
+          note: No strategic gates — routine hygiene, safe to run any time.
+        cfo:
+          hit: true
+          note: 16 stories, mostly S/XS effort — the cheapest bulk win in the whole open backlog.
+        cdao:
+          hit: true
+          note: 'The epic IS a data-integrity audit: does every capability have a real caller, does every
+            "verified" claim actually hold.'
+        eng:
+          hit: false
+          note: Advisory-only by design — findings can never become a second PR gate.
+    - station: Herald
+      accent: --st-herald
+      epic_num: '19'
+      epic: Herald in effect
+      counts: '**3** backlog · 1 blocked'
+      counts_html: <b>3</b> backlog · <span class="blocked">1 blocked</span>
+      delivers: Wires Herald's already-built deck-QA gate and pptx pipeline to something that actually
+        calls them, instead of sitting unused.
+      open: 4
+      lenses:
+        ceo:
+          hit: false
+          note: No portfolio-level gate — a station-local cleanup.
+        cfo:
+          hit: false
+          note: 4 stories; effort not sized in this pass.
+        cdao:
+          hit: true
+          note: Another "built but never called" audit — same integrity theme fleet-wide.
+        eng:
+          hit: true
+          note: '19.2 has a genuinely open question: needs a named persistent-store host, or a declared
+            foundry-cutover deferral.'
+    - station: Marshal
+      accent: --st-marshal
+      epic_num: '5'
+      epic: Fleet visibility
+      counts: '**1** backlog'
+      counts_html: <b>1</b> backlog
+      delivers: Fixes the exact "UNKNOWN" liveness bug this session hit on Steward's own fleet-picture
+        row.
+      open: 1
+      lenses:
+        ceo:
+          hit: false
+          note: Self-contained; no gating decision attached.
+        cfo:
+          hit: true
+          note: Single story, deps already done — the cheapest possible fix on this board.
+        cdao:
+          hit: true
+          note: Directly about trusting what the fleet-status view reports — same theme as Steward's Epic
+            48.
+        eng:
+          hit: false
+          note: Self-contained; no cross-station coupling.
+    - station: Marshal
+      accent: --st-marshal
+      epic_num: '33'
+      epic: Token economy in effect
+      counts: '**1 done** this session · **4** in flight · 2 blocked · **4** backlog'
+      counts_html: <b>1 done</b> this session · <b>4</b> in flight · <span class="blocked">2 blocked</span>
+        · <b>4</b> backlog
+      delivers: Turns on the cost-saving machinery Epic 28 already built but never switched on — measurement
+        first, then context layers, model tiering, and review-depth savings.
+      open: 10
+      lenses:
+        ceo:
+          hit: true
+          note: 'HARD-ordered: 33.1 dispatches alone first; 33.11 is explicitly deprioritized by the operator''s
+            own note. This session watched that ordering get violated mid-run and recovered it live.'
+        cfo:
+          hit: true
+          note: The direct token/credit-savings epic — the reason this whole session started.
+        cdao:
+          hit: true
+          note: '33.1 is a measurement-first gate: no savings claim ships without a real benchmark artifact
+            first.'
+        eng:
+          hit: true
+          note: 33.4 is a cross-station joint landing with Steward 49.8; 33.9 adds a scope-enforcement
+            guard for parallel dispatch.
+    - station: Mason
+      accent: --st-mason
+      epic_num: '15'
+      epic: Close the CFE rebuild campaign
+      counts: '**2** backlog'
+      counts_html: <b>2</b> backlog
+      delivers: Retires the old CFE mirror slices now that the rebuilt ones are live, closing out a migration.
+      open: 2
+      lenses:
+        ceo:
+          hit: true
+          note: 'Carries a named cross-station order: must land before Steward''s 44.6 ("CFE comes home").'
+        cfo:
+          hit: false
+          note: 2 stories; effort not sized in this pass.
+        cdao:
+          hit: false
+          note: Not a data-integrity story — a migration cleanup.
+        eng:
+          hit: false
+          note: No cross-station technical risk beyond the sequencing note.
+    - station: Mason
+      accent: --st-mason
+      epic_num: '16'
+      epic: Turn on what is built
+      counts: '**4** backlog'
+      counts_html: <b>4</b> backlog
+      delivers: Same effect-audit pattern as Atlas/Doctor/Herald, applied to Mason's own coverage residue.
+      open: 4
+      lenses:
+        ceo:
+          hit: false
+          note: No gating decisions — routine coverage residue.
+        cfo:
+          hit: false
+          note: 4 stories; effort not sized in this pass.
+        cdao:
+          hit: true
+          note: Same usage-integrity audit theme as Atlas/Doctor/Herald's own effect epics.
+        eng:
+          hit: false
+          note: Advisory-shaped, same as its sibling effect epics.
+    - station: Scribe
+      accent: --st-scribe
+      epic_num: '8'
+      epic: Scribe in effect
+      counts: '**1** backlog'
+      counts_html: <b>1</b> backlog
+      delivers: Gives the memory-compile step a real scheduled trigger instead of relying on someone remembering
+        to run it by hand.
+      open: 1
+      lenses:
+        ceo:
+          hit: false
+          note: Self-contained; no gating decision attached.
+        cfo:
+          hit: true
+          note: Single story, deps already done.
+        cdao:
+          hit: true
+          note: The freshness signal this story adds is itself a data-trust mechanism for compiled memory.
+        eng:
+          hit: true
+          note: Explicitly ruled out as a GitHub Actions workflow — needs an operator-owned machine with
+            the right local surfaces.
+    - station: Steward
+      accent: --st-steward
+      epic_num: '14'
+      epic: The BMAD core upgrades repeatably
+      counts: '**1** backlog'
+      counts_html: <b>1</b> backlog
+      delivers: Rehearses a bmad-method upgrade in a disposable worktree before ever touching the real
+        one.
+      open: 1
+      lenses:
+        ceo:
+          hit: false
+          note: No gating decisions — a disposable rehearsal.
+        cfo:
+          hit: false
+          note: Single story; effort not sized in this pass.
+        cdao:
+          hit: false
+          note: Not a data-integrity story.
+        eng:
+          hit: false
+          note: Low-risk rehearsal; never counts as live shipped-proof by itself.
+    - station: Steward
+      accent: --st-steward
+      epic_num: '43'
+      epic: Contracts and the document
+      counts: '**1** backlog'
+      counts_html: <b>1</b> backlog
+      delivers: Proves a database sidecar actually works on the new Python version — a real test, not
+        just a health-check ping.
+      open: 1
+      lenses:
+        ceo:
+          hit: false
+          note: Self-contained; no gating decision attached.
+        cfo:
+          hit: false
+          note: Single story; effort not sized in this pass.
+        cdao:
+          hit: true
+          note: Closes a "we said done but didn't really test it" gap.
+        eng:
+          hit: false
+          note: No cross-station coupling.
+    - station: Steward
+      accent: --st-steward
+      epic_num: '44'
+      epic: Cutover to python-foundry
+      counts: '**1** backlog · 14 blocked'
+      counts_html: <b>1</b> backlog · <span class="blocked">14 blocked</span>
+      delivers: Moves the entire codebase to a clean, permanent home and retires the old repo — like moving
+        out of a storage unit into a real HQ.
+      open: 15
+      lenses:
+        ceo:
+          hit: true
+          note: 'The single biggest, most irreversible bet in the fleet. Three sub-decisions need the
+            operator''s own sign-off: opening a new repo, letting an agent open real conda-forge PRs,
+            and archiving the old repo for good.'
+        cfo:
+          hit: false
+          note: Mostly M/L effort — expensive, not a quick win. Only 44.13 is cheap and explicitly exempted
+            from the block.
+        cdao:
+          hit: false
+          note: Not itself a data-integrity story — it depends on one (Epic 48).
+        eng:
+          hit: true
+          note: Gated on Epic 47's readiness checklist and Steward 48.1 landing first — real cross-epic
+            dependencies, not just scheduling.
+    - station: Steward
+      accent: --st-steward
+      epic_num: '46'
+      epic: The bmad-suite is wielded by the fleet
+      counts: '**1** backlog'
+      counts_html: <b>1</b> backlog
+      delivers: Verifies the release-cadence runbook actually works, once it's been run for real.
+      open: 1
+      lenses:
+        ceo:
+          hit: false
+          note: No gating decisions — a verification story.
+        cfo:
+          hit: false
+          note: Single story; effort not sized in this pass.
+        cdao:
+          hit: false
+          note: Not a data-integrity story.
+        eng:
+          hit: false
+          note: Depends on Epic 14's own rehearsal story landing first.
+    - station: Steward
+      accent: --st-steward
+      epic_num: '48'
+      epic: The chain tells the truth
+      counts: '**11** backlog'
+      counts_html: <b>11</b> backlog
+      delivers: 'Fixes the tracking system''s own bugs — the exact "UNKNOWN" status this session hit —
+        plus real infra gaps: servers sized wrong, the internal network wide open, no documented secret
+        rotation.'
+      open: 11
+      lenses:
+        ceo:
+          hit: true
+          note: Gates Steward 44's big cutover flip — the operator's own dependency chain, not an assumption.
+        cfo:
+          hit: true
+          note: Cheapest epic with the widest payoff — no story larger than Medium effort.
+        cdao:
+          hit: true
+          note: 'THE data-integrity epic: 48.1 must dispatch first and alone, and fixes the same rollup
+            bug confirmed on Atlas and Warden too.'
+        eng:
+          hit: true
+          note: 'Bundles real, unrelated security gaps: an open internal network and no secret-rotation
+            policy.'
+    - station: Steward
+      accent: --st-steward
+      epic_num: '49'
+      epic: Shipped becomes in effect
+      counts: '**6** backlog · 7 blocked'
+      counts_html: <b>6</b> backlog · <span class="blocked">7 blocked</span>
+      delivers: A fleet-wide "did we actually get what we paid for" audit — found a login-revocation feature
+        that doesn't take effect until re-login, and a "semantic search" that's just keyword matching.
+      open: 13
+      lenses:
+        ceo:
+          hit: true
+          note: 49.1 → 49.2 gate everything else; 49.9–49.13 are index-only rows waiting on the very station
+            epics in this table.
+        cfo:
+          hit: false
+          note: 13 stories; effort not sized in this pass.
+        cdao:
+          hit: true
+          note: Same shipped-vs-real audit pattern as Marshal's own token-economy finding, applied fleet-wide.
+        eng:
+          hit: true
+          note: 'Contains a genuine, live security gap: login revocation that isn''t enforced until the
+            next login.'
+    - station: Warden
+      accent: --st-warden
+      epic_num: '12'
+      epic: A promotion gate that has seen what it ships
+      counts: '**6** backlog'
+      counts_html: <b>6</b> backlog
+      delivers: Makes sure Warden's compliance scan covers the actual shipped artifact, not just the source
+        before packaging.
+      open: 6
+      lenses:
+        ceo:
+          hit: true
+          note: 'Explicit order: Story 12.1 mints first, ahead of the CAPs it protects.'
+        cfo:
+          hit: false
+          note: 6 stories; effort not sized in this pass.
+        cdao:
+          hit: false
+          note: Not a data-integrity story — a scan-coverage fix.
+        eng:
+          hit: true
+          note: A supply-chain / promotion-gate integrity fix — closes a real gap between what's scanned
+            and what ships.
+    footnote: 'Prototype scope: the 15 fleet epics with open work as of 2026-09-09, not all 182. The other
+      167 are already shipped — extending this table to cover them is a separate, much larger data-gathering
+      pass.'
+  - type: note
+    md: ''
+footer:
+  note: Compiled from direct, parallel source investigation of all 8 `src/shared/packages/pyforge-*` stations
+    plus `pyforge-core` — local-recipes repository.
+  date: '2026-08-30'
