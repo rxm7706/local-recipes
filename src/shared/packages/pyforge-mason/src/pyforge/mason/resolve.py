@@ -228,3 +228,117 @@ def detect_native_build_config() -> str | None:
     if system == "Windows":
         return "win64"
     return None
+
+
+# --- Story 44.7: factory island path resolution (fnd:CAP-4) ----------------
+
+_FACTORY_RECIPES_PREFIX = "factory/recipes/"
+"""Recipe paths under the python-foundry factory island use this prefix."""
+
+_ENV_FOUNDRY_ROOT = "MASON_FOUNDRY_ROOT"
+"""Explicit foundry git root when building `factory/recipes/<r>` from local-recipes."""
+
+_ENV_FACTORY_ROOT = "MASON_FACTORY_ROOT"
+"""Set by `recipe.build()` for CFE's native-build wrapper — never read by Mason."""
+
+_FACTORY_PIXI = Path("factory/pixi.toml")
+_FACTORY_LOCK = Path("factory/pixi.lock")
+
+
+@dataclass(frozen=True)
+class ResolvedFactoryIsland:
+    """A resolved factory-island recipe build target (Story 44.7).
+
+    `recipe_path` is the absolute filesystem path passed to CFE's native
+    build script; `factory_root` is the island's own root (`…/factory/`)."""
+
+    foundry_root: Path
+    factory_root: Path
+    recipe_path: Path
+
+
+def is_factory_recipe_path(recipe_path: str) -> bool:
+    """Return ``True`` when ``recipe_path`` names a factory-island recipe."""
+    normalized = recipe_path.replace("\\", "/").lstrip("./")
+    return normalized.startswith(_FACTORY_RECIPES_PREFIX)
+
+
+def resolve_foundry_root(
+    explicit: str | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> Path | None:
+    """Resolve the python-foundry git root: flag/env -> upward walk -> ``None``.
+
+    The walk marker is ``factory/pixi.toml`` plus ``factory/pixi.lock`` at
+    the same directory level — the island lock the spec requires (R-17b).
+    """
+    if explicit is not None and explicit.strip():
+        return Path(explicit.strip()).resolve()
+
+    env_value = environ.get(_ENV_FOUNDRY_ROOT)
+    if env_value is not None and env_value.strip():
+        return Path(env_value.strip()).resolve()
+
+    candidate = start_directory.resolve()
+    while True:
+        if (candidate / _FACTORY_PIXI).is_file() and (candidate / _FACTORY_LOCK).is_file():
+            return candidate
+        parent = candidate.parent
+        if parent == candidate:
+            break
+        candidate = parent
+    return None
+
+
+def resolve_factory_island(
+    recipe_path: str,
+    *,
+    foundry_root_arg: str | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> ResolvedFactoryIsland | None:
+    """Resolve ``factory/recipes/<r>`` to an absolute recipe under foundry.
+
+    Returns ``None`` when ``recipe_path`` is not a factory-island path.
+    Raises ``FactoryIslandMissingError`` when the path is factory-shaped but
+    the island lock or recipe target is absent.
+    """
+    if not is_factory_recipe_path(recipe_path):
+        return None
+
+    from .errors import FactoryIslandMissingError
+
+    foundry = resolve_foundry_root(foundry_root_arg, environ, start_directory)
+    if foundry is None:
+        raise FactoryIslandMissingError(
+            "the python-foundry root could not be resolved for a factory/recipes/ "
+            "build: set --foundry-root, set MASON_FOUNDRY_ROOT, or run from "
+            "within a clone that contains factory/pixi.toml and factory/pixi.lock"
+        )
+
+    factory_root = foundry / "factory"
+    if not (factory_root / "pixi.toml").is_file() or not (factory_root / "pixi.lock").is_file():
+        raise FactoryIslandMissingError(
+            f"factory island lock missing under {factory_root}: expected "
+            "factory/pixi.toml and factory/pixi.lock (Story 44.7 / R-17b)"
+        )
+
+    normalized = recipe_path.replace("\\", "/").lstrip("./")
+    slug = normalized.removeprefix(_FACTORY_RECIPES_PREFIX)
+    if not slug or slug.endswith("/"):
+        raise FactoryIslandMissingError(
+            f"factory recipe path must name a recipe under factory/recipes/: got {recipe_path!r}"
+        )
+
+    abs_recipe = (factory_root / "recipes" / slug).resolve()
+    if not abs_recipe.exists():
+        raise FactoryIslandMissingError(
+            f"factory recipe not found at {abs_recipe} (resolved from {recipe_path!r})"
+        )
+
+    return ResolvedFactoryIsland(
+        foundry_root=foundry,
+        factory_root=factory_root,
+        recipe_path=abs_recipe,
+    )

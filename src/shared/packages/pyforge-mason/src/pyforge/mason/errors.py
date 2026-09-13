@@ -96,6 +96,20 @@ class CfeImportFloorError(MasonError):
         super().__init__("cfe:import-floor-missing", message)
 
 
+class FactoryIslandMissingError(MasonError):
+    """The factory island or a named ``factory/recipes/<r>`` target is absent.
+
+    Raised by ``resolve.py::resolve_factory_island`` when a factory-shaped
+    recipe path cannot be mapped to ``python-foundry/factory/`` (Story 44.7).
+    """
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(
+            "factory:missing-island",
+            detail.strip(),
+        )
+
+
 class CfeUnresolvedError(MasonError):
     """The CFE root could not be resolved by any step of `resolve.py`'s
     chain (FR-5, D-2, NFR-14).
