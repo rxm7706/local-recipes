@@ -47,11 +47,8 @@ Engine files must stay **byte-identical** across every deck — apply any engine
 to all decks in the same change (`diff -q` to prove it).
 
 ## Design project (the bridge's far end)
-
 Prototype lives in Claude Design project **"PyForge Mason deck"** (`a7a2c3b1-5718-49fa-8c90-71d44d57eae9`):
-https://claude.ai/design/p/a7a2c3b1-5718-49fa-8c90-71d44d57eae9?file=PyForge+Mason.dc.html
-Pull it into this deck with the MCP bridge ("pull mason") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+https://claude.ai/design/p/a7a2c3b1-5718-49fa-8c90-71d44d57eae9?file=PyForge%20Mason.dc.html
 
 ## Ledger — 2026-09-13 standard rebuild (Story 20.7)
 

@@ -135,6 +135,31 @@ entity-escaping, and nothing relays through the agent context. Never write the
 serve URL into any persisted file. Both directions are now mechanized; the
 herald CLI formalizes them but no longer gates them.
 
+### The deck registry and the bridge state (two parts, one truth)
+
+Each deck README carries a machine-owned `## Design project (the bridge's far end)` section in the
+canonical two-line shape `registry.register` writes and `registry.read` parses: the project name and
+id on one line, the prototype URL on the next. **Nothing else belongs in that span** — it is rewritten
+whole on every `register`. Historical notes (a project renamed, a deck seeded late) go in a
+`### Provenance` sub-heading directly beneath, which also bounds the machine-owned span.
+
+`.herald/bridge-state.json` is the operational half and is gitignored, so a fresh clone starts without
+it. Rebuild it from the READMEs — they are the durable record:
+
+```python
+from pyforge.herald import registry, state   # repo root as cwd
+root = pathlib.Path(".").resolve(); sp = root / state.DEFAULT_STATE_PATH
+for readme in sorted(root.glob("presentations/pyforge-*/README.md")):
+    dp = registry.read(readme)
+    if dp:
+        state.write(sp, readme.parent.name,
+                    state.DeckState(project_id=dp.project_id, etags={}, last_pull=None))
+```
+
+`herald deck status --repo-root .` then reports every registered deck `linked`. A deck whose README
+has no section, or a malformed one, is reported unlinked rather than guessed at — the four chain decks
+sit there deliberately.
+
 ### Manual handoff (fallback — no MCP bridge in the session)
 
 This is the original hand-off, learned across Worked Examples 1–3.

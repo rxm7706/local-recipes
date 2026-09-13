@@ -47,11 +47,8 @@ Engine files must stay **byte-identical** across every deck — apply any engine
 to all decks in the same change (`diff -q` to prove it).
 
 ## Design project (the bridge's far end)
-
 Prototype lives in Claude Design project **"PyForge Herald deck"** (`ff879a32-9741-4cf5-948f-d67040481d24`):
-https://claude.ai/design/p/ff879a32-9741-4cf5-948f-d67040481d24?file=PyForge+Herald.dc.html
-Pull it into this deck with the MCP bridge ("pull herald") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+https://claude.ai/design/p/ff879a32-9741-4cf5-948f-d67040481d24?file=PyForge%20Herald.dc.html
 
 ## Ledger — 2026-09-13 standard rebuild (Story 20.5)
 

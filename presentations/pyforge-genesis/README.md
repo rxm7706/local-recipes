@@ -29,11 +29,8 @@ Display brand **PyForge · Dream to Code** on the slides; slug `pyforge-genesis`
 in paths. Engine files stay **byte-identical** across every deck.
 
 ## Design project (the bridge's far end)
-
 Prototype lives in Claude Design project **"PyForge Genesis deck"** (`6af4c28d-d510-4e9b-b788-6c0e5d651183`):
-https://claude.ai/design/p/6af4c28d-d510-4e9b-b788-6c0e5d651183?file=PyForge+Genesis.dc.html
-Pull it into this deck with the MCP bridge ("pull genesis") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+https://claude.ai/design/p/6af4c28d-d510-4e9b-b788-6c0e5d651183?file=PyForge%20Genesis.dc.html
 
 ## Artifact family (2026-07-24 sweep)
 

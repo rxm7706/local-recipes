@@ -71,11 +71,13 @@ Reskin the palette in `src/index.css` (`--navy`/`--paper`/`--gold`/`--blue`/`--s
 if PyForge-Warden gets its own colors.
 
 ## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"PyForge Warden deck"** (`100ca8cc-8daa-409a-8564-1f8d79c579d2`):
+https://claude.ai/design/p/100ca8cc-8daa-409a-8564-1f8d79c579d2?file=Warden%20Deck.dc.html
 
-Prototype lives in Claude Design project **"PyForge Warden deck"**
-(`100ca8cc-8daa-409a-8564-1f8d79c579d2`) — renamed 2026-07-24 from
-"Python deptry OSV scanner" (it was the original warden deck workspace all
-along, mislabeled). Pull with the MCP bridge ("pull warden").
+### Provenance
+
+Renamed 2026-07-24 from "Python deptry OSV scanner" — it was the original warden deck
+workspace all along, mislabeled.
 
 ### Artifact map + sync ledger (2026-07-24)
 
