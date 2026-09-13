@@ -3486,4 +3486,4 @@ categories it lacks
 **And** Warden stays the sole PR verdict and doctor stays advisory — no Guard
 mints a second verdict
 **And** Source-Grounding is the first category added to the library
-**Status:** backlog
+**Status:** done
