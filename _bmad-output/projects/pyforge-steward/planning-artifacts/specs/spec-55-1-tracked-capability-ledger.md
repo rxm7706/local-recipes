@@ -2,7 +2,7 @@
 title: 'Tracked capability ledger'
 type: 'docs'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 context: []
 warnings: []
 deferred: []
