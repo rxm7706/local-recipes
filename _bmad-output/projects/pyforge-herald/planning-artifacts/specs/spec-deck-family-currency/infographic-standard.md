@@ -38,6 +38,16 @@ content. The eight station posters rebuilt on 2026-09-13 (Stories 20.3–20.10) 
 | Render | headless full-page PNG at 1240 px wide, no clipped or blank region | reviewer looks at the PNG |
 | Offline | renders from disk; only the Google Fonts `<link>` is remote and falls back to system fonts | open the file with the network off |
 
+## Three hazards `--refresh` cannot save you from
+
+1. **Hand-counted prose.** `--refresh` rewrites marked literals only. A sentence like "three
+   stations are complete on both rows" is a count no row backs, so it silently goes wrong when a
+   ledger moves. Write such a claim as a marked fact or not at all.
+2. **SVG `<text>` is swept.** Diagram labels are visible text to the checker, so no `n/n`, `x.y.z`
+   or `YYYY-MM-DD` literal may sit in one unless it is marked (`<tspan data-fact="…">`).
+3. **`.tag{display:inline-flex}` fuses tokens.** It swallows the whitespace around a marked span,
+   so `bmad-loop 0.11.1` renders as `bmad-loop0.11.1`. Use `inline-block`.
+
 ## The six-act arc
 
 | Act | Band label (adapt per subject) | Story-arc phase | Sections it carries |
