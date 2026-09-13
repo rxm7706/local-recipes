@@ -88,18 +88,33 @@ class TestTokenSavings:
 class TestRecallArgvScope:
     def test_scope_appends_flag(self):
         argv = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="pyforge-warden")
-        assert argv == ("/bin/scribe", "recall", "a query", "--scope", "pyforge-warden")
+        assert argv == (
+            "/bin/scribe",
+            "recall",
+            "a query",
+            "--mode",
+            "planning",
+            "--scope",
+            "pyforge-warden",
+        )
 
     def test_no_scope_omits_flag(self):
         argv = planning.render_scribe_recall_argv("/bin/scribe", "a query")
-        assert argv == ("/bin/scribe", "recall", "a query")
+        assert argv == ("/bin/scribe", "recall", "a query", "--mode", "planning")
 
     def test_empty_scope_omits_flag(self):
         argv = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="")
-        assert argv == ("/bin/scribe", "recall", "a query")
+        assert argv == ("/bin/scribe", "recall", "a query", "--mode", "planning")
 
     def test_never_passes_kind(self):
         scoped = planning.render_scribe_recall_argv(
             "/bin/scribe", "a query", scope="pyforge-scribe"
         )
         assert "--kind" not in scoped
+        assert "--mode" in scoped
+        assert scoped[scoped.index("--mode") + 1] == "planning"
+
+    def test_never_defaults_to_code_mode(self):
+        argv = planning.render_scribe_recall_argv("/bin/scribe", "a query")
+        assert argv.count("--mode") == 1
+        assert "code" not in argv

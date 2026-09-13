@@ -648,6 +648,21 @@ CAP-11). Internal lexical/semantic ranking is unchanged.
 **And** neither flag keeps the CAP-4 default bag
 **And** portal argv is unchanged
 
+## Epic 18: Planning retrieve names the planning surface
+
+**Spec binding.** `spec-scribe-recall-mode-wiring` CAP-1..3. Story 16.1
+shipped `--mode`; this epic wires the callers.
+
+### Story 18.1: Retrieve and sessions pass mode planning
+**Type:** feature • **Effort:** S • **Deps:** S-16.1 • **FR/AD:** `spec-scribe-recall-mode-wiring` CAP-1, CAP-2, CAP-3
+**difficulty:** easy
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py`, `src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py`, `AGENTS.md`, `.cursor/rules/scribe-recall.mdc`
+**Given** Story 16.1 shipped `--mode` and Marshal retrieve still inherits the default bag
+**When** this story lands
+**Then** `render_scribe_recall_argv` appends `--mode planning`, may still append `--scope`, never appends `--kind`, and does not default to `--mode code`
+**And** `recall_cli_argv` with no mode has neither `--mode` nor `--kind`; `mode=planning|memory|code` appends that `--mode`
+**And** `AGENTS.md` session path and `.cursor/rules/scribe-recall.mdc` show `--mode planning` on the decision command
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

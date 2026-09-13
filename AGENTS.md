@@ -75,7 +75,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 When you need a **team decision**, an active Dream or SPEC, or a Herald fact
 ledger number — not a guess from chat memory — run:
 
-`pixi run -e pyforge-scribe scribe recall "…"`
+`pixi run -e pyforge-scribe scribe recall "…" --mode planning`
 
 Default recall omits `kind=code` graphify AST nodes. Use `--mode planning`
 (docs/memlogs), `--mode memory`, or `--mode code` when you want one
