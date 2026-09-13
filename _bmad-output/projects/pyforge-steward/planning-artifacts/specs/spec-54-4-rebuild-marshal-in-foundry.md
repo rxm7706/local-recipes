@@ -2,7 +2,7 @@
 title: 'Rebuild marshal in foundry'
 type: 'feature'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 context: []
 warnings: []
 deferred: []

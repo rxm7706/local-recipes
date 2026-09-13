@@ -3594,7 +3594,7 @@ are green
 until 44.14
 **And** `pyforge.cutover_root` is still `local-recipes`
 **And** the CAP-1 marshal cases have an A/B row that is not `diverge` (`ab-sync.md`)
-**Status:** backlog
+**Status:** done
 
 ### Story 54.5: A/B protocol and pin on foundry
 
