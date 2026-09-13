@@ -18,7 +18,7 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 
 | ID | Intent | Why later | Unblocks |
 |---|---|---|---|
-| **CAP-6** | Compile **in-flight story specs** (`planning-artifacts/specs/spec-<n>-<m>-*.md`) as `kind=doc` when status is `ready-for-dev` or in-dev — not the historical done corpus. | Generic BMAD “atomic SM→dev handoff.” Filter must exist first or lexical recall drowns in `spec-2-1`… | Session agents asking about the story they are on |
+| **CAP-6** | Compile **in-flight story specs.** Hoisted 2026-09-13 to `spec-scribe-in-flight-story-specs` CAP-1 / Story 10.1 (ledger filter, not frontmatter). | Was parked so the session would not lose it. | Session agents asking about the story they are on |
 | **CAP-7** | **Pointer or extract** nodes for Brief / PRD / Architecture / `epics.md`: title + path + status, or FR/AD/spine list only. Never the wholesale body. | Documents stay SoT; Marshal already forbids `*prd*`/`*epic*` wholesale loads. A pointer does not recreate CAP-6’s token failure. | “Where is the PRD?” without serving 46k tokens |
 | **CAP-8** | Explicit **graphify target list** (`src/platform/`, `scripts/` in addition to `src/shared/packages/`). Still not `recipes/` or repo root. | Cost + Story 8.2 currency must stay green first. Needs a target-list CAP, not a bigger hardcoded default. | Code map of host + factory scripts |
 | **CAP-9** | Persist **`compiled_at` on the store** and recompute stale **at recall time** so a day-old `graph.json` withholds sources committed after that compile. | CAP-1 only fixes full-rebuild false positives. Between 02:30 runs the stored `stale` bit stays false. | Marshal CAP-13 meaning between nightlies |
@@ -30,5 +30,6 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 
 ## Recorded, not scheduled
 
-CAP-10 is Story 9.1 (`spec-scribe-marshal-fact-visibility`). No story is
-minted here for CAP-6–CAP-9 or CAP-11–CAP-14.
+CAP-10 is Story 9.1. CAP-6 is Story 10.1
+(`spec-scribe-in-flight-story-specs`). No story is minted here for
+CAP-7–CAP-9 or CAP-11–CAP-14.

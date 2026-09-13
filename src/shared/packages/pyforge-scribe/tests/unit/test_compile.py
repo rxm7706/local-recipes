@@ -1543,3 +1543,97 @@ def test_active_dreams_and_specs_compile_inactive_are_skipped(
     assert "docs/dreams/README.md" not in citations
     assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-demo/SPEC.md" in citations
     assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-old/SPEC.md" not in citations
+
+
+def test_in_flight_story_spec_compiles_done_and_stale_frontmatter_do_not(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    specs = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "specs"
+    )
+    specs.mkdir(parents=True)
+    flying = (
+        "---\nstatus: ready-for-dev\n---\n# In flight\nuniqueinflighttoken\n"
+    )
+    landed = (
+        "---\nstatus: ready-for-dev\n---\n# Landed\nuniquehistorictoken\n"
+    )
+    (specs / "spec-10-1-in-flight-story-specs-join-the-compile.md").write_text(
+        flying, encoding="utf-8"
+    )
+    (specs / "spec-2-1-graphstore-port-flat-file-adapter.md").write_text(
+        landed, encoding="utf-8"
+    )
+    (specs / "spec-10-2-backlog-only.md").write_text(
+        "---\nstatus: ready-for-dev\n---\n# Backlog\n", encoding="utf-8"
+    )
+    ledger = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    ledger.write_text(
+        "development_status:\n"
+        "  10-1-in-flight-story-specs-join-the-compile: in-progress\n"
+        "  2-1-graphstore-port-flat-file-adapter: done\n"
+        "  10-2-backlog-only: backlog\n"
+        "  epic-10: in-progress\n",
+        encoding="utf-8",
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    citations = {n.citation for n in store.iter_nodes() if n.kind == "doc"}
+    assert (
+        "_bmad-output/projects/demo/planning-artifacts/specs/"
+        "spec-10-1-in-flight-story-specs-join-the-compile.md"
+        in citations
+    )
+    assert not any("spec-2-1-graphstore" in c for c in citations)
+    assert not any("spec-10-2-backlog" in c for c in citations)
+    assert not any("story spec" in w.lower() or "in-flight" in w.lower() for w in result.warnings)
+
+
+def test_missing_ledger_adds_no_story_spec_nodes_or_warning(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    specs = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "specs"
+    )
+    specs.mkdir(parents=True)
+    (specs / "spec-10-1-in-flight-story-specs-join-the-compile.md").write_text(
+        "---\nstatus: in-progress\n---\n# Would compile if ledger said so\n",
+        encoding="utf-8",
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert not any("spec-10-1-in-flight" in n.citation for n in store.iter_nodes())
+    assert not any("story spec" in w.lower() for w in result.warnings)

@@ -7,7 +7,8 @@ named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
 history, retros, CHANGELOGs (PRD Open Question 2, resolved here),
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
 as a compile source in Story 3.2), and Herald deck fact ledgers
-(`presentations/<slug>/facts.yaml`, Story 8.3) -- and writes one `GraphNode`
+(`presentations/<slug>/facts.yaml`, Story 8.3), in-flight story specs
+(Story 10.1) -- and writes one `GraphNode`
 per source item through the `GraphStore` port (Story 2.1), never a specific
 storage engine's client library directly (AD-5).
 
@@ -245,6 +246,9 @@ def compile_graph(
         for node in _read_spec_surface(repo_root):
             store.upsert_node(node)
 
+        for node in _read_story_spec_surface(repo_root):
+            store.upsert_node(node)
+
         for node in _read_git_surface(repo_root, max_commits, warnings):
             store.upsert_node(node)
 
@@ -459,6 +463,11 @@ def _facts_ledger_title(text: str, relpath: str) -> str:
 
 _ACTIVE_DREAM_STATUSES = frozenset({"dreamt", "pitched", "specified"})
 _ACTIVE_SPEC_STATUSES = frozenset({"ready", "in-progress"})
+#: Ledger rows that mean "this story spec is the one a session is on."
+#: `done` is the historical corpus. `backlog` is not yet handed to dev.
+_IN_FLIGHT_STORY_STATUSES = frozenset({"ready-for-dev", "in-progress", "review"})
+_STORY_SPEC_NAME_RE = re.compile(r"^spec-(?P<key>\d+-\d+-.+)\.md$")
+_LEDGER_RELPATH = Path("planning-artifacts") / "sprint-status-ledger.yaml"
 
 
 def _frontmatter_status(text: str) -> str | None:
@@ -503,6 +512,61 @@ def _read_spec_surface(repo_root: Path) -> list[GraphNode]:
         if _frontmatter_status(text) not in _ACTIVE_SPEC_STATUSES:
             continue
         nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
+    return nodes
+
+
+def _parse_ledger_story_status(text: str) -> dict[str, str]:
+    """Map story keys to statuses from a sprint-status-ledger.yaml body.
+
+    Line parser only — compile stays off PyYAML (Story 8.3). Epic keys are
+    ignored. A later top-level key ends the `development_status:` block."""
+    statuses: dict[str, str] = {}
+    in_block = False
+    for line in text.splitlines():
+        if not in_block:
+            if line.startswith("development_status:"):
+                in_block = True
+            continue
+        if line and not line[0].isspace() and not line.startswith("#"):
+            break
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or ":" not in stripped:
+            continue
+        key, value = stripped.split(":", 1)
+        key, value = key.strip(), value.strip().strip("'\"")
+        if not key or key.startswith("epic-"):
+            continue
+        statuses[key] = value
+    return statuses
+
+
+def _read_story_spec_surface(repo_root: Path) -> list[GraphNode]:
+    """In-flight story specs only (Story 10.1). Ledger is the oracle."""
+    projects = repo_root / "_bmad-output" / "projects"
+    if not projects.is_dir():
+        return []
+    nodes: list[GraphNode] = []
+    for project_dir in sorted(p for p in projects.iterdir() if p.is_dir()):
+        ledger_path = project_dir / _LEDGER_RELPATH
+        if not ledger_path.is_file():
+            continue
+        statuses = _parse_ledger_story_status(
+            ledger_path.read_text(encoding="utf-8", errors="replace")
+        )
+        specs = project_dir / "planning-artifacts" / "specs"
+        if not specs.is_dir():
+            continue
+        for path in sorted(specs.glob("spec-*-*.md")):
+            if not path.is_file():
+                continue
+            match = _STORY_SPEC_NAME_RE.fullmatch(path.name)
+            if match is None:
+                continue
+            if statuses.get(match.group("key")) not in _IN_FLIGHT_STORY_STATUSES:
+                continue
+            if _is_excluded(path.relative_to(repo_root).parts):
+                continue
+            nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
     return nodes
 
 
