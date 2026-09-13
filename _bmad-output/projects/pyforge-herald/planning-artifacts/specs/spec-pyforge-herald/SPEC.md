@@ -19,10 +19,39 @@ surface-drift-exclude:
   # 2026-09-13: the deck-family surfaces spec-deck-family-currency owns and reconciles on every
   # poster story (its memlog moves per story; this kernel's does not). facts.yaml headers also
   # carry the HEAD sha, so they legitimately change on every re-derive after a commit.
-  - presentations/pyforge-*/facts.yaml                                     # also governed by pyforge-herald/spec-deck-family-currency
-  - presentations/pyforge-*/project/* Infographic standalone.html          # also governed by pyforge-herald/spec-deck-family-currency
-  - presentations/pyforge-*/README.md                                      # also governed by pyforge-herald/spec-deck-family-currency
-  - presentations/README.md                                                # also governed by pyforge-herald/spec-deck-family-currency
+  # (the checker matches this list by literal path, not glob — chain.py:1613 `if f in s["exclude"]` — so every
+  # deck-family file is listed; extend when a deck joins the family)
+  - presentations/pyforge-atlas/facts.yaml
+  - presentations/pyforge-atlas/project/PyForge Atlas Infographic standalone.html
+  - presentations/pyforge-atlas/README.md
+  - presentations/pyforge-doctor/facts.yaml
+  - presentations/pyforge-doctor/project/PyForge Doctor Infographic standalone.html
+  - presentations/pyforge-doctor/README.md
+  - presentations/pyforge-herald/facts.yaml
+  - presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html
+  - presentations/pyforge-herald/README.md
+  - presentations/pyforge-marshal/facts.yaml
+  - presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html
+  - presentations/pyforge-marshal/README.md
+  - presentations/pyforge-mason/facts.yaml
+  - presentations/pyforge-mason/project/PyForge Mason Infographic standalone.html
+  - presentations/pyforge-mason/README.md
+  - presentations/pyforge-scribe/facts.yaml
+  - presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html
+  - presentations/pyforge-scribe/README.md
+  - presentations/pyforge-steward/facts.yaml
+  - presentations/pyforge-steward/project/PyForge Steward Infographic standalone.html
+  - presentations/pyforge-steward/README.md
+  - presentations/pyforge-warden/facts.yaml
+  - presentations/pyforge-warden/project/Warden Infographic standalone.html
+  - presentations/pyforge-warden/README.md
+  - presentations/pyforge-genesis/facts.yaml
+  - presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html
+  - presentations/pyforge-genesis/README.md
+  - presentations/pyforge-unifying-strategy/facts.yaml
+  - presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html
+  - presentations/pyforge-unifying-strategy/README.md
+  - presentations/README.md
 companions:
   - artifact-tracking-matrix.md
   - workflow-stages.md
