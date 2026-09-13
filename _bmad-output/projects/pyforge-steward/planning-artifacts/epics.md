@@ -3497,14 +3497,15 @@ mints a second verdict
 **And** Source-Grounding is the first category added to the library
 **Status:** done
 
-## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..4 / fnd:CAP-11)
+## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
 
 Minted 2026-09-13 from `docs/dreams/foundry-regenerate-not-fold.md`. Operator
-accepted regenerate-not-fold, invent-in-local-recipes, A + thin oracle, Launch
-= CLI + MCP. Implementation of CAP-2..4 lands in a **python-foundry**
-worktree; this repo holds the Dream, Spec, Stories, and thin-oracle list.
-Does not dispatch 44.4 or 44.5. Does not flip any Epic 44 `blocked` key.
-Does not flip `pyforge.cutover_root`. Public CLI verbs stay.
+accepted regenerate-not-fold, A + thin oracle, Launch = CLI + MCP, CFE
+rebuild-not-move, and **fnr:CAP-5** (Dream+Frame+Spec shared; A/B behavior;
+BMAD-on-B clean). CAP-2..4 land in a **python-foundry** worktree. 54.5 lands
+the A/B protocol on B (docs). Does not dispatch 44.4, 44.5, or 44.6. Does
+not flip any Epic 44 `blocked` key. Does not flip `pyforge.cutover_root`.
+Public CLI verbs stay.
 
 ### Story 54.1: Thin oracle for the foundry kernel
 
@@ -3572,4 +3573,24 @@ are green
 **And** `MRS-DISP-*` corners not in the thin list stay on local-recipes
 until 44.14
 **And** `pyforge.cutover_root` is still `local-recipes`
+**And** the CAP-1 marshal cases have an A/B row that is not `diverge` (`ab-sync.md`)
+**Status:** backlog
+
+### Story 54.5: A/B protocol and pin on foundry
+
+As a platform operator,
+I want the dual-root protocol, a SHA pin file, and a short case-list stub
+on `python-foundry`,
+So that a new builder treats B as the clean BMAD tree and A as control,
+without copying A's comments.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-foundry-regenerate-not-fold
+CAP-5
+**Note:** Implementation is a **python-foundry** PR: rewrite README/AGENTS
+as greenfield; add `docs/foundry/PIN.md`; add the case-list stub. This
+repo keeps the Spec companion. Do not rsync `_bmad-output`.
+**Given** `ab-sync.md` exists on A **When** this story lands **Then** B
+has `PIN.md` pointing at this Spec SHA, a case-list stub, and operator
+docs that do not say "replay 44.4"
+**And** A does not receive a copy of B's slim chain
 **Status:** backlog

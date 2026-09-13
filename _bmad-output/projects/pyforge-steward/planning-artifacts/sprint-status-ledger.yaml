@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 339
+# stories: 340
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -223,6 +223,7 @@ development_status:
   54-2-rebuild-pyforge-core-in-foundry: backlog
   54-3-rebuild-steward-in-foundry: backlog
   54-4-rebuild-marshal-in-foundry: backlog
+  54-5-a-b-protocol-and-pin-on-foundry: backlog
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done

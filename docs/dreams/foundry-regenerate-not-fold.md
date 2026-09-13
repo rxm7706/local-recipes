@@ -91,3 +91,6 @@ core/steward/marshal tests as the gate.
   regenerate-not-fold, A + thin oracle, CLI+MCP Launch. Epic 54 mints the
   kernel Stories. 44.4 / 44.5 / 44.6 parked as file-move. Ledger keys stay
   `backlog`; they are not dispatched. CFE is rebuild-from-spec, not cargo.
+- **2026-09-13** — A/B lock: one starting contract (Dream + Frame + Spec
+  five-fields); A/B the behavior. `fnr:CAP-5` + `ab-sync.md`. Story 54.5
+  lands the protocol on foundry. BMAD-on-B is slim; do not copy A's trees.
