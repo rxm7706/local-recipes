@@ -3561,7 +3561,7 @@ CAP-2; fnd:CAP-11
 **Given** CAP-1 list exists **When** this story lands **Then** foundry has a
 core leaf whose CAP-1 core slice is green
 **And** no `apply --phase 1a` copy of `pyforge-core` is the source
-**Status:** backlog
+**Status:** done
 
 ### Story 54.3: Rebuild steward in foundry
 
@@ -3576,7 +3576,7 @@ CAP-3; fnd:CAP-11
 **Given** foundry core is green **When** this story lands **Then**
 `pyforge steward` on a foundry checkout passes the CAP-1 steward slice
 **And** public verb `pyforge steward` is unchanged
-**Status:** backlog
+**Status:** done
 
 ### Story 54.4: Rebuild marshal in foundry
 
@@ -3594,7 +3594,7 @@ are green
 until 44.14
 **And** `pyforge.cutover_root` is still `local-recipes`
 **And** the CAP-1 marshal cases have an A/B row that is not `diverge` (`ab-sync.md`)
-**Status:** backlog
+**Status:** done
 
 ### Story 54.5: A/B protocol and pin on foundry
 
