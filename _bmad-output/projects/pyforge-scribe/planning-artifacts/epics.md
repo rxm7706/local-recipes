@@ -12,7 +12,7 @@ inputDocuments:
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
 updated: "2026-09-13"
-currency_review: "Reviewed 2026-09-13 (Stories 8.4–8.6: layered knowledge — stale vs compiled_at, compile hygiene, named Dreams/SPECs/facts, default recall omits code, AGENTS session path; contract spec-scribe-knowledge-layers. Story 8.3: Herald fact ledgers. Story 8.2: nightly graphify extra). Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+currency_review: "Reviewed 2026-09-13 (Story 13.1: planning pointers — Brief/PRD/spine/epics.md extract only; contract spec-scribe-planning-pointers. Stories 8.4–8.6: layered knowledge — stale vs compiled_at, compile hygiene, named Dreams/SPECs/facts, default recall omits code, AGENTS session path; contract spec-scribe-knowledge-layers. Story 8.3: Herald fact ledgers. Story 8.2: nightly graphify extra). Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -590,6 +590,21 @@ parked CAP-12). CAP-5 stays `AGENTS.md`.
 **And** Marshal may still pass `--scope`
 **And** `.cursor/rules/scribe-recall.mdc` names the AGENTS session path
 **And** django-scribe is not redesigned and does not import `pyforge.scribe`
+
+## Epic 13: Planning novels stay files; the graph holds pointers
+
+**Spec binding.** `spec-scribe-planning-pointers` CAP-1 (hoisted
+parked CAP-7). Folder `SPEC.md` and in-flight story specs stay on
+their own surfaces.
+
+### Story 13.1: Planning pointers join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-10.1 • **FR/AD:** `spec-scribe-planning-pointers` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** named `brief.md` / `prd.md` / `ARCHITECTURE-SPINE.md` / `epics.md` **When** `scribe graph compile` runs **Then** each is one `kind=doc` pointer
+**And** pointer text has title, path, status, and FR/AD or Epic/Story headings
+**And** a unique sentence that exists only in the source body is absent from the node
+**And** `epics-*.md`, architecture novels, addenda, research, and `specs/` are omitted
+**And** a missing tree is zero nodes and no warning
 
 ## Platform floor addendum — 2026-09-07
 
