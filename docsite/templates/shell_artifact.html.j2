@@ -1,0 +1,13 @@
+{#- Standalone single-file build for the Artifact tool.
+    The Artifact host supplies <!doctype>, <html>, <head> and <body>, so this
+    template deliberately emits none of them — only title, fonts, inlined CSS
+    and the dossier body. Keep it that way. -#}
+<title>{{ page_title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+{{ css }}
+</style>
+
+{% include "dossier_body.html.j2" %}

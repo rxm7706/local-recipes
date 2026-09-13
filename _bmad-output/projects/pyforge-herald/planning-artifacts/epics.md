@@ -3,10 +3,10 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 19  # 2026-09-09: Epic 19 added ("Herald in effect" — the realization-gate satellites, fleet-readiness decision batch 2026-09-09 row C6). 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
-storyCount: 54  # 2026-09-09: 50 + Stories 19.1–19.4 (dated snapshot; the ledger enumerates).
-status: in-progress  # 2026-09-09: Epic 19 opens four unstarted stories; was `complete` while Epics 1–18 were the whole set.
-updated: "2026-09-09"
+epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
+storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
+status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
+updated: "2026-09-13"
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -38,7 +38,8 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E12** | Documentation & operator experience | 4 | 4 |
 | **E20** | The deck family stays current (spec-deck-family-currency) | 14 | 14 |
 | **E21** | The whole deck family moves together (spec-deck-family-lockstep) | 11 | 0 |
-| **Total** | | **47** | **47** |
+| **E22** | The public Pages root is one dossier (spec-pyforge-pages) | 1 | 0 |
+| **Total** | | **48** | **47** |
 
 
 ---
@@ -786,3 +787,19 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Epic 22: The public Pages root is one dossier (spec-pyforge-pages)
+
+**Spec binding.** `spec-pyforge-pages` CAP-1..5 (herald; Dream `docs/dreams/pyforge-pages.md`,
+`specified` 2026-09-13). The PyForge dossier lives in `docsite/content/dossier.yml`; Pages,
+the gallery, and the Claude Artifact build are renders. Kedro-Viz stays at `/kedro-viz/`.
+One `deploy-pages` caller. After steward 54.5, python-foundry re-derives this surface —
+it is kernel cargo, not a 44.4 fold. **HARD boundaries:** never a second Pages deploy;
+`build.py` never blanket-`rmtree`s `docs/dashboard/`; `environment.yaml` stays
+byte-identical; verify is advisory in CI; `maintenance` label; not Lane 1.
+
+### Story 22.1: The dossier is the source and Pages is a render
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pyforge-pages` CAP-1..5
+**Surface:** `docsite/**` (new), `pixi.toml` (`[feature.site]` + `site` environment), `.github/workflows/dashboard.yml` (build into `docs/dashboard/`), `.gitignore` (owned outputs), `docs/dashboard/index.html` (replaced by the landing render)
+**Given** Pages publishes `docs/dashboard/` as Kedro-Viz plus a retired Guildhall landing, and the dossier exists only as a published artifact — **When** the rebased `pyforge-pages` bundle lands (`docsite/` + `feature.site` + `dashboard.yml` build step) — **Then** `pixi run -e site site-check` is green, `pixi project export conda-environment -e build` leaves `environment.yaml` unchanged, Kedro-Viz remains at `/kedro-viz/`, and `dashboard.yml` is still the only `deploy-pages` caller
+**And** the PR carries the `maintenance` label; `verify_claims.py` is advisory in CI (`continue-on-error`); foundry lists this surface as rebuild cargo after 54.5 with the same CAP-N
