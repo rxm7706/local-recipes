@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 122
+# stories: 135
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -73,6 +73,17 @@ development_status:
   20-7-pyforge-mason-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-8-pyforge-scribe-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-9-pyforge-steward-poster-rebuilt-to-the-standard-from-its-ledger: done
+  21-1-deck-trio-derives-the-infographic-head-from-the-standalone: backlog
+  21-10-the-registry-sees-all-fourteen-decks: backlog
+  21-11-one-deck-proves-the-design-loop-end-to-end: backlog
+  21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: backlog
+  21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster: backlog
+  21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: backlog
+  21-5-the-exec-summaries-and-the-export-set-follow-the-same-ledger: backlog
+  21-6-unity-data-stack-rebuilt-to-the-standard: backlog
+  21-7-wasm-analytics-stack-rebuilt-to-the-standard: backlog
+  21-8-deckcraft-rebuilt-to-the-standard: backlog
+  21-9-presenton-pixi-image-rebuilt-to-the-standard: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -122,6 +133,8 @@ development_status:
   epic-2-retrospective: optional
   epic-20: done
   epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done
