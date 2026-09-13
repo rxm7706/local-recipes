@@ -571,6 +571,10 @@ depends-on = ["pyforge-steward-build-conda", "pyforge-steward-build-dist"]
 description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta)."
 cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
 
+[feature.pyforge-steward.tasks.frame-preflight]
+description = "Story 53.2 (spec-intelligence-hub CAP-2): in-repo Frame Spec v0.2 preflight for docs/foundry/frames/ (type/name/description/visibility + owner; station Frames inherit the company Frame). Not a gate: never joins detectors/detectors-ci — Warden stays the sole PR verdict."
+cmd = "python -m pyforge.steward.frames"
+
 [feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
 cmd = "python scripts/run_station_coverage_gate.py --station steward"

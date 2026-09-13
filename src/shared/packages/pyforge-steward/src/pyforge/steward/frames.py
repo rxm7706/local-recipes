@@ -1,0 +1,287 @@
+"""In-repo Frame Spec v0.2 preflight (Story 53.2 / spec-intelligence-hub CAP-2).
+
+Checks the nine tracked Frames under ``docs/foundry/frames/``: required fields
+``type``, ``name``, ``description``, ``visibility``, plus named ``owner``.
+Station Frames must ``inherits`` the Company Frame. Git is the store.
+
+Does **not** invoke upstream ``tools/validate_frames.py``. Not a detector and
+not a second PR verdict — Warden stays the sole gate.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+FRAMES_RELATIVE = Path("docs/foundry/frames")
+COMPANY_NAME = "pyforge"
+STATION_TOKENS: tuple[str, ...] = (
+    "herald",
+    "marshal",
+    "atlas",
+    "warden",
+    "mason",
+    "doctor",
+    "scribe",
+    "steward",
+)
+EXPECTED_COUNT = 1 + len(STATION_TOKENS)
+REQUIRED_FIELDS: tuple[str, ...] = (
+    "type",
+    "name",
+    "description",
+    "visibility",
+    "owner",
+)
+VALID_TYPES = frozenset({"frame", "frame [0.2]"})
+FRONTMATTER_SPLIT = "---"
+
+
+@dataclass(frozen=True)
+class FrameDoc:
+    path: Path
+    fields: dict[str, Any]
+    body: str
+
+
+@dataclass(frozen=True)
+class FrameFinding:
+    path: Path
+    code: str
+    message: str
+
+
+@dataclass
+class FramePreflightReport:
+    frames: list[FrameDoc] = field(default_factory=list)
+    findings: list[FrameFinding] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+
+def default_frames_root(repo_root: Path) -> Path:
+    return repo_root / FRAMES_RELATIVE
+
+
+def parse_frame_markdown(path: Path) -> tuple[dict[str, Any] | None, str, str | None]:
+    """Return ``(frontmatter, body, parse_error)``."""
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith(FRONTMATTER_SPLIT):
+        return None, text, "missing YAML frontmatter"
+    rest = text[len(FRONTMATTER_SPLIT) :]
+    if rest.startswith("\n"):
+        rest = rest[1:]
+    closer = rest.find(f"\n{FRONTMATTER_SPLIT}\n")
+    if closer < 0:
+        closer = rest.find(f"\n{FRONTMATTER_SPLIT}\r\n")
+    if closer < 0:
+        return None, text, "unclosed YAML frontmatter"
+    raw = rest[:closer]
+    body = rest[closer + len(f"\n{FRONTMATTER_SPLIT}\n") :]
+    try:
+        loaded = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        return None, body, f"invalid YAML frontmatter: {exc}"
+    if not isinstance(loaded, dict):
+        return None, body, "frontmatter is not a mapping"
+    return loaded, body, None
+
+
+def discover_frame_paths(frames_root: Path) -> list[Path]:
+    if not frames_root.is_dir():
+        return []
+    return sorted(p for p in frames_root.rglob("*.frame.md") if p.is_file())
+
+
+def _as_inherits_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, str)):
+        return [str(item) for item in value if str(item).strip()]
+    return [str(value)]
+
+
+def _resolve_inherit(
+    ref: str,
+    child: Path,
+    by_name: dict[str, FrameDoc],
+) -> FrameDoc | None:
+    if ref in by_name:
+        return by_name[ref]
+    candidate = (child.parent / ref).resolve()
+    for doc in by_name.values():
+        if doc.path.resolve() == candidate:
+            return doc
+    return None
+
+
+def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> FramePreflightReport:
+    root = frames_root if frames_root is not None else default_frames_root(repo_root)
+    report = FramePreflightReport()
+    paths = discover_frame_paths(root)
+    if len(paths) != EXPECTED_COUNT:
+        report.findings.append(
+            FrameFinding(
+                path=root,
+                code="count",
+                message=(
+                    f"expected exactly {EXPECTED_COUNT} *.frame.md files "
+                    f"(one company + eight stations); found {len(paths)}"
+                ),
+            )
+        )
+
+    for path in paths:
+        fields, body, err = parse_frame_markdown(path)
+        if err is not None or fields is None:
+            report.findings.append(
+                FrameFinding(path=path, code="parse", message=err or "parse failed")
+            )
+            continue
+        report.frames.append(FrameDoc(path=path, fields=fields, body=body))
+        for key in REQUIRED_FIELDS:
+            raw = fields.get(key)
+            if raw is None or (isinstance(raw, str) and not raw.strip()):
+                report.findings.append(
+                    FrameFinding(
+                        path=path,
+                        code="missing-field",
+                        message=f"required field {key!r} is missing or empty",
+                    )
+                )
+        type_val = fields.get("type")
+        if isinstance(type_val, str) and type_val.strip() and type_val not in VALID_TYPES:
+            report.findings.append(
+                FrameFinding(
+                    path=path,
+                    code="type",
+                    message=(
+                        f"type must be 'frame' or 'frame [0.2]', got {type_val!r}"
+                    ),
+                )
+            )
+
+    by_name: dict[str, FrameDoc] = {}
+    for doc in report.frames:
+        name = doc.fields.get("name")
+        if isinstance(name, str) and name.strip():
+            by_name.setdefault(name, doc)
+
+    company = by_name.get(COMPANY_NAME)
+    if company is None:
+        report.findings.append(
+            FrameFinding(
+                path=root,
+                code="company",
+                message=f"company Frame with name {COMPANY_NAME!r} is required",
+            )
+        )
+        return report
+
+    expected_station_names = {f"pyforge-{token}" for token in STATION_TOKENS}
+    seen_stations: set[str] = set()
+    for doc in report.frames:
+        name = doc.fields.get("name")
+        if name == COMPANY_NAME:
+            if _as_inherits_list(doc.fields.get("inherits")):
+                report.findings.append(
+                    FrameFinding(
+                        path=doc.path,
+                        code="company-inherits",
+                        message="company Frame must not inherit another Frame",
+                    )
+                )
+            continue
+        if name not in expected_station_names:
+            report.findings.append(
+                FrameFinding(
+                    path=doc.path,
+                    code="unexpected-name",
+                    message=f"unexpected Frame name {name!r}",
+                )
+            )
+            continue
+        seen_stations.add(str(name))
+        refs = _as_inherits_list(doc.fields.get("inherits"))
+        if not refs:
+            report.findings.append(
+                FrameFinding(
+                    path=doc.path,
+                    code="inherits",
+                    message=f"station Frame must inherit {COMPANY_NAME!r}",
+                )
+            )
+            continue
+        resolved = [_resolve_inherit(ref, doc.path, by_name) for ref in refs]
+        if not any(parent is not None and parent.fields.get("name") == COMPANY_NAME for parent in resolved):
+            report.findings.append(
+                FrameFinding(
+                    path=doc.path,
+                    code="inherits",
+                    message=(
+                        f"station Frame inherits {refs!r} but none resolve to "
+                        f"the company Frame {COMPANY_NAME!r}"
+                    ),
+                )
+            )
+
+    missing = expected_station_names - seen_stations
+    if missing:
+        report.findings.append(
+            FrameFinding(
+                path=root,
+                code="stations",
+                message=f"missing station Frame(s): {', '.join(sorted(missing))}",
+            )
+        )
+    return report
+
+
+def format_report(report: FramePreflightReport) -> str:
+    if report.ok:
+        return (
+            f"frame-preflight: ok — {len(report.frames)} Frames "
+            f"(company {COMPANY_NAME} + {len(STATION_TOKENS)} stations)"
+        )
+    lines = [f"frame-preflight: {len(report.findings)} finding(s)"]
+    for finding in report.findings:
+        lines.append(f"  [{finding.code}] {finding.path}: {finding.message}")
+    return "\n".join(lines)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="frame-preflight",
+        description=(
+            "In-repo Frame Spec v0.2 preflight for docs/foundry/frames/. "
+            "Not a detector; Warden stays the sole PR verdict."
+        ),
+    )
+    parser.add_argument(
+        "--repo",
+        default=".",
+        metavar="PATH",
+        help="repository root (default: cwd)",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    ns = build_parser().parse_args(argv)
+    report = preflight_frames(Path(ns.repo).resolve())
+    print(format_report(report))
+    return 0 if report.ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
