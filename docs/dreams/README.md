@@ -184,6 +184,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`scribe-recall-stale-between-nightlies.md`](scribe-recall-stale-between-nightlies.md) | specified | Persist `compiled_at`; recall withholds sources committed after that compile. |
 | [`scribe-portal-recall-defaults.md`](scribe-portal-recall-defaults.md) | specified | Portal and Marshal inherit default recall (no `--kind`); Cursor names the session path. |
 | [`scribe-planning-pointers.md`](scribe-planning-pointers.md) | specified | Compile Brief/PRD/Architecture-spine/`epics.md` as pointer nodes (title, path, status, FR/AD/headings) — never the wholesale body. |
+| [`scribe-named-docs.md`](scribe-named-docs.md) | specified | Named docs extras: how-tos plus a library-catalog heading extract — never `docs/**`. |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**

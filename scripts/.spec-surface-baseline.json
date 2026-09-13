@@ -3511,7 +3511,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "111644d03c49e62587017aab4fcae592bc8889dc",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/cocoindex_flow.py": "dbd3ae6c66b63d41715bcde49005c435132b1aa7",
@@ -3604,7 +3604,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "a9e3d990267967c41ea9b6feea41d08f9d01d995"
+  "memlog": "ebc848634cfeed189a36556333bf1e67fccd478d"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5033,7 +5033,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "111644d03c49e62587017aab4fcae592bc8889dc",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/cocoindex_flow.py": "dbd3ae6c66b63d41715bcde49005c435132b1aa7",
@@ -5054,7 +5054,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "7ef280c26107a31fe00d96b5df708c192926fc58",
    "src/shared/packages/pyforge-scribe/tests/unit/test_capture.py": "86b4a884f5342c51a16d351281b5e583486dd436",
    "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "eb9ac99d3ac3e0c3ed97f2cb5fef2d3a6887ec0d",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "f08cca95fcf93b480070877abf27681075230204",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "0e7c383ecf1c582fb001a2012efcc9b9e897e1df",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py": "92dc82f0d9a078ce0705e25f3c3bbd4334aef686",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_graphify.py": "e940b1738e9de1b2c69511f595fa4b0cd19d9f2e",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_move_list.py": "4ae0f70ad16fd8202f94f66c7bb87f5b873f7374",
@@ -5069,7 +5069,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "2b675babdf882c0a0d4c15a0c81f1778f024f497"
+  "memlog": "33587ad28652e52c786192971011ab30c33ec64f"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
@@ -5079,25 +5079,25 @@
   "files": {
    "pixi.toml": "ba2396814a5e8f6833c883b3c33eab7bd7e60e84",
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py": "8647f159bad4d360ab724fd37eee37a3ca55ad39"
   },
-  "memlog": "f845eee19cc1abef44e53dc24441935ac36fc0fa"
+  "memlog": "c4d65f642e37a3694c8a48de0e1654679607a3a1"
  },
  "pyforge-scribe/spec-scribe-in-flight-story-specs": {
   "files": {
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba"
   },
-  "memlog": "9789693ede3a0b66de0b44741da4673fd20c37d1"
+  "memlog": "d0c0c963f45e9b8fe67c4e7ff01bd09406a2918d"
  },
  "pyforge-scribe/spec-scribe-knowledge-layers": {
   "files": {
    "AGENTS.md": "4e36e13328d56c7ec03341532e15ccf30cec96b9",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "111644d03c49e62587017aab4fcae592bc8889dc",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b"
   },
-  "memlog": "85dfa85591b86161c7cb09687bf8e3056ba2c4aa"
+  "memlog": "af3655a4b7cd5974c2cb1dc877332eeaa853aa6f"
  },
  "pyforge-scribe/spec-scribe-marshal-fact-visibility": {
   "files": {
@@ -5110,11 +5110,17 @@
   "files": {},
   "memlog": "cf1fd414cf341d6fb466b45cb605b1d2639d12ad"
  },
+ "pyforge-scribe/spec-scribe-named-docs": {
+  "files": {
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba"
+  },
+  "memlog": "6cdf0f4857da80c7014d5ff54a4197ad6c1830a5"
+ },
  "pyforge-scribe/spec-scribe-planning-pointers": {
   "files": {
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6"
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba"
   },
-  "memlog": "a3161aef616d9f6669b009cf5db920f38975a76b"
+  "memlog": "64e01bd612db6c75ad9e2377399af85ebc10c84d"
  },
  "pyforge-scribe/spec-scribe-portal-recall-defaults": {
   "files": {
@@ -5125,11 +5131,11 @@
  },
  "pyforge-scribe/spec-scribe-recall-stale-between-nightlies": {
   "files": {
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py": "663f55b14c4c9a43e4eea33bde45b5284b5610bc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "999f27b4f975f3e141f46cdff1f035603554234b"
   },
-  "memlog": "6c2a18563748de3d7c3b94feeb197219ba88f1de"
+  "memlog": "8e26c7e725f213bb6e60c01b18f66c7c1c640f15"
  },
  "pyforge-scribe/spec-sentinel": {
   "files": {},
@@ -6398,7 +6404,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "76a150963ab56c5562aaa744ecf97debda31dd17",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "111644d03c49e62587017aab4fcae592bc8889dc",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "8351e3124f36d0e81f8bbbcfb698b5754d1a9fc6",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "9baf31f0674ec91dd6b0bfa5a25b1ed59cc366ba",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "d5cd0609ef3fcf616d5e29f411fae05f13d8f5cc",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/cocoindex_flow.py": "dbd3ae6c66b63d41715bcde49005c435132b1aa7",
@@ -6419,7 +6425,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/conftest.py": "7ef280c26107a31fe00d96b5df708c192926fc58",
    "src/shared/packages/pyforge-scribe/tests/unit/test_capture.py": "86b4a884f5342c51a16d351281b5e583486dd436",
    "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py": "eb9ac99d3ac3e0c3ed97f2cb5fef2d3a6887ec0d",
-   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "f08cca95fcf93b480070877abf27681075230204",
+   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py": "0e7c383ecf1c582fb001a2012efcc9b9e897e1df",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_cocoindex_flow.py": "92dc82f0d9a078ce0705e25f3c3bbd4334aef686",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_graphify.py": "e940b1738e9de1b2c69511f595fa4b0cd19d9f2e",
    "src/shared/packages/pyforge-scribe/tests/unit/test_extras_move_list.py": "4ae0f70ad16fd8202f94f66c7bb87f5b873f7374",
@@ -6434,7 +6440,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "46e99f38f2307974217370c8dc0d50ac9f6da752"
+  "memlog": "97e5e8a876f9c6798fc44f1e9309a7eb604eda46"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
