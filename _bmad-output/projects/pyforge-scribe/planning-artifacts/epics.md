@@ -536,6 +536,21 @@ night and prove nothing); the graph stays a derived artifact, never a source of 
 **Given** any coding agent reading `AGENTS.md` **When** it needs a team decision or contract fact **Then** it is instructed to run `scribe recall` (default omits `code:`)
 **And** graphify AST and Marshal `codegraph` are named as different products, not the default recall bag
 
+## Epic 9: Scoped retrieve can cite the poster’s numbers
+
+**Spec binding.** `spec-scribe-marshal-fact-visibility` CAP-1 (hoisted
+parked CAP-10). Compile already writes `presentations/<slug>/facts.yaml`
+(`Story 8.3`). Marshal planning-graph retrieve already passes `--scope`.
+The gap is the citation rule in `recall.py`.
+
+### Story 9.1: Scoped recall admits the project's own fact ledger
+**Type:** feature • **Effort:** S • **Deps:** S-8.3 • S-8.5 • **FR/AD:** `spec-scribe-marshal-fact-visibility` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`
+**Given** a compiled `doc:` node cited `presentations/pyforge-scribe/facts.yaml` **When** `answer(..., scope="pyforge-scribe")` runs **Then** that node is a legal candidate (same as that project's planning tree)
+**And** `--scope pyforge-scribe` still excludes `presentations/pyforge-warden/facts.yaml`, nested `facts.yaml`, and the rest of `presentations/`
+**And** unscoped recall is unchanged
+**And** Marshal argv stays `--scope` only — no `--facts` flag
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.
