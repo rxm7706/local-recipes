@@ -106,8 +106,10 @@ def render_scribe_recall_argv(
     matches every project; the slug's own discriminating suffix is one
     token among several). Always passed when the caller has a resolved
     project slug -- ``run_context_retrieve`` never calls this unscoped.
-    Story 12.1: never pass ``--kind``; inherit scribe's default bag."""
-    argv = (binary_path, *SCRIBE_RECALL_ARGV, query)
+    Story 12.1: never pass ``--kind``; inherit scribe's default bag.
+    Story 18.1: always name ``--mode planning`` so retrieve does not
+    compete with memory and commits."""
+    argv = (binary_path, *SCRIBE_RECALL_ARGV, query, "--mode", "planning")
     if scope:
         argv = (*argv, "--scope", scope)
     return argv
