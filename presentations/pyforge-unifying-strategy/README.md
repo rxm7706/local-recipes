@@ -97,3 +97,7 @@ lede now cites the log's live `dream_log_*` rows instead), the MCP protocol revi
 `fbc1d6c8-b35f-4df6-9044-a64d2675427b`) and seeded with the family. The push, read-back and the
 canonical `## Design project` registry section are the operator's half of Story 20.12 and are not
 written here.
+
+## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"PyForge Unifying Strategy deck"** (`1e4020bc-7f7f-43b2-9219-0904d4863df6`):
+https://claude.ai/design/p/1e4020bc-7f7f-43b2-9219-0904d4863df6?file=Unifying%20Strategy%20Deck.dc.html

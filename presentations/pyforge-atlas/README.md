@@ -89,11 +89,13 @@ Palette is Modernist — light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a
 — matching the `pyforge-warden` deck so the two sit next to each other.
 
 ## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"PyForge Atlas deck"** (`2acb0575-9997-442b-bb0e-6207d78f6648`):
+https://claude.ai/design/p/2acb0575-9997-442b-bb0e-6207d78f6648?file=PyForge%20Atlas.dc.html
 
-Claude Design project **"PyForge Atlas deck"**
-(`2acb0575-9997-442b-bb0e-6207d78f6648`) — created + seeded 2026-07-24 (the
-deck predates the pilot, so it had no Design project until now). Bound to the
-Modernist design system.
+### Provenance
+
+Created and seeded 2026-07-24 — the deck predates the bridge pilot, so it had no Design
+project until then. Bound to the Modernist design system.
 
 ### Artifact map + sync ledger (2026-07-24, disk → Design seed)
 
