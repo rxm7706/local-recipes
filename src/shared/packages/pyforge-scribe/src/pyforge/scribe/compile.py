@@ -8,7 +8,8 @@ history, retros, CHANGELOGs (PRD Open Question 2, resolved here),
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
 as a compile source in Story 3.2), and Herald deck fact ledgers
 (`presentations/<slug>/facts.yaml`, Story 8.3), in-flight story specs
-(Story 10.1), planning pointers (Story 13.1) -- and writes one `GraphNode`
+(Story 10.1), planning pointers (Story 13.1), named docs extras
+(Story 14.1) -- and writes one `GraphNode`
 per source item through the `GraphStore` port (Story 2.1), never a specific
 storage engine's client library directly (AD-5).
 
@@ -263,6 +264,9 @@ def compile_graph(
             store.upsert_node(node)
 
         for node in _read_planning_pointer_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_named_docs_surface(repo_root):
             store.upsert_node(node)
 
         for node in _read_git_surface(repo_root, max_commits, warnings):
@@ -685,6 +689,56 @@ def _node_from_planning_pointer(
     if headings:
         lines.append("headings:")
         lines.extend(f"- {item}" for item in headings)
+    text = "\n".join(lines)
+    if len(text) > _MAX_POINTER_TEXT_CHARS:
+        text = text[:_MAX_POINTER_TEXT_CHARS]
+    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    return GraphNode(
+        id=f"doc:{relpath}",
+        kind="doc",
+        title=title or relpath,
+        text=text,
+        citation=relpath,
+        valid_from=mtime,
+    )
+
+
+def _read_named_docs_surface(repo_root: Path) -> list[GraphNode]:
+    """How-tos and the library catalog only (Story 14.1). Never ``docs/**``."""
+    nodes: list[GraphNode] = []
+    how_to = repo_root / "docs" / "how-to"
+    if how_to.is_dir():
+        for path in sorted(how_to.glob("*.md")):
+            if path.name == "README.md" or not path.is_file():
+                continue
+            nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
+    catalog = repo_root / "docs" / "reference" / "library-llms-full.md"
+    if catalog.is_file():
+        nodes.append(_node_from_library_catalog_extract(catalog, repo_root=repo_root))
+    return nodes
+
+
+def _node_from_library_catalog_extract(path: Path, *, repo_root: Path) -> GraphNode:
+    """``##`` section titles only — the catalog file stays SoT."""
+    relpath = path.relative_to(repo_root).as_posix()
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    title = next(
+        (line.strip("# ").strip() for line in raw.splitlines() if line.startswith("#")),
+        relpath,
+    )
+    headings = [
+        line.strip()
+        for line in raw.splitlines()
+        if line.startswith("## ")
+    ][:_MAX_POINTER_HEADINGS]
+    lines = [
+        "pointer:library-catalog",
+        f"path:{relpath}",
+        f"title:{title}",
+    ]
+    if headings:
+        lines.append("headings:")
+        lines.extend(f"- {item[3:].strip()}" for item in headings)
     text = "\n".join(lines)
     if len(text) > _MAX_POINTER_TEXT_CHARS:
         text = text[:_MAX_POINTER_TEXT_CHARS]

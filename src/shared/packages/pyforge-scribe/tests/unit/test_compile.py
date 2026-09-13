@@ -1763,3 +1763,72 @@ def test_missing_planning_tree_adds_no_pointer_nodes_or_warning(
         for n in store.iter_nodes()
     )
     assert not any("pointer" in w.lower() and "planning" in w.lower() for w in result.warnings)
+
+
+def test_named_docs_compile_how_tos_and_catalog_extract_not_docs_tree(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    how_to = tmp_path / "docs" / "how-to"
+    how_to.mkdir(parents=True)
+    (how_to / "pixi-tasks.md").write_text(
+        "# Pixi tasks\nhowtopixiuniquetoken\n", encoding="utf-8"
+    )
+    (how_to / "README.md").write_text("# How-to index\n", encoding="utf-8")
+    (tmp_path / "docs" / "explanation").mkdir(parents=True)
+    (tmp_path / "docs" / "explanation" / "why.md").write_text(
+        "# Why\nexplanationuniquetoken\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "tutorials").mkdir(parents=True)
+    (tmp_path / "docs" / "tutorials" / "getting-started.md").write_text(
+        "# Start\ntutorialuniquetoken\n", encoding="utf-8"
+    )
+    catalog = tmp_path / "docs" / "reference" / "library-llms-full.md"
+    catalog.parent.mkdir(parents=True)
+    marker = "CATALOGBODYMARKERUNIQUE"
+    catalog.write_text(
+        "# Library catalog\n\n## 1. Core runtime\n\n"
+        f"{marker} " + ("lorem " * 2000) + "\n\n## 16. Explicitly NOT available\n",
+        encoding="utf-8",
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    citations = {n.citation: n for n in store.iter_nodes() if n.kind == "doc"}
+    assert "docs/how-to/pixi-tasks.md" in citations
+    assert "howtopixiuniquetoken" in citations["docs/how-to/pixi-tasks.md"].text
+    assert "docs/how-to/README.md" not in citations
+    assert "docs/explanation/why.md" not in citations
+    assert "docs/tutorials/getting-started.md" not in citations
+    catalog_cite = "docs/reference/library-llms-full.md"
+    assert catalog_cite in citations
+    assert "pointer:library-catalog" in citations[catalog_cite].text
+    assert "1. Core runtime" in citations[catalog_cite].text
+    assert "16. Explicitly NOT available" in citations[catalog_cite].text
+    assert marker not in citations[catalog_cite].text
+    assert not any("named docs" in w.lower() or "library-llms" in w.lower() for w in result.warnings)
+
+
+def test_missing_named_docs_adds_no_nodes_or_warning(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+    assert not any(
+        n.citation.startswith("docs/how-to/")
+        or n.citation.endswith("library-llms-full.md")
+        for n in store.iter_nodes()
+    )
+    assert not any("named docs" in w.lower() or "library-llms" in w.lower() for w in result.warnings)

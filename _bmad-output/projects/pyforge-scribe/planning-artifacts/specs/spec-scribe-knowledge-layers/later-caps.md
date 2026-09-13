@@ -25,10 +25,10 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 | **CAP-10** | **Fact ledgers visible to Marshal retrieve.** Hoisted 2026-09-13 to `spec-scribe-marshal-fact-visibility` CAP-1 / Story 9.1 (identity citation rule). | Was parked here so the session would not lose it. | Decks and dispatch citing the same numbers |
 | **CAP-11** | First-class recall **modes** (`planning` / `memory` / `code`), not only `--kind`. | `--kind` is enough for CAP-4. Modes are the PyForge wiring shape. | Portal + agents without inventing argv |
 | **CAP-12** | **Portal / harness wiring.** Hoisted 2026-09-13 to `spec-scribe-portal-recall-defaults` CAP-1 / Story 12.1. | Was parked so the session would not lose it. | “Wiring this into PyForge” |
-| **CAP-13** | Named extra **`docs/` surfaces** (e.g. how-tos, `library-llms-full.md`) — never `docs/**`. | FR-9 named Dreams (CAP-3). Other docs are catalog, not contract. | Library/how-to questions |
+| **CAP-13** | Named extra **`docs/` surfaces** (how-tos, `library-llms-full.md`). Hoisted 2026-09-13 to `spec-scribe-named-docs` CAP-1 / Story 14.1. | Was parked so the session would not lose it. | Library/how-to questions |
 | **CAP-14** | **One navigation owner:** graphify `code:` vs Marshal `codegraph.db`. Not both as recall peers. | Non-goal on this Spec is “do not replace codegraph.” A later decision can pick. | Agents asking “where is this symbol?” |
 
 ## Recorded, not scheduled
 
-CAP-6/7/9/10/12 are Stories 10.1 / 13.1 / 11.1 / 9.1 / 12.1. No story is
-minted here for CAP-8, CAP-11, or CAP-13–CAP-14.
+CAP-6/7/9/10/12/13 are Stories 10.1 / 13.1 / 11.1 / 9.1 / 12.1 / 14.1.
+No story is minted here for CAP-8, CAP-11, or CAP-14.
