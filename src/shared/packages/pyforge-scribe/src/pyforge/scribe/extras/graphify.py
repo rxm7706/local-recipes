@@ -45,7 +45,16 @@ _TRUTHY = frozenset({"1", "true", "yes", "on"})
 #: Bounded default ingest target: the pyforge station package tree, not the
 #: whole repo -- `recipes/` alone has thousands of first-level directories,
 #: the same cost concern Story 3.3 bounded for the compile's other surfaces.
+#: Single-path APIs (`index report`, `--target` help) still name this path.
 DEFAULT_GRAPHIFY_TARGET = Path("src") / "shared" / "packages"
+
+#: Extra-on compile / `index build` with no `--target` (Story 15.1).
+#: Named list only — never `recipes/` and never the repo root.
+DEFAULT_GRAPHIFY_TARGETS = (
+    DEFAULT_GRAPHIFY_TARGET,
+    Path("src") / "platform",
+    Path("scripts"),
+)
 
 #: graphify's own AST-extraction disk cache, redirected under Scribe's
 #: already-gitignored `.claude/data/` home (AC4) instead of a foundry-root
@@ -102,12 +111,17 @@ def ingest_repo(
     target: Path | None = None,
     warnings: list[str] | None = None,
 ) -> list[GraphNode]:
-    """Ingest ``target`` (repo-relative; default `src/shared/packages/`)
-    with graphifyy and return `GraphNode`s ready for
-    `GraphStore.upsert_node()` -- never a parallel store (AC2).
+    """Ingest ``target`` (repo-relative) with graphifyy and return
+    `GraphNode`s ready for `GraphStore.upsert_node()` -- never a
+    parallel store (AC2).
+
+    When ``target`` is omitted, walk `DEFAULT_GRAPHIFY_TARGETS` (Story
+    15.1): `src/shared/packages/`, `src/platform/`, `scripts/`. Missing
+    optional list entries are silent. A warning fires only when no
+    default target exists, or when an explicit ``target`` is missing.
 
     The target-existence check runs BEFORE the lazy `graphify` import: a
-    repo with no `src/shared/packages/` (or an explicit target that does
+    repo with none of the named trees (or an explicit target that does
     not exist) degrades to a warning and zero nodes without ever requiring
     graphifyy to be installed. Only once there is something to ingest does
     this raise `GraphifyUnavailableError` when the package is missing --
@@ -116,20 +130,33 @@ def ingest_repo(
     own degrade-not-abort contract.
     """
     collected_warnings = warnings if warnings is not None else []
-    resolved_target = (repo_root / (target if target is not None else DEFAULT_GRAPHIFY_TARGET)).resolve()
-    if not resolved_target.is_dir():
-        collected_warnings.append(
-            f"graphify ingest target {resolved_target} does not exist -- skipped"
-        )
-        return []
+    if target is not None:
+        resolved_targets = [(repo_root / target).resolve()]
+        if not resolved_targets[0].is_dir():
+            collected_warnings.append(
+                f"graphify ingest target {resolved_targets[0]} does not exist -- skipped"
+            )
+            return []
+    else:
+        resolved_targets = [
+            (repo_root / rel).resolve()
+            for rel in DEFAULT_GRAPHIFY_TARGETS
+            if (repo_root / rel).is_dir()
+        ]
+        if not resolved_targets:
+            collected_warnings.append(
+                "graphify ingest targets do not exist -- skipped"
+            )
+            return []
 
     graphify = _import_graphify()
-    graph = _build_graph(graphify, repo_root, resolved_target)
     nodes: list[GraphNode] = []
-    for node_id, attrs in graph.nodes(data=True):
-        node = _graph_node_from_graphify(node_id, attrs, repo_root)
-        if node is not None:
-            nodes.append(node)
+    for resolved_target in resolved_targets:
+        graph = _build_graph(graphify, repo_root, resolved_target)
+        for node_id, attrs in graph.nodes(data=True):
+            node = _graph_node_from_graphify(node_id, attrs, repo_root)
+            if node is not None:
+                nodes.append(node)
     return nodes
 
 

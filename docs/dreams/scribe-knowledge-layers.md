@@ -78,3 +78,6 @@ fleet truth.
 - **2026-09-13** — Parked CAP-13 hoisted to Dream
   `scribe-named-docs` / Spec
   `spec-scribe-named-docs` (Story 14.1).
+- **2026-09-13** — Parked CAP-8 hoisted to Dream
+  `scribe-graphify-target-list` / Spec
+  `spec-scribe-graphify-target-list` (Story 15.1).

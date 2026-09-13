@@ -50,8 +50,10 @@ prints `captured: <path>`.
 
 **Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L251-L269]:
 full rebuild of the graph; never prompts. When `SCRIBE_GRAPHIFY_EXTRA` is truthy,
-also ingests `src/shared/packages/` through the graphify extra (Story 6.1) as a
-seventh, optional compile source -- off by default (air-gap). Every current node
+also ingests the named graphify target list (`src/shared/packages/`,
+`src/platform/`, `scripts/` — Story 15.1) through the graphify extra
+(Story 6.1) as an optional compile source -- off by default (air-gap). Never
+`recipes/` or the repo root. Every current node
 also gets a `stale` flag (Story 6.3, CAP-13): `true` when its citation's source
 file has a git commit postdating the node's own `valid_from` with no `supersedes:`
 edge naming it -- a git-timestamp comparison only, no LLM call. `scribe recall`
