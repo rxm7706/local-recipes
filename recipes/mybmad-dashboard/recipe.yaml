@@ -11,11 +11,10 @@ schema_version: 1
 # that provisions a local PostgreSQL cluster and runs the app.
 #
 # DESIGN NOTE — "stay true to upstream":
-#   The upstream source is used UNMODIFIED. Everything conda-specific (the
-#   Postgres lifecycle, secret generation, the launcher CLI) lives in the
-#   Python wrapper under wrapper/, NOT as source patches. Upstream version
-#   bumps therefore only require: new commit/sha256 + a rebuild. No rebasing
-#   of patches.
+#   Conda-specific orchestration (Postgres lifecycle, secret generation, the
+#   launcher CLI) lives in wrapper/, not in-build sed. One source patch adds
+#   runtime MYBMAD_LOCALE (default en; fr keeps upstream French copy). Rebase
+#   that patch when the pinned commit moves.
 #
 # NOT noarch: the Prisma `classic` query engine is a per-platform native
 # binary, so the built bundle is architecture-specific.
@@ -38,9 +37,11 @@ source:
   # sha256. The web app lives in the web/ subdirectory of this archive.
   url: https://github.com/bmad-code-org/bmad-method-ui/archive/${{ commit }}.tar.gz
   sha256: f3ffbe4fcad86f76a291e56300e47a24ac631daf7933379555f1e92893e1a9ad
+  patches:
+    - patches/0001-runtime-MYBMAD_LOCALE-en-fr-ui-copy.patch
 
 build:
-  number: 0
+  number: 1  # same-version rebuild: MYBMAD_LOCALE source patch + launcher env
   # Arch-specific (the bundle ships the native Prisma query engine) -> NOT
   # noarch. But the package's only Python content is the launcher wrapper, which
   # is pure Python and version-agnostic, so build ONE artifact per platform
@@ -118,8 +119,9 @@ about:
       * applies database migrations, and
       * starts the web server (default http://localhost:3002).
 
-    The upstream source is used unmodified; all conda-specific orchestration
-    lives in the launcher. Run `mybmad up` to start the dashboard,
+    A source patch adds runtime `MYBMAD_LOCALE` (default `en`; set `fr` for
+    the upstream French copy). Postgres lifecycle and secrets stay in the
+    launcher. Run `mybmad up` to start the dashboard,
     `mybmad promote-admin --email you@example.com` to grant admin after you
     register, and `mybmad stop` to stop the database.
   homepage: https://github.com/bmad-code-org/bmad-method-ui/tree/main/web

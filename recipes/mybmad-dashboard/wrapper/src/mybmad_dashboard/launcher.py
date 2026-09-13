@@ -12,7 +12,7 @@ The conda package ships a prebuilt Next.js ``standalone`` server bundle under
 
 It uses ONLY the Python standard library, plus the ``node`` and PostgreSQL
 binaries (``initdb``, ``pg_ctl``, ``createdb``, ``psql``) provided as conda
-runtime dependencies. The upstream source is not modified; this is pure glue.
+runtime dependencies. UI locale is ``MYBMAD_LOCALE`` (default ``en``).
 """
 
 from __future__ import annotations
@@ -135,6 +135,13 @@ def _bool_env(env_var: str, default: bool) -> bool:
     if raw is None:
         return default
     return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _ui_locale() -> str:
+    """Normalize MYBMAD_LOCALE to ``en`` or ``fr`` (default ``en``)."""
+    raw = os.environ.get("MYBMAD_LOCALE", "en").strip().lower()
+    token = raw.replace("_", "-").split("-", 1)[0]
+    return "fr" if token == "fr" else "en"
 
 
 def _which(name: str) -> str:
@@ -360,22 +367,34 @@ def _apply_migrations(db_port: int) -> None:
 def _server_env(data_dir: Path, web_port: int, db_port: int) -> dict:
     cfg = _load_or_init_config(data_dir)
     env = os.environ.copy()
+    bind_host = os.environ.get("MYBMAD_HOSTNAME", "127.0.0.1")
+    # localhost and 127.0.0.1 are different browser origins. Better Auth
+    # 403s a sign-up from the other host as INVALID_ORIGIN; the login form
+    # maps every 403 to "Registration is disabled". Trust both loopbacks.
+    loopback_origins = ",".join(
+        f"http://{h}:{web_port}" for h in ("127.0.0.1", "localhost")
+    )
     env.update(
         {
             "NODE_ENV": "production",
             "NEXT_TELEMETRY_DISABLED": "1",
             "PORT": str(web_port),
-            "HOSTNAME": os.environ.get("MYBMAD_HOSTNAME", "127.0.0.1"),
+            "HOSTNAME": bind_host,
             "DATABASE_URL": _database_url(db_port),
             "BETTER_AUTH_SECRET": cfg["better_auth_secret"],
             "BETTER_AUTH_URL": os.environ.get(
-                "MYBMAD_BETTER_AUTH_URL", f"http://localhost:{web_port}"
+                "MYBMAD_BETTER_AUTH_URL", f"http://{bind_host}:{web_port}"
+            ),
+            "BETTER_AUTH_TRUSTED_ORIGINS": os.environ.get(
+                "BETTER_AUTH_TRUSTED_ORIGINS", loopback_origins
             ),
             "REVALIDATE_SECRET": cfg["revalidate_secret"],
             # Local self-host: enable local-folder import by default (the
             # primary "develop projects on this machine" use case).
             "ENABLE_LOCAL_FS": "true" if _bool_env("MYBMAD_ENABLE_LOCAL_FS", True) else "false",
             "ALLOW_REGISTRATION": "true" if _bool_env("MYBMAD_ALLOW_REGISTRATION", True) else "false",
+            # Runtime UI copy. Default English; ``fr`` keeps upstream French.
+            "MYBMAD_LOCALE": _ui_locale(),
         }
     )
     # Point Prisma directly at the bundled native query engine. Flattening the
@@ -504,6 +523,7 @@ def cmd_info(args: argparse.Namespace) -> int:
     print(f"pg log:        {_pg_log(data_dir)}")
     print(f"web port:      {web_port}")
     print(f"db port:       {db_port}")
+    print(f"locale:        {_ui_locale()}")
     print(f"database url:  {_database_url(db_port)}")
     print(f"pg running:    {_pg_is_running(data_dir)}")
     return 0
