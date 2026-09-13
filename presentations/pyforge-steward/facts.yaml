@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-steward
 persona: "PyForge Steward"
-derived_at: "2026-09-13T03:04:34-05:00"
-tree: "04d73cac387c922dc56fd2835afcfe6b540e73b8"
+derived_at: "2026-09-13T05:54:55-05:00"
+tree: "fbefe6eea68adbf67dd689aea5ae53072f01d75b"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -147,10 +147,10 @@ facts:
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
     shown_as: ["2026-07-24"]
   - id: recipes_count
-    value: "7872"
+    value: "7864"
     source: "recipes/"
     method: "count of recipes/*/ directories, excluding the staged-recipes templates recipes/example/ and recipes/examples/"
-    shown_as: ["7872"]
+    shown_as: ["7864"]
   - id: scribe_epics_done_total
     value: "8/8"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
