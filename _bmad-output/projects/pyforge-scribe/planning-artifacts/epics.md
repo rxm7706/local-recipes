@@ -620,6 +620,20 @@ CAP-13). Dreams stay on the existing CAP-3 surface.
 **And** a unique sentence that exists only in the catalog body is absent from that node
 **And** a missing how-to tree or missing catalog is zero extra nodes and no warning
 
+## Epic 15: Graphify walks the named code trees, not the warehouse
+
+**Spec binding.** `spec-scribe-graphify-target-list` CAP-1 (hoisted
+parked CAP-8). Extra remains off by default.
+
+### Story 15.1: Graphify target list joins the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.2 • **FR/AD:** `spec-scribe-graphify-target-list` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py`
+**Given** extra-on compile and no explicit target **When** `ingest_repo` runs **Then** it walks `src/shared/packages`, `src/platform`, and `scripts` when they exist
+**And** a present `recipes/` tree is not ingested
+**And** missing optional list entries produce no warning
+**And** extra-off compile is unchanged
+**And** an explicit `--target` stays one path
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

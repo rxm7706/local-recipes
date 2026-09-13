@@ -390,7 +390,10 @@ def _index_artifact_path(repo_root: Path, name: str) -> Path:
 _TARGET_OPTION = typer.Option(
     None,
     "--target",
-    help="Folder to ingest, repo-relative (default: src/shared/packages).",
+    help=(
+        "Folder to ingest, repo-relative. Omit to walk the named list "
+        "(src/shared/packages, src/platform, scripts) — not recipes/."
+    ),
 )
 
 _DECLARE_OPTION = typer.Option(
@@ -409,8 +412,9 @@ _DECLARE_OPTION = typer.Option(
 def index_build(target: Path | None = _TARGET_OPTION) -> None:
     """Ingest `target` with graphifyy and write GraphNodes through the
     persist port (`open_graph_store`) -- never a parallel store (Story 6.1,
-    AC2). Explicit and deliberate: unlike `scribe graph compile`'s automatic
-    fan-in, this command does not consult `SCRIBE_GRAPHIFY_EXTRA`."""
+    AC2). Omit `--target` to walk the named list (Story 15.1). Explicit
+    and deliberate: unlike `scribe graph compile`'s automatic fan-in, this
+    command does not consult `SCRIBE_GRAPHIFY_EXTRA`."""
     repo_root = Path.cwd()
     warnings: list[str] = []
     try:

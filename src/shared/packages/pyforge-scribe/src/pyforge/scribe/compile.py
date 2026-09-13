@@ -71,7 +71,8 @@ is untouched. `commit:`/`transcript:` citations have no git-trackable
 source-file counterpart and are never checked.
 
 **Optional eighth surface (Story 6.1).** When `SCRIBE_GRAPHIFY_EXTRA` is
-truthy, `compile_graph()` also ingests `src/shared/packages/` with the
+truthy, `compile_graph()` also ingests the named graphify target list
+(`src/shared/packages/`, `src/platform/`, `scripts/` — Story 15.1) with the
 graphify `compile_surface` extra (`pyforge.scribe.extras.graphify`),
 writing `code`-kind `GraphNode`s through this SAME `GraphStore` -- never a
 parallel store. Off by default (AD-6): the env var is checked before the
