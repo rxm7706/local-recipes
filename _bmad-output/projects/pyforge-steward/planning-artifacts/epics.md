@@ -3460,7 +3460,7 @@ acceptance to upstream `tools/validate_frames.py`.
 Frame and eight station Frames that `inherits` it exist in git
 **And** each passes the in-repo four-field preflight and names its owner
 **And** no Community Frame or registry is required for success
-**Status:** backlog
+**Status:** done
 
 ### Story 53.3: One tracked track.json per run
 

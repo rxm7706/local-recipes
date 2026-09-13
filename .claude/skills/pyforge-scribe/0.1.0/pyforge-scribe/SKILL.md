@@ -105,7 +105,7 @@ retrieval, and, later, marshal Story 28.8's freshness check) bind to this
 grammar only -- never to `pyforge.scribe.extras` internals.
 
 <!-- [MANUAL:additional-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+Frame store (steward Story 53.2 pointer only): Company + eight station Frames live in `docs/foundry/frames/` in git — do not graph-ingest them unless a later Spec says so.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows
