@@ -1,7 +1,7 @@
 ---
 id: SPEC-deck-family-currency
 spec: deck-family-currency
-status: ready
+status: in-progress
 owner-dream: docs/dreams/deck-family-currency.md
 companions:
   - infographic-standard.md
@@ -66,9 +66,11 @@ posters rebuilt from it, the Design mirror proven, and staleness made visible.
     source through a per-deck fact ledger, `presentations/<slug>/facts.yaml`, re-derivable on
     demand from the tracked ledgers and manifests — never from a prior poster or from memory.
   - **success:** Each of the ten decks has a `facts.yaml` whose rows carry `id`, `value`,
-    `source`, `method` and `derived_at`; every numeric, version or status token the poster
-    shows resolves to a row; re-deriving on an unchanged tree reproduces the values
-    byte-identically; re-deriving after a tracked ledger changes reports the changed rows.
+    `source`, `method` and `shown_as`, under a document header naming the `tree` (HEAD sha) and
+    `derived_at` (HEAD commit date); every swept token (`n/n`, `x.y.z`, `YYYY-MM-DD`) and every
+    `data-fact` mark the poster shows resolves to a row; re-deriving on an unchanged tree
+    reproduces the file byte-identically; re-deriving after a tracked source changes reports
+    the changed rows.
 - **CAP-3**
   - **intent:** Each PyForge-branded poster is rebuilt to the standard from its fact ledger,
     repo-side and at full depth.

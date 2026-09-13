@@ -16,6 +16,13 @@ surface-drift-exclude:
   # Coverage is unchanged (still listed under `surface:` above); only
   # this spec's own drift tracking for these specific files is off.
   - src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py   # also governed by pyforge-marshal/spec-pyforge-core
+  # 2026-09-13: the deck-family surfaces spec-deck-family-currency owns and reconciles on every
+  # poster story (its memlog moves per story; this kernel's does not). facts.yaml headers also
+  # carry the HEAD sha, so they legitimately change on every re-derive after a commit.
+  - presentations/pyforge-*/facts.yaml                                     # also governed by pyforge-herald/spec-deck-family-currency
+  - presentations/pyforge-*/project/* Infographic standalone.html          # also governed by pyforge-herald/spec-deck-family-currency
+  - presentations/pyforge-*/README.md                                      # also governed by pyforge-herald/spec-deck-family-currency
+  - presentations/README.md                                                # also governed by pyforge-herald/spec-deck-family-currency
 companions:
   - artifact-tracking-matrix.md
   - workflow-stages.md
