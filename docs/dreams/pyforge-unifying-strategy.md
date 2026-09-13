@@ -342,6 +342,32 @@ built anywhere:** `taplo` + `sqlfluff` (zero hits in any `.py`; doctor's 2026-08
 "no story exists"), `markitdown`, `vizro-mcp` / `vizro-e2e-flow`, and `kedro-mcp` (architecturally
 banned as load-bearing). Two BSL metric names formerly listed under item 3 exist nowhere in the repo.
 
+**Measured 2026-09-12 (manifest-sync gap — a `library-llms-full.md` audit, but the inverse
+finding: not "should bind," but "already bound, invisible to the chain").** Every `pyforge-*`
+station has a **second, un-mirrored dependency manifest**: its own
+`src/shared/packages/pyforge-<station>/pixi.toml` `[package.run-dependencies]` table (the one
+`pixi-build-python` actually reads to build that station's conda package — kept in sync with the
+station's own `pyproject.toml` by `tests/meta/test_manifest_sync.py`). Root `pixi.toml` — and
+therefore `docs/reference/library-llms-full.md` and its `llms-full-check` detector, both of which
+only ever read root `pixi.toml` — has no visibility into that second manifest at all. Cross-checking
+all ten stations' own run-deps against root `pixi.toml` surfaced seven libraries that are real,
+directly-imported, already-shipped station code (confirmed importable live in each station's own
+env today, resolving only because the built package carries its own run-deps) yet never appear
+anywhere in root `pixi.toml`: `packaging` (marshal, mason, warden), `jsonschema` (doctor, marshal,
+warden), `psutil` (marshal), `attrs` (atlas), `packageurl-python` — imports as `packageurl`
+(warden), `license-expression` — imports as `license_expression` (warden). (`filelock`, atlas's
+existing use, is already tracked above as the "extend to marshal/scribe" adoption decision — a
+different, forward-looking question from this one, which is about deps *already* adopted and
+merely invisible.) This is a `regenerable-factory`-shaped blind spot: the two-layer detector/
+reconciler loop that keeps `library-llms-full.md` honest was never told this second manifest
+exists, so it cannot flag drift there — the exact "shipped but not in effect" pattern this Dream's
+§ *Where next* / Epic 49 already names, applied to the dependency-truth surface itself. Fix is
+two-part: (1) mirror the seven into root `pixi.toml` (`local-recipes` plus each owning station's
+own `[feature.pyforge-<station>.dependencies]` block) and their `library-llms-full.md` entries;
+(2) extend `scripts/llms_full_check.py`'s `manifest_deps()` to also walk every
+`src/shared/packages/pyforge-*/pixi.toml`'s `[package.run-dependencies]` table, so this class of
+gap is caught automatically going forward instead of requiring another manual audit.
+
 ### Capability checklist from the BaaS comparison (2026-09-05)
 
 InsForge's feature list was used as a **checklist, not a shopping list** — every row was
@@ -826,3 +852,22 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   refresh on promotion; `AGENTS.md` no longer mandates `--repair-feed` before every ledger write.
 - **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, operator-approved in full). Three changes here: the Kinships line's `[[atlas-query-dashboards]]` clause is corrected — it asserted "a second, shipped Lane-3 runtime", which is false under this Dream's own gate; atlas Epic 14's `pyforge/atlas/views/` package is **retired** (no caller outside its own tests; a private SQLite read through a dynamic-import bridge whose docstring declares the evasion of CAP-19). § *Where next* gains a dated subsection recording the pass: 18 built-not-in-effect capabilities fleet-wide, Epic 49 widened to the station satellites via owning-station effect stories plus steward index rows, and the batch file as the record. And the Spec side gains the batch as a companion, five previously-unvesselled currency-review findings in § Residual, and the note that `realization-gate-home`'s precondition (the Intelligence Hub Spec at `ready`) is met this pass with the re-home pending that Spec's re-derive.
 - **2026-09-09** — **C3 absorb (fleet readiness).** `spec-django-accelerator-framework` (mason, `draft`) is absorbed into `spec-pyforge-unifying-strategy` and its Dream archived (`archived-reason: absorbed`). The Unifying Spec now carries a `## Absorbed (daf:CAP-*)` section: `daf:CAP-1` — the accelerator contract (cookiecutter-django + FastAPI ASGI seam, `env()`-split settings, `/ht/` health checks, render-time mirror endpoints, vendored zero-CDN assets, internal OIDC) — arrives in full with its air-gap and living-exemplar constraints, and its stale citation corrected on arrival (`config/urls.py:26 include("health_check.urls")` → `src/platform/config/urls.py:98` via `HealthCheckView`, import at `:11`; `:50-55` records the `include(...)` form as deprecated and 4.x as having no `health_check.urls` module at all). `daf:CAP-2` — the templating engine — is **not** absorbed: its "a third/fourth Django surface repeats the copy by hand" trigger was falsified, and its open question (repo-wide vs estate-wide counting) dies with it. Ids are qualified `daf:` on arrival so no bare `CAP-n` collides with CAP-1..19, the rule Story 48.7 enforces.
+- **2026-09-12** — **Manifest-sync gap found** (operator-directed audit of
+  `library-llms-full.md` scope): each `pyforge-*` station's own nested
+  `pixi.toml [package.run-dependencies]` is invisible to root `pixi.toml` and
+  therefore to `library-llms-full.md` / `llms_full_check.py`. Seven already-shipped,
+  directly-imported station deps (`packaging`, `jsonschema`, `psutil`, `attrs`,
+  `packageurl-python`, `license-expression`) surfaced as a result — recorded above
+  under § *High-Leverage Library Integration* as "Measured 2026-09-12." Another
+  instance of this Dream's own "shipped but not in effect" pattern (§ *Where next* /
+  Epic 49), this time on the dependency-truth surface itself. Per Story 12.1's own
+  precedent and `deferred:` note (`spec-12-1-full-pixi-wiring-distribution-and-repo-gate-compliance`,
+  pyforge-marshal — hand-wired one station's pixi dep and flagged pre-existing catalog
+  drift as a follow-up), the fix is generalized into a standing detector fix rather than
+  another one-off hand-wiring pass, and is carried as its own satellite Dream —
+  [[library-catalog-manifest-sync]] (owner marshal) — so the mega-spec doesn't absorb an
+  unrelated tooling CAP. Closed same day: `spec-library-catalog-manifest-sync` CAP-1/CAP-2
+  shipped as `pyforge-marshal` Epic 36 (Stories 36.1, 36.2) — see that Dream's own
+  Realization log for the full narrative, including a mid-turn process correction (a Story
+  must exist before hand-implementation, no exemption for a small fix) now codified in
+  `AGENTS.md` / `CLAUDE.md`.

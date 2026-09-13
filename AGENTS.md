@@ -130,6 +130,17 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    deriving the Spec from it — never with "draft the story specs and dispatch". Operator ruling
    2026-09-12, minted on the CAP-17 run-state gap
    ([`docs/dreams/run-state-one-publisher.md`](docs/dreams/run-state-one-publisher.md)).
+5. **Spec → Story before code.** A `ready` Spec is a contract, not a work order. Once `bmad-spec`
+   produces it inside a BMAD project, decompose its capabilities into a numbered Story (or
+   Stories) in that project's `epics.md` and reflect it in `sprint-status-ledger.yaml` — via
+   `bmad-sprint-planning` / `bmad-create-epics-and-stories`, or by hand mirroring the project's
+   own established numbering convention when those skills aren't invoked directly — **before**
+   touching any file outside `docs/dreams/` or the Spec folder itself. A mechanically
+   well-understood, single-CAP fix is not an exemption: skipping the Story skips the one place
+   the dev/review loop and retro triggers this repo relies on actually fire. Incident:
+   `spec-library-catalog-manifest-sync` CAP-1/CAP-2 were hand-implemented straight from the Spec
+   with no Story minted in `pyforge-marshal/epics.md` and no ledger entry — caught mid-turn by
+   the operator, reconciled after the fact (2026-09-12).
 
 ## The tiers (do not cross them)
 

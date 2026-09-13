@@ -23,5 +23,5 @@ dependencies:
 - networkx >=3.0
 - rattler-build-conda-compat >=1.2.0,<2.0.0a0
 - pip >=26.2.1
-- uv >=0.12.10
+- uv >=0.12.13
 

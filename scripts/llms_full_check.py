@@ -12,6 +12,15 @@ detector/reconciler loop (same pattern as bmad_drift_check.py):
 Reconciler: the regeneration prompt in the catalog's header (an LLM rewrite);
 this script never edits either file.
 
+Every `pyforge-*` station also carries a SECOND manifest -- its own
+`src/shared/packages/pyforge-<station>/pixi.toml` `[package.run-dependencies]` table,
+the one `pixi-build-python` actually builds the station's conda package from. Root
+`pixi.toml` doesn't need to re-declare a station's run-dep to make it resolve (the
+built package carries its own), so that manifest is a second, un-mirrored source of
+"active" deps this detector must also read (`spec-library-catalog-manifest-sync`
+CAP-2, 2026-09-12) -- otherwise a station could add a real run-dep there, never
+mirror or document it, and this check would stay green.
+
 Deliberately unchecked (regeneration territory, not detection): commented-out
 deps vs the catalog's "explicitly NOT available" section, env-membership prose,
 capability text.
@@ -33,6 +42,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "pixi.toml"
 CATALOG = REPO_ROOT / "docs" / "reference" / "library-llms-full.md"
+STATION_MANIFESTS = sorted((REPO_ROOT / "src" / "shared" / "packages").glob("pyforge-*/pixi.toml"))
 
 # A catalog entry is "- **name** (spec)" on a bullet line; "a / b" name lists
 # share one spec. Prose bolds like "**pandera** (schemas)" are excluded by
@@ -61,6 +71,22 @@ def manifest_deps(manifest: dict) -> dict[str, set[str]]:
                 walk(value)
 
     walk(manifest)
+    return deps
+
+
+def station_run_deps() -> dict[str, set[str]]:
+    """name -> set of version-spec strings, from every pyforge-* station's own
+    pixi.toml [package.run-dependencies] table (STATION_MANIFESTS) -- the
+    manifest pixi-build-python actually builds that station's conda package
+    from, invisible to a root-pixi.toml-only walk."""
+    deps: dict[str, set[str]] = {}
+    for manifest_path in STATION_MANIFESTS:
+        data = tomllib.loads(manifest_path.read_text())
+        run_deps = data.get("package", {}).get("run-dependencies", {})
+        for name, spec in run_deps.items():
+            if isinstance(spec, dict):  # {path = "..."} path deps
+                spec = str(spec.get("version", "*"))
+            deps.setdefault(name, set()).add(str(spec))
     return deps
 
 
@@ -105,6 +131,8 @@ def mentioned(name: str, text: str) -> bool:
 
 def run() -> tuple[list[dict], dict]:
     deps = manifest_deps(tomllib.loads(MANIFEST.read_text()))
+    for name, specs in station_run_deps().items():
+        deps.setdefault(name, set()).update(specs)
     text = CATALOG.read_text()
 
     findings: list[dict] = []

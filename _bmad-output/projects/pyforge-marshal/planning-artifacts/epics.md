@@ -5159,6 +5159,43 @@ GitHub PR-merge fix (`_branch_belongs_to_project`) is untouched.
 
 **Residual, explicitly named, not closed by this story:** `gather_dispatch_git_facts` (wired, closes the exact site that caused 2026-09-11's false verdicts) is the only caller updated to supply `known_keys`. `cli/dispatch.py`'s wave/reconcile paths, `dispatch_land.py`'s "already landed" short-circuit, `cli/status.py`'s reconcile-ledger report, `cli/land.py`'s wave-based landing, and `branch_story_merge_confirmed_by_grammar` all still call `merged_story_keys`/`marshal_native_merged_keys` without `known_keys` and remain exposed to the same collision until a follow-up wires them too — mirrors the sibling Dream's own "not auditing every OTHER caller" Non-goal.
 
+## Epic 36: The library catalog can't see a station's own build manifest
+
+**Goal:** close `docs/dreams/library-catalog-manifest-sync.md` — every `pyforge-*` station has a
+second dependency manifest (its own `src/shared/packages/pyforge-<station>/pixi.toml`
+`[package.run-dependencies]` table, the one `pixi-build-python` actually builds the station's
+conda package from) that root `pixi.toml`, `docs/reference/library-llms-full.md`, and
+`scripts/llms_full_check.py` were all blind to, since all three only ever read root `pixi.toml`.
+Found 2026-09-12 auditing the catalog's own scope; seeded from `spec-pyforge-unifying-strategy`'s
+Realization log ("Manifest-sync gap found").
+
+**Process note (2026-09-12):** both stories below were implemented directly from
+`spec-library-catalog-manifest-sync` before this Epic/these Stories existed — no Story was
+minted in this file and no `sprint-status-ledger.yaml` row existed until the operator caught
+the gap mid-turn. Recorded here, and in `AGENTS.md` § Dream-first workflow item 5 /
+`CLAUDE.md`'s Dream-first paragraph, so a `ready` Spec is never again treated as license to skip
+decomposition. The work itself was independently verified (live `llms-full-check` runs, a new
+`pixi lock --check`, a new unit-test file) before this reconciliation, so it stands as `done`
+rather than being reverted and redone.
+
+### Story 36.1: Root pixi.toml and the catalog document every station's already-shipped, undocumented run-dep
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-library-catalog-manifest-sync` CAP-1
+**Surface:** `pixi.toml` (`[feature.local-recipes.dependencies]` plus `[feature.pyforge-marshal.dependencies]`, `[feature.pyforge-mason.dependencies]`, `[feature.pyforge-warden.dependencies]`, `[feature.pyforge-doctor.dependencies]`, `[feature.pyforge-atlas.dependencies]`), `docs/reference/library-llms-full.md` (new § 1a, `pydantic` note sharpened)
+**Given** `packaging`, `jsonschema`, `psutil`, `attrs`, `packageurl-python`, `license-expression`, and `filelock` are each already a direct run-dep of a station's own nested `pixi.toml [package.run-dependencies]` and already imported directly in that station's source, but none appears anywhere in root `pixi.toml` or the catalog
+**When** each is added to root `pixi.toml` — `[feature.local-recipes.dependencies]` plus the owning station's own feature block — floored at the version `pixi.lock` already resolves (`packaging` 26.3, `jsonschema` 4.26.0, `psutil` 7.2.2, `attrs` 26.1.0, `packageurl-python` 0.17.6, `license-expression` 30.4.4, `filelock` 3.32.0) **Then** `pixi lock --check` reports the lock file already up to date (no new solve required — the version was already resolved transitively) and `pixi run -e local-recipes llms-full-check` no longer reports any of the seven as `undocumented-dep`
+**And** the catalog's new § 1a documents all seven with their owning station(s) and import-name gotchas (`packageurl-python` imports as `packageurl`, `license-expression` as `license_expression`), and the existing `pydantic` note is sharpened to also name pyforge-atlas's and pyforge-scribe's direct declarations without adding a new root pin
+**And** `filelock` — found only after Story 36.2's own scan went live, a CAP-1 scoping miss (conflated with the separate marshal/scribe filelock *adoption* question in `spec-pyforge-unifying-strategy`'s Estate leverage table) — is folded into this story's own surface and Given/When/Then rather than deferred, since it is the identical class of gap
+**Status:** done
+
+### Story 36.2: `llms-full-check` reads every station's own nested manifest, not just root pixi.toml
+**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** `spec-library-catalog-manifest-sync` CAP-2
+**Surface:** `scripts/llms_full_check.py` (`STATION_MANIFESTS`, `station_run_deps()`, `run()`), `tests/scripts/test_llms_full_check.py` (new)
+**Given** `manifest_deps()` only ever walked root `pixi.toml`, so a station declaring a real run-dep only in its own `pixi.toml [package.run-dependencies]` would never be flagged as undocumented no matter how long it went unmirrored
+**When** `station_run_deps()` parses every `src/shared/packages/pyforge-*/pixi.toml`'s `[package.run-dependencies]` table (same path-dep handling as the existing root-manifest walk) and `run()` merges it into the same active-dependency set **Then** a synthetic station-manifest-only entry is caught as `undocumented-dep` (`tests/scripts/test_llms_full_check.py::test_run_flags_a_station_only_dep_as_undocumented`), and once mirrored + documented the same fixture reports clean (`::test_run_stays_clean_when_station_dep_is_mirrored_and_documented`)
+**And** the pre-existing root-pixi.toml-only behavior, the exit-code contract (0/1/2), and the `--json` flag are all unchanged — proven by `::test_no_station_manifests_falls_back_to_root_only_behavior` and a full clean run against the real repo (`pixi run -e local-recipes llms-full-check`, 352 active deps / 320 catalog entries, zero findings)
+**And** turning the scan on against the real repo immediately surfaced Story 36.1's own `filelock` scoping miss — the new capability catching a gap in the story that shipped one commit before it, the exact self-detection this Epic exists for
+**Status:** done
+
 ## Deferred-work verification state — reconciled 2026-09-08
 
 The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all

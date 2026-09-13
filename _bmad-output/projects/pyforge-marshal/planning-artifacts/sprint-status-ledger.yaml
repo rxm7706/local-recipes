@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 318
+# stories: 321
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -209,6 +209,8 @@ development_status:
   34-3-factory-drain-tells-a-crashed-session-apart-from-a-genuinely-failed-one: done
   34-4-the-attention-block-s-own-refused-verdict-check-gets-the-same-test-coverage-its-station_state-sibling-has: done
   35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-project-s-own-tracked-ledger-not-trusted-from-text-alone: done
+  36-1-root-pixi-toml-and-the-catalog-document-every-station-s-already-shipped-undocumented-run-dep: done
+  36-2-llms-full-check-reads-every-station-s-own-nested-manifest-not-just-root-pixi-toml: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
@@ -301,7 +303,7 @@ development_status:
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
-  epic-28: in-progress
+  epic-28: done
   epic-28-retrospective: optional
   epic-29: done
   epic-29-retrospective: optional
@@ -319,6 +321,8 @@ development_status:
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional
+  epic-36: done
+  epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
   epic-5: done
