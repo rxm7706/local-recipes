@@ -1,0 +1,1296 @@
+# Foundry capability ledger — strangler routing (fcl:CAP-1 / Story 55.1).
+# Inventory: extract.md (ready|in-progress SPEC CAP headings only).
+# Modes: rebuild | retire | A-only | B-only. Never move.
+# verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
+# Do not flip 44.1 or any Epic 44 blocked key.
+schema: pyforge.capability-ledger/v0
+updated: "2026-09-13"
+source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
+extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
+modes:
+  - rebuild
+  - retire
+  - A-only
+  - B-only
+never_move: true
+story_44_1: blocked
+capabilities:
+  - id: wagtail-corporate-brain:CAP-1
+    spec: wagtail-corporate-brain
+    station: pyforge-atlas
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md
+  - id: wagtail-corporate-brain:CAP-2
+    spec: wagtail-corporate-brain
+    station: pyforge-atlas
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md
+  - id: wagtail-corporate-brain:CAP-3
+    spec: wagtail-corporate-brain
+    station: pyforge-atlas
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md
+  - id: sibling-dreams-drift:CAP-1
+    spec: sibling-dreams-drift
+    station: pyforge-doctor
+    heading: the drift check
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-sibling-dreams-drift/SPEC.md
+  - id: deck-family-lockstep:CAP-1
+    spec: deck-family-lockstep
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md
+  - id: deck-family-lockstep:CAP-2
+    spec: deck-family-lockstep
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md
+  - id: deck-family-lockstep:CAP-3
+    spec: deck-family-lockstep
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md
+  - id: deck-family-lockstep:CAP-4
+    spec: deck-family-lockstep
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md
+  - id: deck-family-lockstep:CAP-5
+    spec: deck-family-lockstep
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md
+  - id: deck-visual-qa:CAP-1
+    spec: deck-visual-qa
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa/SPEC.md
+  - id: deck-visual-qa:CAP-2
+    spec: deck-visual-qa
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa/SPEC.md
+  - id: deck-visual-qa:CAP-3
+    spec: deck-visual-qa
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa/SPEC.md
+  - id: pptx-custom-shapes:CAP-1
+    spec: pptx-custom-shapes
+    station: pyforge-herald
+    heading: the shape API + autofit engine (→ 15.2)
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pptx-custom-shapes/SPEC.md
+  - id: pptx-deck-generation:CAP-1
+    spec: pptx-deck-generation
+    station: pyforge-herald
+    heading: template-parse-then-fill (→ 15.1)
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pptx-deck-generation/SPEC.md
+  - id: pptx-deck-generation:CAP-2
+    spec: pptx-deck-generation
+    station: pyforge-herald
+    heading: "custom shapes + real autofit (→ 15.2, downstream)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pptx-deck-generation/SPEC.md
+  - id: pgs:CAP-1
+    spec: pyforge-pages
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-pages/SPEC.md
+  - id: pgs:CAP-2
+    spec: pyforge-pages
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-pages/SPEC.md
+  - id: pgs:CAP-3
+    spec: pyforge-pages
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-pages/SPEC.md
+  - id: pgs:CAP-4
+    spec: pyforge-pages
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-pages/SPEC.md
+  - id: pgs:CAP-5
+    spec: pyforge-pages
+    station: pyforge-herald
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-pages/SPEC.md
+  - id: agent-tool-surface:CAP-1
+    spec: agent-tool-surface
+    station: pyforge-marshal
+    heading: one governed surface
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md
+  - id: agent-tool-surface:CAP-2
+    spec: agent-tool-surface
+    station: pyforge-marshal
+    heading: the surface survives a clone
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md
+  - id: agent-tool-surface:CAP-3
+    spec: agent-tool-surface
+    station: pyforge-marshal
+    heading: "CLI ⇄ tool parity is gated, not reviewed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md
+  - id: agent-tool-surface:CAP-4
+    spec: agent-tool-surface
+    station: pyforge-marshal
+    heading: "coverage is measured, not assumed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md
+  - id: bmad-loop-liveness-footgun:CAP-1
+    spec: bmad-loop-liveness-footgun
+    station: pyforge-marshal
+    heading: Marshal gains the missing liveness primitive
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md
+  - id: bmad-loop-liveness-footgun:CAP-2
+    spec: bmad-loop-liveness-footgun
+    station: pyforge-marshal
+    heading: The operator answer is one command
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md
+  - id: bmad-loop-liveness-footgun:CAP-3
+    spec: bmad-loop-liveness-footgun
+    station: pyforge-marshal
+    heading: An UNSUPERVISED row has a cheap double-check
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md
+  - id: bmad-switch-scope-enforcement:CAP-1
+    spec: bmad-switch-scope-enforcement
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md
+  - id: bmad-switch-scope-enforcement:CAP-2
+    spec: bmad-switch-scope-enforcement
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md
+  - id: bmad-switch-scope-enforcement:CAP-3
+    spec: bmad-switch-scope-enforcement
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md
+  - id: cursor-native-tier-map:CAP-1
+    spec: cursor-native-tier-map
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-cursor-native-tier-map/SPEC.md
+  - id: cursor-native-tier-map:CAP-2
+    spec: cursor-native-tier-map
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-cursor-native-tier-map/SPEC.md
+  - id: fleet-chain-completeness:CAP-1
+    spec: fleet-chain-completeness
+    station: pyforge-marshal
+    heading: orchestrated chain regeneration
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md
+  - id: fleet-chain-completeness:CAP-2
+    spec: fleet-chain-completeness
+    station: pyforge-marshal
+    heading: code-status preservation
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md
+  - id: fleet-chain-completeness:CAP-3
+    spec: fleet-chain-completeness
+    station: pyforge-marshal
+    heading: chain-completeness audit mode
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md
+  - id: fleet-chain-completeness:CAP-4
+    spec: fleet-chain-completeness
+    station: pyforge-marshal
+    heading: orphan detection with review-gated cleanup
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md
+  - id: fleet-chain-completeness:CAP-5
+    spec: fleet-chain-completeness
+    station: pyforge-marshal
+    heading: configurable per-project invocation
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-1
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-2
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-3
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-4
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-5
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-6
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-7
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-8
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-9
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-10
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-11
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-single-story-dispatch:CAP-12
+    spec: marshal-single-story-dispatch
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md
+  - id: marshal-token-economy:CAP-1
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-2
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-3
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-4
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-5
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-6
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-7
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-8
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-9
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-10
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-11
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-12
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-13
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-14
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-15
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-16
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-17
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-18
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: pyforge-testing-charter:CAP-1
+    spec: pyforge-testing-charter
+    station: pyforge-marshal
+    heading: Correct fleet-wide TEA signal
+    mode: A-only
+    expiry: 2026-12-31
+    note: "default: live on A until station vine"
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md
+  - id: pyforge-testing-charter:CAP-2
+    spec: pyforge-testing-charter
+    station: pyforge-marshal
+    heading: "One automation path, run for real per station"
+    mode: A-only
+    expiry: 2026-12-31
+    note: "default: live on A until station vine"
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md
+  - id: pyforge-testing-charter:CAP-3
+    spec: pyforge-testing-charter
+    station: pyforge-marshal
+    heading: Shared test-support package (pyforge-testing-kit)
+    mode: A-only
+    expiry: 2026-12-31
+    note: "default: live on A until station vine"
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md
+  - id: pyforge-testing-charter:CAP-4
+    spec: pyforge-testing-charter
+    station: pyforge-marshal
+    heading: "Coverage gate enforced, not just measured"
+    mode: A-only
+    expiry: 2026-12-31
+    note: "default: live on A until station vine"
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md
+  - id: pyforge-testing-charter:CAP-5
+    spec: pyforge-testing-charter
+    station: pyforge-marshal
+    heading: Test architecture stays current as stories land
+    mode: A-only
+    expiry: 2026-12-31
+    note: "default: live on A until station vine"
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md
+  - id: risk-tiered-review-depth:CAP-1
+    spec: risk-tiered-review-depth
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md
+  - id: risk-tiered-review-depth:CAP-2
+    spec: risk-tiered-review-depth
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md
+  - id: risk-tiered-review-depth:CAP-3
+    spec: risk-tiered-review-depth
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md
+  - id: risk-tiered-review-depth:CAP-4
+    spec: risk-tiered-review-depth
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md
+  - id: run-state-one-publisher:CAP-1
+    spec: run-state-one-publisher
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - id: run-state-one-publisher:CAP-2
+    spec: run-state-one-publisher
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - id: run-state-one-publisher:CAP-3
+    spec: run-state-one-publisher
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - id: run-state-one-publisher:CAP-4
+    spec: run-state-one-publisher
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - id: run-state-one-publisher:CAP-5
+    spec: run-state-one-publisher
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-run-state-one-publisher/SPEC.md
+  - id: scribe-code-navigation-owner:CAP-1
+    spec: scribe-code-navigation-owner
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-code-navigation-owner/SPEC.md
+  - id: scribe-graphify-nightly-currency:CAP-1
+    spec: scribe-graphify-nightly-currency
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-graphify-nightly-currency/SPEC.md
+  - id: scribe-graphify-nightly-currency:CAP-2
+    spec: scribe-graphify-nightly-currency
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-graphify-nightly-currency/SPEC.md
+  - id: scribe-graphify-nightly-currency:CAP-3
+    spec: scribe-graphify-nightly-currency
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-graphify-nightly-currency/SPEC.md
+  - id: scribe-graphify-target-list:CAP-1
+    spec: scribe-graphify-target-list
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-graphify-target-list/SPEC.md
+  - id: scribe-in-flight-story-specs:CAP-1
+    spec: scribe-in-flight-story-specs
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-in-flight-story-specs/SPEC.md
+  - id: scribe-knowledge-layers:CAP-1
+    spec: scribe-knowledge-layers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-knowledge-layers/SPEC.md
+  - id: scribe-knowledge-layers:CAP-2
+    spec: scribe-knowledge-layers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-knowledge-layers/SPEC.md
+  - id: scribe-knowledge-layers:CAP-3
+    spec: scribe-knowledge-layers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-knowledge-layers/SPEC.md
+  - id: scribe-knowledge-layers:CAP-4
+    spec: scribe-knowledge-layers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-knowledge-layers/SPEC.md
+  - id: scribe-knowledge-layers:CAP-5
+    spec: scribe-knowledge-layers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-knowledge-layers/SPEC.md
+  - id: scribe-marshal-fact-visibility:CAP-1
+    spec: scribe-marshal-fact-visibility
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-marshal-fact-visibility/SPEC.md
+  - id: scribe-named-docs:CAP-1
+    spec: scribe-named-docs
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-named-docs/SPEC.md
+  - id: scribe-planning-pointers:CAP-1
+    spec: scribe-planning-pointers
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-planning-pointers/SPEC.md
+  - id: scribe-portal-recall-defaults:CAP-1
+    spec: scribe-portal-recall-defaults
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-portal-recall-defaults/SPEC.md
+  - id: scribe-recall-mode-wiring:CAP-1
+    spec: scribe-recall-mode-wiring
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-mode-wiring/SPEC.md
+  - id: scribe-recall-mode-wiring:CAP-2
+    spec: scribe-recall-mode-wiring
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-mode-wiring/SPEC.md
+  - id: scribe-recall-mode-wiring:CAP-3
+    spec: scribe-recall-mode-wiring
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-mode-wiring/SPEC.md
+  - id: scribe-recall-modes:CAP-1
+    spec: scribe-recall-modes
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-modes/SPEC.md
+  - id: scribe-recall-stale-between-nightlies:CAP-1
+    spec: scribe-recall-stale-between-nightlies
+    station: pyforge-scribe
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-stale-between-nightlies/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-1
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Pre-flight diff (report-only)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-2
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: "Deliberate, reviewable apply"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-3
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Custom-surface reconciliation
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-4
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Downstream pin fan-out report (report-only)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-5
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Post-apply verification gate
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-6
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Non-interactive installer drive
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-7
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Custom-module awareness
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-8
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Local-customization scan and re-apply
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: bmad-method-core-upgrade:CAP-9
+    spec: bmad-method-core-upgrade
+    station: pyforge-steward
+    heading: Deliberate shim retirement (`--no-shims`)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md
+  - id: fcl:CAP-1
+    spec: foundry-capability-ledger
+    station: pyforge-steward
+    heading: Tracked ledger
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/SPEC.md
+  - id: fcl:CAP-2
+    spec: foundry-capability-ledger
+    station: pyforge-steward
+    heading: Extract detector
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/SPEC.md
+  - id: fcl:CAP-3
+    spec: foundry-capability-ledger
+    station: pyforge-steward
+    heading: Case-list join
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/SPEC.md
+  - id: fnr:CAP-1
+    spec: foundry-regenerate-not-fold
+    station: pyforge-steward
+    heading: Thin oracle
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/SPEC.md
+  - id: fnr:CAP-2
+    spec: foundry-regenerate-not-fold
+    station: pyforge-steward
+    heading: Rebuild `pyforge-core` in foundry
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/SPEC.md
+  - id: fnr:CAP-3
+    spec: foundry-regenerate-not-fold
+    station: pyforge-steward
+    heading: Rebuild steward in foundry
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/SPEC.md
+  - id: fnr:CAP-4
+    spec: foundry-regenerate-not-fold
+    station: pyforge-steward
+    heading: Rebuild marshal in foundry
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/SPEC.md
+  - id: fnr:CAP-5
+    spec: foundry-regenerate-not-fold
+    station: pyforge-steward
+    heading: Dual-root A/B
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/SPEC.md
+  - id: jira-github-projects-sync:CAP-1
+    spec: jira-github-projects-sync
+    station: pyforge-steward
+    heading: "bidirectional propagation of status, assignee, and identity link"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md
+  - id: jira-github-projects-sync:CAP-2
+    spec: jira-github-projects-sync
+    station: pyforge-steward
+    heading: zero-loop guarantee
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md
+  - id: jira-github-projects-sync:CAP-3
+    spec: jira-github-projects-sync
+    station: pyforge-steward
+    heading: idempotent update processing
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md
+  - id: jira-github-projects-sync:CAP-4
+    spec: jira-github-projects-sync
+    station: pyforge-steward
+    heading: "fail loud, fail alone on broken links"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md
+  - id: jira-github-projects-sync:CAP-5
+    spec: jira-github-projects-sync
+    station: pyforge-steward
+    heading: explicit status-vocabulary translation
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md
+  - id: local-ocp-hybrid-environment:CAP-1
+    spec: local-ocp-hybrid-environment
+    station: pyforge-steward
+    heading: Cluster bring-up + registry posture (→ Story 12.4)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/SPEC.md
+  - id: local-ocp-hybrid-environment:CAP-2
+    spec: local-ocp-hybrid-environment
+    station: pyforge-steward
+    heading: DB-GPT sidecar joins the chart (→ Story 12.5)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/SPEC.md
+  - id: local-ocp-hybrid-environment:CAP-3
+    spec: local-ocp-hybrid-environment
+    station: pyforge-steward
+    heading: "Redis hardened, ephemeral kept (→ Story 12.6)"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/SPEC.md
+  - id: local-ocp-hybrid-environment:CAP-4
+    spec: local-ocp-hybrid-environment
+    station: pyforge-steward
+    heading: Tier-3 attended verification (→ Story 12.7)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/SPEC.md
+  - id: local-ocp-hybrid-environment:CAP-5
+    spec: local-ocp-hybrid-environment
+    station: pyforge-steward
+    heading: dlt Projects V2 bridge (→ Story 12.8)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/SPEC.md
+  - id: mcp-factory-stdio-translator:CAP-1
+    spec: mcp-factory-stdio-translator
+    station: pyforge-steward
+    heading: stdio wrap of a FastMCP 3 child
+    mode: A-only
+    expiry: 44.7
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-factory-stdio-translator/SPEC.md
+  - id: mcp-factory-stdio-translator:CAP-2
+    spec: mcp-factory-stdio-translator
+    station: pyforge-steward
+    heading: explicit non-CRC claim
+    mode: A-only
+    expiry: 44.7
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-factory-stdio-translator/SPEC.md
+  - id: ocp-as-a-portability-profile:CAP-1
+    spec: ocp-as-a-portability-profile
+    station: pyforge-steward
+    heading: Optional OCP smoke job
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile/SPEC.md
+  - id: ocp-as-a-portability-profile:CAP-2
+    spec: ocp-as-a-portability-profile
+    station: pyforge-steward
+    heading: Route and SCC proof
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile/SPEC.md
+  - id: ocp-as-a-portability-profile:CAP-3
+    spec: ocp-as-a-portability-profile
+    station: pyforge-steward
+    heading: Runner honesty
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile/SPEC.md
+  - id: platform-fifteen-factors:CAP-1
+    spec: platform-fifteen-factors
+    station: pyforge-steward
+    heading: OIDC-delegated identity
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
+  - id: platform-fifteen-factors:CAP-2
+    spec: platform-fifteen-factors
+    station: pyforge-steward
+    heading: telemetry
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
+  - id: platform-fifteen-factors:CAP-3
+    spec: platform-fifteen-factors
+    station: pyforge-steward
+    heading: startup refusals
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
+  - id: platform-fifteen-factors:CAP-4
+    spec: platform-fifteen-factors
+    station: pyforge-steward
+    heading: policy-as-tests
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
+  - id: platform-fifteen-factors:CAP-5
+    spec: platform-fifteen-factors
+    station: pyforge-steward
+    heading: pixi-sourced deps
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md
+  - id: pap:CAP-1
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "`django-pyforge`, the shared chrome"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-2
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "Lane 1 is CMS-managed, and it is the only front door"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-3
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "Eight portals, one session"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-4
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Every station has a service face
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-5
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: One command grammar
+    mode: rebuild
+    note: one command grammar — public CLI verbs
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-6
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "One client, carrying identity"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-7
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Analytics behind the front door
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-8
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Stations can tell each other things
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-9
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "Schema change is governed, not incidental"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-10
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Failure is contained
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-11
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Queue and cache cannot evict each other
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-12
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Access is revocable and secrets are delivered
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-13
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Behaviour flips without a redeploy
+    mode: rebuild
+    note: flag tree — cutover_root
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-14
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "Scribe's graph outlives one file"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-15
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Every station teaches an agent its own work
+    mode: rebuild
+    note: station teaches an agent — MCP
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-16
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: Every station can be addressed as a persona
+    mode: rebuild
+    note: station as persona
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-17
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: "Run state is a service, not a local filesystem read"
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-18
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: One hook-spec and plugin-registration shape
+    mode: rebuild
+    note: hook-spec / plugin registration — pyforge-core
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-19
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: One HTAP query plane; stations are clients
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals/analytics later; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: fnd:CAP-1
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Open foundry (Phase 0)
+    mode: rebuild
+    note: foundry exists; keep as rebuild not a fold
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-2
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Realize the estate (Phase 1)
+    mode: rebuild
+    note: realize by vines; 44.4-44.6 file-move parked; never apply --phase 1a
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-3
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: CFE on foundry (Phase 2)
+    mode: rebuild
+    note: CFE from Specs; not 44.6 cell move
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-4
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Factory island (Phase 3)
+    mode: rebuild
+    note: factory island already on B
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-5
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Working set (Phase 4)
+    mode: A-only
+    expiry: 44.8
+    note: working set stays invented on A
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-6
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Mason talks to conda-forge (Phase 5)
+    mode: A-only
+    expiry: 44.9
+    note: outward conda-forge; 44.9 stays blocked
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-7
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Archive `local-recipes` (Phase 6)
+    mode: retire
+    note: archive local-recipes; must not appear on B
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-8
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: "Flag-gated, replayable cutover"
+    mode: rebuild
+    note: cutover flag; 44.12 done
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-9
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Capability ledger and rebuild harness
+    mode: rebuild
+    note: ledger+harness; 44.1 move-list stays blocked; 44.14 later
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-10
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Metered minutes budget
+    mode: A-only
+    expiry: 44.15
+    note: minutes metering later
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: fnd:CAP-11
+    spec: python-foundry-cutover
+    station: pyforge-steward
+    heading: Foundry kernel regenerate
+    mode: rebuild
+    note: kernel 54.2-54.4 landed on B
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md
+  - id: scratch-worktree-lifecycle:CAP-1
+    spec: scratch-worktree-lifecycle
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/SPEC.md
+  - id: scratch-worktree-lifecycle:CAP-2
+    spec: scratch-worktree-lifecycle
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/SPEC.md
+  - id: scratch-worktree-lifecycle:CAP-3
+    spec: scratch-worktree-lifecycle
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/SPEC.md
+  - id: scratch-worktree-lifecycle:CAP-4
+    spec: scratch-worktree-lifecycle
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/SPEC.md
+  - id: scratch-worktree-lifecycle:CAP-5
+    spec: scratch-worktree-lifecycle
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/SPEC.md
+  - id: secure-live-dashboards:CAP-1
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: identity and role arrive from the request; the pattern authenticates no one
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-2
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: "row-level isolation is declared, not implemented, by the adopter"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-3
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: "an unauthorized page is absent, not hidden"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-4
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: "the audit trail records what was seen, not merely that something happened"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-5
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: "export is gated server-side, and may be encrypted"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-6
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: the deployment perimeter ships with the pattern
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-7
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: the security boundaries are proven by tests that cannot pass vacuously
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: secure-live-dashboards:CAP-8
+    spec: secure-live-dashboards
+    station: pyforge-steward
+    heading: "the same dashboard definition ships hosted or static, without a fork"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - id: suite-scaffold-and-mybmad-sidecar:CAP-1
+    spec: suite-scaffold-and-mybmad-sidecar
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-suite-scaffold-and-mybmad-sidecar/SPEC.md
+  - id: suite-scaffold-and-mybmad-sidecar:CAP-2
+    spec: suite-scaffold-and-mybmad-sidecar
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-suite-scaffold-and-mybmad-sidecar/SPEC.md
+  - id: suite-scaffold-and-mybmad-sidecar:CAP-3
+    spec: suite-scaffold-and-mybmad-sidecar
+    station: pyforge-steward
+    heading: ""
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-suite-scaffold-and-mybmad-sidecar/SPEC.md
+  - id: compliance-factory-web-face:CAP-1
+    spec: compliance-factory-web-face
+    station: pyforge-warden
+    heading: the service skeleton
+    mode: retire
+    note: compliance_face / services stay off B
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md
+  - id: compliance-factory-web-face:CAP-2
+    spec: compliance-factory-web-face
+    station: pyforge-warden
+    heading: results + derived progress
+    mode: retire
+    note: compliance_face / services stay off B
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md
+  - id: golden-path-conda-blind-spot:CAP-1
+    spec: golden-path-conda-blind-spot
+    station: pyforge-warden
+    heading: environment-scoped lockfile extraction
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/SPEC.md
+  - id: golden-path-conda-blind-spot:CAP-2
+    spec: golden-path-conda-blind-spot
+    station: pyforge-warden
+    heading: the promotion scans the shipped closure
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/SPEC.md
+  - id: golden-path-conda-blind-spot:CAP-3
+    spec: golden-path-conda-blind-spot
+    station: pyforge-warden
+    heading: the offline OSV database is provisioned in CI
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/SPEC.md
+  - id: golden-path-conda-blind-spot:CAP-4
+    spec: golden-path-conda-blind-spot
+    station: pyforge-warden
+    heading: the verdict is honest and specific
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/SPEC.md
+  - id: golden-path-conda-blind-spot:CAP-5
+    spec: golden-path-conda-blind-spot
+    station: pyforge-warden
+    heading: deploy gates on the verdict (already true on main — preserve)
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/SPEC.md
+  - id: package-inventory-eligibility:CAP-1
+    spec: package-inventory-eligibility
+    station: pyforge-warden
+    heading: SourceContract + identity API
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md
+  - id: package-inventory-eligibility:CAP-2
+    spec: package-inventory-eligibility
+    station: pyforge-warden
+    heading: eligibility-union + provenance
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md
+  - id: package-inventory-eligibility:CAP-3
+    spec: package-inventory-eligibility
+    station: pyforge-warden
+    heading: CycloneDX out + the corpus in
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md
