@@ -63,7 +63,9 @@ their own non-graph path instead of serving it.
 
 **Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
-Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--scope`
+Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--mode`
+planning|memory|code is the named bag (Story 16.1), exclusive with `--kind`.
+`--scope`
 admits that project's planning tree plus `presentations/<scope>/facts.yaml`
 (Story 9.1).
 

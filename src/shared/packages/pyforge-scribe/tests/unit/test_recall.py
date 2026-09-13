@@ -502,6 +502,76 @@ def test_unknown_recall_kind_raises() -> None:
         resolve_recall_kinds(frozenset({"nope"}))
 
 
+def test_recall_mode_planning_and_memory_are_exclusive_bags(
+    repo_with_citation: Path,
+) -> None:
+    (repo_with_citation / "docs").mkdir(exist_ok=True)
+    (repo_with_citation / "docs" / "prd.md").write_text("prd", encoding="utf-8")
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(_node())
+    store.upsert_node(
+        _node(
+            id="doc:docs/prd.md",
+            kind="doc",
+            title="PRD",
+            text="We dropped Kuzu because planning said so.",
+            citation="docs/prd.md",
+        )
+    )
+    store.commit()
+
+    planning = answer(
+        "why did we drop Kuzu?",
+        store,
+        repo_root=repo_with_citation,
+        surface="planning",
+    )
+    memory = answer(
+        "why did we drop Kuzu?",
+        store,
+        repo_root=repo_with_citation,
+        surface="memory",
+    )
+    assert planning.citation == "docs/prd.md"
+    assert memory.citation == "notes/kuzu-drop.md"
+
+
+def test_recall_mode_and_kind_are_exclusive() -> None:
+    from pyforge.scribe.recall import resolve_recall_selection
+
+    with pytest.raises(ValueError, match="exclusive"):
+        resolve_recall_selection(kinds=frozenset({"doc"}), surface="planning")
+    with pytest.raises(ValueError, match="unknown recall mode"):
+        resolve_recall_selection(surface="lexical")
+
+
+def test_recall_mode_code_selects_code_only(repo_with_citation: Path) -> None:
+    (repo_with_citation / "src").mkdir(exist_ok=True)
+    (repo_with_citation / "src" / "example.py").write_text("x = 1\n", encoding="utf-8")
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(_node())
+    store.upsert_node(
+        _node(
+            id="code:python:example",
+            kind="code",
+            title="example",
+            text="We dropped Kuzu in the AST.",
+            citation="src/example.py:L1",
+        )
+    )
+    store.commit()
+
+    result = answer(
+        "why did we drop Kuzu?",
+        store,
+        repo_root=repo_with_citation,
+        surface="code",
+    )
+    assert result.citation == "src/example.py:L1"
+
+
 @pytest.fixture()
 def repo_with_fact_ledgers(tmp_path: Path) -> Path:
     for slug in ("pyforge-scribe", "pyforge-warden"):

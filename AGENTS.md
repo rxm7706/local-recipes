@@ -77,8 +77,10 @@ ledger number — not a guess from chat memory — run:
 
 `pixi run -e pyforge-scribe scribe recall "…"`
 
-Default recall omits `kind=code` graphify AST nodes. Use `--kind code` only
-when you want that surface. Scoped retrieve (`--scope <slug>`, including
+Default recall omits `kind=code` graphify AST nodes. Use `--mode planning`
+(docs/memlogs), `--mode memory`, or `--mode code` when you want one
+surface — or `--kind` for an explicit bag. `--mode` and `--kind` are
+exclusive. Scoped retrieve (`--scope <slug>`, including
 Marshal planning-graph) also admits that slug's
 `presentations/<slug>/facts.yaml`. Marshal `codegraph`
 (`.codegraph/codegraph.db`) owns symbol navigation. Do not treat the

@@ -7,9 +7,9 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-09-13):** `spec-scribe-graphify-target-list` + Story 15.1.
-CAP-6/7/8/9/10/12/13 hoisted. Parked CAP-11 and CAP-14 stay in
-`later-caps.md`. Prior note kept below.
+**Status (2026-09-13):** `spec-scribe-recall-modes` + Story 16.1.
+CAP-6–CAP-13 hoisted. Parked CAP-14 stays in `later-caps.md`. Prior
+note kept below.
 
 **Status (2026-08-08):** all 9 done stories have a spec here. `spec-1-4`
 (pointer stub write-back, idempotent re-invocation) and `spec-1-5` (seed

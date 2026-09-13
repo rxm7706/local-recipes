@@ -23,12 +23,12 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 | **CAP-8** | Explicit **graphify target list**. Hoisted 2026-09-13 to `spec-scribe-graphify-target-list` CAP-1 / Story 15.1. | Was parked so the session would not lose it. | Code map of host + factory scripts |
 | **CAP-9** | Persist **`compiled_at`.** Hoisted 2026-09-13 to `spec-scribe-recall-stale-between-nightlies` CAP-1 / Story 11.1. | Was parked so the session would not lose it. | Marshal CAP-13 meaning between nightlies |
 | **CAP-10** | **Fact ledgers visible to Marshal retrieve.** Hoisted 2026-09-13 to `spec-scribe-marshal-fact-visibility` CAP-1 / Story 9.1 (identity citation rule). | Was parked here so the session would not lose it. | Decks and dispatch citing the same numbers |
-| **CAP-11** | First-class recall **modes** (`planning` / `memory` / `code`), not only `--kind`. | `--kind` is enough for CAP-4. Modes are the PyForge wiring shape. | Portal + agents without inventing argv |
+| **CAP-11** | First-class recall **modes**. Hoisted 2026-09-13 to `spec-scribe-recall-modes` CAP-1 / Story 16.1. | Was parked so the session would not lose it. | Portal + agents without inventing argv |
 | **CAP-12** | **Portal / harness wiring.** Hoisted 2026-09-13 to `spec-scribe-portal-recall-defaults` CAP-1 / Story 12.1. | Was parked so the session would not lose it. | “Wiring this into PyForge” |
 | **CAP-13** | Named extra **`docs/` surfaces** (how-tos, `library-llms-full.md`). Hoisted 2026-09-13 to `spec-scribe-named-docs` CAP-1 / Story 14.1. | Was parked so the session would not lose it. | Library/how-to questions |
 | **CAP-14** | **One navigation owner:** graphify `code:` vs Marshal `codegraph.db`. Not both as recall peers. | Non-goal on this Spec is “do not replace codegraph.” A later decision can pick. | Agents asking “where is this symbol?” |
 
 ## Recorded, not scheduled
 
-CAP-6/7/8/9/10/12/13 are Stories 10.1 / 13.1 / 15.1 / 11.1 / 9.1 / 12.1 /
-14.1. No story is minted here for CAP-11 or CAP-14.
+CAP-6/7/8/9/10/11/12/13 are Stories 10.1 / 13.1 / 15.1 / 11.1 / 9.1 /
+16.1 / 12.1 / 14.1. No story is minted here for CAP-14.

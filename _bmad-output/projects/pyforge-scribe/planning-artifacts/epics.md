@@ -634,6 +634,20 @@ parked CAP-8). Extra remains off by default.
 **And** extra-off compile is unchanged
 **And** an explicit `--target` stays one path
 
+## Epic 16: Recall names the surface, not a kind bag
+
+**Spec binding.** `spec-scribe-recall-modes` CAP-1 (hoisted parked
+CAP-11). Internal lexical/semantic ranking is unchanged.
+
+### Story 16.1: Recall modes join the CLI
+**Type:** feature • **Effort:** S • **Deps:** S-8.5 • **FR/AD:** `spec-scribe-recall-modes` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `cli.py`
+**Given** `scribe recall` **When** `--mode planning` **Then** candidates are `doc` and `memlog` only
+**And** `--mode memory` is `memory` only; `--mode code` is `code` only
+**And** `--mode` with `--kind` exits 2
+**And** neither flag keeps the CAP-4 default bag
+**And** portal argv is unchanged
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

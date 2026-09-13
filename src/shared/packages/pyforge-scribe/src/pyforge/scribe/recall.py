@@ -50,6 +50,13 @@ DEFAULT_RECALL_KINDS: frozenset[GraphNodeKind] = frozenset(
 _ALL_RECALL_KINDS: frozenset[str] = frozenset(
     {"memory", "memlog", "commit", "doc", "transcript", "code"}
 )
+#: User-facing `--mode` bags (Story 16.1 / CAP-11). Distinct from
+#: `answer(..., mode=)` which is lexical vs semantic ranking.
+RECALL_MODE_KINDS: dict[str, frozenset[str]] = {
+    "planning": frozenset({"doc", "memlog"}),
+    "memory": frozenset({"memory"}),
+    "code": frozenset({"code"}),
+}
 
 _STOPWORDS = frozenset(
     {
@@ -141,6 +148,29 @@ def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
     return kinds
 
 
+def resolve_recall_selection(
+    *,
+    kinds: frozenset[str] | None = None,
+    surface: str | None = None,
+) -> frozenset[str]:
+    """Resolve `--mode` or `--kind` to a kind bag (Story 16.1).
+
+    The two flags are exclusive. ``surface`` is the user-facing mode
+    (`planning` / `memory` / `code`), not lexical/semantic ranking.
+    """
+    if surface is not None and kinds is not None:
+        raise ValueError("--mode and --kind are exclusive")
+    if surface is not None:
+        bag = RECALL_MODE_KINDS.get(surface)
+        if bag is None:
+            raise ValueError(
+                f"unknown recall mode {surface!r}; "
+                f"expected one of {sorted(RECALL_MODE_KINDS)}"
+            )
+        return bag
+    return resolve_recall_kinds(kinds)
+
+
 def answer(
     query: str,
     store: GraphStore,
@@ -149,6 +179,7 @@ def answer(
     mode: str = "lexical",
     scope: str | None = None,
     kinds: frozenset[str] | None = None,
+    surface: str | None = None,
 ) -> RecallAnswer:
     """Deterministic, cited retrieval over the compiled graph (AD-6/AD-8).
 
@@ -173,8 +204,9 @@ def answer(
 
     `kinds` (Story 8.5): `None` omits `code`. An explicit frozenset is the
     only candidate kinds — `--kind code` is opt-in, not additive.
+    `surface` (Story 16.1): named `--mode` bag; exclusive with `kinds`.
     """
-    allowed = resolve_recall_kinds(kinds)
+    allowed = resolve_recall_selection(kinds=kinds, surface=surface)
     if mode == "semantic":
         return _answer_semantic(
             query, store, repo_root=repo_root, scope=scope, kinds=allowed

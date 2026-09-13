@@ -357,7 +357,16 @@ def recall_cmd(
         help=(
             "Restrict candidates to these GraphNode kinds (repeatable). "
             "Default omits code. Pass --kind code to search AST nodes only; "
-            "combine kinds explicitly when you want more than one."
+            "combine kinds explicitly when you want more than one. "
+            "Exclusive with --mode."
+        ),
+    ),
+    surface: str | None = typer.Option(
+        None,
+        "--mode",
+        help=(
+            "Named candidate bag: planning (doc+memlog), memory, or code. "
+            "Exclusive with --kind. Distinct from --semantic ranking."
         ),
     ),
 ) -> None:
@@ -369,7 +378,13 @@ def recall_cmd(
     kinds = frozenset(kind) if kind else None
     try:
         result = recall_answer(
-            query, store, repo_root=repo_root, mode=mode, scope=scope, kinds=kinds
+            query,
+            store,
+            repo_root=repo_root,
+            mode=mode,
+            scope=scope,
+            kinds=kinds,
+            surface=surface,
         )
     except ValueError as exc:
         typer.echo(str(exc), err=True)
