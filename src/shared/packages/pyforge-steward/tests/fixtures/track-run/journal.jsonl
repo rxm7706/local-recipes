@@ -1,0 +1,3 @@
+{"id":{"writer_id":"dispatch","counter":0},"ts":"2026-09-13T16:00:00.000Z","run_id":"run-fixture-53-3","kind":"run.start","phase":"observation","payload":{}}
+{"id":{"writer_id":"dispatch","counter":1},"ts":"2026-09-13T16:01:00.000Z","run_id":"run-fixture-53-3","kind":"gate.verdict","phase":"observation","payload":{"name":"confidence","rule":"confidence below 0.80 → human review","verdict":"pass"}}
+{"id":{"writer_id":"dispatch","counter":2},"ts":"2026-09-13T16:02:00.000Z","run_id":"run-fixture-53-3","kind":"run.end","phase":"observation","payload":{}}

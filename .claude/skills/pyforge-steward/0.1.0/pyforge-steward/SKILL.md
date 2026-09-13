@@ -54,7 +54,9 @@ machine-readable ceiling; `check` may request `EXIT_BUDGET_NOT_CONFIGURED` (3)
 when no metered source exists [SRC:src/pyforge/steward/cli.py:L25-L33].
 
 <!-- [MANUAL:additional-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+**Track** (`steward track assemble --run-dir DIR --out PATH`) (Story 53.3 / hub:CAP-3):
+write one tracked `track.json` from a run dir. Field list is marshal-relayed
+(`TRACK_FIELDS`); this duty is the Track writer. Not a detector.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows
@@ -138,5 +140,5 @@ steward init|shell-init|setup|initrepo|validate-fast [--json]
 ```
 
 <!-- [MANUAL:api-notes] -->
-<!-- Add custom notes here. This section is preserved during skill updates. -->
+steward track assemble --run-dir DIR --out PATH
 <!-- [/MANUAL:api-notes] -->
