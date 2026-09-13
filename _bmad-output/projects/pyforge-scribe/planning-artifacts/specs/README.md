@@ -7,9 +7,9 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-09-13):** `spec-scribe-recall-stale-between-nightlies` +
-Story 11.1. CAP-6/9/10 hoisted. Parked CAP-7–CAP-8 and CAP-11–CAP-14 stay
-in `later-caps.md`. Prior note kept below.
+**Status (2026-09-13):** `spec-scribe-portal-recall-defaults` + Story 12.1.
+CAP-6/9/10/12 hoisted. Parked CAP-7–CAP-8, CAP-11, CAP-13–CAP-14 stay in
+`later-caps.md`. Prior note kept below.
 
 **Status (2026-08-08):** all 9 done stories have a spec here. `spec-1-4`
 (pointer stub write-back, idempotent re-invocation) and `spec-1-5` (seed

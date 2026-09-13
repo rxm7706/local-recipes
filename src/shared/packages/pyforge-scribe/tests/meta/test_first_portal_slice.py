@@ -216,6 +216,25 @@ def test_portal_tree_has_no_raw_http_or_pyforge_or_chrome_copy() -> None:
     assert offenders == []
 
 
+def test_portal_job_and_cursor_rule_inherit_default_recall() -> None:
+    root = _repo_root()
+    job = (
+        root
+        / "src"
+        / "shared"
+        / "packages"
+        / "django-pyforge"
+        / "src"
+        / "django_pyforge"
+        / "assertion"
+        / "client.py"
+    ).read_text(encoding="utf-8")
+    assert '"--kind"' not in job and "'--kind'" not in job
+    rule = (root / ".cursor" / "rules" / "scribe-recall.mdc").read_text(encoding="utf-8")
+    assert "scribe recall" in rule
+    assert "AGENTS.md" in rule
+
+
 def test_src_platform_has_no_pyforge_import() -> None:
     root = _repo_root()
     changed = changed_paths_since(root, pathspec="src/platform")
