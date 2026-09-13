@@ -414,6 +414,9 @@ observability:
 # Story 48.9 / CAP-1: OIDC identity. Default profile deploys Keycloak
 # in-cluster (state in existing PostgreSQL); `byo` skips Keycloak and reads
 # issuer/JWKS/client from `oidc.byo.*` — the COMPONENT_OIDC_* BYO escape hatch.
+# Story 52.1: the mybmad sidecar consumes this same plane (and estate
+# DATABASE_URL with Prisma ?schema=mybmad). Liquibase creates schema mybmad
+# only. Do not add a second login under src/platform/ or mount /console/.
 oidc:
   # `bundled` (default): chart renders Keycloak and wires COMPONENT_OIDC_*.
   # `byo`: no Keycloak workloads; set oidc.byo.* explicitly.

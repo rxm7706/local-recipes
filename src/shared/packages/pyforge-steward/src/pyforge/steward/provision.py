@@ -483,6 +483,12 @@ _SUPPORTED_MODULES: dict[str, ModuleBackend] = {
 }
 
 # Documented skip set — never registered, never provisionable. Citation only.
+_TEMPLATE_AUTHORING_ONLY = (
+    "bmad-module-template is an authoring tool only (adoption-register "
+    "row 11; Story 52.1). Never steward provision --module into "
+    ".claude/skills/. Use bmad-builder beside this scaffold."
+)
+
 _SKIPPED_MODULES: dict[str, str] = {
     "wds": (
         "WDS (bmad-method-wds-expansion) is skip-decided: deprecated upstream "
@@ -490,6 +496,9 @@ _SKIPPED_MODULES: dict[str, str] = {
         "bmad-suite-channel-product — absorbing into bmad-ux). Not in "
         "_SUPPORTED_MODULES."
     ),
+    "module-template": _TEMPLATE_AUTHORING_ONLY,
+    "bmad-module-template": _TEMPLATE_AUTHORING_ONLY,
+    "template": _TEMPLATE_AUTHORING_ONLY,
 }
 
 

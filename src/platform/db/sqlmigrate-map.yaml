@@ -25,6 +25,9 @@ distributions:
       sites.0003_set_site_domain_and_name: 12
       sites.0004_alter_options_ordering_domain: 13
       warden_fabric.0001_initial: 14
+  pyforge-mybmad:
+    # Story 52.1: consume sidecar schema only (no Django app / no public tables).
+    migrations: {}
   pyforge-scribe:
     # Scribe's graph store is not a Django app, so this distribution maps no
     # migrations. It still owns seqs 1-4 in the changelog (pgvector extension,

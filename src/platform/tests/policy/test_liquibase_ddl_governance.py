@@ -29,7 +29,14 @@ DB_README = DB_ROOT / "README.md"
 ALLOWED_SCHEMAS = frozenset(
     # Story 41.3 added scribe_schema: scribe's graph relations are governed
     # DDL now, not something its runtime driver creates for itself.
-    {"public", "langflow_schema", "dbgpt_schema", "liquibase", "scribe_schema"},
+    {
+        "public",
+        "langflow_schema",
+        "dbgpt_schema",
+        "liquibase",
+        "scribe_schema",
+        "mybmad",
+    },
 )
 CHANGESET_ID = re.compile(r"^[a-z0-9][a-z0-9.-]*:[1-9][0-9]*$")
 CREATE_SCHEMA = re.compile(
@@ -323,6 +330,10 @@ def test_scribe_owns_its_own_distribution_sequence() -> None:
     bodies = _changeset_files()
     for changeset_id in SCRIBE_CHANGESETS:
         assert changeset_id in bodies, f"{changeset_id} missing from the changelog"
+
+    mybmad_sql = bodies["pyforge-mybmad:1"].upper()
+    assert "CREATE SCHEMA IF NOT EXISTS MYBMAD" in mybmad_sql
+    assert "CREATE TABLE" not in mybmad_sql
 
     scribe_sql = "\n".join(bodies[cid] for cid in SCRIBE_CHANGESETS).upper()
     assert "CREATE EXTENSION IF NOT EXISTS VECTOR" in scribe_sql

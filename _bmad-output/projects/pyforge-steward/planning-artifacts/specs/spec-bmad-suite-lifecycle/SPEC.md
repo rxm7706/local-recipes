@@ -8,7 +8,7 @@ status: in-progress   # 2026-09-09 (batch Class B row stA), was `ready` since 20
                       # Derived 2026-09-06 from docs/dreams/bmad-suite-lifecycle.md; decomposed the
                       # same day (steward Epics 46/47 + Story 14.9, marshal 30.5 + Epic 31,
                       # doctor 20, warden 11, herald 18, scribe 7, atlas 24, mason 14).
-updated: "2026-09-09"
+updated: "2026-09-13"
 owner-dream: docs/dreams/bmad-suite-lifecycle.md
 surface: []   # provisioning, upgrade and suite code stay governed by spec-pyforge-steward's surface; station relays by their own Specs
 companions:
@@ -151,8 +151,14 @@ cutover chain, so it owns closing all three.
 
 - First-install of bmad-method (the foundry's; Epic 14 upgrades an installed core).
 - Refreshing suite conda recipes (the CFE factory flow, Mason).
-- mybmad-dashboard into the platform; `bmad-module-template` provisioning; the whole labs
-  marketplace.
+- Replacing `/console/` or adding a ninth station. `mybmad-dashboard` is a
+  **consume sidecar** (estate Postgres schema `mybmad` + estate Keycloak/OIDC;
+  django-pyforge chrome may show it after the same session) — not a skip-out
+  of the estate and not a second login in `src/platform/`.
+- `steward provision --module` of `bmad-module-template` into `.claude/skills/`.
+  The template is an **authoring tool** beside `bmad-builder` — not a skip of
+  the catalog row and not a provisionable module.
+- The whole labs marketplace.
 - Upstream pull requests (skf `marketplace.json`, the sprint-plan key fix, the skf uninstall bug).
 - The cutover itself (Epic 44) — this Spec makes it possible, it does not perform it.
 
