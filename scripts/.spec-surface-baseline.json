@@ -731,6 +731,34 @@
   },
   "memlog": "b9a95f1b8e7d6ffdf0611c4f39bd874a238f9034"
  },
+ "pyforge-herald/spec-deck-family-currency": {
+  "files": {
+   "docs/specs/presentation-deck.md": "bd3f4889702564ce863a5236acd614bdc30fc196",
+   "pixi.toml": "76c561e066c24c07e3b5577fdc8b23821be668b3",
+   "presentations/README.md": "260bc5f31cc5cb21ffd8507b3d119b3b55713e83",
+   "presentations/pyforge-atlas/README.md": "db6d47b8d54c4ecfc0415ec4bde710c967adf85e",
+   "presentations/pyforge-atlas/project/PyForge Atlas Infographic standalone.html": "22f9e8c02578ff1deee1cdfe856f57d1eea35e48",
+   "presentations/pyforge-doctor/README.md": "36e889752b71728bb675e032b517ade1af75c0eb",
+   "presentations/pyforge-doctor/project/PyForge Doctor Infographic standalone.html": "104c97f8931610c7f5deca1c29356a0bb7fc1d47",
+   "presentations/pyforge-genesis/README.md": "52ccceb704b1980c3f9efab8d732c521af91fd59",
+   "presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html": "2b0e5b6a17a26d5553232a419046a148950d0359",
+   "presentations/pyforge-herald/README.md": "3919ec54f9993764a8b2c05f04fa705a2e750432",
+   "presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html": "0828e5c78609cb09cf8e7f2de47d3fc3ed77a751",
+   "presentations/pyforge-marshal/README.md": "28ffd9692e7d9691b1b7a3b812b073c2266e0103",
+   "presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html": "820cf9c24d38a9ce71b94547c5d8691d814ba0b7",
+   "presentations/pyforge-mason/README.md": "d38ef40e64d026a52019bbe2d2017fa8d35177ac",
+   "presentations/pyforge-mason/project/PyForge Mason Infographic standalone.html": "a0014dadf29c99225f99ce905b1bf5ad4ad6ac3d",
+   "presentations/pyforge-scribe/README.md": "9eba761b7658d50ad380430ad929ca39f6539510",
+   "presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html": "1203c6f5e7986e0b530da5d7b69861d7e0f11428",
+   "presentations/pyforge-steward/README.md": "fea2a1144cdc7d8e682ce33d6e71711e68538859",
+   "presentations/pyforge-steward/project/PyForge Steward Infographic standalone.html": "0f6368f72c585c4548866b56807da70245b3989c",
+   "presentations/pyforge-unifying-strategy/README.md": "8534cd8cec84e1762b09dd5f857ee6cb2ef2035d",
+   "presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html": "28dcd528db83fa9decb4a8d0f2acc5bb71ff56e5",
+   "presentations/pyforge-warden/README.md": "c12c1aa21e8983619ca5a04d917607fb7da0dd14",
+   "presentations/pyforge-warden/project/Warden Infographic standalone.html": "4aaa06d1ae501607cefcc0a6bf169c0c20cc33d5"
+  },
+  "memlog": "1fad09ee9949e002dc938ce5be2ad98e1d454699"
+ },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
   "memlog": ""
@@ -1572,7 +1600,7 @@
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
-   "presentations/README.md": "848954c4ae6feb81a096f2c4ce8aceebeaa09a67",
+   "presentations/README.md": "260bc5f31cc5cb21ffd8507b3d119b3b55713e83",
    "presentations/agentic-sdlc/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/agentic-sdlc/README.md": "533f06ca816883b03e0b716db5a907c8b924f885",
    "presentations/agentic-sdlc/index.html": "8f980ba03b85e80061001a4bb5cf8737f2298322",
@@ -2458,7 +2486,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "277eaec48cd7f81b4fd6f9815188bc75052a5061"
+  "memlog": "57455c09700b9df9d593c3b5b82f9f9ff4a43262"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
