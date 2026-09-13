@@ -29,7 +29,8 @@ open_questions: []
 > `spec-pyforge-herald` HER-1..3 and the herald CLI's Epics 1–5; the render-to-PNG discipline
 > is `spec-deck-visual-qa` CAP-1; the deck-family workflow and its export set are
 > `docs/specs/presentation-deck.md`. This Spec names only what none of those cover: the
-> standard, the fact ledger, the rebuild, the mirror proof, and the staleness check.
+> standard, the fact ledger, the rebuild, the mirror proof, the staleness check, and the
+> mechanical refresh.
 
 # The deck family stays current — infographics re-derived from the ledgers, not remembered
 
@@ -92,6 +93,15 @@ posters rebuilt from it, the Design mirror proven, and staleness made visible.
   - **success:** After a tracked ledger changes a value a poster shows, the check names that
     poster and row; on an unchanged tree it reports clean; it always exits 0 and is invocable
     as a pixi task.
+- **CAP-6**
+  - **intent:** A stale marked literal is refreshed mechanically from the ledger — `deck-facts
+    <slug> --refresh` re-derives the ledger and rewrites every `data-fact` mark whose text no
+    longer equals its row, preserving the literal's shape (`N/M` vs `N of M`, a leading `v`), so
+    a poster follows its ledger without hand edits.
+  - **success:** After a tracked ledger moves, `--refresh` leaves `--check` at 0 `mismatch` on
+    the marks it rewrote, reports each rewrite (`id`, old → new), leaves the file byte-identical
+    outside the rewritten text spans, exits 0, and reports nested or unresolvable marks instead
+    of rewriting them.
 
 ## Constraints
 

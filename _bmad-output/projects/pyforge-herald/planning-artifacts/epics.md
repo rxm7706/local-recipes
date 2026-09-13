@@ -692,6 +692,12 @@ density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20
 **Given** `herald deck status --repo-root .` reported all fifteen decks `linked: false` on 2026-09-13 because no bridge state exists and every README section predates the canonical shape (DW-1-5-1) — **When** the ten README sections are registered canonically and the state is bootstrapped from them — **Then** `herald deck status` lists the ten PyForge-branded decks `linked: true` with their project ids, and a fresh clone reproduces that answer from the READMEs alone
 **And** no second registry is invented — the README section stays the human-readable record and `bridge-state.json` the operational one, exactly as `registry.py` and `state.py` already divide them
 
+### Story 20.14: `deck-facts --refresh` rewrites stale marked literals from the ledger
+**Type:** feature • **Effort:** S • **Deps:** S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-6 (minted 2026-09-13 from the Wave A round-1 landing)
+**Surface:** `scripts/deck_facts.py` (`--refresh`), `tests/scripts/test_deck_facts.py`, `docs/specs/presentation-deck.md` (one line in the poster sub-step)
+**Given** the four round-1 posters landed and their own landings moved the fleet and station counts they print (`848/878` → `852/878`, herald `69/81` → `73/81`), so `deck-facts <slug> --check` reads `mismatch` on those marks the moment the reconcile merged — detected by CAP-5, repairable only by hand — **When** `deck-facts <slug> --refresh` re-derives the ledger and rewrites each `data-fact` mark whose text differs from its row, choosing the replacement by the old literal's shape (the row's `value`, or the `shown_as` variant at the same index, keeping a leading `v`) — **Then** the poster is byte-identical outside the rewritten spans, `--check` reports 0 `mismatch` for every rewritten mark, each rewrite is printed as `refreshed  <id>  "<old>" -> "<new>"`, nested marks and marks with no row are printed as `skipped` with the reason, and the exit code is 0
+**And** the verb never touches prose, unmarked tokens, `facts.yaml` rows it did not derive, or any other file; a `--with-tests` flag combines as for derive so a poster that prints `tests_collected` keeps its row
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

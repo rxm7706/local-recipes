@@ -76,7 +76,7 @@ a deck about the deck engine.
    SVGs, ≥ 90 KB, every fact a `facts.yaml` row) and render it headless to a full-page PNG you
    actually look at — the standard and its README ledger entry live in
    `spec-deck-family-currency/infographic-standard.md` (see § *Artifact dependency tree*).
-   Derive the ledger and check the poster against it with `pixi run -e local-recipes deck-facts <slug> [--check]` (advisory, exit 0; shape in `spec-deck-family-currency/facts-ledger.md`).
+   Derive the ledger and check the poster against it with `pixi run -e local-recipes deck-facts <slug> [--check]` (advisory, exit 0; shape in `spec-deck-family-currency/facts-ledger.md`); after a tracked source moves, `deck-facts <slug> --refresh` rewrites every stale `data-fact` literal in the poster from the fresh ledger, keeping its shape (`N/M` vs `N of M`, a leading `v`) and skipping nested or row-less marks.
 6. **Verify** against [Acceptance criteria](#acceptance-criteria).
 7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
@@ -222,7 +222,7 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
 | Infographic content | ★ `PyForge <Name> - Infographic.dc.html` in Design (the trio's head) | standalone + Infographic Deck (Path A/B below); optionally the marp `.md` → infographic pptx |
 | Executive summary | `PyForge <Name> - Executive Summary.dc.html` in Design; keep its marp `.md` in step | exec pages both sides |
 | Exports only (pptx / marp standalone) | `src/marp/pyforge-<slug>-*.md` in git, then `pixi run -e local-recipes deck-export <slug>` | pptx + marp-rendered standalone |
-| A number / version / status / date the poster shows | `pixi run -e local-recipes deck-facts <slug>` re-derives `facts.yaml`, then edit the poster and mark the literal with `data-fact` | the standalone (head + Infographic Deck in the lockstep slice) |
+| A number / version / status / date the poster shows | an **already-marked** literal: `pixi run -e local-recipes deck-facts <slug> --refresh` re-derives `facts.yaml` and rewrites the literal in the poster from it, keeping its shape — no hand edit. A **new** literal: edit the poster and mark it by hand with `data-fact`, then `deck-facts <slug>` to add its row | the standalone (head + Infographic Deck in the lockstep slice) |
 | Visual design / palette / tokens | the **Modernist design system** project (`fbc1d6c8`), NOT per-artifact; per-artifact layout tweaks in that artifact's dc.html | every Modernist-bound deck |
 
 **Propagating an infographic edit** (the trio must stay in lockstep):

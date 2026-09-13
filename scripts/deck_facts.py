@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Derive a presentation deck's fact ledger and check its poster against it.
+"""Derive a deck's fact ledger, check its poster against it, and refresh it.
 
 ``presentations/<slug>/facts.yaml`` is the per-deck fact ledger (contract:
-``spec-deck-family-currency`` CAP-2 / CAP-5, shape in its ``facts-ledger.md``):
+``spec-deck-family-currency`` CAP-2 / CAP-5 / CAP-6 -- herald Stories 20.2 and
+20.14 -- shape in its ``facts-ledger.md``):
 every count / version / status / date a poster shows has a row -- ``id``,
 ``value``, ``source``, ``method``, ``shown_as`` -- re-derived from TRACKED live
 sources only. Nothing here reads ``implementation-artifacts/``, another poster,
@@ -25,13 +26,40 @@ one line per finding plus a summary:
     unsourced  a row the current run could not derive (its omit reason follows)
     unshown    a row neither marked nor shown anywhere in the poster
 
-The check is advisory: exit 0 always. The only non-zero exit is a usage error
-(unknown slug, ``--check`` before a ledger exists) -- exit 2. This is NOT a
-detector (no ``DETECTOR`` marker, never in ``detectors``/``detectors-ci``).
+``--refresh`` (CAP-6, herald Story 20.14) re-derives and writes the ledger, then
+rewrites the text of every ``data-fact="<id>"`` element whose text is neither the
+fresh row's value nor one of its shown_as literals. The replacement is the fresh
+literal with the OLD text's shape (``848/878`` -> ``852/878``, ``848 of 878`` ->
+``852 of 878``, ``v0.11.1`` -> ``v0.11.2``), so authored shapes survive; only the
+text inside a rewritten mark changes, everything else stays byte-identical. Marks
+are located with the same tag bookkeeping ``--check`` uses, so ``--refresh``
+rewrites only what ``--check`` reads -- never a mark buried in a comment, a
+script/style/title body, another mark, or a start tag that does not tokenize.
+One line per rewrite or skip, then a summary::
+
+    poster: presentations/<slug>/project/<file>  the file about to be rewritten
+    refreshed  <id>  "<old>" -> "<new>"
+    skipped  <id>  nested mark      the span holds another tag: left to the author
+    skipped  <id>  not a plain span void, self-closing, or never closed
+    skipped  <id>  inside <comment|script|style|title>   markup to nobody
+    skipped  <id>  inside nested mark   an inner mark of a skipped mark
+    skipped  <id>  unparsed tag     the start tag does not tokenize
+    skipped  <id>  entities         entity-encoded text: the bytes stay the author's
+    skipped  <id>  no row           no fresh row for this id: never guessed
+    unvisited  <id>  mark not reachable by --refresh   (a --check mark was missed)
+    summary   <slug>: N refreshed, M skipped
+
+``--refresh --check`` runs the check after the refresh, against the ledger just
+written.
+
+The check and the refresh are advisory: exit 0 always. The only non-zero exit
+is a usage error (unknown slug, ``--check`` before a ledger exists) -- exit 2.
+This is NOT a detector (no ``DETECTOR`` marker, never in ``detectors``/
+``detectors-ci``).
 
 Usage (the ``scripts/deck_export.py`` precedent: one script, one pixi task)::
 
-    pixi run -e local-recipes deck-facts <slug> [--check] [--with-tests]
+    pixi run -e local-recipes deck-facts <slug> [--check] [--refresh] [--with-tests]
 
 ``--with-tests`` adds a ``tests_collected`` row by running the station's own
 ``pytest --collect-only -q`` over its ``tests/`` in its own pixi env; the default
@@ -41,7 +69,9 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -97,6 +127,15 @@ _BLOCK_TAGS = frozenset(
 )
 _INLINE_JOIN = "\x00"   # placeholder resolved by _join()
 _INSIDE_TOKEN_JOIN = re.compile(r"(?<=[0-9./-])\x00+(?=[0-9./-])")
+# --refresh splices raw bytes, so it needs each `data-fact` mark's offsets -- but a
+# regex is the wrong locator: `[^>]*` stops at the first `>` even inside a quoted
+# attribute (`title="a -> b"`), and it never sees the unquoted `data-fact=x` or
+# spaced `data-fact = "x"` forms --check accepts. _MarkSpans (below) locates marks
+# with _PosterText's own tag bookkeeping instead; this stays only as the post-hoc
+# net for a start tag the parser could not tokenize at all.
+_MARK_NET = re.compile(
+    r"""<\w+\b[^<]*?\bdata-fact\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>]*))""", re.IGNORECASE)
+_DIGITS = re.compile(r"\d+")
 
 
 # ----------------------------------------------------------------- primitives
@@ -605,10 +644,15 @@ def _shown(literal: str, text: str) -> bool:
     return re.search(rf"(?<![\w./-]){v}{re.escape(literal)}(?![\w./-])", text) is not None
 
 
+def _literals(row: dict) -> list[str]:
+    """[value, *shown_as] -- every text a mark for this row may show."""
+    return [str(row["value"]), *(str(s) for s in row.get("shown_as") or [])]
+
+
 def check(root: Path, slug: str, ledger: dict, fresh: dict,
           omitted: list[tuple[list[str], str]] | None = None) -> list[str]:
     rows = {f["id"]: f for f in ledger.get("facts") or []}
-    literals = {fid: [str(f["value"]), *(str(s) for s in f.get("shown_as") or [])] for fid, f in rows.items()}
+    literals = {fid: _literals(f) for fid, f in rows.items()}
     by_literal: dict[str, str] = {}
     for fid in sorted(rows):
         for lit in literals[fid]:
@@ -688,6 +732,240 @@ def check(root: Path, slug: str, ledger: dict, fresh: dict,
     return lines
 
 
+# ------------------------------------------------------------------ refresh
+
+class _MarkSpans(HTMLParser):
+    """Raw offsets of every `data-fact` mark, and of the spans --check never reads.
+
+    Mirrors _PosterText's tag bookkeeping -- the same _SKIP_TAGS / _VOID_TAGS rules
+    and the same outer-mark-only guard -- but records offsets (`getpos()` +
+    `get_starttag_text()`) instead of text, so --refresh splices exactly the span
+    --check reported on. Being a real parser, a quoted `>` inside an attribute
+    cannot cut a start tag short and `data-fact=x` / `data-fact = "x"` are the same
+    mark they are to --check.
+
+    Each mark carries `skip`: the reason it must be left alone, or None when its
+    text is a plain, rewritable span. `regions` are the raw spans whose contents
+    are never tokenized into tags (a comment, a <script>/<style>/<title> body) --
+    a `data-fact` in there is markup to nobody, so --refresh must not rewrite it.
+    """
+
+    def __init__(self, text: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.text = text
+        self._line_start = [0]
+        i = text.find("\n")
+        while i >= 0:
+            self._line_start.append(i + 1)
+            i = text.find("\n", i + 1)
+        self.marks: list[dict] = []
+        self.regions: list[tuple[int, int, str]] = []
+        self._stack: list[str] = []
+        self._skip: list[tuple[str, int]] = []   # open (skip tag, body start offset)
+        self._mark: dict | None = None
+
+    def _at(self) -> int:
+        """The absolute offset of the construct being handled (getpos() is 1-based
+        line + characters since the last \n, so \r\n endings stay exact)."""
+        line, col = self.getpos()
+        return self._line_start[line - 1] + col
+
+    def _buried(self) -> str | None:
+        return f"inside <{self._skip[-1][0]}>" if self._skip else None
+
+    def _flat(self, attrs, tag: str, start: int, end: int) -> None:
+        """A void or self-closing `data-fact` tag: there is no text span to rewrite."""
+        if self._mark is not None:
+            self._mark["plain"] = False
+            return
+        attr = dict(attrs)
+        if "data-fact" not in attr:
+            return
+        self.marks.append({"id": attr["data-fact"] or "", "tag": tag, "start": start,
+                           "text_start": end, "text_end": end, "span_end": end,
+                           "plain": False, "skip": self._buried() or "not a plain span"})
+
+    def _close(self, end_tag: str | None, text_end: int, span_end: int) -> None:
+        mark = self._mark
+        self._mark = None
+        mark.update(text_end=text_end, span_end=span_end)
+        if mark["skip"] is None:
+            if end_tag != mark["tag"]:
+                mark["skip"] = "not a plain span"   # never closed, or closed by another tag
+            elif not mark["plain"]:
+                mark["skip"] = "nested mark"
+        self.marks.append(mark)
+
+    def handle_starttag(self, tag, attrs):
+        start = self._at()
+        end = start + len(self.get_starttag_text() or "")
+        if tag in _SKIP_TAGS:
+            self._skip.append((tag, end))
+        if tag in _VOID_TAGS:
+            self._flat(attrs, tag, start, end)
+            return
+        self._stack.append(tag)
+        if self._mark is not None:
+            self._mark["plain"] = False
+        elif "data-fact" in dict(attrs):
+            self._mark = {"id": dict(attrs)["data-fact"] or "", "tag": tag, "start": start,
+                          "text_start": end, "text_end": None, "span_end": None,
+                          "depth": len(self._stack), "plain": True, "skip": self._buried()}
+
+    def handle_startendtag(self, tag, attrs):
+        start = self._at()
+        self._flat(attrs, tag, start, start + len(self.get_starttag_text() or ""))
+
+    def handle_endtag(self, tag):
+        start = self._at()
+        close = self.text.find(">", start)
+        end = len(self.text) if close < 0 else close + 1
+        if tag in _SKIP_TAGS and self._skip:
+            open_tag, body_start = self._skip.pop()
+            self.regions.append((body_start, start, f"inside <{open_tag}>"))
+        if tag in _VOID_TAGS or tag not in self._stack:
+            return
+        while self._stack and self._stack.pop() != tag:
+            pass
+        if self._mark and len(self._stack) < self._mark["depth"]:
+            self._close(tag, start, end)
+
+    def handle_comment(self, data):
+        start = self._at()
+        close = self.text.find("-->", start)
+        self.regions.append((start, len(self.text) if close < 0 else close + 3, "inside <comment>"))
+
+    def close(self):
+        super().close()
+        if self._mark is not None:
+            self._close(None, self._mark["text_start"], len(self.text))
+        while self._skip:
+            open_tag, body_start = self._skip.pop()
+            self.regions.append((body_start, len(self.text), f"inside <{open_tag}>"))
+        self.marks.sort(key=lambda m: m["start"])
+
+
+def _mark_spans(poster_text: str) -> list[dict]:
+    """Every `data-fact` mark in document order: `id`, `start`, the `text_start` /
+    `text_end` of its span, and `skip` -- the reason to leave it alone, or None.
+
+    The parser is authoritative. _MARK_NET is the post-hoc net for the marks it
+    never visits -- one buried in a comment or a script/style/title body, an inner
+    mark of a skipped mark, or a start tag it could not tokenize (an unterminated
+    attribute quote swallows the rest of the file). None of those is a mark
+    --check reads, so none of them may be rewritten blind.
+    """
+    scan = _MarkSpans(poster_text)
+    scan.feed(poster_text)
+    scan.close()
+    marks = list(scan.marks)
+    visited = {m["start"] for m in marks}
+    buried = [(m["start"], m["span_end"]) for m in marks if m["skip"]]
+    for net in _MARK_NET.finditer(poster_text):
+        at = net.start()
+        if at in visited:
+            continue
+        why = next((reason for lo, hi, reason in scan.regions if lo <= at < hi), None)
+        if why is None and any(lo <= at < hi for lo, hi in buried):
+            why = "inside nested mark"
+        marks.append({"id": next((g for g in net.groups() if g is not None), ""), "start": at,
+                      "text_start": None, "text_end": None, "skip": why or "unparsed tag"})
+    marks.sort(key=lambda m: m["start"])
+    return marks
+
+
+def _shape(literal: str) -> str:
+    return _DIGITS.sub("#", literal)
+
+
+def _replacement(old: str, previous: dict | None, row: dict) -> str:
+    """The fresh literal for a stale mark, chosen by the OLD text's shape.
+
+    `old` is the mark's normalised text, leading `v` already stripped. The
+    previous ledger's value maps to the fresh value and its shown_as[k] to the
+    fresh shown_as[k] -- but only while that keeps the old text's digit pattern: a
+    reordered shown_as would otherwise hand back a literal of another shape
+    (prev `848 of 878` at k=2, fresh k=2 `852 done`). When the index result does
+    not fit, or the old text matches nothing in the previous row -- facts.yaml was
+    already re-derived, or the row is new -- the first fresh literal with the same
+    digit pattern keeps the shape (`848 of 878` -> `852 of 878`); failing that, the
+    fresh value. The result is always one of the fresh row's own literals.
+    """
+    fresh = _literals(row)
+    prev = _literals(previous) if previous else []
+    same_shape = next((lit for lit in fresh if _shape(lit) == _shape(old)), None)
+    if old in prev:
+        k = prev.index(old)
+        by_index = fresh[k] if k < len(fresh) else fresh[0]
+        if _shape(by_index) == _shape(old) or same_shape is None:
+            return by_index
+    return same_shape or fresh[0]
+
+
+def refresh(slug: str, previous: dict, fresh: dict, poster_text: str) -> tuple[str, list[str]]:
+    """(rewritten poster text, report lines) -- CAP-6.
+
+    Every plain `data-fact` mark (`_mark_spans`) whose text -- normalised as
+    --check normalises it, a leading `v` stripped and remembered -- is neither the
+    fresh row's value nor one of its shown_as literals gets `_replacement`'s
+    literal, the `v` restored and the span's own edge whitespace kept. A mark whose
+    span is not plain text, whose text is entity-encoded, or whose id has no fresh
+    row is reported and left alone; a mark that already resolves is neither touched
+    nor printed. Everything outside the rewritten spans is returned byte-for-byte.
+
+    Finally the marks --check reads are compared against the marks visited here:
+    any --check mark this pass never reached is reported `unvisited`, so a `0
+    skipped` summary can never hide a stale mark.
+    """
+    prev_rows = {f["id"]: f for f in previous.get("facts") or []}
+    rows = {f["id"]: f for f in fresh.get("facts") or []}
+    out: list[str] = []
+    lines: list[str] = []
+    n_refreshed = n_skipped = 0
+    pos = 0
+    visited: set[str] = set()
+    for mark in _mark_spans(poster_text):
+        fid = mark["id"]
+        visited.add(fid)
+        if mark["skip"]:
+            n_skipped += 1
+            lines.append(f"skipped  {fid}  {mark['skip']}")
+            continue
+        if fid not in rows:
+            n_skipped += 1
+            lines.append(f"skipped  {fid}  no row")
+            continue
+        raw = poster_text[mark["text_start"]:mark["text_end"]]
+        shown = _norm(html.unescape(raw))
+        bare = _LEADING_V.sub("", shown)
+        if bare in _literals(rows[fid]):
+            continue
+        if html.unescape(raw) != raw:
+            # Rewriting would flatten `&nbsp;`/`&#47;` to plain text, changing bytes
+            # beyond the literal -- the author's encoding is the author's.
+            n_skipped += 1
+            lines.append(f"skipped  {fid}  entities")
+            continue
+        new = _replacement(bare, prev_rows.get(fid), rows[fid])
+        if shown != bare and new[:1].isdigit():
+            new = "v" + new
+        lead = raw[: len(raw) - len(raw.lstrip())]
+        trail = raw[len(raw.rstrip()):] if raw.strip() else ""
+        out += [poster_text[pos: mark["text_start"]], lead + new + trail]
+        pos = mark["text_end"]
+        n_refreshed += 1
+        lines.append(f'refreshed  {fid}  "{shown}" -> "{new}"')
+    out.append(poster_text[pos:])
+
+    seen = _PosterText()
+    seen.feed(poster_text)
+    seen.close()
+    for fid in sorted({f for f, _ in seen.marks} - visited):
+        lines.append(f"unvisited  {fid}  mark not reachable by --refresh")
+    lines.append(f"summary   {slug}: {n_refreshed} refreshed, {n_skipped} skipped")
+    return "".join(out), lines
+
+
 # --------------------------------------------------------------------- main
 
 def main(argv: list[str] | None = None) -> int:
@@ -695,6 +973,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("slug", help="deck directory under presentations/")
     ap.add_argument("--check", action="store_true",
                     help="read the poster against facts.yaml and report findings (advisory, exit 0)")
+    ap.add_argument("--refresh", action="store_true",
+                    help="re-derive, then rewrite every stale data-fact literal in the poster from "
+                         "the fresh ledger, keeping its shape (advisory, exit 0)")
     ap.add_argument("--with-tests", action="store_true",
                     help="add a tests_collected row (runs the station's pytest --collect-only)")
     args = ap.parse_args(argv)
@@ -704,25 +985,76 @@ def main(argv: list[str] | None = None) -> int:
     if not deck_dir.is_dir():
         ap.error(f"presentations/{args.slug} not found")
     ledger_file = deck_dir / "facts.yaml"
+    # The on-disk ledger before the re-derive: what --check reads, and the
+    # "previous" side --refresh maps old literals through. A plain run is the
+    # command that REGENERATES a corrupt ledger, so it never parses one; under
+    # --check / --refresh an unparseable ledger is simply no previous ledger.
+    previous = None
+    if (args.check or args.refresh) and ledger_file.is_file():
+        try:
+            loaded = yaml.safe_load(ledger_file.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            print(f"presentations/{args.slug}/facts.yaml is not valid YAML -- treated as no "
+                  f"previous ledger: {str(exc).splitlines()[0]}", file=sys.stderr)
+        else:
+            previous = loaded if isinstance(loaded, dict) else {}
 
     fresh, notes, omitted = derive(root, args.slug, with_tests=args.with_tests)
     for note in notes:
         print(note, file=sys.stderr)
 
-    if args.check:
-        if not ledger_file.is_file():
+    if args.check and not args.refresh:
+        if previous is None:
             ap.error(f"presentations/{args.slug}/facts.yaml not found -- run: "
                      f"pixi run -e local-recipes deck-facts {args.slug}")
-        ledger = yaml.safe_load(ledger_file.read_text(encoding="utf-8")) or {}
-        for line in check(root, args.slug, ledger, fresh, omitted):
+        for line in check(root, args.slug, previous, fresh, omitted):
             print(line)
         return 0
+
+    # The poster is read and decoded BEFORE the ledger is written: a poster that
+    # cannot be read must not leave the ledger advanced and the poster stale.
+    poster = raw = poster_text = None
+    if args.refresh:
+        hits = poster_hits(root, args.slug)
+        if hits:
+            poster = hits[0]
+            # Bytes in, bytes out: the poster's encoding and line endings are not ours.
+            raw = poster.read_bytes()
+            try:
+                poster_text = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                poster_text = None
 
     text = render_yaml(fresh)
     changed = not ledger_file.is_file() or ledger_file.read_text(encoding="utf-8") != text
     ledger_file.write_text(text, encoding="utf-8")
     print(f"{args.slug}: {'wrote' if changed else 'unchanged'} "
           f"presentations/{args.slug}/facts.yaml ({len(fresh['facts'])} facts)")
+    if not args.refresh:
+        return 0
+
+    if poster is None:
+        print(f"no poster: presentations/{args.slug}/project/*{POSTER_SUFFIX}")
+        print(f"summary   {args.slug}: 0 refreshed, 0 skipped")
+    elif poster_text is None:
+        print("skipped poster: not UTF-8")
+        print(f"summary   {args.slug}: 0 refreshed, 0 skipped")
+    else:
+        print(f"poster: {poster.relative_to(root).as_posix()}")
+        new_text, lines = refresh(args.slug, previous or {}, fresh, poster_text)
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            # Temp file + os.replace: an interrupted write never truncates the
+            # tracked poster, and the glob cannot pick the temp file up.
+            tmp = poster.with_name(poster.name + ".deck-facts.tmp")
+            tmp.write_bytes(new_raw)
+            os.replace(tmp, poster)
+        for line in lines:
+            print(line)
+    if args.check:
+        ledger = yaml.safe_load(ledger_file.read_text(encoding="utf-8")) or {}
+        for line in check(root, args.slug, ledger, fresh, omitted):
+            print(line)
     return 0
 
 
