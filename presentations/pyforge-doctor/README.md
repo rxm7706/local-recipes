@@ -52,3 +52,20 @@ Prototype lives in Claude Design project **"PyForge Doctor deck"** (`46dbbdea-6f
 https://claude.ai/design/p/46dbbdea-6f8d-45c6-9309-15d1f297beeb?file=PyForge+Doctor.dc.html
 Pull it into this deck with the MCP bridge ("pull doctor") — see
 `docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.4)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-3) from
+`facts.yaml` re-derived at tree `b5fe5e46fc`. Every count, version, status and date the
+poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyforge-doctor
+--check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 0 unshown; facts 85/85`.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Doctor Infographic standalone.html` | 135,606 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 9 tables · facts 85/85 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 20012 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
+tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
+full-page PNG at 1240 px reviewed by eye (`.herald/deck-qa/pyforge-doctor/standalone.png`,
+gitignored) ✓ · offline apart from the Google Fonts `<link>` ✓. No section of the standard's
+set was dropped; the Warden "sub-agent team" slot is filled by Doctor's source registry (§06).
