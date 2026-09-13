@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-marshal
 persona: "PyForge Marshal"
-derived_at: "2026-09-13T05:54:55-05:00"
-tree: "fbefe6eea68adbf67dd689aea5ae53072f01d75b-dirty"
+derived_at: "2026-09-13T08:57:33-05:00"
+tree: "51a1053e06c624f393f799fa709c5d692e85a77f-dirty"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -107,15 +107,15 @@ facts:
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["34/36", "34 of 36"]
   - id: fleet_epics_done_total
-    value: "182/189"
+    value: "190/197"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["182/189", "182 of 189"]
+    shown_as: ["190/197", "190 of 197"]
   - id: fleet_stories_done_total
-    value: "852/878"
+    value: "870/892"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["852/878", "852 of 878"]
+    shown_as: ["870/892", "870 of 892"]
   - id: groundtruth_atlas_phases
     value: "22"
     source: "pixi run -e local-recipes bmad-groundtruth"
@@ -152,10 +152,10 @@ facts:
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["18/20", "18 of 20"]
   - id: herald_stories_done_total
-    value: "73/81"
+    value: "78/82"
     source: "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["73/81", "73 of 81"]
+    shown_as: ["78/82", "78 of 82"]
   - id: marshal_epics_done_total
     value: "34/36"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
@@ -192,15 +192,15 @@ facts:
     method: "count of TRACKED recipes/<name>/ directories (git ls-files -- recipes; untracked local dirs and dot-dirs never count), excluding the staged-recipes templates recipes/example/ and recipes/examples/"
     shown_as: ["7864"]
   - id: scribe_epics_done_total
-    value: "8/8"
+    value: "16/16"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["8/8", "8 of 8"]
+    shown_as: ["16/16", "16 of 16"]
   - id: scribe_stories_done_total
-    value: "20/20"
+    value: "33/33"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["20/20", "20 of 20"]
+    shown_as: ["33/33", "33 of 33"]
   - id: spec_capabilities
     value: "18"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md"
@@ -226,6 +226,11 @@ facts:
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
     shown_as: ["248/249", "248 of 249"]
+  - id: tests_collected
+    value: "7933"
+    source: "pixi run -e pyforge-marshal pytest --collect-only -q src/shared/packages/pyforge-marshal/tests"
+    method: "N from the trailing `N tests collected` line"
+    shown_as: ["7933"]
   - id: tree_commit_date
     value: "2026-09-13"
     source: "git log -1 --format=%cs"

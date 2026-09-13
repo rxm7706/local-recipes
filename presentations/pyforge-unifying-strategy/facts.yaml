@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-unifying-strategy
 persona: "PyForge Unifying Strategy"
-derived_at: "2026-09-13T08:54:15-05:00"
-tree: "bb5eed590c5ce21861d12b1725b7423de1ffe634"
+derived_at: "2026-09-13T08:57:33-05:00"
+tree: "51a1053e06c624f393f799fa709c5d692e85a77f-dirty"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"

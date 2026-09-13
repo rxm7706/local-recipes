@@ -121,7 +121,7 @@ it goes stale on the very commit that lands the poster).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296808981454` · 132,410 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296808981454` · 132,410 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Against the floors: acts 6/6 · sections 22 ≥ 18 · inline SVG 4 ≥ 3 · bytes 132,410 ≥ 90,000 ·
 tables 8 ≥ 3 · cast: eight full station cards (role, motto, paragraph, CLI verbs, ledger chips) ·

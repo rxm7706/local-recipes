@@ -62,7 +62,7 @@ poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyfor
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Mason Infographic standalone.html` | 151,188 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789298273970701` · 151,188 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 21820 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Mason Infographic standalone.html` | 151,188 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789298273970701` · 151,188 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 21820 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
