@@ -143,51 +143,6 @@ def parse_engines(wrap: Tag) -> dict:
     return {"type": "engines", "engines": engines}
 
 
-LENS_KEYS = ("ceo", "cfo", "cdao", "eng")
-
-
-def parse_scorecards(section: Tag) -> dict:
-    lenses = []
-    for btn in section.select(".lens-btn"):
-        lenses.append({"key": btn["data-lens"], "label": inline_md(btn)})
-
-    rows = []
-    for tr in section.select("#sc-body tr"):
-        station_cell = tr.select_one(".sc-station")
-        epic_cell = tr.select_one(".sc-epic")
-        # pull the <b>NN</b> out first — computing the label from the whole
-        # cell and then string-replacing leaves the bold markers behind
-        epic_b = epic_cell.find("b")
-        epic_num = epic_b.get_text(strip=True) if epic_b else ""
-        if epic_b:
-            epic_b.extract()
-        row = {
-            "station": inline_md(station_cell),
-            "accent": css_var(station_cell.select_one(".dot").get("style"), "background") or "",
-            "epic_num": epic_num,
-            "epic": inline_md(epic_cell),
-            "counts": inline_md(tr.select_one(".sc-counts")),
-            "counts_html": "".join(str(c) for c in tr.select_one(".sc-counts").children).strip(),
-            "delivers": inline_md(tr.select_one(".sc-deliver")),
-            "open": int(tr["data-open"]),
-            "lenses": {},
-        }
-        for key in LENS_KEYS:
-            row["lenses"][key] = {
-                "hit": tr.get(f"data-{key}") == "1",
-                "note": tr.get(f"data-{key}-note", ""),
-            }
-        rows.append(row)
-
-    proto = section.select_one(".sc-proto-note")
-    return {
-        "type": "scorecards",
-        "lenses": lenses,
-        "rows": rows,
-        "footnote": inline_md(proto) if proto else "",
-    }
-
-
 def parse_blocks(section: Tag) -> list[dict]:
     """Walk a section's direct children in document order into typed blocks."""
     blocks: list[dict] = []
@@ -267,13 +222,11 @@ def parse_blocks(section: Tag) -> list[dict]:
         elif name == "p" and "verify-note" in classes:
             blocks.append({"type": "verify", "md": inline_md(el)})
         elif name == "p" and "sc-proto-note" in classes:
-            continue  # folded into the scorecards block
+            continue  # part of the removed Fleet scorecards section
         elif name == "p":
             blocks.append({"type": "note", "md": inline_md(el)})
-        elif "lens-bar" in classes:
-            blocks.append(parse_scorecards(section))
-        elif "lens-sub" in classes or "sc-table-wrap" in classes:
-            continue  # consumed by parse_scorecards
+        elif "lens-bar" in classes or "lens-sub" in classes or "sc-table-wrap" in classes:
+            continue  # the Fleet scorecards section was removed from the dossier
         elif name == "script":
             continue
         else:
