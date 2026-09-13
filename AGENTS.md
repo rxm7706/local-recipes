@@ -171,6 +171,10 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    `spec-library-catalog-manifest-sync` CAP-1/CAP-2 were hand-implemented straight from the Spec
    with no Story minted in `pyforge-marshal/epics.md` and no ledger entry — caught mid-turn by
    the operator, reconciled after the fact (2026-09-12).
+6. **Foundry-product Dreams after 54.5 are authored on B.** `rxm7706/python-foundry` writes
+   new Dreams / Frames / Spec five-fields for the lasting root. This repo (**A**) pins the SHA
+   (`docs/foundry/PIN.md` on B). Do not mint a second foundry-product Dream here. Factory /
+   CFE / recipes stay invented on A until a foundry CFE exists. Kernel package commits stay on B.
 
 ## The tiers (do not cross them)
 

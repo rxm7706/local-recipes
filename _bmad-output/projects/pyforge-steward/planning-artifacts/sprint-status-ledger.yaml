@@ -223,7 +223,7 @@ development_status:
   54-2-rebuild-pyforge-core-in-foundry: backlog
   54-3-rebuild-steward-in-foundry: backlog
   54-4-rebuild-marshal-in-foundry: backlog
-  54-5-a-b-protocol-and-pin-on-foundry: backlog
+  54-5-a-b-protocol-and-pin-on-foundry: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -344,7 +344,7 @@ development_status:
   epic-52-retrospective: optional
   epic-53: done
   epic-53-retrospective: optional
-  epic-54: backlog
+  epic-54: in-progress
   epic-54-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
