@@ -120,3 +120,45 @@ Deck.dc.html`): `render_preview` → `curl` the serve URL to disk → strip the
 contiguous `data-omelette-injected` `<style>/<script>` block after `<head>`
 (fixed-size harness; splice with a single newline). Both directions are now
 mechanized; the herald CLI formalizes them but no longer gates them.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.10)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-3) from
+`facts.yaml` re-derived at tree `fbefe6eea6`. Every count, version, status and date the
+poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyforge-warden
+--check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 91/91` (the one
+`unshown` row is `poster_last_commit_date`, deliberately not printed — dates come only from
+the `dream_log_*` and `tree_commit_date` rows).
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `PENDING-PUSH` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
+tables ≥ 3 ✓ · cast cards full for all eight stations with ledger chips ✓ · facts all resolved ✓ ·
+headless full-page PNG at 1240 px reviewed by eye in 2500 px tiles
+(`.herald/deck-qa/pyforge-warden/`, gitignored) ✓ · offline apart from the Google Fonts `<link>` ✓ ·
+no `<script>`, no `<x-dc>`, no `support.js`, no raster image ✓. No section of the standard's set
+was dropped; the "sub-agent team" slot is filled by Warden's engines and feeds (§07).
+
+**This file remains the family's density and visual-form reference.** The 411,764 B measured on
+2026-09-13 was a Claude Design *bundle*: 192,472 B of page content JSON-encoded inside a
+`__bundler/template` script tag plus ~205 KB of base64 assets (three Archivo woff2 faces and three
+Design runtime scripts) and an `<x-dc>` wrapper — none of which the standard permits. The rebuild
+is plain standalone HTML, so the honest before/after is **192,472 B → 295,079 B of page content**,
+18 → 32 numbered sections, every div-built diagram kept (the six-axis grid, the five-step
+pipeline, the three path columns, the lattice ladder, the three rings, the roadmap and leader
+cards, the 70-row integration matrix), the 14 icon glyphs kept with their `viewBox` restored
+(Design had mangled them to `sc-camel-view-box`, so they never scaled outside Design), Design's
+`sc-raw-table` pseudo-elements converted to real `<table>` markup, and four genuine 1128-wide
+SVG diagrams added (the spine topology, the seven-rungs-to-four-exits ladder, the autonomy
+gradient, the relay).
+
+Left out for lack of a fact row (never guessed): the two-ecosystem population figures
+(`~850K packages`, `~30K feedstocks`, the `20% / 80%` footprint split), the `20k+` repo-fleet
+scale target, the waiver default expiry (`14 days`), the old `5 epics · 20 stories` scope cell,
+`Python 3.12+` and every other two-part or third-party version (CycloneDX spec, report schema,
+deptry / osv-scanner ranges), story counts such as `31/31` / `43/43`, the corpus size
+(`~1,950`), the test count (`--with-tests` not run), and the retired duplicate Dream's date.
+Exit codes appear only as separate code literals or in their own table cells, never
+slash-adjacent.
