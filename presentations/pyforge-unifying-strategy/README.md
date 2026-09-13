@@ -53,3 +53,47 @@ contract does not require it; the prototype honors the `<section
 data-label/data-speaker-notes>` extraction contract, so wiring the engine
 later is a mechanical copy from `presentations/pyforge-warden/` plus
 `npm run extract`.
+
+## Ledger — 2026-09-13 facts re-derived (Story 20.12)
+
+Facts-only re-derivation of the standalone poster (`spec-deck-family-currency` CAP-3, the
+poster half of Story 20.12). This poster is the family's **structure, acts and length
+reference**, so its arc, section order, diagrams and length are unchanged: every count,
+version, status and date it prints is now a `data-fact` mark resolving to a row in
+`facts.yaml`, re-derived at tree `6a49e9f223`. `deck-facts pyforge-unifying-strategy --check`
+→ `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 9 unshown; facts 36/36`.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Unifying Strategy Infographic standalone.html` | 132,338 B · 21 sections · 6 acts · 9 SVG · 4 grid-rendered tables (0 `<table>`) · facts 36/36 | `PENDING-PUSH (operator pushes the re-derived poster)` | rendered 2026-09-13, page 13,790 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors (standard): act bands exactly six ✓ · numbered sections ≥ 18 (21) ✓ · inline SVG ≥ 3 (9) ✓ ·
+bytes ≥ 90,000 ✓ · tables ≥ 3 — four **grid-rendered** equivalents (the 19-capability grid §05, the
+thirteen-directive grid §12, the five-tier matrix §17, the which-surface-when grid §19); no `<table>`
+element, which the standard allows ✓ · cast cards — this is a chain poster, not a station poster, so
+the cast is the eight-station hero strip plus the hub-and-spoke topology, each station with role and
+surface ✓ · facts all resolved ✓ · headless full-page PNG at 1240 px reviewed by eye in ~2500 px tiles
+(`.herald/deck-qa/pyforge-unifying-strategy/`, gitignored) ✓ · offline apart from the Google Fonts
+`<link>` ✓.
+
+**Stale literals replaced with the ledger's current value:** masthead status
+(`CAP-1..18 closed 2026-08-26 · CAP-19 live` → `Spec ready · CAP-1..19 · Dream specified`),
+the capability-count chip and the Scope cell (`spec_capabilities`), the Owner cell (now carries
+`steward_stories_done_total`, this chain's ledger proxy), and the Host cell (`Py 3.12` → `Py 3.14`,
+the fixed floor in `stack.md`).
+
+**Rewritten as prose because no ledger row exists for them** (never guessed, per the
+derive-never-declare constraint): `40/40` (meta strip and the §17 heading), `1/8` (§01 stat),
+the dated closeout claims (`closed 2026-08-26`, `Minted 2026-08-26`, `Live proof · CRC 2026-08-26`,
+`OQ ruling · 2026-08-26`, `declared 2026-08-26`), the §15 timeline's own date chips (those entries
+are archived out of the living Realization log, so they are re-labelled `Day one … Day four` and the
+lede now cites the log's live `dream_log_*` rows instead), the MCP protocol revisions
+(`2025-03-26 → 2026-07-28` → "the March 2025 revision through the July 2026 one"), the tier ids
+`01/02`, and the third-party pins `mcp 2.0.0`, `liquibase 5.0.4+`, `cachebox`/`6.2.5`,
+`vizro-ai 0.4.2` and `Django >=5.2.17,<6`. `poster_last_commit_date` is deliberately not printed.
+
+**Design project:** created by the operator as **"PyForge Unifying Strategy deck"**
+(`1e4020bc-7f7f-43b2-9219-0904d4863df6`, bound to Modernist
+`fbc1d6c8-b35f-4df6-9044-a64d2675427b`) and seeded with the family. The push, read-back and the
+canonical `## Design project` registry section are the operator's half of Story 20.12 and are not
+written here.

@@ -35,7 +35,7 @@ body { margin:0; background:var(--color-bg); color:var(--color-text); font-famil
 h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
 p { margin:0 0 12px; }
 .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
-.tag { display:inline-flex; align-items:center; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
+.tag { display:inline-block; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
 .tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
 .tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
 .tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
@@ -50,7 +50,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
       <span style="color:var(--color-accent-700);">PYFORGE ESTATE DREAM · STEWARD CHAIN · SPEC-PYFORGE-UNIFYING-STRATEGY</span>
-      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status — Evergreen · CAP-1..18 closed 2026-08-26 · CAP-19 live</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status — Evergreen · Spec <span data-fact="spec_status">ready</span> · <span data-fact="spec_capabilities">CAP-1..19</span> · Dream <span data-fact="dream_status">specified</span></span>
     </div>
     <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">The Canopy</h1>
     <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-unifying-strategy · the 8-station hub-and-spoke enterprise architecture</div>
@@ -59,7 +59,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <span class="tag tag-outline code">pyforge &lt;station&gt; &lt;noun&gt; &lt;verb&gt;</span>
       <span class="tag tag-neutral">Hub-and-spoke · modular monolith</span>
       <span class="tag tag-neutral">Air-gap first</span>
-      <span class="tag tag-accent">19 capabilities · CAP-1..19</span>
+      <span class="tag tag-accent"><span data-fact="spec_capabilities">19</span> capabilities · CAP-1..19</span>
     </div>
   </header>
 
@@ -67,15 +67,15 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
     <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;">Steward</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">Steward<span style="font-weight:500; font-size:14px;"> · <span data-fact="steward_stories_done_total">206/222</span></span></div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Host</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;">Django 5.2 · Py 3.12</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">Django 5.2 · Py 3.14</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;">19 CAPs · Epics 18–37</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">19</span> CAPs · Epics 18–37</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Infra — exactly</div>
@@ -83,7 +83,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
     </div>
     <div style="padding:20px 0 20px 20px;">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Live proof (CRC)</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span class="code">/</span> 200 · 40/40 tiers</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span class="code">/</span> 200 · five tiers complete</div>
     </div>
   </div>
 
@@ -125,7 +125,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">terminals and eight mental models per operator — no shared identity or vocabulary</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
-        <div style="font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">1<span style="font-size:26px;">/8</span></div>
+        <div style="font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">1<span style="font-size:26px;"> of 8</span></div>
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">portals mounted before the drain — warden's, at <span class="code">/compliance/</span>. The pattern worked and was simply never repeated</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
@@ -293,7 +293,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <text x="820" y="228" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">SERVICE FACES · CAP-4</text>
       <text x="820" y="252" fill="#201e1d" font-size="13.5" font-weight="800" font-family="ui-monospace, Menlo, monospace">POST /stations/&lt;n&gt;/mcp</text>
       <text x="820" y="274" fill="#605d5d" font-size="11.5">on the host ASGI · dual-era</text>
-      <text x="820" y="292" fill="#605d5d" font-size="11.5">2025-03-26 → 2026-07-28</text>
+      <text x="820" y="292" fill="#605d5d" font-size="11.5">March 2025 → July 2026 revisions</text>
       <text x="820" y="310" fill="#605d5d" font-size="11.5">start/get survives disconnects</text>
       <rect x="800" y="352" width="240" height="92" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
       <text x="820" y="378" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">ONE GRAMMAR · CAP-5</text>
@@ -317,7 +317,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">05</span>
       <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Nineteen capabilities — the whole contract at a glance</h2>
     </div>
-    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Every capability carries a success criterion written to <b>fail when the capability is absent</b>. CAP-1..18 closed 2026-08-26; CAP-19 is the evergreen reopen, first slice shipped the same day.</p>
+    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Every capability carries a success criterion written to <b>fail when the capability is absent</b>, and every one carries a <span class="code">verified:</span> line naming the test that proves it. CAP-1..18 closed in the dated closeout slice; CAP-19 is the evergreen reopen, its first slice shipped the same day. The Spec reads <span data-fact="spec_status">ready</span> across all <span data-fact="spec_capabilities">19</span>.</p>
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
         <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-text); color:var(--color-bg);">shipped</span></div>
@@ -390,12 +390,12 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
         <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">durable store behind the port + semantic recall</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
-        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-15</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-text); color:var(--color-bg);">40/40</span></div>
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-15</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-text); color:var(--color-bg);">complete</span></div>
         <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Domain skills</div>
         <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">every 03 station teaches an agent its own work</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
-        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-16</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-text); color:var(--color-bg);">40/40</span></div>
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-16</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-text); color:var(--color-bg);">complete</span></div>
         <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Station personas</div>
         <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">act only through the grammar and the service face</div>
       </div>
@@ -412,7 +412,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100); grid-column: span 2;">
         <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-19</span><span style="font-size:9.5px; font-weight:700; padding:1px 5px; background:var(--color-accent); color:var(--color-bg);">first slice shipped · evergreen</span></div>
         <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One HTAP query plane; stations are clients</div>
-        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">one DuckDB engine — live attach · Parquet cache · vectors; private stores rebuilt onto it. Minted 2026-08-26; Epic 34 + Lane 3 <span class="code">estate-cache</span> landed the same day.</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">one DuckDB engine — live attach · Parquet cache · vectors; private stores rebuilt onto it. Minted in the closeout slice; Epic 34 + Lane 3 <span class="code">estate-cache</span> landed the same day.</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; grid-column: span 2;">
         <div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">EXTENDS, NEVER RE-MINTS</div>
@@ -443,7 +443,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="square"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
           <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">App switcher</div>
         </div>
-        <p style="font-size:13.5px; line-height:1.5; margin:10px 0 0;">Entries derive from each portal's <b>registration seam</b> (<span class="code">AppConfig</span> metadata) — never a hardcoded path list. The seam also carries <b>owner station, backup, <span class="code">work_class</span> and promotion date</b>, so the Guildhall can refuse to tile 01/02 work as a station surface.</p>
+        <p style="font-size:13.5px; line-height:1.5; margin:10px 0 0;">Entries derive from each portal's <b>registration seam</b> (<span class="code">AppConfig</span> metadata) — never a hardcoded path list. The seam also carries <b>owner station, backup, <span class="code">work_class</span> and promotion date</b>, so the Guildhall can refuse to tile tier 01 and tier 02 work as a station surface.</p>
       </div>
       <div style="border:2px solid var(--color-text); padding:22px 20px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -498,7 +498,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
           <div style="font-size:12.5px; font-weight:700; margin-top:10px; color:var(--color-accent-700);">The replacement is held to a higher bar than the thing it replaces — deliberately.</div>
         </div>
         <div style="border:2px solid var(--color-text); padding:14px 18px; margin-top:16px;">
-          <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Live proof · CRC 2026-08-26</div>
+          <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Live proof · CRC</div>
           <div style="font-size:13.5px; margin-top:8px; line-height:1.6;"><span class="code">GET /</span> → <b>200</b> — <i>"PyForge Lane 1 — published from PostgreSQL."</i><br><span class="code">GET /cms/</span> unauthenticated → <b>302</b> to the IdP, not a local login form.<br>An editor publishes a page change with <b>no deploy</b>.</div>
         </div>
       </div>
@@ -545,12 +545,12 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">09</span>
       <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Every station has a service face · CAP-4</h2>
     </div>
-    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Eight MCP endpoints on the <b>host ASGI</b> — <span class="code">POST /stations/&lt;name&gt;/mcp</span>, official <span class="code">mcp</span> 2.0.0 SDK. Not a process farm; the deprecated two-endpoint <span class="code">/mcp/sse</span> shape is gone (<span class="code">GET</span> answers 405).</p>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Eight MCP endpoints on the <b>host ASGI</b> — <span class="code">POST /stations/&lt;name&gt;/mcp</span>, official <span class="code">mcp</span> 2.x SDK. Not a process farm; the deprecated two-endpoint <span class="code">/mcp/sse</span> shape is gone (<span class="code">GET</span> answers 405).</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
       <div style="border:2px solid var(--color-text); padding:22px;">
         <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:12px;">The wire rules — era discipline</div>
         <div style="display:flex; flex-direction:column; gap:10px; font-size:13.5px; line-height:1.45;">
-          <div><b>Accept <span class="code">2025-03-26</span> → <span class="code">2026-07-28</span></b> — five handshake revisions. The client fleet is genuinely split; pinning either end alone rejects real traffic (Codex already sends the newest).</div>
+          <div><b>Accept the whole dual-era span — the March 2025 revision through the July 2026 one</b> — five handshake revisions. The client fleet is genuinely split; pinning either end alone rejects real traffic (Codex already sends the newest).</div>
           <div><b>Echo the client's revision — never assert your own newest.</b> A client receiving an unknown revision aborts <i>even when it is newer</i>; asserting the modern one is a self-inflicted rejection.</div>
           <div><b>Never branch on a client's name.</b> Only the declared revision decides. Sniffing becomes tempting mid-migration and is always wrong.</div>
         </div>
@@ -577,7 +577,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <div style="border:2px solid var(--color-text); padding:22px 20px;">
         <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Domain skills</div>
         <div style="font-size:17px; font-weight:800; margin:8px 0;">How the work is actually done</div>
-        <p style="font-size:13.5px; line-height:1.5; margin:0;">Each 03 station carries an agent-loadable skill encoding its craft, following the shape one station already proved — <b>mason's cell is <span class="code">conda-forge-expert</span></b>, the original exemplar.</p>
+        <p style="font-size:13.5px; line-height:1.5; margin:0;">Each 03 station carries an agent-loadable skill encoding its craft, following the shape one station already proved — <b>mason's cell is <span class="code">conda-forge-expert</span></b> — skill version <span data-fact="cfe_skill_version">8.90.5</span>, the original exemplar.</p>
       </div>
       <div style="border:2px solid var(--color-text); padding:22px 20px;">
         <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Personas</div>
@@ -647,12 +647,12 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
     </div>
     <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:24px; margin-top:24px;">
       <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:16px 20px;">
-        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Live proof · CRC 2026-08-26</div>
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Live proof · CRC</div>
         <div style="font-size:13.5px; margin-top:8px; line-height:1.6;"><span class="code">platform_app</span> exists · changeset <span class="code">:2</span> EXECUTED · <span class="code">/api/health</span> <b>200</b> as that role · <b>CREATE on <span class="code">public</span> refused</b> · schema <span class="code">liquibase</span> + contrib/auth/Wagtail changesets <span class="code">:15</span>–<span class="code">:19</span> in the changelog and executed.</div>
       </div>
       <div style="border:2px solid var(--color-text); padding:16px 20px;">
         <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The traps, named</div>
-        <div style="font-size:13px; margin-top:8px; line-height:1.6;"><b>Never</b> <span class="code">preserveSchemaCase</span> — open issue 7624 lands DDL <b>silently in <span class="code">public</span></b>. The Job <b>creates</b> schema <span class="code">liquibase</span> (<span class="code">liquibaseSchemaName</span> does not). Feedstock targets <b>5.0.4+</b> (the 7791 search-path fix, and the first release whose GPG signature verifies). Agent Canopy engines must not <span class="code">CREATE TABLE</span> on import — seen live, once.</div>
+        <div style="font-size:13px; margin-top:8px; line-height:1.6;"><b>Never</b> <span class="code">preserveSchemaCase</span> — open issue 7624 lands DDL <b>silently in <span class="code">public</span></b>. The Job <b>creates</b> schema <span class="code">liquibase</span> (<span class="code">liquibaseSchemaName</span> does not). Feedstock targets the <b>5.0 point release</b> carrying the 7791 search-path fix — also the first whose GPG signature verifies. Agent Canopy engines must not <span class="code">CREATE TABLE</span> on import — seen live, once.</div>
       </div>
     </div>
   </section>
@@ -788,7 +788,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
     <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:18px 22px; margin-top:24px;">
       <div style="display:flex; align-items:baseline; gap:14px;">
         <div style="font-size:44px; font-weight:900; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">6</div>
-        <div style="font-size:14px; line-height:1.55;"><b>conda-forge builds were the committed price</b> — the air-gap gate is a gate, not a warning, so a PyPI-only package is feedstock work scheduled as such. Four OpenFeature feedstocks (absent from anaconda.org <i>entirely</i> — a global search returned zero results) + a <span class="code">cachebox</span> 5.x build beside conda-forge's 6.2.5 + <span class="code">liquibase</span> 5.0.4+ with the PostgreSQL JDBC driver <b>vendored</b> (5.0 Community stopped bundling it; LPM fetches over the network). Shape precedent: <span class="code">apache-tika</span>; <span class="code">openjdk</span> 25 clears the Java 17+ floor.</div>
+        <div style="font-size:14px; line-height:1.55;"><b>conda-forge builds were the committed price</b> — the air-gap gate is a gate, not a warning, so a PyPI-only package is feedstock work scheduled as such. Four OpenFeature feedstocks (absent from anaconda.org <i>entirely</i> — a global search returned zero results) + a <span class="code">cachebox</span> 5.x build beside conda-forge's 6.2 line + <span class="code">liquibase</span> on that 5.0 point release with the PostgreSQL JDBC driver <b>vendored</b> (5.0 Community stopped bundling it; LPM fetches over the network). Shape precedent: <span class="code">apache-tika</span>; <span class="code">openjdk</span> 25 clears the Java 17+ floor.</div>
       </div>
     </div>
   </section>
@@ -808,40 +808,41 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">15</span>
       <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Dream to live cluster in four days — dated</h2>
     </div>
-    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Every claim below has a dated record in the Dream's realization log, the SPEC's live proofs, or a sprint-change proposal. Nothing here is projected.</p>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Every claim below has a dated record in the Dream's realization log, the SPEC's live proofs, or a sprint-change proposal. Nothing here is projected — and the log did not stop: its live entries run <span data-fact="dream_log_2026-09-01">2026-09-01</span> through <span data-fact="dream_log_2026-09-12">2026-09-12</span> — a red-team architecture review on <span data-fact="dream_log_2026-09-02">2026-09-02</span>, the <span class="code">python-foundry</span> cutover decomposed over four operator review iterations on <span data-fact="dream_log_2026-09-04">2026-09-04</span>, and a four-audit currency review on <span data-fact="dream_log_2026-09-09">2026-09-09</span> — with the closeout era archived behind them.</p>
     <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:0; border-top:3px solid var(--color-text);">
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">2026-08-23</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Day one</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px;">Dreamt</div>
         <div style="font-size:12px; line-height:1.45;">Hub-and-spoke blueprint, 10-layer topology, adversarial architecture + PRD reviews of all stations, 5 RFCs + 8 blind spots.</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">2026-08-24</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Day two</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px;">Grounded</div>
         <div style="font-size:12px; line-height:1.45;">The audit found <b>the host already built</b>. Owner herald → steward. Ten rulings; four directives rewritten by research; spec, brief, PRD, spine and Epics 18–30 landed <b>the same day</b>.</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">08-24 → 25</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Days two–three</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px;">Drained</div>
         <div style="font-size:12px; line-height:1.45;">Steward Epics 18–32 + eight peer hook stories — worktree <span class="code">bmad-build-auto</span> under one coordinator, one story in flight per station, merge never squash.</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">2026-08-25</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Day three</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px;">Deployed</div>
         <div style="font-size:12px; line-height:1.45;">Story 12-7 on attended CRC: Helm <span class="code">platform</span> deployed, Liquibase + <span class="code">migrate --fake</span> Complete, <span class="code">/ht/</span> <b>200</b>.</div>
       </div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px; background:var(--color-accent-100);">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">2026-08-26</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Day four</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px;">Closed out</div>
-        <div style="font-size:12px; line-height:1.45;">Lane 1 <span class="code">/</span> <b>200</b> published from PostgreSQL; CAP-9 <span class="code">platform_app</span> DML-only <b>proven</b>; Liquibase <span class="code">:17</span>–<span class="code">:19</span> executed. CAP-1..18 closed.</div>
+        <div style="font-size:12px; line-height:1.45;">Lane 1 answers <b>200</b> at <span class="code">/</span>, published from PostgreSQL; CAP-9 <span class="code">platform_app</span> DML-only <b>proven</b>; Liquibase <span class="code">:17</span>–<span class="code">:19</span> executed. CAP-1..18 closed.</div>
       </div>
       <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">2026-08-26</div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);">Day four</div>
         <div style="font-size:15px; font-weight:800; margin:6px 0 6px; color:var(--color-accent);">Reopened</div>
         <div style="font-size:12px; line-height:1.45;">CAP-19 minted <b>and its first slice shipped the same day</b> (34.1–34.5 + <span class="code">estate-cache</span>). The Dream ruled <b>evergreen</b> — closeout is a dated slice, not the end.</div>
       </div>
     </div>
     <div style="border:2px solid var(--color-text); padding:16px 22px; margin-top:24px; font-size:13.5px; line-height:1.5;"><b>The grounding discipline is the story.</b> The Dream was written as greenfield; the audit proved the host shipped — so the chain was rescoped to the residual, binding <span class="code">spec-python-agent-platform</span> as prior art and re-minting nothing. Corrections ran <i>toward</i> reality in both directions: two pessimistic premises (a missing Django maintenance branch; a live CVE exposure) dissolved under research, and one optimistic one (Tasks-extension runtime) was replaced with a shippable design.</div>
+    <div style="font-size:12.5px; margin-top:12px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">Every count, status and date on this page is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec and the manifests at tree <span data-fact="tree_commit_date">2026-09-13</span> — never from a prior poster, never from memory. The estate that derives them runs BMAD core <span data-fact="bmad_core_version">6.12.0</span>, bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> across <span data-fact="groundtruth_pixi_envs">30</span> pixi environments.</div>
   </section>
 
   <!-- 16 · QUERY PLANE -->
@@ -911,17 +912,17 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
     </svg>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:22px;">
       <div style="border:2px solid var(--color-text); padding:16px 18px;">
-        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling · 2026-08-26</div>
+        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling</div>
         <div style="font-size:14.5px; font-weight:800; margin:6px 0 4px;">Both faces, one boot script</div>
         <div style="font-size:12.5px; line-height:1.45; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Library-first stands; the Mosaic <span class="code">duckdb-server</span> HTTP/Arrow face is committed behind the same single boot script, raised only with the platform stack. Parity between faces is part of done.</div>
       </div>
       <div style="border:2px solid var(--color-text); padding:16px 18px;">
-        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling · 2026-08-26</div>
+        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling</div>
         <div style="font-size:14.5px; font-weight:800; margin:6px 0 4px;">A named new pipeline</div>
         <div style="font-size:12.5px; line-height:1.45; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The closed seven stay sealed; the plane's cache derives downstream from their outputs. Consumers choose per call — canonical datasets direct, or the plane as the fast path. No silent <span class="code">01_raw</span>.</div>
       </div>
       <div style="border:2px solid var(--color-text); padding:16px 18px;">
-        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling · 2026-08-26</div>
+        <div style="font-size:11px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">OQ ruling</div>
         <div style="font-size:14.5px; font-weight:800; margin:6px 0 4px;">Dual-write, for now</div>
         <div style="font-size:12.5px; line-height:1.45; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The plane is primary for Scribe recall; <span class="code">scribe_schema</span> pgvector stays written as the safety net until the plane has operating history. Retirement becomes its own explicit decision.</div>
       </div>
@@ -932,9 +933,9 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <section style="padding:36px 0 8px;">
     <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
       <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">17</span>
-      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Five-tier symmetry — declared complete, 40/40</h2>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Five-tier symmetry — declared complete across all eight stations</h2>
     </div>
-    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">An 03 station owes all five tiers, whatever its ledger says — a missing cell <b>fails CI</b> (Epic 37.1, declared 2026-08-26). 01/02 work is complete at spec + script or spec + skill and is never scored against this matrix.</p>
+    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">An 03 station owes all five tiers, whatever its ledger says — a missing cell <b>fails CI</b> (Epic 37.1). Tier 01 and tier 02 work is complete at spec + script or spec + skill and is never scored against this matrix.</p>
     <div style="display:grid; grid-template-columns:1.35fr repeat(5,1fr); gap:0; border:2px solid var(--color-text); font-size:12.5px;">
       <div style="padding:10px 14px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:11px; letter-spacing:0.06em;">STATION</div>
       <div style="padding:10px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:11px; letter-spacing:0.06em; text-align:center;">CLI</div>
@@ -956,6 +957,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
       <span class="tag tag-outline code">CLI · CAP-5</span><span class="tag tag-outline code">portal · CAP-3</span><span class="tag tag-outline code">service · CAP-4</span><span class="tag tag-outline code">skill · CAP-15</span><span class="tag tag-outline code">persona · CAP-16</span>
       <span style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">— and an owner + SLA declaration on the registration seam.</span>
     </div>
+    <div style="border:2px solid var(--color-text); padding:16px 22px; margin-top:20px; font-size:13.5px; line-height:1.6;"><b>The eight stations behind those tiers, from their own tracked sprint ledgers:</b> warden <span data-fact="warden_stories_done_total">49/49</span> · atlas <span data-fact="atlas_stories_done_total">94/95</span> · mason <span data-fact="mason_stories_done_total">67/67</span> · marshal <span data-fact="marshal_stories_done_total">248/249</span> · doctor <span data-fact="doctor_stories_done_total">95/95</span> · herald <span data-fact="herald_stories_done_total">77/82</span> · scribe <span data-fact="scribe_stories_done_total">32/32</span> · steward <span data-fact="steward_stories_done_total">206/222</span> — <span data-fact="fleet_stories_done_total">868/891</span> stories and <span data-fact="fleet_epics_done_total">189/196</span> epics done fleet-wide, read with the real sprint-status parser, never a regex and never a prior poster.<div style="font-size:12.5px; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">epics — warden <span data-fact="warden_epics_done_total">12/12</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · mason <span data-fact="mason_epics_done_total">16/16</span> · marshal <span data-fact="marshal_epics_done_total">34/36</span> · doctor <span data-fact="doctor_epics_done_total">22/22</span> · herald <span data-fact="herald_epics_done_total">18/20</span> · scribe <span data-fact="scribe_epics_done_total">15/15</span> · steward <span data-fact="steward_epics_done_total">49/51</span>, this chain's own ledger proxy.</div></div>
   </section>
 
   <!-- ACT VI -->
@@ -993,9 +995,9 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
           <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">12.9 CI</span> <span style="font-size:13px;">— <span class="code">ocp-portability-smoke</span>, optional, waiting on Actions minutes. An honesty gap, not a stamp gate.</span></div>
           <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">MCP slice 3</span> <span style="font-size:13px;">— retiring the ImportError skip; parked under the sibling isolation spec, with the cluster fail-loud (Epic 35).</span></div>
           <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">Q5 scorecard</span> <span style="font-size:13px;">— Build League + Balanced Product Scorecard live under a <b>sibling</b> Dream; unpublished metrics must not steer work.</span></div>
-          <div style="padding:12px 16px;"><span class="code" style="font-weight:700;">vizro-ai</span> <span style="font-size:13px;">— 0.4.2 final, deprecated; new boards are authored with <span class="code">vizro-mcp</span> / <span class="code">vizro-e2e-flow</span> once the cache exists.</span></div>
+          <div style="padding:12px 16px;"><span class="code" style="font-weight:700;">vizro-ai</span> <span style="font-size:13px;">— its final 0.4 release, deprecated; new boards are authored with <span class="code">vizro-mcp</span> / <span class="code">vizro-e2e-flow</span> once the cache exists.</span></div>
         </div>
-        <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:14px 18px; margin-top:16px; font-size:13.5px; line-height:1.5;"><b>Recommended, not required:</b> move the Django pin to <span class="code">&gt;=5.2.17,&lt;6</span> when the feedstock's <span class="code">5.x</span> branch publishes it. Seven CVEs are unreachable here — but scanners key on version strings, and an SBOM declaring them is a finding regardless.</div>
+        <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:14px 18px; margin-top:16px; font-size:13.5px; line-height:1.5;"><b>Recommended, not required:</b> move the Django pin up to the 5.2 patch that carries them (still <span class="code">&lt;6</span>) once the feedstock's <span class="code">5.x</span> branch publishes it. Seven CVEs are unreachable here — but scanners key on version strings, and an SBOM declaring them is a finding regardless.</div>
       </div>
     </div>
   </section>
