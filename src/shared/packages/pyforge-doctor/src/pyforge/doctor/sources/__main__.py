@@ -55,6 +55,7 @@ from . import (
     chain,
     deps,
     factory,
+    capability_ledger,
     frozen_path,
     general_docs_consistency,
     ledger,
@@ -121,6 +122,8 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 22.3 (Epic 22) -- general-docs-consistency beside status-body-
     # consistency in detectors; same shape as PIXI_CURRENCY_LEDGER above.
     Source.GENERAL_DOCS_CONSISTENCY.value: general_docs_consistency.gather,
+    # Story 55.2 -- extract detector vs capability-ledger.yaml.
+    Source.CAPABILITY_LEDGER.value: capability_ledger.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

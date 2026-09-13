@@ -309,6 +309,11 @@ class Source(StrEnum):
     # vs station Dream) for quotable identity contradictions. WARN-only,
     # fail-open — never a second PR gate.
     GENERAL_DOCS_CONSISTENCY = "general-docs-consistency"
+    # Story 55.2 (steward Epic 55 / spec-foundry-capability-ledger fcl:CAP-2):
+    # CAP heading + intent/success extract vs docs/foundry/capability-ledger.yaml.
+    # HARD on unclassified live CAP-N and A-only without expiry; post-PIN
+    # unclassified paths are --append. Extract-only inventory.
+    CAPABILITY_LEDGER = "capability-ledger"
 
 
 class Partition(StrEnum):

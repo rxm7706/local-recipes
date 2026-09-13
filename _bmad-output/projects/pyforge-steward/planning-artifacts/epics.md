@@ -3655,7 +3655,7 @@ the Why sentence
 **And** unclassified `CAP-N` is HARD
 **And** `A-only` without expiry is HARD
 **And** a path/Spec after the PIN SHA without a row is `--append`
-**Status:** backlog
+**Status:** done
 
 ### Story 55.3: verified-in-foundry joins the case list
 

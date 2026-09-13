@@ -134,6 +134,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.STATUS_BODY_CONSISTENCY: "status_body_consistency.py",  # Story 21.12
     Source.PIXI_CURRENCY_LEDGER: "pixi_currency.py",  # Story 21.7
     Source.GENERAL_DOCS_CONSISTENCY: "general_docs_consistency.py",  # Story 22.3
+    Source.CAPABILITY_LEDGER: "capability_ledger.py",  # Story 55.2
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
