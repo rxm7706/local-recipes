@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-scribe
 persona: "PyForge Scribe"
-derived_at: "2026-09-13T05:54:55-05:00"
-tree: "fbefe6eea68adbf67dd689aea5ae53072f01d75b"
+derived_at: "2026-09-13T06:19:22-05:00"
+tree: "469ac025f50ec32d0d1ddae88ce268a7b4444136-dirty"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -152,10 +152,10 @@ facts:
     method: "project.version"
     shown_as: ["0.1.0"]
   - id: poster_last_commit_date
-    value: "2026-07-24"
+    value: "2026-09-13"
     source: "presentations/pyforge-scribe/project/PyForge Scribe Infographic standalone.html"
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
-    shown_as: ["2026-07-24"]
+    shown_as: ["2026-09-13"]
   - id: recipes_count
     value: "7864"
     source: "recipes/"
