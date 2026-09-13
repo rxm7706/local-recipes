@@ -152,7 +152,7 @@ development_status:
   44-1-the-move-list-manifest: blocked
   44-10-archive-local-recipes: blocked
   44-11-windows-native-estate: blocked
-  44-12-cutover-flag-and-replay-harness: backlog
+  44-12-cutover-flag-and-replay-harness: done
   44-13-memlog-fidelity: done
   44-14-rebuild-harness-and-oracle-gate: blocked
   44-15-actions-minutes-metering: blocked

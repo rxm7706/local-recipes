@@ -32,7 +32,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_seventeen_duties():
+def test_there_are_exactly_eighteen_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -51,6 +51,7 @@ def test_there_are_exactly_seventeen_duties():
         "revoke",
         "track",
         "guards",
+        "cutover",
     )
 
 
@@ -104,7 +105,15 @@ def test_setup_initrepo_validate_fast_are_wired_into_help():
         # Excluded because a bare invocation either probes the real machine or
         # trips a required flag (exit 2), neither of which is a duty outcome.
         if d
-        not in ("init", "setup", "initrepo", "validate-fast", "restore", "revoke")
+        not in (
+            "init",
+            "setup",
+            "initrepo",
+            "validate-fast",
+            "restore",
+            "revoke",
+            "cutover",
+        )
     ],
 )
 def test_each_duty_dispatches_and_succeeds(duty):

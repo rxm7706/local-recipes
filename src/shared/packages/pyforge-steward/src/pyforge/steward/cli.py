@@ -57,6 +57,7 @@ DUTIES: tuple[str, ...] = (
     "revoke",
     "track",
     "guards",
+    "cutover",
 )
 
 _HELP = {
@@ -124,6 +125,10 @@ _HELP = {
         "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
         "never a PR verdict (Story 53.4 / hub:CAP-4)"
     ),
+    "cutover": (
+        "flag-gated cutover plan/apply/flip (Story 44.12 / fnd:CAP-8); "
+        "default root stays local-recipes"
+    ),
 }
 
 
@@ -177,6 +182,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_track_subparsers(duty_parser)
         elif name == "guards":
             _add_guards_subparsers(duty_parser)
+        elif name == "cutover":
+            _add_cutover_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -324,6 +331,24 @@ def _add_revoke_arguments(revoke_parser: argparse.ArgumentParser) -> None:
             "(default: the one running steward)"
         ),
     )
+
+
+def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
+    """Story 44.12: plan / apply / flip."""
+    cutover_subs = cutover_parser.add_subparsers(
+        dest="cutover_verb", metavar="{plan,apply,flip}"
+    )
+    plan = cutover_subs.add_parser("plan", help="regenerate or append the move-list")
+    plan.add_argument("--regenerate", action="store_true")
+    plan.add_argument("--append", action="store_true")
+    plan.add_argument("--manifest", default=None, metavar="PATH")
+    apply = cutover_subs.add_parser("apply", help="replay one phase into foundry")
+    apply.add_argument("--phase", required=True, metavar="N", help="1a or 1b")
+    apply.add_argument("--manifest", default=None, metavar="PATH")
+    apply.add_argument("--foundry-root", default=None, metavar="DIR")
+    flip = cutover_subs.add_parser("flip", help="set pyforge.cutover_root (refuses if a loop is running)")
+    flip.add_argument("--to", required=True, choices=("local-recipes", "foundry"))
+    flip.add_argument("--flags", default=None, metavar="PATH")
 
 
 def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
@@ -1067,6 +1092,10 @@ def resolve_duty(name: str) -> Duty:
         from .guards import GuardsDuty
 
         return GuardsDuty()
+    if name == "cutover":
+        from .cutover import CutoverDuty
+
+        return CutoverDuty()
     return NullDuty(name)
 
 
