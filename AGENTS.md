@@ -83,7 +83,7 @@ surface — or `--kind` for an explicit bag. `--mode` and `--kind` are
 exclusive. Scoped retrieve (`--scope <slug>`, including
 Marshal planning-graph) also admits that slug's
 `presentations/<slug>/facts.yaml`. Marshal `codegraph`
-(`.codegraph/codegraph.db`) owns symbol navigation. Do not treat the
+(`.codegraph/codegraph.db`) owns symbol navigation. Do not use `scribe recall --mode code` for symbols. Do not treat the
 compiled graph as a substitute for this file or a station `SKILL.md`.
 
 ## Trunk, worktrees, PRs (session path)

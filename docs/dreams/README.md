@@ -187,6 +187,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`scribe-named-docs.md`](scribe-named-docs.md) | specified | Named docs extras: how-tos plus a library-catalog heading extract — never `docs/**`. |
 | [`scribe-graphify-target-list.md`](scribe-graphify-target-list.md) | specified | Extra-on graphify ingest walks packages + platform + scripts — never `recipes/` or the repo root. |
 | [`scribe-recall-modes.md`](scribe-recall-modes.md) | specified | First-class `--mode planning|memory|code` bags, exclusive with `--kind`. |
+| [`scribe-code-navigation-owner.md`](scribe-code-navigation-owner.md) | specified | One nav owner: Marshal `codegraph.db` for symbols; graphify `code:` is AST/report only. Epic 17 / Story 17.1. |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**

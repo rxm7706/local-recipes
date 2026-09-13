@@ -4,6 +4,10 @@ extra (Story 6.1, unifying-strategy Grounding 2026-08-30: "cocoindex is a
 engine"; stack.md "Estate leverage": "`cocoindex` + `graphifyy` | scribe |
 `scribe index`: AST graph + incremental index ... | bind").
 
+This extra is not the symbol-navigation API. Marshal codegraph
+(``.codegraph/codegraph.db``) owns "where is this symbol?"; ``code:``
+nodes stay an AST / ``index report`` / ``--mode code`` surface.
+
 Binds graphifyy (>=0.9.51, Apache-2.0) as an OPTIONAL ingest source: when
 `SCRIBE_GRAPHIFY_EXTRA` is truthy, `compile.py`'s fan-in (and the explicit
 `scribe index build` verb) call `ingest_repo()` here to turn a folder of

@@ -26,9 +26,10 @@ presentations export trees, cocoindex inside `compile_graph`, full-text
 | **CAP-11** | First-class recall **modes**. Hoisted 2026-09-13 to `spec-scribe-recall-modes` CAP-1 / Story 16.1. | Was parked so the session would not lose it. | Portal + agents without inventing argv |
 | **CAP-12** | **Portal / harness wiring.** Hoisted 2026-09-13 to `spec-scribe-portal-recall-defaults` CAP-1 / Story 12.1. | Was parked so the session would not lose it. | “Wiring this into PyForge” |
 | **CAP-13** | Named extra **`docs/` surfaces** (how-tos, `library-llms-full.md`). Hoisted 2026-09-13 to `spec-scribe-named-docs` CAP-1 / Story 14.1. | Was parked so the session would not lose it. | Library/how-to questions |
-| **CAP-14** | **One navigation owner:** graphify `code:` vs Marshal `codegraph.db`. Not both as recall peers. | Non-goal on this Spec is “do not replace codegraph.” A later decision can pick. | Agents asking “where is this symbol?” |
+| **CAP-14** | **One navigation owner:** graphify `code:` vs Marshal `codegraph.db`. **Hoisted 2026-09-13 to `spec-scribe-code-navigation-owner` / Epic 17.** | Was parked so the session would not lose it; unifying pgvector/semantic stays steward 49.7. | Agents asking “where is this symbol?” |
 
 ## Recorded, not scheduled
 
 CAP-6/7/8/9/10/11/12/13 are Stories 10.1 / 13.1 / 15.1 / 11.1 / 9.1 /
-16.1 / 12.1 / 14.1. No story is minted here for CAP-14.
+16.1 / 12.1 / 14.1. CAP-14 is Story 17.1
+(`spec-scribe-code-navigation-owner`).
