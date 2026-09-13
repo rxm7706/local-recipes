@@ -32,16 +32,34 @@ verbs stay (`pyforge steward`, `pyforge marshal`, `warden scan`).
 **Launch the Foundry. Adopt Frames. Build the Intelligence Hub. Wire every
 component of the BMAD-suite.**
 
-- **Launch** — the lasting root exists *and* a regenerated kernel runs
-  there. Not “the brownfield tree arrived.” Factory island (44.7) and the
-  cutover flag (44.12) already landed. Story 44.4’s fold is parked.
-- **Adopt Frames** — Company + eight station `.frame.md` (53.2). Frames are
-  spec, not a copy list.
+Operating model: **strangler fig**. Facade is the public CLI (later
+`cutover_root`). Each `rebuild` row is a new vine on B from Frame+Spec.
+A long-lived git mirror of A is out of contract. The capability ledger
+is the routing table (`docs/dreams/foundry-capability-ledger.md`).
+
+| Mode | Meaning |
+|---|---|
+| `rebuild` | B re-derives from Frame/Spec; A is oracle until `verified-in-foundry` |
+| `retire` | Must not appear on B; A may keep history |
+| `A-only` | Allowed on A; expiry (story id or `YYYY-MM-DD`) |
+| `B-only` | Named on a Spec before `done` |
+
+Never `move`. `verified-in-foundry` is a claim on a `rebuild` row (needs
+a 54.1 case-list id), not a fifth mode. Frame preflight is not the oracle.
+
+- **Launch** — B exists *and* a regenerated kernel runs there. Not “A’s
+  tree arrived.” Factory island (44.7) and the cutover flag (44.12)
+  landed. 54.1 case-list is the thin oracle. 54.2–54.4 rebuild core /
+  steward / marshal on B. 44.4–44.6 stay parked (file-move, not dispatch).
+- **Adopt Frames** — Company + eight station `.frame.md` as Frame Spec
+  **v0.3 working draft** (53.2 + 53.5; Apache-2.0; `openteams-ai/frame-spec#28`).
+  B is the Frame writer. Frames are spec, not a copy list.
 - **Build the Hub** — Charter map, Frames, `track.json`, Guards (53.1–53.4).
-  Do not invent Hub objects first in foundry.
+  Do not invent Hub objects first in foundry. No Community Frame / registry
+  until that later-cap is named.
 - **Wire the suite** — re-provision in foundry from the register. Not
-  `apply --phase 1b` as a tree copy. Chrome / mybmad stay on local-recipes
-  until UX exists.
+  `apply --phase 1b` as a tree copy. Chrome / mybmad stay on A until UX
+  exists. Drain is not unlocked by 28.29.
 
 ## Why now
 
@@ -73,6 +91,7 @@ core/steward/marshal tests as the gate.
 - `docs/dreams/regenerable-factory.md` (archive as oracle, not as source copy)
 - `docs/dreams/pyforge-steward.md`, `docs/dreams/pyforge-marshal.md`
 - Company Frame `docs/foundry/frames/pyforge.frame.md` (no lasting `src/shared/packages/`)
+- `docs/dreams/foundry-capability-ledger.md` / `spec-foundry-capability-ledger` (modes / Epic 55)
 
 ## Constraints / Non-goals
 
@@ -94,3 +113,6 @@ core/steward/marshal tests as the gate.
 - **2026-09-13** — A/B lock: one starting contract (Dream + Frame + Spec
   five-fields); A/B the behavior. `fnr:CAP-5` + `ab-sync.md`. Story 54.5
   lands the protocol on foundry. BMAD-on-B is slim; do not copy A's trees.
+- **2026-09-13** — Strangler kit merged (A #1343 / B #3): Frames v0.3,
+  case-list, Epic 55 Spec. Mode contract memorialized on B
+  (`docs/foundry/modes.md` + `estate-smoke`).
