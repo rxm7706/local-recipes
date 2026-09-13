@@ -52,3 +52,24 @@ Prototype lives in Claude Design project **"PyForge Mason deck"** (`a7a2c3b1-571
 https://claude.ai/design/p/a7a2c3b1-5718-49fa-8c90-71d44d57eae9?file=PyForge+Mason.dc.html
 Pull it into this deck with the MCP bridge ("pull mason") — see
 `docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.7)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-3) from
+`facts.yaml` re-derived at tree `fbefe6eea6`. Every count, version, status and date the
+poster prints is a `data-fact` mark resolving to a ledger row; `deck-facts pyforge-mason
+--check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 0 unshown; facts 91/91`.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Mason Infographic standalone.html` | 151,188 B · 24 sections (23 numbered + creed) · 6 acts · 4 SVG · 11 tables · facts 91/91 | `PENDING-PUSH` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 21820 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
+tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all resolved ✓ · headless
+full-page PNG at 1240 px reviewed by eye (`.herald/deck-qa/pyforge-mason/standalone.png`,
+gitignored) ✓ · offline apart from the Google Fonts `<link>` ✓. No section of the standard's
+set was dropped; the Warden "sub-agent team" slot is filled by Mason's engines-on-the-bench
+table (§06). Left out for lack of a fact row: the feedstock count, the CFE line count, test
+counts, the hard-constraint count, engine versions, and every date outside the Dream's
+realization log (the `SCAFFOLD` status at the top of this README describes the React deck,
+not this poster).
