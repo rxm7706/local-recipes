@@ -2721,7 +2721,7 @@ So that `local-recipes` keeps evolving until the flip and foundry never falls be
 **Given** `src/platform/config/flags.json` **When** `pyforge.cutover_root` is read **Then** the host reads it in-process and the CLIs read it through a `pyforge-core` reader; its value alone decides the ledger of record, Mason's targets and the loop-home remotes, and flipping it back restores them
 **And** `steward cutover plan --regenerate` and `--append` both preserve `moved` rows (a test proves idempotence over status), and `steward cutover apply --phase <n>` is idempotent when re-run
 **And** a flip is refused while any loop is running and is recorded in the Dream's Realization log
-**Status:** backlog
+**Status:** done
 
 ### Story 44.13: Memlog fidelity
 
