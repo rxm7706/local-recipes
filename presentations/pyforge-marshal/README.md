@@ -71,3 +71,27 @@ Authored repo-side this generation (inverted from the usual Design-first flow);
 pushed byte-for-byte via the DesignSync localPath pipeline. On the next
 Design-side edit session, finish with a byte-exact pull per
 `docs/specs/presentation-deck.md` § the MCP bridge.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.6)
+
+Re-derived to `infographic-standard.md` (spec-deck-family-currency CAP-1..3) from
+`presentations/pyforge-marshal/facts.yaml` (`pixi run -e local-recipes deck-facts pyforge-marshal
+--with-tests`, re-derived on the clean tree of the commit that landed this poster — the ledger's
+`tree:` names it, following the 20.2 convention of deriving on the parent commit). The 2026-07-31 six-act arc and its 19-section order are kept;
+every count, version, status and date is now a `data-fact` mark resolving to a ledger row — the
+July claims (`bmad-method 6.10.0`, `bmad-loop 0.9.0`, "128/333 fleet-wide", "Epic 1 · 10/10",
+the per-station July chips, "785 tests", the stack table's module versions) are gone. Dropped for
+lack of a fact row: the stack table's per-module versions for BMB / TEA / CIS / SKF / pyforge-core
+(column shows `—`; only `bmad_core_version`, `bmad_loop_version`, `cfe_skill_version`,
+`package_version` print), the "10 detectors" / "51 skills" / "16 skf" counts, the "8 concurrent
+homes" numeral (now "one home per station"), and `bmad-dashboard` (retired console). Sections
+kept in full: no section of the standard's set was dropped.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Marshal Infographic standalone.html` | 112,843 B · 19 sections (21 `<section` incl. doctrine + creed bands) · 6 acts · 4 SVG · 6 tables · facts 128/128 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath, server-side read; written: 1) · etag + byte-exact read-back pending the claude-design MCP reconnect (DesignSync returns no etag)` (operator pushes via DesignSync after review) | rendered 2026-09-13 at 1240 px, page 16,427 px, no clipped or blank region; `deck-facts pyforge-marshal --check` → `0 unmarked, 0 mismatch, 0 drifted, 1 unsourced (tests_collected, --with-tests only), 0 unshown`; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Floors: act bands 6/6 · sections 19 ≥ 18 · inline SVGs 4 ≥ 3 · bytes 112,843 ≥ 90,000 · tables
+6 ≥ 3 · cast cards 8/8 full (role, motto, paragraph, verbs, stories + epics chips) · render
+reviewed as eight 2100 px slices. Render artifacts live under the gitignored
+`.herald/deck-qa/pyforge-marshal/`.
