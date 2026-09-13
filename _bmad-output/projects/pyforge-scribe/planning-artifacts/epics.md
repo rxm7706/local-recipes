@@ -551,6 +551,20 @@ The gap is the citation rule in `recall.py`.
 **And** unscoped recall is unchanged
 **And** Marshal argv stays `--scope` only — no `--facts` flag
 
+## Epic 10: The story you are on compiles; the ones you finished do not
+
+**Spec binding.** `spec-scribe-in-flight-story-specs` CAP-1 (hoisted
+parked CAP-6). Folder `SPEC.md` already compiles (Story 8.4). Per-story
+files must not join as a glob.
+
+### Story 10.1: In-flight story specs join the compile
+**Type:** feature • **Effort:** S • **Deps:** S-8.4 • **FR/AD:** `spec-scribe-in-flight-story-specs` CAP-1
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`
+**Given** `spec-10-1-….md` and a ledger row `10-1-…: in-progress` **When** `scribe graph compile` runs **Then** that file is one `kind=doc` node
+**And** the same file with ledger `done` is omitted even if frontmatter says `ready-for-dev`
+**And** `backlog` rows, a missing ledger, and folder `SPEC.md` are not this surface
+**And** a missing tree is zero nodes and no warning
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

@@ -63,3 +63,6 @@ fleet truth.
 - **2026-09-13** — Parked CAP-10 hoisted to Dream
   `scribe-marshal-fact-visibility` / Spec
   `spec-scribe-marshal-fact-visibility` (Story 9.1).
+- **2026-09-13** — Parked CAP-6 hoisted to Dream
+  `scribe-in-flight-story-specs` / Spec
+  `spec-scribe-in-flight-story-specs` (Story 10.1).
