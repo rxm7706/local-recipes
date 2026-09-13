@@ -124,6 +124,44 @@ def test_review_stage_never_drops_below_first_candidate_model():
     assert resolved.harness == "claude"
 
 
+def test_resolve_stage_candidate_returns_none_when_nothing_is_available():
+    """2026-09-12 (dispatch-tier-routing-fails-safe): when every declared
+    candidate for a stage fails ``availability_fn``, the function must
+    return ``None`` -- never fabricate an answer by falling back to a
+    candidate nothing confirmed available. The prior "never block" fallback
+    is exactly how an unverified candidate (a Cursor model with no
+    resolvable harness) could be resolved and then written into a real
+    launch's adapter config despite failing every check. ``resolve_tier_
+    launch``'s own ``if resolved is None: continue`` already treats this
+    identically to "no candidates for this stage": the difficulty override
+    is dropped and the stage falls back to the un-tiered baseline."""
+    candidates = (StageCandidate(harness="cursor", model="composer-2.5"),)
+
+    resolved = resolve_stage_candidate(
+        candidates,
+        is_review=False,
+        review_floor_model=None,
+        availability_fn=lambda candidate: False,
+        catalog=_SAMPLE_CATALOG,
+    )
+    assert resolved is None
+
+
+def test_resolve_stage_candidate_review_returns_none_when_nothing_is_available():
+    """Same as above for the review stage's floor-preference path -- an
+    unavailable floor candidate must not be forced through either."""
+    candidates = (StageCandidate(harness="cursor", model="composer-2.5"),)
+
+    resolved = resolve_stage_candidate(
+        candidates,
+        is_review=True,
+        review_floor_model=None,
+        availability_fn=lambda candidate: False,
+        catalog=_SAMPLE_CATALOG,
+    )
+    assert resolved is None
+
+
 def test_resolve_tier_launch_journals_models_and_pools():
     effective = _compose(
         model_tier_map={

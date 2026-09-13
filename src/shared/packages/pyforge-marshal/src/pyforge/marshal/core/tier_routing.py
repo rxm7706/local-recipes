@@ -149,7 +149,20 @@ def resolve_stage_candidate(
     availability_fn: Callable[[StageCandidate], bool],
     catalog: object,
 ) -> ResolvedStage | None:
-    """Pick the first available candidate; review never drops below floor model."""
+    """Pick the first available candidate; review prefers the floor model.
+
+    Returns ``None`` when nothing declared for this stage is genuinely
+    available -- the caller (``resolve_tier_launch``) already treats that
+    identically to "no candidates for this stage": the difficulty override
+    is dropped and the stage falls back to whatever the base, un-tiered
+    policy already declares. This function used to fabricate an answer
+    anyway ("never block — fall back to the first declared candidate"),
+    which is exactly how a Cursor-only model (``composer-2.5-fast``, no
+    ``harness`` key) could be resolved and then written into the launched
+    adapter's own stage config even though nothing about it was ever
+    confirmed available (2026-09-12, dispatch-tier-routing-fails-safe). A
+    stage silently missing its override is always safer than one silently
+    carrying an unverified one."""
     if not candidates:
         return None
     floor = review_floor_model if is_review else None
@@ -162,15 +175,7 @@ def resolve_stage_candidate(
             continue
         if availability_fn(candidate):
             return _resolved_from_candidate(candidate, catalog)
-
-    # Never block — fall back to the first declared candidate.
-    first = ordered[0]
-    if is_review and floor is not None and first.model != floor:
-        for candidate in ordered:
-            if candidate.model == floor:
-                first = candidate
-                break
-    return _resolved_from_candidate(first, catalog)
+    return None
 
 
 def resolve_tier_difficulty(

@@ -220,6 +220,68 @@ def test_empty_model_tier_map_with_a_difficulty_renders_baseline():
     assert doc["adapter"]["review"]["model"] == "opus"
 
 
+def test_tier_batching_never_writes_a_stage_model_catalogued_under_a_different_provider():
+    """2026-09-12 (dispatch-tier-routing-fails-safe): a bare-string
+    ``model_tier_map`` stage entry has no declared ``harness``, so it
+    always launches under whichever adapter this render resolves to
+    (``[adapter].name``, here the template's ``claude`` baseline, since
+    ``harness_preference`` is left at its own default). When the cost
+    catalog identifies that model's declared provider as something OTHER
+    than the resolved adapter's own provider, writing it anyway would
+    launch a real adapter binary with a model it was never meant to
+    receive -- the exact hybrid, invalid dispatch this fix closes (a
+    Cursor model, `composer-2.5-fast`, silently landing on `claude`
+    because `harness_preference` (`cursor`-only) has no bmad-loop
+    counterpart). The stage must fall through to the template's own
+    baseline instead, not be left absent -- `[adapter.review]`'s baseline
+    override still applies unconditionally regardless of this guard."""
+    effective = _compose(
+        model_tier_map={"heavy": {"dev": "composer-2.5-fast"}},
+        model_cost_catalog=_SAMPLE_CATALOG_WITH_FAST,
+    )
+    doc = tomllib.loads(render_policy_toml(effective, difficulty="heavy"))
+    assert "dev" not in doc["adapter"]
+    assert doc["adapter"]["model"] == "sonnet"
+    assert doc["adapter"]["review"]["model"] == "opus"
+
+
+def test_tier_batching_still_applies_a_stage_model_catalogued_under_the_resolved_adapters_own_provider():
+    """Sibling of the mismatch test above: a tier-mapped model DOES apply
+    when the cost catalog names it under the SAME provider as the adapter
+    that will actually launch (here ``claude`` -> ``anthropic``) -- the
+    guard only ever filters a genuine cross-provider mismatch, never a
+    legitimately-tiered same-adapter model."""
+    effective = _compose(
+        model_tier_map={"heavy": {"dev": "sonnet-5"}},
+        model_cost_catalog={
+            "providers": {
+                "anthropic": {
+                    "models": {
+                        "sonnet-5": {"input_per_million": 2.0, "output_per_million": 10.0},
+                    },
+                },
+            },
+        },
+    )
+    doc = tomllib.loads(render_policy_toml(effective, difficulty="heavy"))
+    assert doc["adapter"]["dev"]["model"] == "sonnet-5"
+
+
+_SAMPLE_CATALOG_WITH_FAST = {
+    "providers": {
+        "cursor": {
+            "subscription_pool": "cursor-ultra",
+            "models": {
+                "composer-2.5-fast": {
+                    "input_per_million": 3.0,
+                    "output_per_million": 15.0,
+                },
+            },
+        },
+    },
+}
+
+
 # --- the harness's stricter attempt-count floor ---------------------------------
 
 

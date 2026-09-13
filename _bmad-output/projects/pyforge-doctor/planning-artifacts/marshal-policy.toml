@@ -271,14 +271,24 @@ enabled = true
 [context.output]
 enabled = true
 
+# 2026-09-12 (dispatch-tier-routing-fails-safe): dev/review reverted to the
+# same models the plain [adapter]/[adapter.review] baseline already uses.
+# Cursor's composer-2.5/-fast is confirmed permanently dead for headless
+# dispatch (spec-28-29-wire-is-dead-for-cursor-...) and this fleet's own
+# harness_preference is cursor-only with no bmad-loop counterpart, so every
+# heavy/medium/easy dispatch was silently launching claude with an invalid
+# model string. render_policy_toml now refuses that mismatch outright
+# (provider_declaring_model), so this revert is belt-and-suspenders: it
+# keeps the config honest about what actually runs, not just safe by
+# accident of a runtime filter.
 [model_tier_map.heavy]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = "sonnet"
+review = "opus"
 
 [model_tier_map.medium]
-dev = "composer-2.5-fast"
-review = "composer-2.5"
+dev = "sonnet"
+review = "opus"
 
 [model_tier_map.easy]
-dev = "composer-2.5-fast"
+dev = "sonnet"
 

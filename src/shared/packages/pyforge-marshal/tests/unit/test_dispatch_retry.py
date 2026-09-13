@@ -119,7 +119,16 @@ def test_all_eight_stations_declare_model_tier_map(station: str) -> None:
 def test_newly_fed_station_policies_compose_non_null_dispatch_model(
     station: str, difficulty: str
 ) -> None:
-    """Story 33.6 CAP-1: composed station policy resolves a dev model on dispatch."""
+    """Story 33.6 CAP-1: composed station policy resolves a dev model on dispatch.
+
+    2026-09-12 (dispatch-tier-routing-fails-safe): `model_tier_map`'s dev
+    value fleet-wide reverted from Cursor's `composer-2.5-fast` to `sonnet`
+    -- the SAME model the plain, un-tiered `[adapter].model` baseline
+    already uses -- since Cursor is confirmed permanently dead for headless
+    dispatch and this fleet's `harness_preference` (`cursor`-only) has no
+    bmad-loop counterpart, so the Cursor model was silently launching under
+    the `claude` adapter instead. See that spec for the full finding.
+    """
     repo_root = Path(__file__).resolve().parents[6]
     policy_path = (
         repo_root
@@ -134,5 +143,5 @@ def test_newly_fed_station_policies_compose_non_null_dispatch_model(
     model, escalated, _, _ = resolve_dispatch_model_with_retry_escalation(
         effective, difficulty=difficulty, prior_failed_attempts=0
     )
-    assert model == "composer-2.5-fast"
+    assert model == "sonnet"
     assert escalated is False

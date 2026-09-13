@@ -3905,10 +3905,17 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert parsed["gate_mode"] == "none"
     assert len(parsed["verify_commands"]) == 2
     assert len(parsed["landing_rules"]) == 2
+    # 2026-09-12 (dispatch-tier-routing-fails-safe): dev/review reverted
+    # from Cursor's composer-2.5(-fast) to sonnet/opus -- the SAME models
+    # the plain [adapter]/[adapter.review] baseline already uses -- since
+    # Cursor is confirmed permanently dead for headless dispatch and this
+    # fleet's harness_preference (cursor-only) has no bmad-loop
+    # counterpart, so the Cursor model was silently launching under the
+    # claude adapter instead.
     assert parsed["model_tier_map"] == {
-        "heavy": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
-        "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
-        "easy": {"dev": "composer-2.5-fast"},
+        "heavy": {"dev": "sonnet", "review": "opus"},
+        "medium": {"dev": "sonnet", "review": "opus"},
+        "easy": {"dev": "sonnet"},
     }
 
     effective, findings = policy_module.compose(
@@ -3918,7 +3925,11 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
 
     rendered_easy = render_policy_toml(effective, difficulty="easy")
     parsed_easy = tomllib.loads(rendered_easy)
-    assert parsed_easy["adapter"]["dev"]["model"] == "composer-2.5-fast"
+    # The override still applies -- sonnet belongs to the same provider as
+    # the adapter that runs it, so render_policy_toml's provider-mismatch
+    # guard has nothing to filter; this still proves the tier-map mechanism
+    # works end to end, just with a model the adapter can actually use.
+    assert parsed_easy["adapter"]["dev"]["model"] == "sonnet"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
 
 

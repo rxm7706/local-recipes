@@ -230,6 +230,7 @@ from ..core.model_cost import (
     catalog_declared,
     estimate_layer_savings_usd,
     estimate_spend_usd,
+    provider_declaring_model,
     resolve_cache_read_ratio,
     resolve_model_price,
     weighted_total,
@@ -610,9 +611,29 @@ def render_policy_toml(
 
     if stage_models:
         adapter_table = doc["adapter"]
+        # FR-51 tier-batching only ever means "use this model under whichever
+        # adapter actually launches" -- `doc["adapter"]["name"]` above is
+        # already the FINAL, real adapter (explicit arg, tier-resolved,
+        # harness_preference-derived, or the template's own baseline). When
+        # a stage's tier-mapped model is catalogued under a DIFFERENT
+        # provider than that adapter, writing it anyway launches a real
+        # adapter binary with a model it was never meant to receive -- the
+        # exact hybrid, invalid dispatch found 2026-09-12
+        # (dispatch-tier-routing-fails-safe): a Cursor model
+        # (`composer-2.5-fast`) with no explicit `harness` key landed on the
+        # `claude` adapter because `harness_preference` (`cursor`) has no
+        # bmad-loop counterpart and silently fell back to the template
+        # baseline, while the model override applied unchanged. Skip the
+        # override for that stage instead -- it keeps the baseline
+        # [adapter]/[adapter.review] model, which is always launchable.
+        resolved_adapter_provider = adapter_provider(str(doc["adapter"]["name"]))
+        catalog_for_stage_check = effective.model_cost_catalog.value
         for stage in _ADAPTER_STAGES:
             model = stage_models.get(stage)
             if model is None:
+                continue
+            implied_provider = provider_declaring_model(catalog_for_stage_check, model)
+            if implied_provider is not None and implied_provider != resolved_adapter_provider:
                 continue
             if stage not in adapter_table:
                 adapter_table[stage] = tomlkit.table()

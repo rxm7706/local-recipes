@@ -92,6 +92,36 @@ def resolve_model_price(
     return None
 
 
+def provider_declaring_model(catalog: object, model: str) -> str | None:
+    """Which declared catalog provider (if any) names this exact model --
+    the reverse of ``resolve_model_price`` (that looks up a KNOWN provider's
+    price; this finds which provider, if any, claims a given model at all).
+
+    Used to catch a ``model_tier_map`` stage entry whose model plainly
+    belongs to a DIFFERENT provider than the adapter that will actually
+    launch it -- e.g. a Cursor model (``composer-2.5-fast``) landing on the
+    ``claude`` adapter because its tier-map entry carried no explicit
+    ``harness`` key and the operator's own ``harness_preference`` (`cursor`)
+    has no bmad-loop counterpart, so the render silently falls back to the
+    template's baseline adapter while the model override still applies
+    unchanged (2026-09-12, dispatch-tier-routing-fails-safe). Absence from
+    the catalog is not itself suspicious: most legitimate default-adapter
+    models (``sonnet``, ``opus``) are never catalogued at all, since the
+    catalog is a declared PRICE snapshot, not a model registry."""
+    if not catalog_declared(catalog) or not isinstance(catalog, Mapping):
+        return None
+    providers = catalog.get("providers")
+    if not isinstance(providers, Mapping):
+        return None
+    for provider_name, provider_block in providers.items():
+        if not isinstance(provider_block, Mapping):
+            continue
+        models = provider_block.get("models")
+        if isinstance(models, Mapping) and model in models:
+            return provider_name
+    return None
+
+
 def resolve_cache_read_ratio(
     catalog: Mapping[str, object] | None,
     *,
