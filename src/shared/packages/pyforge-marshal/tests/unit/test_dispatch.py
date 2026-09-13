@@ -11,6 +11,7 @@ import pytest
 
 from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
 from pyforge.marshal.core import policy
+from pyforge.marshal.core.model import Severity
 from scope_triangle import point_scope_triangle
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core import dispatch as dispatch_core
@@ -1733,6 +1734,72 @@ def test_dispatch_does_not_escalate_on_first_attempt(
     )
     assert attempt.data.get("model") == "composer-2.5-fast"
     assert "escalated" not in attempt.data
+
+
+def test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-09-12 (dispatch-tier-routing-fails-safe): the dispatch engine's
+    own counterpart to render_policy_toml's provider-mismatch guard on the
+    spin engine. `dev = "composer-2.5-fast"` carries no explicit harness,
+    so it was resolved BEFORE the live binary+authcheck walk below ran --
+    when the declared cost catalog says that model belongs to `cursor` but
+    the walk (here `FakeBuildHarness`, which always lands on the first
+    `harness_preference` entry, `claude`) resolves a DIFFERENT provider,
+    the model override must be dropped rather than launch `claude` with a
+    model it was never meant to receive. MRS-DISP-043 records why."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "33-6-cross-provider-mismatch"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "composer-2.5-fast"},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "composer-2.5-fast": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") is None
+    assert "escalated" not in attempt.data
+    assert "resolved_models" not in attempt.data or "dev" not in attempt.data["resolved_models"]
+    mismatch_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(mismatch_findings) == 1
+    assert mismatch_findings[0].severity is Severity.WARN
 
 
 def test_dispatch_failure_count_resets_after_completed_run(

@@ -320,6 +320,10 @@ def test_registered_codes_contains_the_real_codes():
             # deploying the caveman skill into a dispatch worktree
             # degraded -- unavailable instrument or a write failure.
             "MRS-DISP-042",
+            # 2026-09-12 (dispatch-tier-routing-fails-safe): a tier-mapped
+            # model's cost-catalog provider disagreed with the
+            # live-verified harness the walk landed on -- override dropped.
+            "MRS-DISP-043",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",

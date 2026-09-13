@@ -121,3 +121,14 @@ with a new, narrowly-scoped Dream rather than reopening a shipped one).
   binary+authcheck preflight is a separate, already-hardened defense this
   effort did not need to duplicate. Story spec:
   `planning-artifacts/specs/spec-dispatch-tier-routing-fails-safe.md`.
+- **2026-09-12** — Residual gap closed, same day, on operator request.
+  `cli/dispatch.py`'s own model-resolution path (`resolve_dispatch_model_
+  with_retry_escalation`) now carries the identical `provider_declaring_
+  model` cross-check, applied right after the live binary+authcheck
+  walk's real `resolution.profile` is known — the dispatch engine's own
+  "real, final adapter" moment, the counterpart to `render_policy_toml`'s
+  `doc["adapter"]["name"]`. A mismatch drops the model override to `None`
+  and records a new `MRS-DISP-043` (WARN) rather than launch a
+  live-verified harness with a model it was never meant to receive. Both
+  dispatch engines now carry the identical guarantee; no known gap
+  remains.

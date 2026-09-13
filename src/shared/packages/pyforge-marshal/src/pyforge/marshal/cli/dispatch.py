@@ -106,6 +106,7 @@ from ..core.journal import (
     sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..core.model_cost import adapter_provider, provider_declaring_model
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -1751,6 +1752,48 @@ def dispatch_once(
         )
         return _done()
     data["harness_profile"] = resolution.profile
+
+    # 2026-09-12 (dispatch-tier-routing-fails-safe): the tier-mapped model
+    # was resolved BEFORE this live binary+authcheck walk ran, from a
+    # bare-string model_tier_map entry that carries no harness of its own
+    # (see core/tier_routing.py::resolve_tier_launch) -- so it can name a
+    # model that belongs to a DIFFERENT provider than whichever profile the
+    # walk above actually landed on (harness_preference has no bmad-loop
+    # counterpart, a candidate's auth/binary failed, a transient exclusion
+    # kicked in, etc.). render_policy_toml (the bmad-loop `spin` engine)
+    # already guards this same mismatch at render time; this is the SAME
+    # guard for the `dispatch` engine, applied once the REAL harness is
+    # known. A mismatch drops the model override entirely (never launches a
+    # real, live-verified harness with a model it was never meant to
+    # receive) rather than block the dispatch outright -- the harness's own
+    # default model is always a safe fallback.
+    resolved_provider = adapter_provider(resolution.profile)
+    catalog = effective_policy.model_cost_catalog.value
+    model_provider = provider_declaring_model(catalog, data["model"]) if data["model"] else None
+    if model_provider is not None and model_provider != resolved_provider:
+        findings.append(
+            Finding(
+                code="MRS-DISP-043",
+                severity=Severity.WARN,
+                message=(
+                    f"tier-mapped model {data['model']!r} is catalogued under "
+                    f"provider {model_provider!r}, but the live-verified harness "
+                    f"{resolution.profile!r} resolves to provider "
+                    f"{resolved_provider!r} -- dropping the model override for "
+                    "this dispatch; the harness's own default applies"
+                ),
+            )
+        )
+        data["model"] = None
+        data.pop("escalated", None)
+        data.pop("from_model", None)
+        data.pop("to_model", None)
+        if "resolved_models" in data:
+            data["resolved_models"] = {
+                stage: stage_model
+                for stage, stage_model in data["resolved_models"].items()
+                if stage != "dev"
+            }
 
     conflict = station_in_flight_conflict(
         fs=fs,

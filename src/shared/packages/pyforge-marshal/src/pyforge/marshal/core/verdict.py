@@ -1117,6 +1117,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # reason — a token-economy layer that did not engage over a launch
     # that is otherwise entirely viable.
     "MRS-DISP-042": Verdict.WARN,
+    # 2026-09-12 (dispatch-tier-routing-fails-safe): the model override was
+    # dropped, not the dispatch -- the harness's own default model applies
+    # and the launch is otherwise entirely viable. The SAME WARN tier as
+    # MRS-DISP-033/042 above and for the same reason.
+    "MRS-DISP-043": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

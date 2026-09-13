@@ -112,6 +112,14 @@ have silently hit this bug before now.
   pre-existing tests that hard-asserted `composer-2.5-fast`/`composer-2.5` as the
   "working" tier-map values; they now assert `sonnet`/`opus`, with a dated note
   explaining the revert.
+- [x] `cli/dispatch.py` — the SAME provider-mismatch guard for the `dispatch` engine,
+  applied once the live binary+authcheck walk's real `resolution.profile` is known; a
+  mismatch drops the model override (new `MRS-DISP-043`, WARN) rather than launch a
+  live-verified harness with a model it was never meant to receive.
+- [x] `core/findings.py` / `core/verdict.py` — register `MRS-DISP-043` (WARN).
+- [x] `tests/unit/test_findings.py` — add `MRS-DISP-043` to the registered-codes fixture.
+- [x] `tests/unit/test_dispatch.py` — new
+  `test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider`.
 
 **Acceptance Criteria:**
 - Given `model_tier_map.heavy` declares `dev = "composer-2.5-fast"` with no explicit
@@ -148,17 +156,24 @@ have silently hit this bug before now.
   it was a key, not a tier-map value) — caught by grepping for the catalog section
   immediately after, reverted with two targeted, unambiguous table-header-only `sed`
   substitutions, re-verified clean.
-- `marshal factory dispatch`'s own `resolve_dispatch_model_with_retry_escalation` reads
-  `resolve_tier_launch(...).resolved_models["dev"]` directly and does NOT go through
-  `render_policy_toml`'s new guard — but `cli/dispatch.py`'s surrounding harness-walk
-  already does a LIVE binary+authcheck preflight per candidate (Story 22.8, hardened
-  2026-08-27 after real cursor-auth-wall incidents), a different and independently
-  robust protection this effort did not need to duplicate. In practice this path is now
-  also safe, since the fleet-wide config revert means `resolved_models["dev"]` is
-  literally `"sonnet"` everywhere — the residual gap is only a hypothetical FUTURE
-  regression if someone reintroduces a bad tier-map entry; the documented Constraint
-  (explicit `{harness, model}` form required for non-default-adapter models) is the
-  convention-level guard for that case. Flagged here rather than silently left uncovered.
+- **Closed same day, on operator request.** `marshal factory dispatch`'s own
+  `resolve_dispatch_model_with_retry_escalation` reads
+  `resolve_tier_launch(...).resolved_models["dev"]` directly and did NOT go through
+  `render_policy_toml`'s guard — `cli/dispatch.py`'s surrounding harness-walk already
+  does a LIVE binary+authcheck preflight per candidate (Story 22.8, hardened 2026-08-27
+  after real cursor-auth-wall incidents), but that walk determines the REAL harness
+  (`resolution.profile`) only AFTER the model was already resolved, so the model and the
+  live-verified harness could still diverge. Added the same `provider_declaring_model`
+  cross-check right after `data["harness_profile"] = resolution.profile` (the dispatch
+  engine's own "real, final adapter" moment, the counterpart to
+  `render_policy_toml`'s `doc["adapter"]["name"]`): a mismatch drops `data["model"]` to
+  `None` (and clears any `escalated`/`from_model`/`to_model`/`resolved_models["dev"]`
+  the mismatch produced), letting the harness's own default apply, and records
+  `MRS-DISP-043` (WARN — registered in `core/findings.py` + `core/verdict.py`) so the
+  correction is never silent. New regression test:
+  `test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider` in
+  `tests/unit/test_dispatch.py`. Both engines (`spin` and `dispatch`) now carry the
+  identical guarantee.
 
 ## Spec Change Log
 
@@ -181,5 +196,6 @@ The two rejected/reverted design paths, for the next person who reaches for them
 
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py -q` — expected: all passed (77 passed)
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green (7919 passed, 1 skipped, 12 deselected)
+- `pixi run --frozen -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py::test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider -v` — expected: PASSED
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green (7920 passed, 1 skipped, 12 deselected)
 - Direct re-execution of the original bug-finding probe (`resolve_tier_launch(policy, "heavy")` + `render_policy_toml(...)` against the live `pyforge-marshal` policy for heavy/medium/easy) — expected: no `[adapter.dev]`/`[adapter.review]` override differing from the template baseline; confirmed.

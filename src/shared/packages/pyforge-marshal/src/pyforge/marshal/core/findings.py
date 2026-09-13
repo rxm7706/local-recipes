@@ -1709,6 +1709,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # the dispatch worktree failed — the layer is off for this
         # iteration and the session runs unwrapped.
         "MRS-DISP-042",
+        # 2026-09-12 (dispatch-tier-routing-fails-safe): a tier-mapped
+        # model's declared cost-catalog provider disagrees with the
+        # live-verified harness profile the binary+authcheck walk actually
+        # landed on — the model override is dropped, the harness's own
+        # default applies. The dispatch engine's own counterpart to
+        # adapters/harness_bmadloop.py::render_policy_toml's same guard on
+        # the spin engine.
+        "MRS-DISP-043",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
