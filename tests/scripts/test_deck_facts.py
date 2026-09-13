@@ -1,7 +1,9 @@
-"""Unit tests for scripts/deck_facts.py (herald Story 20.2; spec-deck-family-currency
-CAP-2 / CAP-5): the per-deck fact ledger is derived deterministically from tracked
-sources via the real sprint parser, and ``--check`` reads a poster against it
-(unmarked / mismatch / drifted / unsourced / unshown), advisory exit 0.
+"""Unit tests for scripts/deck_facts.py (herald Stories 20.2 and 20.14;
+spec-deck-family-currency CAP-2 / CAP-5 / CAP-6): the per-deck fact ledger is derived
+deterministically from tracked sources via the real sprint parser, ``--check`` reads a
+poster against it (unmarked / mismatch / drifted / unsourced / unshown), and
+``--refresh`` (CAP-6, Story 20.14) rewrites every stale ``data-fact`` literal the check
+reads -- and only those, by the old literal's shape. Advisory, exit 0.
 
 Fixture style mirrors tests/scripts/test_llms_full_check.py: a synthetic repo root
 under tmp_path, the module reached through sys.path since scripts/ has no
@@ -428,6 +430,9 @@ def test_usage_errors_exit_two(root):
     with pytest.raises(SystemExit) as unknown:
         deck_facts.main(["nope"])
     assert unknown.value.code == 2
+    with pytest.raises(SystemExit) as unknown_refresh:
+        deck_facts.main(["nope", "--refresh"])
+    assert unknown_refresh.value.code == 2
     with pytest.raises(SystemExit) as before_derive:  # --check before any ledger exists
         deck_facts.main(["pyforge-alpha", "--check"])
     assert before_derive.value.code == 2
@@ -465,3 +470,308 @@ def test_tracked_recipe_dirs_reads_git_and_drops_templates_and_dotdirs(monkeypat
         stdout = ""
     monkeypatch.setattr(deck_facts.subprocess, "run", lambda *a, **k: F())
     assert deck_facts.tracked_recipe_dirs(tmp_path) is None
+
+
+# ------------------------------------------------------------------ refresh
+# (herald Story 20.14; CAP-6): `--refresh` rewrites every stale plain data-fact
+# mark from the fresh ledger by the OLD literal's shape, splicing bytes.
+
+REFRESH_POSTER = (
+    "<html><head><title>Alpha</title></head>\r\n"
+    "<body>\r\n"
+    '<p>fleet <span data-fact="fleet_stories_done_total">4/6</span> · '
+    '<span class="k" data-fact="fleet_epics_done_total">2 of 4</span></p>\r\n'
+    '<p>loop <em data-fact="bmad_loop_version">v0.11.1</em> · '
+    'core <span data-fact="bmad_core_version">6.12.0</span></p>\r\n'
+    '<p>verbs <b data-fact="cli_verbs"><i>1</i></b> · '
+    'tests <span data-fact="tests_collected">2132</span></p>\r\n'
+    '<p>prose keeps 4/6 and v0.11.1; gamma <span data-fact="gamma_stories_done_total"> 1 / 2 </span></p>\r\n'
+    "</body></html>\r\n"
+)
+# What --refresh must produce after the `stale` move: four spans, nothing else.
+REFRESHED_POSTER = (
+    REFRESH_POSTER.replace(">4/6<", ">5/6<").replace(">2 of 4<", ">3 of 4<")
+    .replace(">v0.11.1<", ">v0.11.2<").replace("> 1 / 2 <", "> 2/2 <")
+)
+
+
+def _poster(root: Path) -> Path:
+    return root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html"
+
+
+def _stale_poster(root: Path, body: str) -> Path:
+    """`body` authored as the alpha poster against today's ledger, then the sources
+    move: gamma lands its second story and its epic (fleet 4/6 -> 5/6 stories, 2/4
+    -> 3/4 epics; gamma 1/2 -> 2/2) and the lock bumps bmad-loop 0.11.1 -> 0.11.2.
+    facts.yaml still holds the previous values -- the state --refresh is for."""
+    poster = _poster(root)
+    poster.write_bytes(body.encode("utf-8"))
+    assert deck_facts.main(["pyforge-alpha"]) == 0
+    _write(root / "_bmad-output/projects/pyforge-gamma/planning-artifacts/sprint-status-ledger.yaml",
+           GAMMA_LEDGER.replace("1-2-g: backlog", "1-2-g: done").replace("epic-1: backlog", "epic-1: done"))
+    lock = root / "pixi.lock"
+    lock.write_text(lock.read_text().replace("bmad-loop-0.11.1", "bmad-loop-0.11.2"))
+    return poster
+
+
+@pytest.fixture
+def stale(root) -> Path:
+    return _stale_poster(root, REFRESH_POSTER)
+
+
+def _refresh_lines(capsys, *flags: str) -> list[str]:
+    capsys.readouterr()
+    assert deck_facts.main(["pyforge-alpha", "--refresh", *flags]) == 0
+    return capsys.readouterr().out.splitlines()
+
+
+def test_refresh_rewrites_stale_marks_by_the_old_literals_shape(root, stale, capsys):
+    out = _refresh_lines(capsys)
+    assert out[0].startswith("pyforge-alpha: wrote")  # the ledger is written first
+    assert _kind(out, "refreshed") == [
+        'refreshed  fleet_stories_done_total  "4/6" -> "5/6"',            # value -> value
+        'refreshed  fleet_epics_done_total  "2 of 4" -> "3 of 4"',        # shown_as[1] keeps its shape
+        'refreshed  bmad_loop_version  "v0.11.1" -> "v0.11.2"',           # the stripped v restored
+        'refreshed  gamma_stories_done_total  "1/2" -> "2/2"',            # `1 / 2` normalised like --check
+    ]
+    assert _kind(out, "skipped") == ["skipped  cli_verbs  nested mark", "skipped  tests_collected  no row"]
+    assert not any("bmad_core_version" in l for l in out)  # already resolves: untouched, unprinted
+    assert out[-1] == "summary   pyforge-alpha: 4 refreshed, 2 skipped"
+    assert _rows(root, "pyforge-alpha")["fleet_stories_done_total"]["value"] == "5/6"
+
+
+def test_refresh_splices_bytes_only_inside_rewritten_spans(root, stale, capsys):
+    _refresh_lines(capsys)
+    # CRLF line endings, the middle dots, the prose tokens `4/6` / `v0.11.1`, the
+    # nested and no-row marks and the span's own edge whitespace all survive.
+    assert stale.read_bytes() == REFRESHED_POSTER.encode("utf-8")
+
+
+def test_refresh_is_idempotent_and_leaves_check_clean(root, stale, monkeypatch, capsys):
+    monkeypatch.setattr(deck_facts, "tests_collected", lambda root, station: "2140")
+    out = _refresh_lines(capsys, "--with-tests", "--check")
+    # a row the previous ledger lacked (tests_collected on a plain run) still refreshes
+    assert 'refreshed  tests_collected  "2132" -> "2140"' in out
+    summary = _kind(out, "summary")
+    assert summary[0] == "summary   pyforge-alpha: 5 refreshed, 1 skipped"  # nested cli_verbs only
+    # --refresh --check: the check runs after the refresh, against the ledger just written
+    assert out.index(summary[0]) < out.index(summary[1])
+    assert not _kind(out, "mismatch") and not _kind(out, "drifted")
+    assert "0 mismatch" in summary[1] and "0 drifted" in summary[1]
+
+    after = stale.read_bytes()
+    again = _refresh_lines(capsys, "--with-tests")
+    assert not _kind(again, "refreshed")
+    assert again[-1] == "summary   pyforge-alpha: 0 refreshed, 1 skipped"
+    assert stale.read_bytes() == after
+
+
+def test_refresh_keeps_the_shape_when_facts_yaml_was_already_rederived(root, stale, capsys):
+    assert deck_facts.main(["pyforge-alpha"]) == 0  # a plain derive after the move: previous == fresh
+    out = _refresh_lines(capsys)
+    assert 'refreshed  fleet_epics_done_total  "2 of 4" -> "3 of 4"' in out
+    assert 'refreshed  bmad_loop_version  "v0.11.1" -> "v0.11.2"' in out
+    assert stale.read_bytes() == REFRESHED_POSTER.encode("utf-8")
+
+
+def test_refresh_with_no_stale_mark_leaves_the_poster_bytes_unchanged(root, capsys):
+    poster = _poster(root)
+    poster.write_bytes(REFRESH_POSTER.encode("utf-8"))
+    assert deck_facts.main(["pyforge-alpha"]) == 0
+    before = poster.stat().st_mtime_ns
+    out = _refresh_lines(capsys)
+    assert out[-1] == "summary   pyforge-alpha: 0 refreshed, 2 skipped"
+    assert poster.read_bytes() == REFRESH_POSTER.encode("utf-8")
+    assert poster.stat().st_mtime_ns == before  # not even rewritten with identical bytes
+
+
+def test_refresh_without_a_poster_says_so_and_still_writes_the_ledger(root, capsys):
+    assert deck_facts.main(["pyforge-beta", "--refresh"]) == 0
+    out = capsys.readouterr().out.splitlines()
+    assert f"no poster: presentations/pyforge-beta/project/*{deck_facts.POSTER_SUFFIX}" in out
+    assert out[-1] == "summary   pyforge-beta: 0 refreshed, 0 skipped"
+    assert (root / "presentations/pyforge-beta/facts.yaml").is_file()
+
+
+def test_replacement_maps_value_to_value_and_shown_as_index_to_index():
+    prev = {"value": "848/878", "shown_as": ["848/878", "848 of 878", "848 done"]}
+    new = {"value": "852/878", "shown_as": ["852/878", "852 of 878"]}
+    assert deck_facts._replacement("848/878", prev, new) == "852/878"
+    assert deck_facts._replacement("848 of 878", prev, new) == "852 of 878"
+    assert deck_facts._replacement("848 done", prev, new) == "852/878"      # shown_as[2] gone: the value
+    assert deck_facts._replacement("848 of 878", None, new) == "852 of 878"  # no previous row: same digit shape
+    assert deck_facts._replacement("848 of 878", new, new) == "852 of 878"   # ledger already re-derived
+    assert deck_facts._replacement("stale", prev, new) == "852/878"          # no shape match: the value
+    status = {"value": "in-progress", "shown_as": ["in-progress"]}
+    assert deck_facts._replacement("ready", None, status) == "in-progress"
+
+
+# --- Story 20.14 review round: --refresh must rewrite exactly the marks --check
+# reads -- located with the parser's own tag bookkeeping, never a regex over raw
+# text -- and must leave every other `data-fact` in the file alone.
+
+def test_a_quoted_angle_bracket_in_an_attribute_does_not_cut_the_span(root, capsys):
+    body = '<p>fleet <span data-fact="fleet_stories_done_total" title="4/6 -> 5/6">4/6</span></p>\n'
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "refreshed") == ['refreshed  fleet_stories_done_total  "4/6" -> "5/6"']
+    assert not _kind(out, "skipped")
+    assert poster.read_text(encoding="utf-8") == body.replace(">4/6<", ">5/6<")  # the attribute survives
+
+
+def test_an_untokenizable_start_tag_is_reported_not_spliced(root, capsys):
+    """An unterminated attribute quote: the parser cannot read the tag, so nothing
+    downstream of it is a mark anyone can trust -- report, never guess."""
+    body = '<p>fleet <span data-fact="fleet_stories_done_total" title="oops>4/6</span> tail</p>\n'
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "skipped") == ["skipped  fleet_stories_done_total  unparsed tag"]
+    assert poster.read_text(encoding="utf-8") == body
+
+
+def test_unquoted_and_spaced_data_fact_attributes_are_refreshed(root, capsys):
+    """Both forms --check's parser accepts; the old regex visited neither."""
+    body = ('<p><span data-fact=fleet_stories_done_total>4/6</span> · '
+            '<span data-fact = "fleet_epics_done_total">2 of 4</span></p>\n')
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "refreshed") == [
+        'refreshed  fleet_stories_done_total  "4/6" -> "5/6"',
+        'refreshed  fleet_epics_done_total  "2 of 4" -> "3 of 4"',
+    ]
+    assert poster.read_text(encoding="utf-8") == body.replace(">4/6<", ">5/6<").replace(">2 of 4<", ">3 of 4<")
+
+
+def test_a_mark_check_reads_but_refresh_misses_is_reported_unvisited(root, monkeypatch, capsys):
+    """The cross-check that keeps `0 skipped` from ever hiding a stale mark."""
+    body = ('<p><span data-fact="fleet_stories_done_total">4/6</span> · '
+            '<span data-fact="fleet_epics_done_total">2 of 4</span></p>\n')
+    poster = _stale_poster(root, body)
+    real = deck_facts._mark_spans
+    monkeypatch.setattr(deck_facts, "_mark_spans",
+                        lambda text: [m for m in real(text) if m["id"] != "fleet_epics_done_total"])
+    out = _refresh_lines(capsys)
+    assert "unvisited  fleet_epics_done_total  mark not reachable by --refresh" in out
+    assert out[-1] == "summary   pyforge-alpha: 1 refreshed, 0 skipped"
+    assert ">2 of 4<" in poster.read_text(encoding="utf-8")  # still stale, and now said out loud
+
+
+def test_marks_the_check_never_reads_are_skipped_not_rewritten(root, capsys):
+    body = (
+        '<head><title><span data-fact="fleet_stories_done_total">4/6</span></title>\n'
+        '<style>/* <span data-fact="fleet_stories_done_total">4/6</span> */</style>\n'
+        '<script>var s = "<span data-fact=\'fleet_stories_done_total\'>4/6</span>";</script></head>\n'
+        '<body><!-- <span data-fact="fleet_stories_done_total">4/6</span> -->\n'
+        '<p><b data-fact="cli_verbs"><i data-fact="fleet_stories_done_total">4/6</i></b></p>\n'
+        "</body>\n")
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "skipped") == [
+        "skipped  fleet_stories_done_total  inside <title>",
+        "skipped  fleet_stories_done_total  inside <style>",
+        "skipped  fleet_stories_done_total  inside <script>",
+        "skipped  fleet_stories_done_total  inside <comment>",
+        "skipped  cli_verbs  nested mark",
+        "skipped  fleet_stories_done_total  inside nested mark",
+    ]
+    assert not _kind(out, "refreshed")
+    assert poster.read_text(encoding="utf-8") == body
+
+
+def test_unclosed_and_void_marks_are_not_a_plain_span(root, capsys):
+    """`nested mark` means "the span holds another tag"; a span that never closes
+    and a tag with no span at all are a different thing and say so."""
+    body = ('<p><span data-fact="fleet_stories_done_total">4/6</p>\n'
+            '<p><img data-fact="fleet_epics_done_total"/> · '
+            '<img data-fact="bmad_loop_version"> · '
+            '<span data-fact="gamma_stories_done_total"/></p>\n')
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "skipped") == [
+        "skipped  fleet_stories_done_total  not a plain span",
+        "skipped  fleet_epics_done_total  not a plain span",
+        "skipped  bmad_loop_version  not a plain span",
+        "skipped  gamma_stories_done_total  not a plain span",
+    ]
+    assert poster.read_text(encoding="utf-8") == body
+
+
+def test_entity_encoded_mark_text_is_left_to_the_author(root, capsys):
+    """Rewriting would flatten the entities to plain text, changing bytes beyond
+    the literal -- and a mark that already resolves stays unprinted either way."""
+    body = ('<p><span data-fact="fleet_stories_done_total">&nbsp;4/6&nbsp;</span> · '
+            '<span data-fact="fleet_epics_done_total">2&#32;of&#32;4</span> · '
+            '<span data-fact="gamma_stories_done_total">&nbsp;2/2&nbsp;</span></p>\n')
+    poster = _stale_poster(root, body)
+    out = _refresh_lines(capsys)
+    assert _kind(out, "skipped") == [
+        "skipped  fleet_stories_done_total  entities",
+        "skipped  fleet_epics_done_total  entities",
+    ]
+    assert not _kind(out, "refreshed")
+    assert poster.read_text(encoding="utf-8") == body
+
+
+def test_replacement_prefers_the_shape_over_a_reordered_shown_as_index():
+    prev = {"value": "848/878", "shown_as": ["848/878", "848 of 878"]}
+    fresh = {"value": "852/878", "shown_as": ["852/878", "852 done", "852 of 878"]}
+    # the index alone would return `852 done`: a literal of a different shape
+    assert deck_facts._replacement("848 of 878", prev, fresh) == "852 of 878"
+    assert deck_facts._replacement("848/878", prev, fresh) == "852/878"
+
+
+def test_a_corrupt_ledger_never_breaks_the_regeneration_command(root, capsys):
+    corrupt = "facts: [\n  - id: x\n   value: 'unclosed\n"
+    ledger = root / "presentations/pyforge-alpha/facts.yaml"
+    _write(ledger, corrupt)
+    assert deck_facts.main(["pyforge-alpha"]) == 0  # the plain run is what REPAIRS it
+    assert _rows(root, "pyforge-alpha")["bmad_core_version"]["value"] == "6.12.0"
+
+    ledger.write_text(corrupt, encoding="utf-8")
+    _poster(root).write_bytes(REFRESH_POSTER.encode("utf-8"))
+    capsys.readouterr()
+    assert deck_facts.main(["pyforge-alpha", "--refresh"]) == 0  # simply no previous ledger
+    assert "facts.yaml is not valid YAML -- treated as no previous ledger" in capsys.readouterr().err
+
+
+def test_a_non_utf8_poster_is_skipped_not_a_traceback(root, capsys):
+    poster = _poster(root)
+    poster.write_bytes(b'<p><span data-fact="fleet_stories_done_total">4/6 \xff\xfe</span></p>\n')
+    before = poster.read_bytes()
+    capsys.readouterr()
+    assert deck_facts.main(["pyforge-alpha", "--refresh"]) == 0
+    out = capsys.readouterr().out.splitlines()
+    assert "skipped poster: not UTF-8" in out
+    assert out[-1] == "summary   pyforge-alpha: 0 refreshed, 0 skipped"
+    assert poster.read_bytes() == before
+    assert (root / "presentations/pyforge-alpha/facts.yaml").is_file()
+
+
+def test_refresh_reads_the_poster_before_it_advances_the_ledger(root, monkeypatch):
+    """A ledger written past an unreadable poster would leave the poster stale with
+    nothing left to compare it against."""
+    ghost = root / "presentations/pyforge-alpha/project/Ghost Infographic standalone.html"
+    monkeypatch.setattr(deck_facts, "poster_hits", lambda r, slug: [ghost])
+    with pytest.raises(OSError):
+        deck_facts.main(["pyforge-alpha", "--refresh"])
+    assert not (root / "presentations/pyforge-alpha/facts.yaml").exists()
+
+
+def test_refresh_with_no_previous_ledger_rewrites_by_shape(root, capsys):
+    poster = _poster(root)
+    original = ('<p>fleet <SPAN data-fact="fleet_stories_done_total">1/6</SPAN> · '
+                "<span data-fact='fleet_epics_done_total'>1 of 4</span> · "
+                '<em data-fact="bmad_loop_version">v0.9.9</em></p>\r\n')
+    poster.write_bytes(original.encode("utf-8"))
+    assert not (root / "presentations/pyforge-alpha/facts.yaml").exists()  # the `previous or {}` guard
+    out = _refresh_lines(capsys)
+    assert out[0].startswith("pyforge-alpha: wrote")
+    assert out[1] == "poster: presentations/pyforge-alpha/project/Alpha Infographic standalone.html"
+    assert _kind(out, "refreshed") == [
+        'refreshed  fleet_stories_done_total  "1/6" -> "4/6"',      # uppercase <SPAN>
+        'refreshed  fleet_epics_done_total  "1 of 4" -> "2 of 4"',  # single-quoted id, shape kept
+        'refreshed  bmad_loop_version  "v0.9.9" -> "v0.11.1"',
+    ]
+    assert poster.read_bytes() == (original.replace(">1/6<", ">4/6<").replace(">1 of 4<", ">2 of 4<")
+                                   .replace(">v0.9.9<", ">v0.11.1<")).encode("utf-8")
+    assert not list((root / "presentations/pyforge-alpha/project").glob("*.tmp"))  # temp file + os.replace
