@@ -16,8 +16,8 @@
 #      $RECIPE_DIR/wrapper/).
 #   5. Pip-install the wrapper so conda-build picks up the entry point.
 #
-# NOTE: the upstream source is NOT patched. All conda-specific behavior lives
-# in the wrapper. This keeps the recipe faithful to upstream across bumps.
+# NOTE: rattler-build applies source.patches (MYBMAD_LOCALE) before this
+# script. All other conda-specific behavior lives in the wrapper.
 set -euo pipefail
 
 echo ">> environment"
