@@ -3497,6 +3497,26 @@ mints a second verdict
 **And** Source-Grounding is the first category added to the library
 **Status:** done
 
+### Story 53.5: Adopt the frame-spec v0.3 working draft
+
+As a platform operator,
+I want the nine git-store Frames and B's first Frame tree to follow the
+v0.3 working draft (Apache-2.0),
+So that foundry starts as a Hub participant, not a private v0.2 fork.
+
+**Type:** docs • **Effort:** S • **Deps:** S-53.2 • **FR/AD:** spec-intelligence-hub
+CAP-2
+**Surface:** `docs/foundry/frames/` on A and B; `type: frame [0.3]`;
+`license` Apache-2.0 IRI; `identifier` stated. Draft:
+openteams-ai/frame-spec#28. Do not open a second LICENSE PR.
+Lands in the same kit as 54.1 (case-list) and Epic 55 (strangler ledger).
+**Given** #28 adds Apache-2.0 and the v0.3 model **When** this story lands
+**Then** every tracked `.frame.md` uses `frame [0.3]` and the Apache-2.0 IRI
+**And** B has the nine Frames (writer), not only a PIN path to A
+**And** in-repo preflight accepts any `type` whose first word is `frame`
+**And** we adjust when #28 / #29 merge
+**Status:** done
+
 ## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
 
 Minted 2026-09-13 from `docs/dreams/foundry-regenerate-not-fold.md`. Operator
@@ -3525,7 +3545,7 @@ named archived-test list exists and is the kernel gate
 **And** the list cites existing tests in local-recipes; it does not wait for
 44.14
 **And** 44.4 / 44.5 remain undispatched
-**Status:** backlog
+**Status:** done
 
 ### Story 54.2: Rebuild pyforge-core in foundry
 
@@ -3593,4 +3613,59 @@ repo keeps the Spec companion. Do not rsync `_bmad-output`.
 has `PIN.md` pointing at this Spec SHA, a case-list stub, and operator
 docs that do not say "replay 44.4"
 **And** A does not receive a copy of B's slim chain
+**Status:** backlog
+
+## Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..3)
+
+Minted 2026-09-13 from `docs/dreams/foundry-capability-ledger.md`.
+**Strangler fig:** facade is public CLI (+ later `cutover_root`); ledger
+is the routing table. Not a long-lived B branch that mirrors A. Modes:
+`rebuild` | `retire` | `A-only` (expiry) | `B-only`. No `move`. Inventory
+is a CAP heading extract. Lands as one kit with **53.5** (v0.3 Frames)
+and **54.1** (case-list). Does not flip 44.1.
+
+### Story 55.1: Tracked capability ledger
+
+As a platform operator,
+I want every live capability classified in one tracked yaml,
+So that PIN-as-oracle is a check, not a feeling.
+
+**Type:** docs • **Effort:** M • **Deps:** S-54.1 • **FR/AD:** spec-foundry-capability-ledger
+CAP-1
+**Surface:** `docs/foundry/capability-ledger.yaml`; companion
+`modes.md`.
+**Given** live `CAP-N` extracts exist **When** this story lands **Then**
+each extract has a mode row
+**And** there is no `move` key
+**And** 44.1 remains `blocked`
+**Status:** backlog
+
+### Story 55.2: Extract detector in detectors-ci
+
+As a platform operator,
+I want unclassified or undated rows to fail `detectors-ci`,
+So that a new CAP cannot sit invisible after a pin bump.
+
+**Type:** feature • **Effort:** M • **Deps:** S-55.1 • **FR/AD:** spec-foundry-capability-ledger
+CAP-2
+**Surface:** doctor gather in `detectors-ci`; companion `extract.md`.
+**Given** a fixture SPEC with a unique Why sentence and a `CAP-9`
+**When** the detector runs **Then** it sees `CAP-9` and does not see
+the Why sentence
+**And** unclassified `CAP-N` is HARD
+**And** `A-only` without expiry is HARD
+**And** a path/Spec after the PIN SHA without a row is `--append`
+**Status:** backlog
+
+### Story 55.3: verified-in-foundry joins the case list
+
+As a platform operator,
+I want a `verified-in-foundry` claim to name a case-list id,
+So that Frame preflight cannot stand in for A/B behavior.
+
+**Type:** docs • **Effort:** S • **Deps:** S-55.1 • **FR/AD:** spec-foundry-capability-ledger
+CAP-3
+**Given** a ledger row claims `verified-in-foundry` without a 54.1
+case-list id **When** the detector runs **Then** the finding is HARD
+**And** a row that cites a listed id is not HARD for this reason
 **Status:** backlog

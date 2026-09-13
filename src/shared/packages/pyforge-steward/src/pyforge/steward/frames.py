@@ -1,11 +1,14 @@
-"""In-repo Frame Spec v0.2 preflight (Story 53.2 / spec-intelligence-hub CAP-2).
+"""In-repo Frame preflight (Story 53.2 / 53.5 / spec-intelligence-hub CAP-2).
 
 Checks the nine tracked Frames under ``docs/foundry/frames/``: required fields
 ``type``, ``name``, ``description``, ``visibility``, plus named ``owner``.
-Station Frames must ``inherits`` the Company Frame. Git is the store.
+``type`` must start with the word ``frame`` (v0.3 draft; ``frame [0.2]``
+and ``frame [0.3]`` both pass). Station Frames must ``inherits`` the
+Company Frame. Git is the store.
 
-Does **not** invoke upstream ``tools/validate_frames.py``. Not a detector and
-not a second PR verdict — Warden stays the sole gate.
+Does **not** invoke upstream ``tools/validate_frames.py`` until
+openteams-ai/frame-spec#28 / #29 merge. Not a detector and not a second
+PR verdict — Warden stays the sole gate.
 """
 
 from __future__ import annotations
@@ -39,8 +42,14 @@ REQUIRED_FIELDS: tuple[str, ...] = (
     "visibility",
     "owner",
 )
-VALID_TYPES = frozenset({"frame", "frame [0.2]"})
 FRONTMATTER_SPLIT = "---"
+
+
+def _type_is_frame(value: object) -> bool:
+    """v0.3 draft §6.2.1: type MUST begin with the word ``frame``."""
+    if not isinstance(value, str) or not value.strip():
+        return False
+    return value.strip().split()[0] == "frame"
 
 
 @dataclass(frozen=True)
@@ -160,13 +169,14 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
                     )
                 )
         type_val = fields.get("type")
-        if isinstance(type_val, str) and type_val.strip() and type_val not in VALID_TYPES:
+        if isinstance(type_val, str) and type_val.strip() and not _type_is_frame(type_val):
             report.findings.append(
                 FrameFinding(
                     path=path,
                     code="type",
                     message=(
-                        f"type must be 'frame' or 'frame [0.2]', got {type_val!r}"
+                        f"type must begin with the word 'frame' (v0.3 draft), "
+                        f"got {type_val!r}"
                     ),
                 )
             )
@@ -263,7 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="frame-preflight",
         description=(
-            "In-repo Frame Spec v0.2 preflight for docs/foundry/frames/. "
+            "In-repo Frame preflight (v0.2 + v0.3 draft) for docs/foundry/frames/. "
             "Not a detector; Warden stays the sole PR verdict."
         ),
     )

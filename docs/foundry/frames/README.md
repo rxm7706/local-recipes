@@ -16,13 +16,18 @@ Stations: herald, marshal, atlas, warden, mason, doctor, scribe, steward.
 ## `inherits` convention
 
 Station Frames inherit the Company Frame by **name** (`inherits: pyforge`),
-matching Frame Spec v0.2's example style. The in-repo preflight also accepts a
-path that resolves to the company file (relative to the child).
+matching Frame Spec v0.2 / v0.3-draft (`inherits` aliases `composition`).
+The in-repo preflight also accepts a path that resolves to the company
+file (relative to the child). Working draft:
+https://github.com/openteams-ai/frame-spec/pull/28 (Apache-2.0).
+`type: frame [0.3]`; `license` is the Apache-2.0 IRI. Adjust when v0.3
+freezes.
 
 ## Preflight
 
-In-repo four-field check (plus named `owner`). Does **not** call upstream
-`tools/validate_frames.py`.
+In-repo check: `type` begins with `frame`, plus `name` / `description` /
+`visibility` / `owner`. Does **not** call upstream `validate_frame.py`
+until frame-spec#28 / #29 merge.
 
 ```bash
 pixi run -e pyforge-steward frame-preflight

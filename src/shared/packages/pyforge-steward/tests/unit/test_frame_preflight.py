@@ -10,7 +10,7 @@ from pyforge.steward.frames import (
     COMPANY_NAME,
     EXPECTED_COUNT,
     STATION_TOKENS,
-    VALID_TYPES,
+    _type_is_frame,
     main,
     preflight_frames,
 )
@@ -85,7 +85,7 @@ def test_live_repo_has_exactly_nine_valid_frames() -> None:
     for doc in report.frames:
         for key in REQUIRED:
             assert doc.fields.get(key), f"{doc.path} missing {key}"
-        assert doc.fields["type"] in VALID_TYPES
+        assert _type_is_frame(doc.fields["type"])
 
 
 def test_live_station_frames_inherit_company_by_name() -> None:
@@ -171,7 +171,7 @@ def test_invalid_type_fails(tmp_path: Path) -> None:
     frames = _seed_valid_tree(tmp_path)
     _write_frame(
         frames / "pyforge.frame.md",
-        type_="frame [0.2.0]",
+        type_="cog [0.3]",
         name=COMPANY_NAME,
         owner="steward/guild",
     )
