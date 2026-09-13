@@ -175,6 +175,11 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    new Dreams / Frames / Spec five-fields for the lasting root. This repo (**A**) pins the SHA
    (`docs/foundry/PIN.md` on B). Do not mint a second foundry-product Dream here. Factory /
    CFE / recipes stay invented on A until a foundry CFE exists. Kernel package commits stay on B.
+   **Modes (contract):** `rebuild` (B re-derives; A oracle until `verified-in-foundry`),
+   `retire` (must not appear on B), `A-only` (expiry: story or date), `B-only`
+   (named on a Spec before `done`). Never `move`. Table on B:
+   `docs/foundry/modes.md`. Campaign verbs: Launch the Foundry / Adopt Frames /
+   Build the Intelligence Hub / Wire every BMAD-suite component.
 
 ## The tiers (do not cross them)
 
