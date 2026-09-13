@@ -15,7 +15,7 @@ from pyforge.steward.restore import RestoreDuty
 def test_restore_is_fourteenth_duty():
     assert "restore" in DUTIES
     assert DUTIES.index("restore") == 13  # noqa: PLR2004 -- the fourteenth slot
-    assert len(DUTIES) == 16  # noqa: PLR2004 -- + `track` (Story 53.3)
+    assert len(DUTIES) == 17  # noqa: PLR2004 -- + `guards` (Story 53.4)
 
 
 def test_restore_resolves_to_restore_duty():

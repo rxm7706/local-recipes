@@ -116,7 +116,7 @@ def test_schema_accepts_assembled_track():
 
 def test_track_is_a_registered_duty():
     assert "track" in DUTIES
-    assert DUTIES[-1] == "track"
+    assert "track" in DUTIES
     impl = resolve_duty("track")
     assert isinstance(impl, TrackDuty)
     assert impl.name == "track"

@@ -87,9 +87,11 @@ Public SKF extract of `cli.py` (Quick mode): `build_parser`, `resolve_duty`,
 `main` [SRC:src/pyforge/steward/cli.py]. Console script:
 `steward = pyforge.steward.cli:main` [SRC:pyproject.toml:L52-L53].
 
-Registered duties [SRC:src/pyforge/steward/cli.py:L41-L55]: `keys`, `deploy`,
+Registered duties [SRC:src/pyforge/steward/cli.py]: `keys`, `deploy`,
 `provision`, `budget`, `sync`, `workspace`, `upgrade`, `suite`, `init`,
-`shell-init`, `setup`, `initrepo`, `validate-fast`.
+`shell-init`, `setup`, `initrepo`, `validate-fast`, `restore`, `revoke`,
+`track`, `guards`. `guards` is a library (catalog / lacking / source-ground),
+never a PR verdict.
 
 ## Usage
 

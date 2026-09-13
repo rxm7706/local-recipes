@@ -56,6 +56,7 @@ DUTIES: tuple[str, ...] = (
     "restore",
     "revoke",
     "track",
+    "guards",
 )
 
 _HELP = {
@@ -119,6 +120,10 @@ _HELP = {
         "assemble one tracked track.json per run from journal/gate-record/state "
         "(Story 53.3 / hub:CAP-3); not a detector"
     ),
+    "guards": (
+        "Hub Guard library — catalog, spec lacking, source-ground (AD-8 copy); "
+        "never a PR verdict (Story 53.4 / hub:CAP-4)"
+    ),
 }
 
 
@@ -170,6 +175,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_revoke_arguments(duty_parser)
         elif name == "track":
             _add_track_subparsers(duty_parser)
+        elif name == "guards":
+            _add_guards_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -337,6 +344,35 @@ def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
         required=True,
         metavar="PATH",
         help="destination track.json path",
+    )
+
+
+def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
+    """Story 53.4: catalog / lacking / source-ground (not a detector)."""
+    guards_subs = guards_parser.add_subparsers(
+        dest="guards_verb", metavar="{catalog,lacking,source-ground}"
+    )
+    guards_subs.add_parser("catalog", help="print the seven-category library")
+    lacking = guards_subs.add_parser(
+        "lacking",
+        help="paper categories a Spec (or the library) still lacks",
+    )
+    lacking.add_argument(
+        "--spec",
+        default=None,
+        metavar="PATH",
+        help="SPEC.md with a hub_guards: list; omit to list library gaps",
+    )
+    ground = guards_subs.add_parser(
+        "source-ground",
+        help="AD-8 copy: require resolvable [source: path] on text (not a PR gate)",
+    )
+    ground.add_argument("--text", required=True, metavar="PATH", help="file to check")
+    ground.add_argument(
+        "--repo",
+        default=None,
+        metavar="DIR",
+        help="repo root for citation resolution (default: cwd)",
     )
 
 
@@ -1027,6 +1063,10 @@ def resolve_duty(name: str) -> Duty:
         from .track import TrackDuty
 
         return TrackDuty()
+    if name == "guards":
+        from .guards import GuardsDuty
+
+        return GuardsDuty()
     return NullDuty(name)
 
 

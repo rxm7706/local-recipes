@@ -32,7 +32,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_sixteen_duties():
+def test_there_are_exactly_seventeen_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -50,6 +50,7 @@ def test_there_are_exactly_sixteen_duties():
         "restore",
         "revoke",
         "track",
+        "guards",
     )
 
 
