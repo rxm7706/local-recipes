@@ -1,0 +1,30 @@
+---
+description: Trunk-based work — every agent uses a worktree and a PR
+alwaysApply: true
+---
+
+# Trunk, worktree, PR
+
+This repo is **trunk-based**. `main` is the trunk. Agents and subagents do
+not commit on the shared checkout.
+
+1. **Start a worktree** (do not `git worktree add` by hand):
+   `pixi run -e pyforge-steward pyforge steward workspace start <slug>`
+   Default source is `origin/main`. The new checkout is branch `<slug>`,
+   never `main` (`main` stays on the primary tree). Then do all git and
+   edits in that path. Contract: `spec-scratch-worktree-lifecycle`.
+2. **One agent, one worktree, one Story.** Parallel = two worktrees, not
+   two writers on one tree or one ledger. `BMAD_ACTIVE_PROJECT=<slug>` and
+   physical `_bmad-output/projects/<slug>/` paths. Never `scripts/bmad-switch`
+   from a parallel agent.
+3. **Land with a PR** to `rxm7706/local-recipes`: `gh pr create --repo
+   rxm7706/local-recipes`. Prove locally (`detectors-ci`, station tests,
+   `platform-ci-local` if platform). Merge `--merge` (admin if Actions is
+   still red). Add `maintenance` if the PR leaves `recipes/`. If `pixi.toml`
+   changed, regenerate `environment.yaml` in the same PR.
+4. **Clean:** `pyforge steward workspace clean --merged-only` after merge.
+   Marshal loop homes (`~/.bmad-loops/`) are not these worktrees — do not
+   `clean` them via steward.
+
+Coordinator chat on the primary checkout may plan and mint Dreams/Specs.
+Implementation, commits, and PRs happen in the worktree.

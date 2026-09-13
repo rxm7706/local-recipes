@@ -13,3 +13,4 @@ Read `AGENTS.md` at the repo root first.
   `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
   `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
 - Never put a spec into a Tier-3 output dir. Write your own working output under `.cursor/`.
+- Implement in a steward worktree and land through a PR (`.cursor/rules/trunk-worktree-pr.mdc`). Do not commit on the shared checkout.

@@ -86,6 +86,20 @@ Marshal planning-graph) also admits that slug's
 (`.codegraph/codegraph.db`) owns symbol navigation. Do not treat the
 compiled graph as a substitute for this file or a station `SKILL.md`.
 
+## Trunk, worktrees, PRs (session path)
+
+Trunk-based: branch from `origin/main`, live hours not weeks, merge back to
+`main`. Every agent and subagent works in its own worktree and lands through
+a PR. Prefer `pixi run -e pyforge-steward pyforge steward workspace start
+<slug>` over hand `git worktree add` (`spec-scratch-worktree-lifecycle`).
+The worktree branch is `<slug>`, not `main` — Git will refuse `checkout
+main` there because the primary checkout already holds it.
+Never commit on the shared checkout. Never `scripts/bmad-switch` from a
+parallel agent — `BMAD_ACTIVE_PROJECT` and physical
+`_bmad-output/projects/<slug>/` paths. Create with
+`gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads
+the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
+
 ## Dream-driven: where work starts
 
 **Every deliverable starts as a Dream in `docs/dreams/*.md`** — the raw, pre-technical aspiration
