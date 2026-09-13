@@ -23,6 +23,7 @@ from pyforge.scribe.extras.graphify import (
     DEFAULT_GRAPHIFY_TARGET,
     GRAPHIFY_EXTRA_ENV,
     GraphifyUnavailableError,
+    _graphify_api,
     build_graph_report,
     graphify_extra_enabled,
     ingest_repo,
@@ -70,6 +71,29 @@ class _FakeGraphifyModule:
 
     def god_nodes(self, graph, top_n=10):
         return self._god
+
+
+class _ExtractSubmodule:
+    """graphifyy's `graphify.extract` after `collect_files` imports the
+    submodule -- not callable; the function lives at `.extract`."""
+
+    def __init__(self, parent: "_ShadowingGraphifyModule") -> None:
+        self._parent = parent
+
+    def extract(self, files, cache_root=None, root=None, parallel=True):
+        return self._parent.extract_impl(files, cache_root, root, parallel)
+
+
+class _ShadowingGraphifyModule(_FakeGraphifyModule):
+    """Live graphifyy shape: `extract` is a module, `extract.extract` is
+    the callable Story 8.2 / CAP-1 must unwrap."""
+
+    def __init__(self, nodes: dict[str, dict], god: list[dict] | None = None) -> None:
+        super().__init__(nodes, god)
+        self.extract = _ExtractSubmodule(self)
+
+    def extract_impl(self, files, cache_root=None, root=None, parallel=True):
+        return super().extract(files, cache_root, root, parallel)
 
 
 # --- env-var gating (AC1) ------------------------------------------------
@@ -223,6 +247,34 @@ def test_ingest_repo_writes_through_the_same_flatfile_store(
 
     reopened = FlatFileGraphStore(tmp_path / "graph.json")
     assert [n.id for n in reopened.iter_nodes()] == ["code:python:example"]
+
+
+def test_graphify_api_unwraps_submodule_shadowing_the_callable() -> None:
+    fake = _ShadowingGraphifyModule({})
+    extract = _graphify_api(fake, "extract")
+    assert extract.__func__ is fake.extract.extract.__func__
+
+
+def test_ingest_repo_unwraps_extract_submodule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+        }
+    }
+    fake = _ShadowingGraphifyModule(fake_nodes)
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: fake)
+
+    nodes = ingest_repo(tmp_path)
+
+    assert len(nodes) == 1
+    assert fake.extract_calls
+    assert nodes[0].kind == "code"
 
 
 def test_ingest_repo_never_creates_a_foundry_root_graphify_out_dir(

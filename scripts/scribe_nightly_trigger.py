@@ -28,8 +28,10 @@ WHAT IT DOES
    WITHOUT attempting the compile, rather than ever reporting a red
    scheduled run for a driver this machine cannot confirm live.
 2. Otherwise -- the default `FlatFileGraphStore` path (nothing to check),
-   or the PostgreSQL cluster is confirmed live -- invokes
-   `scribe graph compile --nightly` and propagates its exit code UNCHANGED.
+   or the PostgreSQL cluster is confirmed live -- sets
+   `SCRIBE_GRAPHIFY_EXTRA=1` when the operator has not set it (Story 8.2:
+   the full rebuild keeps `code:` nodes), invokes
+   `scribe graph compile --nightly`, and propagates its exit code UNCHANGED.
    A genuine compile failure must still surface; only the PostgreSQL
    preflight step gets the "never fail red" treatment.
 
@@ -52,6 +54,13 @@ _GRAPHSTORE_OWNER_ENV = "PYFORGE_GRAPHSTORE_OWNER"
 _POSTGRES_OWNER = "steward"
 
 _COMPILE_CMD: list[str] = ["scribe", "graph", "compile", "--nightly"]
+
+#: Story 8.2 / spec-scribe-graphify-nightly-currency CAP-2 -- the nightly
+#: process opts the seventh compile surface on so a full rebuild keeps
+#: `code:` nodes. Interactive `scribe graph compile` is unchanged (AD-6).
+#: An operator-set value, including ``0``, is left alone.
+_GRAPHIFY_EXTRA_ENV = "SCRIBE_GRAPHIFY_EXTRA"
+_GRAPHIFY_EXTRA_DEFAULT = "1"
 
 
 def _run(cmd: list[str]) -> int:
@@ -111,6 +120,7 @@ def main(*, run=_run, which=shutil.which) -> int:
     owner = os.environ.get(_GRAPHSTORE_OWNER_ENV, "scribe")
     if owner == _POSTGRES_OWNER and not _ensure_postgres_ready(run=run, which=which):
         return 0
+    os.environ.setdefault(_GRAPHIFY_EXTRA_ENV, _GRAPHIFY_EXTRA_DEFAULT)
     return run(_COMPILE_CMD)
 
 

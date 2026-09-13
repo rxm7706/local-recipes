@@ -2399,6 +2399,7 @@ pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
 cocoindex = ">=1.0.22"            # Story 28.28: the `compile_surface` incremental extra (pyforge-scribe's own optional `[cocoindex]` pyproject extra, floor matched here) -- without it here, `scribe index refresh`'s `--declare`/on-mode paths always degrade via CocoindexUnavailableError, since marshal's ScribeCli resolves the `pyforge-scribe` env's own binary before ever falling back to `local-recipes` (which already carries cocoindex for unrelated reasons)
+graphifyy = ">=0.9.51"            # Story 8.2: the graphify compile_surface extra (pyforge-scribe's own optional `[graphify]` pyproject extra, floor matched here) -- without it here, the 02:30 trigger's `SCRIBE_GRAPHIFY_EXTRA=1` compile degrades every night and `scribe index build` exits 2 in this env
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 psycopg = ">=3.3.4"               # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); 3.2+ for PostgreSQL 17 / libpq 17
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)

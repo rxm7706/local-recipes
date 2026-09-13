@@ -1159,17 +1159,13 @@ def _init_git_and_commit_everything(tmp_path: Path) -> None:
     _git(tmp_path, "commit", "-q", "-m", "commit touching the current tree")
 
 
-def test_stale_flag_set_when_source_commit_postdates_node_valid_from(
+def test_stale_flag_set_when_source_commit_postdates_compile_clock(
     tmp_path: Path, memory_root: Path
 ) -> None:
-    """AC1: a node whose source file's latest git commit postdates the
-    node's own `valid_from`, with no `supersedes:` edge naming it, is
-    flagged `stale: true`."""
-    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
-    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
-    os.utime(result_capture.path, (old_mtime, old_mtime))
-
-    _init_git_and_commit_everything(tmp_path)  # commit authored "now" -- postdates 2020
+    """AC1 / Story 8.4: stale when the source commit is authored after
+    this compile's `compiled_at` — not when working-tree mtime is old."""
+    capture(memory_root, "project", "Original plan.", slug="plan-x")
+    _init_git_and_commit_everything(tmp_path)
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
     result = compile_graph(
@@ -1177,6 +1173,7 @@ def test_stale_flag_set_when_source_commit_postdates_node_valid_from(
         repo_root=tmp_path,
         store=store,
         transcript_root=tmp_path / "no-transcripts",
+        compiled_at=datetime(2019, 1, 1, tzinfo=timezone.utc),
     )
 
     node = next(n for n in store.iter_nodes() if n.id == "memory:project/plan-x")
@@ -1262,15 +1259,14 @@ def test_superseded_node_is_never_flagged_stale_even_with_a_newer_commit(
     assert result.stale_count == 0
 
 
-def test_stale_flag_applies_to_memlog_and_doc_surfaces_too(tmp_path: Path, memory_root: Path) -> None:
-    """Design Notes: this is compile.py's general surface, not
-    graphify-specific -- a `.memlog.md`/CHANGELOG.md node gets the same
-    signal as a memory node."""
-    memlog_path = tmp_path / ".memlog.md"
-    memlog_path.write_text("session log entry\n", encoding="utf-8")
+def test_full_rebuild_does_not_flag_stale_when_mtime_is_older_than_commit(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Story 8.4: a just-read file whose mtime predates its last commit is
+    still current on this compile — that used to false-positive ~1k nodes."""
+    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
     old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
-    os.utime(memlog_path, (old_mtime, old_mtime))
-
+    os.utime(result_capture.path, (old_mtime, old_mtime))
     _init_git_and_commit_everything(tmp_path)
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -1279,6 +1275,28 @@ def test_stale_flag_applies_to_memlog_and_doc_surfaces_too(tmp_path: Path, memor
         repo_root=tmp_path,
         store=store,
         transcript_root=tmp_path / "no-transcripts",
+    )
+
+    node = next(n for n in store.iter_nodes() if n.id == "memory:project/plan-x")
+    assert node.stale is False
+    assert result.stale_count == 0
+
+
+def test_stale_flag_applies_to_memlog_and_doc_surfaces_too(tmp_path: Path, memory_root: Path) -> None:
+    """Design Notes: this is compile.py's general surface, not
+    graphify-specific -- a `.memlog.md`/CHANGELOG.md node gets the same
+    signal as a memory node."""
+    memlog_path = tmp_path / ".memlog.md"
+    memlog_path.write_text("session log entry\n", encoding="utf-8")
+    _init_git_and_commit_everything(tmp_path)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+        compiled_at=datetime(2019, 1, 1, tzinfo=timezone.utc),
     )
 
     node = next(n for n in store.iter_nodes() if n.id == "memlog:.memlog.md")
@@ -1320,9 +1338,7 @@ def test_staleness_check_makes_zero_network_calls(
 ) -> None:
     """AC4: the staleness check is a git-timestamp comparison only -- no
     LLM call, and by extension no network call at all (AD-6)."""
-    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
-    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
-    os.utime(result_capture.path, (old_mtime, old_mtime))
+    capture(memory_root, "project", "Original plan.", slug="plan-x")
     _init_git_and_commit_everything(tmp_path)
 
     def _blocked_socket(*args, **kwargs):
@@ -1336,6 +1352,7 @@ def test_staleness_check_makes_zero_network_calls(
         repo_root=tmp_path,
         store=store,
         transcript_root=tmp_path / "no-transcripts",
+        compiled_at=datetime(2019, 1, 1, tzinfo=timezone.utc),
     )
 
     assert result.stale_count == 1  # the check still ran and found the expected result
@@ -1357,3 +1374,172 @@ def test_git_absent_staleness_check_degrades_to_warning_not_abort(
 
     assert result.stale_count == 0
     assert any("staleness" in w.lower() for w in result.warnings)
+
+
+def test_facts_ledger_becomes_one_doc_node(tmp_path: Path, memory_root: Path) -> None:
+    capture(memory_root, "feedback", "content")
+    ledger = tmp_path / "presentations" / "pyforge-scribe" / "facts.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(
+        "# GENERATED\ndeck: pyforge-scribe\nfacts:\n  - id: n\n    value: \"1\"\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "presentations" / "pyforge-scribe" / "project").mkdir()
+    (tmp_path / "presentations" / "pyforge-scribe" / "project" / "deck.dc.html").write_text(
+        "<html></html>\n", encoding="utf-8"
+    )
+    (tmp_path / "presentations" / "pyforge-scribe" / "src" / "deck").mkdir(parents=True)
+    (tmp_path / "presentations" / "pyforge-scribe" / "src" / "deck" / "engine.js").write_text(
+        "export {}\n", encoding="utf-8"
+    )
+    (tmp_path / "facts.yaml").write_text("deck: ignored-root\n", encoding="utf-8")
+    nested = tmp_path / "presentations" / "pyforge-scribe" / "nested" / "facts.yaml"
+    nested.parent.mkdir(parents=True)
+    nested.write_text("deck: ignored-nested\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    fact_nodes = [n for n in store.iter_nodes() if n.citation.endswith("facts.yaml")]
+    assert [n.citation for n in fact_nodes] == ["presentations/pyforge-scribe/facts.yaml"]
+    assert fact_nodes[0].kind == "doc"
+    assert fact_nodes[0].id == "doc:presentations/pyforge-scribe/facts.yaml"
+    assert fact_nodes[0].title == "facts:pyforge-scribe"
+    assert "value: \"1\"" in fact_nodes[0].text
+    assert not any("facts.yaml" in w or "fact ledger" in w.lower() for w in result.warnings)
+
+
+def test_missing_presentations_dir_adds_no_facts_nodes_or_warning(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert not any(n.citation.endswith("facts.yaml") for n in store.iter_nodes())
+    assert not any("facts.yaml" in w or "fact ledger" in w.lower() for w in result.warnings)
+
+
+def test_compile_hygiene_skips_archive_tests_impl_and_retro_filename_glob(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    (tmp_path / "archive" / "old").mkdir(parents=True)
+    (tmp_path / "archive" / "old" / ".memlog.md").write_text("archived\n", encoding="utf-8")
+    (tmp_path / "pkg" / "tests").mkdir(parents=True)
+    (tmp_path / "pkg" / "tests" / ".memlog.md").write_text("fixture\n", encoding="utf-8")
+    impl = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "implementation-artifacts"
+    )
+    impl.mkdir(parents=True)
+    (impl / "epic-1-retro-2026-01-01.md").write_text("impl retro\n", encoding="utf-8")
+    specs = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "specs"
+    )
+    specs.mkdir(parents=True)
+    (specs / "spec-12-1-landed-retros-are-mirrored.md").write_text(
+        "story spec about retros\n", encoding="utf-8"
+    )
+    retros = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "retros"
+    )
+    retros.mkdir(parents=True)
+    (retros / "retro-demo-2026-09-01.md").write_text("# real retro\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    citations = {n.citation for n in store.iter_nodes()}
+    assert "archive/old/.memlog.md" not in citations
+    assert "pkg/tests/.memlog.md" not in citations
+    assert not any("implementation-artifacts" in c for c in citations)
+    assert not any("spec-12-1-landed-retros" in c for c in citations)
+    assert (
+        "_bmad-output/projects/demo/planning-artifacts/retros/retro-demo-2026-09-01.md"
+        in citations
+    )
+
+
+def test_active_dreams_and_specs_compile_inactive_are_skipped(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+    dreams = tmp_path / "docs" / "dreams"
+    dreams.mkdir(parents=True)
+    (dreams / "README.md").write_text("# Dreams\n", encoding="utf-8")
+    (dreams / "live.md").write_text(
+        "---\nstatus: specified\n---\n# Live dream\n", encoding="utf-8"
+    )
+    (dreams / "done.md").write_text(
+        "---\nstatus: realized\n---\n# Done dream\n", encoding="utf-8"
+    )
+    spec_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-demo"
+    )
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "SPEC.md").write_text(
+        "---\nstatus: ready\n---\n# Demo spec\n", encoding="utf-8"
+    )
+    shipped = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "demo"
+        / "planning-artifacts"
+        / "specs"
+        / "spec-old"
+    )
+    shipped.mkdir(parents=True)
+    (shipped / "SPEC.md").write_text(
+        "---\nstatus: shipped\n---\n# Old spec\n", encoding="utf-8"
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    citations = {n.citation for n in store.iter_nodes() if n.kind == "doc"}
+    assert "docs/dreams/live.md" in citations
+    assert "docs/dreams/done.md" not in citations
+    assert "docs/dreams/README.md" not in citations
+    assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-demo/SPEC.md" in citations
+    assert "_bmad-output/projects/demo/planning-artifacts/specs/spec-old/SPEC.md" not in citations

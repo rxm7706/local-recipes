@@ -177,6 +177,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`pyforge-doctor.md`](pyforge-doctor.md) | realized | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
 | [`pyforge-herald.md`](pyforge-herald.md) | realized | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
 | [`pyforge-scribe.md`](pyforge-scribe.md) | realized | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
+| [`scribe-graphify-nightly-currency.md`](scribe-graphify-nightly-currency.md) | specified | Nightly compile keeps the graphify code surface — adapter works against live graphifyy; 02:30 does not drop `code:` nodes. |
+| [`scribe-knowledge-layers.md`](scribe-knowledge-layers.md) | specified | Compile and recall are layered knowledge (hygiene, named Dreams/SPECs/facts, default recall omits `code:`), not one lexical bag. |
 | [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**

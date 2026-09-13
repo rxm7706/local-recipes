@@ -78,6 +78,24 @@ def _import_graphify():
     return graphify
 
 
+def _graphify_api(graphify, name: str):
+    """Return a callable public name from graphifyy.
+
+    graphifyy's package uses lazy ``__getattr__`` exports AND same-named
+    submodules (``graphify/extract.py``). After ``collect_files`` imports
+    that submodule, ``graphify.extract`` is the module, not the function
+    ``__getattr__`` would have returned — calling it raises TypeError.
+    Unwrap ``module.<name>`` when the attribute itself is not callable.
+    """
+    attr = getattr(graphify, name)
+    if callable(attr):
+        return attr
+    nested = getattr(attr, name, None)
+    if callable(nested):
+        return nested
+    raise TypeError(f"graphify.{name} is not callable")
+
+
 def ingest_repo(
     repo_root: Path,
     *,
@@ -122,14 +140,17 @@ def _build_graph(graphify, repo_root: Path, target: Path):
     the AST cache away from the foundry root (AC4)."""
     cache_root = repo_root / _CACHE_SUBDIR
     cache_root.mkdir(parents=True, exist_ok=True)
-    files = graphify.collect_files(target, root=repo_root)
+    collect_files = _graphify_api(graphify, "collect_files")
+    extract = _graphify_api(graphify, "extract")
+    build_from_json = _graphify_api(graphify, "build_from_json")
+    files = collect_files(target, root=repo_root)
     if not files:
         extraction = {"nodes": [], "edges": [], "hyperedges": []}
     else:
-        extraction = graphify.extract(
+        extraction = extract(
             files, cache_root=cache_root, root=repo_root, parallel=False
         )
-    return graphify.build_from_json(extraction, root=repo_root)
+    return build_from_json(extraction, root=repo_root)
 
 
 def _graph_node_from_graphify(node_id: object, attrs: dict, repo_root: Path) -> GraphNode | None:
@@ -182,7 +203,7 @@ def build_graph_report(
 
     graphify = _import_graphify()
     graph = _build_graph(graphify, repo_root, resolved_target)
-    god = graphify.god_nodes(graph, top_n=top_n)
+    god = _graphify_api(graphify, "god_nodes")(graph, top_n=top_n)
 
     try:
         rel_target = resolved_target.relative_to(repo_root)

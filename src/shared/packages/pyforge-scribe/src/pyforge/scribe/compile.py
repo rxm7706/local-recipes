@@ -2,13 +2,14 @@
 AD-1/AD-5/AD-6/AD-9).
 
 `compile_graph()` is the "compile" layer of the architecture's paradigm:
-event-sourced capture with a derived, rebuildable read-model. It reads six
+event-sourced capture with a derived, rebuildable read-model. It reads seven
 named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
-history, retros, CHANGELOGs (PRD Open Question 2, resolved here), and
+history, retros, CHANGELOGs (PRD Open Question 2, resolved here),
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
-as a compile source in Story 3.2) -- and writes one `GraphNode` per source
-item through the `GraphStore` port (Story 2.1), never a specific storage
-engine's client library directly (AD-5).
+as a compile source in Story 3.2), and Herald deck fact ledgers
+(`presentations/<slug>/facts.yaml`, Story 8.3) -- and writes one `GraphNode`
+per source item through the `GraphStore` port (Story 2.1), never a specific
+storage engine's client library directly (AD-5).
 
 Every run is a FULL rebuild, never an incremental patch: `store.reset()`
 clears the in-memory state, every surface is re-read from scratch, and
@@ -20,11 +21,11 @@ content depends only on the current on-disk/in-git state, two consecutive
 runs against unchanged sources produce byte-identical `GraphStore` output --
 the idempotency Story 2.2 requires.
 
-That reproducibility is per-machine, not repo-wide: five of the six surfaces
+That reproducibility is per-machine, not repo-wide: six of the seven surfaces
 are repo artifacts, but the transcript surface (Story 3.2) reads a per-user,
 per-machine `~/.claude/projects/<encoded-cwd>/` tree that is not part of the
 repository. Two operators compiling the same commit therefore get the same
-five-surface core plus whatever transcript nodes their own machine holds --
+six-surface repo core plus whatever transcript nodes their own machine holds --
 by design (that local-only content is the gap Epic 3 exists to close), but
 worth stating, since the AD-1 quote above otherwise reads as repo-determinism.
 
@@ -67,16 +68,17 @@ nodes alike) -- no LLM call, no new dependency, and `_apply_supersession()`
 is untouched. `commit:`/`transcript:` citations have no git-trackable
 source-file counterpart and are never checked.
 
-**Optional seventh surface (Story 6.1).** When `SCRIBE_GRAPHIFY_EXTRA` is
+**Optional eighth surface (Story 6.1).** When `SCRIBE_GRAPHIFY_EXTRA` is
 truthy, `compile_graph()` also ingests `src/shared/packages/` with the
 graphify `compile_surface` extra (`pyforge.scribe.extras.graphify`),
 writing `code`-kind `GraphNode`s through this SAME `GraphStore` -- never a
 parallel store. Off by default (AD-6): the env var is checked before the
 extra's own lazy `graphify` import ever runs, so an off-mode compile is
-byte-for-byte identical to the six-surface compile that predates this
-story. If the extra is on but graphifyy fails to import (or errors during
-extraction), that degrades to a warning like every other optional surface
-here -- it does not abort the rest of the compile.
+byte-for-byte identical to the seven-surface compile that predates Story 6.1
+(facts.yaml is a named surface, not this extra). If the extra is on but
+graphifyy fails to import (or errors during extraction), that degrades to a
+warning like every other optional surface here -- it does not abort the rest
+of the compile.
 
 **Story 6.2 deliberately does not hook the cocoindex incremental extra into
 this function.** `compile_graph()`'s whole contract is `store.reset()` then
@@ -138,6 +140,11 @@ _EXCLUDED_DIR_NAMES = frozenset(
         "__pycache__",
         ".venv",
         "venv",
+        # Story 8.4: not fleet truth — archived BMAD trees, gitignored
+        # execution output, and test fixtures.
+        "archive",
+        "implementation-artifacts",
+        "tests",
     }
 )
 
@@ -180,8 +187,9 @@ def compile_graph(
     nightly: bool = False,
     max_commits: int = _DEFAULT_MAX_COMMITS,
     transcript_root: Path | None = None,
+    compiled_at: datetime | None = None,
 ) -> CompileResult:
-    """Rebuild the compiled graph from scratch from the six named surfaces.
+    """Rebuild the compiled graph from scratch from the seven named surfaces.
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).
@@ -212,6 +220,7 @@ def compile_graph(
 
     with _compile_lock(resolved_path):
         warnings: list[str] = []
+        compile_started = compiled_at or datetime.now(timezone.utc)
         store.reset()
 
         memory_nodes = _read_memory_surface(memory_root, repo_root, warnings)
@@ -225,6 +234,15 @@ def compile_graph(
             store.upsert_node(node)
 
         for node in _read_retro_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_facts_ledger_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_dream_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_spec_surface(repo_root):
             store.upsert_node(node)
 
         for node in _read_git_surface(repo_root, max_commits, warnings):
@@ -251,7 +269,9 @@ def compile_graph(
 
         invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
 
-        stale_count = _apply_staleness(store, repo_root, warnings)
+        stale_count = _apply_staleness(
+            store, repo_root, warnings, compiled_at=compile_started
+        )
 
         store.commit()
 
@@ -388,10 +408,102 @@ def _read_changelog_surface(repo_root: Path) -> list[GraphNode]:
 
 
 def _read_retro_surface(repo_root: Path) -> list[GraphNode]:
-    return [
-        _node_from_text_file(path, kind="doc", repo_root=repo_root)
-        for path in _rglob_excluding(repo_root, "**/*retro*.md")
-    ]
+    """Station retros only — not `*retro*` anywhere (story specs, skill
+    templates, team-memory slugs, gitignored implementation copies)."""
+    nodes: list[GraphNode] = []
+    pattern = repo_root / "_bmad-output" / "projects"
+    if not pattern.is_dir():
+        return []
+    for path in sorted(pattern.glob("*/planning-artifacts/retros/*.md")):
+        if path.is_file() and not _is_excluded(path.relative_to(repo_root).parts):
+            nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
+    return nodes
+
+
+# --- surface: Herald fact ledgers (Story 8.3) ---------------------------------
+
+
+def _read_facts_ledger_surface(repo_root: Path) -> list[GraphNode]:
+    """One `kind=doc` node per `presentations/<slug>/facts.yaml`.
+
+    Herald owns derivation (`deck-facts`); Scribe only compiles the derived
+    ledger. Missing `presentations/` is the ordinary case in a tmp fixture
+    and contributes zero nodes with no warning. Nested or repo-root
+    `facts.yaml` files are not this surface -- the glob is one slug deep so
+    the 558-file presentations tree (fragments, `.dc.html`, dated Marp,
+    copied deck engines) stays out.
+    """
+    presentations = repo_root / "presentations"
+    if not presentations.is_dir():
+        return []
+    nodes: list[GraphNode] = []
+    for path in sorted(presentations.glob("*/facts.yaml")):
+        if not path.is_file():
+            continue
+        node = _node_from_text_file(path, kind="doc", repo_root=repo_root)
+        nodes.append(node.model_copy(update={"title": _facts_ledger_title(node.text, node.citation)}))
+    return nodes
+
+
+def _facts_ledger_title(text: str, relpath: str) -> str:
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("deck:"):
+            deck = stripped.split(":", 1)[1].strip().strip("\"'")
+            return f"facts:{deck}" if deck else relpath
+        return stripped
+    return relpath
+
+
+_ACTIVE_DREAM_STATUSES = frozenset({"dreamt", "pitched", "specified"})
+_ACTIVE_SPEC_STATUSES = frozenset({"ready", "in-progress"})
+
+
+def _frontmatter_status(text: str) -> str | None:
+    if not text.startswith("---"):
+        return None
+    closing = text.find("\n---", 3)
+    if closing < 0:
+        return None
+    for line in text[3:closing].splitlines():
+        stripped = line.strip()
+        if stripped.startswith("status:"):
+            raw = stripped.split(":", 1)[1].strip()
+            token = raw.split()[0] if raw else ""
+            return token.strip("'\"") or None
+    return None
+
+
+def _read_dream_surface(repo_root: Path) -> list[GraphNode]:
+    dreams = repo_root / "docs" / "dreams"
+    if not dreams.is_dir():
+        return []
+    nodes: list[GraphNode] = []
+    for path in sorted(dreams.glob("*.md")):
+        if path.name == "README.md" or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if _frontmatter_status(text) not in _ACTIVE_DREAM_STATUSES:
+            continue
+        nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
+    return nodes
+
+
+def _read_spec_surface(repo_root: Path) -> list[GraphNode]:
+    specs_root = repo_root / "_bmad-output" / "projects"
+    if not specs_root.is_dir():
+        return []
+    nodes: list[GraphNode] = []
+    for path in sorted(specs_root.glob("*/planning-artifacts/specs/*/SPEC.md")):
+        if not path.is_file() or _is_excluded(path.relative_to(repo_root).parts):
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if _frontmatter_status(text) not in _ACTIVE_SPEC_STATUSES:
+            continue
+        nodes.append(_node_from_text_file(path, kind="doc", repo_root=repo_root))
+    return nodes
 
 
 def _is_excluded(parts: tuple[str, ...]) -> bool:
@@ -751,8 +863,8 @@ _STALENESS_EXEMPT_KINDS = frozenset({"commit", "transcript"})
 
 
 def _staleness_source_path(node: GraphNode) -> str | None:
-    """The repo-relative path to compare `node`'s `valid_from` against, or
-    `None` when this node's citation has no git-trackable source file."""
+    """The repo-relative path to compare against `compiled_at`, or `None`
+    when this node's citation has no git-trackable source file."""
     if node.kind in _STALENESS_EXEMPT_KINDS:
         return None
     if node.kind == "code":
@@ -761,9 +873,15 @@ def _staleness_source_path(node: GraphNode) -> str | None:
     return node.citation
 
 
-def _apply_staleness(store: GraphStore, repo_root: Path, warnings: list[str]) -> int:
-    """Flag `stale=True` on every CURRENT node (Story 6.3, CAP-13) whose
-    source file's latest git commit postdates the node's own `valid_from`.
+def _apply_staleness(
+    store: GraphStore,
+    repo_root: Path,
+    warnings: list[str],
+    *,
+    compiled_at: datetime,
+) -> int:
+    """Flag `stale=True` on every CURRENT node (Story 6.3 / 8.4) whose
+    source file's latest git commit is authored after `compiled_at`.
 
     A git-timestamp comparison only -- no LLM call, no new dependency, and
     `_apply_supersession()` above is untouched: this function only READS
@@ -787,7 +905,7 @@ def _apply_staleness(store: GraphStore, repo_root: Path, warnings: list[str]) ->
         latest_commit_time = _git_latest_commit_time(repo_root, relpath, git_bin)
         if latest_commit_time is None:
             continue
-        if latest_commit_time > node.valid_from:
+        if latest_commit_time > compiled_at:
             store.upsert_node(node.model_copy(update={"stale": True}))
             flagged += 1
     return flagged
