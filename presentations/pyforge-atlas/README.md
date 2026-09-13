@@ -109,3 +109,26 @@ Modernist design system.
 
 Disk-side only (stay git-side): `src/pptx/*.pptx`, the infographic standalone,
 the built React deck. Convention: Design project name ↔ this folder.
+
+## Ledger — 2026-09-13 standard rebuild (Story 20.3)
+
+Rebuilt repo-side to `infographic-standard.md` (spec-deck-family-currency CAP-1/CAP-3) from
+`facts.yaml` re-derived at tree `b5fe5e46fc` (`pixi run -e local-recipes deck-facts pyforge-atlas`).
+Every count, version, status and date on the poster is a `data-fact` mark resolving to a ledger
+row; `deck-facts pyforge-atlas --check` → `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced,
+1 unshown; facts 77/77` (the one unshown row is `poster_last_commit_date`, left off on purpose —
+it goes stale on the very commit that lands the poster).
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `PENDING-PUSH (operator pushes via DesignSync after review)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+
+Against the floors: acts 6/6 · sections 22 ≥ 18 · inline SVG 4 ≥ 3 · bytes 132,410 ≥ 90,000 ·
+tables 8 ≥ 3 · cast: eight full station cards (role, motto, paragraph, CLI verbs, ledger chips) ·
+offline: only the Google Fonts `<link>` is remote; no `<x-dc>`, no `support.js`, no scripts, no
+raster images. No section of the standard's set was dropped (the contract-at-a-glance and
+workforce sections are additions, numbered in sequence). Ledger correction recorded here:
+`recipes_count` derives to 7864 on the clean tree (an earlier derivation on an unclean checkout
+read 7872 — untracked local recipe dirs). Full-page PNG: `.herald/deck-qa/pyforge-atlas/standalone.png`
+(gitignored). Mirror push (CAP-4) is the operator's step: after review, `DesignSync finalize_plan →
+write_files (localPath)` to project `2acb0575-9997-442b-bb0e-6207d78f6648`, then record the etag here.
