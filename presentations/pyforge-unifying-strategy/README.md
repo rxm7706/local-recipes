@@ -65,7 +65,7 @@ version, status and date it prints is now a `data-fact` mark resolving to a row 
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Unifying Strategy Infographic standalone.html` | 132,338 B · 21 sections · 6 acts · 9 SVG · 4 grid-rendered tables (0 `<table>`) · facts 36/36 | `PENDING-PUSH (operator pushes the re-derived poster)` | rendered 2026-09-13, page 13,790 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Unifying Strategy Infographic standalone.html` | 132,338 B · 21 sections · 6 acts · 9 SVG · 4 grid-rendered tables (0 `<table>`) · facts 36/36 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) into the deck's own Design project `1e4020bc-7f7f-43b2-9219-0904d4863df6` (created and seeded the same day) · Design etag `1789307803346747` · 132,337 B on both sides · read back via `render_preview` → curl → harness strip: **byte-identical** to git` | rendered 2026-09-13, page 13,790 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
 
 Floors (standard): act bands exactly six ✓ · numbered sections ≥ 18 (21) ✓ · inline SVG ≥ 3 (9) ✓ ·
 bytes ≥ 90,000 ✓ · tables ≥ 3 — four **grid-rendered** equivalents (the 19-capability grid §05, the
