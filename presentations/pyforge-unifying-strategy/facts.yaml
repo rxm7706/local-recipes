@@ -3,8 +3,8 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-unifying-strategy
 persona: "PyForge Unifying Strategy"
-derived_at: "2026-09-13T03:04:34-05:00"
-tree: "04d73cac387c922dc56fd2835afcfe6b540e73b8"
+derived_at: "2026-09-13T05:54:55-05:00"
+tree: "fbefe6eea68adbf67dd689aea5ae53072f01d75b-dirty"
 facts:
   - id: atlas_epics_done_total
     value: "23/24"
@@ -92,10 +92,10 @@ facts:
     method: "sum over the guild-roster stations of done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["182/189", "182 of 189"]
   - id: fleet_stories_done_total
-    value: "848/878"
+    value: "852/878"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["848/878", "848 of 878"]
+    shown_as: ["852/878", "852 of 878"]
   - id: groundtruth_atlas_phases
     value: "22"
     source: "pixi run -e local-recipes bmad-groundtruth"
@@ -132,10 +132,10 @@ facts:
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
     shown_as: ["18/20", "18 of 20"]
   - id: herald_stories_done_total
-    value: "69/81"
+    value: "73/81"
     source: "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["69/81", "69 of 81"]
+    shown_as: ["73/81", "73 of 81"]
   - id: marshal_epics_done_total
     value: "34/36"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
@@ -162,10 +162,10 @@ facts:
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
     shown_as: ["2026-08-26"]
   - id: recipes_count
-    value: "7872"
-    source: "recipes/"
-    method: "count of recipes/*/ directories, excluding the staged-recipes templates recipes/example/ and recipes/examples/"
-    shown_as: ["7872"]
+    value: "7864"
+    source: "recipes/ (git ls-files)"
+    method: "count of TRACKED recipes/<name>/ directories (git ls-files -- recipes; untracked local dirs and dot-dirs never count), excluding the staged-recipes templates recipes/example/ and recipes/examples/"
+    shown_as: ["7864"]
   - id: scribe_epics_done_total
     value: "8/8"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
