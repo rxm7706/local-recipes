@@ -4879,6 +4879,8 @@ changes Warden's verdict (AD-4); steward 46.3 provisions TEA first — this epic
 **Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 and 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
 **Surface:** `.claude/skills/bmad-agent-marshal/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
 **Given** the two skills installed by steward **When** the marshal persona gains "reach for `bmad-os-gh-triage` for PR/issue triage and `multi-repo-git-ops` for cross-repo landings (never for a `marshal land` the harness owns)" **Then** each skill has exactly one wielding station in the register, the register rows name both and the AD-2 meta-test passes, CLAUDE.md is untouched, and `DW-HYGIENE-2026-09-05-1`'s `marshal sweep` wish notes whether `multi-repo-git-ops` covers it
+**Status:** done
+**Outcome (2026-09-13):** found already satisfied — the routing line is live in `bmad-agent-marshal/SKILL.md` § "Utility skill routing (AD-2)", `adoption-register.md` § 2 rows 38/45 name marshal as sole wielder for both skills, and `DW-HYGIENE-2026-09-05-1` already carries the 2026-09-07 note answering the coverage question. `pyforge-steward-test -k adoption_register` (8 tests) green. Ledger was simply never flipped after the work landed.
 
 
 ## Epic 32: The operating model matches its own instruments

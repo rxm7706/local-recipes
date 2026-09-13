@@ -1,6 +1,6 @@
 ---
 spec: capability-effect-check
-status: draft
+status: shipped
 owner-dream: docs/dreams/capability-effect-check.md
 surface: []
 companions:
@@ -55,6 +55,11 @@ been structurally incapable of a finding since it merged.
     `risk-tiered-review-depth`'s `classify_review_tier` / `resolve_review_cycles` — zero
     callers outside `core/gate.py` and `tests/unit/test_gate.py`, measured 2026-09-09 — as a
     live finding, and stays silent for a capability with real callers.
+  - **verified:** 2026-09-13 — live run (`pixi run -e local-recipes capability-effect-check`)
+    names real no-caller findings against the running fleet, e.g. marshal's
+    `resolve_max_parallel` (spec-marshal-parallel-dispatch-fanout) and `_load_known_story_keys`;
+    `pyforge-doctor-test -k capability_effect` 30/30 pass, incl.
+    `test_sources_capability_effect_caller_reach.py`.
 
 - **CAP-2 — the `verified:` line, rendered per CAP.**
   - **intent:** A capability may carry `verified: <date> — <what was exercised, where>` on the
@@ -63,6 +68,11 @@ been structurally incapable of a finding since it merged.
   - **success:** The "realized versus verified" column the Unifying Strategy's own 2026-09-09
     review asked for is produced mechanically from `SPEC.md`, never hand-maintained; a CAP
     with a current `verified:` line produces no finding.
+  - **verified:** 2026-09-13 — live run against the real fleet reports 396 `verified:`-line
+    findings spanning pyforge-steward, pyforge-warden, pyforge-marshal, pyforge-doctor, and
+    pyforge-atlas Specs (exit 0, advisory); `iter_capability_verified_rows` walks every
+    project under `_bmad-output/projects/` (a filesystem `iterdir()`, not a hardcoded station
+    list) — the widened-scope clause is real, not aspirational.
 
 - **CAP-3 — it renders where the operator already looks.**
   - **intent:** The new Source appears in the doctor report and the `fleet-picture` ATTENTION
@@ -70,6 +80,9 @@ been structurally incapable of a finding since it merged.
     detectors task set.
   - **success:** One `detectors` run answers both "did the story land" and "is the capability
     reached"; the two remain separate modules with separate check names.
+  - **verified:** 2026-09-13 — `pixi.toml`'s `capability-effect-check` task and
+    `report-schema.json:87`'s `"capability-effect"` entry both confirmed present; runs beside
+    `story-status-check` in one `detectors` invocation.
 
 ## Constraints
 
