@@ -1174,6 +1174,7 @@ def build_native(
     root: Path,
     timeout: float | None = None,
     stderr_sink: TextIO | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BuildResult:
     """Invoke CFE's native build script (AD-3's `build_native` adapter,
     FR-9, AD-25) and return a `BuildResult`.
@@ -1220,16 +1221,23 @@ def build_native(
             ["bash", str(script_path), recipe_path],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_native", timeout=resolved_timeout) from None
+
+    artifact_root = env.get("MASON_FACTORY_ROOT") if env is not None else None
+    if artifact_root:
+        artifact_dir = f"{artifact_root}/build_artifacts/{config}" if config is not None else None
+    else:
+        artifact_dir = f"build_artifacts/{config}" if config is not None else None
 
     return BuildResult(
         mode="native",
         config=config,
         returncode=returncode,
         stdout=stdout,
-        artifact_dir=f"build_artifacts/{config}" if config is not None else None,
+        artifact_dir=artifact_dir,
     )
 
 
@@ -1240,6 +1248,7 @@ def build_docker(
     interpreter: str,
     timeout: float | None = None,
     stderr_sink: TextIO | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BuildResult:
     """Invoke CFE's Docker/CI-parity build script (AD-3's `build_docker`
     adapter, FR-9, AD-25) and return a `BuildResult`.
@@ -1295,16 +1304,23 @@ def build_docker(
             [interpreter, str(script_path), config],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_docker", timeout=resolved_timeout) from None
+
+    artifact_root = env.get("MASON_FACTORY_ROOT") if env is not None else None
+    if artifact_root:
+        artifact_dir = f"{artifact_root}/build_artifacts/{config}"
+    else:
+        artifact_dir = f"build_artifacts/{config}"
 
     return BuildResult(
         mode="docker",
         config=config,
         returncode=returncode,
         stdout=stdout,
-        artifact_dir=f"build_artifacts/{config}",
+        artifact_dir=artifact_dir,
     )
 
 

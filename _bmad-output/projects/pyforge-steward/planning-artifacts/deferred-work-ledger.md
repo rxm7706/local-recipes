@@ -2489,11 +2489,11 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-17** — Lock topology: `factory/` island lock and per-package `pixi.toml` scheduled ahead of any further eight-wide station wave; `environment.yaml` regeneration automated in CI. (red-team D-2)
   evidence: Review § 4 (R-17); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: promoted
-  disposition: 2026-09-04 — promoted to steward Story 44.7 (spec-python-foundry-cutover fnd:CAP-4, Phase 3 factory island; R-17a env export in 44.3); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
+  status: resolved
+  disposition: 2026-09-13 — resolved by Story 44.7: `python-foundry/factory/pixi.toml` + `factory/pixi.lock` exist; estate root lock carries no solver-farm deps; island CI triggers on `factory/**` only; `mason recipe build factory/recipes/<r>` uses today's CFE native-build wrap via `MASON_FACTORY_ROOT`.
 
-  vessel: steward Story 44.7 (`fnd:CAP-4`, Phase 3 factory island; R-17a env export in 44.3) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  vessel: steward Story 44.7 (`fnd:CAP-4`, Phase 3 factory island) — **done** 2026-09-13.
+  verified: 2026-09-13 — resolved — factory island lock present on `rxm7706/python-foundry`; mason factory path resolution landed in pyforge-mason; spec-reusable-cicd-workflows trigger evaluated and declined (island pixi lives under `factory/`, not repo root).
 
 ### DW-RT-2026-09-02-2
 

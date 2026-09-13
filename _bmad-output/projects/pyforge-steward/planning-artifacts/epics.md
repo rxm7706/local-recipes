@@ -2665,7 +2665,7 @@ So that recipe churn never re-solves the estate and `mason recipe build factory/
 **Given** `factory/pixi.toml` + `factory/pixi.lock`, `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml` **When** `mason recipe build factory/recipes/<r>` runs **Then** it matches today's CFE wrap, the estate lock carries no solver-farm dependency, and island CI triggers on `paths: factory/**` only
 **And** `DW-RT-2026-09-02-1` is resolved
 **And** — reciprocal note, not a `Deps:` token: **`spec-reusable-cicd-workflows`' trigger ("a SECOND consuming repo") fires here.** Consult that extension-point at 44.7 rather than re-deriving the island's CI shape from scratch (fleet readiness 2026-09-09, mason-E3 / Class D D11)
-**Status:** backlog
+**Status:** done
 
 ### Story 44.8: The working set
 

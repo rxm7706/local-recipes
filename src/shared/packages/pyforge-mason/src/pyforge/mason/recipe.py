@@ -225,7 +225,13 @@ from . import cfe
 from .engines.build_hooks import select_build_engine_plugin
 from .errors import CfeImportFloorError, RecipeGenerationError
 from .models import BuildResult, CfeResult, ShipState, ShipTargetResult
-from .resolve import resolve_cfe_interpreter, resolve_cfe_root
+from .resolve import (
+    _ENV_FACTORY_ROOT,
+    _ENV_FOUNDRY_ROOT,
+    resolve_cfe_interpreter,
+    resolve_cfe_root,
+    resolve_factory_island,
+)
 
 _OPTIMIZE_RELEVANT_FLOOR: tuple[str, ...] = ("ruamel.yaml",)
 """The subset of `cfe.CFE_IMPORT_FLOOR` the wrapped optimizer actually
@@ -406,6 +412,23 @@ def build(
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
     cfe.ensure_cfe_root(resolved_root)
 
+    foundry_root_arg = environ.get(_ENV_FOUNDRY_ROOT)
+    factory_island = resolve_factory_island(
+        recipe_path,
+        foundry_root_arg=foundry_root_arg,
+        environ=environ,
+        start_directory=start_directory,
+    )
+    if factory_island is not None:
+        recipe_path = str(factory_island.recipe_path)
+        build_env = {
+            **environ,
+            _ENV_FACTORY_ROOT: str(factory_island.factory_root),
+            _ENV_FOUNDRY_ROOT: str(factory_island.foundry_root),
+        }
+    else:
+        build_env = environ
+
     if docker:
         resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
         return cfe.build_docker(
@@ -414,6 +437,7 @@ def build(
             interpreter=resolved_interpreter.path,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
+            env=build_env,
         )
 
     plugin = select_build_engine_plugin()
@@ -424,6 +448,7 @@ def build(
             root=resolved_root.root,
             timeout=cfe_timeout_arg,
             stderr_sink=stderr_sink,
+            env=build_env,
         )
 
     return plugin.call("around", {"next": _native_next})
