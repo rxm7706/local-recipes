@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 324
+# stories: 327
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -214,6 +214,7 @@ development_status:
   51-1-a-byo-external-postgresql-deployment-overlay-exists-additive-to-the-self-hosted-default: done
   51-2-a-byo-external-redis-deployment-overlay-exists-additive-to-the-self-hosted-default: done
   51-3-the-backup-pitr-handoff-is-explicit-when-the-byo-postgresql-overlay-is-active: done
+  52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: backlog
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -330,6 +331,8 @@ development_status:
   epic-50-retrospective: optional
   epic-51: done
   epic-51-retrospective: optional
+  epic-52: backlog
+  epic-52-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

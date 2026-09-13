@@ -3370,3 +3370,43 @@ silently assumed
 **And** with the overlay NOT applied, the backup CronJob still deploys exactly as it does
 today — no change to the self-hosted default's backup behavior
 **Status:** done
+
+## Epic 52: The last two suite skips become an authoring path and an isolated sidecar
+
+Minted 2026-09-13 from `docs/dreams/suite-scaffold-and-mybmad-sidecar.md`. The
+2026-09-06 operator verdict on `spec-bmad-suite-lifecycle` left
+`bmad-module-template` and `mybmad-dashboard` at `skip`. This epic flips those
+two register rows by Story, not by silent edit: template = authoring tool
+beside `bmad-builder`; mybmad = isolated opt-in sidecar. It does **not** make
+mybmad `/console/`. The host stays django-pyforge + Keycloak/OIDC;
+`retired-console-check` still fails a second Guildhall-class console.
+`bmad-dashboard` (member 12) stays the opt-in marshal VS Code surface under the
+same never-console rule. Does not flip any Epic 44 `blocked` key.
+
+### Story 52.1: Module-template is authoring-only and mybmad is an isolated sidecar never the console
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle
+CAP-1 (register rows 11 and 13); 2026-09-13 memlog superseding the 2026-09-06
+skip pair
+**Note:** The *why mybmad is not the console* belongs in the register hazard
+cell and the Dream, not as a footnote: own Postgres + own auth would be a
+second identity and datastore plane against `/console/`'s Keycloak and
+`DATABASE_URL`. A later Dream that *replaces* the host is out of scope.
+**Surface:** `adoption-register.md` rows 11 and 13; lifecycle `.memlog.md` +
+`bmad-spec` re-derive of Non-goals; steward docs beside `bmad-builder` for the
+template path; `mybmad` launcher docs that name isolation (no `/console/`
+mount, no platform OIDC, not a PR gate). Never `steward provision --module`
+for the template.
+**Given** rows 11 and 13 still read `skip` on the 2026-09-06 verdict **When**
+this story lands **Then** row 11 is `wield (authoring tool only)` with wielder
+steward / `bmad-builder`, provisioning path documented and proven never to
+install into `.claude/skills/`, and row 13 is `wield (isolated opt-in sidecar)`
+with the `mybmad` launcher as the only entry, hazard text naming own Postgres
++ auth vs `/console/` + OIDC
+**And** `bmad-spec` has re-derived `spec-bmad-suite-lifecycle` so Non-goals no
+longer treat those two as skips; the new contract is authoring-tool + sidecar
+**And** no route, reverse-proxy, or Django include mounts mybmad at `/console/`
+or joins it to platform OIDC; `retired-console-check` stays green
+**And** `pipeline-truth`'s `wired` column still agrees with the register
+(template remains unwired-as-module; mybmad remains launcher-only)
+**Status:** backlog
