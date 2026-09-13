@@ -2622,12 +2622,13 @@ As a platform operator,
 I want `src/shared/packages/*` under `src/packages/` in foundry with every consumer path rewritten from manifest rows and no source copied into the host image,
 So that station envs solve and the host boots in foundry from workspace members.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.1, S-44.3, S-44.12 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-3, fnd:AD-6, fnd:AD-7, fnd:AD-15, fnd:AD-18 • pap:AD-9 ratified • pap:AD-2 breach closed
+**Type:** feature • **Effort:** L • **Deps:** S-44.3, S-44.12 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-3, fnd:AD-6, fnd:AD-7, fnd:AD-15, fnd:AD-18 • pap:AD-9 ratified • pap:AD-2 breach closed
 **Given** the manifest rows for `src/shared/packages/**` **When** the fold lands **Then** every station env solves, the host boots, no `src/shared/` exists, the Containerfile has none of its ten `COPY src/shared/packages/...` lines and no `COPY . /app` of package source, each of the seven `django-*` packages carries a `pixi.toml` (workspace member, as the ten `pyforge-*` already do), and `five_tier.py` / `script_map_from_packages_root` / `marshal-policy.toml` / Spec `surface:` globs / CI `paths:` / the 103 `pixi.toml` path sites all point at `src/packages/`
 **And** every `parent_depth` coupling row (the 59 files computing paths by `parents[N]`) is rewritten with no silent wrong-root fallback; `CLAUDE.md` / `AGENTS.md` are refreshed by `skf-export`; the affected specs are re-stamped scoped
 **And** the `src/platform/ingest/github_projects/*` import of `pyforge.steward.keys` has its successor landed per `ingest-keys-import` (never deleted without one)
 **And** distribution and import names are byte-identical to before the fold (package fold only — nothing from Story 44.5 rides along)
 **And** the fold is `steward cutover apply --phase 1a`, re-runnable into foundry after every `--regenerate` or `--append` until the flag flips (`fnd:AD-18`)
+**Status:** backlog
 
 ### Story 44.5: Move the estate
 
@@ -2640,6 +2641,7 @@ So that agents and loops resolve everything from the lasting root.
 **And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
 **And** the open question `planning-history-scope` is answered before dispatch
 **And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (fnd:AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
+**Status:** backlog
 
 ### Story 44.6: CFE comes home
 
@@ -2651,6 +2653,7 @@ So that no `MASON_CFE_ROOT` resolves to `local-recipes` and retros land in the l
 **Given** `pyforge/mason/resolve.py`'s chain (flag → `MASON_CFE_ROOT` → cwd walk) **When** it runs in a foundry checkout **Then** the whole CFE cell (skill, `scripts/`, `tools/conda_forge_server.py`, the 76 `pixi.toml` references) lives under `skills/domain/conda-forge-expert/`, `_CFE_MARKER` and both detectors' path literals are rewritten, `MASON_CFE_ROOT` resolves there as a repo root, recipe build / submit / update are `pixi run --manifest-path factory/pixi.toml` subprocesses, and `mason-cfe-surface-check` + `cfe-rebuild-guard-check` pass **with the foundry epoch as their range floor** (a zero-commit range is exit 2, never clean)
 **And** the story invokes `conda-forge-expert` and closes with a Rule-2 CFE retro
 **And** — reciprocal note, not a `Deps:` token: **mason Story 15.1 (close the CFE rebuild campaign; delete-on-cutover) must land BEFORE this story moves the CFE cell to `skills/domain/`.** The rebuild Spec's surface and slice map are written against `.claude/skills/conda-forge-expert/**`; moving the cell first leaves that Spec pointing at a path that no longer exists and makes this story intractable (fleet readiness 2026-09-09, mason-E2 / § 2.3 C2)
+**Status:** backlog
 
 ### Story 44.7: The factory island
 
@@ -2662,6 +2665,7 @@ So that recipe churn never re-solves the estate and `mason recipe build factory/
 **Given** `factory/pixi.toml` + `factory/pixi.lock`, `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml` **When** `mason recipe build factory/recipes/<r>` runs **Then** it matches today's CFE wrap, the estate lock carries no solver-farm dependency, and island CI triggers on `paths: factory/**` only
 **And** `DW-RT-2026-09-02-1` is resolved
 **And** — reciprocal note, not a `Deps:` token: **`spec-reusable-cicd-workflows`' trigger ("a SECOND consuming repo") fires here.** Consult that extension-point at 44.7 rather than re-deriving the island's CI shape from scratch (fleet readiness 2026-09-09, mason-E3 / Class D D11)
+**Status:** backlog
 
 ### Story 44.8: The working set
 
@@ -2713,10 +2717,11 @@ As a platform operator,
 I want one flag that names the root of record and a harness that regenerates, appends and replays the cutover plan,
 So that `local-recipes` keeps evolving until the flip and foundry never falls behind it.
 
-**Type:** feature • **Effort:** M • **Deps:** S-44.1 • **FR/AD:** fnd:CAP-8 • fnd:AD-2, fnd:AD-17, fnd:AD-18 • canopy:AD-11
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-8 • fnd:AD-2, fnd:AD-17, fnd:AD-18 • canopy:AD-11
 **Given** `src/platform/config/flags.json` **When** `pyforge.cutover_root` is read **Then** the host reads it in-process and the CLIs read it through a `pyforge-core` reader; its value alone decides the ledger of record, Mason's targets and the loop-home remotes, and flipping it back restores them
 **And** `steward cutover plan --regenerate` and `--append` both preserve `moved` rows (a test proves idempotence over status), and `steward cutover apply --phase <n>` is idempotent when re-run
 **And** a flip is refused while any loop is running and is recorded in the Dream's Realization log
+**Status:** backlog
 
 ### Story 44.13: Memlog fidelity
 
