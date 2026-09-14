@@ -14,8 +14,8 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-09-09'   # 2026-09-09 Epic 12 added — spec-golden-path-conda-blind-spot CAP-1..5 + the CAP-5 regression guard (see currency_review)
-currency_review: "Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
+updated: '2026-09-14'   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -848,3 +848,31 @@ sweep). Findings, all confirmatory:
   (9.3).
 - No epic or story restructuring was needed; this note and the frontmatter bump are
   the only changes in this pass.
+
+## Currency validation — 2026-09-14 (chain-currency sweep cascade)
+
+Validated against the architecture spine as re-stamped today (its § Currency
+reconciliation — 2026-09-14) and the PRD's same-day reconciliation.
+
+- **Ledger agreement, re-measured with the real parser** (`fleet_scan.parse_sprint_status`,
+  not a regex): **49/49 stories `done` across 12/12 epics.** Every `### Story` heading here
+  maps 1:1 to a `sprint-status-ledger.yaml` key, no orphan either direction.
+  **This supersedes the Spec's own figure**, which reads "43 story keys ... across eleven
+  epics ... plus a twelfth epic minted 2026-09-09." That was a dated snapshot and the
+  ledger is the enumerator; the Spec's number is not wrong so much as frozen. Left as-is
+  in the Spec rather than hand-corrected — a Spec is re-derived from its memlog, not
+  patched in place — and recorded here so the discrepancy is not re-discovered as a defect.
+- **The PRD's newly recorded `review_required` gap is deliberately NOT minted as a story
+  here.** The field is promised by FR9, the bypass feature description and the exit-code
+  acceptance matrix, and occurs zero times in shipped `src/` or `tests/`. Closing it means
+  either widening a **report schema the Spec closes at 1.1.0** or amending FR9 — either way
+  a contract change that enters through `docs/dreams/<slug>.md` → `bmad-spec` → a Story,
+  not through a currency sweep hand-writing an epic entry.
+- **The station's coherence checkpoint is still red, and that is correct.** Three
+  operator-owned questions sit in the Spec's `open_questions:` (is v1 released or
+  story-complete; what becomes of the legacy Tier-1 spec; what promotes provenance and
+  maintenance out of vision — four-axis or six-axis until then). No story is minted for
+  them: they are decisions, not work items, and minting stories would convert an open
+  question into an assumed answer.
+- No epic or story content above was restructured; this note and the frontmatter
+  `updated:`/`currency_review:` bumps are the whole edit.

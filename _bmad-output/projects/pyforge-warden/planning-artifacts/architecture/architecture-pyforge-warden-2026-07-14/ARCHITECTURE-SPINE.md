@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: '2026-09-07'
+updated: '2026-09-14'   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). No AD added, changed or removed; § Currency reconciliation — 2026-09-14 appended, recording the review_required field gap as a SCHEMA question against the closed 1.1.0 producer.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -472,3 +472,42 @@ plugin-error-handling seam, not a new seam. Fail-open is retained for the narrow
 of a present-but-unreachable-on-PATH `tea` binary. AD-10 (the fleet-wide architecture
 decision this implements) lives in steward's lifecycle spine, not this document — no
 edit needed here beyond recording that this project's implementation now matches it.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after recording the
+`review_required` gap and folding the Spec's 2026-09-11 verification sweep. This section
+is the as-built check.*
+
+**The PRD's new gap is an architecture question, and this is where it lands.**
+`review_required` — promised by FR9 and the acceptance matrix — exists in no shipped
+module (`src/` and `tests/` both return zero occurrences, verified 2026-09-14). The
+reason it matters *here* rather than only in the PRD is that the report producer is
+**closed at schema version 1.1.0**: exactly one amendment was sanctioned, and the
+contract states no other story may widen it. So the field cannot simply be added; either
+a second schema amendment is paid deliberately, or FR9 is amended to describe the audit
+trail that ships (`status=bypassed` plus the waiver stanza's
+`authorized_by`/`reason`/timestamps, which is real and tested). **Not decided here** —
+it is a contract change needing its own Dream/Spec. Recorded so the next reader does not
+discover the gap a third time.
+
+**Every structural invariant this spine names was re-proved on 2026-09-11, and two were
+proved more strongly than the spine asks.**
+
+- **Zero silent egress** was verified with `strace -f -e trace=network` wrapping the full
+  `warden scan` process tree — CLI plus every forked engine subprocess — over the real
+  corpus, asserting zero internet-family syscalls anywhere in the trace. That is an
+  *outside-the-process* observation; the spine only requires an in-process socket guard.
+  Where the stronger check exists, it should stay the one that gates.
+- **`verdict.py`'s sole ownership** of the seven-rung lattice and its projection onto
+  `{0,1,2,130}` holds, enforced by `tests/meta/test_verdict_sole_ownership.py`. The
+  `--doctor` path was live-invoked and exited **2**, never 1 — operability, not policy,
+  exactly as drawn.
+
+**No module boundary moved.** The only surface change is a 2-path
+`surface-drift-exclude:` block for `extract/__init__.py` and `extract/lockfiles.py`,
+both also governed by `pyforge-marshal/spec-pyforge-core`; coverage is unchanged and the
+extract layer's no-execution rule is untouched.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.

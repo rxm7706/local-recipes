@@ -147,3 +147,55 @@ Regenerating a board view is optional confirmation, not the measure.
   FR-192..195 with two numbering defects filed; (3) keep the shared files (dreams README)
   to exactly one writer — the mason agent owned it, the parent did the chain-currency row
   after. Landed via the sweep/run-1 branch (stacked on PR #877).
+
+- **Run 2026-09-14 — 8 of 9 findings cleared; 1 documented residual, not stamped over.**
+  Entry state: 8 × `staleness` (all eight stations) + 1 × `coherence` (warden), tracked as
+  `DW-VOCAB-2026-09-14-15`. Exit state: `chain-currency-sweep-check` exit 1 with **one**
+  finding — warden `coherence`. Executed by a single agent, serially, **not** the runbook's
+  eight-parallel dispatch: the operator was working the same checkout concurrently with
+  staged work on a PR branch, so the agent was barred from every git operation, and serial
+  editing removed the shared-state risk the parallel pattern exists to manage. Per station:
+  **atlas** (`code→retro`) → a real retro for 2026-08-26 → 09-14 (Epics 20–24 closed, Epic
+  25 at 3-of-4, `views/` deleted, `DW-B2-3` closed); **doctor / herald / marshal / mason /
+  scribe / steward / warden** (`spec→prd`) → PRD + spine cascades, plus epics validation
+  notes where `arch→epics` would have fired next (doctor, mason, warden); **steward** also
+  `research→brief` (the two 2026-09-14 vocabulary passes — chain-scoped to
+  `vocabulary-one-name-one-job`, no charter change).
+
+  **Deviations / lessons:**
+
+  1. **Genuine reconciliation found six real defects the findings themselves did not name.**
+     doctor's spine listed 12 `sources/` modules and "14 dispatcher entries" against a live
+     20/22; mason's FR-14 (diff-before-apply) and NFR-9 (dry-run by default) are both false
+     for `mason recipe update` (`cli.py:711-715`, `recipe.py:797-799`); scribe's UJ-1 writes
+     `--type decision`, which `models.py:34` does not allow, and SM-4 still names a crontab
+     that Story 8.1 replaced with a checked-in systemd-user timer; warden's
+     `review_required` — promised by FR9 and the acceptance matrix — occurs **zero** times
+     in shipped `src/`/`tests/`; and marshal's PRD still carried four questions (its
+     Q-4..Q-7) that the Spec's 2026-09-09 operator pass had already answered. A sweep that
+     only re-stamped would have found none of them.
+  2. **Number translation between a Spec and its PRD is a real hazard.** marshal's Spec
+     Q-11..Q-14 are the PRD's Q-4..Q-7. The mapping is now a table in that PRD's § 19;
+     without it the next sweep re-derives it or misses the answers entirely.
+  3. **`updated:` must be an explicit frontmatter key to verify pre-commit.** The audit reads
+     the working tree, but a stage whose date falls through to git last-touch cannot move on
+     an *uncommitted* edit. Every artifact touched here already carried `updated:`; one that
+     does not must have the key added, not rely on the commit to move it.
+  4. **Quote `currency_review:` values, and re-validate with a real YAML parser after every
+     frontmatter edit.** `fleet_scan._frontmatter_scalars` is a deliberately naive line
+     reader, so a frontmatter block can be invalid YAML and still feed the board correctly.
+     steward's PRD was **already broken at HEAD** this way (unquoted scalar containing
+     `: `) and was repaired in passing; one edit here broke mason's the same way and was
+     caught only because a `yaml.safe_load` check ran immediately after. Check after each
+     edit, not at the end of the pass.
+  5. **A documented residual beats a stamp.** warden's `coherence` is `overtaken` on three
+     **operator-owned** questions (is v1 released or story-complete; what becomes of the
+     legacy Tier-1 spec; four-axis or six-axis until provenance/maintenance are promoted).
+     The runbook's own remedy is "resolve with the operator," so the checkpoint was left red
+     and the reason written into warden's PRD rather than answered unilaterally to reach
+     exit 0.
+  6. **Three findings were recorded as owing a Dream/Spec, not repaired.** mason's
+     FR-14/NFR-9 default, scribe's SM-4 trigger wording, and warden's `review_required`
+     field are all behaviour or schema changes. Under Dream-first they enter through
+     `docs/dreams/<slug>.md` → `bmad-spec` → a Story; a currency sweep records them and
+     stops.
