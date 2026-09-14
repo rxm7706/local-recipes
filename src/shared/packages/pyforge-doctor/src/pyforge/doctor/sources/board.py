@@ -128,6 +128,14 @@ DEFERRED_SPECS: dict[str, str] = {
         "from the dated org inventory alone. CAP-1..6 are explicitly candidates, so an epic "
         "today would decompose choices nobody has made. De-register once the open_questions are "
         "cleared and the Spec reaches `ready`",
+    "spec-work-passports-dated-extracts":
+        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
+        "INV-1). Its six open questions are DESIGN leftovers after converge (file transport, "
+        "when larva starts, mint-vs-reject a missing passport, second vendor in v1, outbound "
+        "signer role, glass if standup refuses the app) — the egg corridor itself is named "
+        "but not ready to decompose. CAP-1..7 are explicitly candidates. Sibling of "
+        "spec-jira-github-projects-sync; do not treat Epic 8 as this product. De-register "
+        "once the open_questions are cleared and the Spec reaches `ready`",
     "spec-coverage-gate-independence":
         "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
         "INV-1). Its five open questions are DESIGN decisions about where a fleet-wide blocking "
