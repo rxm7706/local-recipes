@@ -87,7 +87,7 @@ table.tbl tr.hi td { background:#fbe4de; }
   <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
       <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE PROVISIONER · STEWARD CHAIN · SPEC-PYFORGE-STEWARD · THE CANOPY</span>
-      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-13</span></span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-14</span></span>
     </div>
     <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Steward</h1>
     <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-steward · module pyforge.steward · console script <span data-fact="console_entry">steward</span> · spec-pyforge-steward <span data-fact="spec_capabilities">CAP-1..4</span> · owner of spec-pyforge-unifying-strategy, the Canopy</div>
@@ -106,11 +106,11 @@ table.tbl tr.hi td { background:#fbe4de; }
   <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
     <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">206/222</span> done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">231/244</span> done</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">49/51</span> done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">56/58</span> done</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
@@ -122,7 +122,7 @@ table.tbl tr.hi td { background:#fbe4de; }
     </div>
     <div style="padding:20px 0 20px 20px;">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI surface</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">23</span> verbs · one exit-code owner</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">30</span> verbs · one exit-code owner</div>
     </div>
   </div>
 
@@ -156,7 +156,7 @@ table.tbl tr.hi td { background:#fbe4de; }
     <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
       <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">The Implementation view names <b>Deployment &amp; Operations</b> a first-class stage of the lifecycle — and in the crew it fell between two chairs. The Pages console deployed by a hand-run task and a push; the pixi estate synced by convention; keys lived in environment variables with no owner and no lifecycle. The repo paid for that gap twice: <span class="code">_http.py</span> attached the <span class="code">JFROG_API_KEY</span> auth header to <b>every outbound request regardless of host</b> until a human caught it, and a committed provider key needed git history rewritten and the key rotated. <b>Same underlying fault both times — privilege that outlived its intended scope, caught after the fact.</b> Nothing in the Guild owned prevention until the ownership audit found the stage orphaned and adopted the Provisioner.</p>
       <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
-        <div class="bignum"><span data-fact="groundtruth_pixi_envs">30</span></div>
+        <div class="bignum"><span data-fact="groundtruth_pixi_envs">31</span></div>
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">pixi environments in the estate — every one materializable by name through <span class="code">steward provision --env</span>, every one behind the <span class="code">environment.yaml</span> sync gate</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
@@ -396,7 +396,7 @@ table.tbl tr.hi td { background:#fbe4de; }
     <p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Steward is the estate every other station stands on, and the owner of the Canopy that mounts them. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">78/82</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/94</span></span></div>
         <h3>Herald</h3>
         <div class="role">Visual Media Engine &amp; System Messenger</div>
         <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
@@ -404,7 +404,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">248/249</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
         <h3>Marshal</h3>
         <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
         <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
@@ -428,7 +428,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">67/67</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span></span></div>
         <h3>Mason</h3>
         <div class="role">Package &amp; Release Craftsman</div>
         <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
@@ -436,7 +436,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/95</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
         <h3>Doctor</h3>
         <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
         <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
@@ -444,7 +444,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">doctor check · monitor · diagnose · backlog-intake</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">33/33</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
         <h3>Scribe</h3>
         <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
         <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
@@ -452,7 +452,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">scribe capture · graph compile · recall</div>
       </div>
       <div class="station me">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">206/222</span> · <span data-fact="steward_epics_done_total">49/51</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span> · <span data-fact="steward_epics_done_total">56/58</span></span></div>
         <h3>Steward</h3>
         <div class="role">Platform, Deployment &amp; Operations Officer</div>
         <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
@@ -460,7 +460,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">steward keys · deploy · provision · budget · sync · workspace · upgrade · suite · init · restore · revoke</div>
       </div>
     </div>
-    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">870/892</span> stories and <span data-fact="fleet_epics_done_total">190/197</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">18/20</span> · marshal <span data-fact="marshal_epics_done_total">34/36</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">16/16</span> · doctor <span data-fact="doctor_epics_done_total">22/22</span> · scribe <span data-fact="scribe_epics_done_total">16/16</span></span></div>
+    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/966</span> stories and <span data-fact="fleet_epics_done_total">207/218</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/22</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span></span></div>
   </section>
 
   <!-- 06 · THE DUTIES ON THE FLOOR -->
@@ -729,7 +729,7 @@ table.tbl tr.hi td { background:#fbe4de; }
   <section class="sec">
     <div class="sechead">
       <span class="num">13</span>
-      <h2>The shipped CLI — <span data-fact="cli_verbs">23</span> verbs behind one dispatcher</h2>
+      <h2>The shipped CLI — <span data-fact="cli_verbs">30</span> verbs behind one dispatcher</h2>
     </div>
     <p class="lede">Console script <span class="code"><span data-fact="console_entry">steward</span></span>, package <span class="code">pyforge-steward</span> <span data-fact="package_version">0.1.0</span>, run through the unified grammar <span class="code">pyforge steward …</span>. The four contract duties carry the Spec; sync, workspace, upgrade, suite, the bootstrap family, restore and revoke were relayed in by later chains — the seam ratification, the suite lifecycle, the red-team review. <span class="code">--version</span> is top-level only, mirroring Warden.</p>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
@@ -784,7 +784,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <tr><td><b>Configuration</b></td><td><span class="code">.steward/</span> — <span class="code">budget.yaml</span> · <span class="code">keys-inventory.yaml</span> · <span class="code">*.age</span> · <span class="code">sync-config.example.yaml</span> · <span class="code">repo-sets.example.yaml</span></td><td>tracked, repo-root, per-kind — never a blanket glob that would silently absorb a stray file dropped into the one directory designated for credential material</td><td>the Spec's own <span class="code">surface:</span> list</td></tr>
         <tr><td><b>Build</b></td><td>hatchling · pixi-build-python</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-steward-build</span> task; the station's own nested <span class="code">pixi.toml</span> run-dependencies mirrored to the root manifest by the catalog sync detector</td><td><span class="code">pixi.toml</span> tasks</td></tr>
         <tr><td><b>Tests</b></td><td>pytest · unit, meta, fixtures</td><td>meta-tests pin the doctrine: no <span class="code">sys.exit</span> in a duty, <span class="code">main()</span> the sole exit owner, the pin pair in sync, the five-tier structural check over the whole roster, the manifest-sync invariant; the keys suite covers every CAP-1 sub-claim including "never a raw value"</td><td><span class="code">pyforge-steward-test</span></td></tr>
-        <tr class="hi"><td><b>The estate it keeps</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="groundtruth_pixi_envs">30</span> pixi environments · <span data-fact="recipes_count">7864</span> recipes</td><td>the core <span class="code">upgrade bmad-core</span> moves and <span class="code">prove-landed</span> verifies; the loop whose homes <span class="code">prove-landed</span> refreshes; the skill whose meta-tests are one of its gates; the environments <span class="code">provision</span> materializes; the shipped estate the platform serves</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
+        <tr class="hi"><td><b>The estate it keeps</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="groundtruth_pixi_envs">31</span> pixi environments · <span data-fact="recipes_count">7864</span> recipes</td><td>the core <span class="code">upgrade bmad-core</span> moves and <span class="code">prove-landed</span> verifies; the loop whose homes <span class="code">prove-landed</span> refreshes; the skill whose meta-tests are one of its gates; the environments <span class="code">provision</span> materializes; the shipped estate the platform serves</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
         <tr><td><b>The platform it deploys</b></td><td><span class="code">src/platform/</span> — Django + Wagtail + HTMX on one ASGI · Celery · PostgreSQL + Redis + Kubernetes · a Helm chart with an OpenShift overlay · a Containerfile · Liquibase for governed DDL</td><td>the Canopy host: cookiecutter-django with a FastAPI seam, OIDC through <span class="code">django-allauth</span>, agent-runtime engines as a pluggable app and a sidecar, egress-blocked by a failing check, its app role provably unable to alter its own schema</td><td><span class="code">src/platform/deploy/</span> · <span class="code">pyproject.toml</span> under the platform</td></tr>
         <tr><td><b>Intelligence it reads</b></td><td>cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports; the surfaces the Canopy mounts behind one session and the query plane Steward's through-line rebuilt the private stores onto</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
       </tbody>
@@ -925,10 +925,10 @@ table.tbl tr.hi td { background:#fbe4de; }
       <span class="num">21</span>
       <h2>Proof — the receipts, from the ledgers</h2>
     </div>
-    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec and the manifests at tree <span data-fact="tree_commit_date">2026-09-13</span> — never from a prior poster, never from memory. The stub this poster replaces quoted an estate of a dozen environments and four duties; the ledger reads differently now.</p>
+    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec and the manifests at tree <span data-fact="tree_commit_date">2026-09-14</span> — never from a prior poster, never from memory. The stub this poster replaces quoted an estate of a dozen environments and four duties; the ledger reads differently now.</p>
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">206/222</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser; the remainder is the cutover's held phases and two realization index rows</div></div>
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">49/51</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the credential lifecycle to consumed datastores; the two open are the cutover and the realization gate</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">231/244</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser; the remainder is the cutover's held phases and two realization index rows</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">56/58</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the credential lifecycle to consumed datastores; the two open are the cutover and the realization gate</div></div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">4</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a mechanical <span class="code">verified:</span> PASS at a named HEAD; Spec <span data-fact="spec_status">shipped</span></div></div>
       <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — the act that completed, not a promise</div></div>
     </div>
@@ -946,11 +946,11 @@ table.tbl tr.hi td { background:#fbe4de; }
     <table class="tbl" style="margin-top:0;">
       <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
       <tbody>
-        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">78/82</span></td><td><span data-fact="marshal_stories_done_total">248/249</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">67/67</span></td><td><span data-fact="doctor_stories_done_total">95/95</span></td><td><span data-fact="scribe_stories_done_total">33/33</span></td><td><b><span data-fact="steward_stories_done_total">206/222</span></b></td><td><b><span data-fact="fleet_stories_done_total">870/892</span></b></td></tr>
-        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">18/20</span></td><td><span data-fact="marshal_epics_done_total">34/36</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">16/16</span></td><td><span data-fact="doctor_epics_done_total">22/22</span></td><td><span data-fact="scribe_epics_done_total">16/16</span></td><td><b><span data-fact="steward_epics_done_total">49/51</span></b></td><td><b><span data-fact="fleet_epics_done_total">190/197</span></b></td></tr>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/94</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><b><span data-fact="steward_stories_done_total">231/244</span></b></td><td><b><span data-fact="fleet_stories_done_total">926/966</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/22</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><b><span data-fact="steward_epics_done_total">56/58</span></b></td><td><b><span data-fact="fleet_epics_done_total">207/218</span></b></td></tr>
       </tbody>
     </table>
-    <div class="box" style="margin-top:18px;"><b>The finding that changed what done means.</b> The Canopy's own currency review found the estate very good at building and without a discipline for taking effect: capabilities shipping as passing mechanism and never being switched on, fed or measured. Steward's chain answered with the realization gate — a <span class="code">verified:</span> line on every capability naming which clause has a live exercise and which is fixture-only, a Doctor-owned effect check beside the story-status check, and Dreams that flip to <span class="code">realized</span> on effect rather than on ledger bookkeeping. This poster's own <span data-fact="stories_done_total">206/222</span> is a count of tracked <span class="code">done</span> keys, not a claim about effect.</div>
+    <div class="box" style="margin-top:18px;"><b>The finding that changed what done means.</b> The Canopy's own currency review found the estate very good at building and without a discipline for taking effect: capabilities shipping as passing mechanism and never being switched on, fed or measured. Steward's chain answered with the realization gate — a <span class="code">verified:</span> line on every capability naming which clause has a live exercise and which is fixture-only, a Doctor-owned effect check beside the story-status check, and Dreams that flip to <span class="code">realized</span> on effect rather than on ledger bookkeeping. This poster's own <span data-fact="stories_done_total">231/244</span> is a count of tracked <span class="code">done</span> keys, not a claim about effect.</div>
   </section>
 
   <!-- 22 · THE SEED -->
@@ -982,9 +982,9 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div style="font-size:12px; line-height:1.45;">Written as greenfield, grounded against a host that already shipped, owner moved from Herald to Steward; chrome, portals, faces, grammar, events, flags, governed DDL and the hook contract drained under one coordinator; attended bring-up on a local cluster; the front door published; the query plane minted as the evergreen reopen; the red-team's CRITICALs and HIGHs bound and closed.</div>
       </div>
       <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-13</span></div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-14</span></div>
         <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Realized · re-derived</div>
-        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">49/51</span> epics — the cutover under contract and held, the realization gate open — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">56/58</span> epics — the cutover under contract and held, the realization gate open — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
       </div>
     </div>
     <div class="box" style="margin-top:22px;"><b>Why the grounding discipline is the story.</b> The Canopy Dream was drafted as though the platform host were greenfield. The audit proved the host had shipped — a live cookiecutter-django project with an ASGI seam, OIDC, the agent-runtime engines mounted, a chart with an OpenShift overlay — so the chain was rescoped to the residual, bound the host contract as prior art and re-minted nothing. Corrections ran toward reality in both directions: two pessimistic premises dissolved under research, one optimistic one was replaced with a shippable design. A pessimistic premise is as much a planning error as an optimistic one; both had been sized as risk.</div>
@@ -1000,12 +1000,12 @@ table.tbl tr.hi td { background:#fbe4de; }
       <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
         <div class="k">Now — shipped and verified</div>
         <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
-          <li>The four contract duties plus sync, workspace, upgrade, suite, the bootstrap family, restore and revoke — <span data-fact="cli_verbs">23</span> verbs behind one dispatcher and one exit-code owner</li>
+          <li>The four contract duties plus sync, workspace, upgrade, suite, the bootstrap family, restore and revoke — <span data-fact="cli_verbs">30</span> verbs behind one dispatcher and one exit-code owner</li>
           <li><span data-fact="spec_capabilities">CAP-1..4</span> each carrying a mechanical <span class="code">verified:</span> PASS; the cross-host leak closed as a named regression test</li>
           <li>The Canopy's capabilities closed out and proven on an attended cluster — the front door published, the app role DML-only, the live egress-blocked run-state exercise done; the query plane's first slice shipped</li>
           <li>Both red-team CRITICALs fixed in shipped code; the HIGH set landed as data safety, agent and bus containment, contracts and the document</li>
           <li>SKF content skill, station persona, the <span class="code">/stations/steward/</span> portal and MCP face; the five-tier reporter the whole roster is measured by</li>
-          <li>Tracked ledger <span data-fact="stories_done_total">206/222</span> · <span data-fact="epics_done_total">49/51</span></li>
+          <li>Tracked ledger <span data-fact="stories_done_total">231/244</span> · <span data-fact="epics_done_total">56/58</span></li>
         </ul>
       </div>
       <div class="card">

@@ -70,3 +70,20 @@ table (§06). Left out for lack of a fact row: the feedstock count, the CFE line
 counts, the hard-constraint count, engine versions, and every date outside the Dream's
 realization log (the `SCAFFOLD` status at the top of this README describes the React deck,
 not this poster).
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 18 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-mason --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **41** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 91/91`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `a7a2c3b1-5718-49fa-8c90-71d44d57eae9`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Mason Infographic standalone.html` | 151,194 | `1789417228960051` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.

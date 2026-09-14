@@ -76,3 +76,20 @@ inline SVG only.
 Design mirror (CAP-4) not yet pushed in this PR — the etag cell above is filled by the operator
 after the DesignSync `finalize_plan` → `write_files` (`localPath`) push and byte-identical
 read-back; `herald deck status pyforge-herald` linked in Story 20.13.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 18 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-herald --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **21** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 53/53`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `ff879a32-9741-4cf5-948f-d67040481d24`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Herald Infographic standalone.html` | 137,560 | `1789417210958518` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.

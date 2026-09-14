@@ -92,3 +92,20 @@ Floors: act bands 6/6 · sections 19 ≥ 18 · inline SVGs 4 ≥ 3 · bytes 112,
 6 ≥ 3 · cast cards 8/8 full (role, motto, paragraph, verbs, stories + epics chips) · render
 reviewed as eight 2100 px slices. Render artifacts live under the gitignored
 `.herald/deck-qa/pyforge-marshal/`.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 18 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-marshal --refresh --check `--with-tests`` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **56** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 0 unshown; facts 128/128`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `ad84d4f6-c292-42c8-98bf-ede78a567773`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Marshal Infographic standalone.html` | 112,851 | `1789417220069499` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.

@@ -174,3 +174,16 @@ extending `--check`/`--refresh` to walk the head, Infographic Deck and exec summ
 ## Design project (the bridge's far end)
 Prototype lives in Claude Design project **"PyForge Unifying Strategy deck"** (`1e4020bc-7f7f-43b2-9219-0904d4863df6`):
 https://claude.ai/design/p/1e4020bc-7f7f-43b2-9219-0904d4863df6?file=Unifying%20Strategy%20Deck.dc.html
+
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+`deck-facts pyforge-unifying-strategy --refresh --check` at tree `168bbedb13` re-derived `facts.yaml`
+(16 rows had drifted) and rewrote **nothing**: the poster carries no mark for any of the rows that
+moved, so there was no stale literal to refresh and the standalone is byte-unchanged — nothing to
+push, the Design mirror (`1e4020bc`) already holds it. The re-check reads `3 unmarked, 0 mismatch,
+0 drifted, 0 unsourced, 32 unshown; facts 4/7`. That is the recorded state of Story 21.11's
+Design-side visual pass (see `spec-deck-family-lockstep/.memlog.md`, the CAP-5 proof event): the
+operator's redesign dropped the fleet-count strip, so the 32 `unshown` ledger rows are a content
+decision, not staleness, and the 3 `unmarked` narrative dates were left per this deck's house
+style. Re-marking those surfaces is the Design-side pass carried on `DW-VOCAB-2026-09-14-3` and
+Epic 21, not a refresh.

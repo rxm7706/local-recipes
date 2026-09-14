@@ -113,3 +113,20 @@ being authored, so eight rows drifted (`dreams_total`, `dreams_specified`, the t
 the 28 stale marked literals from the fresh ledger, and one piece of prose that counted them by
 hand — "three stations are complete on both rows" — was corrected to four. `facts.yaml` was then
 re-derived on a clean tree so its `tree:` header records the branch base, not a dirty working copy.
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 20 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `dreams_dreamt`, `dreams_realized`, `dreams_specified`, `dreams_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-genesis --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **54** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 94/94`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `6af4c28d-d510-4e9b-b788-6c0e5d651183`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Genesis Infographic standalone.html` | 142,319 | `1789417197745702` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.
