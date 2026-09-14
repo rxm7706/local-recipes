@@ -622,6 +622,42 @@ enters the seven.
 Stations. Those three stay ours. The Cogs/Skills collision is named so no
 agent treats “Cog” as a ninth Smith.
 
+### Gate has three senses; verdict has one *(amended 2026-09-14)*
+
+The Cogs/Smith collision was named here and the neighbouring one was not, so
+`Gate` ran loose while `Guards / Gates` above carried a single cell. Ruled, in
+the same shape:
+
+1. **The PR verdict** — the judgement about the *work*, published on a pull
+   request. **Warden's, solely.** `pyforge-warden` enforces this mechanically:
+   a plugin that does not own the verdict spec raises `SecondVerdictError`.
+2. **The harness gate** — a deterministic mechanical check that the *process*
+   held: `detectors-ci`, a `*-check` task, a sandbox or permission gate, a
+   verify gate inside a loop. These **may fail CI**, and doing so is not a
+   verdict and never was. § *Execution Doctrine* already places them: the
+   harness — *“bmad-loop, sandbox and permission gates, CI verify gates,
+   no-LLM tools”* — is the **unit of governance**. Governance gates; stations
+   judge. That distinction was always implied here and is now stated, because
+   five surfaces had independently concluded they were in violation and said
+   so in their own docstrings.
+3. **BMAD's readiness gate** — upstream's `PASS` / `CONCERNS` / `FAIL` on a
+   readiness report. Not ours to redefine (§ Branding: upstream literals are
+   conformed to or the divergence is recorded, never silently redefined).
+
+**Say which sense.** An artifact may use “gate” unqualified only where its
+sense is determinable from context.
+
+**“Verdict” is the reserved word, and it is narrower than “gate”.** Only a
+station publishes a verdict, only about work it did not do, and only one
+station publishes the PR verdict. A deterministic check that fails CI is not
+a verdict however loudly it exits. Where a lattice, a rung or an exit code is
+named “verdict” outside that meaning, it is either renamed or its scope is
+recorded in the owning Spec.
+
+*(This rules `Gate`. **`Track` remains unruled** — Hub's durable evidence
+record vs BMAD's planning lane — and is carried as
+`spec-vocabulary-one-name-one-job` CAP-4.)*
+
 **The rented-model / owned-context tension:** this factory rents the model
 and harness (Claude Code) while owning context, workflows, checks, and
 evidence — the split the paper says matters most, stated here so CAP-1
@@ -722,6 +758,32 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment)** — **§ The Lexicon gains `### Gate has three senses; verdict has
+  one`** (operator ruling, this date). The 2026-09-13 Hub cross-walk named the Cogs/Smith
+  collision and gave `Guards / Gates` a single cell with no collision marker, so `Gate` ran
+  loose across three live senses: Warden's PR verdict, the harness CI gate (`detectors-ci`,
+  the `*-check` tasks, `gate_mode`, a loop's verify gate), and upstream BMAD's
+  `PASS`/`CONCERNS`/`FAIL` readiness gate. The amendment rules them in the Cogs/Smith shape —
+  name the collision, scope each sense, require authors to say which — and additionally
+  **reserves “verdict”** as the narrow word: a station publishes it, only about work it did
+  not do, and only Warden publishes the PR one.
+  The evidence that forced it: five non-Warden surfaces had each independently concluded they
+  were violating the sole-verdict rule and said so in their own prose — `platform_policy.py`
+  (*“a REAL, ACTIONABLE gate”*), `pixi.toml` (*“install it … to make this a real gate”*),
+  `scripts/detectors.py` (*“what actually gates”*), `pyforge-marshal/README.md`
+  (*“conformance report (CI gate)”*), and an Atlas task (*“CI gate (exit 2 on violations)”*).
+  They were not in violation. § *Execution Doctrine* had already placed CI verify gates in the
+  **harness** — the unit of governance — rather than among station verdicts; that reading was
+  simply never written down, so each surface resolved the ambiguity alone. **No code changed
+  in this amendment**, deliberately: rewording those five would have buried the doctrinal gap
+  behind tidier prose, which is why they were left standing until the rule existed.
+  Two things this does NOT settle, both carried forward rather than quietly closed:
+  **`Track`** (Hub's durable evidence record vs BMAD's planning lane) stays unruled under
+  `spec-vocabulary-one-name-one-job` CAP-4; and **marshal's own six-rung verdict lattice with
+  its `GATE_FAILED` rung** is under investigation against §5 / the §269 ruling that Doctor holds
+  the verdict on Marshal's row — a question of fact (does that value ever leave the loop?), not
+  of vocabulary, so the ruling above does not pre-judge it.
 
 - **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
   retires as a name and is absorbed here** (operator decision). §5 previously read

@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-09-09"
+updated: "2026-09-14"   # currency reconciliation — the two 2026-09-14 vocabulary research passes (three-source reconciliation + identifier-shapes inventory) landed under this station's research folder and fired the research->brief edge. Both are chain-scoped to `vocabulary-one-name-one-job`, both declare `status: draft` and "takes no decision"; no change to Steward's charter. See "Currency reconciliation — 2026-09-14" at the end of this file. Prior stamp 2026-09-09.
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -168,3 +168,41 @@ effect stories for CAP-4/-7/-11/-12/-14/-17). One operator ruling recorded upstr
 Dream's ≤400-line constraint is retired. Nothing here adds a capability to Steward the station;
 the realization gate is a definition-of-done discipline the whole estate inherits, and its binding
 home is the Spec's open question `realization-gate-home`.
+
+## Currency reconciliation — 2026-09-14
+
+Fired by the `research→brief` staleness edge again, and for the same structural reason as
+2026-09-09: two research passes landed under this station's research folder on 2026-09-14 —
+`research/technical-vocabulary-three-source-reconciliation-2026-09-14.md` (BMAD-METHOD v6.12.0
+× the PyForge Lexicon × the Intelligence Hub / Frame-spec terms, three parallel read-only
+passes at `main` `445976e5be`) and `research/technical-identifier-shapes-inventory-2026-09-14.md`
+(nine identifier surfaces measured at the same head) — while this brief's stamp sat at
+2026-09-09.
+
+**No change to Steward's charter.** Both documents are **chain-scoped to
+`vocabulary-one-name-one-job`**, both carry `status: draft`, and both state in their own
+opening that they **take no decision**. They are Dream-tier inputs: `docs/dreams/vocabulary-one-name-one-job.md`
+(`status: dreamt`, owner steward) cites them as its two sources, and
+`planning-artifacts/specs/spec-vocabulary-one-name-one-job/` is where the contract will be
+derived. Steward is the owning station because vocabulary and governance currency are its
+post — which is exactly what this brief already says — so the research confirms the charter
+rather than extending it.
+
+**Two things from the passes worth carrying at brief altitude, because they bear on how
+Steward measures anything:**
+
+1. **The estate already has one identifier convention with zero exceptions** — `^### Story
+   \d+\.\d+: .+$` holds 952/952 across all eight stations — and the doctor finding codes are
+   the next cleanest at 124/124. The shapes pass exists because the *rest* of the surfaces
+   are not like that. This is the measurement baseline any future standardization works
+   against.
+2. **The identifier sweep was run against a dirty working tree and says so, in bold, in its
+   own method section** (36 modified paths, three `epics.md` files with uncommitted edits, one
+   result materially affected). That caveat is the reason the document is usable: a
+   measurement that names its own contamination can be re-run; one that does not gets adopted
+   as a baseline and quietly poisons everything downstream. Recorded here as the standard this
+   station holds research to, not as a defect in the pass.
+
+**Nothing here adds a capability to Steward the station.** The vocabulary work is a chain with
+its own Dream and its own Spec folder; this brief's scope, success criteria and vision are
+unchanged.

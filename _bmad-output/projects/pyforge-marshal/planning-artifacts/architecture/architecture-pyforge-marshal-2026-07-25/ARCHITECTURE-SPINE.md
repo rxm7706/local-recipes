@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-08"
+updated: "2026-09-14"
+# 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
 # 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
@@ -1595,3 +1596,47 @@ the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows 
 
 `spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
 found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after folding
+`spec-pyforge-marshal`'s 2026-09-09 operator answering pass, which fires the `prd→arch`
+edge. This section is the as-built check: does the spine above still describe the
+package after that PRD change.*
+
+**The PRD's two new constraints land ON this spine, not beside it — that is why no AD
+moves.**
+
+- **C-11 (the declared, advisory-in-v1 trust model).** The escape hatch is an
+  operator-attributed journal entry admitted at the **call surface only**
+  (`core/journal.py:159`). Architecturally this is a statement *about* AD-5 ("the
+  journal is the single source of run truth") and AD-28 ("every journal entry is
+  addressable"), not a new decision: the journal already records who claimed what, and
+  this spine has never claimed it verifies the claim. The reason it cannot is already
+  an AD-adjacent constraint here — a worktree isolates filesystem and branch, not
+  process or network, and process isolation is Steward's provisioning territory. The
+  honest architectural statement is therefore: **attribution is an audit record, and
+  its unforgeability is deferred behind isolation this spine deliberately does not
+  own.** Recording that in the PRD rather than minting an AD is the right home — it is
+  a product-visible property, not a structural choice.
+- **C-12 (no unattended mid-run freeze writer).** `KIND_FREEZE_DECLARED` /
+  `KIND_FREEZE_REMOVED` are existing journal kinds (`core/journal.py:152-163`) under
+  AD-26's single-producer fold. The constraint says no *unattended* writer exists for
+  them, which is a policy statement over an already-architected entry kind. AD-26 is
+  untouched.
+
+**The composite-id protocol is re-confirmed, not re-opened.** The Spec's own
+2026-09-09 disposition pass recorded F-6 as RESOLVED exactly as this spine already
+specifies it — `(writer_id, counter)` per AD-28, total order `(ts, writer_id,
+counter)`, physical append protocol AD-30. The resolution cites `core/journal.py:13`
+and `:201`; the spine's text and the code agree. No correction needed.
+
+**F-1, F-2 and F-3 likewise closed against decisions already drawn here**: the harness
+policy render (`marshal config --write-harness-policy`), quarantine scoped to the
+offending `(story, kind)` domain rather than the run — which is precisely the
+"resilient but never silently green" clause AD-30 already carries — and `cli/gate.py`'s
+explicit `scope: policy-seed-only` for a standalone evaluation. Three findings, three
+existing ADs; none reopened.
+
+**No content change required beyond this note.** `updated:` bumped to record that the
+cascade ran.

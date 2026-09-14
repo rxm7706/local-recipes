@@ -86,11 +86,26 @@ this Spec eventually decides.
     Retrospective, the five agents) and has no cross-walk, though the Hub got one.
   - **success:** every BMAD term we use maps to a Lexicon noun or is named as having none, and
     the places we diverge from upstream literals are recorded in the open.
-- **CAP-4 — the unnamed collisions get rulings.**
+- **CAP-4 — the unnamed collisions get rulings.** *(Half delivered 2026-09-14.)*
   - **intent:** `Track` (Hub evidence record vs BMAD planning lane) and `Guard`/`Gate` (Hub
     check/decide vs our `gate_mode` and detectors vs BMAD's PASS/CONCERNS/FAIL) are named and
     ruled on, as the Charter did for Cogs/Smith.
   - **success:** no artifact uses either word without its sense being determinable.
+  - **`Gate`: RULED 2026-09-14** by operator decision, landed as a Charter amendment
+    (`pyforge-charter.md` § The Lexicon → `### Gate has three senses; verdict has one`, with a
+    Realization-log entry). Three senses named and scoped — Warden's PR verdict, the harness CI
+    gate, upstream BMAD's readiness gate — plus `verdict` reserved as the narrow word. The five
+    surfaces that had declared themselves in violation were not: the Execution Doctrine already
+    placed CI verify gates in the harness. No code changed. Closes
+    `DW-VOCAB-2026-09-14-10`.
+  - **`Track`: STILL UNRULED.** Hub's durable evidence record (`hub:CAP-3`, Story 53.3's
+    `track.json`) vs the deck's BMAD planning lane (Quick Flow / BMad Method / Enterprise),
+    the latter live in 24 legacy `docs/specs/*.md` intake headers and in the public deck. This
+    capability is not met until it is ruled the same way.
+  - **Out of scope for this CAP, recorded so it is not mistaken for part of it:** marshal's own
+    six-rung verdict lattice and its `GATE_FAILED` rung are a question of *fact* — does that
+    value ever escape the loop to a PR? — not of vocabulary. Tracked separately; the Gate ruling
+    deliberately does not pre-judge it.
 - **CAP-5 — the Design tier stops drifting.**
   - **intent:** the deck's practice vocabulary either joins the map or is declared
     teaching-only; its four retired BMAD names and the retired Paige persona are corrected; and
