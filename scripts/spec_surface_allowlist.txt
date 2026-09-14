@@ -5,6 +5,7 @@ docs/dreams/**           # Tier-0 prose (Dream convention governs), not code
 docs/reference/**        # reference prose; catalog drift has its own detector (llms-full-check)
 docs/intake/**           # intake inbox (triage rules in its README), not code
 docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs governs)
+docs/foundry/**          # the foundry tracking/contract tree (EPOCH.md, capability-ledger.yaml, frames/*.frame.md, guards/README.md, tracks/*) -- both natural owners (spec-foundry-capability-ledger, spec-foundry-regenerate-not-fold) deliberately declare `surface: []`; same class as docs/dreams/**/docs/governance/** below, not code (found live 2026-09-14, 15 files ungoverned)
 docs/governance/**           # the CONSTITUTIVE governance kernel (Charter §5, precedes stations). Cannot declare a `surface:` — spec_surface_check's SPEC_GLOB only discovers _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md, so this kernel is not a spec to this detector at all. Same class as docs/dreams/**: a contract, not code. Governing it would mean moving it under a station, which is a governance decision, not a detector fix.
 archive/**               # discarded material, retained for history
 _bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
@@ -70,7 +71,6 @@ GEMINI.md                # per-tool pointer (governance doc)
 README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license
-.gitignore               # repo plumbing
 .gitattributes           # repo plumbing
 .azure-pipelines/**      # inherited staged-recipes CI legs (upstream-owned)
 .ci_support/**           # inherited staged-recipes CI support (upstream-owned)
