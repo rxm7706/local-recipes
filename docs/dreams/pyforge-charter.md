@@ -658,7 +658,11 @@ the same shape:
    conformed to or the divergence is recorded, never silently redefined).
 
 **Say which sense.** An artifact may use “gate” unqualified only where its
-sense is determinable from context.
+sense is determinable from context. The operational words around it —
+`detector`, `check`, `preflight`, `advisory`, `lens` — and the exit-code
+domains they project through are stated positively in
+[`docs/reference/judgement-vocabulary.md`](../reference/judgement-vocabulary.md),
+which restates these rulings but rules nothing itself.
 
 **“Verdict” is the reserved word, and it is narrower than “gate”.** Only a
 station publishes a verdict, only about work it did not do, and only one

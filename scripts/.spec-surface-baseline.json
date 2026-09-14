@@ -525,7 +525,7 @@
  },
  "pyforge-doctor/spec-general-docs-consistency": {
   "files": {
-   "docs/MAP.md": "86c1e68228efe14c0bc56fd6d36a1b12e38c4b48",
+   "docs/MAP.md": "ade9647106ca2630aa2591777ff6fd3bb13ff162",
    "docs/explanation/README.md": "a0fb48e84a245584f850a2107a974f93158720fc",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
    "docs/explanation/enterprise-deployment.md": "52c65a5a88870212d41e59dca36b1ed2afb44668",
@@ -541,7 +541,7 @@
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "d046acc399d657cc671332723af5b45f10490612"
   },
-  "memlog": "795be3ab31ac496354fba9147fb3386cb3164e3f"
+  "memlog": "cbc0a84b512fdad23e7808c12252e7df071678f2"
  },
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {

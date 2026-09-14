@@ -56,6 +56,7 @@ Every file that lived in `docs/reference/` before Story 22.4 is accounted for be
 | [`github-workflows.md`](reference/github-workflows.md) | True reference | Workflow inventory (**still stale** — audited 2026-07-26; omits/adds workflows vs live tree) |
 | [`sync-jira-github-workflow-templates/`](reference/sync-jira-github-workflow-templates/) | True reference | Reusable GitHub Actions workflow templates for Jira↔GitHub Projects sync (see `docs/intake/jira-github-projects-sync/`) |
 | [`test-charter.md`](reference/test-charter.md) | Policy reference | Fleet testing charter (cited by `docs/dreams/pyforge-testing-charter.md`) |
+| [`judgement-vocabulary.md`](reference/judgement-vocabulary.md) | Policy reference | What `verdict` / `gate` / `detector` / `check` / `preflight` / `advisory` / `lens` each mean, stated **positively**; the four exit-code domains and the `2` inversion. Restates the Charter's Gate/Track/kernel rulings; rules nothing itself (cited by `docs/dreams/pyforge-charter.md` § The Lexicon) |
 | [`conda-forge-packaging-inventory-operations_prompt.md`](reference/conda-forge-packaging-inventory-operations_prompt.md) | True reference | Standalone re-run prompt for inventory runner |
 | [`conda-forge-packaging-inventory-operations_replay.md`](reference/conda-forge-packaging-inventory-operations_replay.md) | True reference | Replay/sync contract for inventory runner |
 | [`README.md`](reference/README.md) | Index | Reference-quadrant index (this story updates it) |
