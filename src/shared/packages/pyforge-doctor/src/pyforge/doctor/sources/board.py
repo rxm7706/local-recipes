@@ -136,16 +136,12 @@ DEFERRED_SPECS: dict[str, str] = {
         "but not ready to decompose. CAP-1..7 are explicitly candidates. Sibling of "
         "spec-jira-github-projects-sync; do not treat Epic 8 as this product. De-register "
         "once the open_questions are cleared and the Spec reaches `ready`",
-    "spec-coverage-gate-independence":
-        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
-        "INV-1). Its five open questions are DESIGN decisions about where a fleet-wide blocking "
-        "gate may live, and the obvious answers are already ruled out: `pyforge-core` and "
-        "`pyforge-testing-kit` are both governed by marshal's own planning tree (so moving there "
-        "relocates the violation rather than ending it), and doctor cannot host a blocking gate "
-        "because doctor is constitutionally advisory. The question is recursive -- the gate "
-        "judges all eight stations, so any station-owned home reproduces the defect -- which is "
-        "why there is nothing an epic could pick up today. De-register once the operator picks a "
-        "home; the remedy is then mechanical",
+    # `spec-coverage-gate-independence` was registered here 2026-09-14 (morning) as a `draft`
+    # seed whose five open questions were unanswerable design decisions. De-registered the
+    # same day: the operator ruled its home the Guild (Charter §5 amendment), so the Spec moved
+    # to docs/governance/spec-coverage-gate-independence/ -- outside `pa.glob("specs/spec-*")`
+    # above, exactly like spec-pyforge-charter -- and the mechanism stories live in doctor's
+    # epics.md (Epic 24), where INV-A can see them.
     "spec-vocabulary-one-name-one-job":
         "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
         "INV-1). All eleven of its open questions are operator decisions about constitutional "

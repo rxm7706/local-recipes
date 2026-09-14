@@ -6,6 +6,9 @@ owner-dream: docs/dreams/pyforge-charter.md
 covers-dreams:
   # Absorbed 2026-08-08 as CAP-5..CAP-8 + the Dream's § Satellite: The Seed.
   # `owner: guild` closed at one; this Spec is the whole constitutive chain.
+  # 2026-09-14: `guild` re-opened by §5 amendment for one further shape only — a gate
+  # that judges all eight Smiths (spec-coverage-gate-independence, beside this one).
+  # This Spec is still the whole CONSTITUTIVE chain; the sibling is a gate, not a constitution.
   - archive/docs/dreams/pyforge-genesis.md   # moved out of docs/dreams/ in the same commit
 surface:
   - docs/dreams/pyforge-charter.md

@@ -492,14 +492,32 @@ Two clarifications, because both were live gaps until 2026-07-25:
   is no placeholder project in the target state.
 - **`owner: guild` is reserved** for the one Dream that *precedes* the stations —
   this Charter, which constitutes the Guild and records the Lexicon, the
-  membership, and the seed. Nothing else may claim it; a second `guild` is an
-  unassigned Dream hiding behind a collective noun. (The retired `owner: crew`
-  was exactly that, on four Dreams.)
+  membership, and the seed — **and for a gate that judges all eight Smiths**
+  *(amended 2026-09-14; see the Realization log)*. Nothing else may claim it; a
+  second `guild` is an unassigned Dream hiding behind a collective noun. (The
+  retired `owner: crew` was exactly that, on four Dreams.)
+
+  The second case is the first case's own doctrine applied to itself. "The hand
+  that builds is never the gate that judges" has a corollary: a check that can red
+  every Smith's pull request cannot be any Smith's work, because whichever Smith
+  held it would grade itself on one row — and §6's "the Marshal may not weaken,
+  re-threshold or disable a check that judges the Marshal" cannot be honoured by
+  a check that ships inside the Marshal. The test is narrow and structural, not a
+  convenience: `guild` is legal **only** where no Smith *can* be accountable
+  because the artifact judges all of them. A Dream that is merely cross-cutting,
+  shared, or unowned does not qualify — it names a station or it is unassigned.
+  The outcome is the Guild's; the *mechanism* stories that move the files are a
+  Smith's, per §5's outcome/mechanism rule (Doctor's, for the coverage gate, as
+  the Smith §6 already names Marshal's judge). `guild_dreams` in
+  `docs/governance/guild-roster.json` is the enumeration, and adding to it stays
+  a §5 decision.
 
   **Its chain lives in `docs/governance/`** *(amended 2026-08-08; see the
   Realization log)* — not under `_bmad-output/projects/`, because a constitutive
   document is not a station's work and no Smith may own the document that
-  constitutes the Smiths. `spec-pyforge-charter/` is the whole of it.
+  constitutes the Smiths. `spec-pyforge-charter/` was the whole of it until
+  2026-09-14; `spec-coverage-gate-independence/` sits beside it under the
+  second case above.
 
   **The seed's *installer* is not constitutive and is not held here.**
   Standing up a greenfield or brownfield repo with the pixi environment, python,
@@ -790,6 +808,37 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment, two rulings on §5/§6 force)** — **`owner: guild` widens from
+  "the one constitutive Dream" to "that, and a gate that judges all eight Smiths"**, and
+  **Doctor's durability verdict on Marshal's row becomes blocking in CI.** Both close
+  questions this log opened the same morning (the `§6 read BROADLY` entry below recorded
+  the coverage gate's remedy as "NOT the mechanical move" and the force ratio as "its own
+  question").
+  *The first.* The coverage gate's home was recursive under §5 as written: every candidate
+  (`pyforge-core`, `pyforge-testing-kit`, `scripts/`) is governed by marshal's planning tree,
+  Doctor is constitutionally advisory, and `guild` was closed at one on 2026-08-08 —
+  "Nothing else may claim it". The operator ruled the narrow amendment now in §5: `guild`
+  is legal only where no Smith *can* be accountable because the artifact judges all of
+  them — the §5 doctrine applied to itself, with the `owner: crew` failure mode excluded by
+  construction (cross-cutting or unowned is not the same as judging every Smith).
+  Consequences, all landed this date: `guild_dreams` in `guild-roster.json` gains
+  `coverage-gate-independence`; that Dream is re-owned to `guild` and its Spec moves to
+  `docs/governance/spec-coverage-gate-independence/` at `ready`, its five open questions
+  answered by the ruling; the archived `pyforge-testing-charter` (test *architecture*,
+  legitimately marshal's build work) stays where it is. The mechanism — moving
+  `coverage_gate.py` + `coverage_thresholds.toml` under the governance Spec's surface,
+  amending the AD-3/AD-4 import-linter contract deliberately, and adding the rule that no
+  `pyforge.<station>` module evaluates that station's own CI gate — is Doctor's story work
+  under the outcome/mechanism rule, as this log's C8 row already established for Doctor.
+  *The second.* `detectors.yml` gains a second scoped blocking step beside
+  `cfe_rebuild_guard_check`: `ledger-regression`, Doctor's committed-range durability
+  verdict on Marshal's ledgers (the 2026-08-08 incident class). The 2026-07-31 advisory
+  posture stands for every other detector — this reverses it for exactly one row, the one
+  §6 makes independent, so that the judge's verdict has force and the judged station's own
+  gate is no longer the only thing that reds a Marshal PR. Widening to `ledger-direction`
+  or any other Marshal-row source is a further ruling, not a drift. Closes
+  `DW-VOCAB-2026-09-14-16`; `DW-COVERAGE-GATE-INDEPENDENCE-1` carries the mechanism.
 
 - **2026-09-14 (amendment, ruling)** — **`Track` is qualified in prose**, completing CAP-4's
   other half. Hub's *evidence Track* (`track.json`, Story 53.3) and BMAD's *planning track*
