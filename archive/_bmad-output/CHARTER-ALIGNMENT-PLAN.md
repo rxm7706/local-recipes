@@ -1,5 +1,8 @@
 # Charter-alignment migration plan
 
+> **Archived 2026-09-14** from `_bmad-output/CHARTER-ALIGNMENT-PLAN.md`. Historical
+> record only. Living contract: `_bmad-output/EXEMPLAR-STANDARD.md`.
+
 **Status: SUPERSEDED (2026-08-15) — kept as historical record, not executed as
 written.** This plan's own target premise (9 projects: the 8 Smiths +
 `pyforge-genesis` kept and sharded) did not happen. `pyforge-genesis` was
@@ -7,7 +10,7 @@ written.** This plan's own target premise (9 projects: the 8 Smiths +
 (`owner: guild`, no Smith may own the Charter that constitutes the Smiths); its two
 Spec kernels moved to `docs/governance/spec-pyforge-charter/` and
 `docs/governance/spec-pyforge-genesis/` instead, and the rest archived to
-`archive/_bmad-output/projects/pyforge-genesis/`. See `EXEMPLAR-STANDARD.md` § INV-2
+`archive/_bmad-output/projects/pyforge-genesis/`. See `_bmad-output/EXEMPLAR-STANDARD.md` § INV-2
 for the actual resolution. This plan's other named steps (sharding marshal/warden,
 evacuating `local-recipes`) are done — verified 2026-08-15, both projects are
 sharded and `_bmad-output/projects/local-recipes/` no longer exists — but as a side
@@ -27,7 +30,7 @@ record) — do not treat its counts or its genesis-as-9th-project premise as cur
 **Status: planned, not executed.** Derived 2026-07-28 from
 `scripts/dream_chain_check.py` against the Charter § 5 amendment
 ("owning is becoming — at the planning tier"). The standard is
-`EXEMPLAR-STANDARD.md`; the live backlog is always the detector, never this file.
+`_bmad-output/EXEMPLAR-STANDARD.md`; the live backlog is always the detector, never this file.
 
 ```bash
 pixi run -e local-recipes python scripts/dream_chain_check.py
@@ -75,7 +78,7 @@ warden 2 · doctor 0.
 - **Charter § 5 amended** + Realization log entry — "owning is becoming, at the planning
   tier"; the two constitutive Dreams' chains live in `pyforge-genesis`; the installer is
   the Marshal's.
-- **`EXEMPLAR-STANDARD.md`** rewritten to the amendment, with three superseded drafts
+- **`_bmad-output/EXEMPLAR-STANDARD.md`** rewritten to the amendment, with three superseded drafts
   recorded rather than silently replaced.
 - **`docs/dreams/pyforge-genesis.md`** → `owner: guild`, constitutive banner.
 - **`docs/dreams/genesis-installer.md`** created — `owner: marshal`, the buildable half.

@@ -1,5 +1,8 @@
 # Dream triage — 10 backlog Specs, 2026-08-08
 
+> **Archived 2026-09-14** from `_bmad-output/DREAM-TRIAGE-2026-08-08.md`. Point-in-time
+> decision aid; live Dream status is each file's frontmatter and `dream-chain`.
+
 10 Dreams that were flagged by `dream_chain_check.py` (INV-1: every Dream needs a Spec) now
 each have a real `status: draft` Spec — see each `spec-<slug>/SPEC.md` for the full contract.
 None of this is built. This doc is the one-page decision aid: fold into a station's real
@@ -9,7 +12,7 @@ recommendation this doc makes for you — it summarizes each Spec's own readines
 Detector state after all 10 Specs landed: `OK: all three invariants hold` (0 findings, was 16).
 That was a point-in-time reading, not a standing claim — the fleet's Dream corpus has grown
 from 31 to 96 since, and `python -m pyforge.doctor.sources dream-chain` (the retired
-`dream_chain_check.py`'s successor, see `EXEMPLAR-STANDARD.md`) reports 16 without-spec again
+`dream_chain_check.py`'s successor, see `_bmad-output/EXEMPLAR-STANDARD.md`) reports 16 without-spec again
 today (2026-08-15), all newer Dreams than the 10 this triage covered.
 
 **Status refresh, 2026-08-15 — 7 of 10 acted on, 3 genuinely still open.** Checked each

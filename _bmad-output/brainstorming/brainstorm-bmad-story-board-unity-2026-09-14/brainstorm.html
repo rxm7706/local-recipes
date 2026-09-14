@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waybill — BMAD Story Board Unity — 14 September 2026</title>
+<style>
+  :root {
+    --paper: #efe6d4;
+    --ink: #1c1610;
+    --red: #8b1e1e;
+    --wax: #6b1420;
+    --tide: #2a4a52;
+    --foam: #8aa8a8;
+    --grey: #7a756c;
+    --gold: #b0893a;
+    --cream: #f7f1e4;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(139,30,30,.04) 40px),
+      linear-gradient(180deg, #d4c8ae 0%, var(--paper) 120px);
+    color: var(--ink);
+    font: 17px/1.55 "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  }
+  .tide {
+    position: fixed; inset: auto 0 0 0; height: 28vh; pointer-events: none; z-index: 0;
+    background: linear-gradient(180deg, transparent, rgba(42,74,82,.22));
+    animation: tide 14s ease-in-out infinite;
+  }
+  @keyframes tide {
+    0%, 100% { height: 22vh; opacity: .7; }
+    50% { height: 32vh; opacity: 1; }
+  }
+  header.customs {
+    position: relative; z-index: 1;
+    border-bottom: 6px double var(--red);
+    padding: 2.2rem 8vw 1.6rem;
+    background: var(--cream);
+  }
+  header.customs h1 {
+    font-family: "Copperplate", "Palatino Linotype", serif;
+    letter-spacing: .18em;
+    font-size: clamp(1.4rem, 3vw, 2.1rem);
+    margin: 0 0 .4rem;
+    text-transform: uppercase;
+  }
+  .port-mark {
+    display: inline-block;
+    border: 3px solid var(--red);
+    color: var(--red);
+    padding: .15rem .6rem;
+    font-size: .72rem;
+    letter-spacing: .22em;
+    transform: rotate(-3deg);
+    margin-bottom: .8rem;
+  }
+  nav.waybills {
+    position: sticky; top: 0; z-index: 4;
+    display: flex; flex-wrap: wrap; gap: .4rem;
+    padding: .5rem 8vw;
+    background: #2a2118;
+    border-bottom: 3px solid var(--gold);
+  }
+  nav.waybills a {
+    color: #ead9b4;
+    text-decoration: none;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .25rem .5rem;
+    border: 1px dashed rgba(234,217,180,.35);
+  }
+  nav.waybills a:hover { background: var(--gold); color: #1c1610; }
+  main { position: relative; z-index: 1; padding: 0 8vw 8rem; max-width: 1100px; }
+  section { margin: 3.2rem 0; }
+  h2 { font-size: 1.35rem; letter-spacing: .06em; border-bottom: 1px solid #c4b79a; padding-bottom: .3rem; }
+  .hmw {
+    background: #fffaf0;
+    border: 1px solid #c9b896;
+    box-shadow: 8px 10px 0 rgba(28,22,16,.08);
+    padding: 1.6rem 1.8rem 1.4rem;
+    font-size: 1.28rem;
+    font-style: italic;
+    line-height: 1.45;
+  }
+  .hmw cite { display: block; margin-top: 1rem; font-style: normal; font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
+  .locks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: .7rem;
+  }
+  .lock {
+    border: 4px ridge #8a7a58;
+    background: #3d3428;
+    color: #f0e4c8;
+    padding: .9rem .75rem;
+    min-height: 7.2rem;
+    position: relative;
+  }
+  .lock strong { display: block; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: #e8c56a; }
+  .lock span { font-size: .88rem; }
+  .lock::after {
+    content: "LOCKED";
+    position: absolute; bottom: .35rem; right: .45rem;
+    font-size: .58rem; letter-spacing: .2em; color: #c45;
+  }
+  .lock.extract { background: #2a4038; }
+  .lock.nologin { background: #4a2020; }
+  /* HMW sparks — torn tickets */
+  .sparks { display: flex; flex-wrap: wrap; gap: .55rem; }
+  .ticket {
+    background: repeating-linear-gradient(-12deg, #fff8ea, #fff8ea 10px, #f3e8d0 10px, #f3e8d0 12px);
+    border: 1px dashed #8a6a3a;
+    padding: .55rem .7rem;
+    width: calc(50% - .3rem);
+    font-size: .92rem;
+    clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+  }
+  @media (max-width: 700px) { .ticket { width: 100%; } }
+  /* Assumption reversal — split plank */
+  .reversals { display: grid; gap: .8rem; }
+  .rev {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: .5rem;
+    align-items: stretch;
+  }
+  .rev .was, .rev .flip {
+    padding: .7rem .8rem;
+    font-size: .9rem;
+  }
+  .rev .was { background: #ddd4c2; text-decoration: line-through; color: #4a4034; }
+  .rev .arrow { align-self: center; font-size: 1.4rem; color: var(--red); }
+  .rev .flip { background: #e8f0ea; border-left: 5px solid var(--tide); }
+  /* Morphological — cargo manifest table */
+  table.morph {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .82rem;
+    background: #fffdf7;
+  }
+  table.morph th, table.morph td {
+    border: 1px solid #b8aa8c;
+    padding: .35rem .45rem;
+    vertical-align: top;
+  }
+  table.morph th { background: #2a2118; color: #ead9b4; font-weight: 600; letter-spacing: .06em; }
+  table.morph tr:nth-child(even) td { background: #f4ecda; }
+  .combo {
+    margin-top: .8rem;
+    font-family: ui-monospace, "Courier New", monospace;
+    font-size: .78rem;
+    background: #1c1610;
+    color: #c8e0c0;
+    padding: .8rem 1rem;
+    white-space: pre-wrap;
+  }
+  /* One feature — single wax seal */
+  .onefeat {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 1.2rem;
+    align-items: center;
+  }
+  .seal {
+    width: 128px; height: 128px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #c23, var(--wax));
+    color: #f8e8c8;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 8px rgba(0,0,0,.15), 4px 6px 0 rgba(0,0,0,.2);
+    transform: rotate(-8deg);
+  }
+  .onefeat ul { margin: 0; padding-left: 1.1rem; columns: 2; font-size: .92rem; }
+  @media (max-width: 700px) {
+    .onefeat { grid-template-columns: 1fr; }
+    .onefeat ul { columns: 1; }
+  }
+  /* Alien / Swarm — two columns, different species */
+  .two-species {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 800px) { .two-species { grid-template-columns: 1fr; } }
+  .alien {
+    background: #12161a;
+    color: #c5d8c8;
+    padding: 1.2rem 1.3rem;
+    font-style: italic;
+    border-radius: 2px 40px 2px 2px;
+  }
+  .alien h3 { font-style: normal; color: #9fd; letter-spacing: .14em; font-size: .78rem; text-transform: uppercase; margin-top: 0; }
+  .swarm {
+    background: repeating-radial-gradient(circle at 10% 10%, #2c2418 0 8px, #332a1c 8px 16px);
+    color: #f4e8c8;
+    padding: 1.2rem 1.3rem;
+    font-size: .9rem;
+  }
+  .swarm h3 { letter-spacing: .14em; font-size: .78rem; text-transform: uppercase; margin-top: 0; color: #e8c56a; }
+  .swarm li { margin: .35rem 0; }
+  /* Scenario cross — 2x2 dock */
+  .cross {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 3px solid var(--ink);
+  }
+  .cell { padding: 1rem; min-height: 8rem; font-size: .9rem; }
+  .cell:nth-child(1) { background: #dce8dc; }
+  .cell:nth-child(2) { background: #d4e0e8; border-left: 2px solid var(--ink); }
+  .cell:nth-child(3) { background: #e8dcc8; border-top: 2px solid var(--ink); }
+  .cell:nth-child(4) { background: #e8d4d0; border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+  .cell em { display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .4rem; }
+  .wins-all {
+    margin-top: .8rem;
+    border: 2px dashed var(--tide);
+    padding: .8rem 1rem;
+    background: #eef4f4;
+  }
+  /* Extract corridor — two envelopes */
+  .mail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.4rem;
+    perspective: 900px;
+  }
+  @media (max-width: 750px) { .mail { grid-template-columns: 1fr; } }
+  .envelope {
+    background: #e8d9b8;
+    border: 1px solid #8a7a50;
+    min-height: 220px;
+    padding: 1.2rem 1.1rem 1rem;
+    position: relative;
+    box-shadow: 0 8px 0 rgba(0,0,0,.12);
+    cursor: pointer;
+    transition: transform .4s;
+  }
+  .envelope:hover { transform: rotate(-1deg) translateY(-4px); }
+  .envelope.open { background: #fff8ea; }
+  .envelope .flap {
+    position: absolute; top: 0; left: 0; right: 0; height: 54px;
+    background: linear-gradient(180deg, #c9b48a, #d8c49a);
+    clip-path: polygon(0 0, 50% 100%, 100% 0);
+    opacity: .85;
+  }
+  .envelope h3 { margin: 3.2rem 0 .4rem; font-size: 1rem; }
+  .postmark {
+    position: absolute; top: .6rem; right: .6rem;
+    width: 72px; height: 72px;
+    border: 3px double var(--red);
+    border-radius: 50%;
+    color: var(--red);
+    font-size: .55rem;
+    letter-spacing: .06em;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    transform: rotate(12deg);
+    background: rgba(255,255,255,.4);
+  }
+  .date-line { font-family: ui-monospace, "Courier New", monospace; font-size: .8rem; color: var(--tide); }
+  /* Rituals — ceremony cards, not the same shape */
+  .rituals { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  @media (max-width: 800px) { .rituals { grid-template-columns: 1fr; } }
+  .night {
+    background: #0e1420;
+    color: #e8dcc0;
+    padding: 1.3rem 1.1rem;
+    border-top: 8px solid #c9a227;
+  }
+  .hour {
+    background: #efe6c8;
+    border: 8px solid #5a4a20;
+    padding: 1.1rem;
+    transform: rotate(.6deg);
+  }
+  .bless {
+    background: #f7f0e6;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    box-shadow: inset 0 0 0 3px var(--gold);
+    font-family: "Copperplate", Georgia, serif;
+  }
+  /* Fridge */
+  .kitchen {
+    background: linear-gradient(180deg, #9aa3a8, #7d868c);
+    padding: 1.6rem 1.4rem 1.8rem;
+    border-radius: 8px;
+    box-shadow: inset 0 20px 40px rgba(255,255,255,.15);
+  }
+  .magnet {
+    display: inline-block;
+    background: #c42;
+    color: #fff;
+    padding: .55rem .9rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    transform: rotate(-4deg);
+    box-shadow: 2px 3px 0 rgba(0,0,0,.25);
+    font-family: Impact, "Arial Black", sans-serif;
+  }
+  .fridge-note {
+    margin: 1rem 0 0;
+    background: #fffde8;
+    padding: 1rem 1.1rem;
+    width: min(420px, 100%);
+    transform: rotate(1.4deg);
+    box-shadow: 3px 4px 0 rgba(0,0,0,.2);
+    color: #222;
+  }
+  /* Egg larva */
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+  @media (max-width: 700px) { .meta { grid-template-columns: 1fr; } }
+  .egg {
+    background: #f4efe4;
+    border: 2px solid #c4b090;
+    border-radius: 50% 50% 46% 46%;
+    padding: 2rem 1.4rem 1.6rem;
+    text-align: center;
+  }
+  .larva {
+    background: #2d3a28;
+    color: #d8e8c8;
+    padding: 1.2rem 1.2rem;
+    border-radius: 40% 20% 50% 30%;
+    transform: rotate(-2deg);
+  }
+  /* MoSCoW */
+  .moscow { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  @media (max-width: 700px) { .moscow { grid-template-columns: 1fr; } }
+  .must { background: #8b1e1e; color: #fff8ee; padding: 1rem 1.1rem; }
+  .should { background: #3d4f38; color: #eef6e8; padding: 1rem 1.1rem; }
+  .could { background: #3a4a58; color: #e8f0f6; padding: 1rem 1.1rem; }
+  .wont {
+    background: #111;
+    color: #e8c0c0;
+    padding: 1.2rem 1.2rem;
+    grid-column: 1 / -1;
+    border: 4px solid #c00;
+  }
+  .wont h3 { color: #f66; letter-spacing: .2em; margin-top: 0; }
+  /* Climax */
+  .climax {
+    margin: 4rem 0 2rem;
+    padding: 2.4rem 1.6rem;
+    text-align: center;
+    background: #1c1610;
+    color: #f4e8c8;
+    position: relative;
+  }
+  .climax p {
+    font-size: clamp(1.4rem, 3.2vw, 2.1rem);
+    font-style: italic;
+    margin: 0;
+    line-height: 1.35;
+  }
+  /* Buried oddities — small, findable */
+  .oddities { position: relative; min-height: 280px; }
+  .qr {
+    width: 92px; height: 92px;
+    background:
+      linear-gradient(#111 25%, transparent 25%) 0 0 / 12px 12px,
+      linear-gradient(90deg, #111 25%, transparent 25%) 0 0 / 12px 12px,
+      #f4efe0;
+    border: 6px solid #111;
+    position: absolute; left: 0; top: 1rem;
+    cursor: help;
+  }
+  .qr:hover + .qr-hint, .qr:focus + .qr-hint { opacity: 1; }
+  .qr-hint {
+    position: absolute; left: 110px; top: 1.2rem;
+    opacity: 0; transition: opacity .3s;
+    font-size: .85rem; max-width: 16rem;
+    background: #fff; padding: .5rem .6rem; border: 1px solid #111;
+  }
+  .stamp-grey {
+    position: absolute; right: 8%; top: 2rem;
+    width: 110px; height: 110px;
+    border: 5px solid #8a8680;
+    border-radius: 50%;
+    color: #8a8680;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: rotate(18deg);
+    background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(80,80,80,.12) 4px, rgba(80,80,80,.12) 6px);
+    filter: contrast(.7) brightness(.85);
+  }
+  .drunk {
+    margin: 8rem 0 0 18%;
+    max-width: 28rem;
+    font-size: 1.05rem;
+    transform: rotate(-2.5deg);
+    color: #4a3020;
+    border-left: 4px solid #8b1e1e;
+    padding-left: .8rem;
+  }
+  .funeral {
+    margin: 2rem 0 0;
+    background: #2a2a2a;
+    color: #c8c8c8;
+    padding: 1rem 1.2rem;
+    font-family: ui-monospace, "Courier New", monospace;
+    font-size: .85rem;
+  }
+  .unborn {
+    margin-top: 1.2rem;
+    border: 2px dashed #9a9a9a;
+    min-height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    color: #8a8a8a;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    font-size: .78rem;
+    background: repeating-linear-gradient(90deg, #ece8e0, #ece8e0 20px, #e4e0d8 20px, #e4e0d8 40px);
+  }
+  footer {
+    text-align: center;
+    font-size: .75rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #6a5a40;
+    padding: 2rem 8vw 4rem;
+    position: relative; z-index: 1;
+  }
+  .whisper { font-size: .88rem; color: #5a4e3c; }
+</style>
+</head>
+<body>
+<div class="tide" aria-hidden="true"></div>
+<header class="customs">
+  <div class="port-mark">Port of Sight · Customs House</div>
+  <h1>Two dated lists in the mail</h1>
+  <p>A keepsake of a BMAD brainstorm, 14 September 2026. Not a report. A waybill for work that already lives in rooms other humans may not enter.</p>
+</header>
+<nav class="waybills" aria-label="Beats">
+  <a href="#hmw">How Might We</a>
+  <a href="#locks">Locks</a>
+  <a href="#reverse">Reversal</a>
+  <a href="#morph">Manifest</a>
+  <a href="#one">One Feature</a>
+  <a href="#alien">Alien / Swarm</a>
+  <a href="#cross">Scenario Cross</a>
+  <a href="#corridor">Corridor</a>
+  <a href="#rituals">Rituals</a>
+  <a href="#egg">Egg / Larva</a>
+  <a href="#moscow">MoSCoW</a>
+  <a href="#climax">The sentence</a>
+</nav>
+<main>
+  <section id="hmw">
+    <h2>The kept question</h2>
+    <blockquote class="hmw">
+      How might the internal agile team see every piece of work that already lives on internal Jira, the internal GitHub Project, and the external vendor GitHub Project, without anyone needing access to a board they are forbidden to open?
+      <cite>Kept. Visibility only. We = the internal agile team, all roles at once.</cite>
+    </blockquote>
+    <p class="whisper">This week's pain is see everything — not connect, not analytics. Same work can sit in Jira quarterly planning, on the vendor board, and on the internal board used to test vendor solutions. Postgres is not a choice; it is a constraint.</p>
+    <div class="sparks" style="margin-top:1.2rem">
+      <div class="ticket">Kanban lead: a quarterly epic and the vendor card it became, without two logins.</div>
+      <div class="ticket">Testers: the vendor shipped before anyone opens a GitHub issue to test it.</div>
+      <div class="ticket">BMAD stories as first-class cards the team already knows how to drag.</div>
+      <div class="ticket">One identity surviving three boards — not three copies that look related.</div>
+      <div class="ticket">See work that exists only on a board they are forbidden to open.</div>
+      <div class="ticket">Hide nothing that is ours; show only a shadow of what is theirs.</div>
+      <div class="ticket">Occluded is a card type: count it, do not invent its fields.</div>
+      <div class="ticket">The honest product: see everything we are allowed to see; vendor-private stays a hole with a named reason.</div>
+    </div>
+  </section>
+
+  <section id="locks">
+    <h2>User locks — the doors that stay shut</h2>
+    <div class="locks">
+      <div class="lock"><strong>Internal Jira</strong><span>Kanban + quarterly. Forced. We live here.</span></div>
+      <div class="lock"><strong>Internal GH</strong><span>Our issues. The fridge the team already opens.</span></div>
+      <div class="lock"><strong>External GH</strong><span>Vendor issues we are allowed to share. Not their temple.</span></div>
+      <div class="lock"><strong>Postgres app</strong><span>The join store we must use. Glass collapses here unless they refuse it at standup.</span></div>
+      <div class="lock extract"><strong>Extract both ways</strong><span>They mail a list; we mail a list. Air-gap is no live login, not no data.</span></div>
+      <div class="lock nologin"><strong>No live login</strong><span>We do not sit in their UI. They do not sit in ours. A PAT is an incident.</span></div>
+    </div>
+  </section>
+
+  <section id="reverse">
+    <h2>Assumption Reversal — the plank split</h2>
+    <div class="reversals">
+      <div class="rev"><div class="was">We must see the vendor private project.</div><div class="arrow">→</div><div class="flip">We never see it. Seeing means the packet they are contracted to emit — or the extract they mail.</div></div>
+      <div class="rev"><div class="was">Postgres is the hub UI.</div><div class="arrow">→</div><div class="flip">Postgres is the join store. The glass may be the app — because we are forced to use it — or a query emailed when they refuse the screen.</div></div>
+      <div class="rev"><div class="was">One system of record. Sync like Epic 8, both ways.</div><div class="arrow">→</div><div class="flip">Four systems of record, one system of sight. Visibility inbound-only. Writes stay on the board that owns the action.</div></div>
+      <div class="rev"><div class="was">The same work is one ticket cloned three times.</div><div class="arrow">→</div><div class="flip">Three tickets that share a passport. Never a clone. Identity is a UUID we mint; keys and issue numbers are nicknames that collide.</div></div>
+      <div class="rev"><div class="was">We cannot know vendor status because we cannot access their private project.</div><div class="arrow">→</div><div class="flip">Access is not the only sensor. Extract, webhook they send, email, meeting, invoice. The corridor is legal window, not a seat.</div></div>
+    </div>
+    <p class="whisper">Rebuilds that survived the flip: Passport Desk (mint, stamp, render occluded). Vendor Radio (listen only). A hole-honest dashboard — three green panes and one grey stamp.</p>
+  </section>
+
+  <section id="morph">
+    <h2>Morphological analysis — cargo parameters</h2>
+    <table class="morph">
+      <thead>
+        <tr>
+          <th>Glass</th><th>Identity</th><th>Write-back</th><th>Vendor sensor</th><th>Honesty</th><th>Cadence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Internal GH · Jira · Postgres app · digest · Herald · none</td>
+          <td>Minted UUID · Jira key · GH issue · BMAD id · SKU · title-match (refused)</td>
+          <td>None · status to acting board · bidirectional · ledger only</td>
+          <td>External GH · webhook · file drop · clerk · none · steward (blocked on private)</td>
+          <td>Hide holes · occluded · percentage-seen · two-pane</td>
+          <td>Webhook · hourly · daily · sprint · quarterly</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="combo">combo that smells like v1:
+glass=Postgres app + identity=UUID + write-back=none
+vendor=file drop / extract + honesty=occluded + cadence=the drop
+BMAD + fridge = larva, not egg</div>
+  </section>
+
+  <section id="one">
+    <h2>One Feature Only</h2>
+    <div class="onefeat">
+      <div class="seal">If you cannot<br>mint a<br>passport<br>there is<br>no product</div>
+      <ul>
+        <li>The occluded card — a truthful hole</li>
+        <li>Vendor packet inbox</li>
+        <li>Same-work linker: three URLs, human paste</li>
+        <li>Ready-to-test shelf from extract shipped</li>
+        <li>Daily legal-see email</li>
+        <li>SELECT * FROM work_passport</li>
+        <li>Refuse Epic 8 across the air-gap</li>
+        <li>File-only loader; no PAT theatre</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="alien">
+    <h2>Alien anthropologist &amp; swarm logic</h2>
+    <div class="two-species">
+      <article class="alien">
+        <h3>Field notes from the visitor</h3>
+        <p>Why keep work in rooms the others are forbidden to enter, then ask a third room to remember all the rooms?</p>
+        <p>They already have a shared External GitHub Project and still mourn a private one they cannot open. The grief is the requirement.</p>
+        <p>“See everything” means see the ritual, not the workshop. The private repo is a temple. The packet is the offering.</p>
+        <p>BMAD stories live in a git folder and they want them on a Project — they are photocopying a ledger onto a fridge magnet.</p>
+        <p>The product is a customs house at the wall, not a window into the temple.</p>
+      </article>
+      <article class="swarm">
+        <h3>Rules the swarm will not break</h3>
+        <ul>
+          <li>A tracker writes stamps only about itself.</li>
+          <li>If you cannot read a board, emit occluded — never invent a stamp.</li>
+          <li>A human may mint by pasting two URLs; the swarm does not guess a third.</li>
+          <li>Collectors for live boards we own; loaders for extracts we do not; no collector for their private GH.</li>
+          <li>Ready-to-test and stale are derived bits. Analytics never write trackers.</li>
+          <li>Epic 8 only when both endpoints sit on the allowed-pair list.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section id="cross">
+    <h2>Scenario Cross — packet × glass</h2>
+    <div class="cross">
+      <div class="cell"><em>Packet + Jira glass</em> Gadgets and steward inbound. Internal GH is BMAD satellite. Postgres joins quietly.</div>
+      <div class="cell"><em>Packet + GH glass</em> Fridge. Jira quarterly-only. BMAD projects onto GH. Vendor column from the packet.</div>
+      <div class="cell"><em>No packet + Jira glass</em> Occluded vendor column is permanent. Clerk and minutes are the sensor. Do not promise vendor status.</div>
+      <div class="cell"><em>No packet + GH glass</em> Same hole. Fridge still works for us and BMAD. Vendor book is a count of occluded plus External GH if they use it.</div>
+    </div>
+    <div class="wins-all">
+      Moves that win in all four: mint passports for <em>our</em> work now; vendor is an optional stamp; never block v1 on their private project. Allowed-pair default deny. Occluded ships on day one. UUID in Postgres; every glass is a projection.
+    </div>
+  </section>
+
+  <section id="corridor">
+    <h2>The extract corridor — two dated lists</h2>
+    <p>Click an envelope. The air-gap is a pair of drop zones. Both land in Postgres. Neither is a live board login.</p>
+    <div class="mail">
+      <article class="envelope" id="env-in" tabindex="0" role="button">
+        <div class="flap"></div>
+        <div class="postmark">INBOUND<br>WAYBILL</div>
+        <h3>Vendor → us</h3>
+        <p class="date-line" id="asof-in">as of — last successful extract</p>
+        <p hidden class="letter">We see whatever they chose to emit, on the cadence of the drop. Their private issue numbers may arrive as nicknames; those URLs stay unclickable. Occluded shrinks to missing fields, or a late drop — not “their whole book is invisible.” Idempotent: re-dropping last week does not mint twins.</p>
+      </article>
+      <article class="envelope" id="env-out" tabindex="0" role="button">
+        <div class="flap"></div>
+        <div class="postmark">OUTBOUND<br>SLICE</div>
+        <h3>Us → vendor</h3>
+        <p class="date-line">may-leave only · signed slice · they load it</p>
+        <p hidden class="letter">Testers’ findings and shared book items. Never the full Jira Kanban. Never secrets. Never factory BMAD unless marked vendor-shared. We do not push with our credentials. Postage due: outbound without may-leave is refused at the door.</p>
+      </article>
+    </div>
+    <p class="whisper">See-everything, restated after the corridor: our live Jira + our live Internal GH + last successful vendor extract + last outbound we sent them. Page title is the timestamp. High tide is inbound; between tides the beach shows stranded as-of, not empty ocean.</p>
+  </section>
+
+  <section id="rituals">
+    <h2>Rituals of the house</h2>
+    <div class="rituals">
+      <article class="night">
+        <h3>Drop Night</h3>
+        <p>Vendor sends the file. A named receiver stamps the waybill. Standup the next morning cites the waybill — not “any updates from the vendor.” Testers only pull shipped after Drop Night. Hunting private GH is taboo.</p>
+      </article>
+      <article class="hour">
+        <h3>Quarantine Hour</h3>
+        <p>Twice weekly the lead links or rejects unlinked inbound rows. No auto. No title-match. Holding pen, not a merge.</p>
+      </article>
+      <article class="bless">
+        <h3>Outbound Blessing</h3>
+        <p>A reviewer signs the slice name before the file may leave. Unsigned file does not render. Reviewer on PTO: testers keep last signed slice.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="egg">
+    <h2>Metamorphosis</h2>
+    <div class="meta">
+      <article class="egg">
+        <h3>Egg</h3>
+        <p>Table in the existing Postgres app. CSV in, CSV out. As-of times. Standup view. Shipped view. No write to any tracker. Do not skip the egg. Adult BI with no trusted inbound drop is a costume.</p>
+      </article>
+      <article class="larva">
+        <h3>Larva</h3>
+        <p>Live collectors for Jira and Internal GH we already own. Still extract-only for vendor. Internal GH fridge. BMAD projection (cards say <em>projected</em>; ledger remains source). Vendor column is a view, not a clone of the temple.</p>
+      </article>
+    </div>
+    <p class="whisper">Named winner if forced today: egg table + two views. Fridge and BMAD wait in the next instar. $0 already proves the corridor is a social contract and a table, not a platform buy.</p>
+  </section>
+
+  <section id="moscow">
+    <h2>MoSCoW — convergence 14 September 2026</h2>
+    <div class="moscow">
+      <article class="must">
+        <h3>Must</h3>
+        <p>Inbound and outbound extract. Frozen tiny schema. Passport UUID. As-of and waybill. Column allowlist. Outbound slice and signer. File-only loader. No PAT into vendor org. Join-store — not a fourth Kanban.</p>
+      </article>
+      <article class="should">
+        <h3>Should</h3>
+        <p>Standup and shipped views. Quarantine, no auto-link. vendor_id and batch sha. Empty file equals fail.</p>
+      </article>
+      <article class="could">
+        <h3>Could</h3>
+        <p>Internal GH fridge. BMAD projection, vendor-shared only. Epic 8 inside our walls. Herald weekly book. Inventory on extract history.</p>
+      </article>
+      <article class="wont">
+        <h3>Won't</h3>
+        <p>PAT into the vendor org. Title-match as identity. A fourth Kanban in the app. Live sync to their private GitHub. Fabricate rows so the pane looks complete. Treat extract as live. Dump the whole Jira outbound. Unito, Exalate, a GitHub App on their side, a borrowed laptop.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="climax" class="climax">
+    <p>“Lists in the mail, dated, in the database we already have.”</p>
+  </section>
+
+  <section class="oddities" aria-label="Buried in the ledger">
+    <div class="qr" tabindex="0" title="Work passport"></div>
+    <p class="qr-hint">Laminated work passport: QR to UUID, four colored stamps. Grey means occluded. The product is the UUID and the legend — not a new tracker.</p>
+    <div class="stamp-grey">Occluded<br>vendor<br>private<br>not connected</div>
+    <p class="drunk">Drunk truth, kept as the Dream one-liner: you cannot look at their board so they mail you a list and you mail a list back and you pretend that is seeing everything. The database is where the lists sit so you stop losing them in email. Jira and your GitHub are still the real work; the vendor list is a photocopy with a date on it. If you give a robot their GitHub keys you deserve the incident. BMAD on a Project board is a fridge magnet so humans remember the factory is moving.</p>
+    <div class="funeral">EMPTY-FILE FUNERAL — a failed drop is announced. Yesterday remains on the wall. An empty file sent to look on-time is a failed drop, not a green pane.</div>
+    <div class="unborn">Vendor pane · unborn · no first waybill yet</div>
+  </section>
+
+  <section>
+    <h2>Jobs at the desk</h2>
+    <p>When I stand up, help me say what is waiting on the vendor without opening their GitHub. When I test, only what their last extract marked shipped. When I finish, a finding in an extract they can load. When security reviews a PAT, show there is no credential that opens their org. When the drop is late, yesterday’s book as stale, not empty. When two extracts disagree, the conflict — not latest-wins.</p>
+    <p class="whisper">Epic 8 and github_metrics dlt stay adapters inside the walls. This Dream is a sibling, not a reopen of jira-github-projects-sync. Stewards of the factory: adapters, not the spine.</p>
+  </section>
+</main>
+<footer>
+  Customs House keepsake · brainstorm-bmad-story-board-unity · 2026-09-14 · English · no live login
+</footer>
+<script>
+(function () {
+  function openEnv(el) {
+    el.classList.toggle("open");
+    var letter = el.querySelector(".letter");
+    if (letter) letter.hidden = !el.classList.contains("open");
+  }
+  ["env-in", "env-out"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("click", function () { openEnv(el); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEnv(el); }
+    });
+  });
+  var asof = document.getElementById("asof-in");
+  if (asof) {
+    asof.textContent = "as of waybill — drop time is the product, not 'now'";
+  }
+})();
+</script>
+</body>
+</html>
