@@ -1,5 +1,8 @@
 # Fleet readiness — 2026-08-08
 
+> **Archived 2026-09-14** from `_bmad-output/FLEET-READINESS-2026-08-08.md`. Dated
+> snapshot; live board is `pixi run -e local-recipes fleet-picture`.
+
 **SUPERSEDED (2026-08-15) — a dated snapshot, kept as historical record; do not read its
 table or its methodology section as current.** Fact-checked against live state:
 
@@ -15,7 +18,7 @@ table or its methodology section as current.** Fact-checked against live state:
   week**: the alias was normalized in the DATA (not the parser) on 2026-08-08 — 38 headings,
   32 ledger keys, 64 Tier-3 feed keys, 32 story-spec filenames, 32 board ids all moved to
   canonical form in lockstep, verified byte-identical detector output before/after. Full
-  account in `EXEMPLAR-STANDARD.md` § INV-5. `epics.md` now reads fully canonical
+  account in `_bmad-output/EXEMPLAR-STANDARD.md` § INV-5. `epics.md` now reads fully canonical
   `### Story 1.1:`-style headings throughout — checked directly.
 - **The "7 standing practices" list is mostly resolved**: of the 7 Dreams this doc frames as
   "tended, never finished," 6 now carry a terminal `status:` (`archived` or `realized`) —

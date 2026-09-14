@@ -176,4 +176,17 @@ scoped in its first finding.
   All six capabilities in `spec-general-docs-consistency/SPEC.md` are done;
   the Spec and this Dream both close as `shipped`/`realized`. Status:
   `specified` → `realized`.
+- **2026-09-14 (residue — leftover shelf)** — Epic 22 shipped the map
+  (`docs/MAP.md`), the four quadrants, the identity detector, and entry-point
+  pointers. A live shelf sweep the same day (operator + pass-2 fold analysis)
+  found the **leftover class** that campaign's own Non-goals left on the
+  table: dated `_bmad-output/` notes, intake dumps with no disposition
+  frontmatter, three `workflow` files still living in legacy `docs/specs/`,
+  marshal brownfield binders that tell humans and agents to read different
+  pages, and air-gap / getting-started facts still copied in three places.
+  That residue is **not a reopen of CAP-1..6**. It is the next campaign, seeded
+  as [[docs-shelf-alignment]] (`docs/dreams/docs-shelf-alignment.md`, Spec
+  `spec-docs-shelf-alignment`, `draft`). This Dream stays `realized` — the
+  first campaign ran. The sibling owns fold, sunset-by-status, dual-audience
+  indexes, and the repeatable check that the shelf does not grow back.
 

@@ -122,6 +122,10 @@ Epic 5 applied §6 to one artifact. An ownership audit found the clause violated
 Decomposes `spec-backlog-intake-check`, split from spec-deferred-work-resolution-sweep's former CAP-8 once Epic 11 shipped cleanly as its own self-contained pipeline. A tracked deferred-work entry naming an epic/story in its `owner:`/prose is surfaced as a candidate acceptance criterion when that epic/story is drafted, instead of staying inert prose only a human happens to notice by re-reading the ledger.
 **CAP covered:** spec-backlog-intake-check CAP-1
 
+### Epic 23: Leftover docs fold into Diátaxis (added 2026-09-14)
+Decomposes `spec-docs-shelf-alignment` CAP-1..7. Residue of shipped Epic 22: indexes, fold cluster, sunset `docs/specs/` by status, intake route, archive citations, publish-root MAP rule, new leftover-shelf Doctor source.
+**CAP covered:** spec-docs-shelf-alignment CAP-1..7
+
 ---
 
 ## Epic 1: Pre-flight Check (walking skeleton)
@@ -1832,6 +1836,106 @@ into the reorganized structure is broken
 discipline Story 22.2 already applies, now applied to the new structure
 **Status:** done
 
+## Epic 23: Leftover docs fold into Diátaxis (spec-docs-shelf-alignment CAP-1..7)
+
+Minted 2026-09-14 from `spec-docs-shelf-alignment` (owner Dream
+`docs/dreams/docs-shelf-alignment.md`, `ready`). Residue of realized
+[[general-docs-consistency]] / shipped Epic 22 — not a reopen. Five design
+questions settled the same day: workflow stubs, brownfield extract-then-stub,
+a new Doctor source, this epic (not steward), no empty `vizro/` directory.
+
+### Story 23.1: Entry points are indexes; one owner per fact
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-docs-shelf-alignment CAP-1
+**Surface:** `docs/MAP.md`, `README.md`, `CLAUDE.md`, `AGENTS.md`.
+**Given** operational procedures are still restated in entry-point files after Epic 22
+**When** each duplicated procedure becomes a pointer into `docs/`
+**Then** no operational procedure is copied verbatim across an entry point and a
+quadrant file without one side being a pointer
+**And** SKILL.md files keep wielding notes that name CLI grammar only
+**Status:** backlog
+
+### Story 23.2: Fold the getting-started and air-gap cluster; stub the binders
+
+**Type:** feature • **Effort:** M • **Deps:** S-23.1 • **FR/AD:** spec-docs-shelf-alignment CAP-2
+**Surface:** `docs/tutorials/getting-started.md`, `docs/how-to/`,
+`docs/explanation/enterprise-deployment.md`, marshal
+`planning-artifacts/development-guide.md` and `deployment-guide.md`,
+`src/shared/packages/pyforge-marshal/docs/`, `docs/reference/` redirect stubs.
+**Given** air-gap and getting-started facts live in three or more places and the
+brownfield binders tell humans and agents to read different pages
+**When** unique operational steps are extracted into the existing Diátaxis files
+and the binders become stubs pointing at `docs/` plus `SYNC-RUNBOOK.md`
+**Then** there is one tutorial path, one air-gap how-to, and one air-gap explanation
+**And** `docs/reference/` redirect stubs are deleted after the pointer sweep
+**And** the planning tree still exists — `epics.md` is not moved
+**Status:** backlog
+
+### Story 23.3: Sunset docs/specs/ by frontmatter status
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-docs-shelf-alignment CAP-3
+**Surface:** `docs/specs/`, `docs/how-to/`, `archive/docs/specs/`, `CLAUDE.md`,
+`scripts/bmad_drift_check.py` (`--specs` remains a glob of `docs/specs/*.md`).
+**Given** 19 legacy intake specs still live in `docs/specs/` with YAML `status:`
+**When** `shipped` and `superseded` files move to `archive/docs/specs/`,
+`in-progress` files stay, and each `workflow` body moves to `docs/how-to/`
+with a stub left at `docs/specs/<name>.md` (`status: workflow` + pointer)
+**Then** no shipped/superseded Tier-1 spec remains the live home
+**And** `python scripts/bmad_drift_check.py --specs` still lists the three
+workflow stubs and CLAUDE.md still indexes those filenames
+**Status:** backlog
+
+### Story 23.4: Empty the intake inbox per its own README
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-docs-shelf-alignment CAP-4
+**Surface:** `docs/intake/`, `archive/docs/intake/`, owning Dream companions.
+**Given** intake dumps have no per-file disposition and several already have a
+specified or pitched Dream
+**When** each folder is routed per `docs/intake/README.md` and `gists/INDEX.md`
+**Then** nothing a specified/realized/archived Dream already absorbed remains
+in intake
+**And** no gist dump gains Dream YAML
+**Status:** backlog
+
+### Story 23.5: Archive citations for the five already-moved _bmad-output/ files
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-docs-shelf-alignment CAP-5
+**Surface:** `docs/intake/README.md`, station `planning-artifacts/specs/README.md`
+files that still cite `_bmad-output/DREAM-TRIAGE-2026-08-08.md` and siblings.
+**Given** five files already live under `archive/_bmad-output/` and inbound
+citations still use the old root path
+**When** those citations are rewritten
+**Then** no live doc cites the old `_bmad-output/` root path for those five files
+**Status:** backlog
+
+### Story 23.6: MAP names publish roots; do not mint an empty vizro/ tree
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-docs-shelf-alignment CAP-6
+**Surface:** `docs/MAP.md`, `docs/dashboard/README.md`.
+**Given** `docs/dashboard/kedro-viz/` is a generated Pages upload root and Vizro
+is a different product
+**When** MAP and the dashboard README state one subfolder per board
+**Then** kedro-viz is not renamed
+**And** `docs/dashboard/vizro/` does not exist unless a later publish story
+created it
+**Status:** backlog
+
+### Story 23.7: A new Doctor source flags leftover-shelf occupancy
+
+**Type:** feature • **Effort:** M • **Deps:** S-23.6 (needs the MAP exception list)
+• **FR/AD:** spec-docs-shelf-alignment CAP-7
+**Surface:** a new `pyforge.doctor.sources` module (not
+`general_docs_consistency.py`), pixi task, unit fixtures.
+**Given** `general_docs_consistency` is identity-only (README vs skill-brief vs
+AGENTS vs Dream) with frozen 22.3 fixtures
+**When** a new warn-only, fail-open source compares leftover-shelf paths to the
+MAP allow-list
+**Then** re-adding a dated campaign note at `_bmad-output/` root, or a second
+air-gap how-to outside the cluster, is a finding with a quoted path
+**And** a clean MAP fixture is silent
+**And** the finding is never a second PR gate
+**Status:** backlog
+
 ## Currency validation — 2026-09-14
 
 Chain-currency sweep cascade (`arch→epics` edge, fired by the spine's 2026-09-14
@@ -1863,3 +1967,10 @@ moving to 2026-09-12 and its memlog to 2026-09-14):
      steward's Epic 57 were both minted retroactively for exactly this reason).
 - No epic or story content above was restructured; this note and the frontmatter
   `updated:`/`currency_review:` bumps are the whole edit.
+
+## Epic 23 mint — 2026-09-14 (later, same day)
+
+`spec-docs-shelf-alignment` reached `ready`; Stories 23.1–23.7 and `## Epic 23`
+appended above. Ledger keys minted via `sprint_plan.py generate` +
+`sprint-ledger-sync -- --project pyforge-doctor`. Prior 95/95 / 22/22 figure
+is superseded by this mint.

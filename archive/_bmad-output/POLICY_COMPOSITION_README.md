@@ -1,5 +1,9 @@
 # Policy Composition Chain (as of 2026-08-01)
 
+> **Archived 2026-09-14** from `_bmad-output/POLICY_COMPOSITION_README.md`. The live
+> layer-2 file is still `_bmad-output/policy-defaults.toml`; composition lives in
+> `pyforge.marshal.core.policy`.
+
 **Refreshed 2026-08-15** — Story 1.10's wiring shipped (§ *Story 1.10 Wiring* below is now a
 historical plan, not a to-do: `core/policy.compose()` already takes `repo_defaults`, wired
 from `adapters/harness_bmadloop.py`, not `cli/config.py` as originally planned — verified
