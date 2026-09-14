@@ -1,7 +1,17 @@
 ---
 status: shipped
-spec_updated: 2026-09-03
+spec_updated: 2026-09-14
+superseded_by: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
 ---
+
+> **Superseded 2026-09-14 (operator ruling).** This legacy Tier-1 intake spec is the
+> historical record of the submission era. The authoritative contract is the BMAD Spec named
+> in `superseded_by:` above. Note that the question which prompted this stamp assumed the file
+> still read `status: in-progress`; it did not — it was corrected to `shipped` on 2026-09-03,
+> so only the `superseded_by:` pointer was actually missing. The Goals prose below is kept
+> **as written** rather than trimmed: § *Release buckets* already records the D12 (2026-07-16)
+> move of the former v1.1 content into v1, so the text is dated rather than wrong, and
+> historical prose keeps its original wording.
 # Tech Spec: `pyforge.warden` (**Warden**) — Python dependency **compliance gate** (multi-axis)
 
 > **Naming (recorded here as source of truth).** **Warden** = the product /

@@ -603,9 +603,15 @@ writer per contract, no dual homes — applied to the organization itself.
 *(Amended 2026-09-13 — steward Story 53.1 / `spec-intelligence-hub` CAP-1.
 Working table: `spec-intelligence-hub/vocabulary-map.md`.)*
 
-The whitepaper names Frames · Cogs · Ops · Guards · Gates · Tracks ·
-Organizational Memory. Those words **map onto** this Lexicon; they **do not
-join** it (Charter CAP-4). An external vocabulary is cross-walked and never
+The whitepaper names **six** shared abstractions — Frames · Cogs · Ops ·
+Guards · Gates · Tracks — and tiers **Organizational Memory** separately, as
+Layer-1 infrastructure rather than a seventh peer. *(Corrected 2026-09-14: this
+paragraph, `spec-intelligence-hub/SPEC.md` and `vocabulary-map.md` had all
+folded Organizational Memory into the list and called them seven. The
+cross-walk table below still carries its row — the mapping is right, only the
+count and the tiering were wrong — and none of this section's substantive
+rulings depend on the enumeration.)* Those words **map onto** this Lexicon;
+they **do not join** it (Charter CAP-4). An external vocabulary is cross-walked and never
 enters the seven.
 
 | Hub term | Nearest Lexicon / estate surface |
@@ -758,6 +764,20 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment, correction)** — **the Hub has SIX shared abstractions, not seven.**
+  § The Lexicon's cross-walk preamble folded **Organizational Memory** into the list; upstream
+  tiers it as Layer-1 infrastructure, beneath the six rather than beside them. Corrected here as
+  an amendment rather than an edit because the enumeration is Tier-0 text. The cross-walk table
+  keeps its Organizational Memory row — the *mapping* was always right, and Scribe does relay it;
+  only the count and the tiering were wrong. **No substantive ruling moves**: CAP-4's
+  cross-walk-never-join, the Cogs/Smith collision, and the reverse walk (Charter · Guild ·
+  Stations have no Hub counterpart) are all independent of how many abstractions upstream
+  publishes. Two downstream artifacts inherited the same error and are corrected in the same pass:
+  `spec-intelligence-hub/SPEC.md` and its `vocabulary-map.md`. Found by the 2026-09-14 three-source
+  reconciliation, which read the whitepaper directly rather than trusting our own restatement of
+  it — the failure mode being that the count had been copied forward three times without anyone
+  re-reading the source. Closes `DW-VOCAB-2026-09-14-1`.
 
 - **2026-09-14 (amendment, scope ruling)** — **§6's Marshal-conformance bullet is read BROADLY**
   (operator ruling). Its prohibition — *"the Marshal may not weaken, re-threshold or disable a

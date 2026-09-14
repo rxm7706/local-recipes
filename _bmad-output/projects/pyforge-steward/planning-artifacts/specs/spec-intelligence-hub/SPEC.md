@@ -45,7 +45,8 @@ open_questions: []
 The whitepaper *The Distributed AI Economy* (Oliphant, August 2026, Rev 9) argues an
 organisation should own its intelligence — context, AI workers, workflows, the checks on their
 work and the evidence they leave, inside a perimeter it governs, built from shared abstractions
-(Frames, Cogs, Ops, Guards, Gates, Tracks, Organizational Memory). PyForge is already such a hub
+(Frames, Cogs, Ops, Guards, Gates, Tracks — six; Organizational Memory is tiered
+separately by the paper as Layer-1 infrastructure, not a seventh peer. Corrected 2026-09-14). PyForge is already such a hub
 in miniature: an owned factory on pixi + conda-forge, context in tracked files, workers as
 station skills, workflows as bmad-loop runs, checks as detectors + Warden, evidence in ledgers.
 It speaks that vocabulary by accident. This Spec exists to decide which of the paper's shapes
@@ -64,9 +65,12 @@ cross-walk is free. Reading 3 (NIC as substrate) is an **adopt-anytime later-cap
 CAP-5 stays the mason lane — do not mint mason stories on the steward Hub epic.*
 
 - **CAP-1 — Vocabulary alignment only.**
-  - **intent:** the Charter's Lexicon and the station roster map once to Frames / Cogs / Ops /
-    Guards / Gates / Tracks / Organizational Memory, recorded in `pyforge-charter.md` or the
-    Unifying Strategy — the cheapest realisation; no code.
+  - **intent:** the Charter's Lexicon and the station roster map once to the paper's six shared
+    abstractions — Frames / Cogs / Ops / Guards / Gates / Tracks — plus Organizational Memory,
+    which the paper tiers as Layer-1 infrastructure rather than a sixth peer and which is mapped
+    here anyway because Scribe really does relay it. Recorded in `pyforge-charter.md` or the
+    Unifying Strategy — the cheapest realisation; no code. *(Count corrected 2026-09-14; the
+    mapping itself never changed.)*
   - **success:** every row of `vocabulary-map.md` names its Charter term and its gap, and the
     rented-model / owned-context tension is stated in the recording document.
 - **CAP-2 — Frames as first-class** *(gate lifted 2026-09-06 — RB-1: Frame Spec v0.2.0 is

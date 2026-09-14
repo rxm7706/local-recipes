@@ -838,7 +838,7 @@ contract chooses among the candidates above before any code.
 
 - **Owner.** Seeded under `steward` because the Hub is the estate and Steward already owns the
   Unifying Strategy, eval-quality and the channel product. Marshal (Ops, Gates) and Scribe (Frames,
-  memory) are the plausible alternatives; owning is the post, not the product.
+  memory) are the plausible alternatives; owning is becoming at the planning tier, but the planning home is not the package name.
 - Is the **Frame protocol** published yet, and where? **Answered 2026-09-06 (RB-1): yes** — Frame
   Spec v0.2.0, released 2026-08-18 at `openteams-ai/frame-spec` (single-file Markdown + YAML
   frontmatter; registries, identity and provenance out of scope; no git tag, no LICENSE file);
