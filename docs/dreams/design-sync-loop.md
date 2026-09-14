@@ -5,7 +5,7 @@ owner: herald
 status: specified   # 2026-09-14 — seeded, answered and specified the same afternoon: the operator's
                     # four requirements (verbatim under § The Dream), the four open questions ruled
                     # the same hour, and spec-design-sync-loop derived `ready` by bmad-spec (CAP-1..8,
-                    # open_questions []). Herald Epic 23 carries the eight stories. Every fact under
+                    # open_questions []). Herald Epic 23 carries six stories (re-scoped). Every fact under
                     # § What is real was measured on main at 168bbedb13.
 ---
 
@@ -140,6 +140,15 @@ it twice in a row is a no-op.
 
 ## Realization log
 
+- **2026-09-14 (evening)** — **Re-scoped after the operator's duplicate-functionality review.** Read
+  against the kernel code, four of Epic 23's eight stories re-described shipped verbs or Epic 21
+  stories: `herald deck pull` *is* Design-wins (etag short-circuit, else Design's bytes overwrite
+  local), `deck watch` is its continuous form, `deck push` already pushes the poster changed-only,
+  and `deck-facts --refresh` over every surface is Story 21.3. 23.3 and 23.4 folded (reserved holes),
+  23.5 narrowed to the `.potx` path + stamps, 23.6 to the binary PPTX push + read-back proof; the
+  Spec's CAP-3..6 re-derived as deltas; 21.10's "`agentic-sdlc` stays unlinked by design" superseded
+  by the scope ruling. Six stories remain. Dispatch order: 21.1 → 21.2 → 21.3, then 23.1 ∥ 23.2
+  beside 21.5, then 23.5/23.6/23.7, then 23.8 — whose first run *is* 21.4.
 - **2026-09-14 (later still)** — **Specified.** `bmad-spec` (headless, express) derived
   `spec-design-sync-loop` at `ready` from this file: CAP-1 enumerate + reconcile the account,
   CAP-2 every presentation has a twin (design systems mirrored as libraries), CAP-3 pull with Design
