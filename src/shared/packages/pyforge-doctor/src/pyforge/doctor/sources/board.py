@@ -117,6 +117,16 @@ DEFERRED_SPECS: dict[str, str] = {
         "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
         "describe undone work an epic could pick up today. De-register once the operator "
         "publishes the human/agent/team measure set CAP-1 needs",
+    "spec-coverage-gate-independence":
+        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
+        "INV-1). Its five open questions are DESIGN decisions about where a fleet-wide blocking "
+        "gate may live, and the obvious answers are already ruled out: `pyforge-core` and "
+        "`pyforge-testing-kit` are both governed by marshal's own planning tree (so moving there "
+        "relocates the violation rather than ending it), and doctor cannot host a blocking gate "
+        "because doctor is constitutionally advisory. The question is recursive -- the gate "
+        "judges all eight stations, so any station-owned home reproduces the defect -- which is "
+        "why there is nothing an epic could pick up today. De-register once the operator picks a "
+        "home; the remedy is then mechanical",
     "spec-vocabulary-one-name-one-job":
         "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
         "INV-1). All eleven of its open questions are operator decisions about constitutional "
