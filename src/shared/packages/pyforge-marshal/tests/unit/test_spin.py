@@ -3905,17 +3905,23 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert parsed["gate_mode"] == "none"
     assert len(parsed["verify_commands"]) == 2
     assert len(parsed["landing_rules"]) == 2
-    # 2026-09-12 (dispatch-tier-routing-fails-safe): dev/review reverted
-    # from Cursor's composer-2.5(-fast) to sonnet/opus -- the SAME models
-    # the plain [adapter]/[adapter.review] baseline already uses -- since
-    # Cursor is confirmed permanently dead for headless dispatch and this
-    # fleet's harness_preference (cursor-only) has no bmad-loop
-    # counterpart, so the Cursor model was silently launching under the
-    # claude adapter instead.
+    # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): superseded the
+    # 2026-09-12 sonnet/opus revert this test originally asserted -- every
+    # station's dev/review stages now name the Cursor Ultra ladder as an
+    # explicit {harness, model} inline table (CAP-1), so a Cursor id cannot
+    # land on `claude --model` (CAP-2's fails-safe moved to dispatch_once's
+    # own live harness cross-check, MRS-DISP-043 -- unaffected by this
+    # table shape and still green).
     assert parsed["model_tier_map"] == {
-        "heavy": {"dev": "sonnet", "review": "opus"},
-        "medium": {"dev": "sonnet", "review": "opus"},
-        "easy": {"dev": "sonnet"},
+        "heavy": {
+            "dev": {"harness": "cursor", "model": "composer-2.5-fast"},
+            "review": {"harness": "cursor", "model": "composer-2.5-fast"},
+        },
+        "medium": {
+            "dev": {"harness": "cursor", "model": "grok-4.6"},
+            "review": {"harness": "cursor", "model": "grok-4.6"},
+        },
+        "easy": {"dev": {"harness": "cursor", "model": "composer-2.5"}},
     }
 
     effective, findings = policy_module.compose(
@@ -3925,11 +3931,15 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
 
     rendered_easy = render_policy_toml(effective, difficulty="easy")
     parsed_easy = tomllib.loads(rendered_easy)
-    # The override still applies -- sonnet belongs to the same provider as
-    # the adapter that runs it, so render_policy_toml's provider-mismatch
-    # guard has nothing to filter; this still proves the tier-map mechanism
-    # works end to end, just with a model the adapter can actually use.
-    assert parsed_easy["adapter"]["dev"]["model"] == "sonnet"
+    # 2026-09-13 (Story 33.15): easy.dev now names a Cursor-only model
+    # (composer-2.5) against the claude adapter this render targets, so
+    # render_policy_toml's provider-mismatch guard drops the override
+    # entirely -- no [adapter.dev] sub-table at all, per FR-51's own
+    # "absent stage inherits [adapter].model" rule -- rather than applying
+    # it. This now proves the fails-safe path, not the happy path: dev
+    # falls back to the base adapter's own sonnet baseline.
+    assert "dev" not in parsed_easy["adapter"]
+    assert parsed_easy["adapter"]["model"] == "sonnet"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
 
 

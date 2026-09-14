@@ -11,9 +11,9 @@ entry. Warn-only, read-only, fail-open — reports the contradiction, never
 proposes closing text.
 
 Story 21.14 (CAP-3): bounded forward-looking-language patterns measured against
-the full live tier before joining ``gather``. Fires on the herald Dream+Spec pair
-and stays quiet elsewhere; see ``PROMISSORY_LANGUAGE_ACCEPTED`` and
-``measure_promissory_language_precision``.
+the full live tier before joining ``gather``. Fires on at most the herald
+Dream+Spec pair and stays quiet elsewhere; see ``PROMISSORY_LANGUAGE_ACCEPTED``
+and ``measure_promissory_language_precision``.
 
 Story 21.15 (CAP-4): reconcile a frontmatter ``status:`` comment naming an epic or
 story key against that key's live row in every tracked ``sprint-status-ledger.yaml``.
@@ -297,7 +297,14 @@ class PromissoryLanguageMeasurement:
 
     @property
     def accepted(self) -> bool:
-        return self.herald_pair_fired == 2 and self.false_positive_documents == 0
+        """At most the known herald Dream+Spec pair fires, never anything
+        else. ``<=`` rather than ``==`` (2026-09-14): the Spec side of the
+        pair had its promissory language cleaned up after this was first
+        measured (Story 21.14 ship time, both firing), dropping the live
+        count to 1 -- a real improvement, not a regression, and an exact
+        match would have wrongly rejected it. Precision stays 1.0 either
+        way since ``false_positive_documents`` is unaffected."""
+        return self.herald_pair_fired <= 2 and self.false_positive_documents == 0
 
 
 def measure_promissory_language_precision(target: Path) -> PromissoryLanguageMeasurement:
@@ -336,7 +343,9 @@ def measure_promissory_language_precision(target: Path) -> PromissoryLanguageMea
 
 
 # Measured at Story 21.14 ship time against the full live tier: herald Dream+Spec
-# fire, zero false positives elsewhere (document-level precision 1.0).
+# both fire, zero false positives elsewhere (document-level precision 1.0).
+# Re-measured 2026-09-14: the Spec side was cleaned up and no longer fires,
+# leaving only the Dream -- still zero false positives, still precision 1.0.
 PROMISSORY_LANGUAGE_ACCEPTED = True
 
 

@@ -1221,7 +1221,7 @@ def build_native(
             ["bash", str(script_path), recipe_path],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
-            env=env,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_native", timeout=resolved_timeout) from None
@@ -1304,7 +1304,7 @@ def build_docker(
             [interpreter, str(script_path), config],
             timeout=resolved_timeout,
             stderr_sink=stderr_sink,
-            env=env,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         raise CfeTimeoutError(script="build_docker", timeout=resolved_timeout) from None

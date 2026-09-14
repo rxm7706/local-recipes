@@ -25,6 +25,7 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 **Critical Rule — PR CI gates (ALWAYS-ON, every PR to `rxm7706/local-recipes`):** the inherited staged-recipes linter reds two ways that Claude must pre-empt at PR open/update time (do NOT wait for red CI):
 1. **Any change outside `recipes/`** (docs, `.github/`, `docs/specs/`, `src/`, `prototypes/`, `pixi.toml`, dashboards — anything but `recipes/**`) → **add the `maintenance` label**: `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
 2. **`pixi.toml` changed** → regenerate + commit `environment.yaml`: `pixi project export conda-environment -e build > environment.yaml` (this sync check is UNGATED — the `maintenance` label does not suppress it). Also fix `main` directly whenever a `pixi.toml` dep change lands there.
+3. **`pixi.toml`/`pixi.lock` changed** → also run `pixi run -e local-recipes pyforge-station-tests` locally first: that touches every PyForge station's "shared surface" per `.github/workflows/pyforge-station-tests.yml`, so ALL 8 station suites fire together in CI, not just the one you meant to touch. Found live 2026-09-14: a 5-day GitHub Actions billing outage (see `.claude/memory/` project notes) let ~260 PRs merge with this workflow never actually running; the next `pixi.toml` push afterward surfaced 5 days of accumulated doctor/marshal/mason drift all at once, entirely unrelated to that PR's own diff.
 
 Recipe-only PRs (touching only `recipes/**`) need neither.
 
@@ -43,6 +44,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 **Tests:**
 - CFE skill suite: `pixi run -e local-recipes test-skill` — scope with `--unit` / `--integration` / `--meta`, single test via `--keyword <expr>`; network tests are opt-in (`-m network`).
 - A PyForge station: `pixi run -e pyforge-<station> pyforge-<station>-test` (e.g. `pixi run -e pyforge-warden pyforge-warden-test`).
+- **All 8 PyForge stations** (mirrors `.github/workflows/pyforge-station-tests.yml`'s per-station jobs): `pixi run -e local-recipes pyforge-station-tests`. That workflow runs every station together whenever `pixi.toml`/`pixi.lock`/`pyforge-core`/`pyforge-testing-kit` changes ("shared surface") — easy to miss locally since most PRs touch only one station. Run this before pushing any change to those shared files; covers each station's own `-test` task only, not atlas's Chromium/DuckDB/WASM setup, herald's browser check, or scribe's Postgres+pgvector service (`scribe-pg-up`).
 - Dashboard structural gate: `pixi run -e local-recipes dashboard-dryrun` — builds the Dashboard object offline, but also runs the Playwright e2e/ARIA suite, which launches a real local server (not fully offline despite the gate's name).
 
 **Health / status:**

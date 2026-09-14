@@ -75,7 +75,13 @@ class TestScribeRecallAdapter:
             grounded=True,
             text="Scoped epic context.",
             citation="epics.md:L10",
-            argv=("/usr/bin/scribe", "recall", "Epic 28 planning"),
+            argv=(
+                "/usr/bin/scribe",
+                "recall",
+                "Epic 28 planning",
+                "--mode",
+                "planning",
+            ),
         )
 
     def test_miss_is_ok_but_not_grounded(self, tmp_path):

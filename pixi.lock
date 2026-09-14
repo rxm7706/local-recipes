@@ -8199,6 +8199,7 @@ environments:
       channel-priority: flexible
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/silo-20260903131801.0.0-hb09cbd0_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/liquibase-postgresql-42.7.13-h59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
@@ -8740,6 +8741,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/silo-20260903131801.0.0-h5ce3bf5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2wsgi-1.10.10-pyhcf101f3_1.conda
@@ -18371,6 +18373,12 @@ packages:
   license: AGPL-3.0-only
   size: 28839322
   timestamp: 1789081719248
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/silo-20260903131801.0.0-hb09cbd0_0.conda
+  sha256: e0e772f4f017a09fd69929b4a3988d0232c737470e5187b7a00e995b6bb69807
+  md5: a7cddb9f53ec7f4f1def264aae4ede71
+  license: AGPL-3.0-only
+  size: 28838185
+  timestamp: 1789354866015
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
   sha256: dbbd6fd842ee928283187a7f95ff04eea34a53215703ba5a12f9da1107cbd689
   md5: b5cd1c5e1998b6a6fb4f2dddb8839be0
@@ -18720,6 +18728,12 @@ packages:
   license: Apache-2.0
   size: 65607
   timestamp: 1787691874389
+- conda: https://conda.anaconda.org/SelfExplainML/osx-arm64/silo-20260903131801.0.0-h5ce3bf5_0.conda
+  sha256: 34eaee33e47f666eedc6f8beeac2f5f6b3b6c8de373fa1c41778f2e5a985a5a1
+  md5: d76b7f5d9911d0840f57b43d5a81baac
+  license: AGPL-3.0-only
+  size: 27560596
+  timestamp: 1789355360745
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
   sha256: 1dd3fffd892081df9726d7eb7e0dea6198962ba775bd88842135a4ddb4deb3c9

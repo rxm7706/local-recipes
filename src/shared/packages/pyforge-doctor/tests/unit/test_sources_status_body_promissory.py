@@ -84,9 +84,13 @@ def test_gather_promissory_fires_on_fixture_pair_and_stays_quiet(tmp_path: Path)
 
 
 def test_gather_live_herald_pair_and_zero_false_positives():
+    """Re-measured 2026-09-14 (was herald_pair_fired == 2): the Spec side of
+    the known pair had its promissory language cleaned up since this was
+    first measured, so only the Dream still fires -- a real improvement,
+    still zero false positives, still `accepted`."""
     repo_root = Path(__file__).resolve().parents[6]
     measurement = sbc.measure_promissory_language_precision(repo_root)
-    assert measurement.herald_pair_fired == 2
+    assert measurement.herald_pair_fired == 1
     assert measurement.false_positive_documents == 0
     assert measurement.accepted is True
     assert sbc.PROMISSORY_LANGUAGE_ACCEPTED is True
@@ -96,7 +100,7 @@ def test_gather_live_herald_pair_and_zero_false_positives():
     assert promissory
     fired_paths = {f.evidence["path"] for f in promissory}
     assert "docs/dreams/pyforge-herald.md" in fired_paths
-    assert any(
+    assert not any(
         p.endswith("pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md")
         for p in fired_paths
     )

@@ -113,6 +113,7 @@ spec:
     {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
 
 {{- /* dbgpt: DNS + optional external LLM */}}
+{{- if .Values.sidecar.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -138,6 +139,7 @@ spec:
         - protocol: TCP
           port: 443
     {{- end }}
+{{- end }}
 
 {{- /* liquibase: postgres + DNS only */}}
 ---

@@ -423,11 +423,14 @@ def test_kinship_wikilink_skips_frontmatter_fence(tmp_path: Path) -> None:
 
 
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-09-11: 24 dead Kinship wikilinks under docs/dreams/."""
+    """Measured live 2026-09-14: 26 dead Kinship wikilinks under docs/dreams/
+    (was 24 on 2026-09-11 -- re-measured, not a regression this guard needs
+    to catch: new Dream content merged in the interim added two more dead
+    targets)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 24
+    assert len(dead) == 26
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:

@@ -19,7 +19,9 @@ DEV_FEATURE = "platform-dev"
 IMAGE_FEATURE = "python-agent-platform"
 
 
-def _feature_deps(feature: str, manifest: dict[str, Any] | None = None) -> dict[str, Any]:
+def _feature_deps(
+    feature: str, manifest: dict[str, Any] | None = None
+) -> dict[str, Any]:
     pixi = manifest if manifest is not None else readers.pixi_manifest()
     table = pixi.get("feature", {}).get(feature, {})
     deps = table.get("dependencies", {})
@@ -33,8 +35,7 @@ def _assert_toolbar_on_platform_dev(deps: dict[str, Any]) -> None:
         f"{TOOLBAR} (steward 56.1 / pdl:CAP-1)"
     )
     assert deps.get(TOOLBAR) == TOOLBAR_SPEC, (
-        f"{TOOLBAR} must be pinned {TOOLBAR_SPEC!r} "
-        f"(got {deps.get(TOOLBAR)!r})"
+        f"{TOOLBAR} must be pinned {TOOLBAR_SPEC!r} (got {deps.get(TOOLBAR)!r})"
     )
 
 
