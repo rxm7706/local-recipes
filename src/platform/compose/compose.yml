@@ -59,6 +59,32 @@ services:
       timeout: 5s
       retries: 5
 
+  # config/object_storage.py (Story 50.3, pap:AD-1's 2026-09-10 dated
+  # exception): S3-compatible object storage, consumed only -- production
+  # target is NetApp StorageGRID, ops-provided. Locally that seam is
+  # satisfied by Silo (Story 50.1/50.2's own local-dev backend,
+  # `scripts/platform_object_storage.py`'s pixi-process path; this is the
+  # container-compose equivalent, same credentials so either path is a
+  # drop-in swap for the other). Upstream's official multi-arch image
+  # (linux/amd64 + linux/arm64) -- no custom Containerfile needed. `mc`/
+  # `mcli ready local` is the documented MinIO-family healthcheck and the
+  # only readiness probe this minimal image ships (no curl, no bash);
+  # verified live against this exact image.
+  objectstorage:
+    image: docker.io/pgsty/silo:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: pyforgeplatformdev
+      MINIO_ROOT_PASSWORD: pyforgeplatformdevsecretkey12345
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   platform:
     build:
       context: ../../..
@@ -134,6 +160,12 @@ services:
       DJANGO_SECURE_SSL_REDIRECT: "False"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
+      # config/object_storage.py's consumption seam (Story 50.3) -- same
+      # three settings a real StorageGRID deployment would carry, pointed
+      # at the local objectstorage service instead.
+      OBJECT_STORAGE_ENDPOINT_URL: http://objectstorage:9000
+      OBJECT_STORAGE_ACCESS_KEY: pyforgeplatformdev
+      OBJECT_STORAGE_SECRET_KEY: pyforgeplatformdevsecretkey12345
       # CAP-1 / steward 16.5: OIDC-delegated identity (Keycloak local substrate).
       COMPONENT_IDENTITY_CLAIM: sub
       COMPONENT_GROUP_CLAIM: groups
@@ -149,6 +181,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      objectstorage:
         condition: service_healthy
       keycloak:
         condition: service_healthy
@@ -200,6 +234,9 @@ services:
       DJANGO_SECURE_SSL_REDIRECT: "False"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT_URL: http://objectstorage:9000
+      OBJECT_STORAGE_ACCESS_KEY: pyforgeplatformdev
+      OBJECT_STORAGE_SECRET_KEY: pyforgeplatformdevsecretkey12345
       COMPONENT_IDENTITY_CLAIM: sub
       COMPONENT_GROUP_CLAIM: groups
       COMPONENT_STAFF_GROUP: platform-staff
@@ -212,6 +249,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      objectstorage:
         condition: service_healthy
       keycloak:
         condition: service_healthy

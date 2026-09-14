@@ -72,6 +72,13 @@ resources:
 # IdP bearer -- there is no separate signal (found running the CAP-3 attended
 # CRC exercise: every mint attempt failed this way because this cluster's
 # existingSecret never had these two keys, 2026-09-12).
+# Three more are wired OPTIONALLY the same way: OBJECT_STORAGE_ENDPOINT_URL /
+# OBJECT_STORAGE_ACCESS_KEY / OBJECT_STORAGE_SECRET_KEY, the S3-compatible
+# object-storage consumption seam (Story 50.3, pap:AD-1's 2026-09-10 dated
+# exception -- consumed only, production target NetApp StorageGRID,
+# ops-provided). Without them, config.object_storage.object_storage_client()
+# raises ImproperlyConfigured -- harmless today, since no feature calls it
+# yet (that module's own docstring: "future, story-by-story work").
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).
@@ -324,6 +331,15 @@ media:
 # (compose.yml + dbgpt Containerfile contract — PostgreSQL wiring is
 # structurally impossible upstream; see dbgpt_integration/apps.py).
 sidecar:
+  # Stays its own sidecar Deployment (forced by the disjoint fastapi version
+  # ranges vs. the shared python-agent-platform env, Story 10.5's Pattern B
+  # deviation -- it cannot be folded into the platform pod) but is NOT
+  # mandatory: false skips the Deployment/Service/PVC/dbgpt-scoped
+  # NetworkPolicy documents entirely and drops DBGPT_SIDECAR_BASE_URL from
+  # every platform-image pod's env, so a namespace that never wants the
+  # DB-GPT text-to-SQL capability doesn't pay for its image pull, PVC, or
+  # attack surface.
+  enabled: true
   image:
     registry: ""
     repository: platform-dbgpt-sidecar

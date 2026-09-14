@@ -1,3 +1,4 @@
+{{- if .Values.sidecar.enabled }}
 # Dedicated SQLite PVC for DB-GPT's own metadata store (AD-6 bounded
 # exception). The mount path matches compose.yml's dbgpt_sqlite_data volume
 # target — see sidecar.metadataMountPath in values.yaml.
@@ -17,3 +18,4 @@ spec:
   {{- with .Values.sidecar.persistence.storageClassName }}
   storageClassName: {{ . | quote }}
   {{- end }}
+{{- end }}

@@ -116,6 +116,8 @@ _SECRET_ENV_NAMES = frozenset(
         "COMPONENT_OIDC_CLIENT_SECRET",
         "KEYCLOAK_ADMIN_PASSWORD",
         "PYFORGE_ASSERTION_PRIVATE_KEY",
+        "OBJECT_STORAGE_ACCESS_KEY",
+        "OBJECT_STORAGE_SECRET_KEY",
     },
 )
 _SECRETISH_ENV_NAME = re.compile(
@@ -1786,6 +1788,46 @@ def test_platform_pods_wire_optional_assertion_signing_keypair():
 
 
 @requires_helm
+def test_platform_pods_wire_optional_object_storage_consumption_seam():
+    """Story 50.3 / pap:AD-1's 2026-09-10 dated exception: object storage is
+    CONSUMED only (production target NetApp StorageGRID, ops-provided) --
+    config.object_storage.object_storage_client() resolves its endpoint and
+    credentials from Django settings, which settings/base.py reads from
+    these three env vars. Mirrors
+    test_platform_pods_wire_optional_assertion_signing_keypair's own proof
+    (and its motivating incident: "documented as consumed" is not the same
+    fact as "actually wired into a template") for this seam -- all three
+    must be present on every platform-image pod, secretKeyRef'd against the
+    same existingSecret, and optional: true (a pod must still boot when
+    they're absent; no feature calls object_storage_client() yet).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    secret_name = values["existingSecret"]
+    by_component = _pod_specs_by_component(docs)
+    for key_name in (
+        "OBJECT_STORAGE_ENDPOINT_URL",
+        "OBJECT_STORAGE_ACCESS_KEY",
+        "OBJECT_STORAGE_SECRET_KEY",
+    ):
+        for component in sorted(_PLATFORM_COMPONENTS):
+            env = _collect_env_by_name(by_component[component])
+            entry = env.get(key_name)
+            assert entry is not None, f"{component} missing {key_name}"
+            secret_ref = entry.get("valueFrom", {}).get("secretKeyRef", {})
+            assert secret_ref.get("name") == secret_name, (
+                f"{component} {key_name} secretKeyRef name mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("key") == key_name, (
+                f"{component} {key_name} secretKeyRef key mismatch: {secret_ref!r}"
+            )
+            assert secret_ref.get("optional") is True, (
+                f"{component} {key_name} must be optional: true, got {secret_ref!r}"
+            )
+
+
+@requires_helm
 def test_rendered_manifests_carry_secret_refs_never_secret_values():
     """Story 26.2 / FR-32 / canopy AD-19: helm template must not emit a
     secret *value*. Canary --set-string values are unused chart paths;
@@ -2773,6 +2815,53 @@ def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
     images = _collect_workload_images(docs)
 
     _assert_image_inventory_is_exactly(images, _default_image_references())
+
+
+@requires_helm
+def test_sidecar_enabled_false_drops_dbgpt_entirely():
+    """AC: `sidecar.enabled: false` is NOT the same shape as
+    `mcpHost` (which has no enabled knob at all, by design -- its own
+    values.yaml comment says why: an empty repository fails helm template).
+    dbgpt stays its own sidecar Deployment (Story 10.5's Pattern B
+    deviation -- the disjoint fastapi ranges make folding it into the
+    platform pod impossible), but it must not be FORCED: with the toggle
+    off, the Deployment/Service/PVC and both dbgpt-scoped NetworkPolicy
+    documents (ingress + egress) disappear, the image inventory drops to
+    the five OTHER images, and DBGPT_SIDECAR_BASE_URL -- the env var that
+    would otherwise point every platform-image pod at a Service that no
+    longer exists -- is absent from all of them.
+    """
+    docs = _render(_CORE_CHART, "--set", "sidecar.enabled=false")
+
+    assert not [
+        doc
+        for doc in docs
+        if doc.get("metadata", {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == _SIDECAR_COMPONENT
+    ], "a dbgpt-labeled document still rendered with sidecar.enabled=false"
+
+    images = _collect_workload_images(docs)
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    sidecar_image = values["sidecar"]["image"]
+    sidecar_repository = (
+        f"{sidecar_image['registry']}/{sidecar_image['repository']}"
+        if sidecar_image.get("registry")
+        else sidecar_image["repository"]
+    )
+    _assert_image_inventory_is_exactly(
+        images,
+        _default_image_references() - {sidecar_repository},
+    )
+
+    by_component = _pod_specs_by_component(docs)
+    for component in sorted(_PLATFORM_COMPONENTS):
+        env = _collect_env_by_name(by_component[component])
+        assert "DBGPT_SIDECAR_BASE_URL" not in env, (
+            f"{component} still wired to the disabled dbgpt sidecar"
+        )
 
 
 @requires_helm

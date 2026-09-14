@@ -335,6 +335,33 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
       name: {{ include "platform.existingSecretName" . | quote }}
       key: PYFORGE_ASSERTION_PUBLIC_KEY
       optional: true
+{{- /* Story 50.3 / pap:AD-1's 2026-09-10 dated exception: object storage is
+       CONSUMED only, never self-hosted -- these three point at whatever
+       S3-compatible endpoint ops provisioned (production target: NetApp
+       StorageGRID), never a server this chart deploys itself. optional:
+       true for the same reason as the assertion keypair above: no feature
+       calls config.object_storage.object_storage_client() yet (that
+       module's own docstring calls this "future, story-by-story work"), so
+       a pod without them must still boot -- ImproperlyConfigured only
+       fires if/when something actually calls that function. */}}
+- name: OBJECT_STORAGE_ENDPOINT_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_ENDPOINT_URL
+      optional: true
+- name: OBJECT_STORAGE_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_ACCESS_KEY
+      optional: true
+- name: OBJECT_STORAGE_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: OBJECT_STORAGE_SECRET_KEY
+      optional: true
 {{- if .Values.redis.external.enabled }}
 - name: REDIS_BROKER_URL
   value: {{ required "redis.external.brokerUrl is required when redis.external.enabled is true" .Values.redis.external.brokerUrl | quote }}
@@ -352,8 +379,10 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
 {{- end }}
 - name: MEDIA_ROOT
   value: {{ .Values.media.mountPath | quote }}
+{{- if .Values.sidecar.enabled }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
+{{- end }}
 - name: MCP_HOST_SIDECAR_BASE_URL
   value: {{ printf "http://%s:8090" (include "platform.mcpHost.fullname" .) | quote }}
 - name: PYFORGE_FLAGS_PATH

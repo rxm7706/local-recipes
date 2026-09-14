@@ -303,6 +303,7 @@ platforms = ["linux-64", "osx-arm64-min"]
 postgresql = ">=17.11,<18"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
 pgvector = ">=0.8.1"              # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
 redis-server = ">=8.10.1"         # per-user local Redis server process -- cache + Celery broker (AD-1)
+silo = ">=20260903131801.0.0"     # per-user local S3-compatible object-storage server process -- consumed via config/object_storage.py's OBJECT_STORAGE_* settings (Story 50.3, pap:AD-1's 2026-09-10 dated exception)
 channels = ">=4.3.2,<5.0"         # Story 48.6: host `/ws/events/` delegates to pyforge.steward.dashboard when importable
 daphne = ">=4.2.3,<5.0"           # Story 48.6: ASGI websocket termination for the dashboard extra face
 asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels load-bearing adapter (matches pyforge-steward `[dashboard]` extra)
