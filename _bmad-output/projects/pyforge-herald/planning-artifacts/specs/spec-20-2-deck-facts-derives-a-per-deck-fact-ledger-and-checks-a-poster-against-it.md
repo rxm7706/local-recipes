@@ -111,7 +111,7 @@ declared_low_risk: false
   - `[low]` `[patch]` EC15 "not a station" `--with-tests` branch unexercised (beta is in the roster) — test now uses a deck outside the roster
   - `[low]` `[reject]` EC16 (claim) ledgers do not print the intent's `846/865 · 67/68` — same as IA row 3; fix is a spec edit
   - `[low]` `[reject]` EC17 (claim) plain integers never reported unmarked — the intent-contract's sweep set; `unshown` covers unmarked integer rows
-  - `[high]` `[patch]` BH1 `spec_capabilities` counts prose mentions (herald 3, doctor 10 vs 8, scribe 6 vs 4) — definition lines only (bold `- **CAP-N`/`- **HER-N` bullets and `### HER-a..HER-b` heading ranges), never prose or frontmatter; live herald 13, scribe 4, doctor 9 (its ninth is a bold titled `- **CAP-9 — …**` bullet of the same shape as unifying-strategy's 19), unifying-strategy 19
+  - `[high]` `[patch]` BH1 `spec_capabilities` counts prose mentions (herald 3, doctor 10 vs 8, scribe 6 vs 4) — definition lines only (bold `- **CAP-N`/`- **HER-N` bullets and `### HER-a..HER-b` heading ranges), never prose or frontmatter; live herald 13, scribe 4, doctor 9 (its ninth is a bold titled `- **CAP-N — …**` bullet of the same shape as unifying-strategy's 19), unifying-strategy 19
   - `[medium]` `[patch]` BH2 `_TOKEN`/`_shown` leading-`v` disagreement — same root cause as EC1
   - `[medium]` `[patch]` BH3 HEAD sha on working-tree values, no dirty marker — same root cause as EC9; `derived_at` documented as the HEAD commit date in facts-ledger.md
   - `[medium]` `[patch]` BH4 own spec's spec-surface baseline left unstamped, masking future drift — scoped `--write-baseline --spec pyforge-herald/spec-deck-family-currency` at finalize after `git add`

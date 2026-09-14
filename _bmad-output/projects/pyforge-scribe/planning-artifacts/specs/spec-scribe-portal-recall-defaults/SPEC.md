@@ -36,7 +36,7 @@ adding `--kind code`. Cursor does not name the session path.
 ## Constraints
 
 - Do not redesign django-scribe. Do not import `pyforge.scribe` there.
-- Do not add recall modes (CAP-11).
+- Do not add recall modes (later-caps:CAP-11).
 
 ## Non-goals
 

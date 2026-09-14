@@ -47,7 +47,7 @@ that extra was gated for.
 ## Non-goals
 
 - `recipes/`, repo-root ingest, cocoindex-in-compile.
-- CAP-14 (one navigation owner).
+- later-caps:CAP-14 (one navigation owner).
 - Turning the extra on for interactive compile.
 
 ## Success signal

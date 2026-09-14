@@ -63,7 +63,7 @@ ledger with the Design etag `PENDING-PUSH`.
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
 | Fact check | `deck-facts pyforge-steward --check` on the rebuilt poster | `0 unmarked, 0 mismatch`; `unshown` may be non-zero | exit 0 always (advisory); iterate until clean |
-| A wanted number has no row | the Canopy's CAP count, its realization-log dates, the five-tier `n/n`, the duty count, plugin count, third-party versions | omitted, or entities enumerated by name (the Canopy table lists CAP-1..CAP-19 as rows; the duty table lists every duty) | — |
+| A wanted number has no row | the Canopy's CAP count, its realization-log dates, the five-tier `n/n`, the duty count, plugin count, third-party versions | omitted, or entities enumerated by name (the Canopy table lists canopy:CAP-1..canopy:CAP-19 as rows; the duty table lists every duty) | — |
 | Exit codes in prose | `0 · 1 · 2 · 3 · 70 · 130` | one code per table cell as a code literal, never `n/n` adjacent (the sweep would read `0/1` as a fraction) | — |
 | Render | Playwright Chromium, viewport 1240 × 900, `networkidle` + fonts settled, full page in ~2500 px tiles | PNG with no clipped, overlapping or blank region; height recorded | tile to the full-page PNG's real height, not only `scrollHeight` |
 | Spec-surface | `python -m pyforge.doctor.sources spec-surface` | drift-presumed lines only for this story's files against `spec-deck-family-currency` | anything else reported, not fixed |
