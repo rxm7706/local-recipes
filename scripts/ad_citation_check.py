@@ -72,7 +72,7 @@ _CAP_BASELINE_PATH = ROOT / "scripts" / ".cap-citation-baseline.json"
 def _today() -> str:
     """The date a baseline is stamped with. Was two hard-coded literals
     ("2026-09-08" / "2026-09-10") until 2026-09-14, so every later re-stamp
-    still claimed those dates (Story 32.9)."""
+    still claimed those dates (Story 43.1)."""
     return datetime.date.today().isoformat()
 
 #: Citations to a THIRD-PARTY tool's own documented ADs. These can never
@@ -455,7 +455,7 @@ def main() -> int:
     # detector that exits 1 must show what it exits on. Until 2026-09-14 both
     # loops sliced `[:10]` beneath a headline carrying the full count, so a red
     # with 61 NEW findings was read from the printed rows and recorded as 14
-    # (Story 32.9 / DW-AD-CITATION-2026-09-14-2): the "head truncates findings
+    # (Story 43.1 / DW-AD-CITATION-2026-09-14-2): the "head truncates findings
     # out of view" class CLAUDE.md warns about for pipes, built into the
     # detector. The baselined set stays a count -- it is known debt, not the
     # action list.

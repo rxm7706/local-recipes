@@ -3030,10 +3030,10 @@
  "pyforge-marshal/spec-fleet-consistency-standard": {
   "files": {
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
-   "scripts/ad_citation_check.py": "94bb8920b14d84aaa198dd249205306667578584",
+   "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/governance_currency_check.py": "cc997d7455cedadd9ded2ba21d922bb80bbee9de"
   },
-  "memlog": "6ee925a770e9ac39a10830c306f64d842ce452cb"
+  "memlog": "68b596559fa51bdf939cccef7f69228dbd5deb80"
  },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {

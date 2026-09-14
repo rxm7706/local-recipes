@@ -1,4 +1,4 @@
-"""Story 32.9 (spec-fleet-consistency-standard CAP-6, DW-AD-CITATION-2026-09-14-2):
+"""Story 43.1 (spec-fleet-consistency-standard CAP-6, DW-AD-CITATION-2026-09-14-2):
 the citation detector shows everything it knows.
 
 Two defects, both found live on 2026-09-14 when `detectors-ci` was red on
