@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 42  # 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 273  # 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-14"   # retroactive Epics 37-41; prior stamp 2026-09-09
+updated: "2026-09-14"   # Story 32.9 appended (DW-AD-CITATION-2026-09-14-2, a fix on the shipped CAP-6 detector; Epic 32 reopened for it); earlier same day: retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4960,6 +4960,13 @@ re-minted.
 **And** the ten pixi tasks naming pre-move atlas paths are repointed and the eight `test-architecture.md` regenerated from the live inventory — a green suite proved the FILES worked and said nothing about the TASKS that name them, which is why the manifest must be grepped after a tree move
 **And** CAP-5's own rationale is corrected on the record: "no environment has ever exercised 3.12" was derived from `pixi.toml` alone and never checked against `.github/workflows/` — three lanes had been exercising it
 
+
+### Story 32.9: The citation detector shows everything it knows
+**Type:** fix • **Effort:** XS • **Deps:** S-32.6 • **FR/AD:** spec-fleet-consistency-standard CAP-6 • `DW-AD-CITATION-2026-09-14-2`
+**Surface:** `scripts/ad_citation_check.py`, its test under `tests/scripts/`, `scripts/.ad-citation-baseline.json` and `scripts/.cap-citation-baseline.json` (the `recorded:` stamp only).
+**Given** `ad_citation_check` prints at most ten NEW rows per class (`new[:10]`, `cap_new[:10]`) beneath a headline that reports the full count, so the 2026-09-14 red on `origin/main` — 4 ad + 57 cap NEW — was read and recorded as 14 from the printed rows, the same "head truncates findings out of view" class CLAUDE.md § Reading a detector's result warns about, implemented inside the detector; and `--write-baseline` / `--write-cap-baseline` stamp `recorded:` with hard-coded literals (`"2026-09-08"`, `"2026-09-10"`), so a baseline re-stamped on any later date still claims those dates **When** every NEW row is printed (the NEW set *is* the actionable set; the baselined set is already summarised by count, and a detector that exits 1 must show what it exits on) and the stamps carry the actual stamping date **Then** the printed NEW rows equal `len(new)` and `len(cap_new)` for any size, proven by a test with more than ten synthetic findings in each class
+**And** `--write-baseline` / `--write-cap-baseline` write today's ISO date, proven by a test that reads it back; the two existing baseline files are re-stamped once so their `recorded:` reflects the 2026-09-14 shrink rather than the literals
+**And** no other behaviour of the detector changes — the ratchet semantics, the "since fixed" accounting, the `[:10]`-free summary lines and the exit codes are byte-for-byte the same, proven by the existing `tests/scripts/` suite staying green
 
 ## Epic 33: Token economy in effect
 

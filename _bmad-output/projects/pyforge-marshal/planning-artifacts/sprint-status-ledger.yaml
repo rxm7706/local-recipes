@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 353
+# stories: 358
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -190,6 +190,7 @@ development_status:
   32-6-governance-documents-cannot-go-stale-silently: done
   32-7-coverage-is-measured-on-all-eight-stations-before-any-floor-is-enforced: done
   32-8-every-caller-and-ci-lane-follows-the-convergence: done
+  32-9-the-citation-detector-shows-everything-it-knows: backlog
   33-1-measurement-first-the-benchmark-artifact-with-real-savings-getters: done
   33-10-the-cfe-pin-is-derived-never-stamped: done
   33-11-attribution-becomes-unforgeable-before-the-track-serves-a-second-principal: blocked
@@ -337,7 +338,7 @@ development_status:
   epic-30-retrospective: optional
   epic-31: done
   epic-31-retrospective: optional
-  epic-32: done
+  epic-32: in-progress
   epic-32-retrospective: done
   epic-33: in-progress
   epic-33-retrospective: optional
@@ -357,10 +358,10 @@ development_status:
   epic-4-retrospective: done
   epic-40: done
   epic-40-retrospective: optional
-  epic-42: backlog
-  epic-42-retrospective: optional
   epic-41: done
   epic-41-retrospective: optional
+  epic-42: backlog
+  epic-42-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done
