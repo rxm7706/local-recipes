@@ -29,11 +29,14 @@ would be Marshal's self-report wearing Doctor's badge.
 the three gathers below documents its own specific "cannot evaluate" paths; see
 each function's own docstring.
 
-**Two independent ``data.js`` readers, deliberately not unified.** ``_board_lines``
-(used by ``gather_chain_completeness``) and ``_load_data_js`` (used by
-``gather_dashboard_drift``) parse the SAME committed file with two DIFFERENT
-methods, because that is what their two respective source scripts already do --
-a fixed-prefix strip in one, a regex search in the other. Consolidating them would
+**One ``data.js`` reader remains.** ``_board_lines`` (used by
+``gather_chain_completeness``) parses the committed file with a fixed-prefix strip.
+It once had a sibling, ``_load_data_js``, which read the same file by regex for
+``gather_dashboard_drift``; the two were deliberately NOT unified because that is
+what their respective source scripts each did. *(2026-09-14: the sibling and the
+whole retired-Guildhall helper island it belonged to were deleted -- provably
+unreachable once the console retired. This note is kept because the reasoning still
+governs ``_board_lines``: consolidating readers would
 be a redesign this story's Boundaries explicitly rule out ("preserve, don't
 redesign"); each stays exactly as strict or as lenient as its own original.
 """
@@ -1261,9 +1264,10 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
         # is the spec's own "INV-C silently skipped; INV-A/B/D unaffected" row
         # -- but the message still claimed "...and board agree" over a board
         # this gather had never read, and nothing in `evidence` let a consumer
-        # tell the two apart. The sibling `_board_projects` refuses exactly
-        # this coercion for `gather_dashboard_drift`, so the same bytes
-        # produced a confident OK here and an honest WARN there.
+        # tell the two apart. A since-deleted sibling, `_board_projects`,
+        # refused exactly this coercion for `gather_dashboard_drift`, so the
+        # same bytes produced a confident OK here and an honest WARN there --
+        # which is why this guard exists and must stay.
         return (
             Finding(
                 source=Source.CHAIN_COMPLETENESS,
@@ -1317,10 +1321,10 @@ def _load_foreign_module(path: Path, mod_name: str):
 
     Sole caller since Story 6.9: ``gather_check_layout`` used to share this
     helper via its own ``_load_check_layout`` (dynamically loading
-    ``check_layout.py`` to reuse its assertions), but that origin file is
-    now deleted and its logic ported into this module as permanent code
-    (``_check_layout_geometry``/``_layout_chip_rows``/the ``_LAYOUT_*``
-    constants) -- there is nothing left for it to dynamically load. This
+    ``check_layout.py`` to reuse its assertions), but that origin file was
+    deleted and its logic ported into this module as permanent code -- and
+    that ported code was itself deleted on 2026-09-14, once the retired
+    console made it unreachable. There is nothing left for it to load. This
     helper's own hardening was originally consolidated from two near-copies
     that had already drifted (only one had the ``sys.path``/``sys.modules``
     guards below); kept as ONE helper rather than trimmed back to inline
@@ -1343,7 +1347,7 @@ def _load_foreign_module(path: Path, mod_name: str):
       ``BaseException``, so ``degrade_on_exception`` -- which documents that
       it deliberately never catches one -- would let it escape the gather and
       break ``gather_dashboard_drift``'s own "never a raised exception"
-      contract. This is the same conversion ``_load_data_js`` already makes
+      contract. The since-deleted ``_load_data_js`` made the same conversion
       for the same reason; the loader had been left out. ``KeyboardInterrupt``
       is NOT converted.
     """
@@ -1368,28 +1372,31 @@ def _load_foreign_module(path: Path, mod_name: str):
     return mod
 
 
-# --- retired-Guildhall machinery: excluded from coverage, not from the build --
+# --- the one surviving retired-Guildhall reader -------------------------------
 #
-# Everything from here to ``gather_check_layout`` can only execute if the
-# retired Guildhall console is REINTRODUCED -- ``docs/dashboard/generate.py``,
-# ``data.js`` and ``index.html`` are all gone, and ``retired-console-check``
-# FAILS CI if any of them comes back (see ``_RETIRED_CONSOLE_FILES`` /
-# ``_RETIRED_CONSOLE_TASKS`` below). So these bodies are unreachable in every
-# supported state of the repo, and their reachable entry points
-# (``gather_dashboard_drift``, ``gather_check_layout``,
-# ``_gather_chain_layers_audit``) now do nothing but assert the retirement
-# holds -- which IS covered.
+# ``_load_dashboard_generate`` imports ``docs/dashboard/generate.py``, which is
+# gone -- and ``retired-console-check`` FAILS CI if it returns. So this body can
+# only execute in a state the estate forbids, and its sole caller
+# (``_gather_chain_layers_audit``) catches the failure and degrades to an
+# honest unevaluable Finding, which IS covered.
 #
-# They carry ``# pragma: no cover`` rather than tests, because writing tests
-# for code scheduled for deletion buys nothing: it was dragging this module to
-# 72% against an 80% floor while measuring a subsystem that cannot run. The
-# pragma narrows the measurement to live code (94%); it lowers no threshold and
-# suppresses no finding.
+# It keeps ``# pragma: no cover`` for that reason, not for convenience: it is
+# reachable code whose reachable path is closed by policy rather than by
+# structure, so a test could only assert the failure branch its caller already
+# covers. Everything ELSE that carried this pragma on 2026-09-14 -- the layout
+# orchestration island and the dashboard-drift helper island, 494 lines across
+# ten functions and ten constants -- had no live caller at all and was deleted
+# outright the same day (DW-DASHBOARD-DEAD-CODE-1). That deletion moved this
+# module from 72% to 95% on real code, with findings byte-identical before and
+# after.
 #
-# Deleting them outright is the real fix and is tracked -- it is a behaviour
-# change to two registered detector sources plus their taxonomy and schema
-# entries, so it needs its own Dream/Spec rather than a drive-by excision.
-# See ``DW-DASHBOARD-DEAD-CODE-1`` in this project's deferred-work ledger.
+# Worth recording, because the ledger entry had it wrong: deleting that code
+# was NOT "a behaviour change to two registered detector sources plus their
+# taxonomy and schema entries". An AST call-graph pass showed the islands were
+# private orphans -- both gathers, their DISPATCH entries, their ``Source``
+# members and ``report-schema.json`` were untouched. The scope was over-stated
+# when the entry was written, which is why it had been deferred as needing its
+# own Dream when it was in fact hygiene.
 
 
 def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
@@ -1409,222 +1416,14 @@ def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guild
     return gen
 
 
-def _load_data_js(target: Path) -> dict:
-    """Port of ``dashboard_drift_check.py``'s own ``_load_data_js`` -- with
-    one deliberate change. The original ``raise SystemExit(...)`` on an
-    unparseable ``data.js`` is replaced with a plain ``ValueError``:
-    ``SystemExit`` is a ``BaseException``, not an ``Exception``, so
-    ``sources.degrade_on_exception`` (which ``gather_dashboard_drift`` wraps
-    itself in) would never catch it, and it would escape this library call
-    exactly like the CLI script's own ``exit`` was never meant to (Boundaries:
-    "the gather itself must not raise it").
-    """
-    data_js = target / "docs" / "dashboard" / "data.js"
-    text = data_js.read_text(encoding="utf-8")
-    m = re.search(r"window\.DASHBOARD_DATA\s*=\s*(\{.*?\});?\s*$", text, re.DOTALL)
-    if not m:
-        raise ValueError(f"cannot parse {data_js}")
-    return json.loads(m.group(1))
 
 
-def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Every story heading in an epics.md as ``(id, None)`` -- verbatim from
-    the original (the second tuple slot is a retired dual-id accommodation;
-    see the original's own docstring)."""
-    out: list[tuple[str, str | None]] = []
-    try:
-        text = path.read_text(encoding="utf-8")
-    except Exception:  # noqa: BLE001 -- an unreadable/non-UTF-8 epics.md is
-        # "nothing to compare", not a reason to discard the twin findings this
-        # station's caller has ALREADY computed (reproduced live: one 0xe9 byte
-        # turned a real `twin-missing` FAIL into a WARN, exit 2 -> exit 0).
-        return out
-    for line in text.splitlines():
-        m = _DRIFT_STORY_HEADING.match(line)
-        if m:
-            out.append((m.group(1), None))
-    return out
 
 
-def _board_projects(data: dict, target: Path) -> dict:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """``data.js``'s ``projects`` mapping, or a raised ``ValueError`` when the
-    file does not actually carry one.
-
-    An ABSENT ``projects`` key is an empty board -- the original script's
-    ``data.get("projects", {})`` reads it exactly that way, and an empty board
-    legitimately produces no findings. A key that is PRESENT but not a mapping
-    (``null``, a list, a string) is something else entirely: the original
-    crashed on it, and coercing it to ``{}`` instead made
-    ``gather_dashboard_drift`` return a confident OK -- *"the committed data.js
-    matches the feeds"* -- over a board it had never read. Trading a loud crash
-    for a false green is the single worst outcome available to a detector whose
-    whole purpose is catching a board that lies, so this raises instead:
-    ``gather_dashboard_drift``'s own ``degrade_on_exception`` turns it into the
-    honest WARN, exactly as it already does for an unparseable ``data.js``.
-    """
-    if "projects" not in data:
-        return {}
-    projects = data["projects"]
-    if not isinstance(projects, dict):
-        raise ValueError(
-            f"cannot read the board in {target / 'docs' / 'dashboard' / 'data.js'}: "
-            f"'projects' is {type(projects).__name__}, not a mapping"
-        )
-    return projects
 
 
-def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
-    checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
-    epics.md vs. board), producing structured dicts instead of printed lines.
-    ``kind``/message text is unchanged from the original.
-
-    ``findings`` is the CALLER's list, appended to in place by the per-station
-    helper -- see ``_check_chain_completeness``'s own docstring for why: a
-    helper that accumulates locally and returns at the end throws away its own
-    station's already-computed FAILs the moment anything downstream raises."""
-    findings: list[dict] = []
-
-    for key, proj in sorted(projects.items()):
-        try:
-            _check_project_dashboard_drift(target, gen, key, proj, findings)
-        except (Exception, SystemExit) as exc:  # noqa: BLE001 -- one station's
-            # malformed data.js entry or feed must not discard every other
-            # station's already-computed drift findings (mirrors
-            # _check_chain_completeness's own per-project isolation).
-            # SystemExit is in the tuple because this body CALLS functions off
-            # a dynamically exec'd, Marshal-owned file, which is free to
-            # sys.exit() at call time as well as at import; KeyboardInterrupt
-            # is deliberately left out.
-            findings.append({
-                "kind": "dashboard-drift-unevaluable", "project": key,
-                "detail": (f"{key}: could not be evaluated here — "
-                           f"{exc.__class__.__name__}: {exc}"),
-                "warn": True,
-            })
-    return findings
 
 
-def _check_project_dashboard_drift(  # pragma: no cover -- retired Guildhall console
-    target: Path, gen, key: str, proj: object, findings: list[dict]
-) -> None:
-    """Append one station's drift findings to the CALLER's ``findings`` list --
-    split out of ``_check_dashboard_drift`` so its caller can isolate one
-    station's failure from the rest (and so a late raise cannot discard the
-    findings this station has already produced)."""
-    if not isinstance(proj, dict):
-        return  # a malformed data.js entry has no epics to compare
-    all_stories = [
-        s for e in proj.get("epics", []) or []
-        if isinstance(e, dict)
-        for s in e.get("stories", []) or []
-        if isinstance(s, (list, tuple)) and s
-    ]
-    # `stories` is the (id, status) unpacking set -- it needs >= 2 elements.
-    # `board_ids` is a pure MEMBERSHIP set and needs only s[0], so it must be
-    # built from the unfiltered list: filtering a 1-element `["1.1"]` out of
-    # board_ids made a story that IS on the board look absent, emitting a
-    # false `missing-story` FAIL.
-    stories = [s for s in all_stories if len(s) >= 2]
-    board_ids = {s[0] for s in all_stories}
-
-    # --- twin vs the Tier-3 feed --------------------------------------
-    rel_feed = gen.PROJECT_SOURCES.get(key)
-    slug_ = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-    twin = (target / "_bmad-output" / "projects" / slug_
-            / "planning-artifacts" / "sprint-status-ledger.yaml")
-    feed_p = target / rel_feed if rel_feed else None
-    if feed_p and feed_p.is_file() and twin.is_file():
-        feed_map = gen.parse_sprint_status(feed_p)
-        twin_map = gen.parse_sprint_status(twin)
-        drifted = sorted(
-            k for k in set(feed_map) | set(twin_map)
-            if feed_map.get(k) != twin_map.get(k)
-        )
-        if drifted:
-            shown = ", ".join(drifted[:4]) + ("…" if len(drifted) > 4 else "")
-            regressing = sorted(
-                k for k in drifted
-                if twin_map.get(k) == "done" and feed_map.get(k) != "done"
-            )
-            if regressing:
-                rshown = ", ".join(regressing[:4]) + ("…" if len(regressing) > 4 else "")
-                findings.append({
-                    "kind": "twin-ahead", "project": key,
-                    "detail": (
-                        f"{key}: the Tier-3 feed is BEHIND the tracked "
-                        f"ledger — it would un-finish {len(regressing)} story(ies) "
-                        f"({rshown}). **Do NOT run sprint-ledger-sync**: the twin is "
-                        f"the durable record and the feed is the lossy one. Repair the "
-                        f"feed from the twin (`sprint-ledger-sync --repair-feed "
-                        f"--project {key}`), then re-check."
-                    ),
-                })
-            else:
-                findings.append({
-                    "kind": "twin-stale", "project": key,
-                    "detail": (
-                        f"{key}: the tracked sprint-status ledger disagrees "
-                        f"with the Tier-3 feed on {len(drifted)} story(ies) ({shown}), "
-                        f"none of them un-finishing a story. CI reads the TWIN, so the "
-                        f"deploy would render the stale set: run `pixi run -e "
-                        f"local-recipes sprint-ledger-sync --project {key}` and commit."
-                    ),
-                })
-    elif feed_p and feed_p.is_file() and not twin.is_file():
-        findings.append({
-            "kind": "twin-missing", "project": key,
-            "detail": (
-                f"{key}: has a Tier-3 sprint feed but no tracked "
-                f"ledger at {twin.relative_to(target)} — CI cannot see this "
-                f"project's completions and will fall back to commit archaeology. "
-                f"Run `pixi run -e local-recipes sprint-ledger-sync`."
-            ),
-        })
-
-    # --- committed baseline vs the local feed ---------------------------
-    rel = gen.PROJECT_SOURCES.get(key)
-    feed_path = target / rel if rel else None
-    if feed_path and feed_path.is_file():
-        sprint = gen.parse_sprint_status(feed_path)
-        for sid, status, *_rest in stories:
-            feed = gen.dashboard_id_to_status(sid, sprint)
-            if feed is None:
-                continue
-            if feed in _DRIFT_DONE and status not in _DRIFT_DONE:
-                findings.append({
-                    "kind": "stale-done", "project": key,
-                    "detail": (
-                        f"{key}:{sid} is '{feed}' in the sprint feed but "
-                        f"'{status}' on the board — the committed baseline is behind. "
-                        f"`--source git` never downgrades, so this will NOT self-heal "
-                        f"at deploy: story status lives on Lane 1 /console/ "
-                        f"(Guildhall data.js retired)."
-                    ),
-                })
-
-    # --- no epics.md story is missing from the board --------------------
-    slug = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-    epics_md = (target / "_bmad-output" / "projects" / slug
-                / "planning-artifacts" / "epics.md")
-    if not epics_md.is_file() or key in getattr(gen, "_DERIVE_EXCLUDE", set()):
-        return
-    heading_ids = _drift_epics_md_ids(epics_md)
-    if not heading_ids:
-        return
-    for lead, alt in heading_ids:
-        if lead in board_ids or (alt and alt in board_ids):
-            continue
-        shown = f"{lead}" + (f" ({alt})" if alt else "")
-        findings.append({
-            "kind": "missing-story", "project": key,
-            "detail": (
-                f"{key}: epics.md has Story {shown} but no story with "
-                f"that id is on the board. If this line's story list is hand-authored "
-                f"(scan_projects warns when it cannot parse the headings), add it to "
-                f"data.js by hand."
-            ),
-        })
 
 
 def _no_system_exit(fn):
@@ -1721,27 +1520,35 @@ def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
 
 # === gather_check_layout =====================================================
 #
-# Ported from docs/dashboard/check_layout.py -- see that script's own module
-# docstring for the full "why measure geometry, not just execution" rationale
-# and the two live incidents (a broken status chip surviving three green
-# gates; the running chip's own fix trading one visual bug for another).
+# This section once held a full browser-driven layout gate, ported from
+# docs/dashboard/check_layout.py: it launched chromium over a served
+# docs/dashboard/, measured the Guildhall console bar at five widths x five
+# font-pressures, and kept "could not measure" and "measured, and it is broken"
+# on deliberately separate verdicts. See that origin script's own module
+# docstring, and this file's git history, for the rationale and the two live
+# incidents behind it (a broken status chip surviving three green gates; the
+# fix for it trading one visual bug for another).
 #
-# Story 6.9 FIX (2026-08-09): this section used to REUSE the origin script's
-# ``check()``/``_rows()``/probe constants via a dynamic ``exec_module`` of
-# ``target/docs/dashboard/check_layout.py`` (``_load_check_layout``, ported
-# from the same ``_load_foreign_module`` ``_load_dashboard_generate`` still
-# uses below). That was fine while the origin file existed alongside its
-# port; Story 6.9 deletes it -- and a dynamic load of a file that is gone
-# does not degrade occasionally, it fails EVERY time, in EVERY environment,
-# permanently: the port would move home only to stop functioning the moment
-# its own story landed. The assertions therefore move in as real, permanent
-# code below (``_check_layout_geometry``/``_layout_chip_rows``, verbatim in
-# behavior from the origin's own ``check()``/``_rows()``, prefixed to fit
-# this module's existing ``_check_<subject>`` naming convention rather than
-# colliding with it) -- no exec, no dependency on a file that may not exist.
-# The browser/HTTP orchestration below (``_run_check_layout``) is unchanged
-# in shape; only the names it reaches for moved from a loaded module's
-# attributes to this module's own.
+# DELETED 2026-09-14 (DW-DASHBOARD-DEAD-CODE-1). The Guildhall console retired;
+# docs/dashboard/{generate.py,data.js,index.html} are gone and
+# `retired-console-check` FAILS CI if any returns. `gather_check_layout` below
+# had already been reduced to a pure retirement assertion -- FAIL if a retired
+# path reappears, OK otherwise -- and an AST call-graph pass proved the whole
+# orchestration island beneath it (`_run_check_layout`, `_serve_layout_dir`,
+# `_check_layout_geometry`, `_layout_chip_rows`, `_suppress_close` and the ten
+# `_LAYOUT_*` probe constants) had NO live caller at all: `_run_check_layout`
+# was called by nothing, and everything else only by it. The same pass found a
+# second orphan island on the dashboard-drift side (`_check_dashboard_drift` ->
+# `_check_project_dashboard_drift` -> `_drift_epics_md_ids`, plus `_load_data_js`
+# and `_board_projects`), deleted with it -- 494 lines, zero behaviour change,
+# verified by byte-comparing this module's `--json` findings before and after.
+#
+# Nothing registered was touched: both gathers, their DISPATCH entries, their
+# `Source` members and `report-schema.json` are unchanged. Only `_LAYOUT_CHECK`
+# survives here, because the live gather still emits it as the check name.
+#
+# If the console is ever revived, this is a rewrite against whatever replaces
+# it, not a revert -- the deleted code measured a bar that no longer exists.
 
 _LAYOUT_CHECK = "console-bar-layout"
 
@@ -1753,10 +1560,6 @@ _LAYOUT_CHECK = "console-bar-layout"
 # Widths above the 720px collapse breakpoint, where the three-column grid is
 # live and all four assertions apply; plus one below it, where stacking is the
 # designed behaviour and only no-overlap/in-bounds are meaningful.
-_LAYOUT_WIDE = (1600, 1400, 1200, 1000, 820)
-_LAYOUT_NARROW = (700,)
-_LAYOUT_BREAKPOINT = 720
-_LAYOUT_CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair
 # demand -- carried verbatim; unused in the origin too (dead there already,
 # not a porting artifact).
 
@@ -1764,8 +1567,6 @@ _LAYOUT_CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair
 # `.cbrow` now, and treating it as a row member made the gate report a phantom
 # "bar wrapped to 2 rows" (the two elements are in different containers, at the
 # same one-line bar height of 34px).
-_LAYOUT_CHIPS = ("#chip-ship", "#chip-run")
-_LAYOUT_EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allowance
 
 # Font sizes in px applied to `.cchip`. 11 is the design size; the rest simulate
 # a wider font face or a zoomed browser, which is how the operator hits at 11px
@@ -1773,31 +1574,8 @@ _LAYOUT_EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allo
 # outer chips wrap -- that is the correct degradation -- so the one-row assertion
 # is scoped to the design size only. Centring and non-overlap must hold at ALL
 # sizes; they are the invariants.
-_LAYOUT_PRESSURES = (11, 14, 17, 20, 24)
-_LAYOUT_DESIGN_SIZE = 11
 
-_LAYOUT_APPLY = """(fs) => {
-  document.querySelectorAll('.cchip').forEach(e => { e.style.fontSize = fs + 'px'; });
-}"""
 
-_LAYOUT_PROBE = """() => {
-  const bar = document.querySelector('.cbstatus');
-  if (!bar) return null;
-  const bb = bar.getBoundingClientRect();
-  const box = el => { const b = el.getBoundingClientRect();
-    return {l:b.left, r:b.right, t:b.top, b:b.bottom, cx:(b.left+b.right)/2}; };
-  const out = {bar:{l:bb.left, r:bb.right, cx:(bb.left+bb.right)/2, h:bb.height}, chips:{}};
-  for (const s of %s) {
-    const el = document.querySelector(s);
-    if (!el) continue;
-    const c = box(el);
-    const txt = el.querySelector('.ctext');
-    c.need = txt ? txt.getBoundingClientRect().width : 0;   // intrinsic label width
-    c.have = el.clientWidth;                                 // room the chip actually has
-    out.chips[s] = c;
-  }
-  return out;
-}""" % list(_LAYOUT_CHIPS)
 
 
 class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -1812,104 +1590,12 @@ class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def _serve_layout_dir(directory: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Serve ``directory`` over an ephemeral loopback port -- ported verbatim
-    from the origin's own ``_serve()`` (renamed only for this module's
-    prefix convention), so the run is hermetic rather than depending on
-    whichever server the operator happens to have open."""
-    handler = functools.partial(_LayoutQuietHandler, directory=str(directory))
-    httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    return httpd, httpd.server_address[1]
 
 
-def _layout_chip_rows(chips: dict) -> list[list[str]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Group chips into visual rows by vertical overlap -- ported verbatim
-    from the origin's own ``_rows()`` (renamed only for this module's
-    prefix convention; body unchanged)."""
-    rows: list[list[str]] = []
-    for name in sorted(chips, key=lambda n: chips[n]["t"]):
-        c = chips[name]
-        for row in rows:
-            o = chips[row[0]]
-            if c["t"] < o["b"] and o["t"] < c["b"]:
-                row.append(name)
-                break
-        else:
-            rows.append([name])
-    return rows
 
 
-def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """The five geometry assertions (edges/no-overlap/one-row/in-bounds/
-    not-clipped) -- ported verbatim from the origin's own ``check()``
-    (renamed to ``_check_layout_geometry`` to match this module's existing
-    ``_check_chain_completeness``/``_check_dashboard_drift`` naming
-    convention for "the pure assertion logic behind a gather"; body and
-    every message string unchanged)."""
-    bar, chips = m["bar"], m["chips"]
-    found: list[str] = []
-    at = f"w={width} [{scenario}]"
-    missing = [c for c in _LAYOUT_CHIPS if c not in chips]
-    if missing:
-        found.append(f"{at}: chip(s) absent from the DOM: {', '.join(missing)}")
-        return found
-
-    rows = _layout_chip_rows(chips)
-
-    # (2) no two chips sharing a row may overlap horizontally
-    for row in rows:
-        ordered = sorted(row, key=lambda n: chips[n]["l"])
-        for a, b in zip(ordered, ordered[1:]):
-            gap = chips[b]["l"] - chips[a]["r"]
-            if gap < 0:
-                found.append(f"{at}: {a} and {b} share a row and OVERLAP by {-gap:.1f}px")
-
-    # (5) no chip is clipping its own label
-    for name, c in chips.items():
-        if c.get("need", 0) > c.get("have", 0) + 1.0:
-            found.append(
-                f"{at}: {name} is CLIPPED — label needs {c['need']:.0f}px, chip has "
-                f"{c['have']:.0f}px; the text is rendering outside its own box")
-
-    # (4) nothing escapes the bar
-    for name, c in chips.items():
-        if c["l"] < bar["l"] - 0.5 or c["r"] > bar["r"] + 0.5:
-            found.append(
-                f"{at}: {name} escapes the bar "
-                f"(chip {c['l']:.0f}–{c['r']:.0f} vs bar {bar['l']:.0f}–{bar['r']:.0f})")
-
-    if width > _LAYOUT_BREAKPOINT:
-        # (3) one row above the breakpoint -- only at the design font size, since
-        # wrapping under font pressure is the intended degradation, not a fault.
-        if scenario == f"{_LAYOUT_DESIGN_SIZE}px" and len(rows) != 1:
-            found.append(
-                f"{at}: bar wrapped to {len(rows)} rows above the {_LAYOUT_BREAKPOINT}px "
-                f"breakpoint (height {bar['h']:.0f}px) — a chip is folding when it should not")
-        # (1) ship flush left, running flush right
-        dl = chips["#chip-ship"]["l"] - bar["l"]
-        dr = bar["r"] - chips["#chip-run"]["r"]
-        if dl > _LAYOUT_EDGE_TOL:
-            found.append(f"{at}: last-shipped chip is {dl:.1f}px from the bar's left edge "
-                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not left-flush")
-        if dr > _LAYOUT_EDGE_TOL:
-            found.append(f"{at}: running chip is {dr:.1f}px from the bar's right edge "
-                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not right-flush")
-    return found
 
 
-def _suppress_close(close) -> None:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """Run a cleanup callable, swallowing anything it raises.
-
-    Used only in ``_run_check_layout``'s ``finally`` blocks: a browser or
-    socket that fails to shut down is not a layout verdict, and letting it
-    propagate replaced every already-collected finding with one vacuous WARN.
-    """
-    try:
-        close()
-    except Exception:  # noqa: BLE001, S110 -- see the docstring; a failed
-        # teardown must never be able to change what this gather reports.
-        pass
 
 
 def _layout_warn(message: str, target: Path) -> tuple[Finding, ...]:
@@ -1972,169 +1658,4 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
-    """The NEW orchestration: launch a browser, serve ``target/docs/dashboard/``
-    over ``_serve_layout_dir``, measure the console bar at every width x
-    font-pressure combination the origin script defined, and hand each
-    width's probe result to ``_check_layout_geometry``. Every explicit
-    ``exit 2`` branch the original had (no usable chromium, the bar never
-    rendering) becomes a WARN ``Finding`` here instead of a process exit.
-
-    "COULD NOT MEASURE" AND "MEASURED, AND IT IS BROKEN" ARE DIFFERENT
-    VERDICTS, and this function keeps them apart in two separate lists. A
-    ``networkidle`` goto with a 20s timeout makes a single width's flake the
-    EXPECTED failure mode, and ``exit_code_for`` maps FAIL to exit 2 while WARN
-    leaves it at 0 -- so folding an unmeasurable width in with the real layout
-    findings reported a transient browser hiccup as a broken console bar and
-    turned the gate red on a clean board (reproduced live). That also
-    contradicts this module's own two siblings, which both spell
-    cannot-evaluate ``warn`` (``chain-completeness-unevaluable``,
-    ``dashboard-drift-unevaluable``). The ``.cbstatus not found`` line stays a
-    FAIL, because that one IS the original's own finding text for a bar that
-    loaded and did not render.
-    """
-    # `target/docs/dashboard`, NOT the origin script's own `HERE`
-    # (`Path(__file__).resolve().parent`) -- that resolved to wherever
-    # check_layout.py physically lived, which was only the same directory as
-    # the board this gather was ASKED about when the file happened to sit
-    # beside it (a symlinked/shared `check_layout.py` measured a DIFFERENT
-    # repo's dashboard, reproduced live before this was ported). The origin
-    # script had no `target` parameter and so could not hit this; serving
-    # `target`'s own directory is the fix, and it is unconditional now that
-    # there is no loaded module's `HERE` to prefer by mistake.
-    httpd, port = _serve_layout_dir(target / "docs" / "dashboard")
-    url = f"http://127.0.0.1:{port}/index.html"
-    raw_findings: list[str] = []
-    unmeasured: list[str] = []
-    measured = 0
-    try:
-        with sync_playwright() as p:
-            try:
-                browser = p.chromium.launch(channel="chrome")
-            except Exception:  # noqa: BLE001 -- fall back to the bundled chromium
-                try:
-                    browser = p.chromium.launch()
-                except Exception as exc:  # noqa: BLE001 -- no usable browser at all
-                    return _layout_warn(
-                        f"no usable chromium ({type(exc).__name__}) — cannot measure layout",
-                        target,
-                    )
-            try:
-                for width in (*_LAYOUT_WIDE, *_LAYOUT_NARROW):
-                    # Per-width isolation: without this guard one late failure
-                    # unwound the whole loop and discarded every
-                    # already-measured FAIL, reporting a genuinely broken bar
-                    # as "could not evaluate" -- the same finding-masking class
-                    # fixed per-project in _check_chain_completeness.
-                    try:
-                        page = browser.new_page(viewport={"width": width, "height": 900})
-                        try:
-                            page.goto(url, wait_until="networkidle", timeout=20000)
-                            page.wait_for_timeout(250)
-                            for fs in _LAYOUT_PRESSURES:
-                                name = f"{fs}px"
-                                page.evaluate(_LAYOUT_APPLY, fs)
-                                page.wait_for_timeout(60)
-                                m = page.evaluate(_LAYOUT_PROBE)
-                                if not m:
-                                    raw_findings.append(
-                                        f"w={width} [{name}]: .cbstatus not found — "
-                                        f"the bar did not render"
-                                    )
-                                    continue
-                                # AFTER _check_layout_geometry(), not before.
-                                # `measured` gates the OK message's "console
-                                # bar edges held, no overlap" -- so counting a
-                                # probe whose assertions never actually RAN
-                                # asserted a clean grid over an evaluation
-                                # that failed. An assertion pass raising at
-                                # every width produced a confident OK
-                                # alongside the per-width WARNs.
-                                raw_findings += _check_layout_geometry(width, m, name)
-                                measured += 1
-                        finally:
-                            # A page that fails to CLOSE is not a failed
-                            # measurement. Left bare, a raising `page.close()`
-                            # put a fully-measured width into `unmeasured` --
-                            # so the gather emitted a spurious cannot-measure
-                            # WARN alongside an OK reading "6 measurement(s):
-                            # 3 width(s) x 2 steps; 3 width(s) could not be
-                            # measured", counting every width in both lists.
-                            # Its two sibling teardowns below were already
-                            # suppressed for exactly this reason.
-                            _suppress_close(page.close)
-                    except (Exception, SystemExit) as exc:  # noqa: BLE001 --
-                        # SystemExit: kept as defense-in-depth against
-                        # playwright's own internals (a third-party library
-                        # this function calls into, not code this module
-                        # owns) rather than -- as before Story 6.9's fix --
-                        # against a dynamically exec'd `check_layout.py`
-                        # that no longer exists; KeyboardInterrupt stays out.
-                        unmeasured.append(
-                            f"w={width}: could not be measured — "
-                            f"{exc.__class__.__name__}: {exc}"
-                        )
-                        continue
-            finally:
-                # Cleanup must not be able to DESTROY the verdict. Raising out
-                # of these two `finally` blocks put every already-collected
-                # FAIL back behind one whole-gather WARN -- the masking hole
-                # the per-width guard above closes, reopened one frame up, and
-                # reproduced live with a browser that dies on close.
-                _suppress_close(browser.close)
-    finally:
-        # shutdown() only stops serve_forever's loop; without server_close()
-        # the listening socket stays open, leaking one fd (and one held
-        # ephemeral port) per call. Harmless in the one-shot CLI this was
-        # ported from, unbounded in a long-lived library caller.
-        _suppress_close(httpd.shutdown)
-        _suppress_close(httpd.server_close)
-
-    warns = tuple(_layout_warn(text, target)[0] for text in unmeasured)
-
-    if not measured:
-        # Nothing measured anywhere is the original's own UNKNOWN (its
-        # `exit 2`), so WARN is right -- but the collected reasons ARE the
-        # diagnosis. Returning only "the bar never rendered at any width"
-        # discarded every one of them AND asserted a cause never observed:
-        # when the page failed to LOAD, whether the bar would have rendered is
-        # exactly what is unknown.
-        detail = "; ".join([*unmeasured, *raw_findings]) or (
-            "the bar never rendered at any width"
-        )
-        return _layout_warn(detail, target)
-
-    if not raw_findings:
-        message = (
-            f"console bar edges held, no overlap — {measured} measurement(s): "
-            f"{len(_LAYOUT_WIDE) + len(_LAYOUT_NARROW)} width(s) x "
-            f"{len(_LAYOUT_PRESSURES)} font-pressure step(s)"
-        )
-        if unmeasured:
-            # Never claim a clean grid that was not measured (this gather's
-            # own headline contract).
-            message += f"; {len(unmeasured)} width(s) could not be measured"
-        return (
-            *warns,
-            Finding(
-                source=Source.CHECK_LAYOUT,
-                check=_LAYOUT_CHECK,
-                status=DoctorStatus.OK,
-                message=message,
-                evidence={"measured": measured},
-            ),
-        )
-    return (
-        *warns,
-        *(
-            Finding(
-                source=Source.CHECK_LAYOUT,
-                check=_LAYOUT_CHECK,
-                status=DoctorStatus.FAIL,
-                message=finding_text,
-                evidence={"measured": measured},
-            )
-            for finding_text in raw_findings
-        ),
-    )
 
