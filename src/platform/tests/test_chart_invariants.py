@@ -2836,7 +2836,9 @@ def test_sidecar_enabled_false_drops_dbgpt_entirely():
     assert not [
         doc
         for doc in docs
-        if doc.get("metadata", {}).get("labels", {}).get(
+        if doc.get("metadata", {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == _SIDECAR_COMPONENT

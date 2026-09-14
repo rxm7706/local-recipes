@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+from django.template.loader import render_to_string
 from django.test import RequestFactory
 from django.urls import get_resolver
 from django_pyforge.context_processors import chrome
@@ -23,7 +25,7 @@ def test_switcher_lists_mybmad_after_oidc_roles(monkeypatch) -> None:
     names = [s.name for s in ctx["pyforge_sidecars"]]
     assert names == ["mybmad"]
     assert ctx["pyforge_sidecars"][0].href == "https://mybmad.example.test"
-    html = __import__("django.template.loader", fromlist=["render_to_string"]).render_to_string(
+    html = render_to_string(
         "django_pyforge/switcher.html",
         ctx,
     )
@@ -45,10 +47,6 @@ def test_no_urlconf_mounts_mybmad_at_console_or_stations() -> None:
 
 def test_sidecar_href_refuses_forbidden_mounts(monkeypatch) -> None:
     monkeypatch.setenv("MYBMAD_PUBLIC_URL", "http://127.0.0.1:8000/console/")
-    try:
+    with pytest.raises(ValueError, match="/console/"):
         mybmad_sidecar()
-    except ValueError as exc:
-        assert "/console/" in str(exc)
-    else:
-        raise AssertionError("expected ValueError for /console/ href")
     assert mybmad_public_url() == "http://127.0.0.1:8000/console"

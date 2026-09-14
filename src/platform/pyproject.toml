@@ -67,7 +67,7 @@ ignore_errors = true
 # and every other code. Same shape as the Ruff per-file block; tighten or drop an entry
 # whenever its module is touched.
 [[tool.mypy.overrides]]
-module = ["platformapp.users.tests.factories", "tests.test_atlas_portal_inventory_row", "tests.test_broker_tls_verified", "tests.test_herald_portal_deck_status", "tests.test_marshal_loop_homes_portal", "tests.test_mason_portal_last_diagnose", "tests.test_restarts_reconcile", "tests.test_station_portal_shells", "tests.test_validation_errors_render_inline", "tests.test_warden_portal_audit_start_get"]
+module = ["platformapp.users.tests.factories", "tests.test_atlas_portal_inventory_row", "tests.test_broker_tls_verified", "tests.test_herald_portal_deck_status", "tests.test_marshal_loop_homes_portal", "tests.test_mason_portal_last_diagnose", "tests.test_restarts_reconcile", "tests.test_station_portal_shells", "tests.test_story_52_1_mybmad_sidecar", "tests.test_validation_errors_render_inline", "tests.test_warden_portal_audit_start_get"]
 disable_error_code = ["attr-defined"]
 
 [[tool.mypy.overrides]]
@@ -207,10 +207,6 @@ ignore = [
   "S101", # Use of assert detected https://docs.astral.sh/ruff/rules/assert/
   "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
   "SIM102", # sometimes it's better to nest
-  "UP038", # Checks for uses of isinstance/issubclass that take a tuple
-          # of types for comparison.
-          # Deactivated because it can make the code slow:
-          # https://github.com/astral-sh/ruff/issues/7871
   "COM812", # missing-trailing-comma -- conflicts with ruff's own formatter
             # (ruff's own warning: "may cause conflicts when used with the
             # formatter"), which now gates this project (retro action item
@@ -218,11 +214,6 @@ ignore = [
             # spots COM812 wants back, so the two rules disagree on the same
             # code. The formatter's placement is authoritative once it's
             # gated.
-]
-# The fixes in extend-unsafe-fixes will require
-# provide the `--unsafe-fixes` flag when fixing.
-extend-unsafe-fixes = [
-  "UP038",
 ]
 
 [tool.ruff.lint.isort]
