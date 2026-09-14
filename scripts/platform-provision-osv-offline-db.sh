@@ -49,10 +49,16 @@ trap 'rm -rf "$SCRATCH"' EXIT
 echo 'pip==24.0' >"${SCRATCH}/provision-input.txt"
 
 export OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="$CACHE_ROOT"
+# `|| true`: osv-scanner exits 1 when it finds vulnerabilities, which the
+# placeholder pip==24.0 bootstrap input always has -- a normal, expected
+# outcome here, not a download failure. The real pass/fail authority is
+# the db_is_usable re-check right below, same as this function's own
+# skip-path check above (found live 2026-09-14 -- under set -e this exit
+# code killed the script before that re-check ever ran).
 osv-scanner scan \
   --offline-vulnerabilities \
   --download-offline-databases \
-  -L "requirements.txt:${SCRATCH}/provision-input.txt"
+  -L "requirements.txt:${SCRATCH}/provision-input.txt" || true
 
 if ! db_is_usable "$DB_ZIP"; then
   echo "::error::OSV offline DB missing or empty after download (${DB_ZIP})" >&2
