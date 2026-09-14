@@ -17,7 +17,7 @@ date (no `.herald/bridge-state.json`).
 | pyforge-steward | PyForge Steward | `573d6554-0095-4126-b13f-cd537279ff8a` | 14,475 | 6 | 0 | 0 | 2026-07-24 | A |
 | pyforge-warden | Warden | `100ca8cc-8daa-409a-8564-1f8d79c579d2` | 411,764 (bundle; 192,472 content) | 18 | 0 | 15 | 2026-07-24 | A (visual reference; rebuild adds the act arc and the ledger, keeps the form) |
 | pyforge-genesis | PyForge Genesis | `6af4c28d-d510-4e9b-b788-6c0e5d651183` | 47,877 | 9 | 0 | 0 | 2026-07-25 | B |
-| pyforge-unifying-strategy | The Canopy | `1e4020bc-7f7f-43b2-9219-0904d4863df6` (created 2026-09-13, Story 20.12) | 128,783 | 21 | 6 | 9 | 2026-08-26 | B (structure reference; rebuild re-derives its facts and seeds Design) |
+| pyforge-unifying-strategy | The Canopy (masthead now reads "Foundry Platform" post-2026-09-13 pull, unreconciled — see deck's own README) | `1e4020bc-7f7f-43b2-9219-0904d4863df6` (created 2026-09-13, Story 20.12) | 236,761 | 23 | 7 | 3 | 2026-09-13 | B (structure reference; rebuild re-derives its facts and seeds Design) |
 | unity-data-stack | Unity Data Stack | `0494e2b0-7132-43b7-8ff2-4b4b42fa8384` | 18,588 | 7 | 0 | 0 | 2026-07-25 | later (chain deck; Design head verified identical to disk 2026-09-13) |
 | wasm-analytics-stack | Wasm Analytics Stack | `45c841c6-e807-4fee-a92a-f8e89cb890b4` | 18,713 | 6 | 0 | 0 | 2026-07-25 | later (chain deck) |
 | deckcraft | Deckcraft | `59c42e9c-7c90-431d-adae-b0021dd3f727` | 15,774 | 6 | 0 | 0 | 2026-07-25 | later (chain deck) |
