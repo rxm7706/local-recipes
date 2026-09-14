@@ -1,5 +1,5 @@
 {
- "recorded": "2026-09-10",
+ "recorded": "2026-09-14",
  "known": [
   "pyforge-doctor: _bmad-output/projects/pyforge-doctor/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-hook-specs.md cites bare CAP-18, which this project does not define -- qualify it (`<spine>:CAP-18`) or fix the id",
   "pyforge-doctor: _bmad-output/projects/pyforge-doctor/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md cites bare CAP-18, which this project does not define -- qualify it (`<spine>:CAP-18`) or fix the id",

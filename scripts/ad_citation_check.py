@@ -44,6 +44,7 @@ NOTHING about what follows. Verify the detector, not just the artifact.
 from __future__ import annotations
 
 import collections
+import datetime
 import json
 import pathlib
 import re
@@ -66,6 +67,13 @@ PROJECTS = ROOT / "_bmad-output" / "projects"
 #: reading, so they are recorded rather than guessed at.
 _BASELINE_PATH = ROOT / "scripts" / ".ad-citation-baseline.json"
 _CAP_BASELINE_PATH = ROOT / "scripts" / ".cap-citation-baseline.json"
+
+
+def _today() -> str:
+    """The date a baseline is stamped with. Was two hard-coded literals
+    ("2026-09-08" / "2026-09-10") until 2026-09-14, so every later re-stamp
+    still claimed those dates (Story 32.9)."""
+    return datetime.date.today().isoformat()
 
 #: Citations to a THIRD-PARTY tool's own documented ADs. These can never
 #: resolve against a spine in this fleet, because the tool that defines them
@@ -391,7 +399,7 @@ def main() -> int:
 
     if "--write-cap-baseline" in sys.argv:
         _CAP_BASELINE_PATH.write_text(
-            json.dumps({"recorded": "2026-09-10", "known": cap_findings}, indent=1) + "\n",
+            json.dumps({"recorded": _today(), "known": cap_findings}, indent=1) + "\n",
             encoding="utf-8",
         )
         print(f"[cap-citation] baseline written: {len(cap_findings)} known issue(s)")
@@ -399,7 +407,7 @@ def main() -> int:
 
     if "--write-baseline" in sys.argv:
         _BASELINE_PATH.write_text(
-            json.dumps({"recorded": "2026-09-08", "known": findings}, indent=1) + "\n",
+            json.dumps({"recorded": _today(), "known": findings}, indent=1) + "\n",
             encoding="utf-8",
         )
         print(f"[ad-citation] baseline written: {len(findings)} known issue(s)")
@@ -443,14 +451,22 @@ def main() -> int:
             + (f", {len(cap_healed)} since fixed" if cap_healed else "")
         )
     exit_code = 0
+    # Every NEW row is printed -- the NEW set IS the actionable set, and a
+    # detector that exits 1 must show what it exits on. Until 2026-09-14 both
+    # loops sliced `[:10]` beneath a headline carrying the full count, so a red
+    # with 61 NEW findings was read from the printed rows and recorded as 14
+    # (Story 32.9 / DW-AD-CITATION-2026-09-14-2): the "head truncates findings
+    # out of view" class CLAUDE.md warns about for pipes, built into the
+    # detector. The baselined set stays a count -- it is known debt, not the
+    # action list.
     if new:
         print(f"[ad-citation] {len(new)} NEW issue(s), not in the baseline:")
-        for line in new[:10]:
+        for line in new:
             print(f"[ad-citation]   NEW: {line}")
         exit_code = 1
     if cap_new:
         print(f"[cap-citation] {len(cap_new)} NEW issue(s), not in the baseline:")
-        for line in cap_new[:10]:
+        for line in cap_new:
             print(f"[cap-citation]   NEW: {line}")
         exit_code = 1
     if exit_code:
