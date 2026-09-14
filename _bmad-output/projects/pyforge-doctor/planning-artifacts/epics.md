@@ -8,8 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-14'   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
-currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-count of the as-built sources/ inventory) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 95/95 stories done across 22/22 epics; the eight sources/ modules the spine's re-count added were traced to their story homes and two have none in THIS file — capability_ledger.py is decomposed on steward's Epic 54 (cross-station relay, consistent with spec-pyforge-doctor's own incoming-surface-claim Assumption) and platform_policy.py landed from a retro action item with no story anywhere. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 21 added: Realization-gate hygiene — the doctor half of fleet-readiness-decision-batch-2026-09-09.md, operator-approved the same day. Stories 21.1-21.8 are the C8 / D2 / D3 / D5 code fixes that a Class-B status flip cannot carry (DEFERRED_SPECS hygiene, spec-status-missing, the sibling-dreams re-key on filename, CONSTITUTIVE derived from guild-roster.json, the deferred-work verifier project-root path bug, dreams-hygiene full coverage + README:71 + the Kinship wikilink validator, pixi-candidate-currency CAP-4, deferred-work intake CAP-9); Stories 21.9-21.16 decompose the two Specs minted this pass from new doctor Dreams (spec-capability-effect-check CAP-1..3 — the Story 49.2 relay; spec-status-body-consistency CAP-1..5). All 16 minted backlog via sprint_plan.py generate; no pre-existing ledger row changed. Prior: Reviewed 2026-09-06 (Epic 20 added: spec-bmad-suite-lifecycle doctor relays — suite drift 7→13, render-HALT + frozen-path-changed detectors, RCA routing, version-drift write-back; Stories 20.1–20.5). Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
+updated: '2026-09-14'   # 2026-09-14 (later): Epic 24 appended (spec-coverage-gate-independence CAP-1..3, guild-owned Spec, doctor mechanism). Earlier same day: chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+currency_review: "Reviewed 2026-09-14, later the same day (Epic 24 added — numbered after the docs-shelf Epic 23 that PR #1358 minted the same day: the coverage gate ships outside every station it judges — the mechanism stories for docs/governance/spec-coverage-gate-independence, a guild-owned Spec by the Charter §5 amendment of this date; Stories 24.1-24.3 minted backlog, doctor as executing Smith under §5 outcome/mechanism; no pre-existing ledger row changed). Prior: Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-count of the as-built sources/ inventory) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 95/95 stories done across 22/22 epics; the eight sources/ modules the spine's re-count added were traced to their story homes and two have none in THIS file — capability_ledger.py is decomposed on steward's Epic 54 (cross-station relay, consistent with spec-pyforge-doctor's own incoming-surface-claim Assumption) and platform_policy.py landed from a retro action item with no story anywhere. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 21 added: Realization-gate hygiene — the doctor half of fleet-readiness-decision-batch-2026-09-09.md, operator-approved the same day. Stories 21.1-21.8 are the C8 / D2 / D3 / D5 code fixes that a Class-B status flip cannot carry (DEFERRED_SPECS hygiene, spec-status-missing, the sibling-dreams re-key on filename, CONSTITUTIVE derived from guild-roster.json, the deferred-work verifier project-root path bug, dreams-hygiene full coverage + README:71 + the Kinship wikilink validator, pixi-candidate-currency CAP-4, deferred-work intake CAP-9); Stories 21.9-21.16 decompose the two Specs minted this pass from new doctor Dreams (spec-capability-effect-check CAP-1..3 — the Story 49.2 relay; spec-status-body-consistency CAP-1..5). All 16 minted backlog via sprint_plan.py generate; no pre-existing ledger row changed. Prior: Reviewed 2026-09-06 (Epic 20 added: spec-bmad-suite-lifecycle doctor relays — suite drift 7→13, render-HALT + frozen-path-changed detectors, RCA routing, version-drift write-back; Stories 20.1–20.5). Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -1974,3 +1974,91 @@ moving to 2026-09-12 and its memlog to 2026-09-14):
 appended above. Ledger keys minted via `sprint_plan.py generate` +
 `sprint-ledger-sync -- --project pyforge-doctor`. Prior 95/95 / 22/22 figure
 is superseded by this mint.
+
+## Epic 24: The coverage gate ships outside every station it judges (spec-coverage-gate-independence CAP-1..3)
+
+Minted 2026-09-14 from `docs/governance/spec-coverage-gate-independence/SPEC.md` (owner Dream
+`docs/dreams/coverage-gate-independence.md`, **`owner: guild`** by the Charter §5 amendment of the
+same day — the only Dream besides the Charter to carry it). The **outcome** is the Guild's; the
+**mechanism** is Doctor's under §5's outcome/mechanism rule, because Doctor is the Smith §6 names as
+Marshal's judge and `sources/marshal.py` is the independence exemplar CAP-1 copies — the same
+relay shape as the C8 row on the Charter's own Spec. Every story below binds to a CAP id on a Spec
+that lives in `docs/governance/`, not in this project's `specs/` tree; INV-A does not scan that
+directory, so the citations here are the only place the Spec's stories are enumerated.
+**Ruled and closed before minting** (do not re-open): the home is the Guild, not a `pyforge-gates`
+package (a Smith-less ninth package is `owner: crew` again); the data-only split is **not**
+sufficient (§6 names *weaken, re-threshold, disable* — moving only the data protects one of the
+three), so Story 24.1 moves the evaluator and the thresholds together; all eight stations are
+treated alike; the import-linter gains the rule. What is NOT in scope: any floor value (the 80/70
+defaults are `spec-pyforge-testing-charter` CAP-4's), marshal's verdict lattice (cleared), and the
+fleet-wide advisory posture of `detectors.yml` (its one-row carve-out, `ledger-regression`, was
+ruled separately the same day).
+
+### Story 24.1: The evaluator and the thresholds move out of marshal's package, together
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-coverage-gate-independence
+CAP-1, CAP-2 (`SPEC.md` success; the two land together by ruling, never CAP-2 alone)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_gate.py` (removed),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_thresholds.toml` (removed), their
+new homes under the governance Spec's surface (`docs/governance/coverage-thresholds.toml` beside
+`guild-roster.json`, carrying the same "changing this file is a governance act" `$comment`; the
+evaluator at a path outside every `pyforge.<station>` package — `scripts/` is the natural one, now
+that the Spec governing it is guild-owned), `scripts/coverage_gates_ci.py`,
+`scripts/run_station_coverage_gate.py`, `.github/workflows/coverage-gates.yml`, the eight
+`pyforge-<station>-coverage-gate` pixi tasks,
+`src/shared/packages/pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py` (the
+AD-3/AD-4 contract that names `pyforge.marshal.coverage_gate`, amended with its reasoning), and
+marshal's own tests for the module.
+**Given** `pyforge/marshal/coverage_gate.py` and `coverage_thresholds.toml` ship inside the marshal
+package and `coverage-gates.yml:90` runs that gate across all eight stations with no
+`continue-on-error`, so a three-line `[stations.marshal]` edit to a file marshal owns lowers the
+floor that reds marshal's own PRs with no Doctor verdict **When** the evaluator and the thresholds
+are moved out of `pyforge.marshal` to homes governed by the guild-owned Spec, every caller is
+re-pointed, and the AD-3/AD-4 import-linter contract is amended deliberately (its reasoning in the
+same change) **Then** no `pyforge.<station>` module is the evaluator of any station's CI gate
+**And** `coverage-gates.yml` and all eight `pyforge-<station>-coverage-gate` tasks call the new
+home and are green at the same floors — no station's floor changes as a side effect (byte-compare
+the effective thresholds before and after)
+**And** `docs/governance/coverage-thresholds.toml` carries the governance-act `$comment` and
+`spec-coverage-gate-independence/SPEC.md`'s `surface:` names both new paths
+**And** `import-linter` passes with the amended contract; the old module path resolves nowhere
+**Status:** backlog
+
+### Story 24.2: An import-linter contract catches the class structurally
+
+**Type:** feature • **Effort:** S • **Deps:** S-24.1 • **FR/AD:** spec-coverage-gate-independence
+CAP-3 (`SPEC.md` success)
+**Surface:** `src/shared/packages/pyforge-marshal/pyproject.toml` `[tool.importlinter]` (marshal's
+contracts, where AD-3/AD-4 live) and/or a fleet-level contract home the story chooses,
+`src/shared/packages/pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py` or a sibling
+meta-test, a fixture proving the contract fires.
+**Given** the defect Story 24.1 removes survived for weeks because nothing could see it — no test
+or contract asked whether a station's package evaluates that same station's CI gate **When** a
+contract forbids any `pyforge.<station>` module from importing or defining the gate evaluator, and
+a meta-test proves the contract fails on a planted reintroduction (a throwaway
+`pyforge.<station>.coverage_gate` shim in a temp tree) and passes on the moved layout **Then**
+reintroducing the shape fails a test rather than waiting for a future audit
+**And** the contract's own docstring names Charter §5/§6 and this Spec as its reason, so a
+future maintainer does not read it as an arbitrary layering rule
+**Status:** backlog
+
+### Story 24.3: The surfaces are reconciled so no file is governed twice or not at all
+
+**Type:** fix • **Effort:** S • **Deps:** S-24.1 • **FR/AD:** spec-coverage-gate-independence
+CAP-1 (`SPEC.md` `surface:`); spec-pyforge-testing-charter surface (the two `scripts/` drivers
+leave it); spec-surface baseline
+**Surface:** `docs/governance/spec-coverage-gate-independence/SPEC.md` (`surface:` declared,
+`.memlog.md` moved), `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md`
+(`scripts/coverage_gates_ci.py` and `scripts/run_station_coverage_gate.py` removed from its
+`surface:`, `.memlog.md` moved), `scripts/.spec-surface-baseline.json` (scoped stamps only —
+`--write-baseline --spec <key>` per key, never bare).
+**Given** Story 24.1 moves files that `spec-pyforge-testing-charter` currently lists in its
+`surface:` while the governance Spec's `surface:` is deliberately `[]` until the move **When** the
+governance Spec declares its surface, testing-charter drops the two drivers, both memlogs record
+the hand-over, and each key is stamped scoped **Then** `spec-surface` reports no `ungoverned`
+and no `drift` for any moved path
+**And** the governance Spec's `surface:` and testing-charter's are disjoint (no path appears in
+both)
+**And** `git ls-files` shows every new path tracked before the stamp (the baseline reads
+`git ls-files`)
+**Status:** backlog

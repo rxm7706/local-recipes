@@ -44,7 +44,7 @@ argument; the user-facing flag is still `--mode`.
 
 ## Non-goals
 
-- CAP-14 nav owner. Semantic as default. Portal redesign.
+- later-caps:CAP-14 nav owner. Semantic as default. Portal redesign.
 
 ## Success signal
 

@@ -75,7 +75,7 @@ new capability, additive to the estate, with a narrow and precisely-bounded
 exception (object storage only, client-consumed only, never self-hosted). Effort:
 moderate (three stories, one of which is real conda-forge recipe work with its own
 lifecycle). Risk: low — the exception's own boundary (never a platform-image-
-deployed service) is the same boundary AD-19 already proved safe for the IdP.
+deployed service) is the same boundary canopy:AD-19 already proved safe for the IdP.
 Timeline: no dependency on anything currently in flight.
 
 ## 4. Detailed change proposals

@@ -354,7 +354,7 @@ and was superseded. The correction is this paragraph; a future edit that re-word
 should cite it.
 
 **An ownership ruling worth carrying, because it prevents a duplicate capability.** The
-Spec now states **"Not CAP-14"**: the Unifying-Strategy semantic-recall capability
+Spec now states **"Not canopy:CAP-14"**: the Unifying-Strategy semantic-recall capability
 belongs to **steward Story 49.7**, and no parallel scribe-side CAP is minted for it.
 Charter §5 decides it — the owner of the outcome writes the story, the owner of the
 mechanism owns the verb it calls. Scribe owns the mechanism (`recall`); it does not own

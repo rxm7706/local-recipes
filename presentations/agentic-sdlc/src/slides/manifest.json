@@ -30,8 +30,8 @@
     "bg": "#F6F4EE"
   },
   {
-    "id": "06-what-is-ai-sdlc",
-    "label": "What is AI-SDLC",
+    "id": "06-what-is-aidd",
+    "label": "What is AiDD",
     "notes": "Define the term before going further. The AI-SDLC is not a new lifecycle — it's the one you already know: analyze, plan, design, build, test, ship. What changes is who does the work and how state moves between phases. Specialized agents execute each phase, humans keep judgment and approval, and persistent specs — not meetings or chat memory — carry the state from one phase to the next.",
     "bg": "#F6F4EE"
   },
@@ -134,7 +134,7 @@
   {
     "id": "23-skill-roster",
     "label": "Skill roster",
-    "notes": "The full skill roster in the latest release, aligned to agents and phases. Every workflow ships as an installable skill — invoke it directly by its bmad- id, or through the owning agent's menu. Mary and Paige cover analysis, John and Sally planning, Winston solutioning, Amelia the whole implementation loop. And a set of cross-cutting skills — help, party-mode, customize, project-context generation — plus the quick-dev and dev-auto parallel track work across all phases.",
+    "notes": "The full skill roster in v6.12, aligned to agents and phases. Every workflow ships as an installable skill — invoke it directly by its bmad- id, or through the owning agent's menu. Mary covers analysis, John and Sally planning, Winston solutioning, Amelia the whole implementation loop. Cross-cutting skills — help, party-mode, project-context — plus the build and build-auto parallel track work across all phases.",
     "bg": "#F6F4EE"
   },
   {
@@ -228,73 +228,79 @@
     "bg": "#F6F4EE"
   },
   {
-    "id": "39-governance",
+    "id": "39-workflow-matrix",
+    "label": "Workflow matrix",
+    "notes": "The comprehensive workflow matrix — everything in the method on one page. Read across: each phase column shows the activities you can run, the agents that own them, the skills those agents wield, and the artifacts that come out. Read down: pick your track — BMAD-full runs all four phases end to end, BMAD-quick-dev skips straight to story specs and implementation. The bottom strip maps the eight PyForge Guild stations to their current phase, showing who's building what right now.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "40-governance",
     "label": "Governance",
     "notes": "Pull the docs idea together and scale it. The documents aren't paperwork — they're the product's memory. A project-context file makes a dozen separate agent runs feel like one coherent team, and at enterprise scale it matures into a constitution: a single, versioned source of truth that supersedes ad-hoc practice. The interesting part: agents are empowered to enforce it — they audit every PR and cite the exact clause a change violates. Humans amend it through ADRs and sign-off. And a simplicity gate keeps complexity honest: YAGNI, with justification required.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "40-the-lexicon",
+    "id": "41-the-lexicon",
     "label": "The Lexicon",
     "notes": "The vocabulary of the system, read as a constitution. Seven nouns, each a load-bearing separation of concerns, each doing exactly one job — the Spec joined the six on 2026-07-25 to close a real hole: nothing else held the five-field contract still while the PRD, architecture, and epics moved around it. The chain reads both ways: forward as authorization — the Charter authorizes the Guild, the Spec binds the work, the Guild seats Smiths, Smiths hold stations, stations wield skills, the work stands open in the Guildhall. Backward as audit — anything visible traces to an independent verdict, a named Smith, the Guild, a Spec, the Charter. The tagline maps directly: Governed is Charter plus Spec plus Stations, Auditable is the Guildhall plus the backward trace, Production-ready is Skills plus verdicts that never false-green.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "41-lexicon-to-pyforge",
+    "id": "42-lexicon-to-pyforge",
     "label": "Lexicon to PyForge",
     "notes": "How the lexicon is actually implemented, using PyForge as the worked example. Read each row across: the abstract unit, what the Charter's law says, and the concrete artifact in the repo. The Charter is a markdown Dream at Tier 0, amended by a recorded Realization log. The Spec is the five-field contract every Dream distills to, derived from an append-only memlog and re-rendered, never hand-patched. The Guild shows up as owner frontmatter on all thirty-seven Dreams. Each Smith has a persona Dream, with the branding law enforced down to PEP 503 package names. Stations live as per-project BMAD output plus the loop policy's gates. Skills are the installed bmad-star suite plus the skill forge — the harness deliberately isn't one. And the Guildhall is the Factory Console on GitHub Pages, derived from ledgers, and refuses to publish a row with no accountable owner. The strip at the bottom is the Dream-first flow from the Dreams README — with the audit running backward in parallel.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "42-build-for-agents",
+    "id": "43-build-for-agents",
     "label": "Build for agents",
     "notes": "The flip side: it's not just about using agents to build — it's about building systems agents can operate. Three layers: interfaces with semantic structure and deterministic layouts, no vibe UI; APIs that are idempotent and self-documenting with errors clear enough for an agent to self-correct; and an agent harness — explicit tool exposure, strict guardrails, exhaustive run-trace logs.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "43-governing-the-agent-not-just-the-code",
+    "id": "44-governing-the-agent-not-just-the-code",
     "label": "Governing the agent, not just the code",
     "notes": "As agents get more autonomy, the security conversation shifts from what the model outputs to what the agent is allowed to do. OWASP's 2026 Top 10 for Agentic Applications puts identity and privilege abuse at the top — agents inheriting broad, long-lived credentials and acting past what anyone intended. The governing principle industry is converging on is least agency, not just least privilege: bound not just what an agent can reach, but how much it can decide before checking back. BMAD's phase gates and named, scoped agents are already a structural head start on this, even though the framework itself isn't a security product.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "44-module-ecosystem",
+    "id": "45-module-ecosystem",
     "label": "Module ecosystem",
     "notes": "BMAD isn't one thing — the core is a module in a wider ecosystem, and V6 leans hard into that. The core, BMM, is the 34+ workflow framework this deck walks through. On top of it, official modules extend the same scale-adaptive discipline into new domains, each installable during setup or any time after: BMad Builder to create your own agents and workflows; Test Architect (TEA) for risk-based test strategy; Game Dev Studio for Unity, Unreal, and Godot pipelines; and the Creative Intelligence Suite for brainstorming, innovation, and design-thinking facilitation. All MIT, all installed the same way. And when you're unsure what's next, the bmad-help skill tells you what to do and what's optional.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "45-bmad-builder",
+    "id": "46-bmad-builder",
     "label": "BMad Builder",
     "notes": "When the built-in agents don't cover your domain — HIPAA reviews, a house deployment process — BMad Builder creates your own. The packaging model: everything is a skill, a folder with a SKILL.md, following the open Agent Skills standard; agents, workflows, and utilities all ship the same way. Agents come in three types: stateless for single-session experts; memory agents that keep a persistent 'sanctum' of identity and knowledge files and greet you by name next session; and autonomous agents that add a PULSE file and wake on a schedule to work unattended. Builders run as guided conversations, then modules package skills for distribution on GitHub.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "46-plan-anywhere",
+    "id": "47-plan-anywhere",
     "label": "Plan anywhere",
     "notes": "The method isn't locked to one tool. Six planning coaches ship as web bundles you can install as ChatGPT Custom GPTs, Gemini Gems, or Microsoft Copilot agents — do the heavy planning on a flat-rate subscription, then bring the artifacts into your IDE for implementation. And a growing ecosystem of modules and community tools extends the same discipline to testing, game dev, automation, and more.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "47-in-action",
+    "id": "48-in-action",
     "label": "In action",
     "notes": "Optional show-and-tell slide. Drop in your own screenshots to make the method concrete: the installer running in your terminal, a real workflow or party-mode session, and the generated artifacts in your editor or the docs site. Live captures land better than stock diagrams here — swap these three in before presenting. If you'd rather not use images, this slide can be removed.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "48-get-started",
+    "id": "49-get-started",
     "label": "Get started",
     "notes": "How to actually try it. One install command, open your AI IDE, and if you're ever unsure, ask bmad-help and it tells you what's next. It's free and open source. The fastest way to understand it is to run it once on something small.",
     "bg": "#0B1626"
   },
   {
-    "id": "49-principles",
+    "id": "50-principles",
     "label": "Principles",
     "notes": "The takeaways that transfer even if you never use this specific framework. Structure beats prompting. Documents are context. Decide the hard things once. Match ceremony to complexity. Keep a human in the loop. And when output is wrong, fix the upstream document and rerun — don't patch the code. These are the durable lessons of agentic development.",
     "bg": "#0B1626"
   },
   {
-    "id": "50-closing",
+    "id": "51-closing",
     "label": "Closing",
     "notes": "Close. Agentic development isn't about handing off your judgment — it's about giving your judgment a structure to work in. Try it on something small this week. Resources on screen.",
     "bg": "#0B1626"

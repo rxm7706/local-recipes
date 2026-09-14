@@ -81,6 +81,27 @@ this Spec eventually decides.
     `status_body_consistency.py` with one declaration both prose and code consume.
   - **success:** adding or retiring a status value is a one-place change, and no detector carries
     a private copy.
+  - **Scope widened 2026-09-14 (operator ruling on `DW-VOCAB-2026-09-14-8`): the exit-code
+    lattices are the second vocabulary this CAP owns.** Four exit-code domains are live at once —
+    `pyforge.doctor.verdict` `{0, 2, 130}` (2 = FAIL, no 1), `scripts/detectors.py` `{0, 1, 2}`
+    (2 = could-not-run), `pyforge.warden.verdict` `{0, 1, 2, 130}`, `pyforge.marshal.core.verdict`
+    `{0, 1, 2, 3, 4, 130}` — three of which invented their own numbers, with only Doctor⊂Warden
+    documented as intentional and Marshal's recorded in its own docstring as "a recorded
+    assumption, not architecture-dictated". The **declaration half is done**:
+    `docs/reference/judgement-vocabulary.md` is the declared home and
+    `tests/scripts/test_exit_code_domains_are_declared.py` pins all four domains against it,
+    asserting the *code* rather than its prose, so the rot risk is closed. The **unification
+    half is this CAP's**: one declared exit-code vocabulary the four surfaces *read*, rather
+    than four hand-maintained constants — the same "no detector carries a private copy" success
+    criterion, applied to exit codes instead of status values. Ruled to live here rather than in
+    a Dream of its own because this Dream already owns "one name, one job" for the estate's
+    vocabulary and a second Dream would split one contract across two chains. Constraints
+    carried from the ledger entry: Doctor's subset of Warden's domain is deliberate
+    (`doctor/verdict.py:4-7` — Doctor reports operability, not policy, so it omits the policy
+    rung `1`) and survives unification as a declared subset; only the aggregator's `2` genuinely
+    conflicts and it is the one surface with no lattice at all. Cross-station (doctor, warden,
+    marshal, `scripts/detectors.py`), so the Story that lands it names all four surfaces and
+    is dispatched when this Spec flips to `ready`.
 - **CAP-3 — the BMAD↔Lexicon cross-walk.**
   - **intent:** BMAD supplies the terms in heaviest daily use (Epic, Story, Sprint, PRD,
     Retrospective, the five agents) and has no cross-walk, though the Hub got one.

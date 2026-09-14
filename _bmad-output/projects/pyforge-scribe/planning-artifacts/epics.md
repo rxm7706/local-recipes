@@ -326,14 +326,14 @@ the same date.
 
 ## Canopy obligations (2026-08-24)
 
-Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). CAP-14 graph
+Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). canopy:CAP-14 graph
 backend and semantic recall stay **steward Epic 28** — not a scribe-local graph epic.
 **Epic 4** (later 2026-08-24) is CAP-18 `GraphStore` plugin *registration* only.
 
 | Obligation | Owner | Notes |
 |---|---|---|
-| **CAP-14 / FR-35** — durable PostgreSQL/pgvector graph driver behind the existing `GraphStore` port, with the local flat-file path retained | **steward Epic 28** (S-28.1) | Scribe cooperates only: keep `compile.py` / `recall.py` caller-agnostic (scribe AD-5); schema isolation is **parent AD-1** / **parent AD-5** (`scribe_schema`). **Do not** add SQLite-over-RWX. Today's shipped backend is **`FlatFileGraphStore`** only — the unifying-strategy Dream's "already dual-driver" premise was false. |
-| **CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
+| **canopy:CAP-14 / FR-35** — durable PostgreSQL/pgvector graph driver behind the existing `GraphStore` port, with the local flat-file path retained | **steward Epic 28** (S-28.1) | Scribe cooperates only: keep `compile.py` / `recall.py` caller-agnostic (scribe AD-5); schema isolation is **parent AD-1** / **parent AD-5** (`scribe_schema`). **Do not** add SQLite-over-RWX. Today's shipped backend is **`FlatFileGraphStore`** only — the unifying-strategy Dream's "already dual-driver" premise was false. |
+| **canopy:CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
 | **Five-tier symmetry** — portal `/stations/scribe/`, MCP service face, SKF domain skill, station persona | **steward Epics 19, 21, 29** | CLI tier exists (`scribe`; unified `pyforge scribe` via steward Epic 22). No second chrome, no extra port. |
 | Scribe tracker | *This section only* | Thin cooperation note — implementation stories live in steward planning artifacts, not here. |
 
@@ -359,7 +359,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
-**Scribe-local:** Graph-store / recall-backend plugins are station hooks (Story **4.1**). Memory completeness is not a PR quality gate. CAP-14 backing-store work remains steward Epic 28.
+**Scribe-local:** Graph-store / recall-backend plugins are station hooks (Story **4.1**). Memory completeness is not a PR quality gate. canopy:CAP-14 backing-store work remains steward Epic 28.
 
 **Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
 `change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
@@ -382,7 +382,7 @@ So that swapping a recall store does not fork scribe.
 
 ## Epic 5: Scribe owns remaining skill/persona and one portal job
 
-Steward 29.1 compiled the SKF *shape* from scribe. This epic **owns** any remaining skill/persona gaps and the first portal job. Does **not** copy Canopy 18–30. CAP-14 PG driver stays steward Epic 28.
+Steward 29.1 compiled the SKF *shape* from scribe. This epic **owns** any remaining skill/persona gaps and the first portal job. Does **not** copy Canopy 18–30. canopy:CAP-14 PG driver stays steward Epic 28.
 
 ### Story 5.1: SKF skill ownership and BMAD persona for scribe
 
@@ -414,7 +414,7 @@ shipped plugin contract. Extras are **off by default** (air-gap). Two consumers 
 waiting: the foundry-cutover move-list (`docs/dreams/pyforge-unifying-strategy.md` § One working tree / phases 0–6) and
 marshal Epic 28's token-economy Layers 3–4 (marshal Stories 28.8/28.9 consume by scribe
 grammar only). **Never, epic-wide:** a second graph/vector store or store-of-record; a
-`cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides CAP-8);
+`cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides canopy:CAP-8);
 a foundry-root `graphify-out/` product dir; `mem0.add` / `mem0 init --agent` in place of
 `scribe capture` — the `recall_ranker` mem0 extra is deliberately **not** in this epic.
 
@@ -440,7 +440,7 @@ So that derived artifacts (the move list, marshal's epic-context distills) stay 
 **Given** the extra off (default) **When** a compile runs **Then** behavior is unchanged
 **And** with the extra on, unchanged sources across two consecutive runs yield zero recompute, and one changed source yields exactly one refresh touching only the affected derived rows
 **And** outputs write through the persist port or land as derived gitignored artifacts — cocoindex is the freshness engine, never a GraphStore engine and never a store of record
-**And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides CAP-8)
+**And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides canopy:CAP-8)
 
 ### Story 6.3: The graph-node staleness flag
 
@@ -448,7 +448,7 @@ As a scribe operator,
 I want compile_graph to flag a node `stale: true` when its source has moved since compile with no declared supersession,
 So that consumers like marshal's planning-graph retrieval (Story 28.9) never silently serve outdated planning context as if it were current.
 
-**Type:** feature • **Effort:** M • **Deps:** S-2.3 • **FR/AD:** spec-marshal-token-economy CAP-13
+**Type:** feature • **Effort:** M • **Deps:** S-2.3 • **FR/AD:** spec-marshal-token-economy token-economy:CAP-13
 **Given** a node whose source file's latest git commit postdates the node's own `valid_from` and no `supersedes:` edge points at it **When** compile runs **Then** the node is flagged `stale: true`
 **And** given an unchanged source, or a node with a declared `supersedes:` edge pointing at it **When** compile runs **Then** the node is never flagged stale
 **And** given a retrieval that resolves to a stale-flagged node **When** the answer is served **Then** the consumer falls back to its non-graph path rather than serving the stale node silently
@@ -539,7 +539,7 @@ night and prove nothing); the graph stays a derived artifact, never a source of 
 ## Epic 9: Scoped retrieve can cite the poster’s numbers
 
 **Spec binding.** `spec-scribe-marshal-fact-visibility` CAP-1 (hoisted
-parked CAP-10). Compile already writes `presentations/<slug>/facts.yaml`
+parked later-caps:CAP-10). Compile already writes `presentations/<slug>/facts.yaml`
 (`Story 8.3`). Marshal planning-graph retrieve already passes `--scope`.
 The gap is the citation rule in `recall.py`.
 
@@ -554,7 +554,7 @@ The gap is the citation rule in `recall.py`.
 ## Epic 10: The story you are on compiles; the ones you finished do not
 
 **Spec binding.** `spec-scribe-in-flight-story-specs` CAP-1 (hoisted
-parked CAP-6). Folder `SPEC.md` already compiles (Story 8.4). Per-story
+parked later-caps:CAP-6). Folder `SPEC.md` already compiles (Story 8.4). Per-story
 files must not join as a glob.
 
 ### Story 10.1: In-flight story specs join the compile
@@ -568,7 +568,7 @@ files must not join as a glob.
 ## Epic 11: Recall withholds what landed after last night's compile
 
 **Spec binding.** `spec-scribe-recall-stale-between-nightlies` CAP-1
-(hoisted parked CAP-9). Compile-time stale (Story 8.4) is unchanged.
+(hoisted parked later-caps:CAP-9). Compile-time stale (Story 8.4) is unchanged.
 
 ### Story 11.1: Recall withholds sources committed after compile
 **Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-2.4 • **FR/AD:** `spec-scribe-recall-stale-between-nightlies` CAP-1
@@ -581,7 +581,7 @@ files must not join as a glob.
 ## Epic 12: Every recall door uses the same default bag
 
 **Spec binding.** `spec-scribe-portal-recall-defaults` CAP-1 (hoisted
-parked CAP-12). CAP-5 stays `AGENTS.md`.
+parked later-caps:CAP-12). CAP-5 stays `AGENTS.md`.
 
 ### Story 12.1: Portal and Marshal inherit default recall
 **Type:** feature • **Effort:** S • **Deps:** S-8.5 • S-8.6 • **FR/AD:** `spec-scribe-portal-recall-defaults` CAP-1
@@ -594,7 +594,7 @@ parked CAP-12). CAP-5 stays `AGENTS.md`.
 ## Epic 13: Planning novels stay files; the graph holds pointers
 
 **Spec binding.** `spec-scribe-planning-pointers` CAP-1 (hoisted
-parked CAP-7). Folder `SPEC.md` and in-flight story specs stay on
+parked later-caps:CAP-7). Folder `SPEC.md` and in-flight story specs stay on
 their own surfaces.
 
 ### Story 13.1: Planning pointers join the compile
@@ -609,7 +609,7 @@ their own surfaces.
 ## Epic 14: Named docs extras, never the docs tree
 
 **Spec binding.** `spec-scribe-named-docs` CAP-1 (hoisted parked
-CAP-13). Dreams stay on the existing CAP-3 surface.
+later-caps:CAP-13). Dreams stay on the existing CAP-3 surface.
 
 ### Story 14.1: Named docs join the compile
 **Type:** feature • **Effort:** S • **Deps:** S-8.4 • S-13.1 • **FR/AD:** `spec-scribe-named-docs` CAP-1
@@ -623,7 +623,7 @@ CAP-13). Dreams stay on the existing CAP-3 surface.
 ## Epic 15: Graphify walks the named code trees, not the warehouse
 
 **Spec binding.** `spec-scribe-graphify-target-list` CAP-1 (hoisted
-parked CAP-8). Extra remains off by default.
+parked later-caps:CAP-8). Extra remains off by default.
 
 ### Story 15.1: Graphify target list joins the compile
 **Type:** feature • **Effort:** S • **Deps:** S-8.2 • **FR/AD:** `spec-scribe-graphify-target-list` CAP-1
@@ -637,7 +637,7 @@ parked CAP-8). Extra remains off by default.
 ## Epic 16: Recall names the surface, not a kind bag
 
 **Spec binding.** `spec-scribe-recall-modes` CAP-1 (hoisted parked
-CAP-11). Internal lexical/semantic ranking is unchanged.
+later-caps:CAP-11). Internal lexical/semantic ranking is unchanged.
 
 ### Story 16.1: Recall modes join the CLI
 **Type:** feature • **Effort:** S • **Deps:** S-8.5 • **FR/AD:** `spec-scribe-recall-modes` CAP-1
@@ -651,7 +651,7 @@ CAP-11). Internal lexical/semantic ranking is unchanged.
 ## Epic 17: One owner for “where is this symbol?”
 
 **Spec binding.** `spec-scribe-code-navigation-owner` CAP-1 (hoisted parked
-CAP-14 from `spec-scribe-knowledge-layers/later-caps.md`). Reserved hole
+later-caps:CAP-14 from `spec-scribe-knowledge-layers/later-caps.md`). Reserved hole
 between 16 and 18 — do not renumber Epic 18.
 
 ### Story 17.1: Marshal codegraph owns symbol navigation

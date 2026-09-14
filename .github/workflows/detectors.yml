@@ -24,14 +24,20 @@ name: Detectors
 # observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
 # here is that gap, surfacing as a deployment constraint.
 #
-# ADVISORY, NOT BLOCKING — operator decision 2026-07-31 — WITH ONE SCOPED
-# EXCEPTION (Story 12.2, pyforge-mason, 2026-08-27): `cfe_rebuild_guard_check`
-# alone is a real gate. The CFE-rebuild campaign's re-scope gate named CI
-# enforcement as pre-condition (a) for continuing to slice 2, and SPEC.md's
-# CAP-3 promises a detector that "fails CI" — so that ONE detector gets a
-# dedicated blocking step below whose exit code stands. Every other detector's
-# findings still surface as GitHub warning annotations and a job summary; the
-# advisory sweep itself always succeeds, so their findings never block a merge.
+# ADVISORY, NOT BLOCKING — operator decision 2026-07-31 — WITH TWO SCOPED
+# EXCEPTIONS, each a dedicated blocking step below whose exit code stands.
+# (1) Story 12.2, pyforge-mason, 2026-08-27: `cfe_rebuild_guard_check`. The
+# CFE-rebuild campaign's re-scope gate named CI enforcement as pre-condition (a)
+# for continuing to slice 2, and SPEC.md's CAP-3 promises a detector that
+# "fails CI". (2) Operator ruling 2026-09-14 (DW-VOCAB-2026-09-14-16): Doctor's
+# durability verdict on Marshal's row — `ledger-regression`. Charter §6 makes
+# Doctor the judge of Marshal so Marshal never grades itself, and §5 assumes
+# the judge's verdict is the one with force; but this sweep was advisory while
+# marshal's own coverage gate (coverage-gates.yml) blocks, so the judge
+# annotated and the judged station's gate red the PR. The ruling reverses that
+# for exactly ONE row, not fleet-wide. Every other detector's findings still
+# surface as GitHub warning annotations and a job summary; the advisory sweep
+# itself always succeeds, so their findings never block a merge.
 #
 # State that plainly rather than letting the green tick imply more than it means:
 # this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
@@ -200,3 +206,24 @@ jobs:
       # unchanged (see the header comment above).
       - name: CFE rebuild guard (blocking — Story 12.2)
         run: ${{ steps.py.outputs.cmd }} scripts/cfe_rebuild_guard_check.py
+
+      # Operator ruling 2026-09-14 (DW-VOCAB-2026-09-14-16, the inverted force
+      # ratio): Doctor's durability verdict on Marshal's row is blocking. Same
+      # shape as the step above — the source re-runs after the advisory sweep
+      # and its exit code stands. It projects through pyforge.doctor.verdict,
+      # whose frozen domain is {0, 2, 130}: 0 ok (warn included), 2 FAIL — there
+      # is no 1, and 2 here means a real regression, not "could not run" (see
+      # CLAUDE.md § Health / status on the two surfaces' inverted 2).
+      #
+      # Why `ledger-regression` and not the `marshal-durability` category:
+      # both are Doctor's verdict on the same 2026-08-08 incident class (a
+      # sync destroying 96 `done` markers while printing success), but
+      # `marshal-durability` compares the WORKING TREE against HEAD — on a
+      # runner those are the same commit, so it can observe nothing — while
+      # `ledger-regression` compares origin/main..HEAD (first-parent fallback
+      # on a push to main), the form its own docstring says was designed to
+      # run in CI. fetch-depth: 0 above is what makes that range resolvable.
+      # Scoped on purpose: ledger-direction and every other Marshal-row source
+      # stay advisory; widening is a further ruling, not a drift.
+      - name: Doctor's durability verdict on Marshal (blocking — ruling 2026-09-14)
+        run: ${{ steps.py.outputs.cmd }} -m pyforge.doctor.sources ledger-regression

@@ -22,7 +22,7 @@ Infographic standalone.html` (display brand **The Canopy**) is the family's *str
 and length* reference — 128,783 B, 21 sections, six acts, nine inline SVGs — and it is the one
 deep poster whose shape is already correct. What is wrong is its facts: it was frozen at its
 2026-08-26 authoring date and cited no source for any number. It still read "CAP-1..18 closed
-2026-08-26 · CAP-19 live", "Five-tier symmetry — declared complete, 40/40", "Py 3.12", a
+2026-08-26 · canopy:CAP-19 live", "Five-tier symmetry — declared complete, 40/40", "Py 3.12", a
 six-cell timeline of August dates, and a set of third-party pins (`mcp 2.0.0`,
 `liquibase 5.0.4+`, `Django >=5.2.17,<6`) that no tracked ledger can source.
 
@@ -94,7 +94,7 @@ ledger records the etag as `PENDING-PUSH`.
 **Summary:** `deck-facts pyforge-unifying-strategy` re-derived `facts.yaml` at tree
 `6a49e9f223` (41 rows). 36 `data-fact` marks added across the masthead, the meta strip, the
 capability grid, Acts III–VI. Stale literals replaced from the ledger: the masthead status line
-(`CAP-1..18 closed 2026-08-26 · CAP-19 live` → `Spec ready · CAP-1..19 · Dream specified`), the
+(`CAP-1..18 closed 2026-08-26 · canopy:CAP-19 live` → `Spec ready · CAP-1..19 · Dream specified`), the
 capability chip and Scope cell (`spec_capabilities`), the Owner cell (now carries
 `steward_stories_done_total` — this chain's ledger proxy, the story having no station package),
 and the Host cell (`Py 3.12` → `Py 3.14`, the fixed floor in the Spec's `stack.md`). A new box

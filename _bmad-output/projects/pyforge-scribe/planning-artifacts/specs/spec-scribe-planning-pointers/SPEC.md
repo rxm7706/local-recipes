@@ -51,7 +51,7 @@ ID/heading extract — answers “where is it?” without serving the novel.
 
 - Wholesale `docs/`, `recipes/`, presentations export trees.
 - cocoindex inside `compile_graph`.
-- CAP-8 graphify targets; CAP-13 extra docs; CAP-11 recall modes.
+- later-caps:CAP-8 graphify targets; later-caps:CAP-13 extra docs; later-caps:CAP-11 recall modes.
 
 ## Success signal
 

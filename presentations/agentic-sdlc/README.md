@@ -1,11 +1,40 @@
 # Agentic AI across the software lifecycle — a deck
 
-A 50-slide field guide for engineers on **agentic AI across the SDLC**, grounded in
+A 51-slide field guide for engineers on **agentic AI across the SDLC**, grounded in
 the open-source [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD). Built as
 a self-contained **React + Vite** presentation app.
 
 The deck walks six acts: the case for change → spec-driven development → choosing a
 framework → the BMAD agent team → the four phases → scale, governance & ecosystem.
+
+## Ledger — 2026-09-14 pull (the 2026-09-09 Design refresh)
+
+Pull only — nothing was authored in the repo. The prototype and both standalone
+Lexicon posters were pulled byte-exact from Design (`render_preview` → curl → strip
+the injected harness block; every byte count verified against `list_files`), then
+`extract` → `build` re-derived the fragments and manifest. `project/github.md` is the
+Design-side bridge record, mirrored verbatim.
+
+What the Design refresh carried (authored in Design on 2026-09-09, per `github.md`):
+the AI-SDLC → **AiDD** rebrand, skills consolidated 14 → 8 with the v6.12 names
+(`bmad-build`, `bmad-build-auto`, `bmad-deep-recon`, `bmad-review`, the
+`project-context` skill), the Tech Writer persona (Paige) retired, `bmad-loop` /
+`bmad-spec` / `bmad-ux` added, the module ecosystem grown to six, party mode updated,
+and a new *Workflow matrix* slide (un-footered, like the two Lexicon slides). The
+posters dropped their hard-coded Dream/Spec counts for evergreen copy.
+
+50 → 51 sections; 47 still carry the page-footer counter (Title, Workflow matrix and
+the two dense Lexicon slides are un-footered).
+
+**Still to change in Design, then pull** (tracked as `DW-VOCAB-2026-09-14-3` in
+`_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`):
+the *Scale-adaptive* slide's title reads "Three tracks" where the Charter now
+requires the sense written out ("Three **planning** tracks"); four unprefixed
+`quick-dev` / `dev-auto` mentions survived the rename sweep (one body line on
+*Quick flow*, three speaker notes); *Lexicon to PyForge*'s Guildhall line names the
+retired `docs/dashboard/ → GitHub Pages` surface (the referent is an open Charter §7
+question); and `Agentic SDLC.marp.md` — a parallel Marp export, not derived from the
+prototype — was not refreshed Design-side and still carries the pre-6.11 skill names.
 
 ## Ledger — 2026-08-01 refresh
 

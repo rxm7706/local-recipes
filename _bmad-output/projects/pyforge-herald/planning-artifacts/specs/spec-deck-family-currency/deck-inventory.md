@@ -33,5 +33,5 @@ Every Wave A/B Design project already holds `reference/Warden Infographic standa
 | Marshal | `bmad-method 6.10.0`, `bmad-loop 0.9.0` | BMAD core 6.12.0; bmad-loop per `pixi.toml` pin |
 | Marshal | "128/333 fleet-wide", "Marshal Epic 1 · 10/10" | fleet 846/865 stories, 183/188 epics; marshal 248/249 |
 | Marshal | Herald 4/27 · Mason 4/48 · Doctor 5/18 · Scribe 2/13 · Steward 3/26 · Atlas 57/57 · Warden 43/43 | herald 67/68 · mason 66/66 · doctor 95/95 · scribe 20/20 · steward 206/222 · atlas 94/95 · warden 49/49 |
-| Unifying Strategy | "CAP-1..18 closed 2026-08-26 · CAP-19 live", "40/40 five-tier" | re-derive from `spec-pyforge-unifying-strategy/SPEC.md` and steward's ledger at rebuild time |
+| Unifying Strategy | "CAP-1..18 closed 2026-08-26 · canopy:CAP-19 live", "40/40 five-tier" | re-derive from `spec-pyforge-unifying-strategy/SPEC.md` and steward's ledger at rebuild time |
 | Warden | every stat (July 2026 authoring) | re-derive from warden's ledger, SPEC and CLI at rebuild time |

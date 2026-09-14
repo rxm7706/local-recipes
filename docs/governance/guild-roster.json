@@ -43,16 +43,26 @@
   ],
 
   "guild_dreams": [
-    "pyforge-charter"
+    "pyforge-charter",
+    "coverage-gate-independence"
   ],
   "$comment_guild_dreams": [
-    "The one Dream that may name no station because it CONSTITUTES them: the",
-    "Charter. `guild` is NOT a ninth station.",
+    "The Dreams that may name no station. `guild` is NOT a ninth station.",
+    "",
+    "`pyforge-charter`: the one Dream that CONSTITUTES the stations.",
     "",
     "2026-08-08: closed at one. `pyforge-genesis` was absorbed into the",
     "Charter (Dream § Satellite: The Seed; Spec CAP-5..CAP-8) once its",
     "project had dissolved and its installer half had moved to the Marshal --",
-    "two names for one record."
+    "two names for one record.",
+    "",
+    "2026-09-14: re-opened by Charter amendment for exactly one further",
+    "shape -- a gate that judges all eight Smiths, which no Smith can own",
+    "without grading itself on one row (Charter Section 5, the doctrine",
+    "applied to itself). `coverage-gate-independence` is that gate. The test",
+    "is structural: cross-cutting, shared or unowned does NOT qualify; the",
+    "artifact must judge every Smith. Its mechanism stories stay a Smith's",
+    "(Doctor's) under the outcome/mechanism rule."
   ],
 
   "dream_statuses": [

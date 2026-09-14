@@ -21,7 +21,7 @@ updated: "2026-09-13"
 
 ## Why
 
-Parked later-caps CAP-14 left graphify `code:` and Marshal
+Parked later-caps:CAP-14 left graphify `code:` and Marshal
 `codegraph.db` as peer answers to “where is this symbol?”. Agents
 re-read files. A foundry move would copy the split.
 
@@ -45,7 +45,7 @@ re-read files. A foundry move would copy the split.
 
 ## Non-goals
 
-- Unifying Strategy CAP-14 (pgvector / semantic recall) — steward 49.7.
+- Unifying Strategy canopy:CAP-14 (pgvector / semantic recall) — steward 49.7.
 - Flipping Epic 44 `blocked` rows.
 
 ## Success signal
