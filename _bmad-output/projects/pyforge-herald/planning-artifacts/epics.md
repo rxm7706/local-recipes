@@ -6,7 +6,7 @@ project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-13"
+updated: "2026-09-14"   # Epic 23 appended (spec-design-sync-loop CAP-1..8, one story per CAP); prior stamp 2026-09-13
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -803,3 +803,69 @@ byte-identical; verify is advisory in CI; `maintenance` label; not Lane 1.
 **Surface:** `docsite/**` (new), `pixi.toml` (`[feature.site]` + `site` environment), `.github/workflows/dashboard.yml` (build into `docs/dashboard/`), `.gitignore` (owned outputs), `docs/dashboard/index.html` (replaced by the landing render)
 **Given** Pages publishes `docs/dashboard/` as Kedro-Viz plus a retired Guildhall landing, and the dossier exists only as a published artifact — **When** the rebased `pyforge-pages` bundle lands (`docsite/` + `feature.site` + `dashboard.yml` build step) — **Then** `pixi run -e site site-check` is green, `pixi project export conda-environment -e build` leaves `environment.yaml` unchanged, Kedro-Viz remains at `/kedro-viz/`, and `dashboard.yml` is still the only `deploy-pages` caller
 **And** the PR carries the `maintenance` label; `verify_claims.py` is advisory in CI (`continue-on-error`); foundry lists this surface as rebuild cargo after 54.5 with the same CAP-N
+
+
+## Epic 23: The Design sync loop — one command keeps every twin and its family true (spec-design-sync-loop)
+
+**Spec binding.** `spec-design-sync-loop` CAP-1..8 (herald; Dream `docs/dreams/design-sync-loop.md`,
+`specified` 2026-09-14). Minted the afternoon the second manual CAP-6 sweep landed (PR #1361) from the
+operator's four requirements and four rulings, all recorded on the Dream: presentations *and* design
+systems in scope, two retired projects excluded by name; **Design wins, then the ledger re-applies**;
+PowerPoints both ways per deck (Marp-derived default, `.potx`-filled where declared); the dossier site
+extended with a family page per deck, run on demand from a session. **HARD boundaries (Spec
+constraints):** git is the archive of record and the source of facts — `facts.yaml` is never pulled;
+binds-never-re-mints — the loop *calls* `deck-facts`, `deck-export`, `deck-trio`, the kernel's bridge
+verbs, DesignSync and `docsite/build.py`, and competes with none of them; one Pages deployment;
+session-run and therefore idempotent; measure the artifact, never the container; exclusions by name
+with a reason, never by heuristic. **Order:** 23.1–23.2 are the account and the twins every later story
+enumerates over; 23.3–23.4 are the pull and the re-apply (the operator's core rule); 23.5 waits on
+Epic 21.1/21.2/21.5 for the derivations it calls; 23.6 proves; 23.7 publishes; 23.8 is the command that
+sequences 23.1–23.7 and is the story that closes the Spec. One story per CAP.
+
+### Story 23.1: The account is enumerated and reconciled against the registry
+**Type:** feature • **Effort:** M • **Deps:** S-21.10 • **FR/AD:** `spec-design-sync-loop` CAP-1
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/registry.py` (exclusion + design-system entries), `.../herald/state.py`, `.../herald/cli.py` (`deck status` gains the account view), `presentations/README.md` (the registry's exclusion list), tests.
+**Given** `list_projects` returns the account in pages of 20 and `herald deck status` only knows what a README registry section names, so `PyForge six-quarter roadmap`, `LLM Knowledge Bases`, `Agentic AI SLDC deck`, the two retired projects and the three design systems are invisible to the bridge **When** the loop enumerates every project the login returns (paging), classifies each as presentation / design system / excluded-by-name, and reconciles the set against the registry **Then** `herald deck status` lists every project the account returns with `linked` / `mirrored` / `excluded (<reason>)` / `untwinned`, and no project is absent from the report
+**And** `REMOVED-PyForge Unifying Strategy` and `Local recipes repository connection` are excluded by name in `presentations/README.md` with their recorded reasons — never by a name heuristic
+
+### Story 23.2: Every presentation has a local twin; design systems are mirrored as libraries
+**Type:** feature • **Effort:** M • **Deps:** S-23.1 • **FR/AD:** `spec-design-sync-loop` CAP-2
+**Surface:** `presentations/agentic-sdlc/README.md` (registry section), `presentations/six-quarter-roadmap/**` (new twin), `presentations/llm-knowledge-bases/**` (new twin), `presentations/_design-systems/{modernist,broadsheet,nocturne}/**` (new mirrors), `herald deck seed`/`pull` as needed, tests.
+**Given** `agentic-sdlc` has a Design project but no registry section, two presentation projects have no twin at all, and the three design systems the decks bind to exist only in Design **When** each presentation gets a `presentations/<slug>/` twin with its prototype pulled byte-exact and a machine-owned registry section, and each design system is pulled byte-exact to `presentations/_design-systems/<name>/` **Then** the fourteen decks, `agentic-sdlc`, `six-quarter-roadmap` and `llm-knowledge-bases` all resolve through `registry.read`, the three mirrors match Design byte-for-byte, and a second pull writes nothing
+**And** no deck glob (`presentations/pyforge-*/…`, the four chain decks) matches the design-system home, so no currency check, trio derivation or Pages page picks them up
+
+### Story 23.3: Pull, with Design winning
+**Type:** feature • **Effort:** M • **Deps:** S-23.2 • **FR/AD:** `spec-design-sync-loop` CAP-3
+**Surface:** `.../herald/cli.py` (`deck pull --all` / etag-gated pull), `.../herald/state.py` (last-pull etags), `.../herald/bridge.py`, tests.
+**Given** currency runs repo-side-first today and a human's Design edit is only ever carried across by an agent noticing it **When** the loop compares each twin's recorded etag with Design's and, for every artifact whose etag moved, takes Design's bytes wholesale (harness stripped) and records the new etag **Then** after a human edit in Design one run leaves the repo copy byte-identical to Design
+**And** a repo-side edit that Design has not seen is overwritten and named in the run report — never merged, never silently kept
+
+### Story 23.4: The ledger re-applies over what was pulled
+**Type:** feature • **Effort:** S • **Deps:** S-23.3 • **FR/AD:** `spec-design-sync-loop` CAP-4
+**Surface:** `scripts/deck_facts.py` (report of overrides with the Design value), the loop's report shape, tests.
+**Given** "Design wins" would otherwise let a human's retyped fleet count stand **When** the loop re-derives `facts.yaml` at the current tree and runs `deck-facts --refresh` over every marked surface after the pull **Then** `deck-facts <slug> --check` reads `0 drifted, 0 mismatch` for every deck after a run
+**And** the report lists each literal the ledger overrode together with the value Design had, so an override is visible, never silent
+
+### Story 23.5: The family derives and the PowerPoints regenerate, both ways per deck
+**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2, S-21.5, S-23.4 • **FR/AD:** `spec-design-sync-loop` CAP-5
+**Surface:** the loop's derive stage calling `deck-trio`, `deck-export` and `pptx-spec`/`pptx-fill`; each deck README's registry section (declared `.potx`, chosen path); derived-file stamps (tree + etag); tests.
+**Given** the trio, executive summary, Marp sources and PPTX carry the literals of the day they were authored and nothing sequences the shipped derivations **When** each deck's family is re-derived from the refreshed standalone and ledger — trio via `deck-trio`, export set via `deck-export` by default or `pptx-fill` where the registry declares a `.potx` **Then** every derived file's stamp names the tree and etag it derived at and matches the registry's chosen path
+**And** a host without Chrome reports `derive-skipped: no chrome` for the Marp-PPTX step and the run continues
+
+### Story 23.6: Push what changed; prove the mirror
+**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-6
+**Surface:** `.../herald/cli.py` (`deck push` gains changed-only + read-back proof), `.../herald/state.py`, each deck README's ledger section (etag row), tests.
+**Given** the 2026-09-14 sweep proved push + read-back 9/9 byte-identical by hand, one DesignSync plan per deck **When** the loop pushes only artifacts whose bytes changed and reads each one back through the serve URL with the harness stripped **Then** read-back is byte-identical for 100% of pushed files and the etag is recorded in the README ledger and bridge state
+**And** a second run pushes nothing
+
+### Story 23.7: The family is browsable and downloadable on Pages
+**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-7 • `spec-pyforge-pages` CAP-1/CAP-2 (bound, not re-minted)
+**Surface:** `docsite/build.py`, `docsite/templates/**` (family page + index), `docsite/content/**` (deck family config), `docs/dashboard/**` (render), tests / `site-check`.
+**Given** `docsite/build.py` publishes the standalone infographics into a gallery and nothing else — no PPTX, Marp, executive summary or per-deck page is published or downloadable **When** the site gains one family page per registered deck and an index **Then** each family page shows the poster, the Infographic Deck and the Executive Summary in view, offers the PPTX(s) and Marp sources as downloads, stamps each with its etag and tree, and `site-check` passes
+**And** `dashboard.yml` is still the only `deploy-pages` caller and Kedro-Viz is still at `/kedro-viz/`
+
+### Story 23.8: One command, idempotent, reported
+**Type:** feature • **Effort:** M • **Deps:** S-23.1, S-23.2, S-23.3, S-23.4, S-23.5, S-23.6, S-23.7 • **FR/AD:** `spec-design-sync-loop` CAP-8
+**Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/specs/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
+**Given** every stage exists as its own verb and an agent runs them from memory **When** `herald deck sync-all` runs CAP-1..7 in order for every deck (or one `--slug`) and prints a per-deck report — pulled / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
+**And** `--dry-run` prints the same report without writing, and the README/spec runbook points at the command rather than the steps

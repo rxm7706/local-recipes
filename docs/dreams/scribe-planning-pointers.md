@@ -1,5 +1,5 @@
 ---
-title: "Where is the PRD?" is a pointer, not forty-six thousand tokens
+title: '"Where is the PRD?" is a pointer, not forty-six thousand tokens'
 type: dream
 owner: scribe
 status: specified
