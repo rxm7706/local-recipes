@@ -1,9 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-07'
+updated: '2026-09-14'
 status: final
-currency_review: "Reviewed 2026-09-07 — chain-currency sweep (marshal Story 31.1). Three specs' .memlog moved to 2026-09-07 (cross-station surface-reconcile for factory.py/hygiene_definitions.py's new TEA test-design classification rules) after this PRD sat at 2026-09-04; reconciled in the appended § Currency reconciliation — 2026-09-07. No FR/content change required. Prior: Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor's .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19, above this PRD's FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1); reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-doctor's SPEC.md moved to 2026-09-12 (surface-drift-exclude block; eight dated `verified:` CAP lines from the 2026-09-11 mechanical sweep, all PASS; three new Assumptions bullets) and its .memlog to 2026-09-14T05:18 (six surface-reconcile entries: the new capability_ledger.py source, the PR #1354 snapshot-test re-measure, board.py's INV-A delivered-Spec branch and INV-B epic arm, and marshal Epic 42's incoming surface claim) while this PRD sat at 2026-09-07; reconciled in the appended § Currency reconciliation — 2026-09-14. No FR/content change required. Prior: Reviewed 2026-09-07 — chain-currency sweep (marshal Story 31.1). Three specs' .memlog moved to 2026-09-07 (cross-station surface-reconcile for factory.py/hygiene_definitions.py's new TEA test-design classification rules) after this PRD sat at 2026-09-04; reconciled in the appended § Currency reconciliation — 2026-09-07. No FR/content change required. Prior: Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor's .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19, above this PRD's FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1); reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
@@ -706,5 +706,60 @@ tripped two existing detectors for the first time — `factory.py::classify()`
 one dated classification rule set each, same shape and convention as every prior new-artifact-
 shape incident recorded above. A classifier recognizing one more conventional shape is not a new
 capability.
+
+**No FR/content change required.** `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep re-fired: `spec-pyforge-doctor`'s SPEC.md moved to 2026-09-12 and its
+`.memlog` to 2026-09-14T05:18 while this PRD sat at 2026-09-07 — seven days, past the runbook's
+2-day grace window.*
+
+**What moved in the Spec, and why none of it is a new FR.**
+
+1. **A `surface-drift-exclude:` frontmatter block (7 paths, 2026-09-12).** Pure detector
+   bookkeeping for `spec-surface-check`: seven files this kernel Spec still *covers* under
+   `surface:` but no longer *drift-tracks*, because a narrower Spec
+   (`spec-sibling-dreams-drift`, `pyforge-marshal/spec-pyforge-core`) already reconciles each
+   one. Coverage is unchanged. No FR describes drift-tracking bookkeeping, and none should.
+2. **Eight dated `verified:` lines on CAP-1..CAP-8 plus the Charter §6 CAP (2026-09-11
+   operator-directed mechanical sweep).** All PASS, all evidence *about* the shipped contract
+   rather than changes *to* it. One is worth recording here because it reads like a defect and
+   is not: CAP-3's sweep found 6 of 12 prescriptions carrying `rank_factors: null`, traced to
+   `prescribe.rank()`'s deliberate exclusion of `DoctorStatus.OK` findings from ranking —
+   covered by `test_prescribe_rank.py::test_clean_ok_finding_is_excluded_from_ranking_even_though_actionable`.
+   FR-4's "never a bare priority number" stands as written.
+3. **Three new Assumptions bullets.** (a) Two *incoming* surface claims recorded before the
+   code lands — steward Story 49.2's new `sources/` module (criterion stays on
+   `spec-pyforge-unifying-strategy`; implementation relayed to a new doctor Dream + Spec,
+   `spec-capability-effect-check`) and steward Story 49.8's named `sources/marshal.py:544`
+   read. (b) `spec-pyforge-charter`'s registration in `DEFERRED_SPECS`. (c) The explicit
+   statement that `bmad-drift`'s 17 live warns against marshal's artifacts are **not doctor's
+   to fix** — doctor is the detector, marshal's `SYNC-RUNBOOK.md` is the reconciler. All three
+   are ownership/boundary statements about work this PRD already scopes; none widens the FR set.
+4. **Six `.memlog` surface-reconcile entries (2026-09-12 → 2026-09-14).** A new detector source
+   (`sources/capability_ledger.py` + its tests), a PR #1354 re-measure of three live-repo
+   snapshot tests against the GitHub Actions billing-outage content drift, `board.py`'s INV-A
+   gaining a delivered-Spec branch (ten `shipped` Specs delivered with no epic and no ledger row
+   were structurally invisible), the four-test replacement that followed it, `board.py`'s INV-B
+   gaining an EPIC arm (`DW-CHAIN-COMPLETENESS-7`, closed), and marshal Epic 42's incoming claim
+   on `sources/chain.py::_drift_findings`.
+
+**Why (4) is still inside FR-14/FR-15 and not a new FR.** This PRD's established boundary —
+recorded in the 2026-08-26 reconciliation and reapplied at every sweep since — is that FR-14
+(verdict on the Marshal's durability) and FR-15 (doctor holds the verdict for every conformance
+detector) scope detector *infrastructure*, and that new sources, new invariant arms and new
+classifier rules land inside them rather than each minting an FR. `capability_ledger.py` is one
+more source behind the same dispatcher; INV-A's delivered-Spec branch and INV-B's epic arm are
+two invariants correcting their own blind spots (each had a structural exemption that made a real
+gap invisible) inside `chain-completeness`, which FR-15 already names. Nothing moved a module
+boundary and nothing reopened AD-1..AD-6.
+
+**One thing worth naming rather than absorbing.** Both INV-A and INV-B changes fixed the same
+*class* of defect: an invariant that discarded a whole key class up front (`if status not in
+OPEN_SPEC_STATUSES: continue`; `if not k.startswith("epic-")`) and therefore could never fire on
+it. That is a detector-design lesson, not an FR — it belongs in the doctor Spec's own guidance,
+where the memlog already records it, and it is repeated here only so the PRD's reader knows the
+two entries are one story, not two.
 
 **No FR/content change required.** `updated:` bumped to record that the check ran.

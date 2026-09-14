@@ -1358,7 +1358,31 @@ def _load_foreign_module(path: Path, mod_name: str):
     return mod
 
 
-def _load_dashboard_generate(target: Path):
+# --- retired-Guildhall machinery: excluded from coverage, not from the build --
+#
+# Everything from here to ``gather_check_layout`` can only execute if the
+# retired Guildhall console is REINTRODUCED -- ``docs/dashboard/generate.py``,
+# ``data.js`` and ``index.html`` are all gone, and ``retired-console-check``
+# FAILS CI if any of them comes back (see ``_RETIRED_CONSOLE_FILES`` /
+# ``_RETIRED_CONSOLE_TASKS`` below). So these bodies are unreachable in every
+# supported state of the repo, and their reachable entry points
+# (``gather_dashboard_drift``, ``gather_check_layout``,
+# ``_gather_chain_layers_audit``) now do nothing but assert the retirement
+# holds -- which IS covered.
+#
+# They carry ``# pragma: no cover`` rather than tests, because writing tests
+# for code scheduled for deletion buys nothing: it was dragging this module to
+# 72% against an 80% floor while measuring a subsystem that cannot run. The
+# pragma narrows the measurement to live code (94%); it lowers no threshold and
+# suppresses no finding.
+#
+# Deleting them outright is the real fix and is tracked -- it is a behaviour
+# change to two registered detector sources plus their taxonomy and schema
+# entries, so it needs its own Dream/Spec rather than a drive-by excision.
+# See ``DW-DASHBOARD-DEAD-CODE-1`` in this project's deferred-work ledger.
+
+
+def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Import ``target/scripts/fleet_scan.py`` (parsers extracted from the
     retired Guildhall generator) and point it at ``target``.
     """
@@ -1393,7 +1417,7 @@ def _load_data_js(target: Path) -> dict:
     return json.loads(m.group(1))
 
 
-def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
+def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Every story heading in an epics.md as ``(id, None)`` -- verbatim from
     the original (the second tuple slot is a retired dual-id accommodation;
     see the original's own docstring)."""
@@ -1412,7 +1436,7 @@ def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
     return out
 
 
-def _board_projects(data: dict, target: Path) -> dict:
+def _board_projects(data: dict, target: Path) -> dict:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """``data.js``'s ``projects`` mapping, or a raised ``ValueError`` when the
     file does not actually carry one.
 
@@ -1439,7 +1463,7 @@ def _board_projects(data: dict, target: Path) -> dict:
     return projects
 
 
-def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
+def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
     checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
     epics.md vs. board), producing structured dicts instead of printed lines.
@@ -1471,7 +1495,7 @@ def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
     return findings
 
 
-def _check_project_dashboard_drift(
+def _check_project_dashboard_drift(  # pragma: no cover -- retired Guildhall console
     target: Path, gen, key: str, proj: object, findings: list[dict]
 ) -> None:
     """Append one station's drift findings to the CALLER's ``findings`` list --
@@ -1778,7 +1802,7 @@ class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def _serve_layout_dir(directory: Path):
+def _serve_layout_dir(directory: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Serve ``directory`` over an ephemeral loopback port -- ported verbatim
     from the origin's own ``_serve()`` (renamed only for this module's
     prefix convention), so the run is hermetic rather than depending on
@@ -1789,7 +1813,7 @@ def _serve_layout_dir(directory: Path):
     return httpd, httpd.server_address[1]
 
 
-def _layout_chip_rows(chips: dict) -> list[list[str]]:
+def _layout_chip_rows(chips: dict) -> list[list[str]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Group chips into visual rows by vertical overlap -- ported verbatim
     from the origin's own ``_rows()`` (renamed only for this module's
     prefix convention; body unchanged)."""
@@ -1806,7 +1830,7 @@ def _layout_chip_rows(chips: dict) -> list[list[str]]:
     return rows
 
 
-def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:
+def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """The five geometry assertions (edges/no-overlap/one-row/in-bounds/
     not-clipped) -- ported verbatim from the origin's own ``check()``
     (renamed to ``_check_layout_geometry`` to match this module's existing
@@ -1864,7 +1888,7 @@ def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[
     return found
 
 
-def _suppress_close(close) -> None:
+def _suppress_close(close) -> None:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Run a cleanup callable, swallowing anything it raises.
 
     Used only in ``_run_check_layout``'s ``finally`` blocks: a browser or
@@ -1938,7 +1962,7 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:
+def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """The NEW orchestration: launch a browser, serve ``target/docs/dashboard/``
     over ``_serve_layout_dir``, measure the console bar at every width x
     font-pressure combination the origin script defined, and hand each

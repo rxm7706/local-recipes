@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-07"
+updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). As-built check against Epic 19's effect-gap closure and Story 20.2's per-deck fact ledgers; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
 altitude: feature
 ---
 

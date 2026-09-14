@@ -3,7 +3,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-07"
+updated: "2026-09-14"   # chain-currency sweep: spec-pyforge-herald moved to 2026-09-13 (SPEC.md re-grounded 2026-09-12 on Epic 19's effect-gap closure; memlog through Story 20.2's per-deck fact ledgers) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14; no requirement added, changed or removed.
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -968,3 +968,76 @@ failure mode as a fabricated test-architecture document: it reads as verified to
 agent. There is no `recipes/pyforge-herald/`, so the package is built by `pixi-build-python`
 for this estate and is not published to conda-forge; no external consumer depended on the
 wider floor.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-herald`'s SPEC.md moved to 2026-09-13 and its
+`.memlog` to 2026-09-13T03:35 while this PRD sat at 2026-09-07 — six days, past the
+runbook's 2-day grace window.*
+
+**What moved in the Spec.**
+
+1. **The § Success signal was re-grounded twice (2026-09-09, then again 2026-09-12) —
+   and the second re-grounding is the substantive one.** The 2026-09-09 text named
+   three "effect gaps" between what Herald has built and what the running estate
+   actually exercises. Epic 19 closed two of them the next day, and the Spec was
+   re-grounded to say so:
+   - **The deck-QA gate has a caller** (Story 19.3, PR #1150). Verified live this
+     pass: `pixi.toml` declares `[feature.pyforge-herald.tasks.deck-qa]`, and
+     `docs/specs/presentation-deck.md`'s verify checklist names it as a step.
+   - **The `.pptx` pipeline has rendered a real station deck** (Story 19.4, PR #1155).
+     Verified live: `presentations/pyforge-warden/src/content_plan.json` exists — the
+     first real `content_plan.json` in the tree.
+   - **Still genuinely open:** the live-backend triggers have never run green. Story
+     19.1 moved the webhook routes onto the station-API seam, but Story 19.2 ("one
+     real ship records itself against a persistent store") is `blocked` on
+     **`DW-13-6-1`** — `steward deploy perimeter` renders only a hardcoded
+     `myproject.asgi:application` with no `--asgi-application` flag, so Herald has no
+     perimeter to host a persistent listener on.
+2. **A new § Residual dependencies (2026-09-09).** The Non-goal "the Guildhall is
+   Marshal's (`[[factory-console]]`)" is now marked **known-stale pending a Charter
+   amendment**, not a Herald decision: `factory-console`'s Spec is `superseded`, the
+   Pages GuildHall console is retired-and-guarded (`retired-console-check`), and the
+   three live console surfaces are Atlas's Vizro/BSL board, the Wagtail Lane-1 CMS and
+   the eight `django-*` station portals — none of them Marshal's. Guildhall is Charter
+   Lexicon §7, so the question is constitutional and is raised there, once.
+3. **Story 20.1/20.2 deck-family work (memlog, 2026-09-13).** `presentations/README.md`
+   gained a pointer to `spec-deck-family-currency/infographic-standard.md`, and ten
+   per-deck fact ledgers (`presentations/<slug>/facts.yaml`) were minted — verified
+   live this pass at **10 files**.
+4. **A `surface-drift-exclude:` block of 32 literal paths.** Detector bookkeeping only:
+   `station_api.py` (also governed by `spec-pyforge-core`) plus the 31 deck-family
+   files `spec-deck-family-currency` owns and reconciles per poster story. Recorded
+   because the *reason* is instructive and already cost one wasted pass: the checker
+   matches this list **literally** (`sources/chain.py:1613`), so the four glob entries
+   added earlier the same day never matched anything.
+
+**Why none of this changes a requirement here.**
+
+- **(1) and (3) are this PRD's requirements being *exercised*, not amended.** The
+  deck-QA gate, the `.pptx` export and the per-deck fact ledgers are all inside the
+  deck-family feature set § Requirements by Feature already specifies. A capability
+  acquiring its first caller is a realization event; the requirement text was already
+  correct and stays as written.
+- **(2) is a citation, not a requirement.** The Non-goal's *substance* — the hall is
+  not Herald's — is unchanged and remains true. Only the wikilink referent is stale,
+  and it is owned by the Charter, not by this PRD. The one-owner-one-question rule
+  applies: Herald does not carry a second copy of the question, and this PRD does not
+  either. When the amendment lands, the referent is replaced in the Spec and the
+  change cascades here in the normal way.
+- **(4) is detector bookkeeping.** No requirement describes drift-tracking membership.
+
+**One thing recorded rather than absorbed.** § Success Metrics still reads
+"unmeasured — near-zero production usage time." That remains accurate and this pass
+does **not** quietly upgrade it: two of three effect gaps closing means two
+capabilities now have a caller, which is a strictly weaker claim than the adoption and
+engagement metrics § Success Metrics actually asks for. The honest state is that
+Herald's deck family is exercised by CI and by the estate's own tooling, and is still
+not exercised by an external audience.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): 94 story keys — 82 `done`, 11 `backlog`, 1 `blocked` — across 22 epics (19
+`done`, 2 `in-progress`, 1 `backlog`). The single `blocked` story is 19.2 above.
+
+**No requirement added, changed or removed.** `updated:` bumped to record that the
+check ran.
