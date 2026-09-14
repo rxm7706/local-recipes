@@ -741,17 +741,17 @@ _REQUIRED_EXPLICIT_ENV_SPAWN_FUNCTIONS = frozenset(
 """Independently spelled floor, same rationale as `_REQUIRED_HTTP_IMPORTS`."""
 
 _SANCTIONED_PASS_THROUGH_ENV_EXPR = "dict(env) if env is not None else None"
-"""The one `env=` expression BOTH of Guard-3a's allowlist entries accept
-(Story 2.9 widens this docstring from "the allowlist" (singular) to "both
-entries" -- the expression text itself is unchanged and shared verbatim
-between the two sites), compared as `ast.unparse` text. Story 1.10's
-sanctioned pass-through, mirrored exactly by Story 2.9's second site: it
-forwards the caller's own `env` argument and otherwise hands the call a
-bare `None`, which is exactly "inherit the parent environment". Pinning the
-EXPRESSION, not just the call's identity, is the fix for this guard's
-largest hole (follow-up review, both reviewers, reproduced against the real
-`cfe.py`): allowlisting by identity meant a sanctioned call could be
-rewritten to `env={}` or to a `JFROG_*`-stripping comprehension --
+"""The one `env=` expression every Guard-3a allowlist entry accepts (Story
+2.9 widened this docstring from "the allowlist" (singular) to "both
+entries"; PR #1354 widens it again to four -- the expression text itself is
+unchanged and shared verbatim across every site), compared as `ast.unparse`
+text. Story 1.10's sanctioned pass-through, mirrored exactly by each later
+site: it forwards the caller's own `env` argument and otherwise hands the
+call a bare `None`, which is exactly "inherit the parent environment".
+Pinning the EXPRESSION, not just the call's identity, is the fix for this
+guard's largest hole (follow-up review, both reviewers, reproduced against
+the real `cfe.py`): allowlisting by identity meant a sanctioned call could
+be rewritten to `env={}` or to a `JFROG_*`-stripping comprehension --
 defeating AD-14 at the one site that can defeat it -- with all 34 guard
 tests still green."""
 
@@ -786,8 +786,9 @@ def _named_function_def(
     """The (sync or async) function definition named `name`, anywhere in
     `tree` -- generalized (Story 2.9) from the original
     `_run_streamed_function_def`, which hardcoded the name `"run_streamed"`,
-    so the identical structural lookup serves both of Guard 3a's sanctioned
-    sites: `run_streamed` and `_invoke_captured`.
+    so the identical structural lookup serves every one of Guard 3a's
+    sanctioned sites: `run_streamed`, `_invoke_captured`, `build_native`,
+    and `build_docker` (the latter two added by PR #1354).
 
     `AsyncFunctionDef` too (third review pass, Edge Case Hunter,
     reproduced): matching only `ast.FunctionDef` fails CLOSED -- an `async
@@ -813,9 +814,10 @@ def _allowlisted_call_ids_in_named_function(
     elsewhere in the same file is still caught by the caller below.
     Generalized (Story 2.9) from the original `_allowlisted_popen_call_ids`,
     which hardcoded `"run_streamed"`/`"Popen"`: this same per-function check
-    now backs BOTH sanctioned sites (`run_streamed`/`Popen` and
-    `_invoke_captured`/`run`), each called independently by
-    `_allowlisted_env_override_ids` below.
+    now backs all four sanctioned sites (`run_streamed`/`Popen`,
+    `_invoke_captured`/`run`, `build_native`/`run_streamed`, and
+    `build_docker`/`run_streamed` -- the latter two added by PR #1354), each
+    called independently by `_allowlisted_env_override_ids` below.
 
     Returns the empty set -- gracefully, not an error -- both when
     `function_name` is not defined anywhere in `tree` at all (the original
@@ -864,18 +866,32 @@ def _allowlisted_call_ids_in_named_function(
 
 
 def _allowlisted_env_override_ids(tree: ast.Module) -> set[int]:
-    """The union of BOTH Guard-3a allowlist entries (Story 2.9 renames this
-    from `_allowlisted_popen_call_ids`, which covered only `run_streamed`'s
-    `Popen` call): `run_streamed`'s own `Popen(...)` call, and
-    `_invoke_captured`'s own `run(...)` (`subprocess.run`) call. Each is
+    """The union of all four Guard-3a allowlist entries (Story 2.9 renamed
+    this from `_allowlisted_popen_call_ids`, which covered only
+    `run_streamed`'s `Popen` call): `run_streamed`'s own `Popen(...)` call,
+    `_invoke_captured`'s own `run(...)` (`subprocess.run`) call, and
+    `build_native`'s/`build_docker`'s own `run_streamed(...)` calls. Each is
     checked independently by `_allowlisted_call_ids_in_named_function`
     above, so a regression at one site (a second call planted in its body,
-    a rewritten `env=` expression) does not affect the other site's own
-    coverage."""
-    return _allowlisted_call_ids_in_named_function(
-        tree, "run_streamed", "Popen",
-    ) | _allowlisted_call_ids_in_named_function(
-        tree, "_invoke_captured", "run",
+    a rewritten `env=` expression) does not affect any other site's own
+    coverage.
+
+    The `build_native`/`build_docker` entries were added during local-recipes
+    PR #1354's CI-failure remediation (2026-09-14): Story 44.7's
+    factory-island wiring had both functions forwarding their own `env`
+    parameter into `run_streamed` since the story landed, but the CI job
+    that runs this guard hadn't executed on any push to `main` for five days
+    (a GitHub Actions billing outage), so the violation went undetected
+    through ~260 merged PRs. `cfe.py`'s call sites were changed to the exact
+    `_SANCTIONED_PASS_THROUGH_ENV_EXPR` shape (previously a bare `env=env`)
+    so this extension reuses the identical, already-reviewed expression
+    check -- it does not loosen it -- and each entry still requires exactly
+    one matching call in its named function's body."""
+    return (
+        _allowlisted_call_ids_in_named_function(tree, "run_streamed", "Popen")
+        | _allowlisted_call_ids_in_named_function(tree, "_invoke_captured", "run")
+        | _allowlisted_call_ids_in_named_function(tree, "build_native", "run_streamed")
+        | _allowlisted_call_ids_in_named_function(tree, "build_docker", "run_streamed")
     )
 
 
@@ -1355,6 +1371,53 @@ def test_the_real_cfe_py_invoke_captured_allowlist_entry_is_still_live():
         f"{_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either the sanctioned "
         "pass-through was rewritten (a real AD-14 change -- justify it) or "
         "the allowlist is now covering nothing and must be deleted."
+    )
+
+
+def test_the_real_cfe_py_build_native_allowlist_entry_is_still_live():
+    """Third Guard-3a allowlist entry (local-recipes PR #1354, 2026-09-14),
+    mirroring the `run_streamed`/`_invoke_captured` tests above: `cfe.py`'s
+    own `build_native` must still contain exactly one `run_streamed(...)`
+    call whose `env=` unparses to exactly `_SANCTIONED_PASS_THROUGH_ENV_EXPR`
+    -- proving Story 44.7's factory-island `MASON_FACTORY_ROOT` injection
+    (read by `native-build.sh`) reaches a real, live, structurally-verified
+    pass-through, not a carve-out nobody exercises."""
+    cfe_path = PKG_ROOT / "cfe.py"
+    assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
+
+    allowlisted = _allowlisted_call_ids_in_named_function(
+        _parse_file(cfe_path), "build_native", "run_streamed",
+    )
+
+    assert len(allowlisted) == 1, (
+        "AD-14's build_native allowlist entry is dead: cfe.py's build_native "
+        "no longer contains exactly one run_streamed call whose env= "
+        f"unparses to exactly {_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either "
+        "the sanctioned pass-through was rewritten (a real AD-14 change -- "
+        "justify it) or the allowlist is now covering nothing and must be "
+        "deleted."
+    )
+
+
+def test_the_real_cfe_py_build_docker_allowlist_entry_is_still_live():
+    """Fourth Guard-3a allowlist entry (local-recipes PR #1354, 2026-09-14),
+    mirroring the `build_native` test above: `cfe.py`'s own `build_docker`
+    must still contain exactly one `run_streamed(...)` call whose `env=`
+    unparses to exactly `_SANCTIONED_PASS_THROUGH_ENV_EXPR`."""
+    cfe_path = PKG_ROOT / "cfe.py"
+    assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
+
+    allowlisted = _allowlisted_call_ids_in_named_function(
+        _parse_file(cfe_path), "build_docker", "run_streamed",
+    )
+
+    assert len(allowlisted) == 1, (
+        "AD-14's build_docker allowlist entry is dead: cfe.py's build_docker "
+        "no longer contains exactly one run_streamed call whose env= "
+        f"unparses to exactly {_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either "
+        "the sanctioned pass-through was rewritten (a real AD-14 change -- "
+        "justify it) or the allowlist is now covering nothing and must be "
+        "deleted."
     )
 
 
