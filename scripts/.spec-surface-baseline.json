@@ -504,6 +504,10 @@
   },
   "memlog": "07c92c44d749dd529383c6f0066bf39c0f15ca0a"
  },
+ "pyforge-doctor/spec-coverage-gate-independence": {
+  "files": {},
+  "memlog": "df7955808dd8bacf017c4fb2987a14ed6faacde9"
+ },
  "pyforge-doctor/spec-deferred-work-resolution-sweep": {
   "files": {},
   "memlog": "0a9bd002df094cf61afc920e67e7a063f7b7217b"
