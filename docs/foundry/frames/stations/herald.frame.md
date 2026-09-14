@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-herald
+identifier: pyforge/herald
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-herald
+name: PyForge Herald
 description: Station Frame for Herald — Dream-to-deck bridge and comms face. Load when seeding, pulling, or reporting Claude Design decks, notices, or success records.
 visibility: private
-owner: herald
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - herald
+inherits:
+  - pyforge/company
 ---
 
 # Herald

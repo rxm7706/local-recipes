@@ -18,8 +18,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-09'   # two 2026-09-09 cascades: the currency-review correct-course (Epics 48/49 minted) and the fleet-readiness decision batch (Stories 48.9-48.11, index rows 49.9-49.13) — see the two § Currency validation note — 2026-09-09 sections; prior stamp 2026-09-08 (deferred-work sweep follow-ups; Story 43.7)
-currency_review: "Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
+updated: '2026-09-14'   # retroactive Epic 57 minted (spec-platform-image-one-pixi-env, 3/3 done) after a fleet-picture follow-up audit found it undecomposed despite the Spec itself reading `shipped`; prior stamp 2026-09-09
+currency_review: "Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -1560,7 +1560,7 @@ Non-module suite pieces follow a class-keyed playbook; `wired-or-not` is class-c
 `pyforge-core` ships the shared hook-spec + registration shape; steward deploy-profile adapters become plugins. Warden Epic 9 and peer station process stories consume this contract.
 **FRs covered:** canopy:FR-43, canopy:FR-45 (canopy:FR-44 is Warden Epic 9)
 
-### Epic 18: Chrome and the trusted client
+## Epic 18: Chrome and the trusted client
 
 An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy:AD-1, canopy:AD-3, canopy:AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
 
@@ -3470,6 +3470,12 @@ Frame and eight station Frames that `inherits` it exist in git
 **And** each passes the in-repo four-field preflight and names its owner
 **And** no Community Frame or registry is required for success
 **Status:** done
+**Superseded by 53.6 (2026-09-14) — do not read the Surface/AC above as current.**
+The "four-field preflight … + owner" shape was v0.2-era and is gone: `owner` was
+never a Frame element in any version (the field is `maintainer`; see
+`DW-VOCAB-2026-09-14-4`), and the preflight now requires **six** — `type`,
+`identifier`, `name`, `description`, `visibility`, `maintainer` — keyed on
+`identifier`, not `name`. Current shape: `docs/foundry/frames/README.md`.
 
 ### Story 53.3: One tracked track.json per run
 
@@ -3515,6 +3521,39 @@ Lands in the same kit as 54.1 (case-list) and Epic 55 (strangler ledger).
 **And** B has the nine Frames (writer), not only a PIN path to A
 **And** in-repo preflight accepts any `type` whose first word is `frame`
 **And** we adjust when #28 / #29 merge
+**Status:** done
+
+### Story 53.6: Frame identity is the qualified-ref identifier, not the name
+
+As a platform operator,
+I want the nine Frames to satisfy frame-spec v0.3 in full — qualified-ref
+identifiers, prose titles, sequence-shaped repeatables — and the preflight to
+key off `identifier`,
+So that a Hub reader resolves our Frames by the element that carries identity,
+and the estate stops using one string as both a Frame key and a dist name.
+
+**Type:** docs • **Effort:** S • **Deps:** S-53.5 • **FR/AD:** spec-intelligence-hub
+CAP-2
+**Surface:** `docs/foundry/frames/**` (9 files),
+`src/shared/packages/pyforge-steward/src/pyforge/steward/frames.py`,
+its unit test, `docs/foundry/frames/README.md`, the `frame-preflight` pixi
+task description. Operator ruling 2026-09-14: adopt v0.3 now rather than start
+from an outdated version — this overrides `spec-vocabulary-one-name-one-job`'s
+Non-goal "chasing frame-spec v0.3 before PR #28 merges", which is amended in
+the same change.
+**Given** 53.5 left the nine Frames on `identifier: pyforge-<station>` (a bare
+`name-ref`), slug `name:` values, and scalar `maintainer`/`inherits`
+**When** this story lands
+**Then** every Frame carries a `qualified-ref` identifier (`pyforge/company`,
+`pyforge/<station>`) with exactly one `/` and no `@` (v0.3 §4.2.1, §5.3)
+**And** `name` is the Charter's prose form (`PyForge Steward`), since the
+element profile marks `title` MUST NOT be slug-constrained
+**And** `maintainer` and `inherits` are sequences (§6.2.1 "A writer MUST emit a
+sequence"), with `owner:` collapsed into the registered `maintainer`
+**And** the aliases `name`/`inherits` are KEPT — §6.2.1 requires them of a
+Markdown writer; `title`/`composition` belong to the YAML/JSON encodings
+**And** the preflight keys identity off `identifier`, reports a scalar
+repeatable, and still resolves a `path-ref` parent
 **Status:** done
 
 ## Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..5 / fnd:CAP-11)
@@ -3696,3 +3735,137 @@ at the same floor as `platform-ci-test` (`>=8.0.0`)
 **And** a policy test fails if either pin is wrong
 **And** the proof does not use Docker or CRC
 **Status:** done
+
+## Epic 57: One pixi env for the platform image (spec-platform-image-one-pixi-env)
+
+**Retroactive.** All three CAPs shipped `59083b8391` (2026-08-25, "Fold the
+platform image onto one python-agent-platform env") and were re-verified live
+2026-09-11 (SPEC.md's own dated verification notes), but no story was ever
+written, so `chain-completeness` flagged the Spec as undecomposed despite the
+code being real, tested, and running. This epic documents what already
+exists; no new implementation. Surface: `src/platform/Containerfile`,
+`pixi.toml`/`pixi.lock`, `scripts/platform_image_pip_layer.py`,
+`tests/packaging/test_platform_image_one_pixi_env.py` (repo-root `tests/`,
+not `src/platform/tests/`).
+
+### Story 57.1: One frozen env replaces the pip `--no-deps` layer
+
+As a platform operator,
+I want the platform image produced from a single `pixi install --frozen -e
+python-agent-platform` whose lock already carries the Django-host extras,
+So that a conda/pip overlap (the `mcp` package uninstall CRC hit 2026-08-25)
+fails at lock time, never as a silent Containerfile uninstall.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-image-one-pixi-env CAP-1
+**Given** the extras lived in `[feature.platform-image-pip]` behind a `pip
+install --no-deps` Containerfile RUN
+**When** this story lands **Then** those extras (`django-structlog`,
+`uvicorn-worker`, etc.) are pinned on `[feature.python-agent-platform.dependencies]`
+directly from conda-forge
+**And** the image interpreter imports them with no pip layer RUN
+**And** `platform-ci-test` stays its own separate conda solve (psycopg3 vs image psycopg2)
+**Status:** done — shipped `59083b8391` (2026-08-25); re-verified live
+2026-09-11 (`import django_structlog` succeeds, no pip layer)
+
+### Story 57.2: Containerfile drops the pip installer entirely
+
+As a platform operator,
+I want `[feature.platform-image-pip]` and `scripts/platform_image_pip_layer.py`
+retired to a tombstone that fails loudly if resurrected,
+So that the runtime image never runs a second, overlap-blind installer.
+
+**Type:** chore • **Effort:** S • **Deps:** S-57.1 • **FR/AD:** spec-platform-image-one-pixi-env CAP-2
+**Given** the Containerfile ran `python3 -m pip install --no-deps` for host extras
+**When** this story lands **Then** `rg 'pip install --no-deps'
+src/platform/Containerfile` is empty and `platform_image_pip_layer.py` exits
+2 with "retired" in its stderr if invoked
+**And** the 16.1 emitter is unused by the Containerfile
+**And** `tests/packaging/test_platform_image_one_pixi_env.py` covers both claims
+**Status:** done — shipped `59083b8391` (2026-08-25); re-verified live
+2026-09-11 and again 2026-09-14 (3/3 `tests/packaging/test_platform_image_one_pixi_env.py` pass)
+
+### Story 57.3: pixitainer-docker re-evaluated, hand-rolled Containerfile kept
+
+As a platform operator,
+I want the Docker/Podman pixitainer backend re-tested against the Story 10.3
+contract now that it's on conda-forge,
+So that adopting a generated Containerfile is a measured choice, not a retry
+of the SIF-only rejection from 10.3.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-image-one-pixi-env CAP-3
+**Given** `pixitainer-docker` 0.8.3 is now on conda-forge (missing as a Docker
+backend when Story 10.3 evaluated SIF-only `pixitainer`)
+**When** this story lands **Then** `pixitainer-eval.md` carries a dated Design
+Note with each Story-10.3 must-hold row scored pass/fail and the CLI/package
+actually invoked
+**And** a failing row keeps the hand-rolled Containerfile rather than
+reopening SIF-only `pixi-containerize`
+**And** Mason presenton's own pixitainer usage is untouched either way
+**Status:** done — shipped `59083b8391` (2026-08-25); Design Note recorded
+outcome: fail, hand-rolled Containerfile kept
+
+## Epic 58: The mcp-host sidecar hosts real station tools (spec-mcp-host-real-station-tools)
+
+**Retroactive.** All three CAPs shipped `20a85dcc79` (2026-09-12, "mcp-host sidecar
+hosts marshal's real MCP tools") and each carries its own dated `shipped:` proof
+line in the Spec, but no story was ever written, so `chain-completeness`'s new
+delivered-Spec arm flagged the Spec as undecomposed despite the code being real,
+deployed, and proven live on CRC. This epic documents what already exists; no new
+implementation. Additive to `spec-mcp-era-isolation`'s shipped slices 1-3, which
+are held exactly as they were.
+
+### Story 58.1: A station's real MCP tool is reachable through a deployed cluster
+
+As a platform operator,
+I want an agent calling `/stations/<name>/mcp` to reach that station's real tool
+implementation, not the identity stub,
+So that a correctly-signed host assertion can publish a run against a deployed
+cluster instead of being answered with `Unknown tool`.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-mcp-host-real-station-tools CAP-1
+**Surface:** `src/platform/mcp_host/app.py`; `src/platform/mcp_host/settings.py` (minimal
+Django settings — `django_pyforge` + `django_marshal_portal` only, no Langflow, no Redis);
+`src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py`
+**Given** `asgi_for_station(name)` registered exactly one tool, `station_face()`, returning
+the station's own name **When** this story lands **Then** the sidecar discovers marshal's
+real held-loop tools through the same `iter_station_mcp_apps()` seam the web pod uses
+in-process
+**And** `POST /stations/marshal/mcp` with `publish_loop_run` returns a run handle from
+`publish_held_loop_bounded`, never `Unknown tool: publish_loop_run`
+**And** the MCP SDK's `**payload: Any` → required-nested-`payload` schema bug the first fix
+uncovered is fixed in the same pass
+**Status:** done — shipped `20a85dcc79` (2026-09-12); proven live against the deployed CRC
+cluster: a real `HostPublisher` published, heartbeat'd and completed a run
+
+### Story 58.2: A station with no real app keeps the slice-1 stub, unchanged
+
+As a platform operator,
+I want every station without a real in-process MCP app to keep answering exactly as
+slice 1 shipped it,
+So that adding real-tool hosting for one station cannot regress the other eight.
+
+**Type:** feature • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-mcp-host-real-station-tools CAP-2
+**Given** only marshal has a real app **When** this story lands **Then**
+`spec-mcp-era-isolation`'s CAP-1..3 acceptance (dual-era handshake, protocol-version
+negotiation, 405 on non-POST) still holds unchanged for every station without one
+**And** `_apps` covers all 9 default stations while `_real_apps` covers only `{"marshal"}`
+**And** a `django.setup()` failure for any reason falls back to the stub for **every**
+station, covered directly by a mocked-failure unit test on that isolation seam
+**Status:** done — shipped `20a85dcc79` (2026-09-12); sidecar boot logs show all 9 session
+managers starting cleanly
+
+### Story 58.3: The one unproven run-state row flips to PASS
+
+As a platform operator,
+I want `spec-run-state-one-publisher`'s last unproven verification row closed,
+So that "live run appears on `/runs/`, timing survives teardown" is evidence, not intent.
+
+**Type:** chore • **Effort:** S • **Deps:** S-58.1 • **FR/AD:** spec-mcp-host-real-station-tools CAP-3
+**Surface:** chart `mcp-host` Deployment gains the DB/secret env it needs plus postgres
+egress/ingress (previously DNS-only)
+**Given** that row read `NOT PROVEN` because the real tool was never registered on the
+server answering the call **When** this story lands **Then**
+`spec-run-state-one-publisher/verification-2026-09-12.md` records it `PASS` with the live
+run's evidence
+**And** the run's timing is queryable after the workstation that drove it is gone
+**Status:** done — shipped `20a85dcc79` (2026-09-12)

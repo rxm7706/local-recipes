@@ -244,7 +244,8 @@ declaration.**
 | Story heading | `### Story <epic>.<num>: Title` |
 | Ledger / sprint key | `<epic>-<num>-<kebab-title>` |
 | Board story id | `<epic>.<num>` |
-| Epic heading | `## Epic <n>: Title` |
+| Epic heading | `## Epic <n>: Title` — level 2 exactly; an `###` is invisible to every `^## Epic` parser in the estate |
+| Epic ledger key | `epic-<n>`, paired 1:1 with the heading above; `epic-<n>-retrospective` is that epic's retro row, never a second epic |
 | `**Deps:**` | `S-<epic>.<num>` · `S-<epic>.*` · `<station>:S-<epic>.<num>` · `—` (see row 11) |
 
 *Measured 2026-08-08 — the convention is already near-universal:* 7 of 8 stations are

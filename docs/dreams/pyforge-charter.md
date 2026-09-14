@@ -266,7 +266,7 @@ prescribing the fix before they become outages.
 * **Pre-flight Diagnostics:** A `doctor` self-check verifies every required engine and toolchain is present and correctly configured before Marshal spins the factory.
 * **Fleet Health Monitoring:** Continuously tracking feedstock health, version staleness, upstream drift, new advisories, and abandonment signals across the shipped estate.
 * **Remediation Guidance:** Translating health findings into prioritized, actionable worklists — what to patch, upgrade, or retire, and in what order.
-* **Verdict on the Marshal's conformance** *(ratified 2026-07-28)*: the cross-cutting practices — [[agent-tool-surface]], [[agent-portability]], [[agentic-sdlc-autonomy]] — are owned by the Marshal but bind all eight stations. Marshal detects, each station remediates its own row, and **the Doctor holds the verdict on Marshal's own row** — the one station that would otherwise grade itself. This is §5's *the hand that builds is never the gate that judges*, applied to process rather than code, and it follows existing precedent: the `JFROG_API_KEY` leak was a Steward remediation **on a Doctor finding**. *Governance is kept separate:* the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict, exactly as Mason cannot pass its own build by lowering Warden's bar.
+* **Verdict on the Marshal's conformance** *(ratified 2026-07-28)*: the cross-cutting practices — [[agent-tool-surface]], [[agent-portability]], [[agentic-sdlc-autonomy]] — are owned by the Marshal but bind all eight stations. Marshal detects, each station remediates its own row, and **the Doctor holds the verdict on Marshal's own row** — the one station that would otherwise grade itself. This is §5's *the hand that builds is never the gate that judges*, applied to process rather than code, and it follows existing precedent: the `JFROG_API_KEY` leak was a Steward remediation **on a Doctor finding**. *Governance is kept separate:* the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict, exactly as Mason cannot pass its own build by lowering Warden's bar. ***Scope, ruled 2026-09-14:*** *this prohibition reads **broadly**. "A check that judges the Marshal" is any check that can red a Marshal pull request — not only a conformance check on the three practices named at the head of this bullet. The analogy above settles it: Mason's build is not one of those three either, and the rule still reaches it, because the rule is about the **structural position of the threshold**, not about which practice is being measured. Live violation found the same day: `pyforge.marshal.coverage_gate` and its `coverage_thresholds.toml` ship inside the marshal package while `coverage-gates.yml` runs that gate over all eight stations, marshal included, with no `continue-on-error` — so a three-line `[stations.marshal]` edit to a file marshal owns lowers marshal's own blocking floor with no Doctor in the loop. Tracked for remedy; see [[coverage-gate-independence]].*
 
 ### CLI Cadence
 ```bash
@@ -622,6 +622,42 @@ enters the seven.
 Stations. Those three stay ours. The Cogs/Skills collision is named so no
 agent treats “Cog” as a ninth Smith.
 
+### Gate has three senses; verdict has one *(amended 2026-09-14)*
+
+The Cogs/Smith collision was named here and the neighbouring one was not, so
+`Gate` ran loose while `Guards / Gates` above carried a single cell. Ruled, in
+the same shape:
+
+1. **The PR verdict** — the judgement about the *work*, published on a pull
+   request. **Warden's, solely.** `pyforge-warden` enforces this mechanically:
+   a plugin that does not own the verdict spec raises `SecondVerdictError`.
+2. **The harness gate** — a deterministic mechanical check that the *process*
+   held: `detectors-ci`, a `*-check` task, a sandbox or permission gate, a
+   verify gate inside a loop. These **may fail CI**, and doing so is not a
+   verdict and never was. § *Execution Doctrine* already places them: the
+   harness — *“bmad-loop, sandbox and permission gates, CI verify gates,
+   no-LLM tools”* — is the **unit of governance**. Governance gates; stations
+   judge. That distinction was always implied here and is now stated, because
+   five surfaces had independently concluded they were in violation and said
+   so in their own docstrings.
+3. **BMAD's readiness gate** — upstream's `PASS` / `CONCERNS` / `FAIL` on a
+   readiness report. Not ours to redefine (§ Branding: upstream literals are
+   conformed to or the divergence is recorded, never silently redefined).
+
+**Say which sense.** An artifact may use “gate” unqualified only where its
+sense is determinable from context.
+
+**“Verdict” is the reserved word, and it is narrower than “gate”.** Only a
+station publishes a verdict, only about work it did not do, and only one
+station publishes the PR verdict. A deterministic check that fails CI is not
+a verdict however loudly it exits. Where a lattice, a rung or an exit code is
+named “verdict” outside that meaning, it is either renamed or its scope is
+recorded in the owning Spec.
+
+*(This rules `Gate`. **`Track` remains unruled** — Hub's durable evidence
+record vs BMAD's planning lane — and is carried as
+`spec-vocabulary-one-name-one-job` CAP-4.)*
+
 **The rented-model / owned-context tension:** this factory rents the model
 and harness (Claude Code) while owning context, workflows, checks, and
 evidence — the split the paper says matters most, stated here so CAP-1
@@ -722,6 +758,61 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment, scope ruling)** — **§6's Marshal-conformance bullet is read BROADLY**
+  (operator ruling). Its prohibition — *"the Marshal may not weaken, re-threshold or disable a
+  check that judges the Marshal"* — sits inside a bullet whose subject is the three cross-cutting
+  practices, so whether it reached a coverage gate was genuinely ambiguous. It does: the bullet's
+  own analogy (*"exactly as Mason cannot pass its own build by lowering Warden's bar"*) turns on
+  the **structural position of the threshold**, and Mason's build is not one of the three named
+  practices either.
+  What the ruling was needed for: an investigation this date **cleared** the suspicion that
+  marshal's six-rung verdict lattice self-grades — it does not. `Verdict.GATE_FAILED` is
+  documented in marshal's own source as *"a project's own gate failed"* as against the `ERROR`
+  tier's *"an internal Marshal operation failed"*, two subjects deliberately kept on separate
+  rungs; every classification predicates on the **story's** diff, surface and verify commands.
+  `marshal seed check`'s *"(CI gate)"* label is likewise not literal here (zero hits in
+  `.github/`) — it is literal only in the adoption guide, where an adopting repo gates its own
+  conformance. And Doctor genuinely does hold Marshal's row, with the strongest independence in
+  the estate: `doctor/sources/marshal.py` reads only durable artifacts and **never imports
+  `pyforge.marshal`**, enforced structurally by a meta-test.
+  The real violation was one directory up and unlooked-for: **`pyforge/marshal/coverage_gate.py`
+  plus `coverage_thresholds.toml`**, shipping inside the marshal package and gating marshal's own
+  PRs with no `continue-on-error`. The remedy is NOT the mechanical move it first appears to be —
+  `pyforge-core` and `pyforge-testing-kit`, the obvious new homes, are **both governed by
+  marshal's own planning tree**, so relocating there would move the violation rather than end it;
+  and `pyforge.marshal.coverage_gate` is named in an AD-3/AD-4 import-linter contract. Carried as
+  [[coverage-gate-independence]] rather than executed inline.
+  Recorded and NOT acted on in the same pass: Doctor's verdict on marshal runs
+  `continue-on-error: true` (advisory, per the 2026-07-31 operator decision) while marshal's own
+  coverage gate blocks — the judge advises, the judged station's gate reds the PR. That inverts
+  §5's assumed force ratio and is its own question.
+
+- **2026-09-14 (amendment)** — **§ The Lexicon gains `### Gate has three senses; verdict has
+  one`** (operator ruling, this date). The 2026-09-13 Hub cross-walk named the Cogs/Smith
+  collision and gave `Guards / Gates` a single cell with no collision marker, so `Gate` ran
+  loose across three live senses: Warden's PR verdict, the harness CI gate (`detectors-ci`,
+  the `*-check` tasks, `gate_mode`, a loop's verify gate), and upstream BMAD's
+  `PASS`/`CONCERNS`/`FAIL` readiness gate. The amendment rules them in the Cogs/Smith shape —
+  name the collision, scope each sense, require authors to say which — and additionally
+  **reserves “verdict”** as the narrow word: a station publishes it, only about work it did
+  not do, and only Warden publishes the PR one.
+  The evidence that forced it: five non-Warden surfaces had each independently concluded they
+  were violating the sole-verdict rule and said so in their own prose — `platform_policy.py`
+  (*“a REAL, ACTIONABLE gate”*), `pixi.toml` (*“install it … to make this a real gate”*),
+  `scripts/detectors.py` (*“what actually gates”*), `pyforge-marshal/README.md`
+  (*“conformance report (CI gate)”*), and an Atlas task (*“CI gate (exit 2 on violations)”*).
+  They were not in violation. § *Execution Doctrine* had already placed CI verify gates in the
+  **harness** — the unit of governance — rather than among station verdicts; that reading was
+  simply never written down, so each surface resolved the ambiguity alone. **No code changed
+  in this amendment**, deliberately: rewording those five would have buried the doctrinal gap
+  behind tidier prose, which is why they were left standing until the rule existed.
+  Two things this does NOT settle, both carried forward rather than quietly closed:
+  **`Track`** (Hub's durable evidence record vs BMAD's planning lane) stays unruled under
+  `spec-vocabulary-one-name-one-job` CAP-4; and **marshal's own six-rung verdict lattice with
+  its `GATE_FAILED` rung** is under investigation against §5 / the §269 ruling that Doctor holds
+  the verdict on Marshal's row — a question of fact (does that value ever leave the loop?), not
+  of vocabulary, so the ruling above does not pre-judge it.
 
 - **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
   retires as a name and is absorbed here** (operator decision). §5 previously read

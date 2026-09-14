@@ -1,9 +1,9 @@
 ---
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-07"
+updated: "2026-09-14"
 status: final
-currency_review: Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-scribe moved to 2026-09-12 (its § Open Questions section REMOVED and open_questions: [] set after the 2026-09-09 answering pass; the ambient-capture Non-goal amended; a new decided Non-goal on ADR numbering; a Not-CAP-14 ownership ruling; four new governed script surfaces) and its memlog to 2026-09-13T12:24 while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. TWO REAL DIVERGENCES RECORDED, both re-verified live: UJ-1 writes `scribe capture --type decision` but CaptureType is closed at feedback|project|reference (models.py:34) — the journey is unrunnable as written; and SM-4 still names the operator crontab entry as the nightly trigger, which Story 8.1 replaced with a checked-in systemd-user timer. Prior — Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation."
 ---
 
 # PRD: pyforge-scribe (Scribe)
@@ -209,7 +209,7 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 1. **Graph storage engine** — embedded graph database (e.g., LadybugDB, successor to the now-archived KuzuDB) vs. a flat-file/index model extending `.claude/memory/MEMORY.md`'s existing pattern. Domain research flags this as genuinely undecided; resolve at architecture phase, ideally via an ADR captured through Scribe itself once `scribe capture` exists (dogfooding opportunity).
 2. **Wave 2's exact v1 input surface for `scribe graph compile`** — FR-9 fixes the shape (git history, memlogs, retros, CHANGELOGs, team memory, `docs/dreams/`) but the precise file-glob/inclusion list is a PRD-to-epics scope decision, not resolved here.
 3. **Does `scribe recall` require a local LLM, or can v1 ship as pure grounded retrieval (return the matching record + citation, no generative synthesis)?** Air-gap posture favors the latter as a safer v1 default; unresolved here, flagged for architecture.
-4. **Naming/interop with the ADR convention** — should `scribe capture --type decision` formally adopt the `docs/adr/`-style numbering/format the domain research found as dominant practice, or keep its own vocabulary that happens to be ADR-shaped? Affects whether Scribe should also *read* any pre-existing `docs/adr/`-style files in a target repo.
+4. **Naming/interop with the ADR convention** — should `scribe capture --type decision` formally adopt the `docs/adr/`-style numbering/format the domain research found as dominant practice, or keep its own vocabulary that happens to be ADR-shaped? Affects whether Scribe should also *read* any pre-existing `docs/adr/`-style files in a target repo. **ANSWERED 2026-09-09, folded in here 2026-09-14: NO ADR numbering — and it is a Non-goal, not a deferral.** `scribe capture --type` stays **closed at `{feedback, project, reference}`** because AD-3 requires byte-identical shape parity with Claude Code's user-local auto-memory schema (CAP-1's own success criterion), and a fourth `decision` type would break that parity for a naming convention Scribe can already express inside the three it has. **Consequence for this document, recorded not hidden: UJ-1 above writes `scribe capture --type decision`, which is not a valid invocation as shipped** — `CaptureType = Literal["feedback", "project", "reference"]` (`models.py:34`), verified live 2026-09-14. UJ-1's *substance* (capture a decision at the moment it is made, git-diffable, reviewable in the next PR) is fully delivered; only its literal command line is wrong, and it is left as written with this pointer rather than silently edited, because the journey is the historical record of what was asked for.
 5. **`anthropics/claude-code#38536` (native team-shared memory)** — if Anthropic ships first-class team memory during Scribe's build, does `.claude/memory/`'s file-based layer get absorbed into the native surface, leaving Scribe's value entirely in graph-compile + recall? Watch-item, not a blocker.
 6. **Legacy `CLAUDE.md` §"BMAD ↔ conda-forge-expert integration" de-duplication (Q3 from the legacy spec)** — defaults to "remove, single source of truth in `.claude/memory/`" but is a human-reviewed edit, not an automated one; confirm at Wave 1 implementation.
 
@@ -313,3 +313,61 @@ failure mode as a fabricated test-architecture document: it reads as verified to
 agent. There is no `recipes/pyforge-scribe/`, so the package is built by `pixi-build-python`
 for this estate and is not published to conda-forge; no external consumer depended on the
 wider floor.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-scribe`'s SPEC.md moved to 2026-09-12 and its
+`.memlog` to 2026-09-13T12:24 while this PRD sat at 2026-09-07 — five days, past the
+runbook's 2-day grace window.*
+
+**The Spec closed its own § Open Questions entirely.** All three (the GraphStore-engine
+spike, the nightly input-glob enumeration, ADR interop) were answered on 2026-09-09, the
+section was **deleted**, and `open_questions: []` was set. This PRD's § 8 had already
+dispositioned its six on 2026-08-26, so the two documents now agree — but two of the
+Spec's answers add something this PRD did not have, and both are folded in:
+
+1. **ADR numbering is a decided Non-goal (§ 8 item 4, amended above).** `--type` stays
+   closed at `{feedback, project, reference}` because AD-3 requires byte-identical
+   shape parity with Claude Code's auto-memory schema. **This makes UJ-1's literal
+   command line (`--type decision`) unrunnable as shipped** — verified live against
+   `models.py:34`. Recorded at UJ-1's own § 8 entry rather than edited away.
+2. **The GraphStore port question is closed by evidence, not by a spike.** The Spec now
+   records "three drivers now sit behind it and the port still fixes nothing beyond
+   itself." Verified live this pass: `graph_store.py`, `graph_store_pg.py`,
+   `graph_store_plane.py`, plus `graph_store_plugins.py`. § 8 item 1 asked which engine
+   to pick; the answer is that the port made the question unnecessary — three engines
+   coexist and no PRD-level choice was ever owed.
+
+**A second real divergence, found by reading SM-4 against the code.** § 7's **SM-4**
+states that "the documented, opt-in operator crontab entry in
+`src/shared/packages/pyforge-scribe/docs/cli-runbooks.md` is the trigger and the
+evidence." That is **no longer how the nightly compile fires.** Story 8.1 replaced the
+hand-typed crontab line with a **checked-in systemd-user timer** plus its installer and
+a freshness check — verified live: `src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer`,
+`scripts/scribe_install_nightly_trigger.py`, `scripts/scribe_nightly_trigger.py`,
+`scripts/scribe_graph_freshness_check.py`. SM-4's *criterion* (four consecutive
+unattended runs) is unchanged and still correct; only its named trigger and evidence
+source are stale. **Not rewritten here**: SM-4 is a success metric whose evidence trail
+matters, and replacing the sentence would erase the fact that the crontab era existed
+and was superseded. The correction is this paragraph; a future edit that re-words SM-4
+should cite it.
+
+**An ownership ruling worth carrying, because it prevents a duplicate capability.** The
+Spec now states **"Not CAP-14"**: the Unifying-Strategy semantic-recall capability
+belongs to **steward Story 49.7**, and no parallel scribe-side CAP is minted for it.
+Charter §5 decides it — the owner of the outcome writes the story, the owner of the
+mechanism owns the verb it calls. Scribe owns the mechanism (`recall`); it does not own
+steward's outcome. No FR is added here for the same reason.
+
+**Four new governed script surfaces, all already-landed work.** `scripts/scribe_pg.py`
+(the local PostgreSQL+pgvector the durable GraphStore tests require),
+`scripts/scribe_nightly_trigger.py`, `scripts/scribe_install_nightly_trigger.py` and
+`scripts/scribe_graph_freshness_check.py` joined the Spec's `surface:`. They are
+infrastructure for FR-11's nightly compile, which this PRD already specifies; no new FR.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **35/35 stories `done` across 18/18 epics.**
+
+**Content changed:** § 8 item 4 (dated answer folded in, with the UJ-1 consequence
+named). No FR added, renumbered or removed.

@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-07"
+updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). As-built check against Epic 19's effect-gap closure and Story 20.2's per-deck fact ledgers; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
 altitude: feature
 ---
 
@@ -611,3 +611,44 @@ Consequence for this spine: no deployment target, container image or CI lane may
 3.12/3.13 interpreter for `pyforge-herald`, and none does today — this records the constraint
 rather than changing it. The previous `>=3.12` declaration was never exercised by any
 environment in the workspace.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after reconciling against
+`spec-pyforge-herald`'s 2026-09-13 SPEC.md/memlog, which fires the `prd→arch` edge.
+This section is the as-built check: does the spine above still describe the station.*
+
+**No structural divergence, and two AD boundaries confirmed by the effect-gap
+closures rather than contradicted by them.**
+
+1. **The deck-QA gate landed as a pixi task, not as a new runtime surface.** Story
+   19.3's gate is `[feature.pyforge-herald.tasks.deck-qa]` in `pixi.toml`, declared
+   **advisory only — never a PR gate** (verified live this pass, in the task's own
+   description). That is exactly the boundary this spine and Herald's Spec both hold:
+   Herald proclaims, it does not gate. Nothing here needed to move for it.
+2. **The `.pptx` pipeline's first real render exercised the existing AD boundary, not
+   a new one.** Story 19.4 filled `presentations/pyforge-warden/src/content_plan.json`
+   through `pptx_pipeline.py` against the committed template — the Deckcraft path this
+   spine already draws. The artifact is data, not a new component.
+3. **Story 20.2's per-deck fact ledgers are a new artifact *class*, and they belong to
+   a different Spec.** Ten `presentations/<slug>/facts.yaml` files now exist (verified
+   live: 10). They are owned and reconciled by `spec-deck-family-currency`, not by this
+   station spine, which is why the kernel Spec excludes them from its own drift
+   tracking rather than absorbing them. No AD here describes them and none should — a
+   satellite Spec owning its own artifact family is the intended shape.
+
+**The one thing this spine must not quietly resolve.** The live-backend triggers have
+still never run green: Story 19.2 is `blocked` on `DW-13-6-1` — `steward deploy
+perimeter` renders only a hardcoded `myproject.asgi:application` with no
+`--asgi-application` flag. This is a **cross-station dependency on Steward's
+deployment surface**, not a Herald architecture decision, and it is recorded here (and
+in the PRD) rather than converted into a Herald AD. `spec-herald-moments-2-4-live-backend`
+(LB-2/LB-3) remains the contract that will close it.
+
+**Deferred decisions unchanged.** Satellite items 3, 4 and 6 and Moment-1 items 1–3
+all remain open and non-blocking; the video pipeline (AD-8/AD-9/AD-10 boundary with
+Manticore) is still unexercised downstream, unchanged by this window.
+
+**No content change required beyond this note.** `updated:` bumped to record that the
+cascade ran.

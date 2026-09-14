@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-08"
+updated: "2026-09-14"
+# 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
 # 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
 # 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
 # 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
@@ -929,7 +930,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **No HTTP proxy against any vendor's inference endpoint.** §6.
 - **No sandbox or container implementation.** Worktree isolation is in scope; process and network isolation is Steward's provisioning territory. *A worktree isolates the filesystem and branch, not the process or network — this boundary is stated, not hidden.*
 - **No PR-lifecycle automation beyond opening and updating a batch PR** — no CI watching, no auto-merge. (Q-3.) *(AMENDED 2026-07-31: Q-3 resolved — Marshal owns the PR lifecycle, per `docs/dreams/pr-lifecycle.md`. This non-goal narrows at the Spec's memlog-driven re-derivation; the line is annotated rather than deleted so the amendment stays visible.)*
-- **No fleet-level resource budgeting across concurrent runs.** Per-run ceilings only. (Q-4.)
+- **No fleet-level resource budgeting across concurrent runs.** Per-run ceilings only. (Q-4.) *(AMENDED 2026-09-14, folding the operator's 2026-09-09 answer: this is now a **decided** Non-Goal for v1 rather than a deferral awaiting evidence. A cross-run budget would be the first thing to need shared mutable state across loop homes and therefore the first to break C-3's loop-home write boundary.)*
 - **Marshal does not claim to be "the orchestrator."** It is the station around one. *(Q-14 resolved 2026-07-31: this Non-Goal stands with its scope clarified — it targets the engine claim. Marshal may sequence on verdicts it never authors; the route-verb surface belongs to the `spec-one-front-door` derivation.)*
 
 ---
@@ -998,6 +999,8 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **C-8.** Marshal depends on an external harness; the supported version range is declared and enforced (FR-57).
 - **C-9.** Marshal depends on BMAD Method artifact conventions for the story feed.
 - **C-10.** A worktree is not a sandbox. Unattended runs on untrusted input require process and network isolation Marshal does not provide.
+- **C-11.** *(Added 2026-09-14, folding `spec-pyforge-marshal`'s 2026-09-09 operator answer to its F-4.)* **The trust model is declared, and in v1 it is advisory.** The escape hatch for privileged changes is an operator-attributed journal entry admitted at the **call surface only** (`core/journal.py:159`). No authentication primitive exists in the package; the governed agent is **trusted**, and attribution is an audit record rather than an enforcement boundary. This is stated, not hidden: C-10 above is precisely why — a worktree isolates the filesystem and branch, not the process, so an unforgeable attribution would need isolation Marshal deliberately does not provide. The contract becomes unforgeable before the dispatch journal serves a second principal; until then, advisory is the honest description.
+- **C-12.** *(Added 2026-09-14, folding `spec-pyforge-marshal`'s 2026-09-09 operator answer to its F-5.)* **There is no unattended mid-run freeze writer, by design.** Under the `none` and `per-epic` gate modes no operator is present and a story may not declare its own freeze; mid-run freezes therefore require **per-story approval**. The vocabulary and the writer constraint already ship (`KIND_FREEZE_DECLARED` / `KIND_FREEZE_REMOVED`, `core/journal.py:152-163`); what was missing was the statement that the absence of an unattended writer is the decision, not a gap.
 
 ---
 
@@ -1026,10 +1029,10 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 1. **Q-1 — Wrap versus absorb.** **RESOLVED (§5): wrap and supervise.** Revisit triggers recorded in §5.4.
 2. **Q-2 — Ownership of the AGENTS.md entry-file family.** `AGENTS.md` states the portable Dream→spec handoff is Herald's job; `docs/dreams/agent-portability.md` records portability as re-scoped to Marshal on 2026-07-23. One is stale. Marshal ships **detection only** (FR-46) until this is settled; it edits nothing.
 3. **Q-3 — PR-lifecycle automation.** **RESOLVED (operator, 2026-07-31): Marshal owns it.** Input Dream: `docs/dreams/pr-lifecycle.md` — landing rules become a declared policy surface; `marshal land` performs the last mile and refuses like teardown; wrap-never-absorb unchanged. The §8 non-goal narrows at the Spec's memlog-driven re-derivation, not by hand-patch.
-4. **Q-4 — Fleet-level resource budgets.** Per-run ceilings ship in v1; cross-run budgeting is deferred. Revisit when two projects routinely run heavy loops concurrently.
-5. **Q-5 — OpenTelemetry `gen_ai.*` emission.** Deferred; the conventions moved repositories in June 2026 and remain Development-stability with live renames. Revisit when the conventions stabilize or an external consumer requires them.
-6. **Q-6 — ACP migration trigger.** Proposed trigger: the upstream harness gains an ACP client path, **or** two adapters Marshal must support ship ACP-only, **or** ACP schema v2 reaches stable with the Claude adapter's known gaps closed. Until then, the harness's declarative profiles are the adapter contract.
-7. **Q-7 — Idle threshold default.** 25 minutes is carried from the production stopgap. Needs one wave of data to confirm it does not false-positive on legitimately slow verify steps.
+4. **Q-4 — Fleet-level resource budgets.** Per-run ceilings ship in v1; cross-run budgeting is deferred. Revisit when two projects routinely run heavy loops concurrently. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — recorded in `spec-pyforge-marshal` as its Q-11): a cross-run (fleet-level) budget is OUT of scope for v1, for the reason the question itself names — it would be the first thing to need shared mutable state across loop homes, and therefore the first to break the loop-home write boundary (C-3). The deferral is now a decision with a stated cause, not an open item. § 8's Non-Goal is amended to match.**
+5. **Q-5 — OpenTelemetry `gen_ai.*` emission.** Deferred; the conventions moved repositories in June 2026 and remain Development-stability with live renames. Revisit when the conventions stabilize or an external consumer requires them. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-12): deferred with the resumption condition now NAMED rather than left to judgement — emission waits until the semantic conventions reach **stable**. Paying v1 cost against Development-stability attributes that are still being renamed buys instrumentation that must be redone. The run journal carries equivalent information in a self-owned format until then.**
+6. **Q-6 — ACP migration trigger.** Proposed trigger: the upstream harness gains an ACP client path, **or** two adapters Marshal must support ship ACP-only, **or** ACP schema v2 reaches stable with the Claude adapter's known gaps closed. Until then, the harness's declarative profiles are the adapter contract. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-13): trigger one has **FIRED** — bmad-loop 0.9.0 shipped a sanctioned `copilot` profile plus `copilot --acp`, so the harness has gained an ACP client path. One trigger alone does **not** start the migration; the declarative profiles remain the adapter contract until a second trigger fires. Recorded as a fired-trigger state, not as a scheduled migration.**
+7. **Q-7 — Idle threshold default.** 25 minutes is carried from the production stopgap. Needs one wave of data to confirm it does not false-positive on legitimately slow verify steps. **ANSWERED 2026-09-09 (operator, folded in here 2026-09-14 — `spec-pyforge-marshal` Q-14): the 25-minute default **stands**, and the "one wave of data" becomes an acceptance clause rather than an open experiment — the threshold is real and operator-tunable, and it holds until a wave is actually *read* from the dispatch journals. The question closes; the measurement obligation survives as a condition on changing the number, not as a blocker on shipping it.**
 8. **Q-8 — Difficulty declaration source.** FR-51 reads story difficulty from the story's declaration; whether that lives in the story spec frontmatter or the epics document is an architecture-phase call.
 9. **Q-9 — Conformance smoke story content.** What minimal story exercises spec→change→verify→commit while staying adapter-agnostic and cheap? Architecture phase.
 
@@ -2292,3 +2295,70 @@ the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows 
 
 `spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
 found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
+
+---
+
+## 19. Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-marshal`'s SPEC.md moved through 2026-09-09..09-12
+and its `.memlog` to 2026-09-13T08:33 while this PRD sat at 2026-09-08 — five days,
+past the runbook's 2-day grace window.*
+
+**This is the rare cascade that produced real content edits rather than a note.** The
+Spec's **2026-09-09 operator answering pass** closed six items. Four of them exist in
+this document under **different numbers**, and all four still read as open. Number
+translation, recorded here because it is the thing a future reader will get wrong:
+
+| `spec-pyforge-marshal` | this PRD | subject |
+|---|---|---|
+| Q-11 | **Q-4** | fleet-level resource budgets |
+| Q-12 | **Q-5** | OpenTelemetry `gen_ai.*` emission |
+| Q-13 | **Q-6** | ACP migration trigger |
+| Q-14 | **Q-7** | 25-minute idle threshold |
+| F-4 | *(none — new)* | the trust model |
+| F-5 | *(none — new)* | mid-run freeze writer |
+
+**What was changed in place, above:**
+
+1. **§ 13 Q-4, Q-5, Q-6, Q-7 each gained a dated `ANSWERED 2026-09-09 (operator, folded
+   in here 2026-09-14)` clause** carrying the operator's actual answer and its stated
+   reason — not a pointer to the Spec. Per the runbook's grounding triple: fold the
+   upstream content in, do not merely cite it.
+2. **§ 8's fleet-budget Non-Goal was amended** from a deferral-awaiting-evidence to a
+   decided v1 Non-Goal, with C-3 named as the reason.
+3. **§ 11 gained C-11 and C-12** — the declared advisory-in-v1 trust model (Spec F-4)
+   and the no-unattended-freeze-writer rule (Spec F-5). Both were amended into the
+   Spec's own Constraints on 2026-09-09 and had no home here at all. C-11 is the more
+   consequential of the two: it states plainly that operator attribution is an audit
+   record, not an enforcement boundary, and ties that to C-10's worktree-is-not-a-sandbox
+   position rather than leaving the two facts in separate sections to be reconciled by
+   the reader.
+
+**What moved in the Spec and did NOT need a change here.**
+
+- **`status: shipped` added to the Spec (2026-09-09).** One of eight fleet-wide
+  status-less Specs, three of them marshal's — a bookkeeping defect that made
+  `chain-completeness` report its CAPs uncovered. No PRD consequence.
+- **The genesis-installer → seed-installer name retirement (CAP-6, closed 2026-09-12).**
+  Checked against this document: **§ 15 is already titled "The seed installer —
+  `marshal seed`"** (retitled 2026-08-08). The three remaining "Genesis Installer"
+  strings at §§ 15's provenance block are **historical prose** — the original
+  frontmatter and the archive path of the superseded satellite PRD — and they keep
+  their original names by convention. Nothing to repoint.
+- **Eighteen dated `verified:` lines (2026-09-11 operator-directed sweep).** Evidence
+  about the shipped contract, not changes to it. Several are `PARTIAL` and say so;
+  none contradicts an FR in this document.
+- **The 2026-09-12 tier-routing fail-safe surface reconcile and Story 12.1's
+  `planning_graph.py`.** Both governed by their own narrower Specs
+  (`spec-dispatch-tier-routing-fails-safe`, the recall-kinds work) and already
+  reconciled there; this kernel's memlog records them so `spec-surface-check` does not
+  later read them as ungoverned drift. A 31-path `surface-drift-exclude:` block exists
+  for the same reason. No FR describes drift-tracking bookkeeping.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **273 story keys — 270 `done`, 2 `backlog`, 1 `blocked` — across 42 epics** (40
+`done`, 1 `in-progress`, 1 `backlog`). The § 18 figure of 165/165 across Epics 1–27 is
+superseded by growth, not corrected.
+
+**Content changed:** § 8 (one Non-Goal amended), § 11 (C-11, C-12 added), § 13 (four
+answers folded in). No FR added, renumbered or removed — the FR space is unchanged.

@@ -666,8 +666,9 @@ The eight-station hub-and-spoke Foundry, unchanged in shape, now described in th
 because the vocabulary is deliberate rather than accidental:
 
 - **Frames** are the context tier: the `AGENTS.md` verified block → station personas → story
-  specs, inheriting downward; git is the store; the Frame Spec v0.2 four-field format is the
-  interchange.
+  specs, inheriting downward; git is the store; **Frame Spec v0.3** is the interchange
+  (working draft, openteams-ai/frame-spec#28; adopted by steward Stories 53.5/53.6 — identity
+  is the qualified-ref `identifier`, not a four-field v0.2 shape).
 - **Cogs** are the eight stations as skills plus personas, harness-agnostic by the Portability
   contract. The model and the harness are rented; the context, workflows, checks and evidence are
   owned. That split is stated, not assumed.

@@ -1,6 +1,6 @@
 ---
 spec: spec-surface-overlap-tolerance
-status: draft
+status: ready   # 2026-09-14 — open question answered against chain.py; decomposed into marshal Epic 42.
 created: "2026-09-12"
 updated: "2026-09-12"
 owner-dream: docs/dreams/spec-surface-overlap-tolerance.md
@@ -9,8 +9,7 @@ surface:
 companions: []
 sources:
   - ../../../../../../docs/dreams/spec-surface-overlap-tolerance.md
-open_questions:
-  - "Exact semantics of the OR check across co-governing specs: does the existing per-spec clean-pass bar (memlog moved AND names this path) apply per co-governor, so the first co-governor to pass clears the whole group? Or does the group need a different bar? The Dream's own success criteria assume the existing clean-pass bar is what ORs across co-governors — confirm against chain.py's _drift_findings before implementation."
+open_questions: []   # the one question below was answered 2026-09-14 — see § Open Questions.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for
@@ -78,8 +77,27 @@ manual `surface-drift-exclude:` entry ever required.
 
 ## Open Questions
 
-- Exact semantics of the OR check across co-governing specs: does the existing per-spec
-  clean-pass bar (memlog moved AND names this path) apply per co-governor, so the first
-  co-governor to pass clears the whole group? Or does the group need a different bar?
-  The Dream's own success criteria assume the existing clean-pass bar is what ORs across
-  co-governors — confirm against `chain.py`'s `_drift_findings` before implementation.
+**ANSWERED 2026-09-14** by reading `pyforge.doctor.sources.chain._drift_findings`
+(`chain.py:1662-1742`), as this question itself required. None remain.
+
+**The Dream's assumption holds: the existing per-spec clean-pass bar is the right
+predicate to OR across co-governors, and no new bar is needed.** The bar is already the
+two-part conjunction at `chain.py:1719-1740` — `spec_moved` (the spec's baseline memlog
+hash differs from current) AND `f in named` (the memlog's text names that path). That
+conjunction is exactly the "this spec reconciled *this* path" predicate, as distinct
+from "this spec's memlog moved for something else", so ORing it across co-governors is
+well-defined.
+
+**What must change is the loop shape, not the bar.** `_drift_findings` iterates
+`for name, cur in current.items()` and emits per spec, with no cross-spec awareness —
+that independence *is* the defect. The implementation inverts to group by path first,
+then asks whether ANY co-governing spec passes the bar for it.
+
+**One subtlety the question did not anticipate, recorded so implementation does not lose
+it:** the per-spec outcome is not binary. A co-governor that never moved yields `drift`
+(FAIL); one that moved but does not name the path yields `drift-presumed` (WARN). So the
+OR clears the group only on a fully clean co-governor, and where none is clean the
+residual finding must keep the *strongest* severity among co-governors — otherwise a
+genuinely unreconciled file could be downgraded FAIL→WARN merely by gaining a second
+governing spec, which would violate CAP-2's "does not widen what counts as
+accounted-for".

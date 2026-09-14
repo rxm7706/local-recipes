@@ -115,3 +115,11 @@ rejected again with the same 10.3 reasons plus any new Docker-backend evidence.
   on the feature.** Pins live in `[feature.python-agent-platform.dependencies]` (conda-forge)
   so `platform-dev` inherits them. Not a composed extra feature. `mcp-types` / `httpx2` were
   **not** folded (would pull mcp 2.x; FastMCP 3.x still `mcp<2`).
+
+## Decomposition note — 2026-09-14
+
+Found live (fleet-picture follow-up audit): this Spec's own `status: shipped` and the dated
+`verified: 2026-09-11` notes on every CAP above were never mirrored into `epics.md` — zero
+Epic/Story existed despite the code being real, tested, and running (`59083b8391`,
+2026-08-25). Retroactive **Epic 57** added, mirroring the Epic 38/39 precedent: Story 57.1
+(CAP-1), 57.2 (CAP-2), 57.3 (CAP-3), all `done`. No new implementation; no CAP text changed.

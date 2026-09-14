@@ -5,7 +5,7 @@ Pre-flight + fleet-watch diagnostics CLI (`doctor check` / `doctor monitor` /
 `cf_atlas` signals into one schema-validated `DoctorReport` envelope; findings
 stay advisory — not a second PR gate.
 
-**Status:** all 28 stories shipped (6 epics): the `check`/`monitor`/`diagnose` verbs are live, and `python -m pyforge.doctor.sources` dispatches the 10 detector sources the repo's gates run on
+**Status:** all 95 stories shipped (22 epics): the `check`/`monitor`/`diagnose` verbs are live, and `python -m pyforge.doctor.sources` dispatches the 22 detector sources the repo's `detectors` / `detectors-ci` runs read — advisory findings, never a gate of their own (see the line above; Warden stays the sole PR verdict)
 [`_bmad-output/projects/pyforge-doctor/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-doctor/planning-artifacts/)
 for the PRD/architecture.
 

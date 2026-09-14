@@ -27,6 +27,10 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 2. **`pixi.toml` changed** → regenerate + commit `environment.yaml`: `pixi project export conda-environment -e build > environment.yaml` (this sync check is UNGATED — the `maintenance` label does not suppress it). Also fix `main` directly whenever a `pixi.toml` dep change lands there.
 3. **`pixi.toml`/`pixi.lock` changed** → also run `pixi run -e local-recipes pyforge-station-tests` locally first: that touches every PyForge station's "shared surface" per `.github/workflows/pyforge-station-tests.yml`, so ALL 8 station suites fire together in CI, not just the one you meant to touch. Found live 2026-09-14: a 5-day GitHub Actions billing outage (see `.claude/memory/` project notes) let ~260 PRs merge with this workflow never actually running; the next `pixi.toml` push afterward surfaced 5 days of accumulated doctor/marshal/mason drift all at once, entirely unrelated to that PR's own diff.
 
+4. **Before pushing ANY non-recipe branch → `pixi run -e local-recipes pr-preflight`.** One command covering the four lanes that actually red a PR: `detectors-ci`, `test-ci` (the CFE regression suite — this lane owns the spec-surface meta-test), `pyforge-station-tests` (all 8 stations), and `pyforge-station-coverage-gates` (touched-module coverage floors). Added 2026-09-14 after PR #1355 went red on two lanes with **no local equivalent at all**: a stale spec-surface baseline (a scoped `--write-baseline` was taken, then a governed file was edited *again*, silently invalidating it — a stamp is only valid until the next edit of any file in that spec's surface), and a coverage floor that only measures modules a branch *touches*, so `board.py` sat at 70.1% for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`. Not covered by it: container/guild-container (needs Docker/podman), atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres (`scribe-pg-up` first).
+
+**Reading a detector's result: never through a pipe.** `cmd | grep x | head -5` then `echo $?` reports **`head`'s** exit status, not the detector's — and `head` truncates findings out of view. This produced a false green on 2026-09-14 that CI then caught. Redirect to a file, check the exit code directly, then read the whole finding list. Note also that `2` inverts between surfaces (see § Health / status below).
+
 Recipe-only PRs (touching only `recipes/**`) need neither.
 
 **Repo surfaces beyond `recipes/`:** the PyForge Guild station code (atlas, doctor, herald, marshal, mason, scribe, steward, warden, plus `pyforge-core` / `pyforge-testing-kit` and the `django-*` UI packages) lives in `src/shared/packages/pyforge-*`, each with its own pixi environment and `pyforge-<station>-test` / `-build` tasks. The Vizro/BSL fleet dashboard is part of pyforge-atlas (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/`); the old GuildHall Pages console is retired and `retired-console-check` fails CI if it is reintroduced.
@@ -49,6 +53,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 
 **Health / status:**
 - All detectors: `pixi run -e local-recipes detectors` (CI subset: `detectors-ci`); exit 0 = pass, 1 = findings, 2 = could-not-run (never a false green).
+  **That domain is the AGGREGATOR's only.** A single doctor-sourced task — `bmad-drift-check`, `story-status-check`, `spec-surface-check`, `capability-effect-check` and the rest of `python -m pyforge.doctor.sources <name>` — projects through `pyforge.doctor.verdict.exit_code_for`, whose frozen domain is `{0, 2, 130}`: **`2` means FAIL (findings), there is no `1`, and `warn` never changes the exit code.** So `2` from the aggregator means "could not run" while `2` from an individual detector means "a real failure" — read the wrong one and a genuine red looks like a skipped check. The script-based detectors (`governance_currency_check.py` and friends) are a third shape again, returning plain `0`/`1`. Doctor's subset is deliberate (`doctor/verdict.py:4-7`: it omits warden's policy rung `1` because Doctor reports operability, not policy); the collision with the aggregator's `2` is not.
 - Fleet progress: `pixi run -e local-recipes fleet-picture` — read-only, never gating; paste its stdout verbatim, not reformatted.
 
 ## BMAD Method Documentation
@@ -294,7 +299,9 @@ This repo carries a checked-in team-memory index at `.claude/memory/MEMORY.md` �
 [SKF Skills]|7 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
+<!-- governance-currency:ignore-start (a path that must NEVER exist -- mason's skill tier is conda-forge-expert per five_tier.py; named here BECAUSE minting it is forbidden. Mirrors AGENTS.md:30-32.) -->
 |Mason is the eighth PyForge Guild station but deliberately has no SKF skill — recipe work uses `conda-forge-expert` instead (see `AGENTS.md` governance-currency policy on never minting `.claude/skills/pyforge-mason/`).
+<!-- governance-currency:ignore-end -->
 |
 |[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
 |IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.

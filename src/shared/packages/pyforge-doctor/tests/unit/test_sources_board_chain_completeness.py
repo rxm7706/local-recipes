@@ -43,7 +43,15 @@ def _write_spec(
     path.write_text(text, encoding="utf-8")
 
 
-def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True) -> None:
+def _write_epics_md(
+    path: Path,
+    story_ids: list[str],
+    *,
+    canonical: bool = True,
+    extra_epics: list[int] | None = None,
+) -> None:
+    """``extra_epics`` appends bare ``## Epic N`` headings after the stories,
+    so a test can drive INV-B's epic arm without disturbing its story arm."""
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["---"]
     if canonical:
@@ -52,11 +60,24 @@ def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True)
     lines.append("")
     lines.append("## Epic 1: Test Epic")
     lines.extend(f"### Story {sid}: title" for sid in story_ids)
+    lines.extend(f"## Epic {n}: Test Epic {n}" for n in extra_epics or [])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _write_ledger(path: Path, rows: dict[str, str]) -> None:
+    """Writes ``rows``, plus a default ``epic-1: done`` when the caller
+    supplied no ``epic-*`` key at all.
+
+    ``_write_epics_md`` always emits exactly one ``## Epic 1`` heading, and
+    INV-B's epic arm (2026-09-14) compares those headings against ``epic-N``
+    keys. A real ledger always pairs them — every one of the fleet's eight
+    does — so a fixture that omits the key is the unfaithful artifact, not
+    the detector. Defaulting it here keeps all eighteen call sites honest
+    without restating the pairing in each. A test exercising epic-arm drift
+    passes its own ``epic-*`` key and opts out of the default."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    if not any(k.startswith("epic-") for k in rows):
+        rows = {**rows, "epic-1": "done"}
     lines = ["development_status:"]
     lines.extend(f"  {k}: {v}" for k, v in rows.items())
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -119,14 +140,82 @@ def test_deferred_spec_reports_no_finding(tmp_path: Path) -> None:
     assert findings[0].status is DoctorStatus.OK
 
 
-def test_shipped_spec_is_not_open_and_reports_no_finding(tmp_path: Path) -> None:
+def test_shipped_spec_with_no_epic_reference_reports_delivered_not_decomposed(
+    tmp_path: Path,
+) -> None:
+    """Replaces ``test_shipped_spec_is_not_open_and_reports_no_finding``
+    (2026-09-14). That test asserted the original design — every non-open
+    status skipped INV-A entirely — which is right for ``absorbed`` /
+    ``archived`` / ``superseded`` / ``extension-point`` and wrong for
+    ``shipped``: work really delivered, with no epic and no ledger row, leaves
+    the station under-reporting what it shipped. Ten such Specs were live
+    fleet-wide when this was found."""
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
 
     findings = board.gather_chain_completeness(tmp_path)
 
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    delivered = [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+    assert len(delivered) == 1
+    assert delivered[0].status is DoctorStatus.FAIL
+    assert "spec-foo" in delivered[0].message
+    # The remedy must NOT point at DEFERRED_SPECS: that is the escape hatch for
+    # work deliberately not done, and this is work already delivered.
+    assert "DEFERRED_SPECS" not in delivered[0].evidence.get("remedy", "").split("never")[0]
+
+
+def test_shipped_spec_referenced_by_an_epic_reports_no_finding(tmp_path: Path) -> None:
+    """The delivered branch is held to the WHOLE-SPEC standard, never INV-A's
+    per-CAP citation test: an epic that names the Spec at all clears it, even
+    without enumerating every ``CAP-n``. Running per-CAP here flagged 34 Specs
+    against 12 real ones, because epics written before the cite-every-CAP-id
+    convention name the Spec or its Dream and stop."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
+    (pa / "epics.md").write_text(
+        "## Epic 1: Foo\n\nDecomposes spec-foo.\n\n### Story 1.1: Bar\n**Status:** done\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+
+
+def test_shipped_spec_claimed_by_its_dream_path_reports_no_finding(tmp_path: Path) -> None:
+    """An epic may claim a Spec by its ``owner-dream`` path instead of its slug
+    (steward Epic 51 claims spec-platform-datastores-consumed-not-self-hosted
+    that way). Matching only ``spec-<slug>`` reported it as a false positive."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "shipped")
+    (pa / "epics.md").write_text(
+        "## Epic 1: Foo\n\nSeeded from docs/dreams/x.md.\n\n"
+        "### Story 1.1: Bar\n**Status:** done\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "delivered-spec-not-decomposed"]
+
+
+def test_absorbed_and_archived_specs_stay_exempt_from_decomposition(
+    tmp_path: Path,
+) -> None:
+    """The guard-removed companion: only ``shipped`` joined the checked set.
+    ``absorbed`` CAPs live in the absorbing chain's epic, ``archived`` and
+    ``superseded`` were abandoned rather than delivered, and
+    ``extension-point`` is a standing seam — none owes a story trail."""
+    for status in ("absorbed", "archived", "superseded", "extension-point"):
+        root = tmp_path / status
+        pa = _pa(root, "pyforge-testproj")
+        _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", status)
+
+        findings = board.gather_chain_completeness(root)
+
+        assert not [
+            f for f in findings if f.check == "delivered-spec-not-decomposed"
+        ], f"{status} must stay exempt"
 
 
 def test_spec_without_status_key_reports_spec_status_missing(tmp_path: Path) -> None:
@@ -552,6 +641,91 @@ def test_epics_and_ledger_in_full_agreement_reports_no_finding(tmp_path: Path) -
     _write_ledger(pa / "sprint-status-ledger.yaml", {
         "1-1-foo": "done",
         "1-2-bar": "in-progress",
+    })
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+# --- INV-B: epic headings == ledger epic keys (2026-09-14) -------------------
+#
+# The story arm above compares STORIES. Until 2026-09-14 nothing compared
+# EPICS, because `_ledger_story_ids` discarded every `epic-*` key as
+# "not a story id" — so an epic could exist on one side alone indefinitely.
+# It did, twice: steward Epic 18 sat at H3 (never promoted to a `##` heading)
+# and marshal Epic 29 had no heading at any level, a gap marshal's own
+# frontmatter had admitted in prose — "183 (181 + Epic 29's two, never
+# counted)" — without any detector ever reading it.
+
+
+def test_epic_heading_without_ledger_key_reports_fail(tmp_path: Path) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"], extra_epics=[7])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {
+        "epic-1": "done",
+        "1-1-foo": "done",
+    })
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "epic-heading-without-ledger-key"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-B"
+    assert "7" in finding.evidence["status"]
+
+
+def test_ledger_epic_key_without_heading_reports_fail(tmp_path: Path) -> None:
+    """marshal Epic 29's live shape: the ledger tracks it, no heading declares
+    it. The story arm cannot see this — `epic-29` parses as no story id."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {
+        "epic-1": "done",
+        "epic-9": "done",
+        "1-1-foo": "done",
+    })
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "ledger-epic-key-without-heading"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-B"
+    assert "9" in finding.evidence["status"]
+
+
+def test_epic_headings_and_ledger_keys_in_agreement_reports_no_finding(
+    tmp_path: Path,
+) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"], extra_epics=[2])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {
+        "epic-1": "done",
+        "epic-2": "backlog",
+        "1-1-foo": "done",
+    })
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_a_retrospective_key_is_not_a_second_epic(tmp_path: Path) -> None:
+    """Guard-removed companion: every station pairs `epic-N` with
+    `epic-N-retrospective`, so matching the epic key loosely would demand a
+    heading per retrospective and red the whole fleet at once."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {
+        "epic-1": "done",
+        "epic-1-retrospective": "optional",
+        "1-1-foo": "done",
     })
 
     findings = board.gather_chain_completeness(tmp_path)

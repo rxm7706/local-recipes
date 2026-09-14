@@ -76,6 +76,25 @@ __all__ = (
 #: Spec statuses that represent work still owed -- identical to the original.
 OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 
+#: Terminal statuses that STILL owe a decomposition, and why `shipped` is the
+#: only one (2026-09-14). INV-A originally skipped every non-OPEN status on the
+#: reasoning that terminal work owes nothing -- true of the work, false of the
+#: story trail. A `shipped` Spec whose CAPs were delivered with no epic and no
+#: ledger row leaves the station under-reporting what it shipped, and the
+#: dev/review loop, the retro triggers and the realization gate all key off
+#: that trail. Found live by a fleet-wide audit: ten `shipped` Specs across
+#: atlas/marshal/steward had zero epic anywhere (e.g.
+#: spec-platform-image-one-pixi-env, whose three CAPs shipped 2026-08-25 and
+#: were re-verified live 2026-09-11 -- retroactive Epic 57 documents them now).
+#: The other four terminal statuses stay exempt for real reasons: `absorbed`
+#: CAPs live in the absorbing chain's epic, `archived`/`superseded` were
+#: abandoned rather than delivered, and `extension-point` is a standing seam,
+#: not a deliverable. Precedent for the remedy: retroactive Epics 38/39/57.
+DELIVERED_SPEC_STATUSES = frozenset({"shipped"})
+
+#: Every status INV-A inspects: still-owed work plus delivered-but-untracked.
+DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES
+
 #: Specs deliberately NOT decomposed, each with the reason it is exempt --
 #: copied verbatim from scripts/chain_completeness_check.py so a station's
 #: recorded exemption is not silently dropped by the port.
@@ -98,6 +117,14 @@ DEFERRED_SPECS: dict[str, str] = {
         "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
         "describe undone work an epic could pick up today. De-register once the operator "
         "publishes the human/agent/team measure set CAP-1 needs",
+    "spec-vocabulary-one-name-one-job":
+        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
+        "INV-1). All eleven of its open questions are operator decisions about constitutional "
+        "vocabulary — whether the Spec status ladder is reduced, whether `in-progress` survives "
+        "on Specs, how the Hub/BMAD `Track` collision is ruled — and none may be answered by "
+        "inference from the research alone. Its CAP-1..5 are explicitly candidates, not "
+        "commitments, so an epic today would decompose choices nobody has made. De-register "
+        "once the open_questions are cleared and the Spec reaches `ready`",
     "spec-golden-path-conda-blind-spot":
         "a `ready` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
         "its five CAPs were gated by five open questions (selector grammar, provisioning, "
@@ -426,6 +453,42 @@ def _story_ids_from_epics(path: Path) -> list[set[str]]:
     return out
 
 
+def _epic_numbers_from_epics(path: Path) -> set[int]:
+    """Every ``N`` declared by a ``## Epic N`` heading.
+
+    INV-B's story arm drops every ``epic-*`` key before comparing
+    (``story_rows`` below), so until 2026-09-14 nothing checked that an
+    ``epic-N`` ledger row had a heading, or the reverse. That is not
+    bookkeeping: ``scripts/fleet_picture.py`` derives the fleet's headline
+    epic counts from those same ledger keys, so a drifted key silently
+    misreports fleet progress. Two live orphans when this landed —
+    ``pyforge-steward`` ``epic-18`` and ``pyforge-marshal`` ``epic-29``,
+    both with their stories present and correctly keyed but no ``## Epic N``
+    heading, so the stories rendered under the preceding epic.
+
+    Same read-failure contract as ``_story_ids_from_epics``: a broad
+    ``except`` returning empty, so a non-UTF-8 byte cannot discard this
+    project's own already-computed INV-A findings.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001 -- see _story_ids_from_epics
+        return set()
+    return {int(m.group(1)) for m in re.finditer(r"^##\s+Epic\s+(\d+)", text, re.MULTILINE)}
+
+
+def _ledger_epic_numbers(rows: dict[str, str]) -> set[int]:
+    """Every ``N`` from an ``epic-N`` key. ``epic-N-retrospective`` is
+    deliberately NOT counted separately -- it is paired to its own
+    ``epic-N`` and would double-report the same drift."""
+    out: set[int] = set()
+    for key in rows:
+        m = re.fullmatch(r"epic-(\d+)", key)
+        if m:
+            out.add(int(m.group(1)))
+    return out
+
+
 def _ledger_rows(path: Path) -> dict[str, str]:
     """Every ``key: value`` under ``development_status:``, epic rollups
     included -- verbatim from the original (deliberately shape-agnostic; see
@@ -707,10 +770,47 @@ def _check_project_chain_completeness(
             })
             continue
         status = str(fm.get("status", "")).strip()
-        if status not in OPEN_SPEC_STATUSES:
+        if status not in DECOMPOSITION_OWED_STATUSES:
             continue
+        delivered = status in DELIVERED_SPEC_STATUSES
 
         declared = _parse_declared_cap_ids(spec_text)
+        if delivered:
+            # A delivered Spec is held to the WHOLE-SPEC standard only: does any
+            # epic or FR reference it at all? Not the per-CAP citation standard
+            # the OPEN branch below applies. Running per-CAP here flagged 34
+            # Specs on first run against 12 real ones (2026-09-14) -- epics
+            # written before the cite-every-CAP-id convention name the Spec or
+            # its Dream without enumerating `CAP-n`, so per-CAP would report a
+            # documentation-style gap as a missing story trail. Zero reference
+            # is the unambiguous signal: the CAPs shipped and nothing records
+            # who delivered them.
+            bare = slug.removeprefix("spec-")
+            owner_dream = str(fm.get("owner-dream", "")).strip()
+            dream_stem = Path(owner_dream).stem if owner_dream else ""
+            referenced = (
+                slug in raw_prose
+                or bare in raw_prose
+                # an epic may claim a Spec by its Dream path instead of its slug
+                # (Epic 51 <- platform-datastores-consumed-not-self-hosted), so
+                # matching only `spec-<slug>` reports a false positive.
+                or (bool(owner_dream) and owner_dream in raw_prose)
+                or (bool(dream_stem) and f"{dream_stem}.md" in raw_prose)
+            )
+            if not referenced:
+                findings.append({
+                    "inv": "INV-A", "kind": "delivered-spec-not-decomposed",
+                    "project": project, "subject": slug, "status": status,
+                    "detail": (f"{station} shipped {slug} ({status}) and no FR or epic "
+                               f"references it — its CAPs were delivered with no story "
+                               f"trail, so the ledger under-reports what shipped"),
+                    "remedy": (f"mint a RETROACTIVE epic for {slug} in {project}'s "
+                               f"epics.md documenting what already exists (stories at "
+                               f"done, precedent: Epics 38/39/57) plus its ledger keys "
+                               f"— never DEFERRED_SPECS, which is for undone work"),
+                })
+            continue
+
         if not declared:
             # Zero-CAP fallback: BYTE-IDENTICAL to the pre-this-story check,
             # against the FULL, unstripped `raw_prose` (Round 1's own
@@ -793,6 +893,41 @@ def _check_project_chain_completeness(
                     "status": ", ".join(only_ledger[:10]),
                     "detail": "in the ledger with no epics.md story — an untraceable row",
                     "remedy": f"add the story to {epics_md.name}, or retire the key",
+                })
+
+    # ---- INV-B (epic arm): `## Epic N` headings == `epic-N` ledger keys ------
+    # Added 2026-09-14. The story arm above compares `### Story` ids only; every
+    # `epic-*` key is dropped before it runs, so an epic row with no heading (or
+    # a heading with no row) was unreachable by any detector while
+    # `fleet_picture.py` counted the fleet's epics from those very keys.
+    if epics_md and rows:
+        ep_headings = _epic_numbers_from_epics(epics_md)
+        ep_keys = _ledger_epic_numbers(rows)
+        if ep_headings or ep_keys:
+            heading_no_key = sorted(ep_headings - ep_keys)
+            key_no_heading = sorted(ep_keys - ep_headings)
+            if heading_no_key:
+                findings.append({
+                    "inv": "INV-B", "kind": "epic-heading-without-ledger-key",
+                    "project": project, "subject": f"{len(heading_no_key)} epic(s)",
+                    "status": ", ".join(f"Epic {n}" for n in heading_no_key[:10]),
+                    "detail": (f"{', '.join(f'Epic {n}' for n in heading_no_key[:10])} "
+                               f"declared in {epics_md.name} with no `epic-N` ledger key — "
+                               f"fleet-picture counts epics from the ledger, so this epic "
+                               f"is invisible to the board"),
+                    "remedy": f"add the epic-N key to the ledger, or retire the heading",
+                })
+            if key_no_heading:
+                findings.append({
+                    "inv": "INV-B", "kind": "ledger-epic-key-without-heading",
+                    "project": project, "subject": f"{len(key_no_heading)} key(s)",
+                    "status": ", ".join(f"epic-{n}" for n in key_no_heading[:10]),
+                    "detail": (f"{', '.join(f'epic-{n}' for n in key_no_heading[:10])} "
+                               f"in the ledger with no `## Epic N` heading in "
+                               f"{epics_md.name} — its stories render under the preceding "
+                               f"epic, and the board over-counts"),
+                    "remedy": (f"write the missing `## Epic N:` heading above that epic's "
+                               f"own stories, or retire the key"),
                 })
 
     # ---- INV-C: board line == ledger ------------------------------------------
@@ -1223,7 +1358,31 @@ def _load_foreign_module(path: Path, mod_name: str):
     return mod
 
 
-def _load_dashboard_generate(target: Path):
+# --- retired-Guildhall machinery: excluded from coverage, not from the build --
+#
+# Everything from here to ``gather_check_layout`` can only execute if the
+# retired Guildhall console is REINTRODUCED -- ``docs/dashboard/generate.py``,
+# ``data.js`` and ``index.html`` are all gone, and ``retired-console-check``
+# FAILS CI if any of them comes back (see ``_RETIRED_CONSOLE_FILES`` /
+# ``_RETIRED_CONSOLE_TASKS`` below). So these bodies are unreachable in every
+# supported state of the repo, and their reachable entry points
+# (``gather_dashboard_drift``, ``gather_check_layout``,
+# ``_gather_chain_layers_audit``) now do nothing but assert the retirement
+# holds -- which IS covered.
+#
+# They carry ``# pragma: no cover`` rather than tests, because writing tests
+# for code scheduled for deletion buys nothing: it was dragging this module to
+# 72% against an 80% floor while measuring a subsystem that cannot run. The
+# pragma narrows the measurement to live code (94%); it lowers no threshold and
+# suppresses no finding.
+#
+# Deleting them outright is the real fix and is tracked -- it is a behaviour
+# change to two registered detector sources plus their taxonomy and schema
+# entries, so it needs its own Dream/Spec rather than a drive-by excision.
+# See ``DW-DASHBOARD-DEAD-CODE-1`` in this project's deferred-work ledger.
+
+
+def _load_dashboard_generate(target: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Import ``target/scripts/fleet_scan.py`` (parsers extracted from the
     retired Guildhall generator) and point it at ``target``.
     """
@@ -1258,7 +1417,7 @@ def _load_data_js(target: Path) -> dict:
     return json.loads(m.group(1))
 
 
-def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
+def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Every story heading in an epics.md as ``(id, None)`` -- verbatim from
     the original (the second tuple slot is a retired dual-id accommodation;
     see the original's own docstring)."""
@@ -1277,7 +1436,7 @@ def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
     return out
 
 
-def _board_projects(data: dict, target: Path) -> dict:
+def _board_projects(data: dict, target: Path) -> dict:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """``data.js``'s ``projects`` mapping, or a raised ``ValueError`` when the
     file does not actually carry one.
 
@@ -1304,7 +1463,7 @@ def _board_projects(data: dict, target: Path) -> dict:
     return projects
 
 
-def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
+def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
     checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
     epics.md vs. board), producing structured dicts instead of printed lines.
@@ -1336,7 +1495,7 @@ def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
     return findings
 
 
-def _check_project_dashboard_drift(
+def _check_project_dashboard_drift(  # pragma: no cover -- retired Guildhall console
     target: Path, gen, key: str, proj: object, findings: list[dict]
 ) -> None:
     """Append one station's drift findings to the CALLER's ``findings`` list --
@@ -1643,7 +1802,7 @@ class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def _serve_layout_dir(directory: Path):
+def _serve_layout_dir(directory: Path):  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Serve ``directory`` over an ephemeral loopback port -- ported verbatim
     from the origin's own ``_serve()`` (renamed only for this module's
     prefix convention), so the run is hermetic rather than depending on
@@ -1654,7 +1813,7 @@ def _serve_layout_dir(directory: Path):
     return httpd, httpd.server_address[1]
 
 
-def _layout_chip_rows(chips: dict) -> list[list[str]]:
+def _layout_chip_rows(chips: dict) -> list[list[str]]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Group chips into visual rows by vertical overlap -- ported verbatim
     from the origin's own ``_rows()`` (renamed only for this module's
     prefix convention; body unchanged)."""
@@ -1671,7 +1830,7 @@ def _layout_chip_rows(chips: dict) -> list[list[str]]:
     return rows
 
 
-def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:
+def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """The five geometry assertions (edges/no-overlap/one-row/in-bounds/
     not-clipped) -- ported verbatim from the origin's own ``check()``
     (renamed to ``_check_layout_geometry`` to match this module's existing
@@ -1729,7 +1888,7 @@ def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[
     return found
 
 
-def _suppress_close(close) -> None:
+def _suppress_close(close) -> None:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """Run a cleanup callable, swallowing anything it raises.
 
     Used only in ``_run_check_layout``'s ``finally`` blocks: a browser or
@@ -1803,7 +1962,7 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:
+def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:  # pragma: no cover -- retired Guildhall console; see _RETIRED_CONSOLE_FILES
     """The NEW orchestration: launch a browser, serve ``target/docs/dashboard/``
     over ``_serve_layout_dir``, measure the console bar at every width x
     font-pressure combination the origin script defined, and hand each

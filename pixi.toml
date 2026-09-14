@@ -526,6 +526,11 @@ cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\" && pyte
 description = "Story 16.2: the first real estate caller of `mason recipe build` (FR-9's use-case, wired outside mason's own test tree) -- builds recipes/click-help-colors (a tiny, already-graduated noarch: python recipe with an explicit setuptools host dep and no ${{ python_min }} reference, chosen for a fast, dependency-light smoke build that needs neither the conda-forge-pinning overlay nor an isolated pip build-backend fetch) through `mason recipe build` against mason's own env, rather than `pixi run -e local-recipes recipe-build`. Wired into .github/workflows/pyforge-station-tests.yml's mason-test job so it runs on every execution of that already-existing lane, not only on demand. Does not replace the local-recipes route as the estate's primary recipe-build path."
 cmd = "mason recipe build recipes/click-help-colors"
 
+[feature.pyforge-mason.tasks.pyforge-mason-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (mason)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in mason's own env, against the 80% unit floor. Distinct from pyforge-mason-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "mason" }
+
 [feature.pyforge-mason.tasks.pyforge-mason-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-mason. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
 cmd = "python scripts/run_station_coverage_gate.py --station mason"
@@ -574,8 +579,13 @@ description = "Run the pyforge-steward suite across all three tiers (unit + conf
 cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
 
 [feature.pyforge-steward.tasks.frame-preflight]
-description = "Story 53.2 (spec-intelligence-hub CAP-2): in-repo Frame Spec v0.2 preflight for docs/foundry/frames/ (type/name/description/visibility + owner; station Frames inherit the company Frame). Not a gate: never joins detectors/detectors-ci — Warden stays the sole PR verdict."
+description = "Story 53.2/53.6 (spec-intelligence-hub CAP-2): in-repo Frame Spec v0.3 preflight for docs/foundry/frames/ (type/identifier/name/description/visibility + maintainer; identity is the qualified-ref identifier, station Frames inherit pyforge/company, repeatable fields must be sequences). Not a gate: never joins detectors/detectors-ci — Warden stays the sole PR verdict."
 cmd = "python -m pyforge.steward.frames"
+
+[feature.pyforge-steward.tasks.pyforge-steward-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (steward)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in steward's own env, against the 80% unit floor. Distinct from pyforge-steward-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "steward" }
 
 [feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -692,6 +702,11 @@ cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (marshal)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in marshal's own env, against the 80% unit floor. Distinct from pyforge-marshal-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "marshal" }
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-coverage]
 description = "Story 19.3 / FR-131: unit (>80%) + integration (>70%) coverage gates that name uncovered modules (full package evaluate)."
@@ -1167,13 +1182,45 @@ cmd = "python scripts/detectors.py --scope repo"
 
 [feature.local-recipes.tasks.pyforge-station-tests]
 description = "Run every PyForge station's own pytest suite locally, mirroring .github/workflows/pyforge-station-tests.yml's per-station jobs — the exact set that ALL fire together whenever pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit changes (that workflow's shared-surface rule), which is easy to miss since most day-to-day PRs only touch one station and never see this combination locally. Added 2026-09-14 after a 5-day GitHub Actions billing outage let ~260 PRs merge with this workflow never actually running; a pixi.toml dep bump was the first push afterward to touch shared surface, and it surfaced 5 days of accumulated drift (doctor/marshal/mason) all at once. Fails fast (first red station stops the run) and covers only each station's own `pyforge-<station>-test` task — NOT atlas's Chromium/DuckDB/WASM setup, herald's browser check, scribe's Postgres+pgvector service (see `scribe-pg-up`), or the separate guild-container job; run those stations' own CI-mirroring steps first if you touched them. Run this before pushing any pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit change."
-cmd = """
-set -euo pipefail
-for s in atlas doctor herald marshal mason scribe steward warden; do
-  echo "=== pyforge-$s ==="
-  pixi run --frozen -e "pyforge-$s" "pyforge-$s-test"
-done
-"""
+# Declarative cross-environment depends-on, NOT a shell loop. The original
+# 2026-09-14 landing used `set -euo pipefail` + a bash `for`, which pixi's task
+# shell (deno_task_shell) cannot parse -- so this task errored out on its very
+# first token and never ran a single station. Caught 2026-09-14 on the first
+# real invocation. depends-on runs the eight in order, stops at the first red,
+# and needs no shell at all.
+depends-on = [
+  { task = "pyforge-atlas-test", environment = "pyforge-atlas" },
+  { task = "pyforge-doctor-test", environment = "pyforge-doctor" },
+  { task = "pyforge-herald-test", environment = "pyforge-herald" },
+  { task = "pyforge-marshal-test", environment = "pyforge-marshal" },
+  { task = "pyforge-mason-test", environment = "pyforge-mason" },
+  { task = "pyforge-scribe-test", environment = "pyforge-scribe" },
+  { task = "pyforge-steward-test", environment = "pyforge-steward" },
+  { task = "pyforge-warden-test", environment = "pyforge-warden" },
+]
+
+[feature.local-recipes.tasks.pyforge-station-coverage-gates]
+description = "Run every station's CI-mirroring coverage gate (scripts/coverage_gates_ci.py, touched modules, 80% unit floor) in its own pixi env — the local twin of .github/workflows/coverage-gates.yml's `named-module-gates` matrix. Declarative depends-on, never a shell loop (pixi's task shell cannot parse one; see pyforge-station-tests)."
+depends-on = [
+  { task = "pyforge-atlas-coverage-gate", environment = "pyforge-atlas" },
+  { task = "pyforge-doctor-coverage-gate", environment = "pyforge-doctor" },
+  { task = "pyforge-herald-coverage-gate", environment = "pyforge-herald" },
+  { task = "pyforge-marshal-coverage-gate", environment = "pyforge-marshal" },
+  { task = "pyforge-mason-coverage-gate", environment = "pyforge-mason" },
+  { task = "pyforge-scribe-coverage-gate", environment = "pyforge-scribe" },
+  { task = "pyforge-steward-coverage-gate", environment = "pyforge-steward" },
+  { task = "pyforge-warden-coverage-gate", environment = "pyforge-warden" },
+]
+
+[feature.local-recipes.tasks.pr-preflight]
+description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
+
+Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
+
+Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivalent: `cfe-regression-net` failed on a stale spec-surface baseline (a scoped `--write-baseline` had been taken, then a governed file was edited again, silently invalidating it), and `named-module-gates (doctor)` failed on a coverage floor that only measures modules a branch touches — so it had been latent for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`.
+
+NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error)."""
+depends-on = ["detectors-ci", "test-ci", "pyforge-station-tests", "pyforge-station-coverage-gates"]
 
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
@@ -2222,6 +2269,11 @@ cmd = "warden"
 description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow)"
 cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\""
 
+[feature.pyforge-warden.tasks.pyforge-warden-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (warden)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in warden's own env, against the 80% unit floor. Distinct from pyforge-warden-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "warden" }
+
 [feature.pyforge-warden.tasks.pyforge-warden-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-warden. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
 cmd = "python scripts/run_station_coverage_gate.py --station warden"
@@ -2322,6 +2374,11 @@ duckdb-server = ">=0.31.0"
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
 description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (atlas)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in atlas's own env, against the 80% unit floor. Distinct from pyforge-atlas-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "atlas" }
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-atlas. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -2583,6 +2640,11 @@ pytest = ">=9.1.1"                # test runner
 description = "Run the pyforge.doctor test suite"
 cmd = "pytest src/shared/packages/pyforge-doctor/tests -q"
 
+[feature.pyforge-doctor.tasks.pyforge-doctor-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (doctor)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in doctor's own env, against the 80% unit floor. Distinct from pyforge-doctor-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "doctor" }
+
 [feature.pyforge-doctor.tasks.pyforge-doctor-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-doctor. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
 cmd = "python scripts/run_station_coverage_gate.py --station doctor"
@@ -2603,6 +2665,11 @@ depends-on = ["pyforge-doctor-build-conda", "pyforge-doctor-build-dist"]
 [feature.pyforge-scribe.tasks.pyforge-scribe-test]
 description = "Run the pyforge.scribe test suite"
 cmd = "pytest src/shared/packages/pyforge-scribe/tests -q"
+
+[feature.pyforge-scribe.tasks.pyforge-scribe-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (scribe)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in scribe's own env, against the 80% unit floor. Distinct from pyforge-scribe-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "scribe" }
 
 [feature.pyforge-scribe.tasks.pyforge-scribe-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-scribe. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -2633,6 +2700,11 @@ cmd = "python scripts/scribe_install_nightly_trigger.py"
 [feature.pyforge-herald.tasks.pyforge-herald-test]
 description = "Run the pyforge.herald test suite"
 cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+
+[feature.pyforge-herald.tasks.pyforge-herald-coverage-gate]
+description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (herald)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in herald's own env, against the 80% unit floor. Distinct from pyforge-herald-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+env = { COVERAGE_GATES_STATIONS = "herald" }
 
 [feature.pyforge-herald.tasks.pyforge-herald-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-herald. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."

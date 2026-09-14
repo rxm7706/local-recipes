@@ -18,8 +18,8 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
+updated: "2026-09-14"
+currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -1922,3 +1922,100 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Epic 17: The recipes/ fleet is stewarded (spec-fleet-stewardship fs:CAP-1..3)
+
+**Retroactive.** All three CAPs were re-verified PASS on 2026-09-11 at HEAD `b36c8be118`
+with mechanical evidence recorded in the Spec's own `verified:` lines, but no story was
+ever written, so `chain-completeness`'s delivered-Spec arm flagged the Spec as
+undecomposed. This epic documents a practice that is already in force; no new
+implementation. Unlike mason's other epics this Spec governs a **continuous practice**
+over `recipes/**` rather than a discrete build — which is why it carries
+`surface-drift: exempt` (per-recipe governance is the CFE workflow, not spec
+re-derivation) and adopts three legacy Tier-1 workflow specs as companions rather than
+restating them.
+
+### Story 17.1: The local mirror is the source of truth
+
+As a recipe maintainer,
+I want `recipes/<feedstock>/` edited first and verified locally before anything is
+pushed upstream,
+So that a feedstock never receives an unproven change and the mirror never drifts
+behind what shipped.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-fleet-stewardship CAP-1
+**Surface:** `recipes/**` (`surface-drift: exempt`); `test_recipe_yaml_parse_audit.py`
+**Given** recipe work could be done directly on a feedstock **When** this practice is in
+force **Then** the local mirror is edited first, verified with a real build, and only
+then pushed
+**And** the parse audit holds the mirror machine-checkable
+**Status:** done — re-verified 2026-09-11 at `b36c8be118`: 72 commits touched `recipes/`
+since 2026-08-10 (continuous activity), `test_recipe_yaml_parse_audit.py` 6/6 passing
+
+### Story 17.2: Every local recipe carries its internal metadata, stripped on push
+
+As a recipe maintainer,
+I want each local recipe to carry `cfe-*` internal metadata that never reaches an
+upstream PR,
+So that the factory keeps its own provenance without leaking local-only fields into
+conda-forge.
+
+**Type:** docs • **Effort:** S • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-2
+**Given** `extra: cfe-*` is local-only internal metadata **When** this practice is in
+force **Then** every local recipe carries it and SKILL.md step 8b strips it before push
+**And** a duplicate-key guard (`cfe-conda-name`) keeps the block parseable
+**Status:** done — re-verified 2026-09-11 (meta-test half): parse audit incl. the
+duplicate-key guard 6/6 passing. **Residue recorded in the Spec, not resolved here:** the
+strip-on-push half was not independently re-checked against a real published feedstock
+file that pass — it rests on the documented step-8b convention and prior worked examples
+
+### Story 17.3: The recurring campaigns have a home and a record
+
+As a recipe maintainer,
+I want refresh (Track A/B), platform expansion and red-PR remediation to run as named,
+repeatable campaigns,
+So that bulk feedstock work is a workflow with recorded evidence rather than ad-hoc
+sweeps.
+
+**Type:** docs • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-3
+**Surface:** adopted companions `docs/specs/feedstock-refresh.md`,
+`feedstock-platform-expansion.md`, `feedstock-failure-remediation.md` (legacy Tier-1, in
+force)
+**Given** bulk feedstock work could be ad-hoc **When** this practice is in force **Then**
+each campaign has a named workflow spec and lands its evidence in that spec's own Worked
+Examples / Current State
+**And** dormancy between waves is a currency fact the specs self-document, not a defect
+**Status:** done — re-verified 2026-09-11 (historical; dormant today, matching the Spec's
+own 2026-09-09 realization-gate note): all three companions' last-touch commits still
+match their documented dates (`1aeaf12cee` 2026-07-02, `1bdd5a2f02` 2026-06-28); the
+criterion held when waves ran (Track A Waves B–F)
+
+## Validation note — 2026-09-14 (chain-currency sweep cascade)
+
+Validated against the architecture spine as re-stamped today (its § Currency
+reconciliation — 2026-09-14) and the PRD's same-day reconciliation.
+
+- **Ledger agreement, re-measured with the real parser** (`fleet_scan.parse_sprint_status`,
+  not a regex): **70/70 stories `done` across 17/17 epics.** Every `### Story` heading
+  here maps 1:1 to a `sprint-status-ledger.yaml` key, no orphan either direction. The
+  prior note's 11/50 figure is superseded by growth, not corrected.
+- **Epic 16's realization-gate stories are confirmed landed against live evidence, not
+  against their own status lines.** Story 16.1 (mason's env satisfies the CFE import
+  floor) and Story 16.2 (a first estate caller of `mason recipe`) both read `done`;
+  checked directly this pass, `[feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]`
+  exists in `pixi.toml` and `.github/workflows/pyforge-station-tests.yml:228` invokes
+  it in the mason job. The caller is real and runs on every mason CI run.
+- **The PRD's new FR-14 as-built divergence is deliberately NOT minted as a story
+  here.** `mason recipe update` writes by default while FR-14 promises diff-before-apply
+  (and NFR-9 promises dry-run-by-default). Changing that is a **behaviour change to a
+  shipped verb**, which under this repo's Dream-first rule enters through
+  `docs/dreams/<slug>.md` → `bmad-spec` → a Story, not through a currency sweep
+  hand-writing an epic entry. It is recorded in the PRD (FR-14's divergence box and
+  NFR-9's partial marker) and surfaced to the operator; the story belongs to whoever
+  takes the Dream.
+- **Cross-station note.** The foundry-island wiring that moved mason's package this
+  week (`cfe.py`/`errors.py`/`recipe.py`/`resolve.py`) is **steward Story 44.7**, on
+  steward's epics. No mason story is owed for it, and none is minted — recorded so the
+  package motion is not later read as an undecomposed mason change.
+- No epic or story content above was restructured; this note and the frontmatter
+  `updated:`/`currency_review:` bumps are the whole edit.

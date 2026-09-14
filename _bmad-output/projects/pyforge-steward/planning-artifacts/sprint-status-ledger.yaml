@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 349
+# stories: 359
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -220,6 +220,7 @@ development_status:
   53-3-one-tracked-track-json-per-run: done
   53-4-guards-as-a-library-without-a-second-verdict: done
   53-5-adopt-the-frame-spec-v0-3-working-draft: done
+  53-6-frame-identity-is-the-qualified-ref-identifier-not-the-name: done
   54-1-thin-oracle-for-the-foundry-kernel: done
   54-2-rebuild-pyforge-core-in-foundry: done
   54-3-rebuild-steward-in-foundry: done
@@ -229,6 +230,12 @@ development_status:
   55-2-extract-detector-in-detectors-ci: done
   55-3-verified-in-foundry-joins-the-case-list: done
   56-1-django-debug-toolbar-on-platform-dev-only: done
+  57-1-one-frozen-env-replaces-the-pip-no-deps-layer: done
+  57-2-containerfile-drops-the-pip-installer-entirely: done
+  57-3-pixitainer-docker-re-evaluated-hand-rolled-containerfile-kept: done
+  58-1-a-station-s-real-mcp-tool-is-reachable-through-a-deployed-cluster: done
+  58-2-a-station-with-no-real-app-keeps-the-slice-1-stub-unchanged: done
+  58-3-the-one-unproven-run-state-row-flips-to-pass: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -355,6 +362,10 @@ development_status:
   epic-55-retrospective: optional
   epic-56: done
   epic-56-retrospective: optional
+  epic-57: done
+  epic-57-retrospective: optional
+  epic-58: done
+  epic-58-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

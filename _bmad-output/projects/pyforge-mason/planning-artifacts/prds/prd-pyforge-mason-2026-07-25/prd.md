@@ -2,9 +2,9 @@
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-07"
+updated: "2026-09-14"
 project: pyforge-mason
-currency_review: Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift).
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
@@ -320,6 +320,24 @@ A user updates an existing recipe to a newer upstream version.
 **Consequences (testable):**
 - Diff-before-apply: the change is shown before it is written.
 - `--dry-run` supported on every source type.
+
+> **AS-BUILT DIVERGENCE — recorded 2026-09-14, NOT repaired.** The first consequence does
+> **not** hold on the default path. `--dry-run` is `action="store_true"` and its own help
+> text reads *"compute and show the plan without writing (default: writes the field-scoped
+> update for real)"* (`cli.py:711-715`); `recipe.py::update()` appends `--dry-run` to the
+> CFE argv **only when the flag is set** (`recipe.py:797-799`). The `actions` plan is
+> therefore an **alternative** to writing, not a preview gate ahead of it. Verified
+> independently against live code during the 2026-09-14 chain-currency sweep, confirming
+> the finding `spec-pyforge-mason`'s own 2026-09-11 CAP-2 verification pass raised. The
+> second consequence (`--dry-run` supported on every source type) **does** hold — both the
+> PyPI and GitHub-Releases adapters forward it.
+>
+> **Why it is recorded and not fixed here.** Making diff-before-apply the default is a
+> **behaviour change** to a shipped verb, and this repo's Dream-first rule means it needs
+> its own Dream → Spec → Story, not a drive-by edit inside a currency sweep. The decision
+> it needs is also genuinely open: invert the default (safer, breaks any caller relying on
+> today's write-by-default), or amend FR-14 to describe what shipped (honest, but weakens
+> NFR-9). See NFR-9's own note below — the two must be answered together.
 
 **Notes:** The v1 subcommand set is the intersection of CFE capability and product coherence, not
 the full 46-tool surface. Verbs not listed remain reachable through existing pixi tasks (D-4).
@@ -860,7 +878,12 @@ A user can rehearse a PyPI publish before performing the one-way one.
 - **NFR-7 (No runtime fetch).** Engines are provisioned as conda dependencies. Nothing is downloaded
   at runtime.
 - **NFR-8 (Idempotence).** Re-running a completed ship does not duplicate an upload.
-- **NFR-9 (Safety by default).** Every mutating operation defaults to dry-run.
+- **NFR-9 (Safety by default).** Every mutating operation defaults to dry-run. *(**Partial as
+  built — recorded 2026-09-14, not repaired.** `mason recipe submit` and `mason package ship`
+  both hold it: submit requires an explicit `--yes`, ship defaults to dry-run. `mason recipe
+  update` does **not** — it writes by default and `--dry-run` is opt-in. See FR-14's
+  as-built divergence note; the two are one decision, and it is a behaviour change needing
+  its own Dream/Spec.)*
 - **NFR-10 (Lean deps).** A new runtime dependency requires justification against the workspace's
   lean-dependency doctrine.
 - **NFR-11 (Python floor).** `requires-python >= 3.12`, matching `pyforge-warden` (D-6).
@@ -1747,3 +1770,62 @@ failure mode as a fabricated test-architecture document: it reads as verified to
 agent. There is no `recipes/pyforge-mason/`, so the package is built by `pixi-build-python`
 for this estate and is not published to conda-forge; no external consumer depended on the
 wider floor.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-mason`'s SPEC.md moved to 2026-09-11 and its
+`.memlog` to 2026-09-13T23:57 while this PRD sat at 2026-09-07 — seven days, past the
+runbook's 2-day grace window.*
+
+**One real divergence, folded in above rather than summarized here.** The Spec's
+2026-09-11 CAP-2 verification returned `PARTIAL` on "update shows the change before
+writing it," and this pass re-verified that finding **independently against live
+code** rather than adopting it on report: `cli.py:711-715` registers `--dry-run` as
+`store_true` with help text naming the real write as the default, and
+`recipe.py:797-799` appends the flag to CFE argv only when set. **FR-14 now carries a
+dated as-built divergence note and NFR-9 is marked partial.** Neither is repaired —
+the repair is a behaviour change to a shipped verb and needs its own Dream/Spec under
+this repo's Dream-first rule.
+
+**Three further Spec motions, none of them an FR change.**
+
+1. **`status: shipped` added to the Spec (2026-09-09).** The Spec carried no `status:`
+   key at all — it uses the `id:` form — so `chain-completeness` never saw it and
+   reported 7/7 CAPs uncovered. A bookkeeping defect, fixed at its source.
+2. **The realization gate opened and closed inside four days.** The 2026-09-09 re-read
+   found mason's own differentiator unexercised: `mason doctor` in mason's own pixi env
+   reported `cfe_import_floor_satisfied: false`, `cfe_import_floor_missing:
+   (truststore, conda-forge-metadata)`, `unavailable_verbs: ('recipe',)`; and **nothing
+   in the estate invoked `mason recipe` at all**. Stories 16.1 and 16.2 closed both by
+   2026-09-11. Verified live this pass: `[feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]`
+   exists in `pixi.toml` and is wired into `.github/workflows/pyforge-station-tests.yml:228`'s
+   mason job — `mason recipe build` now has a real estate caller outside mason's own
+   test tree, on every run of that lane. **What is still rehearsal-tier is the *ship*
+   half**: there is no `recipes/pyforge-mason/` and no public publish. This PRD's
+   "Mason ships Mason" success criterion is therefore **half met**, and this note says
+   so rather than letting the closed gate read as full.
+3. **`pyforge-core` is a hard dependency, contradicting the lean-deps posture — already
+   reconciled at the Spec, recorded here for the first time.** `pyproject.toml`'s
+   `dependencies = ["packaging", "pyforge-core", "PyYAML>=6.0.3"]` — verified live this
+   pass. The Spec's CAP-6 text described a sibling-package dependency as an optional
+   extra; the 2026-08-13 fleet decision (`pyforge-marshal/spec-pyforge-core`'s "one
+   lattice, one envelope, one exception root", so `MasonError` re-parents to a shared
+   `PyforgeError`) made it a hard run-dependency across all eight stations. That is a
+   **cross-spec authority overriding a station's own text**, and it satisfies NFR-10's
+   justification requirement — the justification exists, it had simply never been
+   written down on this side. It is now.
+
+**Two memlog entries from the last two days, both surface bookkeeping.** **Steward's**
+Story 44.7 ("The factory island" — steward's epics, not mason's) wired mason to the
+foundry factory island (`cfe.py`, `errors.py`, `recipe.py`, `resolve.py`), and PR #1354
+closed an AD-14 credential-isolation gap that story left open — `build_native`/`build_docker` were forwarding their own `env` into
+`run_streamed`'s `env=` keyword, a shape `test_credential_isolation.py`'s Guard 3a only
+allowlisted at internal call sites. Both are inside already-described adapter
+machinery; neither moves an FR.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a
+regex): **70/70 stories `done` across 17/17 epics.**
+
+**Content changed:** FR-14 (as-built divergence note), NFR-9 (marked partial). No FR
+added, renumbered or removed.

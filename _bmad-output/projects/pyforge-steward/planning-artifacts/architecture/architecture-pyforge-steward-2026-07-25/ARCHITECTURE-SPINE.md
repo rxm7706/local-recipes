@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-08'
+updated: '2026-09-14'   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). § Currency reconciliation — 2026-09-14 appended; frames.py's Story 53.6 identity re-key checked against the as-built module list. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-08 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-08 re-stamp reconciled spec-pyforge-steward's 2026-09-08 memlog motion (the `_persona_mentions` test-helper precision + scan-breadth fix in tests/meta/test_adoption_register.py) and the sibling Story 43.7 authoring (re-homing mason DW-13-2-2's dbgpt-sidecar Celery REST round-trip and SQLite metadata-store validation on Python 3.14, orphaned when Story 43.6 closed done without doing it). Neither touches this spine: the first hardens how an existing obligation is verified in a test, the second decomposes pap:CAP-5/CAP-6 on the platform-image surface, which sits outside this spine's FR-1..18 CLI-package scope — the same boundary Epics 9-38 sit outside. No AD added or altered; no duty module, port or adapter changed. Reviewed 2026-09-05 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-05 re-stamp reconciled spec-pyforge-steward's two 2026-09-05 memlog motions (post-merge follow-up-review landing PR #1056; bmad-suite 2026.9.5 roster change) and the new spec-bmad-eval-quality / Epic 45 — all either inside an existing adapter (suite.py gains the `cli` install class + one probe branch, no new duty module) or outside this spine's FR-1..18 CLI-package scope (recipes, suite manifest); no AD changed. Reviewed 2026-09-02 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-02 re-stamp reconciled spec-pyforge-steward's 2026-09-01 sharded-path landing (no CAP/AD change) and the same-day red-team correct-courses on the unifying chain (Epics 40–43, which bind the unifying spine's AD-7/8/10/15 and add one interpreter AD via Story 43.5 — none of AD-1..9 here change). No AD added or altered. Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
 sources:
@@ -2034,3 +2034,43 @@ stories inside their existing adapters (`django_pyforge/tasks.py`, MCP transport
 tests). Epic 45's recipe + suite-manifest work lives under `recipes/`, outside this spine's
 package boundary — same treatment as Epics 9–38, folded into the scope note above. No AD
 text altered.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after reconciling against
+`spec-pyforge-steward`'s 2026-09-12 SPEC.md and 2026-09-14 memlog, which fires the
+`prd→arch` edge. This section is the as-built check.*
+
+**No structural divergence; five landed stories, all inside existing module homes.** The
+2026-09-14 bulk surface reconcile named `cutover.py`, `track.py`, `guards.py`,
+`frames.py` and their tests plus `data/track.schema.json` and the `track-run` fixtures.
+Each is a module in this package's own namespace under the duty-group structure this
+spine already draws; none reaches around a port, none introduces a second writer, and
+none adds an external service — the four v1 non-goals (no standing secrets-manager, no
+IDP, no GitOps controller, no cloud-cost SDK) are all still true, and the Spec's
+2026-09-11 CAP-4 verification re-proved the last one with a repo-wide grep.
+
+**Story 53.6's identity re-key is an architectural correction worth stating as one.**
+`frames.py` moved the in-repo Frame preflight from keying on `name` to keying on
+`identifier` (verified live: `COMPANY_IDENTIFIER = "pyforge/company"`, `PUBLISHER =
+"pyforge"`, `identifier` in `REQUIRED_FIELDS`, documents indexed by identifier). The
+defect it fixes is a **conflated-identity** defect, not a spelling one: `name` aliases
+the Frame `title`, which the element profile explicitly marks MUST NOT be
+slug-constrained, and the same string was simultaneously serving as the Frame key and
+as the Python distribution name. One string carrying three jobs is exactly the failure
+this spine's duty separation exists to prevent, and it is recorded here so the next
+identity-bearing surface is keyed on an identifier from the start. The decomposition
+lives on `spec-intelligence-hub` CAP-2; no AD here changes.
+
+**The outage lesson, at architecture altitude.** Five days of `spec-surface` drift
+accumulated invisibly because a GitHub Actions billing outage meant the detector never
+ran — and a detector that does not run reports *nothing*, not `unknown`. This spine
+already encodes the inverse rule for the credential path (a check that cannot reach its
+source must not read as clean). The gap is that the rule is stated per-duty rather than
+as a property of the station's own CI surface. **Not resolved here** — making
+"detector-did-not-run" an observable state is a behaviour change with its own owner
+(doctor holds detector verdicts; the `exit 2 = could-not-run, never a false green`
+convention already exists in the fleet's detector contract). Recorded as an
+architectural observation so it is not re-derived from scratch after the next outage.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.

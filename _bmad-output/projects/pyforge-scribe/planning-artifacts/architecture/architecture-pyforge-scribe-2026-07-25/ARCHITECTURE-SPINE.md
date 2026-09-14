@@ -7,8 +7,8 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
+updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). AD-3 and AD-5 both re-verified against live code; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after folding the Spec's 2026-09-09 answering pass and recording two as-built divergences). Appended § Currency reconciliation — 2026-09-14: AD-3's byte-compatible type taxonomy is now load-bearing on a PRODUCT decision (no ADR numbering, --type closed at three), and AD-5's port is confirmed holding THREE concrete drivers, which is what closed the engine-choice question without a spike. Prior: Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/prds/prd-pyforge-scribe-2026-07-25/prd.md (+ addendum.md) — the binding contract'
@@ -276,3 +276,50 @@ Consequence for this spine: no deployment target, container image or CI lane may
 3.12/3.13 interpreter for `pyforge-scribe`, and none does today — this records the constraint
 rather than changing it. The previous `>=3.12` declaration was never exercised by any
 environment in the workspace.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14 after folding
+`spec-pyforge-scribe`'s 2026-09-09 answering pass, which fires the `prd→arch` edge.
+This section is the as-built check: does the spine above still describe the package.*
+
+**AD-3 stopped being a compatibility note and became the reason for a product
+decision — worth recording, because that is a change in the AD's weight, not in its
+text.** The Spec's 2026-09-09 ruling that `scribe capture --type` stays **closed at
+`{feedback, project, reference}`** and that ADR numbering is a Non-goal rests entirely
+on AD-3: byte-compatible parity with Claude Code's user-local auto-memory taxonomy is
+what a fourth `decision` type would break. Verified live this pass: `models.py:34`
+declares `CaptureType = Literal["feedback", "project", "reference"]` with
+`CAPTURE_TYPES` ordered beside it, and `cli.py:104-105` exposes exactly those three.
+AD-3 holds, unmodified; what is new is that a product question now terminates on it.
+
+**AD-5's port is confirmed holding three concrete drivers, and that is what closed the
+engine-choice question.** The Deferred section historically called for a spike
+comparing a flat-file/index adapter against an embedded graph engine before choosing
+the v1 adapter. No spike was ever needed: verified live, `graph_store.py`,
+`graph_store_pg.py` and `graph_store_plane.py` coexist behind the port, with
+`graph_store_plugins.py` registering them. The Spec now states this plainly ("three
+drivers now sit behind it and the port still fixes nothing beyond itself"). **The
+architectural lesson, recorded once:** the port did not defer the decision, it
+dissolved it — a correctly placed seam turns "which engine" into a deployment
+question. AD-5's no-direct-engine-imports rule is what makes that true and is
+unchanged.
+
+**Four new scripts joined the governed surface; none is a component.**
+`scripts/scribe_pg.py`, `scripts/scribe_nightly_trigger.py`,
+`scripts/scribe_install_nightly_trigger.py` and
+`scripts/scribe_graph_freshness_check.py` are operator-side infrastructure for the
+nightly compile. The architecturally relevant fact — and the one the PRD's SM-4 had
+gone stale on — is that **the nightly trigger is now a checked-in systemd-user timer**
+(`src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer`),
+not a hand-typed crontab line. That makes the trigger a tracked artifact rather than
+host state, which is strictly better for the air-gap posture this spine already
+assumes. No component boundary moves: `compile.py` is still the schedulable unit.
+
+**One ownership boundary re-affirmed.** The Unifying-Strategy semantic-recall
+capability is **steward Story 49.7**'s, not this station's; scribe owns the `recall`
+mechanism and does not mint a parallel CAP for steward's outcome (Charter §5). No
+module is added here for it.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.

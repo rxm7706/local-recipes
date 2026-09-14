@@ -975,3 +975,14 @@ deployment.
   status: open
 
   verified: 2026-09-08 — resolved — The merge hazard was navigated; both branches landed and the section re-threaded correctly. `.claude/skills/bmad-agent-herald/SKILL.md:12-39` now carries Story 18.2's rewritten '## Utility skill routing (AD-2)' as a 4-step numbered procedure (the one-line 'Herald wields `bmad-os-changelog`...' sentence this entry warned would be replaced is gone), and 18.3's `slides-generator` paragraph sits intact at `SKILL.md:40`, AFTER that procedure rather than orphaned against a deleted anchor. Nothing was lost in the merge, so the manual re-threading this entry called for is complete and no longer owed.
+
+### DW-FU-20-2: Real `pytest --collect-only -q` output is never parsed under test; only the plumbing around the stubbed `tests_collected` seam is verified.
+
+- source_spec: `planning-artifacts/specs/spec-20-2-deck-facts-derives-a-per-deck-fact-ledger-and-checks-a-poster-against-it.md`
+  summary: Real `pytest --collect-only -q` output is never parsed under test; only the plumbing around the stubbed `tests_collected` seam is verified.
+  evidence: The suite stubs `tests_collected` wholesale, so the regex `(\d+)(?:/\d+)? tests? collected` and the reversed-line scan run only against synthetic strings. The row is opt-in (`--with-tests`) and present in none of the ten committed ledgers. Settle with a stubbed-`subprocess.run` test over captured real tails (plural, singular `1 test collected`, rc≠0 "N errors") when the first `--with-tests` ledger is committed (Wave A).
+  location: scripts/deck_facts.py:tests_collected
+  origin: spec-deferred 0b8723ed0e18 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

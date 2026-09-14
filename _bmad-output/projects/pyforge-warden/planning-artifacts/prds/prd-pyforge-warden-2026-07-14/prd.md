@@ -14,8 +14,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-09-07"
-currency_review: Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it).
+updated: "2026-09-14"
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
   projectTypeNote: "Non-interactive CI/CD policy/quality-gate CLI; primary consumer is a pipeline, not a human terminal. report-schema.json is the data contract (an output_formats concern). developer_tool label dropped (no public SDK/IDE surface). Interactive/shell-completion UX deprioritized."
@@ -771,3 +771,84 @@ recorded here for the PRD's own audit trail, not as new product surface.
 
 No epic or story restructuring was needed; this note and the frontmatter bump are the only
 changes in this pass.
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep: `spec-pyforge-warden`'s SPEC.md moved to 2026-09-12 while this PRD
+sat at 2026-09-07 — five days, past the runbook's 2-day grace window. The station also
+carries an unresolved **coherence** finding; see the last section below.*
+
+### One real gap, verified independently
+
+`review_required` is named three times in this document — **FR9** ("status: bypassed +
+review_required routed to the security queue"), the **bypass** feature description
+("exits 0 with `status: bypassed` + `review_required: true`"), and the **exit-code
+matrix** acceptance criterion ("a non-expired waiver → exit 0 (`bypassed`,
+`review_required`)"). A repo-wide grep over `src/shared/packages/pyforge-warden/src` and
+`.../tests` on 2026-09-14 returns **zero occurrences**. The string exists only in this
+PRD and in the Spec plus its `verdict-contract.md` companion.
+
+**What actually ships in its place** is real and tested: `status=bypassed` with exit 0,
+plus the emitted waiver stanza's `authorized_by`/`reason`/timestamps
+(`test_bypass_with_blocking_findings_prints_stanza_and_exits_bypassed`). So a bypassed
+run *is* auditable. What does not exist is the **named, machine-readable field** that
+FR9 promises downstream consumers — and FR9's own text says the field is what "routes to
+the security queue at the fleet/atlas layer." A consumer written against this PRD would
+look for a key that is not in the report.
+
+**Recorded, not repaired.** Adding `review_required` touches `models.py`, `report.py` and
+the report schema — a **behaviour and schema change** to a producer this Spec explicitly
+closes at `1.1.0` ("exactly ONE sanctioned amendment was paid... no other story may widen
+the schema"). Under this repo's Dream-first rule that enters through
+`docs/dreams/<slug>.md` → `bmad-spec` → a Story, not through a currency sweep. The
+decision it needs is genuinely open: **widen the schema** (pay a second amendment against
+a closed producer), or **amend FR9** to describe the audit trail that actually ships
+(`status=bypassed` + the stanza) and drop the field. This note is the record; the choice
+is the operator's.
+
+### What else moved in the Spec, and why no FR changes for it
+
+1. **Twelve dated `verified:` lines (2026-09-11 sweep), all holding.** Several are worth
+   keeping visible because they are stronger evidence than a test count: CAP-11's
+   zero-egress claim was proved by `strace -f -e trace=network` wrapping the **whole**
+   `warden scan` process tree — CLI plus every forked engine — over the real corpus, an
+   outside-the-process observation rather than an in-process guard; and CAP-8's
+   `--doctor` was live-invoked and exited **2**, never 1, matching "reports operability,
+   not policy."
+2. **A 2-path `surface-drift-exclude:` block** (`extract/__init__.py`,
+   `extract/lockfiles.py`, both also governed by `pyforge-marshal/spec-pyforge-core`).
+   Detector bookkeeping; coverage unchanged.
+3. **The story-set Assumption was re-grounded** from "31 stories across 6 epics" to "43
+   story keys across eleven epics, plus a twelfth minted 2026-09-09." **That figure is
+   itself now behind.** Measured this pass with the real parser
+   (`fleet_scan.parse_sprint_status`, not a regex): **49/49 stories `done` across 12/12
+   epics.** Recorded here rather than silently corrected in the Spec, because the Spec's
+   own number is a dated snapshot and the ledger is the enumerator — the lesson the
+   fleet already learned about dated count snapshots applies to this one too.
+
+### The coherence finding — an honest residual, not a cleared one
+
+The station's `chain-audit-checkpoint-coherence` is **`overtaken`**: the Spec's
+`open_questions:` list is non-empty while its PRD and architecture both exist. Three
+questions were hoisted into frontmatter on 2026-09-11, and **all three are operator
+decisions this sweep has no standing to make**:
+
+1. **Is v1 *released* or *story-complete*?** All stories merged, but the legacy spec's v1
+   Definition of Done still carries unchecked release-level items — the CFE Rule-2
+   closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal
+   JFrog PyPI+conda publish behind the engine version-range gate.
+2. **What becomes of the legacy Tier-1 spec?** `docs/specs/pyforge-warden.md` still reads
+   `status: in-progress` and its Goals block still describes the pre-D12 tiering.
+   Re-stamp it shipped-and-superseded, or freeze it as a historical record?
+3. **What promotes provenance and maintenance out of vision** — and until something does,
+   does the product describe itself as **four-axis or six-axis**?
+
+Per the runbook's finding→remedy map, the remedy for `overtaken` is to *resolve the
+questions with the operator*, record dated answers in § Open Questions, and empty the
+frontmatter list. A sweep that answered them unilaterally would be doing exactly what the
+runbook forbids — stamping without a genuine reconcile. **The checkpoint therefore stays
+red, deliberately, and this paragraph is the reason.** The staleness checkpoint for this
+station is cleared by this cascade; the coherence one is not, and it is not this pass's
+to clear.
+
+**No FR text altered.**

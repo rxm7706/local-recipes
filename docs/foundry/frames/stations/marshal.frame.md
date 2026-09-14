@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-marshal
+identifier: pyforge/marshal
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-marshal
+name: PyForge Marshal
 description: Station Frame for Marshal — deterministic BMAD-loop supervisor. Load when supervising runs, landing stories, or checking fleet/loop-home state.
 visibility: private
-owner: marshal
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - marshal
+inherits:
+  - pyforge/company
 ---
 
 # Marshal

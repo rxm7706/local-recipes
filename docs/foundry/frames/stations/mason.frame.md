@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-mason
+identifier: pyforge/mason
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-mason
+name: PyForge Mason
 description: Station Frame for Mason — recipe craft through conda-forge-expert. Load when generating, validating, building, or preparing conda-forge recipes.
 visibility: private
-owner: mason
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - mason
+inherits:
+  - pyforge/company
 ---
 
 # Mason

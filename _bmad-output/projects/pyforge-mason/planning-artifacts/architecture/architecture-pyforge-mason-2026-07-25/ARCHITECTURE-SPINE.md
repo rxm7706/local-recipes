@@ -7,8 +7,8 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
+updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). No AD added, changed or removed; § Currency reconciliation — 2026-09-14 appended.
+currency_review: "Reviewed 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
   - 'NFR-1..NFR-16'
@@ -696,3 +696,45 @@ Consequence for this spine: no deployment target, container image or CI lane may
 3.12/3.13 interpreter for `pyforge-mason`, and none does today — this records the constraint
 rather than changing it. The previous `>=3.12` declaration was never exercised by any
 environment in the workspace.
+
+
+## Currency reconciliation — 2026-09-14
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-14, firing the `prd→arch` edge.
+This section is the as-built check: does the spine above still describe the package.*
+
+**The PRD's new FR-14 divergence is deliberately NOT an architecture finding.** Whether
+`mason recipe update` writes by default or previews by default is a **verb-level
+argument default** inside `recipe.py`/`cli.py`. It crosses no port, moves no adapter
+boundary, and is invisible to AD-1 (knowledge-free core), AD-2 (the single CFE adapter
+seam) and the exit-code ownership rule. The spine is silent on it by design, and this
+note records that the silence is correct rather than an omission — a reader arriving
+from the PRD's divergence box should not go looking for a missing AD here.
+
+**AD-1 re-confirmed against steward Story 44.7's foundry-island wiring** (the story
+lives on steward's epics, not mason's; it touches mason's package). It added an
+`env` parameter to `build_native`/`build_docker` and factory-island root resolution
+across `cfe.py`, `errors.py`, `recipe.py` and `resolve.py`. All four are the adapter
+layer AD-2 already draws; the core gained no recipe knowledge, and the Spec's own
+2026-09-11 CAP-1 verification re-ran `tests/meta/test_adapter_sole_caller.py` green
+(425 passed) — every recipe verb still reaches the machinery through exactly one
+adapter function.
+
+**AD-14 (credential blindness) held, and was then tightened.** PR #1354 closed a gap
+Story 44.7 left open: `build_native`/`build_docker` were forwarding their own `env`
+into `run_streamed`'s `env=` keyword, a shape `test_credential_isolation.py`'s Guard 3a
+only allowlisted at `run_streamed`'s and `_invoke_captured`'s own internal call sites.
+The fix kept the guard and changed the callers — the invariant moved the code, not the
+other way round. This is the second time in three weeks that pattern has held here
+(the first being the IO-denylist shaping Story 25.4's placement over in atlas), and it
+is worth naming as the working property of this spine's meta-tests.
+
+**One recorded cross-spec override, restated so it is not re-discovered a third time.**
+`pyforge-core` is a hard run-dependency of this package, not the optional extra CAP-6's
+original text describes. The authority is `pyforge-marshal/spec-pyforge-core`'s "one
+lattice, one envelope, one exception root" (2026-08-13), which re-parents `MasonError`
+to a shared `PyforgeError`. It is now reflected in the Spec's Divergences list (item 6)
+and in the PRD's 2026-09-14 reconciliation; recorded here because the dependency edge
+is an architectural fact, even though the decision was not this spine's to make.
+
+**No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.
