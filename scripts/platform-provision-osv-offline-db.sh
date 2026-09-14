@@ -9,11 +9,6 @@ if [ -z "$CACHE_ROOT" ]; then
   exit 1
 fi
 
-if ! command -v osv-scanner >/dev/null 2>&1; then
-  echo "::error::osv-scanner is required (pyforge-warden env)" >&2
-  exit 1
-fi
-
 DB_ZIP="${CACHE_ROOT}/osv-scanner/PyPI/all.zip"
 
 db_is_usable() {
@@ -31,9 +26,19 @@ with zipfile.ZipFile(zip_path) as archive:
 PY
 }
 
+# Checked BEFORE osv-scanner's own presence: the whole point of this
+# idempotent-skip path is to need nothing further when the DB is already
+# usable, including the tool itself (found live 2026-09-14 -- a test-only
+# run with osv-scanner absent from PATH, matching platform-ci-test's real
+# pixi env, failed here even though the DB was already provisioned).
 if db_is_usable "$DB_ZIP"; then
   echo "OSV offline DB already provisioned at ${DB_ZIP}"
   exit 0
+fi
+
+if ! command -v osv-scanner >/dev/null 2>&1; then
+  echo "::error::osv-scanner is required (pyforge-warden env)" >&2
+  exit 1
 fi
 
 mkdir -p "$CACHE_ROOT"
