@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 42  # 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 273  # 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-14"   # retroactive Epics 37-41; prior stamp 2026-09-09
+updated: "2026-09-14"   # Epic 43 / Story 43.1 appended (DW-AD-CITATION-2026-09-14-2, a fix on the shipped CAP-6 detector — its own epic; a done epic stays done); earlier same day: retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -5738,3 +5738,20 @@ downgraded to `drift-presumed` merely because another co-governor moved for an u
 reason
 **And** the coverage half (`ungoverned`) is untouched
 **Status:** backlog
+
+## Epic 43: The citation detector shows everything it knows (spec-fleet-consistency-standard CAP-6, fix)
+
+Minted 2026-09-14 from `DW-AD-CITATION-2026-09-14-2` — a fix on the CAP-6 detector Epic 32 shipped.
+It is its own epic rather than a ninth story on Epic 32 because **a `done` epic stays `done`**: the
+fleet has no precedent for a done roll-up carrying a non-done story, and `ledger-regression` (the
+Doctor verdict that became a blocking CI step this morning) reads any `done → in-progress` key in
+`origin/main..HEAD` as a regression — it fired on the first attempt, which had reopened `epic-32`.
+The lesson is recorded so it is not re-learned: a fix on a shipped Spec gets a new epic, never a
+reopened one. One story; the Spec's CAP-6 is the contract.
+
+### Story 43.1: The citation detector shows everything it knows
+**Type:** fix • **Effort:** XS • **Deps:** S-32.6 (done) • **FR/AD:** spec-fleet-consistency-standard CAP-6 • `DW-AD-CITATION-2026-09-14-2`
+**Surface:** `scripts/ad_citation_check.py`, its test under `tests/scripts/`, `scripts/.ad-citation-baseline.json` and `scripts/.cap-citation-baseline.json` (the `recorded:` stamp only).
+**Given** `ad_citation_check` prints at most ten NEW rows per class (`new[:10]`, `cap_new[:10]`) beneath a headline that reports the full count, so the 2026-09-14 red on `origin/main` — 4 ad + 57 cap NEW — was read and recorded as 14 from the printed rows, the same "head truncates findings out of view" class CLAUDE.md § Reading a detector's result warns about, implemented inside the detector; and `--write-baseline` / `--write-cap-baseline` stamp `recorded:` with hard-coded literals (`"2026-09-08"`, `"2026-09-10"`), so a baseline re-stamped on any later date still claims those dates **When** every NEW row is printed (the NEW set *is* the actionable set; the baselined set is already summarised by count, and a detector that exits 1 must show what it exits on) and the stamps carry the actual stamping date **Then** the printed NEW rows equal `len(new)` and `len(cap_new)` for any size, proven by a test with more than ten synthetic findings in each class
+**And** `--write-baseline` / `--write-cap-baseline` write today's ISO date, proven by a test that reads it back; the two existing baseline files are re-stamped once so their `recorded:` reflects the 2026-09-14 shrink rather than the literals
+**And** no other behaviour of the detector changes — the ratchet semantics, the "since fixed" accounting, the `[:10]`-free summary lines and the exit codes are byte-for-byte the same, proven by the existing `tests/scripts/` suite staying green

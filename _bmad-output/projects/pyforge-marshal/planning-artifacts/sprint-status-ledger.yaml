@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 353
+# stories: 360
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -250,6 +250,7 @@ development_status:
   41-4-the-currency-detector-is-fixed-before-its-data-is-caught-up: done
   42-1-a-co-governed-file-is-clean-when-any-one-of-its-governing-specs-reconciled-it: backlog
   42-2-overlap-tolerance-narrows-a-false-positive-without-widening-what-counts-as-reconciled: backlog
+  43-1-the-citation-detector-shows-everything-it-knows: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -357,10 +358,12 @@ development_status:
   epic-4-retrospective: done
   epic-40: done
   epic-40-retrospective: optional
-  epic-42: backlog
-  epic-42-retrospective: optional
   epic-41: done
   epic-41-retrospective: optional
+  epic-42: backlog
+  epic-42-retrospective: optional
+  epic-43: backlog
+  epic-43-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done
