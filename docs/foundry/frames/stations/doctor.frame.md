@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-doctor
+identifier: pyforge/doctor
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-doctor
+name: PyForge Doctor
 description: Station Frame for Doctor — advisory pre-flight and fleet-watch diagnostics. Load when running doctor grammar or interpreting findings that are not a PR verdict.
 visibility: private
-owner: doctor
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - doctor
+inherits:
+  - pyforge/company
 ---
 
 # Doctor

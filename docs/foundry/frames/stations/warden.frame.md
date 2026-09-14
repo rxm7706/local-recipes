@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-warden
+identifier: pyforge/warden
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-warden
+name: PyForge Warden
 description: Station Frame for Warden — sole PR-gate verdict over dependency hygiene, vulns, license, and currency. Load when scanning manifests or projecting a compliance exit code.
 visibility: private
-owner: warden
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - warden
+inherits:
+  - pyforge/company
 ---
 
 # Warden

@@ -46,7 +46,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 ## Running and verifying
 
 - The merge gate is `detectors-ci` measured as no new findings against `main`; it has been green at `main` since PR #1072 (2026-09-06), so a red run is yours.
-- Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit.
+- Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit — **and so do epic headings and their `epic-<n>` keys.** Since 2026-09-14 `chain-completeness` INV-B compares `## Epic <n>` headings against `epic-<n>` ledger keys in *both* directions, so a heading with no key, or a key with no heading, is now a FAIL rather than an invisible gap. Two live orphans existed for weeks under the old check (steward Epic 18 was an `###`, marshal Epic 29 had no heading at all).
 - Before any ledger write: `sprint-ledger-sync -- --project <station>`, then `story-status-check`; use `--repair-feed` only when deliberately reconciling a stale Tier-3 feed toward the tracked twin — a bare sync refuses when the feed would drop twin-only keys or overwrite `done`/`blocked` rows.
 - To open a landing worktree, prefer `pyforge steward workspace start` / `status` / `clean` over hand-run `git worktree add` (see `spec-scratch-worktree-lifecycle`).
 - Lint and types are per package (`[tool.ruff]`, `[tool.mypy]` in each `pyproject.toml`); `src/platform` still targets py312 while the interpreter is 3.14. TODO (decided 2026-09-04, not landed): repo-level `ruff` and `mypy` pixi tasks, a `.pre-commit-config.yaml`, mypy strict for `pyforge-core`, py314 targets, and a target-version registry check like `pixi-version-check`. Do not invent these invocations.
@@ -171,6 +171,7 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    `spec-library-catalog-manifest-sync` CAP-1/CAP-2 were hand-implemented straight from the Spec
    with no Story minted in `pyforge-marshal/epics.md` and no ledger entry — caught mid-turn by
    the operator, reconciled after the fact (2026-09-12).
+<!-- governance-currency:ignore-start (both paths below live on B -- rxm7706/python-foundry -- and are named here precisely to say they are NOT on A; resolving them against this repo is the wrong repo, not a dead reference) -->
 6. **Foundry-product Dreams after 54.5 are authored on B.** `rxm7706/python-foundry` writes
    new Dreams / Frames / Spec five-fields for the lasting root. This repo (**A**) pins the SHA
    (`docs/foundry/PIN.md` on B). Do not mint a second foundry-product Dream here. Factory /
@@ -180,6 +181,7 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    (named on a Spec before `done`). Never `move`. Table on B:
    `docs/foundry/modes.md`. Campaign verbs: Launch the Foundry / Adopt Frames /
    Build the Intelligence Hub / Wire every BMAD-suite component.
+<!-- governance-currency:ignore-end -->
 
 ## The tiers (do not cross them)
 

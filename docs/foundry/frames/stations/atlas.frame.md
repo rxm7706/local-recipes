@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-atlas
+identifier: pyforge/atlas
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-atlas
+name: PyForge Atlas
 description: Station Frame for Atlas — Kedro/Dagster/DuckDB factory intelligence. Load when running atlas pipelines, listing catalog datasets, or reading the atlas MCP surface.
 visibility: private
-owner: atlas
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - atlas
+inherits:
+  - pyforge/company
 ---
 
 # Atlas

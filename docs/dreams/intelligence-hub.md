@@ -2,7 +2,17 @@
 title: The Distributed AI Economy — Intelligence Hubs, Frames, Cogs, Ops, and the Accountability Plane
 type: dream
 owner: steward
-status: dreamt
+status: realized   # 2026-09-14 -- steward Epic 53 (spec-intelligence-hub hub:CAP-1..4) is 6/6
+                    # stories done: the Charter carries the Hub vocabulary map (53.1), one
+                    # Company Frame + eight station Frames pass the in-repo preflight (53.2,
+                    # 53.5, and 53.6 which moved Frame identity onto the v0.3 qualified-ref
+                    # `identifier`), one tracked track.json per run is assembled (53.3), and the Guards
+                    # library exists with Source-Grounding as its first category (53.4). CAP-5
+                    # (package the Nebari/Nebi lineage) deliberately stays mason lane, not this
+                    # epic's completion criterion. Was `dreamt` since 2026-09-05 per this file's
+                    # own convention ("specified" needs a Spec at `ready`, "realized" needs the
+                    # epic done) -- the flip to `specified` on the Spec's 2026-09-09 ready-derive
+                    # was never made; found stale, corrected directly to `realized`.
 ---
 
 # The Distributed AI Economy — Intelligence Hubs, Frames, Cogs, Ops, and the Accountability Plane
@@ -728,7 +738,8 @@ turns into a decision or a non-goal. **Nothing here is chosen.**
 | Layer 1 as a profile as well | Shapes 5, 6, 7 — NIC and `frames` recipes, Foundry as a Software Pack, Nebi push to OCI | A steward deploy profile; attended bring-up; Go recipes |
 
 **What "adopt the stack" can honestly mean today,** by the paper's own honesty table and RB-1..3:
-adopt Frame Spec v0.2 as the context format now; consume `nebi` and `nebari` from conda-forge as
+adopt Frame Spec v0.3 as the context format now (the working draft, openteams-ai/frame-spec#28 --
+landed by Stories 53.5/53.6; v0.2 was the state when this Dream was written); consume `nebi` and `nebari` from conda-forge as
 they are; treat NIC as Layer 1 *beneath* the Foundry, a profile beside OCP; design PyForge's own Op
 manifest in the paper's example shape (Frames, Cogs, Guards by stage, Gates as threshold rules,
 Track `retain_for` + `include`) so it can be Nebi-packaged once Nebi defines that — no public Op
@@ -768,7 +779,10 @@ operator iterates):
   once in foundry rather than moved:
   1. Lexicon mapping as a recorded Charter amendment — now.
   2. Eight station Frames inheriting a Company Frame derived from the `AGENTS.md` block, a
-     frame-reader skill, a four-field preflight detector — now; git as the store, no registry.
+     frame-reader skill, an in-repo preflight — now; git as the store, no registry. *(As built:
+     six required fields — type, identifier, name, description, visibility, maintainer — and
+     NOT a detector; it never joins `detectors`/`detectors-ci`, because Warden stays the sole
+     PR verdict. See docs/foundry/frames/README.md.)*
   3. A Guard catalogue as a doctor source deriving the seven categories from a declared attribute on
      each detector, Warden axis and review lens — now; it will show source-grounding and outcome
      Guards missing.
@@ -1050,6 +1064,23 @@ Strategy to this Dream would take.
 
 ## Realization log
 
+- **2026-09-14 (later)** — **Frame Spec v0.3 adopted in full** (Story 53.6), on the operator ruling
+  *"we move forward by adopting frame-spec v0.3 — the PR will merge, and no point starting with an
+  outdated version."* 53.5 had stamped `type: frame [0.3]` while the nine Frames still carried a
+  v0.2-shaped body, so the estate was conforming to neither version. Read against the normative
+  profile fetched from the PR head (`spec/profile/frame-core.csv` + `spec/frame-spec.md`), four
+  things changed: `identifier` became a **qualified-ref** (`pyforge/company`, `pyforge/<station>`)
+  where §4.2.1 SHOULDs a URI or `publisher "/" frame-name`; `name` became the Charter's prose form
+  (`PyForge Steward`), since the element profile marks `title` — which `name` aliases — MUST NOT be
+  slug-constrained, and the old slug collided with the Python distribution name; `maintainer` and
+  `inherits` became sequences (§6.2.1, *"A writer MUST emit a sequence"*); and the unregistered
+  `owner:` collapsed into the registered repeatable `maintainer`. The keys `name`/`inherits` are
+  deliberately KEPT — §6.2.1 requires those aliases of a Markdown writer, and `title`/`composition`
+  belong to the YAML/JSON encodings only. The preflight was re-keyed from `name` (a label) onto
+  `identifier` (the identity), and gained a `scalar-repeatable` finding so the sequence rule cannot
+  rot back. Residual exposure recorded, not hidden: #28 is still open, so if its element registry
+  moves before merge the nine Frames and `frames.py` are re-run from the same profile CSV.
+
 - **2026-09-05** — Seeded from the whitepaper (Revision 9, August 2026), read in full (46 pages);
   section-complete distillation with the vocabulary map, candidate shapes and open questions above.
   No adoption decided; owner `steward` as the post. Next: `bmad-spec` under `pyforge-steward`
@@ -1089,3 +1120,16 @@ Strategy to this Dream would take.
   and RB-3's Effect line corrected. The same review found the kinship edge to the Unifying Strategy
   was one-way; that Dream now lists this one.
 - **2026-09-09 (fleet readiness pass)** — **All nine open questions answered as one operator-approved bundle** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C4**: B6–B11 plus the three questions this Dream gained earlier the same day, plus `guild-E3`). Owner stays **steward**, with `hub:CAP-3` relaying to marshal and CAP-2's Frame-store half to scribe. Verified against live code: the seven Guard categories map to five present surfaces, **Source-Grounding exists at exactly one site** (`scribe/recall.py` AD-8) and **Outcome is absent entirely** — and Outcome Guards are blocked on [`build-league-scorecard.md`](build-league-scorecard.md)'s parked measure set, making the two Dreams a dependency pair. A bmad-loop run emits ~60 % of a Track across five files in a **gitignored** Tier-3 dir, missing model/adapter version, human approvals and any retention statement — so one tracked `track.json` per run is assembled, Tracks kept indefinitely and the raw payload 90 days. Frames: yes, minimally and privately (one Company Frame from the `AGENTS.md` verified block + eight station Frames that `inherits` it, git as the store; no Community Frame, no registry), authored **now**, with CAP-2's success rewritten to an **in-repo four-field preflight** rather than upstream's unlicensed `tools/validate_frames.py`. Shape 5's residue is a conda-forge submission decision only — **not now**. `NebariApp`/NIC-kind profile and `nebi push` are **foundry-side**, and any `hub:` NIC-profile story is gated on the first green `ocp-portability-smoke` run. Escalation resolved: `spec-pyforge-unifying-strategy`'s `realization-gate-home` open question depended on this Spec reaching `ready`; **`spec-intelligence-hub` flips `draft` → `ready`** in this pass, so Epic 49's re-home to `hub:CAP-*` is unblocked and pending that Spec's re-derive. This Dream's own **status stays `dreamt` in this pass and flips to `specified` when the Spec's re-derive lands `ready`** (`docs/dreams/README.md:71` — `specified` requires a Spec at `ready` or better).
+- **2026-09-13** — Steward Epic 53 minted (`spec-intelligence-hub hub:CAP-1..4`) and landed all
+  five stories the same pass: 53.1 (Charter carries the Hub vocabulary map + reverse cross-walk,
+  guild-E3), 53.2 (Company + eight station Frames pass the in-repo four-field preflight, B9/B11),
+  53.3 (one tracked `track.json` per run, B8), 53.4 (Guards library, Source-Grounding first per
+  B7), 53.5 (adopted the frame-spec v0.3 working draft, Apache-2.0). CAP-5 (package the
+  Nebari/Nebi lineage) intentionally stays mason lane — no story minted on this steward epic for
+  it. Doctor's `DEFERRED_SPECS` entry for this Spec was removed in the same pass.
+- **2026-09-14** — Found live (fleet-picture follow-up audit): the `specified`/`realized` status
+  flips this Dream's own 2026-09-05/09-09 entries promised never landed in the frontmatter, and
+  `spec-intelligence-hub/SPEC.md` still read `status: ready` despite Epic 53 being 5/5 done.
+  Corrected directly — Dream status `dreamt` → `realized`, Spec status `ready` → `shipped` — no
+  new work, no re-derive; both flips are bookkeeping only, mirroring the Epic 53 completion
+  already on record above.

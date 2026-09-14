@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 33  # 2026-09-09: Epic 33 added (token economy in effect — the enablement epic, sprint-change-proposal-2026-09-09-token-economy-enablement.md; Epic 32 had not bumped this from 31). 2026-09-06: Epic 31 added (TEA replaces the generator + estate cutover-readiness, spec-bmad-suite-lifecycle CAP-3/4/9 marshal relays). 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
-storyCount: 227  # 2026-09-09: 217 + Stories 33.1-33.10 (Epic 33, token economy in effect). The 195 below was a stale snapshot: the live enumeration is 227 `### Story` headings here, matching the 227 story keys in sprint-status-ledger.yaml after Epic 33 is minted (217 before). The ledger key count is the enumeration; this numeral is a dated snapshot. 2026-09-08: 194 + Story 5.11 (HarnessPort terminal-run capability; DW-STATUS-2026-09-08-1's residual). 2026-09-06: 187 + Story 30.5 (shim retirement, era-alignment CAP-12) + Stories 31.1–31.6 (spec-bmad-suite-lifecycle marshal relays). 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-09-09"
+epicCount: 42  # 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 273  # 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-14"   # retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4682,6 +4682,16 @@ So that a spin session's already-provisioned codegraph index (built since Story 
 **And** the existing epic-context/planning-graph/derived-context context sources are unchanged — this is an additional navigation aid, not a replacement for any of them
 **Status:** backlog
 
+## Epic 29: A harness halt of `done` ends the session, not the review
+
+**Heading added 2026-09-14, retroactively.** Stories 29.1-29.2 and their ledger
+keys have existed and read `done` since 2026-09-02, but this epic's own `## Epic 29`
+heading was never written, so both stories rendered under Epic 28 and the board
+counted an epic `epics.md` did not declare. This file's own frontmatter already
+recorded the symptom without naming the cause — `storyCount`: *"183 (181 + Epic 29's
+two, never counted)"*. Found by `chain-completeness`'s new INV-B epic arm
+(doctor DW-CHAIN-COMPLETENESS-7); no story content changed.
+
 **Goal:** FR-193 CAP-11 (`spec-marshal-single-story-dispatch`, Dream addendum
 2026-09-02). A harness halt of `done` is the end of the *session*, not the
 start of another review. Drain may only CAP-4 land or escalate. Motivating
@@ -5228,3 +5238,503 @@ the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows 
 
 `spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
 found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
+
+## Epic 37: The chain audited against the code (spec-artifact-chain-reconciliation CAP-1..8)
+
+**Retroactive.** All eight CAPs shipped 2026-08-10 as one serial session, PRs #399–#406,
+and every one carries a dated `verified:` line from the 2026-09-11 CAP-effect sweep at
+HEAD `fd9eeb53bc` — but no story was ever written, so `chain-completeness`'s
+delivered-Spec arm flagged the Spec as undecomposed. This epic documents what already
+exists; no new implementation. Stories follow the audit's own Phase 0→4 shape rather
+than one-story-per-CAP, because CAP-2/4/5 **co-landed in the Phase-1 PRs and are not
+separable commits**. The Spec states the premise this epic exists to honour: *"The ledger
+reports intent; only the code reports fact."*
+
+### Story 37.1: Phase 0 — mechanical debt to zero before any semantic audit
+
+As a fleet operator,
+I want every detector green and every `[drift-presumed]` warn closed before the audit
+reads a single story premise,
+So that semantic findings are never confused with mechanical noise.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-artifact-chain-reconciliation CAP-1
+**Given** 51 `[drift-presumed]` warns stood fleet-wide (atlas 24 / mason 1 / marshal 26)
+**When** this story lands **Then** six detectors plus the meta-suite are green and zero
+`[drift-presumed]` remains
+**And** dangling commits are dispositioned rather than ignored
+**Status:** done — shipped `2492b849c8`, PR #400 `ef3540caf6` (2026-08-10); 13/13 detectors
+green at close, baseline re-stamped at `3fd83c1aa1`. **Residual by design at the time:**
+20 verified-landed debris commits were left pending an operator prune decision, resolved
+the same day
+
+### Story 37.2: Phase 1 — every remaining story gets a cited verdict
+
+As a fleet operator,
+I want all 68 remaining stories given one of five verdicts with `file:line` or
+command-output evidence, plus a coverage map and both-directions repair,
+So that the backlog is measured against code rather than against its own self-assessment.
+
+**Type:** docs • **Effort:** L • **Deps:** S-37.1 • **FR/AD:** spec-artifact-chain-reconciliation CAP-2, CAP-4, CAP-5
+**Surface:** companion `audit-method.md` (verdict enum, traceability-matrix row shape,
+coverage-debt row shape, done-claim sampling protocol, two-sided repair rule)
+**Given** the ledger reported intent and nothing had checked it against fact **When** this
+story lands **Then** 68/68 verdict rows exist (STILL-VALID / ALREADY-DONE / CONTRADICTED /
+NEEDS-RESPEC / DROP), each cited
+**And** each gate report carries a TEA/coverage-debt table, with an uncovered AC recorded
+as a visible **non-gating** row
+**And** stale artifacts are rebuilt through their owning skills and diverged code is
+corrected with tests, each traceable to its verdict row
+**Status:** done — shipped `6fce755995`/`56f3e1eebc`/`1344bd009b`, PRs #401 `1f1af7b36c`
+(steward, 4 verdicts) / #402 `bc7c7e78e7` (mason, 28) / #403 `ca516848f8` (marshal, 35+1).
+**Carried, not resolved:** 6 of mason's verdicts were *unfalsifiable* at audit time pending
+OQ-A1 ("corrected to 24 valid (6 unfalsifiable)"), so 68/68 includes six rows whose premise
+could not be settled
+
+### Story 37.3: Phase 2 — the five completed stations audited at equal rigor
+
+As a fleet operator,
+I want atlas, doctor, herald, scribe and warden audited as hard as the unfinished
+stations,
+So that "complete" is an earned status rather than an unexamined one.
+
+**Type:** docs • **Effort:** L • **Deps:** S-37.2 • **FR/AD:** spec-artifact-chain-reconciliation CAP-3
+**Given** five stations read complete and had never been sampled against code **When** this
+story lands **Then** each has a gate report, every chain column is verified or carries a
+dispositioned finding, and Spec statuses are corrected to their earned values
+**Status:** done — shipped `28551a6b65`, PR #404 `f9bc17daa0` (2026-08-10)
+
+### Story 37.4: Phase 2b — all 61 Dreams dispositioned
+
+As a fleet operator,
+I want every Dream in `docs/dreams/` given a verdict row covering status truth, chain
+completeness, satellite-consolidation correctness and stranded artifacts,
+So that the non-station estate is audited too, not just the stations.
+
+**Type:** docs • **Effort:** M • **Deps:** S-37.2 • **FR/AD:** spec-artifact-chain-reconciliation CAP-8
+**Surface:** companion `dream-inventory-2026-08-10.md` — the gate report itself
+**Given** 61 live Dreams **When** this story lands **Then** 61/61 are dispositioned in an
+inventory gate report with a status distribution (33 archived / 19 realized / 5 specified /
+2 dreamt / 2 pitched)
+**Status:** done — shipped `6a4c702474`, PR #405 `7bcffbcccd` (2026-08-10); two truth-ups
+recorded, estate verified. *(Note for future readers: that 2-Dream `pitched` count is the
+last known live use of the value; none remains today.)*
+
+### Story 37.5: Phase 3 — decomposition only behind a landed gate report
+
+As a fleet operator,
+I want each queued decomposition chain to start only after its own station's audit gate
+report has landed,
+So that new stories are never built on an unaudited premise.
+
+**Type:** docs • **Effort:** M • **Deps:** S-37.3 • **FR/AD:** spec-artifact-chain-reconciliation CAP-6
+**Given** four chains were queued (atlas → herald → doctor → steward) **When** this story
+lands **Then** every decomposition PR cites the landed gate report it builds on
+**Status:** done — shipped `7e10d9158b`, PR #406 `3fd83c1aa1` (2026-08-10). **Delivered as
+one landed chain, not four, and that is the point:** atlas was resolved-by-delivery, doctor
+landed, and **herald and steward were PREPARED THEN REVERTED** after the blind verifier
+refuted them (steward: `board.py`'s own recorded revisit condition — Epic 8 completes —
+objectively unmet at 1/5; herald: its Spec's serverless-intermediates sequencing brake
+dropped, Q1 unannotated, companion-AD binding gaps). The gate did what it was built to do
+
+### Story 37.6: Phase 4 — the operator resumes on measured artifacts
+
+As a fleet operator,
+I want a final baseline re-stamp, a regenerated board and a per-station go/no-go sheet,
+So that the resume decision reads measurements rather than presumption.
+
+**Type:** docs • **Effort:** M • **Deps:** S-37.5 • **FR/AD:** spec-artifact-chain-reconciliation CAP-7
+**Surface:** companion `resume-package-2026-08-10.md` — the decision sheet itself
+**Given** the audit is complete **When** this story lands **Then** the baseline is stamped,
+the board matches the ledger, and the story projection is backed by verdict rows
+**And** the per-station sheet names specific unmet gates rather than rubber-stamping
+**Status:** done — shipped `9717b8a555` (2026-08-10), closing at 267/339 stories, 53/65
+epics. **Shipped NO-GO for two stations** — mason and marshal both read "NO-GO until one
+correct-course session"; both were lifted the same day by `8549892cce` / `f0f631ed17`,
+**outside** this Spec's eight PRs. Standing hazards were carried forward explicitly rather
+than closed (Tier-3 stale records at preflight; kedro-viz export ordering churn;
+`test-architecture.md` wholesale-stale at 5 of 8 stations)
+
+## Epic 38: bmad-loop cannot dispatch a story whose dependency is still ahead of it (spec-bmad-loop-forward-dependency-blindness CAP-1..4)
+
+**Retroactive.** All four CAPs shipped via PR #238 (`a825ac0749`, 2026-08-03) with
+refinements on 2026-08-08, and each carries a dated `verified:` line from the 2026-09-11
+CAP-effect sweep at HEAD `a0aba94b0a` — but no story was ever written. This epic documents
+what already exists; no new implementation. The Spec's `surface:` is deliberately `[]`:
+the detector moved into `pyforge-doctor` (`sources/deps.py`) on 2026-08-09 under Story 6.9
+and is governed by `spec-pyforge-doctor`'s own glob. **Note for future readers:** that
+frontmatter note points at "this spec's memlog for the hand-off" and **no memlog exists** —
+the spec directory holds only `SPEC.md`.
+
+### Story 38.1: Every station's epics doc is swept for forward-epic dependencies
+
+As a fleet operator,
+I want every story whose documented `**Deps:**` points into a later epic found by a sweep
+across all eight stations,
+So that a structural blocker is known before a run burns attempts on it.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-loop-forward-dependency-blindness CAP-1
+**Given** `next_actionable` is a strict file-order scan with no `depends_on` concept, and
+marshal's own epics.md documented three forward deps (2.3→S-3.2, 2.7→S-4.1, 8.5→S-10.2)
+the engine could not see **When** this story lands **Then** a sweep covers all 8 stations
+**Status:** done — shipped `9c054effc1`, PR #238 `a825ac0749` (2026-08-03). **The Spec
+carries its own correction, and it is the honest part of this story:** an inline
+`CORRECTED 2026-08-08 — the parenthetical claim was false` block records that mason had 30
+deps and **zero** machine-readable (a false green) while atlas had 43 with only 5 readable
+(unmeasured via a `STORY_HEADING_RE` miss). The original claim that marshal's three were
+"the only real ones fleet-wide" did not survive measurement
+
+### Story 38.2: A forward-dependent story is structurally non-actionable
+
+As a fleet operator,
+I want a found forward-dependent story set to a status the picker cannot select,
+So that the engine is structurally unable to dispatch it early rather than merely advised
+not to.
+
+**Type:** feature • **Effort:** S • **Deps:** S-38.1 • **FR/AD:** spec-bmad-loop-forward-dependency-blindness CAP-2
+**Given** `ACTIONABLE_STATUSES = {"backlog", "ready-for-dev"}` **When** this story lands
+**Then** the story reads `blocked` in both the Tier-3 feed and the tracked ledger, and
+`next_actionable(epic=2)` returns 2.4 rather than the blocked story
+**Status:** done — shipped with S-38.1. Marshal's own three original findings (2.3/2.7/8.5)
+are now `done` in the tracked ledger, so they are no longer live cases — the mechanism they
+proved stays test-covered
+
+### Story 38.3: A permanent detector prevents recurrence
+
+As a fleet operator,
+I want a later-added unmarked forward dependency caught in CI,
+So that recurrence costs a red check rather than a burned dev attempt plus review cycles.
+
+**Type:** feature • **Effort:** S • **Deps:** S-38.2 • **FR/AD:** spec-bmad-loop-forward-dependency-blindness CAP-3
+**Given** the failure mode was discovered by burning compute **When** this story lands
+**Then** the detector self-registers (`detectors.py:227` → `("forward-dependency",
+"forward-dependency-check")`) and fails if a forward-dependent story is still `backlog` or
+`ready-for-dev`
+**And** it still reports on a red run, not only a green one
+**Status:** done — shipped with S-38.1; re-homed into `pyforge.doctor.sources.deps` by
+`2e24406414` (Story 6.9), old script deleted by `c698d4b1ad`. Verified 2026-09-11: live
+sweep reports 1 measured / 0 partial / 7 no-dispatch / 0 unmeasured, none silently clean;
+`test_sources_deps_forward_dependency.py` 24/24
+
+### Story 38.4: An unparseable epics format is reported honestly, never silently clean
+
+As a fleet operator,
+I want a station whose epics doc the detector cannot parse reported as **not determinable**
+rather than clean,
+So that the fidelity doctrine applies to the detector itself.
+
+**Type:** feature • **Effort:** S • **Deps:** S-38.3 • **FR/AD:** spec-bmad-loop-forward-dependency-blindness CAP-4
+**Given** some stations use an older narrative format (confirmed: `pyforge-warden`)
+**When** this story lands **Then** those report not-determinable, never a bare "clean"
+**Status:** done — pinned directly by `test_unparseable_heading_is_not_silently_clean` and
+`test_headings_without_deps_field_report_unmeasured`. **Open by design, carried not closed:**
+59 prose dependency declarations across atlas/mason/steward are **not** migrated, so those
+stations report `PARTIAL` rather than `MEASURED`. A by-hand audit of all 62 confirmed no
+prose declaration hides a real forward dependency — a legibility gap, not a live risk.
+Migration plus a gate that fails on `PARTIAL` must land in **one** change, because the gate
+reds CI until the migration completes. *(The Spec states 59 in one place and 62 in another;
+the discrepancy is in the source text and is not resolved here.)*
+
+## Epic 39: `marshal status` recovers from a poisoned harness run id (spec-marshal-status-harness-run-id-poisoning CAP-1..2)
+
+**Retroactive.** Both CAPs shipped by direct commit `e7039b9ee6` (2026-08-15) with no story
+written, and both carry dated `verified:` lines from the 2026-09-11 sweep. This epic
+documents what already exists; no new implementation. **This is a defect fix, not a
+capability** — the commit subject is literally "fix status permanently blinding to a healthy
+run after a launch poll timeout", and the Spec's own decomposition note records the
+judgement: *"like its sibling Spec, no `epics.md` story owns it — but the code is live and
+covered, so the value is `shipped`, not `ready`."*
+
+### Story 39.1: A null harness run id recovers by filesystem discovery
+
+As a fleet operator,
+I want `marshal status` to recover the real run id from `.bmad-loop/runs/` when the journal
+field is null,
+So that a spin-time poll timeout cannot permanently blind status to a healthy run.
+
+**Type:** bugfix • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-status-harness-run-id-poisoning CAP-1
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`
+**Given** a poll timeout (`MRS-SPIN-004`) journals `harness_run_id: null` permanently into
+the launch OUTCOME entry, and the only fallback re-read the same poisoned field **When**
+this story lands **Then** a timestamp-correlated `.bmad-loop/runs/` scan recovers the real
+id, the same discovery `cli/spin.py::_latest_run_dir` already did
+**And** status reports real state (`running`/`idle`/`stopped`) instead of `unknown`
+**Status:** done — shipped `e7039b9ee6` (2026-08-15); reproduced against the live case
+(`pyforge-doctor` story 9.1's spin, a healthy ~40-minute run that `marshal status`,
+`fleet-picture` and `dashboard-gen`'s in-flight card had all been blind to).
+`test_poisoned_harness_run_id_recovers_via_filesystem_discovery` passes. *(The Spec cites
+this function at two different line numbers, `:659` and `:700` — both are drifted; cite
+neither as current.)*
+
+### Story 39.2: A genuinely unrecoverable run still degrades honestly
+
+As a fleet operator,
+I want `MRS-STATUS-002` to keep firing when no run dir is discoverable or readable,
+So that the fix narrows the failure mode rather than removing honest degradation.
+
+**Type:** bugfix • **Effort:** S • **Deps:** S-39.1 • **FR/AD:** spec-marshal-status-harness-run-id-poisoning CAP-2
+**Given** recovery must not become a false green **When** this story lands **Then** a run
+with no discoverable dir — and one with only stale siblings — still reports `unknown` with
+the finding intact
+**Status:** done — shipped `e7039b9ee6`;
+`test_poisoned_harness_run_id_with_no_run_dir_still_reports_unknown` and
+`test_poisoned_harness_run_id_only_stale_siblings_still_reports_unknown` both pass.
+**Not to be confused with** the surviving `pyforge-steward` UNKNOWN — `DW-STATUS-2026-09-08-1`
+traced that to a different cause (a harness-native run marshal never launched), owned by
+Story 5.11
+
+## Epic 40: The genesis-installer name retires completely (spec-genesis-installer-name-retirement CAP-1..8)
+
+**Retroactive.** All eight CAPs shipped as PR #318 (`28b3bca44d`, branch
+`retire/genesis-name-2026-08-08`) with a late CAP-6 follow-up `0ce1db84ce` (2026-09-12),
+and each carries a dated `verified:` line — but no story was ever written. This epic
+documents what already exists; no new implementation. The mandate was explicit: retire the
+name *"not relabeled, not renumbered by hand, but resolved by running the standard planning
+chain"*, so the CLI got designed once with its two open contradictions actually decided.
+
+### Story 40.1: One canonical epics.md, with landed story identity preserved
+
+As a fleet operator,
+I want `epics-genesis-installer.md` merged into one `epics.md` and archived rather than
+deleted, with every already-landed story key unchanged,
+So that the second epics document stops existing without rewriting delivered history.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-genesis-installer-name-retirement CAP-1, CAP-8
+**Given** a second epics document existed alongside the canonical one **When** this story
+lands **Then** one `epics.md` remains and the old file is archived, not deleted
+**And** every `status=done` key is identical after the rewrite; only backlog-only epics are
+free to be restructured
+**Status:** done — shipped `a135cee4fc` (2026-08-08), whose own body records *"CAP-8 PASS:
+all 59 `done` keys byte-identical to the pre-rewrite snapshot"*. **CAP-8 remains `partial:`
+in the Spec** — the 2026-09-11 sweep did not re-derive the pre-rewrite snapshot, which
+*"isn't preserved as a companion artifact"*, so today's ledger is consistent with the claim
+holding rather than independently re-proven byte-for-byte
+
+### Story 40.2: One contiguous FR space, and every installer-only namespace decided
+
+As a fleet operator,
+I want the separate `FR1..FR62` numbering island resolved by chain rewrite rather than by
+hand, and each installer-only namespace given an explicit fate,
+So that one PRD has one numbering space and no bare-digit citation survives.
+
+**Type:** docs • **Effort:** L • **Deps:** S-40.1 • **FR/AD:** spec-genesis-installer-name-retirement CAP-2, CAP-3
+**Surface:** companion `citation-map.md` — the pre-rewrite ground-truth inventory, holding
+the full 62-row `FR1..FR62 → FR-66..FR-127` mapping plus per-file citation-site line lists
+**Given** a no-dash `FR1..FR62` island and installer-only `NFR-O1`/`SC-01..10`/`K-01..03`/
+`OQ-1..9` namespaces **When** this story lands **Then** every FR is dashed and sequential
+(verified 2026-09-11: 196 unique numbers, FR-1..FR-196, zero gaps)
+**And** each namespace's fate is stated in the PRD — `NFR-O1` retired into `NFR-12`,
+`SC-01..10` and `K-01..03` adopted as-is
+**Status:** done — shipped `66511bae13` (2026-08-08). **The SHIPPED banner was FALSE when
+first stamped and this is on the record:** the memlog states the 2026-08-08 success criteria
+*"were FALSE when stamped — epics.md carried 195 live satellite-namespace citations until
+the audit's mechanical re-issue"* (reviewer-verified at all 195: FR+65, AD+50, zero
+mismatches). Corrected by the 2026-08-10 audit, i.e. by Epic 37's Phase-1 work
+
+### Story 40.3: Both CLI contradictions are decided, not flagged
+
+As a fleet operator,
+I want the argparse-vs-typer framework question and the `init`/`check` verb collision
+actually resolved in the architecture and PRD,
+So that the fold-in stops preserving two undecided contradictions.
+
+**Type:** docs • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** spec-genesis-installer-name-retirement CAP-4, CAP-5
+**Given** the installer architecture said typer+rich while the shipped Marshal CLI is
+argparse, and `genesis init`/`genesis check` collided with shipped `marshal init <slug>`/
+`marshal check` **When** this story lands **Then** AD-51 states the framework and why —
+*"amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in
+tree)"* — with no "flagged, not resolved" language left
+**And** the installer's distinct question gets its own verb surface: the `marshal seed
+<verb>` noun group, live in `cli/seed.py`
+**Status:** done — shipped `cfaa9a01ed` (2026-08-08); `grep -rn "import typer"` returns
+nothing
+
+### Story 40.4: No document still frames it as a separate thing
+
+As a fleet operator,
+I want every `Satellite: Genesis Installer` header and separate-thing prose removed from
+the planning tree,
+So that the retirement is real in the documents, not only in the numbering.
+
+**Type:** docs • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** spec-genesis-installer-name-retirement CAP-6
+**Given** the 2026-08-02 consolidation left satellite framing in place **When** this story
+lands **Then** `grep -i "genesis.installer"` across `{prds,architecture,specs,briefs}`
+returns nothing outside `archive/` and memlogs
+**Status:** done — but **only at the second attempt, and the Spec says so rather than
+hiding it.** The 2026-09-11 sweep recorded `NOT fully passing, not fabricating a clean
+result` with a live header surviving at `brief.md:172`; `0ce1db84ce` (2026-09-12) closed it,
+fixing that header plus three prose mentions **and six more live headers in
+`spec-pyforge-marshal/SPEC.md`** — marshal's own kernel Spec, which the prior pass had never
+looked at
+
+### Story 40.5: One dashboard row, and no code reference to the retired name
+
+As a fleet operator,
+I want the fleet dashboard to carry a single `pyforge-marshal` row with the retired name
+gone from the code,
+So that separateness stops leaking onto the board.
+
+**Type:** feature • **Effort:** S • **Deps:** S-40.1 • **FR/AD:** spec-genesis-installer-name-retirement CAP-7
+**Given** PR #233 had relabelled the second row rather than removing it **When** this story
+lands **Then** `IMPL_CAMPAIGN` holds one marshal entry (86 stories), `IMPL_CAMPAIGN_LEDGER`
+drops the key, and `dashboard_drift_check.py` is clean
+**Status:** done — shipped `cfeccf3860` (2026-08-08); the code comment records the intent
+exactly — *"the `genesis-installer` row is GONE, not relabelled"*. `IMPL_CAMPAIGN_LEDGER`
+has itself since been retired into `_PROJECT_OVERRIDES`
+
+## Epic 41: Every planning tree tells the truth about itself (spec-bmad-output-hygiene CAP-1..12)
+
+**Retroactive, and closing a hole the Spec opened deliberately.** All twelve CAPs shipped
+as PR #227 (`b0039075f8`, 2026-08-02, 147 files) plus two post-reopening additions, and
+every CAP carries a dated `verified:` line from the 2026-09-11 sweep (PR #1226). No story
+was ever written — **and that was a recorded decision, not an oversight**: the Spec's own
+non-goal reads *"No new PRD, architecture, or epics chain for this cleanup itself"*, with
+the memlog deciding to *"go straight from Spec to execution."* This epic closes exactly
+that gap retroactively; no new implementation. Stories group the twelve CAPs by failure
+mode rather than one-per-CAP, following how they actually landed.
+
+The Spec's premise: *"Every station's planning tree should tell the truth about itself —
+real content or an honest placeholder, never a templated fiction that happens to compile."*
+
+### Story 41.1: Dead scaffolding is archived, never deleted
+
+As a fleet operator,
+I want dead test scaffolding, the hollow `sprint-status.yaml` stub and orphaned single
+files moved into a mirrored `archive/` path,
+So that a bulk template commit's debris leaves the live tree without losing the history.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-output-hygiene CAP-1, CAP-2, CAP-5
+**Given** `dad47c408a` (2026-08-02) stamped generic template content across all 9 projects
+**When** this story lands **Then** `tests/`/`pytest.ini`/`playwright.config.ts` are absent
+from the 7 station roots carrying zero real tests and present under `archive/`
+**And** the dead 0%/empty-array `sprint-status.yaml` stub is archived from all 9 projects
+while the live `sprint-status-ledger.yaml` stays
+**And** two orphaned single files (atlas `RESUME-EPIC-10.md`, herald intake note) are
+archived
+**And** every move was grep-verified beforehand as read by nothing
+**Status:** done — shipped `22da995c7c` (CAP-1, 95 files, pure renames) and `f7654a4c70`
+(CAP-2 + CAP-5); confirmed live on disk for all 7 and all 9 respectively
+
+### Story 41.2: Templated fiction is replaced with real content
+
+As a fleet operator,
+I want the fabricated `test-architecture.md`, the `[role]`/`[responsibilities]` README
+placeholders and the drifted `project-context.md` files regenerated against live ground
+truth,
+So that no planning document asserts something its own project contradicts.
+
+**Type:** docs • **Effort:** M • **Deps:** S-41.1 • **FR/AD:** spec-bmad-output-hygiene CAP-3, CAP-4, CAP-6
+**Given** the bulk commit left fabricated prose in place **When** this story lands **Then**
+Genesis's `test-architecture.md` makes no claim its own PRD/architecture contradicts
+**And** no literal `[role]`/`[responsibilities]` token survives, and no README describes
+archived scaffolding as live
+**And** mason's and herald's `project-context.md` counts match their ledgers
+**Status:** done — shipped `8e9c84a101` / `5c5e372782` / `9c7acb39bb` (2026-08-02).
+**Scope corrections found mid-execution, recorded rather than smoothed over:** the README
+placeholders actually lived in each station's project-root README, not `planning-artifacts`
+as the Spec first assumed; and the Dream's own "real" counts had themselves gone stale
+(Mason 4/38→4/48, Herald 4/17→4/27). **Two of the three verified artifacts no longer exist
+today** — Genesis as a project, and `project-context.md` (superseded by BMAD 6.12's
+`bmad-project-context`) — *verified once, then their surface legitimately retired*, not
+regressed
+
+### Story 41.3: Stale pointers and off-convention layouts are corrected
+
+As a fleet operator,
+I want the `PROJECTS.md` Dream pointers, CLAUDE.md's sync-section path, and two
+off-convention directory shapes fixed,
+So that content that is correct stops being reached by a wrong name or path.
+
+**Type:** docs • **Effort:** M • **Deps:** S-41.1 • **FR/AD:** spec-bmad-output-hygiene CAP-7, CAP-8, CAP-9, CAP-10
+**Given** two `PROJECTS.md` Dream pointers resolved to a renamed or deleted file, CLAUDE.md
+named a stale `local-recipes` path, marshal's brief sat loose, and herald's brief/
+architecture dirs carried a retired slug **When** this story lands **Then** both Dream
+pointers resolve to an existing `type: dream` file
+**And** CLAUDE.md matches where `bmad_drift_check.py`/`pixi.toml`/`fleet_scan` actually read
+from
+**And** marshal's brief is sharded to `briefs/brief-pyforge-marshal-2026-07-25/brief.md` and
+herald's dirs carry the station slug
+**Status:** done — shipped `f7654a4c70` (CAP-7, folded in unnamed in its subject),
+`207f1d43c8` (CAP-8 + CAP-9) and `cc6db24346` (CAP-10). **CAP-8 carries a reverted-work
+note kept deliberately for the record:** a relocation *"was executed, then reverted in full
+… before this branch went anywhere"* — the 13 factory docs were never misfiled; CLAUDE.md
+was simply stale
+
+### Story 41.4: The currency detector is fixed before its data is caught up
+
+As a fleet operator,
+I want the zero-grace currency check given a 2-day window first, and only then the
+genuinely stale pairs re-stamped,
+So that noise is removed before data is touched, and real drift stays visible.
+
+**Type:** feature • **Effort:** M • **Deps:** S-41.3 • **FR/AD:** spec-bmad-output-hygiene CAP-11, CAP-12
+**Given** a user report of universal "outdated" readings after CAP-10, where 0–1 day
+`spec`/`prd` findings are true by construction rather than drift **When** this story lands
+**Then** `_FEEDS_GRACE_DAYS = 2` is live in the currency loop and the 0–1 day findings
+vanish across all 8 stations
+**And** only pairs whose own `currency_review` proves the bump was structural are
+re-stamped
+**Status:** done — shipped `c5aaf4f3e0` (CAP-11) and `1567a478d1` + `698d32798c` (CAP-12).
+**CAP-12 deliberately leaves real findings visible rather than clearing the board** —
+doctor (`prd`/`arch`, architecture genuinely behind), mason (`arch`/`epics`, a real 4-FR
+gap), and warden (`prd`/`gates`, a structural property of the artifact type) are each
+*"left unfixed and visible"*, out of scope for a hygiene spec. *(The Spec's own success line
+says "16 → 4" while its parenthetical and Success signal both say 3 remaining; the
+discrepancy is in the source text and is not resolved here.)* The `fleet_scan`-driven
+dashboard surface these two CAPs measured against has since been retired fleet-wide, so
+re-measurement today needs the successor tooling
+
+## Epic 42: spec-surface tolerates governed overlap (spec-surface-overlap-tolerance CAP-1..2)
+
+**Goal:** `spec-surface-check`'s DRIFT half stops flagging a file whose co-governing spec
+already reconciled it cleanly. Extension point of `spec-regenerable-factory` CAP-3
+(shipped). Contract is marshal's; the code is doctor's
+(`pyforge.doctor.sources.chain`), so doctor records an incoming surface claim in its own
+memlog before any code lands — the established cross-station convention.
+
+**Why now:** the class is live and recurring, not theoretical. PR #1288 papered over 178
+findings across 17 specs with per-file `surface-drift-exclude:` entries, and on
+2026-09-14 a single `pixi.toml` description edit plus two source edits generated drift
+against **13 more specs** — every one of them a kernel spec that co-governs a path a
+narrower spec had already reconciled. Each cleared only by a hand-written memlog line and
+a scoped stamp. Minting narrow specs under kernel specs is the fleet's normal shape, so
+the noise compounds with every new spec.
+
+### Story 42.1: A co-governed file is clean when any one of its governing specs reconciled it
+
+As a station operator,
+I want `spec-surface-check` to judge a changed file across all of its governing specs at
+once, rather than each spec in isolation,
+So that reconciling a file in the spec that actually owns the change clears it, instead
+of leaving permanent noise on every other spec that happens to match the same glob.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-surface-overlap-tolerance CAP-1
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`
+(`_drift_findings`, `chain.py:1662-1742`) + its unit tests. Cross-station: doctor owns
+the module, marshal owns the contract.
+**Given** two specs govern the same path and one spec's memlog moved AND names that path
+**When** `spec-surface-check` runs
+**Then** neither spec reports `drift` or `drift-presumed` for that path
+**And** the loop groups by path before judging, rather than iterating specs independently
+**And** the per-spec bar is UNCHANGED — still `spec_moved AND f in named` (the answered
+open question: the existing bar is the right predicate to OR; only the loop shape changes)
+**Status:** backlog
+
+### Story 42.2: Overlap tolerance narrows a false positive without widening what counts as reconciled
+
+As a station operator,
+I want proof that the OR only ever removes a false finding,
+So that a genuinely unreconciled file cannot be hidden by gaining a second governing spec.
+
+**Type:** feature • **Effort:** S • **Deps:** S-42.1 • **FR/AD:** spec-surface-overlap-tolerance CAP-2
+**Surface:** `src/shared/packages/pyforge-doctor/tests/unit/` fixtures for
+`spec-surface`; no production change beyond 42.1.
+**Given** 42.1 has landed
+**Then** every existing single-owner `drift` / `drift-presumed` fixture passes unchanged
+**And** a new multi-owner fixture where NEITHER co-governor names the path still produces
+a finding
+**And** that finding keeps the STRONGEST severity among its co-governors — a co-governor
+whose memlog never moved yields `drift` (FAIL), so the group result is FAIL, never
+downgraded to `drift-presumed` merely because another co-governor moved for an unrelated
+reason
+**And** the coverage half (`ungoverned`) is untouched
+**Status:** backlog

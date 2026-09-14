@@ -1922,3 +1922,70 @@ Every story in this epic set builds and tests against **Python 3.14 only**.
 (`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
 installs. No story's acceptance criteria change; recorded here so a future story is not
 written against a 3.12 assumption the estate cannot produce.
+
+## Epic 17: The recipes/ fleet is stewarded (spec-fleet-stewardship fs:CAP-1..3)
+
+**Retroactive.** All three CAPs were re-verified PASS on 2026-09-11 at HEAD `b36c8be118`
+with mechanical evidence recorded in the Spec's own `verified:` lines, but no story was
+ever written, so `chain-completeness`'s delivered-Spec arm flagged the Spec as
+undecomposed. This epic documents a practice that is already in force; no new
+implementation. Unlike mason's other epics this Spec governs a **continuous practice**
+over `recipes/**` rather than a discrete build — which is why it carries
+`surface-drift: exempt` (per-recipe governance is the CFE workflow, not spec
+re-derivation) and adopts three legacy Tier-1 workflow specs as companions rather than
+restating them.
+
+### Story 17.1: The local mirror is the source of truth
+
+As a recipe maintainer,
+I want `recipes/<feedstock>/` edited first and verified locally before anything is
+pushed upstream,
+So that a feedstock never receives an unproven change and the mirror never drifts
+behind what shipped.
+
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-fleet-stewardship CAP-1
+**Surface:** `recipes/**` (`surface-drift: exempt`); `test_recipe_yaml_parse_audit.py`
+**Given** recipe work could be done directly on a feedstock **When** this practice is in
+force **Then** the local mirror is edited first, verified with a real build, and only
+then pushed
+**And** the parse audit holds the mirror machine-checkable
+**Status:** done — re-verified 2026-09-11 at `b36c8be118`: 72 commits touched `recipes/`
+since 2026-08-10 (continuous activity), `test_recipe_yaml_parse_audit.py` 6/6 passing
+
+### Story 17.2: Every local recipe carries its internal metadata, stripped on push
+
+As a recipe maintainer,
+I want each local recipe to carry `cfe-*` internal metadata that never reaches an
+upstream PR,
+So that the factory keeps its own provenance without leaking local-only fields into
+conda-forge.
+
+**Type:** docs • **Effort:** S • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-2
+**Given** `extra: cfe-*` is local-only internal metadata **When** this practice is in
+force **Then** every local recipe carries it and SKILL.md step 8b strips it before push
+**And** a duplicate-key guard (`cfe-conda-name`) keeps the block parseable
+**Status:** done — re-verified 2026-09-11 (meta-test half): parse audit incl. the
+duplicate-key guard 6/6 passing. **Residue recorded in the Spec, not resolved here:** the
+strip-on-push half was not independently re-checked against a real published feedstock
+file that pass — it rests on the documented step-8b convention and prior worked examples
+
+### Story 17.3: The recurring campaigns have a home and a record
+
+As a recipe maintainer,
+I want refresh (Track A/B), platform expansion and red-PR remediation to run as named,
+repeatable campaigns,
+So that bulk feedstock work is a workflow with recorded evidence rather than ad-hoc
+sweeps.
+
+**Type:** docs • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-3
+**Surface:** adopted companions `docs/specs/feedstock-refresh.md`,
+`feedstock-platform-expansion.md`, `feedstock-failure-remediation.md` (legacy Tier-1, in
+force)
+**Given** bulk feedstock work could be ad-hoc **When** this practice is in force **Then**
+each campaign has a named workflow spec and lands its evidence in that spec's own Worked
+Examples / Current State
+**And** dormancy between waves is a currency fact the specs self-document, not a defect
+**Status:** done — re-verified 2026-09-11 (historical; dormant today, matching the Spec's
+own 2026-09-09 realization-gate note): all three companions' last-touch commits still
+match their documented dates (`1aeaf12cee` 2026-07-02, `1bdd5a2f02` 2026-06-28); the
+criterion held when waves ran (Track A Waves B–F)

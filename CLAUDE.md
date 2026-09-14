@@ -49,6 +49,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 
 **Health / status:**
 - All detectors: `pixi run -e local-recipes detectors` (CI subset: `detectors-ci`); exit 0 = pass, 1 = findings, 2 = could-not-run (never a false green).
+  **That domain is the AGGREGATOR's only.** A single doctor-sourced task — `bmad-drift-check`, `story-status-check`, `spec-surface-check`, `capability-effect-check` and the rest of `python -m pyforge.doctor.sources <name>` — projects through `pyforge.doctor.verdict.exit_code_for`, whose frozen domain is `{0, 2, 130}`: **`2` means FAIL (findings), there is no `1`, and `warn` never changes the exit code.** So `2` from the aggregator means "could not run" while `2` from an individual detector means "a real failure" — read the wrong one and a genuine red looks like a skipped check. The script-based detectors (`governance_currency_check.py` and friends) are a third shape again, returning plain `0`/`1`. Doctor's subset is deliberate (`doctor/verdict.py:4-7`: it omits warden's policy rung `1` because Doctor reports operability, not policy); the collision with the aggregator's `2` is not.
 - Fleet progress: `pixi run -e local-recipes fleet-picture` — read-only, never gating; paste its stdout verbatim, not reformatted.
 
 ## BMAD Method Documentation
@@ -294,7 +295,9 @@ This repo carries a checked-in team-memory index at `.claude/memory/MEMORY.md` �
 [SKF Skills]|7 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
+<!-- governance-currency:ignore-start (a path that must NEVER exist -- mason's skill tier is conda-forge-expert per five_tier.py; named here BECAUSE minting it is forbidden. Mirrors AGENTS.md:30-32.) -->
 |Mason is the eighth PyForge Guild station but deliberately has no SKF skill — recipe work uses `conda-forge-expert` instead (see `AGENTS.md` governance-currency policy on never minting `.claude/skills/pyforge-mason/`).
+<!-- governance-currency:ignore-end -->
 |
 |[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
 |IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.

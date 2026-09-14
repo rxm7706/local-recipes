@@ -1,14 +1,16 @@
 ---
 type: frame [0.3]
-identifier: pyforge-scribe
+identifier: pyforge/scribe
 license: https://www.apache.org/licenses/LICENSE-2.0
-name: pyforge-scribe
+name: PyForge Scribe
 description: Station Frame for Scribe — team memory, compiled graph, and cited recall. Load when capturing decisions or answering from grounded sources.
 visibility: private
-owner: scribe
 version: 0.1.0
 scope: station
-inherits: pyforge
+maintainer:
+  - scribe
+inherits:
+  - pyforge/company
 ---
 
 # Scribe

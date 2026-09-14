@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 322
+# stories: 353
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -212,6 +212,18 @@ development_status:
   35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-project-s-own-tracked-ledger-not-trusted-from-text-alone: done
   36-1-root-pixi-toml-and-the-catalog-document-every-station-s-already-shipped-undocumented-run-dep: done
   36-2-llms-full-check-reads-every-station-s-own-nested-manifest-not-just-root-pixi-toml: done
+  37-1-phase-0-mechanical-debt-to-zero-before-any-semantic-audit: done
+  37-2-phase-1-every-remaining-story-gets-a-cited-verdict: done
+  37-3-phase-2-the-five-completed-stations-audited-at-equal-rigor: done
+  37-4-phase-2b-all-61-dreams-dispositioned: done
+  37-5-phase-3-decomposition-only-behind-a-landed-gate-report: done
+  37-6-phase-4-the-operator-resumes-on-measured-artifacts: done
+  38-1-every-station-s-epics-doc-is-swept-for-forward-epic-dependencies: done
+  38-2-a-forward-dependent-story-is-structurally-non-actionable: done
+  38-3-a-permanent-detector-prevents-recurrence: done
+  38-4-an-unparseable-epics-format-is-reported-honestly-never-silently-clean: done
+  39-1-a-null-harness-run-id-recovers-by-filesystem-discovery: done
+  39-2-a-genuinely-unrecoverable-run-still-degrades-honestly: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
@@ -227,6 +239,17 @@ development_status:
   4-7-landing-rules-as-declared-policy: done
   4-8-marshal-land-the-last-mile-lands-itself: done
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
+  40-1-one-canonical-epics-md-with-landed-story-identity-preserved: done
+  40-2-one-contiguous-fr-space-and-every-installer-only-namespace-decided: done
+  40-3-both-cli-contradictions-are-decided-not-flagged: done
+  40-4-no-document-still-frames-it-as-a-separate-thing: done
+  40-5-one-dashboard-row-and-no-code-reference-to-the-retired-name: done
+  41-1-dead-scaffolding-is-archived-never-deleted: done
+  41-2-templated-fiction-is-replaced-with-real-content: done
+  41-3-stale-pointers-and-off-convention-layouts-are-corrected: done
+  41-4-the-currency-detector-is-fixed-before-its-data-is-caught-up: done
+  42-1-a-co-governed-file-is-clean-when-any-one-of-its-governing-specs-reconciled-it: backlog
+  42-2-overlap-tolerance-narrows-a-false-positive-without-widening-what-counts-as-reconciled: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -324,8 +347,20 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
+  epic-37: done
+  epic-37-retrospective: optional
+  epic-38: done
+  epic-38-retrospective: optional
+  epic-39: done
+  epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
+  epic-40: done
+  epic-40-retrospective: optional
+  epic-42: backlog
+  epic-42-retrospective: optional
+  epic-41: done
+  epic-41-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done

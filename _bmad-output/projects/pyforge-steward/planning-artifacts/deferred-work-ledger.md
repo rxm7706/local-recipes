@@ -4396,3 +4396,144 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-VOCAB-2026-09-14-1: the Charter names SEVEN Intelligence Hub abstractions; upstream names six — a factual error in a Tier-0 document, propagated to two more artifacts
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `docs/dreams/pyforge-charter.md:606` reads *"The whitepaper names Frames · Cogs · Ops · Guards · Gates · Tracks · Organizational Memory."* Upstream names **six** shared abstractions; Organizational Memory is a Layer-1 *infrastructure* term ("the Hub's persistent context substrate"), not one of the six execution/accountability abstractions. Folding it in erases a distinction OpenTeams draws deliberately — the architecture is three layers plus a cross-cutting Accountability Plane, explicitly "never 'four layers'". The Charter's substantive rulings (cross-walk never joins; the Cogs/Smith collision; Charter·Guild·Stations have no Hub counterpart) are unaffected — only the enumeration.
+  evidence: Three independent upstream sources agree on six, verified 2026-09-14: `openteams-ai/inthub-whitepaper` README (*"the shared abstractions (Frames, Cogs, Ops, Guards, Gates, Tracks)"*); the guide's glossary entry **Shared abstraction** (*"Frames, Cogs, Ops, Guards, Gates, and Tracks are proposed as the AI era's set"*); and guide §13 (*"ask it to adopt **six nouns**"*). The whitepaper's `GLOSSARY.md` — which self-declares as *"the authoritative definition set"* — carries the six-verb mnemonic ("Frames guide… Cogs perform… Ops orchestrate… Guards verify… Gates decide… Tracks make the work accountable"). Propagation confirmed by grep: `spec-intelligence-hub/SPEC.md:48` (§ Why) and `:68` (CAP-1 intent), plus `vocabulary-map.md`'s table, which carries Organizational Memory as a peer row.
+  location: docs/dreams/pyforge-charter.md:606
+  severity: high
+  status: open
+  raised: 2026-09-14 — Owner: steward. **The Charter is Tier 0 and changes only by recorded amendment**, so this is an amendment with a Realization-log entry, never an edit — deliberately NOT fixed inline during the research pass that found it. The two downstream artifacts correct in the same change. Recorded as correction C-1 in the owning Spec.
+
+### DW-VOCAB-2026-09-14-2: Guard categories are recorded in the wrong order — Source-Grounding ranks second upstream, not sixth
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `spec-intelligence-hub/SPEC.md:192-199` (decision B7) lists the seven Guard categories with Source-Grounding sixth. Whitepaper §5.5 "Seven Categories of Guards" orders them: 1 Algorithmic · 2 **Source-Grounding** · 3 Consensus · 4 Expert · 5 Policy & Safety · 6 Regression & Drift · 7 Outcome, in Title Case. The seven are right; the ordinal is not.
+  evidence: Verified 2026-09-14 against whitepaper §5.5. The substantive B7 finding is unaffected and still stands — Source-Grounding exists at exactly one site (`scribe/recall.py` AD-8) and Outcome is absent entirely. The correction matters because "SOURCE-GROUNDING GOES FIRST", which B7 recorded as our own sequencing preference, turns out to be **upstream's own ranking** (algorithmic strongest → Outcome most business-meaningful), which strengthens rather than weakens the decision.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-intelligence-hub/SPEC.md:192
+  severity: low
+  status: open
+  raised: 2026-09-14 — Owner: steward. Recorded as correction C-2 in the owning Spec. Lands with DW-VOCAB-2026-09-14-1's amendment, since both touch the same Hub-vocabulary surface.
+
+### DW-VOCAB-2026-09-14-3: the Design tier teaches a practice vocabulary that entered no repo artifact, still names four retired BMAD skills, and has drifted 13.5 KB out of sync
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Three problems in one surface. (a) The 45-slide `Agentic SDLC` deck teaches **four phases**, **three tracks** (Quick Flow / BMad Method / Enterprise), parallel track, party mode, execution matrix, method-vs-machinery, and project-context-as-constitution — and **none** of it appears in `vocabulary-map.md`, the Charter cross-walk, or any repo glossary. (b) It still names `bmad-quick-dev`, `bmad-dev-auto`, `bmad-create-story`, `bmad-dev-story` — all renamed or deprecated in BMAD 6.11 — plus **Paige**, the Tech Writer persona retired in 6.11, three times. `CLAUDE.md` records the renames correctly, so the repo knows; the public-facing deck does not. (c) The local pull is stale: `Agentic SDLC.dc.html` is 193,114 B in-repo against 206,638 B in Design — **13.5 KB behind**.
+  evidence: Measured 2026-09-14 against Design project `f58c0f17-087b-417e-9cfa-c410de6169dc` and `presentations/agentic-sdlc/project/` (local copies dated 2026-08-01). Retired-name counts by grep on `Agentic SDLC.marp.md`: one hit each for the four skills, three for Paige. The two Lexicon posters differ only by harness-strip artifacts; the deck is materially behind. The Lexicon slide itself **was** verified current — its seven nouns match the Charter exactly, including the Spec's 2026-07-25 addition. This is a recurrence, not a new class: the Charter's own log (line 826) records the 2026-08-01 pull as the *first* one ever, made precisely because two Design-side Lexicon artifacts had described the pre-2026-07-25 six-noun model since 2026-07-25 and were never pulled.
+  location: presentations/agentic-sdlc/project/
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward rules the vocabulary; **herald owns the deck surface** and the pull discipline (`docs/specs/presentation-deck.md` § the MCP bridge). Carried as CAP-5 of the owning Spec ("the Design tier stops drifting") and as its open questions 8 and 10-11.
+
+### DW-VOCAB-2026-09-14-4: our nine Frames are authored against an unmerged, unlicensed frame-spec draft
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Company Frame and eight station Frames (steward Epic 53, Stories 53.2/53.5) carry `type: frame [0.3]`, `identifier:` and an Apache-2.0 `license:` IRI. All three are **v0.3-only fields**, from `openteams-ai/frame-spec` PR #28, which is **still open**. The released spec is v0.2.0, whose required set is exactly `type`/`name`/`description`/`visibility` and whose optional set is `version`/`scope`/`maintainer`/`inherits` — `identifier` and `license` do not exist in it, and `owner` never existed in any version (the field is `maintainer`, renamed from `author` by merged PR #20).
+  evidence: Verified 2026-09-14. `GET /repos/openteams-ai/frame-spec/license` returns **404** and the repo's `license` field is `null` — there is **no LICENSE on `main` today**, so the spec text currently grants no rights; PR #28, which would add Apache-2.0 along with the v0.3 data model, was created 2026-09-07 and has not merged. PR #29 (reference validator) is open against #28's branch, not main. Separately, the advertised v0.2.0 release is not backed by any git tag or GitHub release. Story 53.5 accepted this knowingly ("we adjust when #28 / #29 merge"); this entry exists so the acceptance is tracked rather than remembered.
+  location: docs/foundry/frames/
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward. Trigger to revisit: PR #28 merging (or closing). Our in-repo four-field preflight is correctly bound to v0.2's required set and does **not** depend on upstream's unlicensed `tools/validate_frames.py`, so the preflight itself is unaffected either way — the exposure is the frontmatter fields and the licence, not the gate.
+
+### DW-VOCAB-2026-09-14-5: `epic-18` is a ledger row with no `## Epic 18` heading, so three stories render under Epic 17 and fleet-picture over-counts
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `sprint-status-ledger.yaml` carries `epic-18: done` and `epic-18-retrospective: optional`, and `epics.md` carries `### Story 18.1/18.2/18.3` with matching ledger keys — but **no `## Epic 18:` heading**. The headings run 16, 17, 19. The three stories therefore render structurally under Epic 17, and `fleet-picture` (which counts epics from ledger keys) reports 57 epics for steward against 56 declared headings.
+  evidence: Measured 2026-09-14 by parsing both files. Epic 18 is referenced by name throughout the FR mapping prose (`epics.md:1440-1456`, "canopy:FR-1: Epic 18 — chrome package", FR-2, FR-3, FR-14, FR-15), so the epic is real and its heading was simply never written. Invisible to `chain-completeness` INV-B by construction — see DW-CHAIN-COMPLETENESS-7.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: steward. Data fix (write the missing heading over the existing three stories); tracked separately from the detector gap so neither blocks the other.
+  closed: 2026-09-14 — Fixed, and the diagnosis above was **wrong about the cause**: Epic 18's heading was not missing, it was **mis-levelled**. `### Epic 18: Chrome and the trusted client` sat at H3 (line 1563) as the body heading, with an identically-titled summary-list entry at line 1503. Promoted the body heading to `##`; the summary entry is untouched. Verified `count == 1` for the body form and `== 2` overall before editing, so the promotion could not land on the summary row. The observable symptoms the entry describes were all real — headings ran 16, 17, 19; the three stories rendered under Epic 17; `fleet-picture` reported 57 against 56 — an H3 is invisible to every `^## Epic` parser in the estate, so a mis-levelled heading and an absent one are indistinguishable from the outside. Now caught by construction: doctor's DW-CHAIN-COMPLETENESS-7 landed the INV-B epic arm the same day, which compares `^##\s+Epic\s+(\d+)` headings against `epic-N` keys in both directions.
+
+### DW-VOCAB-2026-09-14-7: `docs/dreams/README.md`'s "36 backlog stories" example is three weeks stale — every one of those stories is `done`
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `docs/dreams/README.md:93-96` teaches the rule *"Status is NOT a proxy for work remaining, in either direction — the ledger is"* using two examples. The second reads: *"the largest single block of unbuilt work in the fleet — marshal's E7–E12, **36 backlog stories** — sits under `genesis-installer`."* That block is no longer unbuilt. The **rule is correct and should stand**; only the example is stale.
+  evidence: Measured 2026-09-14 directly against the live tracked ledger (the very artifact the passage tells the reader to trust): marshal's E7–E12 hold **37 story rows, all `done`** — zero `backlog`, zero `in-progress`. They landed between 2026-08-10 (`6115ce7669`, Story 7-1) and 2026-08-23 (`52fbe2fac3`, Story 12-6, PR #654); the 37th (`10-8-manifest-declared-writable-artifacts…`) was added after the epics merge. Found during the delivered-Spec decomposition sweep while surveying `spec-genesis-installer-name-retirement`, whose own scope touched E7–E12 **only as documents to merge and renumber, never as work to build** — so nothing in that Spec is contradicted by this; the README simply was not updated when the stories shipped.
+  location: docs/dreams/README.md:94
+  severity: low
+  status: open
+  raised: 2026-09-14 — Owner: steward. Fix is to re-point the example at a block that is genuinely unbuilt today (or state the figure as an as-of-date), **not** to weaken the rule it illustrates. Note the irony worth preserving in the rewrite: the passage's own closing advice — *"read `sprint-status-ledger.yaml`"* — is exactly what falsifies its example.
+
+### DW-VOCAB-2026-09-14-8: `2` means FAIL to a doctor source and "could-not-run" to the aggregator, and CLAUDE.md taught the wrong one
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Four exit-code domains are live at once. `pyforge.doctor.verdict` is frozen at `{0, 2, 130}` where **2 = FAIL** and `1` does not exist; `scripts/detectors.py` uses `{0, 1, 2}` where **2 = could-not-run**; `pyforge.warden.verdict` uses `{0, 1, 2, 130}`; `pyforge.marshal.core.verdict` invents `{0, 1, 2, 3, 4, 130}` with `gate-failed = 3`. `CLAUDE.md` stated the aggregator's domain as if it were universal, while the same file tells the reader to run `bmad-drift-check` / `story-status-check` / `spec-surface-check` / `capability-effect-check`, all of which dispatch through `python -m pyforge.doctor.sources` and therefore project through DOCTOR's domain. So a genuine FAIL from any of those reads, under the documented mapping, as "the check couldn't run" — the precise false-green class `scripts/detectors.py:39-41` exists to prevent, inverted.
+  evidence: Confirmed live 2026-09-14 **by walking into it**: this session ran `python -m pyforge.doctor.sources chain-completeness`, received exit 2 alongside one FAIL finding, and reported it to the operator as "could-not-run, not a pass — a false green signal", which was wrong. The error was caught only by then reading `doctor/verdict.py:45-57` directly. A detector that misleads its own maintainer inside one session is not a theoretical defect. Doctor's subset of warden's domain IS deliberate and documented (`doctor/verdict.py:4-7` — it omits warden's policy rung `1` because Doctor reports operability, not policy); the collision with the aggregator's `2` is not documented anywhere.
+  location: CLAUDE.md (§ Health / status), scripts/detectors.py, src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
+  severity: high
+  status: partially-fixed
+  raised: 2026-09-14 — Owner: steward (vocabulary), doctor (the domains). **The documentation half is fixed**: CLAUDE.md now states both domains and warns that `2` inverts between them. **The design half is open** — four lattices, three of which invented their own numbers, with only the Doctor↔Warden relationship documented as intentional and Marshal's recorded in its own docstring as "a recorded assumption, not architecture-dictated". A single declared exit-code vocabulary is CAP-2's natural scope.
+
+### DW-VOCAB-2026-09-14-9: `Guard`/`Gate` carry three senses and the Charter ruled on the neighbouring collision but not this one
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Three live senses. (1) Intelligence Hub: *"Guards check. Gates decide."* — shipped as `docs/foundry/guards/README.md` + `steward/guards.py`. (2) Ours: `gate_mode` as a run-level approval policy, ~30 `*-check` detectors, and marshal's own `Verdict.GATE_FAILED` rung. (3) Upstream BMAD: `PASS`/`CONCERNS`/`FAIL` as a readiness-gate verdict, live in eight implementation-readiness reports across six stations. The Charter names the Cogs/Smith collision explicitly at `pyforge-charter.md:615` and `:622-623` — and gives Guards/Gates a single cross-walk cell at `:617` with no collision marker at all. The asymmetry looks deliberate but is explained nowhere.
+  evidence: Measured 2026-09-14 across the estate. Worse than an unnamed overload: the only two rulings that DO exist contradict each other — `docs/dreams/intelligence-hub.md:757` says *"Gates are the verdict plus operator confirmation"*, while `spec-pyforge-marshal/glossary.md:52-55` says a Gate is *"a checkpoint that must pass before a story progresses. Three kinds: an approval gate, a verify gate, and a scope check"*, none of which is "the verdict plus operator confirmation". A reader cannot determine which is binding.
+  location: docs/dreams/pyforge-charter.md:617, docs/dreams/intelligence-hub.md:757, _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/glossary.md:52-66
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward. This is exactly `spec-vocabulary-one-name-one-job` CAP-4 ("the unnamed collisions get rulings"), which is still `draft`. A ruling is a Charter amendment with a Realization-log entry, never an edit — and it must also settle `Track` (Hub evidence record vs BMAD planning lane), which has the same shape and is equally unruled.
+
+### DW-VOCAB-2026-09-14-10: nothing reconciles "Warden is the sole PR verdict" with "detectors-ci fails CI"
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Charter's rule is *"Warden stays the sole PR verdict"* (`pyforge-charter.md:617`) under the doctrine *"the hand that builds is never the gate that judges"* (`:451-454`). Yet `detectors-ci` genuinely runs in CI and genuinely fails it, and several non-Warden surfaces say so in their own words: `scripts/detectors.py:212` (*"the FAIL half … is what actually gates"*), `sources/platform_policy.py:41-43` (*"a REAL, ACTIONABLE gate"*), `pixi.toml:1077` (*"install it … to make this a real gate"*), `pyforge-marshal/README.md:31` (*"Read-only conformance report (CI gate)"*), `pixi.toml:1563` (Atlas, *"CI gate (exit 2 on violations)"*). The Charter's harness clause (`:668-673`, "CI verify gates" are the unit of governance) arguably covers this — but no document connects the two, so each surface decides for itself whether calling itself a gate is legal.
+  evidence: Measured 2026-09-14. The tension is not merely verbal: marshal publishes a second `verdict` lattice with a dedicated `GATE_FAILED` rung (`marshal/core/gate.py:41-42`) in the station the Charter explicitly bars from grading its own work (`pyforge-charter.md:269` assigns Marshal's verdict to Doctor). Contrast the surfaces that get it right and say so — `pyforge-warden/README.md:135-138` mechanically raises `SecondVerdictError`, and `steward/frames.py:315` / `docs/foundry/frames/README.md:58` both state "Not a detector; Warden stays the sole PR verdict."
+  location: docs/dreams/pyforge-charter.md:451-454 and :617, scripts/detectors.py:212, src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/platform_policy.py:41-43, src/shared/packages/pyforge-marshal/README.md:31
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward (the ruling), then each named station (its own wording). Deliberately NOT fixed by editing the five call sites: rewording them would hide an unresolved doctrine question behind tidier prose. The ruling decides whether "gate" is reserved for the PR verdict (and every CI-failing check needs a different word) or whether "PR verdict" is the narrow reserved term and CI checks may gate freely.
+
+### DW-VOCAB-2026-09-14-11: `check` does four jobs, and `detector`/`check`/`preflight` are nowhere distinguished
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `check` is simultaneously (1) a `Finding` field naming which check produced it, (2) a marshal CLI verb over the detector registry, (3) one of marshal's three gate kinds (*"a scope check"*), and (4) the filename suffix of ~30 `*-check` pixi tasks that are detectors. `preflight` is separately (1) the Frame validator, (2) a marshal loop-home step, (3) a BigQuery cost dry-run, and (4) Doctor's own tagline for its `check` verb. No artifact anywhere in the estate contrasts detector vs check vs preflight; the only two statements are negative (*"Not a detector"*, twice), defining by exclusion and never saying what the thing is instead. `advisory` is likewise defined only as "not a gate" in all four of its definition sites, and `lens` — load-bearing in `bmad-review`, the Guard library and warden's epics — is defined nowhere at all.
+  evidence: Measured 2026-09-14. This is the Lexicon's own rule failing on the estate's most-used operational nouns: *"Every noun does exactly one job; every job has exactly one noun"* (`pyforge-charter.md:596-599`). The Lexicon's seven nouns satisfy it; the words the fleet actually types every day do not.
+  location: docs/dreams/pyforge-charter.md:596-599, src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py, scripts/detectors.py:23-32
+  severity: low
+  status: open
+  raised: 2026-09-14 — Owner: steward. Folds into CAP-1/CAP-3. Cheapest real fix is a glossary that states each positively (what a detector IS, what advisory obliges a reader to do) rather than four more "not a gate" disclaimers.
+
+### DW-VOCAB-2026-09-14-12: six structural nouns are overloaded and nothing in the estate acknowledges them
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: A fourth sweep (2026-09-14) measured the ARCHITECTURAL nouns, which `spec-vocabulary-one-name-one-job` does not cover — its scope is status vocabularies and identifier shapes. Six are UNRULED, meaning the overload exists and no document names it: **Surface** (5 senses — a Spec's `surface:` frontmatter, a story's `**Surface:**` field, marshal's *frozen surface*, an API surface, and "shared/estate surface"), **Layer** (7 numbered stacks, including two rival config-precedence chains that both live in `_bmad-output/` and never cite each other), **estate / fleet / foundry** (3 senses each), **Tier** beyond the one named collision (three further systems: `five_tier.py`'s station shape, model/cost tiering, test tiers), **Plane** (8 senses; two ADs each claim "one plane" for a *different* plane), and **Spine** (2 senses, and never defined anywhere at all — the word is inherited silently from `bmad-architecture` as a filename).
+  evidence: Surface ranks first on blast radius: 142 `SPEC.md` carry `surface:`, 422 story rows carry `**Surface:**`, `scripts/spec_surface_check.py` gates on the first sense and `marshal/core/gate.py:528` on the third — and `marshal/epics.md:496` uses senses 2 and 3 in one sentence with no qualifier. Marshal's `architecture.md:823-827` § 10.4 is the estate's only terms-of-art list; it rules the Tier collision ("the collision is historical, so always say which") but omits Surface, while marshal owns two of its five senses. `island` is the counter-example worth copying: one definition (`ARCHITECTURE-SPINE.md:604-608`), one owner, three enforcing ADs, a CI `paths:` rule and a test.
+  location: docs/dreams/pyforge-charter.md, _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture.md:823-827, scripts/spec_surface_check.py
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward. Needs its own Dream or an explicit widening of `vocabulary-one-name-one-job`, whose § The shapes covers identifiers and whose CAP-4 covers Track/Guard/Gate — none of these six. The `island` pattern (define once, name an owner, enforce with an AD) is the shape to hold the rest to.
+
+### DW-VOCAB-2026-09-14-13: "kernel" was retired and is now MORE overloaded than before the ban
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: The Charter bans one sense at `pyforge-charter.md:387-389` — *"Never call the Spec a 'kernel' — that is `bmad-spec`'s internal jargon … and it demotes the most load-bearing artifact in the ecosystem to a tool detail"* — and then uses the banned form itself 440 lines later at `:827` (*"this Dream's own Spec kernel"*). `_bmad-output/EXEMPLAR-STANDARD.md:447-465` builds an entire named rule on the banned sense (**"## The kernel/companion rule"**, 16 occurrences), and `PROJECTS.md:64` plus `CHARTER-ALIGNMENT-PLAN.md` follow it. Meanwhile two NEW senses arrived after the ban and were never contemplated by it: "kernel spec" meaning a station's broad umbrella Spec (`docs/dreams/spec-surface-overlap-tolerance.md`, and the branch name `maintenance/kernel-spec-surface-overlap-2026-09-12`), and "foundry kernel" meaning the regenerated core of B (`docs/dreams/foundry-regenerate-not-fold.md`, steward Epic 54). Plus "governance kernel" at `guild-roster.json:17`.
+  evidence: Measured 2026-09-14 — ~120 occurrences across ~40 in-scope files, in four distinct senses. A retirement that the retiring document violates, that a Tier-2 standard builds a named rule on, and that two later efforts extended in new directions, is not a retirement.
+  location: docs/dreams/pyforge-charter.md:387-389 and :827, _bmad-output/EXEMPLAR-STANDARD.md:447-465
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: steward. Either the ban is real (and EXEMPLAR-STANDARD's rule is renamed, and the Charter fixes its own line) or it is narrowed to "never call **the Spec** a kernel, but `kernel` is legal for an umbrella-vs-narrow relationship and for B's core". Both are defensible; the current state — banned and load-bearing at once — is not.
+
+### DW-VOCAB-2026-09-14-14: "the station is the post, not the ___" forked, and two artifacts cite Charter §5 for the variant it does not contain
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: Charter §5 says *"the station is the post, not the **person**"* (`pyforge-charter.md:451`) — station ≠ Smith, the being can be swapped. A second, different ruling also lives in §5 at `:474-485` (*"Owning is becoming — at the planning tier … It does not rename the package"*) — planning home ≠ package identity. Those two rulings have collapsed into one memorable formula with a swappable last word: `docs/dreams/README.md:110` and `docs/dreams/intelligence-hub.md:841` say *"post, not the **product**"*, and `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md:1519` plus `spec-pyforge-unifying-strategy/.memlog.md:6` **cite "Charter §5" for a sentence §5 does not contain**.
+  evidence: Measured 2026-09-14. Both underlying rulings are correct and both are in §5, which is why this went unnoticed — it is a citation-integrity defect, not a semantic one. The public deck (`presentations/agentic-sdlc/…:740`) and the Charter agree on "person"; the Dream README and four in-flight memlogs drifted to "product". Related: station / post / office are three nouns for one job inside the very document whose Spec says *"every job has exactly one noun … never a synonym smuggled into prose"* (`docs/governance/spec-pyforge-charter/SPEC.md:77-79`).
+  location: docs/dreams/pyforge-charter.md:451 and :474-485, docs/dreams/README.md:110, docs/dreams/intelligence-hub.md:841
+  severity: low
+  status: open
+  raised: 2026-09-14 — Owner: steward. Fix is to give the second ruling its own formula rather than overloading the first, and correct the two miscitations. Memlogs are append-only, so the memlog one is corrected by a later entry, never an edit.
+
+### DW-VOCAB-2026-09-14-15: chain-currency reports 9 findings across 8 stations — deferred to a dedicated reconciler pass
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `chain_currency_sweep_check` reports 9 currency-checkpoint failures spanning all eight stations — 8 × `chain-audit-checkpoint-staleness` plus 1 × `chain-audit-checkpoint-coherence` (warden). Clearing them requires the full reconciler sweep documented in `CHAIN-CURRENCY-RUNBOOK.md`, which is a per-station pass over each chain's artifacts, not a mechanical fix.
+  evidence: Observed live 2026-09-14 in a full `pixi run -e local-recipes detectors` run, alongside the other reds cleared that day (governance-currency, deferred-work, chain-completeness, ad-citation, loop-stall, spec-surface). Deliberately NOT attempted in the same session: the chain-currency cost is stages, not diff size — a prior one-line edit cascaded into 9 reconciles and 6 retros — so folding it into a session already carrying a Frame-spec adoption, a detector arm and a 15-spec surface reconcile would have produced a poor pass at both.
+  location: scripts/chain_currency_sweep_check.py, _bmad-output/projects/pyforge-marshal/CHAIN-CURRENCY-RUNBOOK.md
+  severity: medium
+  status: open
+  raised: 2026-09-14 — Owner: each station, sequenced by the runbook. Operator direction the same day: defer to a dedicated next session. This entry exists so the deferral is tracked rather than forgotten — it is the only red left open from that session's sweep.

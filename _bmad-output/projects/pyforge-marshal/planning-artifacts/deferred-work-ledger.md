@@ -6236,3 +6236,14 @@ status: open
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-VOCAB-2026-09-14-6: `epic-29` is a ledger row with no `## Epic 29` heading — and marshal's own frontmatter already admits it
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/SPEC.md`
+  summary: `sprint-status-ledger.yaml` carries `epic-29: done` and `epic-29-retrospective: optional`, and `epics.md` carries `### Story 29.1` and `### Story 29.2` with matching ledger keys — but **no `## Epic 29:` heading**. The headings run 27, 28, 30. The two stories therefore render structurally under Epic 28, and `fleet-picture` (which counts epics from ledger keys) reports 36 epics for marshal against 35 declared headings.
+  evidence: Measured 2026-09-14 by parsing both files. Marshal's own `epics.md` frontmatter already records the symptom without naming the cause — `storyCount` comment: *"2026-09-05: 183 (181 + **Epic 29's two, never counted**)"*. Invisible to `chain-completeness` INV-B by construction, which discards every `epic-*` key before comparing — see doctor's DW-CHAIN-COMPLETENESS-7.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  severity: low
+  status: closed
+  raised: 2026-09-14 — Owner: marshal. Data fix (write the missing heading over the existing two stories); tracked separately from the detector gap so neither blocks the other.
+  closed: 2026-09-14 — Fixed as diagnosed: Epic 29 was genuinely absent at **every** heading level, unlike steward's `epic-18` twin (DW-VOCAB-2026-09-14-5), which turned out to be an H3 that only looked absent. Inserted `## Epic 29: A harness halt of \`done\` ends the session, not the review` above the existing `**Goal:** FR-193 CAP-11` block that already anchored stories 29.1–29.2, so the two stories now render under their own epic instead of Epic 28. The retroactive warrant is marshal's own frontmatter admission quoted in the evidence above — *"183 (181 + Epic 29's two, never counted)"* — which had recorded the symptom since 2026-09-05 without any detector able to read it. Now caught by construction: doctor's DW-CHAIN-COMPLETENESS-7 landed the INV-B epic arm the same day, comparing `^##\s+Epic\s+(\d+)` headings against `epic-N` keys in both directions, with `epic-N-retrospective` deliberately not counted as a second epic.

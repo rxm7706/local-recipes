@@ -1,17 +1,22 @@
 ---
 spec: intelligence-hub
-status: ready   # 2026-09-09 (operator, fleet-readiness decision batch § 2.3 C4 — the nine-answer
-                # bundle approved as one). Was `draft` from 2026-09-05, when the Spec was seeded so
-                # the Dream's chain link was durable (dream-chain INV-1); RB-1/RB-2 closed
-                # 2026-09-06. All six declared open questions plus the three the Dream gained on
-                # 2026-09-09 are now answered and the shapes are chosen — see § Decisions.
-                # OWED TO DOCTOR in the same change (cross-station): de-register this Spec from
-                # `pyforge/doctor/sources/board.py` DEFERRED_SPECS. Its entry rationale is also
-                # factually wrong — it says NIC is absent, and `recipes/nebari-infrastructure-core`
-                # landed 2026-09-07.
-                # This flip is the precondition `spec-pyforge-unifying-strategy`'s own
-                # `realization-gate-home` question names: Epic 49 re-homes to `hub:CAP-*` once this
-                # Spec reaches `ready`.
+status: shipped   # 2026-09-14 -- steward Epic 53 (hub:CAP-1..4) is 5/5 stories done (53.1..53.5);
+                  # CAP-5 stays mason lane, not this epic's completion criterion. Doctor's
+                  # DEFERRED_SPECS entry already removed. Was `ready` since 2026-09-09 (operator,
+                  # fleet-readiness decision batch § 2.3 C4 — the nine-answer bundle approved as
+                  # one); that flip's own history is preserved below.
+                  # 2026-09-09 (operator, fleet-readiness decision batch § 2.3 C4 — the nine-answer
+                  # bundle approved as one). Was `draft` from 2026-09-05, when the Spec was seeded so
+                  # the Dream's chain link was durable (dream-chain INV-1); RB-1/RB-2 closed
+                  # 2026-09-06. All six declared open questions plus the three the Dream gained on
+                  # 2026-09-09 are now answered and the shapes are chosen — see § Decisions.
+                  # OWED TO DOCTOR in the same change (cross-station): de-register this Spec from
+                  # `pyforge/doctor/sources/board.py` DEFERRED_SPECS. Its entry rationale is also
+                  # factually wrong — it says NIC is absent, and `recipes/nebari-infrastructure-core`
+                  # landed 2026-09-07.
+                  # This flip is the precondition `spec-pyforge-unifying-strategy`'s own
+                  # `realization-gate-home` question names: Epic 49 re-homes to `hub:CAP-*` once this
+                  # Spec reaches `ready`.
 updated: "2026-09-13"
 owner-dream: docs/dreams/intelligence-hub.md
 surface: []

@@ -1,10 +1,22 @@
-"""In-repo Frame preflight (Story 53.2 / 53.5 / spec-intelligence-hub CAP-2).
+"""In-repo Frame preflight (Story 53.2 / 53.5 / 53.6, spec-intelligence-hub CAP-2).
 
-Checks the nine tracked Frames under ``docs/foundry/frames/``: required fields
-``type``, ``name``, ``description``, ``visibility``, plus named ``owner``.
-``type`` must start with the word ``frame`` (v0.3 draft; ``frame [0.2]``
-and ``frame [0.3]`` both pass). Station Frames must ``inherits`` the
-Company Frame. Git is the store.
+Checks the nine tracked Frames under ``docs/foundry/frames/``. Git is the store.
+
+**Identity is ``identifier``, not ``name`` (Story 53.6).** v0.3 §4.2.1 makes
+``identifier`` the one mandatory identity element and says it SHOULD be a URI or
+a ``qualified-ref`` (``publisher "/" frame-name``, §5.3); ``name`` aliases
+``title``, which the element profile marks *MUST NOT be slug-constrained* — a
+human label, not a key. Keying this preflight off ``name`` therefore keyed it
+off the wrong element, and off one the estate's own branding law wants to read
+``PyForge Steward`` rather than a slug. Frames are now ``pyforge/company`` and
+``pyforge/<station>``.
+
+``type`` must start with the word ``frame`` (v0.3 §6.2.1; ``frame [0.2]`` and
+``frame [0.3]`` both pass). Station Frames must ``inherits`` the Company Frame.
+``name``/``inherits`` are the spellings v0.3 *requires* of a Markdown writer
+(§6.2.1 aliases: ``name`` denotes ``title``, ``inherits`` denotes
+``composition``) — do not "modernize" them to the model-layer names, which
+belong to the YAML/JSON encodings only.
 
 Does **not** invoke upstream ``tools/validate_frames.py`` until
 openteams-ai/frame-spec#28 / #29 merge. Not a detector and not a second
@@ -23,7 +35,8 @@ from typing import Any
 import yaml
 
 FRAMES_RELATIVE = Path("docs/foundry/frames")
-COMPANY_NAME = "pyforge"
+COMPANY_IDENTIFIER = "pyforge/company"
+PUBLISHER = "pyforge"
 STATION_TOKENS: tuple[str, ...] = (
     "herald",
     "marshal",
@@ -37,11 +50,16 @@ STATION_TOKENS: tuple[str, ...] = (
 EXPECTED_COUNT = 1 + len(STATION_TOKENS)
 REQUIRED_FIELDS: tuple[str, ...] = (
     "type",
+    "identifier",
     "name",
     "description",
     "visibility",
-    "owner",
+    "maintainer",
 )
+#: v0.3 §6.2.1 — "A writer MUST emit a sequence" for a repeatable element.
+#: A scalar is legal to *read* and stays accepted on the way in; emitting one
+#: is what the spec forbids, and these files are ours to write.
+SEQUENCE_FIELDS: tuple[str, ...] = ("maintainer", "inherits")
 FRONTMATTER_SPLIT = "---"
 
 
@@ -180,29 +198,45 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
                     ),
                 )
             )
+        for key in SEQUENCE_FIELDS:
+            raw = fields.get(key)
+            if raw is not None and isinstance(raw, str):
+                report.findings.append(
+                    FrameFinding(
+                        path=path,
+                        code="scalar-repeatable",
+                        message=(
+                            f"{key!r} is repeatable — v0.3 §6.2.1 requires a writer "
+                            f"to emit a sequence, got the scalar {raw!r}"
+                        ),
+                    )
+                )
 
-    by_name: dict[str, FrameDoc] = {}
+    by_identifier: dict[str, FrameDoc] = {}
     for doc in report.frames:
-        name = doc.fields.get("name")
-        if isinstance(name, str) and name.strip():
-            by_name.setdefault(name, doc)
+        ident = doc.fields.get("identifier")
+        if isinstance(ident, str) and ident.strip():
+            by_identifier.setdefault(ident.strip(), doc)
 
-    company = by_name.get(COMPANY_NAME)
+    company = by_identifier.get(COMPANY_IDENTIFIER)
     if company is None:
         report.findings.append(
             FrameFinding(
                 path=root,
                 code="company",
-                message=f"company Frame with name {COMPANY_NAME!r} is required",
+                message=(
+                    f"company Frame with identifier {COMPANY_IDENTIFIER!r} is required"
+                ),
             )
         )
         return report
 
-    expected_station_names = {f"pyforge-{token}" for token in STATION_TOKENS}
+    expected_station_ids = {f"{PUBLISHER}/{token}" for token in STATION_TOKENS}
     seen_stations: set[str] = set()
     for doc in report.frames:
-        name = doc.fields.get("name")
-        if name == COMPANY_NAME:
+        ident = doc.fields.get("identifier")
+        ident = ident.strip() if isinstance(ident, str) else ident
+        if ident == COMPANY_IDENTIFIER:
             if _as_inherits_list(doc.fields.get("inherits")):
                 report.findings.append(
                     FrameFinding(
@@ -212,40 +246,44 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
                     )
                 )
             continue
-        if name not in expected_station_names:
+        if ident not in expected_station_ids:
             report.findings.append(
                 FrameFinding(
                     path=doc.path,
-                    code="unexpected-name",
-                    message=f"unexpected Frame name {name!r}",
+                    code="unexpected-identifier",
+                    message=f"unexpected Frame identifier {ident!r}",
                 )
             )
             continue
-        seen_stations.add(str(name))
+        seen_stations.add(str(ident))
         refs = _as_inherits_list(doc.fields.get("inherits"))
         if not refs:
             report.findings.append(
                 FrameFinding(
                     path=doc.path,
                     code="inherits",
-                    message=f"station Frame must inherit {COMPANY_NAME!r}",
+                    message=f"station Frame must inherit {COMPANY_IDENTIFIER!r}",
                 )
             )
             continue
-        resolved = [_resolve_inherit(ref, doc.path, by_name) for ref in refs]
-        if not any(parent is not None and parent.fields.get("name") == COMPANY_NAME for parent in resolved):
+        resolved = [_resolve_inherit(ref, doc.path, by_identifier) for ref in refs]
+        if not any(
+            parent is not None
+            and str(parent.fields.get("identifier", "")).strip() == COMPANY_IDENTIFIER
+            for parent in resolved
+        ):
             report.findings.append(
                 FrameFinding(
                     path=doc.path,
                     code="inherits",
                     message=(
                         f"station Frame inherits {refs!r} but none resolve to "
-                        f"the company Frame {COMPANY_NAME!r}"
+                        f"the company Frame {COMPANY_IDENTIFIER!r}"
                     ),
                 )
             )
 
-    missing = expected_station_names - seen_stations
+    missing = expected_station_ids - seen_stations
     if missing:
         report.findings.append(
             FrameFinding(
@@ -261,7 +299,7 @@ def format_report(report: FramePreflightReport) -> str:
     if report.ok:
         return (
             f"frame-preflight: ok — {len(report.frames)} Frames "
-            f"(company {COMPANY_NAME} + {len(STATION_TOKENS)} stations)"
+            f"(company {COMPANY_IDENTIFIER} + {len(STATION_TOKENS)} stations)"
         )
     lines = [f"frame-preflight: {len(report.findings)} finding(s)"]
     for finding in report.findings:
