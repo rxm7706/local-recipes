@@ -1,7 +1,17 @@
 ---
 status: shipped
-spec_updated: 2026-09-03
+spec_updated: 2026-09-14
+superseded_by: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
 ---
+
+> **Superseded 2026-09-14 (operator ruling).** This legacy Tier-1 intake spec is the
+> historical record of the submission era. The authoritative contract is the BMAD Spec named
+> in `superseded_by:` above. Note that the question which prompted this stamp assumed the file
+> still read `status: in-progress`; it did not — it was corrected to `shipped` on 2026-09-03,
+> so only the `superseded_by:` pointer was actually missing. The Goals prose below is kept
+> **as written** rather than trimmed: § *Release buckets* already records the D12 (2026-07-16)
+> move of the former v1.1 content into v1, so the text is dated rather than wrong, and
+> historical prose keeps its original wording.
 # Tech Spec: `pyforge.warden` (**Warden**) — Python dependency **compliance gate** (multi-axis)
 
 > **Naming (recorded here as source of truth).** **Warden** = the product /
@@ -194,7 +204,7 @@ retro + CHANGELOG entry (see § Definition of Done).
 | Status | **In progress — story-0.1 replan EXECUTED 2026-07-15; v1 RE-BASELINED 2026-07-16 (D12).** This spec is the sole source of truth; the PRD (FR1–**FR40** + NFR-S9), architecture (§ Multi-axis reconciliation), and epics (**6 epics / 31 stories** — Epic 6 = multi-axis expansion 6.1–6.10; story 2.6 split from 2.1) were rebuilt from this spec's v1 / v1.x / vision tiering and are authoritative **downstream** of it; **D12 pulled the axis gates (flag-activated), EPSS, baseline & grandfathering, and the fix-PR actuator into v1**; readiness re-run 2026-07-16 → READY-WITH-CONDITIONS (re-run `bmad-sprint-planning` before loop execution). Decisions resolved through **D12** (§ Reconciliation + § Decisions) |
 | Scope | **Python only** — PyPI + conda-forge, 6 Python/conda manifest formats; non-Python ecosystems out of scope (see § Scope & naming in the intake note) |
 | Owner | rxm7706 |
-| Track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/pyforge-warden/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
+| Planning track | **Full BMAD** (PRD → architecture → epics/stories → **loop-driven dev**) — planning artifacts under `_bmad-output/projects/pyforge-warden/`. Implementation runs via **bmad-loop v0.8.1 + bmad-dev-auto** (BMAD 6.10) per `docs/specs/bmad-loop-adoption.md` — graduated gates (per-story-spec-approval for 1.1/1.2 → per-epic from Epic 2), deterministic verify gate = the scanner's own test suite |
 | Proposed project slug | `pyforge-warden` (BMAD artifacts → `_bmad-output/projects/pyforge-warden/`) |
 | Python package | module `pyforge.warden`; dist name `pyforge-warden` |
 | Source root | **In-repo pixi *build* workspace member** at `src/shared/packages/pyforge-warden/` (Option B; unity-data-stack `src/shared/packages` convention) — see § Repository layout |

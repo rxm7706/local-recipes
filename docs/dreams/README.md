@@ -90,10 +90,17 @@ contract; the Dream is the "why" behind it.
   **Status is NOT a proxy for work remaining, in either direction — the ledger
   is.** Two live cases make the point. `bmad-module-provisioning` and
   `unified-container` both read `dreamt` while their epics were 3/3 and 5/5 done
-  and merged. And the largest single block of unbuilt work in the fleet —
-  marshal's E7–E12, **36 backlog stories** — sits under `genesis-installer`,
-  which reads `archived` because it was correctly consolidated into
-  `pyforge-marshal` (`realized`, and it does run). Neither status is wrong under
+  and merged. And the reverse direction is now even
+  better evidenced than when this example was written: marshal's E7–E12 sat here
+  as **36 backlog stories** under `genesis-installer`, which reads `archived`
+  because it was correctly consolidated into `pyforge-marshal` (`realized`, and
+  it does run) — and as of 2026-09-14 that block is **37 of 37 done**, with
+  `genesis-installer` still reading `archived` throughout. The status never moved
+  in either direction while the work went from all-unbuilt to all-shipped
+  underneath it. *(Figures re-measured 2026-09-14. Today's largest unbuilt blocks
+  are steward's Epic 44 — 8 blocked + 3 backlog — and herald's Epic 21, 10
+  backlog; both sit under Dreams reading `specified`, which is correct and still
+  tells you nothing about how much is left.)* Neither status is wrong under
   the definitions above; both are useless for "what is left". For that, read
   `sprint-status-ledger.yaml` or run `pixi run -e local-recipes fleet-picture`.
 
@@ -107,9 +114,15 @@ contract; the Dream is the "why" behind it.
 - **`owner:`** names the **station** accountable for carrying the Dream all the
   way to code — the through-line, propagated by the console onto every
   downstream row (Fleet, Backlog, In Build, Realized, Pitch, Archived). Owning
-  is **not** becoming: the station is the post, not the product, so Atlas owning
+  **is** becoming — at the planning tier — but **the planning home is not the
+  package name**, so Atlas owning
   [`unity-data-stack.md`](unity-data-stack.md) does not mean it ships as
-  `pyforge-atlas`. `guild` is reserved for the one Dream that *precedes* the
+  `pyforge-atlas`. *(Corrected 2026-09-14 on two counts: "owning is **not**
+  becoming" was superseded by the Charter's 2026-07-28 §5 amendment, and the
+  clause borrowed §5's other formula — "the station is the post, not the
+  **person**", which is about a Smith being swappable, not about package
+  identity. Two rulings had collapsed into one sentence with a swapped last
+  word; they now read separately.)* `guild` is reserved for the one Dream that *precedes* the
   stations ([`pyforge-charter.md`](pyforge-charter.md)); `bmad-drift-check` emits
   `dream-unowned` for anything else claiming it. *(Closed at one on 2026-08-08,
   when `pyforge-genesis` was absorbed into the Charter — Dream § Satellite: The

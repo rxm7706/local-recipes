@@ -44,7 +44,7 @@ spec_updated: 2026-07-05
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake. 5 open questions (Q1–Q5); Q1 (source robustness) gates Wave A, the rest non-blocking. |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only; no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only; no PRD/architecture phase) |
 | Codename | **trendshift** |
 | Upstream | The top GitHub-trending Python repositories (a *moving target*, re-sampled each batch). First batch = 2026-06-20 snapshot. |
 | Target | (a) cf_atlas **Phase T** discovery engine + `trending-candidates` CLI/MCP tool (this repo); (b) `conda-forge/staged-recipes` new feedstocks for each Tier-1/Tier-2 candidate. |
@@ -1013,7 +1013,7 @@ PR links.
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake; 3 open questions (Q1–Q3) noted, none v1-blocking. |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Upstream | Multiple `github.com/microsoft/*` repos (per-story); all MIT or Apache-2.0. |
 | Target | `conda-forge/staged-recipes` (new feedstocks). Each story = one independently-submittable recipe; PRs land staggered. |
 | Distribution | conda-forge (noarch:python for pure-Python; per-platform for Rust CLI + C++ libs). |

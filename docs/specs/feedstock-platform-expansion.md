@@ -70,7 +70,7 @@ spec_updated: 2026-06-20
 |---|---|
 | Status | **Template** — fill Parameters, resolve Open Questions, then BMAD intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (single-feedstock recipe update, no schema change in this repo) |
+| Planning track | BMAD Quick Flow (single-feedstock recipe update, no schema change in this repo) |
 | Surface area | `recipes/<feedstock>/` (local mirror); `<fork_owner>/<feedstock>-feedstock` fork → PR to `conda-forge/<feedstock>-feedstock`; **no** code changes to `.claude/skills/conda-forge-expert/` (skill-internal work limited to closeout retro per Rule 2) |
 | Scope | (1) Sync local `recipes/<feedstock>/` to upstream feedstock at `<upstream_version>`. (2) Re-verify the recipe via the conda-forge-expert skill (regenerate fresh, diff against current, apply only approved corrections). (3) Native-platform lint/optimize/build/test on `<local_test_subdir>`. (4) Refresh `conda-forge.yml` with the minimal additive deltas for `<target_platforms>`. (5) `conda smithy rerender` to regenerate `.ci_support/` + `.azure-pipelines/`. (6) Local cross-platform build verification where toolchain permits (diagnostic only). (7) Open **DRAFT** PR against `conda-forge/<feedstock>-feedstock` from `<fork_owner>:<branch_name>`. |
 | Out of scope | Version bump beyond `<upstream_version>`. Adding any platform not in `<target_platforms>` (deferred). Modifying already-shipping builds. Touching any other recipe in `recipes/`. Auto-merging the PR. Schema or table changes in `cf_atlas.db`. Skill-code changes outside the closeout retro. |

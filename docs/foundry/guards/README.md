@@ -16,6 +16,14 @@ Warden stays the sole PR verdict. Doctor stays advisory. These verbs are
 | source_grounding | yes (first addition) | scribe recall AD-8; `steward guards source-ground` on dev/review text |
 | outcome | **no** | blocked on `docs/dreams/build-league-scorecard.md` |
 
+**The table above is sorted alphabetically, not by rank.** Recorded 2026-09-14 because it had
+been read as a ranking: the whitepaper's own §5.5 order is **1 Algorithmic · 2 Source-Grounding ·
+3 Consensus · 4 Expert · 5 Policy & Safety · 6 Regression & Drift · 7 Outcome**, so
+`source_grounding` is upstream's **second** category, not its sixth. That matters to one claim in
+particular — landing Source-Grounding as the library's *first addition* (Story 53.4) was not a
+local departure from upstream's priorities, it was following them. `outcome`, the one still
+missing, is genuinely upstream's last.
+
 ```bash
 pixi run -e pyforge-steward steward guards catalog
 pixi run -e pyforge-steward steward guards lacking

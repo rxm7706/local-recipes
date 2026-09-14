@@ -144,7 +144,7 @@ Two coverage paths, by where the dependencies are sourced:
 - **PyPI path:** correct **delegation** — deptry consumes `pyproject.toml`/`requirements.txt`, osv-scanner consumes the native lockfile (`poetry.lock`/`uv.lock`/`pdm.lock`/`Pipfile.lock`/`pylock.toml`/`requirements.txt`); no bespoke parsing; results unified.
 - **Conda/pixi path (E1 bridge):** corpus-conformance — **0 uncaught exceptions** across all `recipes/*/{recipe.yaml,meta.yaml}` (~1,950 real files as of 2026-07-11; globbed at runtime) + sampled `environment.yml`/`pixi.toml`; unparseable rate **< 2%**, surfaced per-manifest.
 - **Honest contract + severity gate:** schema-validated; `status ∈ {error, policy-violation, indeterminate, warn, bypassed, clean, not-applicable}` (the frozen 7-rung lattice; canonical token `warn`); **severity-tiered exit 0/1/2** (default block on **critical CVE or CISA-KEV-listed** — FR18/FR36; `--min-epss` v1 per D12); typed `error_kind` (unparsable-manifest → developer, engine-unavailable → platform, internal-error → CLI maintainers); the gate decides on report **content + severity**, never a subprocess returncode.
-- **Auditable bypass:** `--bypass` emits a committed, **expiring** waiver (default 14d; config + per-repo override); exits 0 with `status: bypassed` + `review_required: true`; the tool never writes the repo (NFR3). An **expired** waiver re-blocks.
+- **Auditable bypass:** `--bypass` emits a committed, **expiring** waiver (default 14d; config + per-repo override); exits 0 with `status: bypassed` — the frozen lattice's dedicated rung for exactly this, sitting between `warn` and `clean` — plus the stanza's `authorized_by`/`reason`/timestamps as the audit trail *(amended 2026-09-14; was `+ review_required: true`, a field that was never built and which `spec-3-3` explicitly says not to build)*; the tool never writes the repo (NFR3). An **expired** waiver re-blocks.
 - **SBOM:** a **CycloneDX BOM** is emitted and validates against the committed CycloneDX schema; components carry correct purls (`pkg:pypi/…` vs `pkg:conda/…?channel=`); a **partial** BOM when coverage < 100%.
 - **Determinism + no mutation (NFR-R3):** **decision-deterministic** by default (same inputs + DB snapshot → same exit code + findings set); **byte-identical** output in `--deterministic` mode; no host/source mutation; cleanup on success + failure.
 - **Lightweight (NFR-P):** stdlib-lean bridge (NFR-S1: no execution of untrusted input); cheap concurrent 20k-repo runs (per-invocation cost independent of fleet size). Conda + wheel + sdist build green.
@@ -241,7 +241,7 @@ Every one of these is **exit 2, explicitly not clean** — the absence of an exp
 
 **Climax — the other side.** Two weeks later Alex (P4) sees the waiver surface via `review_required`; meanwhile Priya's next CI run finds it **expired** → the finding **re-blocks** (exit 1). The bypass was a time-boxed loan, not a permanent mute. *(Waiver-at-scale / expiry-storm renewal is deferred post-v1.)*
 
-*Reveals:* FR9 waivers-as-code (expiring, `authorized_by`); `review_required` routing; expiry re-block; **waiver-as-untrusted-input trust boundary**; NFR3. *Implies FR-NEW-D (waiver integrity + authorizer identity, extending FR9 beyond expiry).*
+*Reveals:* FR9 waivers-as-code (expiring, `authorized_by`); `status=bypassed` routing; expiry re-block; **waiver-as-untrusted-input trust boundary**; NFR3. *Implies FR-NEW-D (waiver integrity + authorizer identity, extending FR9 beyond expiry).*
 
 ### Journey 5 — M1, the machine consumer: the data contract + false-green guards
 
@@ -313,7 +313,7 @@ The journeys resolve into these capability clusters, mapped to epics + the requi
 - **Manifest resolution front-door (E1)** — 6 formats, two-pass eval, stdlib-lean (NFR-S1 no-execution), split coverage, name-only+marked degrade, supported-construct matrix *(J1, J8)*
 - **Dual extraction + delegation (E2/E3)** — PyPI native delegation; conda/pixi bridge to deptry + osv *(J1, J2)*
 - **Honest report + severity gate (E4)** — schema'd `ComplianceReport`, split coverage, verdict-composition, typed error taxonomy + ownership routing, CycloneDX SBOM *(J2, J3, J5, J9)*
-- **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `review_required`, expiry re-block, untrusted-input trust boundary *(J4)*
+- **Auditable expiring bypass (FR9)** — waivers-as-code, `authorized_by`, `status=bypassed` as the routable signal, expiry re-block, untrusted-input trust boundary *(J4)*
 - **Adoption + fleet + machine contract** — warn-only on-ramp, deterministic exit matrix, `--allow-empty`, `schema_version` forward-compat, corpus regression gate, atlas seam, workstation on-ramp (install story, cold-start UX) *(J3, J6, J8, J10, M1)*
 
 **Requirements these journeys surface for Step 9 (Functional Requirements):**
@@ -778,7 +778,26 @@ changes in this pass.
 sat at 2026-09-07 — five days, past the runbook's 2-day grace window. The station also
 carries an unresolved **coherence** finding; see the last section below.*
 
-### One real gap, verified independently
+### One real gap, verified independently — RESOLVED 2026-09-14
+
+> **Operator ruled: amend FR9 to name `Status.BYPASSED`; do not build the field.** The
+> capability shipped — only the literal field name did not. Two story specs had already said so
+> and neither was consulted when FR9 was written: `spec-3-2`'s Design Notes state
+> *"`review_required` has no new schema field. `Status.BYPASSED` already exists as a distinct
+> rung (Story 1.1) sitting between `warn` and `clean` **specifically for this purpose**"*, and
+> `spec-3-3` lists under **Never**: *"Do not implement the `review_required: true` machine field
+> mentioned in planning docs."* Building it would have widened a report schema this Spec closes
+> at `1.1.0` **and** contradicted an explicit do-not-implement instruction. FR9, the bypass
+> feature description, the capability list and the journey's Reveals line are amended to name
+> `status=bypassed`; `report-schema.json` is untouched. The `defer_post_v1` entry — *"org-wide
+> bypass-review routing/queue"* — is unaffected and stays deferred: that is the org-layer
+> routing, which was always a different thing from the per-run signal.
+>
+> The finding below is kept verbatim as the record of what was wrong and how it was found. Note
+> what it got right and what it missed: the grep was correct and the gap was real, but it framed
+> the choice as "widen the schema or amend FR9" without surfacing that two shipped story specs
+> had already decided it. A third option — *it was decided, in a place the PRD never cited* — is
+> the one that turned out to be true.
 
 `review_required` is named three times in this document — **FR9** ("status: bypassed +
 review_required routed to the security queue"), the **bypass** feature description

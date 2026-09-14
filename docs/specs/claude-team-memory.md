@@ -22,7 +22,7 @@ spec_updated: 2026-06-20
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Scope | Layers 1 + 2 of the team-memory analysis (checked-in `.claude/memory/` + `team-memory` skill). Layers 3 (Stop hook automation) and 4 (plugin packaging) are explicitly deferred. |
 | Target users | Every developer working in this repo. v1 is single-author (rxm7706); design tolerates future multi-author without rework. |
 | Distribution | Lives entirely inside this repo. No PyPI / conda / pip / npm / plugin marketplace package. |

@@ -86,7 +86,7 @@ this Spec eventually decides.
     Retrospective, the five agents) and has no cross-walk, though the Hub got one.
   - **success:** every BMAD term we use maps to a Lexicon noun or is named as having none, and
     the places we diverge from upstream literals are recorded in the open.
-- **CAP-4 — the unnamed collisions get rulings.** *(Half delivered 2026-09-14.)*
+- **CAP-4 — the unnamed collisions get rulings.** *(Delivered 2026-09-14; one Design-side follow-through carried in DW-VOCAB-2026-09-14-3.)*
   - **intent:** `Track` (Hub evidence record vs BMAD planning lane) and `Guard`/`Gate` (Hub
     check/decide vs our `gate_mode` and detectors vs BMAD's PASS/CONCERNS/FAIL) are named and
     ruled on, as the Charter did for Cogs/Smith.
@@ -98,10 +98,16 @@ this Spec eventually decides.
     surfaces that had declared themselves in violation were not: the Execution Doctrine already
     placed CI verify gates in the harness. No code changed. Closes
     `DW-VOCAB-2026-09-14-10`.
-  - **`Track`: STILL UNRULED.** Hub's durable evidence record (`hub:CAP-3`, Story 53.3's
-    `track.json`) vs the deck's BMAD planning lane (Quick Flow / BMad Method / Enterprise),
-    the latter live in 24 legacy `docs/specs/*.md` intake headers and in the public deck. This
-    capability is not met until it is ruled the same way.
+  - **`Track`: RULED 2026-09-14**, and more strictly than `Gate`. Both senses are written out in
+    full — **evidence Track** (the Hub's durable run record) and **planning track** (a BMAD lane)
+    — rather than the collision merely being named. The asymmetry is deliberate: the planning-lane
+    sense is public-facing while the evidence sense is what our code emits, so a reader meeting
+    either in isolation has no context to disambiguate from, whereas `Gate`'s three senses all sit
+    inside the estate. Landed as a Charter amendment with a Realization-log entry. Applied to the
+    20 legacy `docs/specs/` header rows; the deck half is **not** applicable in-repo — its
+    fragments are generated and its prototype is a Claude Design pull — so it is folded into
+    `DW-VOCAB-2026-09-14-3`, which already owns a Design-side pass.
+  - **CAP-4 is therefore met on both halves**, subject to that one Design-side follow-through.
   - **Out of scope for this CAP, recorded so it is not mistaken for part of it:** marshal's own
     six-rung verdict lattice and its `GATE_FAILED` rung are a question of *fact* — does that
     value ever escape the loop to a PR? — not of vocabulary. Tracked separately; the Gate ruling

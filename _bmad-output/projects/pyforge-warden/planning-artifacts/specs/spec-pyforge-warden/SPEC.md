@@ -24,19 +24,7 @@ sources:
   - ../../prds/prd-pyforge-warden-2026-07-14/prd.md
   - ../../architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
   - ../../epics.md
-open_questions:
-  - "The legacy spec's v1 Definition of Done still carries unchecked release-level items
-     even though all 31 stories merged (the CFE Rule-2 closeout retro; the internal
-     JFrog PyPI+conda publish behind the engine version-range gate). Is v1 'released'
-     or 'story-complete'?"
-  - "The legacy Tier-1 spec docs/specs/pyforge-warden.md still reads status: in-progress
-     and its Goals block still describes the pre-D12 tiering (license/currency gates as
-     v1.x). Does it get re-stamped shipped and marked superseded by this Spec, or frozen
-     as-is as a historical record?"
-  - "Two axes of the Charter's six-axis Warden identity (provenance, maintenance) are
-     unbuilt and sit in the vision bucket with no owner or trigger. What promotes them
-     out of vision -- and until then, does the product describe itself as four-axis or
-     six-axis?"
+open_questions: []   # all three answered 2026-09-14 by operator ruling — see § Open Questions.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -186,6 +174,28 @@ codes and produced files alone.
 
 ## Open Questions
 
-- **Is v1 released, or story-complete?** All 31 stories merged, but the legacy spec's v1 Definition of Done still carries unchecked release-level items: the CFE Rule-2 closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal JFrog publish behind the engine version-range gate.
-- **What becomes of the legacy Tier-1 spec?** `docs/specs/pyforge-warden.md` still reads `status: in-progress`, and its Goals block still describes the pre-D12 tiering in which the license and currency gates were v1.x. Does it get re-stamped and marked superseded by this Spec, or frozen as a historical record?
-- **What promotes provenance and maintenance out of vision?** Two of the Charter's six axes are unbuilt with no owner and no trigger — and until they have one, does the product describe itself as four-axis or six-axis?
+**All three answered by operator ruling 2026-09-14.** None remain. They had blocked
+`chain_currency_sweep_check`'s coherence checkpoint for warden, whose `overtaken` remedy is
+explicitly *"resolve with the operator"* — so they could not be closed by inference.
+
+- **Is v1 released, or story-complete?** → **Story-complete, not released.** All 31 stories are
+  merged; the release-level Definition-of-Done items are genuinely unticked — the CFE Rule-2
+  closeout retro (the engine mirror recipes lack CHANGELOG entries) and the internal JFrog
+  PyPI+conda publish behind the engine version-range gate. The build is finished; the release is
+  not. Recorded this way deliberately rather than ticking the residue: retroactively redefining
+  "done" to match what shipped is the exact move `docs/dreams/README.md:90-98` warns against, and
+  it would hide two real pieces of work.
+- **What becomes of the legacy Tier-1 spec?** → **Re-stamped shipped and marked superseded**,
+  matching what `claude-team-memory`, `copilot-bridge-vscode-extension` and
+  `bmad-copilot-adapter-upstream` already did in the same phasing-out tier. *The question's premise
+  was stale:* `docs/specs/pyforge-warden.md` was corrected to `status: shipped` on 2026-09-03, so
+  only the `superseded_by:` pointer was ever missing. Its Goals prose is kept as written — its own
+  § *Release buckets* already records D12's move of the former v1.1 content into v1, making the
+  text dated rather than wrong, and historical prose keeps its original wording.
+- **What promotes provenance and maintenance out of vision?** → **The product stays six-axis, with
+  the two annotated unbuilt.** The Charter's six-axis Warden identity is constitutional and is not
+  narrowed to match today's build; provenance and maintenance are described as unbuilt wherever the
+  six are enumerated, so the gap is visible rather than erased. *(The alternative — describing the
+  product as four-axis until they land — was declined: it would have made the docs and the Charter
+  disagree about what Warden is.)* What promotes them out of vision remains unset, and is a
+  scoping question for whoever picks them up, not a blocker on this Spec.

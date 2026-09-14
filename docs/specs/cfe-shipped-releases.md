@@ -59,7 +59,7 @@ spec_updated: 2026-07-02
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — atlas pipeline (Phase D / H / J / M), schema v20, one new CLI / MCP tool |
 | Scope | (1) Phase H denominator one-line fix; (2) Phase J + M archived-feedstock filter; (3) `pypi_universe` side-table extraction + Phase D refactor; (4) `pypi-only-candidates` CLI surfacing the new table |
 | Out of scope | Persona-aware default profiles for `build-cf-atlas`; `v_actionable_packages` SQL view; Phase H `pypi_last_serial` freshness-gate (separate spec); dropping `vuln_total` column |
@@ -772,7 +772,7 @@ explicit new tests:
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — schema v21, atlas pipeline (Phase D / G / H / + every selector), `build-cf-atlas` orchestrator + new `--profile` flag, MCP server (auto-detection helpers), planning artifacts (PRD + architecture-cf-atlas + epics) |
 | Scope | (A5) `v_actionable_packages` SQL view + structural enforcement meta-test; (A3) Phase H `pypi_last_serial` freshness gate (Layer 2 of the audit's serial-gate thread); (A6) drop `vuln_total` column from schema; (A4) persona-aware default profiles (`maintainer` / `admin` / `consumer`) for `build-cf-atlas` |
 | Version | conda-forge-expert v7.9.0 → **v8.0.0** (MAJOR — A4 changes default behavior of `build-cf-atlas`) |
@@ -1518,7 +1518,7 @@ explicit new tests:
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — schema v22 migration adding `pypi_intelligence` side table + `pypi_universe_serial_snapshots` snapshot table; 5 new atlas phases (O, P, Q, R, S); new `pypi-intelligence` CLI; new `pypi_intelligence` MCP tool; new `_http.py` resolver for BigQuery + cross-channel sources |
 | Scope | Tier 1 (serial-snapshot deltas + activity_band) + Tier 2 (BigQuery 30/90 d downloads + cross-channel `in_*` BOOLs) + Tier 3 (per-project JSON enrichment for top-N candidates) + Tier 4 (computed `conda_forge_readiness` + `packaging_shape` + `recommended_template`) + Tier 5 (staged-recipes / issue cross-reference). Architecture: `pypi_universe` stays reference-data-only; all enrichment lands in a new `pypi_intelligence` side table joined on `pypi_name`. |
 | Version | conda-forge-expert v8.0.x → **v8.1.0** (MINOR — additive features, no breaking change; new CLI / MCP tool / schema additions, no deprecations) |
@@ -2375,7 +2375,7 @@ For each wave, the BMAD agent runs the existing pytest suite plus explicit new t
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — schema v23 → v24 migration in Wave A provisioning `epss_scores` + `cwe_categories` (kept) + `package_hardening` (dropped in Wave D's v25 cleanup, Wave C cancelled); 2 new fetcher CLIs (`fetch-epss`, `fetch-cwe-catalog`); Phase G + G' overlay enhancements for EPSS-max + CWE rollup (withdrawn filter dropped pre-Wave-B; Phase T/U + `blint-channel-top-n` cancelled pre-Wave-C). Final shipped surface: 2 new tables + 2 new fetcher CLIs + Phase G/G' overlay wiring + Wave D persona-profile + Wave D schema v25 cleanup. |
 | Scope | Four signal expansions surfaced by the v8.5.3 DW12/DW13 retro: **(A)** blint hardening profiles for built artifacts (PIE/RELRO/stack-canary/NX); **(B)** EPSS scores (FIRST.org `epss_scores-current.csv.gz`) joined per CVE; **(C)** CWE category rollups (MITRE CWE catalog → high-level RCE/DoS/traversal/etc. labels) folded into Phase G/G' output; **(D)** withdrawn-advisory filter excluding OSV `withdrawn`-marked entries from vuln counts. Architecture mirrors the DW13 Path C pattern: external-catalog fetcher + side table + Phase G/G' overlay helper. |
 | Version | conda-forge-expert v8.5.x → **v8.6.0** (MINOR — additive features, no breaking change; new fetchers / phases / CLI / schema additions, no deprecations) |
@@ -3134,7 +3134,7 @@ This spec is **intake-ready** — open questions resolved, scope bounded, accept
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — new CLI script (`pr_artifacts.py`), new pixi task (`pr-artifacts`), new MCP tool (`download_pr_artifacts`), 1 guide section + 1 quickref entry + 1 reference entry |
 | Scope | Given a staged-recipes or feedstock PR (URL or number), resolve the Azure DevOps `buildId` via `gh pr checks`, list published artifacts via the Azure REST API, download all `conda_pkgs_*` ZIPs, optionally extract them into a valid local mamba channel layout. Read-only operation. Anonymous Azure auth. |
 | Version | conda-forge-expert v8.13.2 → **v8.14.0** (MINOR — net-new user-facing feature; no breaking changes to existing CLIs / MCP tools / build flow) |
@@ -3723,7 +3723,7 @@ new tests:
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — schema v25 → v26 migration adding `pypi_downloads_daily` side table; refactor of `phase_p_pypi_downloads` to incremental refresh + dry-run preflight + hard cost cap; new env-var tunables; spec/docstring/CHANGELOG corrections to the wrong "~30 GB scan" claim |
 | Scope | Replace the single-shot 90-day BigQuery aggregate query with an incremental partition-by-partition refresh that stores per-day per-package counts locally and recomputes `pypi_intelligence.downloads_30d/90d` from the local table. Adds dry-run preflight that aborts above operator-set USD cap. Adds `maximum_bytes_billed` hard cap on the live query. Preserves exact per-package counts for the full PyPI namespace (no top-N filter, no aggregator fallback). |
 | Version | conda-forge-expert v8.14.x → **v8.15.0** (MINOR — additive: new schema table, new tunables, new BQ source value; existing `downloads_30d/90d` consumer surface unchanged) |
@@ -4613,7 +4613,7 @@ defaults or surface them for explicit resolution at sprint planning.
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Surface area | `conda-forge-expert` skill — atlas pipeline (Phase F / Phase F+) + 3 new CLIs / MCP tools |
 | Scope | (1) S3 backfill backend for Phase F; (2) richer Phase F+ metrics from same sweep; (3) `platform_breakdown` / `pyver_breakdown` / `channel_split` CLIs and MCP tools |
 | Out of scope | Daily-granularity downloads, defaults-channel atlas, BigQuery integration |
@@ -5433,7 +5433,7 @@ run quick-dev — implement the intent in docs/specs/atlas-phase-f-s3-backend.md
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (no separate PRD / architecture phase — parent spec carries those) |
+| Planning track | BMAD Quick Flow (no separate PRD / architecture phase — parent spec carries those) |
 | Scope | (1) Schema migration v26 → v27; (2) rolling 30/90-day downloads + trend slope; (3) per-platform + per-Python download breakdowns. All computed in one extra parquet sweep — zero new network. |
 | Out of scope | Wave 3 CLIs (`platform_breakdown`, `pyver_breakdown`, `channel_split`); daily-granularity downloads; defaults-channel atlas |
 | Predecessor | `atlas-phase-f-s3-backend.md` Wave 1 (shipped v7.6.0 + v8.17.0) |
@@ -5890,7 +5890,7 @@ add a separate disable knob unless real demand surfaces.
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (parent spec carries PRD/architecture detail) |
+| Planning track | BMAD Quick Flow (parent spec carries PRD/architecture detail) |
 | Scope | (1) `platform_breakdown` CLI + MCP tool; (2) `pyver_breakdown` CLI + MCP tool incl. `--policy-check`; (3) `channel_split` CLI + MCP tool; (4) Wave 2 leftover — populate `package_channel_downloads` during the existing parquet sweep so `channel_split` has data to read. |
 | Out of scope | Wave 4 richer metrics; new aggregation tables beyond `package_channel_downloads`; recipe-format consumers (the CLIs are read-only) |
 | Predecessor | `atlas-phase-f-wave2-richer-metrics.md` (shipped v8.18.0) |
@@ -6314,7 +6314,7 @@ Wave 3 ships **no new env vars**. CLI flags are the only operator-tunable surfac
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (no PRD/architecture phase — single-phase operational fix) |
+| Planning track | BMAD Quick Flow (no PRD/architecture phase — single-phase operational fix) |
 | Scope | Replace Phase K's 8-worker burst with sustained-rate scheduler that respects GitHub's secondary rate limit. Preserve the current behavior as an opt-in via `PHASE_K_AGGRESSIVE=1` for tight-time-budget operators. |
 | Out of scope | Phase L (extra registries) — different rate-limit profiles, not in this ship; Phase N (live GitHub) — already runs at a slow per-batch cadence; Phase H (PyPI) — no rate-limit issues. |
 | Predecessor | v8.16.5 session retro carryover P2; auto-memory `project_phase_k_secondary_rate_limit.md` (2026-05-12 incident) |

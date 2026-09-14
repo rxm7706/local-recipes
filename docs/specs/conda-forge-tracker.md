@@ -22,7 +22,7 @@ shipped_ref: "conda-forge-tracker@cef3be5 (sibling repo ~/UserLocal/Projects/Git
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Target users | Solo conda-forge maintainer (initially rxm7706); pattern reusable for any individual maintainer |
 | Distribution | Local-only directory; no PyPI / conda / pip package |
 | Lifetime | Long-running — replaces ad-hoc personal tracking of conda-forge involvement |
