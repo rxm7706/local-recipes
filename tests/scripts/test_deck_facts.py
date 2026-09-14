@@ -775,3 +775,94 @@ def test_refresh_with_no_previous_ledger_rewrites_by_shape(root, capsys):
     assert poster.read_bytes() == (original.replace(">1/6<", ">4/6<").replace(">1 of 4<", ">2 of 4<")
                                    .replace(">v0.9.9<", ">v0.11.1<")).encode("utf-8")
     assert not list((root / "presentations/pyforge-alpha/project").glob("*.tmp"))  # temp file + os.replace
+
+
+# --- DW-FU-20-2: the collect-count regex against REAL pytest output ---------
+#
+# The suite above stubs `tests_collected` wholesale, so `_PYTEST_COLLECTED` and
+# the reversed-line scan had only ever run against synthetic strings. That is
+# the whole of DW-FU-20-2: the plumbing was proven, the parse was not, and a
+# pytest release changing its summary line would have gone unnoticed until a
+# deck silently lost its test-count row (`tests_collected` returns None on no
+# match, and the row is advisory).
+#
+# These run a REAL `pytest --collect-only -q` over a throwaway package, so they
+# pin the parse against whatever pytest is actually installed. They deliberately
+# do NOT shell out through `tests_command()`'s `pixi run -e pyforge-<station>`:
+# that needs a provisioned station env, which would make the test skip on most
+# machines -- exactly the "only the plumbing is verified" hole being closed.
+
+
+def _collect_output(tmp_path: Path, n: int, deselect: bool = False) -> str:
+    """Real `pytest --collect-only -q` stdout for `n` trivial tests."""
+    import subprocess
+
+    pkg = tmp_path / "realcollect"
+    pkg.mkdir()
+    body = "".join(
+        f"def test_n{i}():\n    assert True\n\n\ndef test_slow{i}():\n    assert True\n\n\n"
+        if deselect else f"def test_n{i}():\n    assert True\n\n\n"
+        for i in range(n)
+    )
+    if deselect:
+        (pkg / "conftest.py").write_text(
+            "import pytest\n\n\n"
+            "def pytest_collection_modifyitems(config, items):\n"
+            "    keep, drop = [], []\n"
+            "    for it in items:\n"
+            "        (drop if 'slow' in it.name else keep).append(it)\n"
+            "    if drop:\n"
+            "        config.hook.pytest_deselected(items=drop)\n"
+            "        items[:] = keep\n",
+            encoding="utf-8",
+        )
+    (pkg / "test_real.py").write_text(body, encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", str(pkg)],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    return proc.stdout
+
+
+def test_collected_regex_matches_real_pytest_summary(tmp_path):
+    """The plain `N tests collected` form, parsed from real pytest stdout."""
+    out = _collect_output(tmp_path, 3)
+    assert "collected" in out, out
+    hit = None
+    for line in reversed(out.splitlines()):          # the function's own scan order
+        m = deck_facts._PYTEST_COLLECTED.search(line)
+        if m:
+            hit = m.group(1)
+            break
+    assert hit == "3", f"regex did not parse real pytest output:\n{out}"
+
+
+def test_collected_regex_matches_real_deselected_summary(tmp_path):
+    """The `N/M tests collected` form pytest emits once anything is deselected.
+
+    `(?:/\\d+)?` exists for exactly this, and the group must capture the
+    SELECTED count (the left number), not the total.
+    """
+    out = _collect_output(tmp_path, 3, deselect=True)
+    hit = None
+    for line in reversed(out.splitlines()):
+        m = deck_facts._PYTEST_COLLECTED.search(line)
+        if m:
+            hit = m.group(1)
+            break
+    assert hit == "3", f"expected the selected count from real output:\n{out}"
+
+
+def test_collected_scan_is_reversed_so_a_later_summary_wins(tmp_path):
+    """Real stdout lists every test id before the summary, so a forward scan
+    could match a digit in a node id. The function scans in reverse; this pins
+    that the summary line is what is read, not the first line containing a
+    number."""
+    out = _collect_output(tmp_path, 2)
+    lines = out.splitlines()
+    summary_idx = max(
+        i for i, line in enumerate(lines) if deck_facts._PYTEST_COLLECTED.search(line)
+    )
+    assert summary_idx > 0, f"summary was the first line; fixture too small:\n{out}"
+    assert deck_facts._PYTEST_COLLECTED.search(lines[summary_idx]).group(1) == "2"
