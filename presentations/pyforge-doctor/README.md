@@ -66,3 +66,20 @@ tables ≥ 3 ✓ · cast cards full for all eight stations ✓ · facts all reso
 full-page PNG at 1240 px reviewed by eye (`.herald/deck-qa/pyforge-doctor/standalone.png`,
 gitignored) ✓ · offline apart from the Google Fonts `<link>` ✓. No section of the standard's
 set was dropped; the Warden "sub-agent team" slot is filled by Doctor's source registry (§06).
+## Ledger — 2026-09-14 currency sweep (spec-deck-family-currency CAP-6)
+
+The poster had gone stale on the fleet's own merges since the 2026-09-13 rebuild — 18 ledger
+rows drifted (`doctor_epics_done_total`, `doctor_stories_done_total`, `epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`, `groundtruth_pixi_envs`, `herald_epics_done_total`, `herald_stories_done_total`, `marshal_epics_done_total`, `marshal_stories_done_total`, `mason_epics_done_total`, `mason_stories_done_total`, `scribe_epics_done_total`, `scribe_stories_done_total`, `steward_epics_done_total`, `steward_stories_done_total`, `stories_done_total`, `tree_commit_date`). Swept repo-side first, per CAP-6:
+`pixi run -e local-recipes deck-facts pyforge-doctor --refresh --check` at tree `168bbedb13` re-derived
+`facts.yaml` and rewrote **40** stale `data-fact` literals in place, keeping their shape; the
+re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 0 unshown; facts 85/85`. Then the mirror (CAP-4): pushed via DesignSync `finalize_plan` →
+`write_files` (`localPath`, no context relay) to project `46dbbdea-6f8d-45c6-9309-15d1f297beeb`, and read back through the
+serve URL with the injected harness stripped — **byte-identical to disk**.
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Doctor Infographic standalone.html` | 135,616 | `1789417185250666` | identical ✓ |
+
+Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
+still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
+(Stories 21.1–21.4), not a refresh.
