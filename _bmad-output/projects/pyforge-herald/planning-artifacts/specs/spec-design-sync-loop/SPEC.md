@@ -3,8 +3,10 @@ id: SPEC-design-sync-loop
 spec: design-sync-loop
 status: ready   # 2026-09-14 — derived by bmad-spec (headless, express) from the Dream the same day it
                 # was seeded; the operator answered all four open questions before derivation, so
-                # the contract is complete and downstream may bind. Decompose into herald stories
-                # before any code moves (Spec → Story before code).
+                # the contract is complete and downstream may bind. Re-derived the same evening
+                # after the operator's duplicate-functionality review: CAP-3..6 narrowed to their
+                # deltas over the kernel's pull/watch/push and Epic 21's 21.3/21.5; Epic 23 is six
+                # stories (23.3/23.4 folded, reserved holes).
 owner-dream: docs/dreams/design-sync-loop.md
 companions: []
 surface: []     # Deliberately empty until the first story lands: the loop's own module, the
@@ -25,8 +27,11 @@ open_questions: []
 > the trio and export-set derivations are `spec-deck-family-lockstep` (Epic 21.1–21.5, 21.10); the
 > bridge verbs are the herald kernel (`seed` / `pull` / `push` / `status` / `watch`); the gallery is
 > `spec-pyforge-pages` CAP-1. This Spec sequences them into one idempotent loop and extends them
-> where the operator's rulings require — Design-wins pull, the account-wide registry, the family
-> page — minting nothing they already cover.
+> where the operator's rulings require — the account-wide registry, the adopt path, the `.potx`
+> path, the binary push and read-back proof, the family page, the command — minting nothing they
+> already cover. *Re-scoped 2026-09-14 the evening it was derived: CAP-3..6 were first written as
+> if the pull, the re-apply, the derive and the push were new; they are the kernel's and Epic 21's,
+> and each CAP now names only its delta (memlog).*
 
 # The Design sync loop
 
@@ -61,30 +66,35 @@ second time it runs.
     `llm-knowledge-bases` each resolve through `registry.read`; `Modernist`, `Broadsheet` and
     `Nocturne` are pulled byte-exact to the design-system home (see Assumptions); a second run
     pulls nothing.
-- **CAP-3 — Pull, with Design winning.**
-  - **intent:** For every twin whose Design etag moved since the last recorded pull, the loop takes
-    Design's bytes wholesale.
-  - **success:** After a human edit in Design, one run leaves the repo copy byte-identical to
-    Design (harness stripped) and records the new etag; a repo-side edit Design has not seen is
-    overwritten and named in the report, never merged.
-- **CAP-4 — The ledger re-applies over what was pulled.**
-  - **intent:** After the pull, every marked literal on every fact-bearing surface — the standalone
-    poster first; the trio, executive summary and Marp as Epic 21.3/21.5 make them markable — is
-    rewritten from a `facts.yaml` re-derived at the current tree.
+- **CAP-3 — The sweep pulls every twin Design changed.** *(narrowed 2026-09-14)*
+  - **intent:** Bound to the kernel's `herald deck pull` / `deck watch` — Design's bytes win wholesale
+    whenever the etag moved, never a merge. This Spec adds the sweep over *every* twin and the
+    report line that names a repo-side edit Design had not seen and was overwritten.
+  - **success:** One `sync-all` run pulls every twin whose Design etag moved since the last recorded
+    pull, each byte-identical to Design (harness stripped), and the report names each overwrite;
+    a twin whose etag did not move is not touched.
+- **CAP-4 — The ledger re-applies, and says what it overrode.** *(narrowed 2026-09-14)*
+  - **intent:** Bound to `deck-facts --refresh` over every marked surface after the pull (lockstep
+    CAP-2 / Story 21.3, currency CAP-6). This Spec adds only the report of each overridden literal
+    together with the value it replaced.
   - **success:** `deck-facts <slug> --check` reads `0 drifted, 0 mismatch` for every deck after a
-    run, and the report lists each literal the ledger overrode together with the value Design had.
-- **CAP-5 — The family derives and the PowerPoints regenerate.**
-  - **intent:** Each deck's Infographic head, Infographic Deck, Executive Summary, Marp sources and
-    PPTX are re-derived from the refreshed standalone and ledger.
-  - **success:** The trio derives via `deck-trio` (21.1/21.2); the export set via `deck-export`
-    (Marp path, the default) or `pptx-spec`/`pptx-fill` (a deck whose registry section declares a
-    `.potx`); every derived file's stamp names the tree and etag it derived at; a deck whose host
-    lacks Chrome reports `derive-skipped: no chrome` rather than failing the run.
-- **CAP-6 — Push what changed; prove the mirror.**
-  - **intent:** Only artifacts whose bytes changed are pushed to their Design project, and every
-    pushed artifact is read back.
-  - **success:** Read-back is byte-identical for 100% of pushed files; the Design etag is recorded
-    in the deck README ledger and in bridge state; a second run pushes nothing.
+    run, and the report lists each literal the ledger overrode with the value Design had.
+- **CAP-5 — The `.potx` path, and every derived file stamped.** *(narrowed 2026-09-14)*
+  - **intent:** The Marp path is lockstep CAP-3 (Story 21.5). This Spec owns the second path the
+    operator ruled — a deck whose registry section declares a `.potx` is filled through
+    `pptx-spec`/`pptx-fill` — the per-deck choice recorded in the registry, and a stamp (tree +
+    etag) on every derived trio/export artifact.
+  - **success:** A `.potx` deck yields a genuinely editable PPTX from its template, a Marp deck
+    yields exactly what 21.5 yields, every derived file's stamp names the tree and etag it derived
+    at, and a host without Chrome reports `derive-skipped: no chrome` rather than failing the run.
+- **CAP-6 — PowerPoints push back, and every push proves itself.** *(narrowed 2026-09-14)*
+  - **intent:** Changed-only, etag-guarded poster push is the kernel's `herald deck push`. This Spec
+    owns what it lacks: the binary PPTX push Story 5.1 deferred, and the read-back proof as a verb
+    rather than a curl recipe.
+  - **success:** A binary push is proven live on one PPTX and adopted for the pair; every pushed
+    file is read back through the serve URL with the harness stripped and is byte-identical; the
+    etag is recorded in the README ledger and bridge state; a read-back mismatch is a refusal that
+    names the file; a second push pushes nothing.
 - **CAP-7 — The family is browsable and downloadable on Pages.**
   - **intent:** The dossier site gains one family page per registered deck and an index across the
     family.
