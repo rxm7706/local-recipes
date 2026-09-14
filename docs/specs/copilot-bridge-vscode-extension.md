@@ -23,7 +23,7 @@ spec_updated: 2026-07-18
 |---|---|
 | Status | **Draft v1** — ready for `bmad-quick-dev` intake |
 | Owner | rxm7706 |
-| Track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
+| Planning track | BMAD Quick Flow (tech-spec only, no PRD/architecture phase) |
 | Target users | Individual developers on their own Mac or Windows machine |
 | Distribution | **Sideloaded `.vsix` only** — never published to the VS Code Marketplace |
 | Lifetime | Transitional — see § Lifecycle Expectations |

@@ -384,9 +384,16 @@ steward budget enforce --cap 1500usd/month
   contract — the primary sense, capital S); **the planning chain** (PRD → architecture
   → epics, the Spec's *decomposition*); **story specs** (per-story intent contracts,
   tracked and durable); **legacy intake specs** (`docs/specs/`, phasing out). Never
-  call the Spec a "kernel" — that is `bmad-spec`'s internal jargon for its five-field
+  call **the Spec** a "kernel" — that is `bmad-spec`'s internal jargon for its five-field
   shape, and it demotes the most load-bearing artifact in the ecosystem to a tool
-  detail.
+  detail. *(Narrowed 2026-09-14: the ban is on that sense only. Three other senses are
+  legitimate and in load-bearing use — a station's broad **umbrella spec** as against its
+  narrow story specs ("kernel spec", `spec-surface-overlap-tolerance`); the regenerated
+  core of B ("foundry kernel", Epic 54); and `guild-roster.json`'s "governance kernel".
+  Say which sense, as with Gate. This Charter used the banned form itself at the
+  Realization-log entry below, and `_bmad-output/EXEMPLAR-STANDARD.md` builds a named
+  "kernel/companion rule" on it — both of which the narrowed ban leaves standing, because
+  neither is calling the Spec a kernel.)*
 - **The console keeps its terminal idiom**: masthead *PyForge · Guildhall*; the
   `pyforge ❯` prompt stays lowercase (a prompt is a technical surface).
 
@@ -660,9 +667,24 @@ a verdict however loudly it exits. Where a lattice, a rung or an exit code is
 named “verdict” outside that meaning, it is either renamed or its scope is
 recorded in the owning Spec.
 
-*(This rules `Gate`. **`Track` remains unruled** — Hub's durable evidence
-record vs BMAD's planning lane — and is carried as
-`spec-vocabulary-one-name-one-job` CAP-4.)*
+### `Track` is qualified, not overloaded *(ruled 2026-09-14)*
+
+`Track` carried two senses: the Hub's **durable evidence record** (`hub:CAP-3`, Story
+53.3's `track.json`) and BMAD's **planning lane** (Quick Flow / BMad Method /
+Enterprise). Unlike `Gate`, this one is **not** resolved by naming the collision and
+moving on — the operator ruled that both senses are written out in full wherever either
+appears:
+
+- **evidence Track** — the durable record of a run. Capital T when standing alone.
+- **planning track** — a BMAD lane sized to the work. Lowercase.
+
+Bare `Track` is acceptable only inside a context that has already established which.
+This is a stricter remedy than `Gate`'s because the planning-lane sense is public-facing
+(it is taught on the Agentic-SDLC deck) while the evidence sense is the one the estate's
+own code emits — a reader meeting either in isolation has no way to tell.
+
+*(Completes `spec-vocabulary-one-name-one-job` CAP-4, whose other half — `Gate` — is
+ruled above.)*
 
 **The rented-model / owned-context tension:** this factory rents the model
 and harness (Claude Code) while owning context, workflows, checks, and
@@ -764,6 +786,38 @@ herald broadcast slack,email --channel engineering-updates
 ---
 
 ## Realization log
+
+- **2026-09-14 (amendment, ruling)** — **`Track` is qualified in prose**, completing CAP-4's
+  other half. Hub's *evidence Track* (`track.json`, Story 53.3) and BMAD's *planning track*
+  (Quick Flow / BMad Method / Enterprise) had shared one word with nothing naming the clash.
+  The operator chose the **stricter** remedy here than for `Gate`: not "name the collision and
+  say which", but write both out — *evidence Track*, *planning track* — wherever either appears.
+  The asymmetry is deliberate and worth recording: the planning-lane sense is **public-facing**,
+  taught on the Agentic-SDLC deck, while the evidence sense is what the estate's own code emits,
+  so a reader meeting either in isolation has no context to disambiguate from. `Gate`'s three
+  senses all live inside the estate, where context usually supplies the answer.
+  Applied this pass to the surfaces we own: the 20 legacy intake-spec header rows in
+  `docs/specs/` and the live slide fragment. **Deliberately not applied** to
+  `presentations/agentic-sdlc/project/*` — those are byte-pulls from Claude Design, and editing
+  them locally would manufacture exactly the Design↔repo drift the 2026-08-01 amendment
+  (line ~826) was written to stop; the Design side has to change first. The two dated
+  `src/marp/*-2026-0*.md` snapshots keep their original wording, historical prose keeping its
+  original names. Closes `DW-VOCAB-2026-09-14-9`'s carried half.
+
+- **2026-09-14 (amendment, scope narrowing)** — **the "kernel" ban is narrowed to its one real
+  target.** § Branding banned the word outright; the estate then went on using it in four senses,
+  ~120 times across ~40 files — including **this document**, which used "Spec kernel" in a
+  Realization-log entry 440 lines after banning it, and `_bmad-output/EXEMPLAR-STANDARD.md`, which
+  built a named **"kernel/companion rule"** on the banned sense. Two further senses arrived *after*
+  the ban and were never contemplated by it: the umbrella-vs-narrow "kernel spec"
+  (`spec-surface-overlap-tolerance`) and Epic 54's "foundry kernel". A prohibition that its own
+  author violates, that a Tier-2 standard builds a rule on, and that two later efforts extend in new
+  directions is not a prohibition — it is a dead letter that quietly makes every reader wrong.
+  The operator ruling keeps the ban's real content — *do not call **the Spec** a kernel*, which was
+  always the point, since that is the demotion § Branding objected to — and blesses the other three
+  by name, on the same say-which-sense footing as the Gate ruling earlier the same day. No file is
+  renamed and EXEMPLAR-STANDARD's rule stands, because neither was ever calling the Spec a kernel.
+  Closes `DW-VOCAB-2026-09-14-13`.
 
 - **2026-09-14 (amendment, correction)** — **the Hub has SIX shared abstractions, not seven.**
   § The Lexicon's cross-walk preamble folded **Organizational Memory** into the list; upstream

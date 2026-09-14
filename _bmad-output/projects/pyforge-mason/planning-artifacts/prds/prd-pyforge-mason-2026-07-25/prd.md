@@ -318,9 +318,17 @@ A user opens a staged-recipes pull request. Realizes UJ-1.
 A user updates an existing recipe to a newer upstream version.
 
 **Consequences (testable):**
-- Diff-before-apply: the change is shown before it is written.
+- `--dry-run` shows the computed plan **instead of** writing; without it, the field-scoped
+  update is written directly. *(Amended 2026-09-14 by operator ruling — see the note below.)*
 - `--dry-run` supported on every source type.
 
+> **RESOLVED 2026-09-14 — FR-14 amended to describe what shipped** (operator ruling: amend the
+> contract, do not invert the default). Inverting would have been a breaking behaviour change to
+> a shipped verb, silently stopping writes for any caller relying on today's default; the ruling
+> chose honesty over a safety claim the code never made. NFR-9 is amended in the same pass rather
+> than left contradicting FR-14 — the two were always one decision. The original finding, kept
+> verbatim below as the record of what was wrong and how it was found:
+>
 > **AS-BUILT DIVERGENCE — recorded 2026-09-14, NOT repaired.** The first consequence does
 > **not** hold on the default path. `--dry-run` is `action="store_true"` and its own help
 > text reads *"compute and show the plan without writing (default: writes the field-scoped
@@ -878,12 +886,15 @@ A user can rehearse a PyPI publish before performing the one-way one.
 - **NFR-7 (No runtime fetch).** Engines are provisioned as conda dependencies. Nothing is downloaded
   at runtime.
 - **NFR-8 (Idempotence).** Re-running a completed ship does not duplicate an upload.
-- **NFR-9 (Safety by default).** Every mutating operation defaults to dry-run. *(**Partial as
-  built — recorded 2026-09-14, not repaired.** `mason recipe submit` and `mason package ship`
-  both hold it: submit requires an explicit `--yes`, ship defaults to dry-run. `mason recipe
-  update` does **not** — it writes by default and `--dry-run` is opt-in. See FR-14's
-  as-built divergence note; the two are one decision, and it is a behaviour change needing
-  its own Dream/Spec.)*
+- **NFR-9 (Safety by default).** Every mutating operation is **either** dry-run by default
+  **or** requires an explicit confirmation flag; none writes silently without the caller having
+  asked for a write. *(**Amended 2026-09-14 by operator ruling**, together with FR-14 — the two
+  were always one decision. The prior wording, "every mutating operation defaults to dry-run",
+  was never true of `mason recipe update`, which writes by default with `--dry-run` as an opt-in
+  preview. `mason recipe submit` requires an explicit `--yes` and `mason package ship` does
+  default to dry-run, so the *safety* property holds across all three — it is the uniform
+  mechanism that did not. Stating the real invariant is what makes NFR-9 testable; the old
+  wording would have failed against shipped code the moment anyone checked.)*
 - **NFR-10 (Lean deps).** A new runtime dependency requires justification against the workspace's
   lean-dependency doctrine.
 - **NFR-11 (Python floor).** `requires-python >= 3.12`, matching `pyforge-warden` (D-6).
