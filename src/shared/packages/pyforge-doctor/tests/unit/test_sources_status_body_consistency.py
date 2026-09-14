@@ -138,23 +138,29 @@ def test_gather_ok_when_no_terminal_docs(tmp_path: Path):
     assert findings[0].evidence["scanned_terminal"] == 0
 
 
-def test_gather_live_pyforge_scribe_cases():
+def test_gather_live_dream_and_spec_progress_phrases():
+    """Repointed (2026-09-14) from pyforge-scribe: that station fully shipped
+    (19/19 stories) and its Dream doc's "three of nine stories" claim was
+    rewritten to say so, moving the old phrasing into a historical "was:"
+    quote that this detector correctly no longer matches -- a real fix, not
+    a regression, but it retires pyforge-scribe.md as a live example of the
+    contradiction this test exists to prove the detector still catches.
+    Repointed to pyforge-herald.md, currently live, plus any currently-live
+    Spec-tier finding (no longer required to be herald's own Spec -- the
+    original station-pairing was incidental, not part of this check's
+    contract)."""
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather_progress_phrase(repo_root)
     progress = [f for f in findings if f.check == sbc._CHECK_PROGRESS]
 
     dream_paths = [
-        f for f in progress if f.evidence["path"] == "docs/dreams/pyforge-scribe.md"
+        f for f in progress if f.evidence["path"] == "docs/dreams/pyforge-herald.md"
     ]
-    assert dream_paths, "expected live pyforge-scribe Dream finding"
-    assert any("3 of 9 stories" in f.evidence["matched"] for f in dream_paths)
+    assert dream_paths, "expected live pyforge-herald Dream finding"
+    assert any("4 of 17 stories" in f.evidence["matched"] for f in dream_paths)
 
-    spec_paths = [
-        f
-        for f in progress
-        if f.evidence["path"].endswith("pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md")
-    ]
-    assert spec_paths, "expected live spec-pyforge-scribe finding"
+    spec_paths = [f for f in progress if f.evidence["path"].endswith("SPEC.md")]
+    assert spec_paths, "expected at least one live Spec-tier finding"
 
 
 def test_gather_degrades_on_exception(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
