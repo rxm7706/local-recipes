@@ -18,6 +18,7 @@ letting the index grow unbounded.
 
 - [bmad-runs-cfe-retro](feedback/bmad-runs-cfe-retro.md) — Always-on rule — at closeout of any BMAD-driven conda-forge effort, run bmad-retrospective focused on conda-forge-exper…
 - [spec-surface-check-py-s-write-baseline-reads-git-ls-files-so](feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md) — spec_surface_check.py's --write-baseline reads git ls-files, so new files must be git add'ed BEFORE stamping or the bas…
+- [pre-existing-findings-fix-now-is-the-default](feedback/pre-existing-findings-fix-now-is-the-default.md) — "Pre-existing" says why a finding is not yours, never why it stays; defer only for a Dream-sized effort or a named blocker; a DW entry is never closure
 
 ## Project
 
