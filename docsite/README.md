@@ -57,9 +57,9 @@ Outputs land in `dist/` (gitignored):
 Open `content/dossier.yml`. It is a list of sections, each a list of typed
 blocks. To change a sentence, find the sentence and change it.
 
-Fifteen block types exist — `lede`, `prose`, `h3`, `table`, `callout`,
+Fourteen block types exist — `lede`, `prose`, `h3`, `table`, `callout`,
 `finding`, `stats`, `quote`, `relations`, `lattice`, `engines`, `chips`,
-`note`, `verify`, `scorecards`. Each has exactly one macro in
+`note`, `verify`. Each has exactly one macro in
 `templates/blocks.html.j2`, used by both the site and the artifact, so they
 cannot drift apart.
 
