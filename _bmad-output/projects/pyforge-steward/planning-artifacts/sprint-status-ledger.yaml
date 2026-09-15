@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 382
+# stories: 387
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -255,6 +255,9 @@ development_status:
   61-3-as-of-glass-and-mailed-query: backlog
   61-4-signed-outbound-slice: backlog
   61-5-quarantine-mint-then-reject: backlog
+  62-1-the-catalog-names-eight-measures-and-their-states: backlog
+  62-2-add-switch-and-archive-without-a-rewrite: backlog
+  62-3-consumers-cite-on-rows-only: backlog
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -390,6 +393,8 @@ development_status:
   epic-60-retrospective: optional
   epic-61: backlog
   epic-61-retrospective: optional
+  epic-62: backlog
+  epic-62-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

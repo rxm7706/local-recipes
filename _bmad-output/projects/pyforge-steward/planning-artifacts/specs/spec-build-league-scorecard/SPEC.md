@@ -1,55 +1,80 @@
 ---
 spec: build-league-scorecard
-status: draft
+status: ready
 created: "2026-08-25"
-updated: "2026-08-25"
+updated: "2026-09-15"
 owner-dream: docs/dreams/build-league-scorecard.md
+surface: []
+companions:
+  - measure-catalog.md
 sources:
   - ../../../../../../docs/dreams/build-league-scorecard.md
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-open_questions:
-  - operator-measure-set
+open_questions: []
 ---
 
-> **Parked contract.** Unifying Strategy Q5 is in the operating model; the **numbers** are
-> not invented here. This SPEC exists so INV-1 has a chain. Do not implement a board until
-> the operator drafts the measure set.
+> **Canonical contract.** Derived 2026-09-15 from
+> `docs/dreams/build-league-scorecard.md` § *Operator rulings (accepted
+> 2026-09-15)* and this folder's `.memlog.md`. CAP-1 is the published
+> configurable catalog. CAP-4 is a later empty slot (no dashboard).
 
 # SPEC — Build League and Balanced Product Scorecard
 
 ## Why
 
-**A vision to realize, later.** The estate must optimize to **published** measures (Q5,
-2026-08-24). WFT named the faces and defined none. Unpublished metrics must not steer work.
-Parking this as a sibling Dream keeps Canopy `open_questions: []` without pretending the
-scorecard shipped.
+The estate must optimize to **published** measures (Unifying Strategy Q5).
+WFT named the faces; the operator selected eight already-counted signals
+and required them to be switchable. Unpublished metrics must not steer
+work. Owner: **steward**.
 
 ## Capabilities
 
-- **CAP-1 — published measure set**
-  - **intent:** An operator-authored set covering **human, agent, and team** dimensions,
-    consistent with Q1–Q4 (spec coverage, promotion class, Golden Path, Warden-gated change,
-    owner on 03).
-  - **success:** The set is written in this SPEC (or a companion) and cited from the Unifying
-    Strategy Dream. No consumer (Herald / Atlas / Marshal / Doctor) invents a substitute.
+- **CAP-1 — published measure catalog.**
+  - **intent:** an operator-authored set covering human, agent, and team,
+    consistent with Q1–Q4, written as named rows with state `on` / `off` /
+    `archived`.
+  - **success:** the eight first-cut ids are in `measure-catalog.md` and
+    cited from the Unifying Strategy Dream. No consumer invents a
+    substitute. First cut: all eight `on`.
+
+- **CAP-2 — add, switch, and archive sources.**
+  - **intent:** a new already-counted source is a new row; a dead source is
+    archived (id reserved). Switching a row does not rewrite the catalog
+    product.
+  - **success:** a new row starts `off`; flipping `on` / `off` / `archived`
+    is config. Archived ids are never reused for a different signal.
+
+- **CAP-3 — consumers cite `on` rows only.**
+  - **intent:** Herald, Atlas, Marshal, and Doctor (and Hub Outcome Guards
+    later) read this catalog; they do not mint stealth metrics.
+  - **success:** citing `off` or `archived` — or an id not in the catalog —
+    is a refuse, not a silent fallback.
+
+- **CAP-4 — scorecard board / league table.** *(Later; empty in v1.)*
+  - **intent:** a board is not a Canopy CAP and is not this first epic.
+  - **success:** the slot exists; v1 does not implement a UI.
 
 ## Constraints
 
-- **Never** invent metrics or optimize to unpublished ones.
-- **Never** score 01/02 work against 5-tier completeness.
-- **Never** treat a Jira key as a quality signal.
-- **Never** a scorecard UI capability in `spec-pyforge-unifying-strategy`. CAP-18 is hooks.
+- Never invent metrics, weights, or a composite league score.
+- Never score 01/02 work against five-tier completeness.
+- Never treat a Jira key as a quality signal.
+- Never a scorecard UI in `spec-pyforge-unifying-strategy`. CAP-18 is hooks.
+- Do not flip Epic 44 `blocked` keys. A-only.
 
 ## Non-goals
 
-- A dashboard in this chain until CAP-1 exists.
+- A dashboard in this epic.
 - Replacing Warden as the PR quality gate (Q8).
+- Implementing Hub Outcome Guards on this Spec.
 
 ## Success signal
 
-Operators and stations can name the published measures and refuse unpublished ones. No first
-cut is claimed until the operator drafts it.
+Operators and stations can name each published measure, its state, and
+refuse unpublished ones. New sources add; old ones archive.
 
-## Open Questions
+## Assumptions
 
-- **operator-measure-set** — the actual metrics. Owner: operator. Not for an agent to fill.
+- Steward Epic 62 is the dispatch home (62.1–62.3).
+- The eight ids name signals the estate already counts; this Spec does not
+  invent their formulas.

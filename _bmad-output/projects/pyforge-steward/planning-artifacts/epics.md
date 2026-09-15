@@ -4079,3 +4079,42 @@ the existing Postgres app / a steward load duty.
 **And** no title-match endpoint exists
 **Status:** backlog
 
+## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..4)
+
+Minted 2026-09-15 from `docs/dreams/build-league-scorecard.md` after the
+operator approved the eight already-counted signals and required on/off/
+archived config. Spec `ready`. **CAP-4** (dashboard / league table) is an
+empty later slot — no story. Do not invent weights. Do not flip any Epic 44
+`blocked` key.
+
+### Story 62.1: The catalog names eight measures and their states
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-build-league-scorecard CAP-1
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md`;
+`docs/dreams/pyforge-unifying-strategy.md` Q5 cite.
+**Given** Q5 named faces and no numbers
+**When** this story lands
+**Then** the eight ids are published with dimension, source, and state
+**And** first cut is all `on`; no consumer invents a substitute
+**Status:** backlog
+
+### Story 62.2: Add, switch, and archive without a rewrite
+
+**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-build-league-scorecard CAP-2
+**Surface:** a config the catalog and later consumers read.
+**Given** a new source or a dead source would fork the product
+**When** this story lands
+**Then** add is a new row starting `off`; archive keeps the id and forbids reuse
+**And** `on` / `off` / `archived` is a config flip
+**Status:** backlog
+
+### Story 62.3: Consumers cite `on` rows only
+
+**Type:** feature • **Effort:** M • **Deps:** S-62.1 • **FR/AD:** spec-build-league-scorecard CAP-3
+**Surface:** a refuse path Herald / Atlas / Marshal / Doctor can call.
+**Given** a station can mint a stealth metric
+**When** this story lands
+**Then** citing `off`, `archived`, or an unknown id is a refuse
+**And** Hub Outcome Guards are not implemented here — they read later
+**Status:** backlog
+

@@ -76,8 +76,11 @@ finding keeps that meaning and is not a length cap. `bmad-correct-course` amends
   `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 - RFC-5 — contrib + `liquibase` schema + `:17`/`:18`/`:19` are in the changelog and
   **EXECUTED** on CRC. Isolated **`mfa` sqlmigrate** is the only remaining fake.
-- **Q5 measure set** — **parked**, not a Foundry SPEC OQ. Unpublished; do not invent metrics.
-  Sibling: `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard` (draft).
+- **Q5 measure set** — **published 2026-09-15** on sibling
+  `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard`
+  (`ready`, steward Epic 62). Catalog:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md`.
+  Do not invent metrics; cite `on` rows only. Not a Foundry SPEC OQ.
 - **Single-Spec merge** — **parked** (Grounding table above). Keep `extends:` until a
   steward story copies `pap:CAP-*` into Unifying SPEC, retargets Epic 10–12, and
   supersedes `spec-python-agent-platform`. Do not rename `[feature.python-agent-platform]`.
