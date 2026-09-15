@@ -159,6 +159,48 @@ BOOKEND_POSTER = """<!DOCTYPE html>
 </html>
 """
 
+# Same masthead/act/section/closing shape as BOOKEND_POSTER, but wrapped
+# ENTIRELY in one ambient page-frame div -- the family's own standard
+# authoring template (infographic-standard.md), and the live Warden
+# standalone's own real shape. A naive body_start/body_end slice cuts
+# through this div's own tag pair: the masthead ships with its opening tag
+# unclosed, the closing band with its closing tag orphaned. Exercises the
+# ambient-wrapper-exclusion fix (third review pass, 2026-09-15).
+WRAPPED_BOOKEND_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  .act { background: #201e1d; }
+</style>
+</head>
+<body>
+<div style="width:1240px; margin:0 auto; padding:56px 56px 0;">
+  <header>Masthead content for Mu.</header>
+  <div class="act">
+    <span class="lbl">ACT I</span>
+    <span class="ttl">Opening</span>
+  </div>
+  <section class="sec">
+    <div class="sechead"><span class="num">01</span><h2>First section</h2></div>
+    <p>Some content.</p>
+  </section>
+  <div class="act">
+    <span class="lbl">ACT II</span>
+    <span class="ttl">Closing</span>
+  </div>
+  <section class="sec">
+    <div class="sechead"><span class="num">02</span><h2>Second section</h2></div>
+    <p>More content.</p>
+  </section>
+  <section style="background:#ec3013;">
+    <div>The creed -- closing band content.</div>
+  </section>
+</div>
+</body>
+</html>
+"""
+
 # No <div class="act"> anywhere -- the "no act bands" refusal row.
 NO_ACTS_POSTER = """<!DOCTYPE html>
 <html>
@@ -666,6 +708,34 @@ def test_deck_closing_band_absent_no_close_slide(root):
     assert 'data-label="Close"' not in text
 
 
+def test_deck_ambient_wrapper_excluded_from_masthead_and_closing_slides(root):
+    """High-severity fix (third review pass, 2026-09-15, ambient-wrapper
+    exclusion): the family's own standard authoring template wraps the
+    ENTIRE body -- masthead through closing band -- in one page-frame div
+    (the live Warden standalone's own real shape). A naive
+    body_start/body_end slice cuts through that div's own tag pair,
+    shipping the Cover slide with an unclosed <div> and the Close slide
+    with an orphaned </div>. Assert both derived bookend slides carry
+    balanced div tags -- proof the ambient wrapper was excluded, not
+    sliced through. (The no-wrapper case, BOOKEND_POSTER, is already
+    covered by the masthead/closing-band-present tests above -- the
+    fallback path is unchanged.)"""
+    _write(root / "presentations/pyforge-mu/project/Mu Infographic standalone.html", WRAPPED_BOOKEND_POSTER)
+    assert deck_trio.main(["pyforge-mu", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-mu", "Mu").read_text(encoding="utf-8")
+
+    cover_start = text.index('<section data-label="Cover"')
+    act_i_start = text.index('<section data-label="ACT I"')
+    cover_slide = text[cover_start:act_i_start]
+    assert "Masthead content for Mu." in cover_slide
+    assert cover_slide.count("<div") == cover_slide.count("</div>")
+
+    close_start = text.index('<section data-label="Close"')
+    close_slide = text[close_start:]
+    assert "The creed -- closing band content." in close_slide
+    assert close_slide.count("<div") == close_slide.count("</div>")
+
+
 def test_deck_mid_deck_banner_produces_no_slide(root):
     """Never (Boundaries & Constraints): a non-numbered full-bleed banner
     sitting BETWEEN act/section elements is neither a masthead, a closing
@@ -796,7 +866,9 @@ def test_deck_reports_measure_all_sections_failure_as_exit_two(root, monkeypatch
 
 def test_deck_measure_all_sections_length_mismatch_exits_two(root, monkeypatch, capsys):
     """Never (Boundaries & Constraints): a length mismatch between measured
-    and parsed sections must not raise an uncaught exception."""
+    and parsed sections must not raise an uncaught exception. Also pins the
+    count-agnostic "section(s)" grammar fix (third review pass,
+    2026-09-15) -- "measured 1 sections" reads as grammatically wrong."""
     _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
     monkeypatch.setattr(
         deck_trio,
@@ -807,8 +879,8 @@ def test_deck_measure_all_sections_length_mismatch_exits_two(root, monkeypatch, 
         deck_trio.main(["pyforge-zeta", "--deck"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "measured 1" in err
-    assert "parsed 3" in err
+    assert "measured 1 section(s)" in err
+    assert "parsed 3 section(s)" in err
     assert not _deck_path_for(root, "pyforge-zeta", "Zeta").exists()
 
 

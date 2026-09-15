@@ -258,9 +258,11 @@ content overflows the slide height — the masthead and closing-band slides
 never split; a non-numbered banner sitting BETWEEN act/section elements, e.g.
 a mid-deck "doctrine" band, produces no slide), and writes `project/<Persona>
 - Infographic Deck.dc.html` — the same refuse-rather-than-guess and
-compare-before-write conventions as `--head`, and independently combinable
-with it (`deck-trio <slug> --head --deck` derives both in one invocation,
-validating both before writing either).
+compare-before-write conventions as `--head`, refusing when there are zero
+act bands or zero numbered sections, an empty act/section label, a section
+with zero direct children, or a measured-vs-parsed section-count mismatch,
+and independently combinable with `--head` (`deck-trio <slug> --head --deck`
+derives both in one invocation, validating both before writing either).
 
 **Where to edit WHAT:**
 

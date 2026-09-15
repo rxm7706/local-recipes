@@ -228,9 +228,13 @@ class _DeckStructure(HTMLParser):
     The masthead (content before the first act/section) and closing band
     (content after the last) are NOT captured by this parser directly -- the
     caller (``main()``) derives their spans from ``items[0]``/``items[-1]``'s
-    own ``span`` and the poster's shared ``_PosterStructure.body_inner``
-    (Design Notes § Masthead and closing band: "bounded by document position
-    ... rather than by a class match").
+    own ``span``, the poster's shared ``_PosterStructure.body_inner``, and
+    (Design Notes § Ambient wrapper exclusion) this parser's own
+    ``first_item_outer_chain``/``last_item_outer_chain``/``close_starts`` --
+    the open-tag ancestry (excluding ``<body>``) at the first item's own open
+    and the last item's own close, used to detect and strip the family's
+    standard whole-body wrapper div rather than slice straight through its
+    own tag pair.
     """
 
     def __init__(self, text: str) -> None:
@@ -255,6 +259,19 @@ class _DeckStructure(HTMLParser):
         # active one (a .lbl/.ttl span or a section's first <h2>).
         self._text_targets: list[list[str]] = []
 
+        # Ambient wrapper exclusion (Design Notes): a parallel (tag, start,
+        # open_tag_end) stack, tracked in lockstep with ``_stack``, for
+        # every tag still open once inside ``<body>`` (``_body_depth`` marks
+        # where inside-body entries begin) -- plus a start-offset -> own
+        # close-tag-start map so a wrapper identified via
+        # first/last_item_outer_chain can be resolved to its own closing
+        # tag's own start offset.
+        self._tag_spans: list[tuple[str, int, int]] = []
+        self._body_depth: int | None = None
+        self.close_starts: dict[tuple[str, int], int] = {}
+        self.first_item_outer_chain: list[tuple[str, int, int]] | None = None
+        self.last_item_outer_chain: list[tuple[str, int, int]] | None = None
+
     def _at(self) -> int:
         line, col = self.getpos()
         return self._line_start[line - 1] + col
@@ -270,6 +287,12 @@ class _DeckStructure(HTMLParser):
         start = self._at()
         cls = self._class_of(attrs)
         depth = len(self._stack)
+
+        is_new_item = (tag == "div" and cls == "act" and self._open_act is None) or (
+            tag == "section" and cls == "sec" and self._open_section is None
+        )
+        if is_new_item and self.first_item_outer_chain is None:
+            self.first_item_outer_chain = list(self._tag_spans[self._body_depth or 0 :])
 
         if tag == "div" and cls == "act" and self._open_act is None:
             self._open_act = {"start": start, "depth": depth, "lbl": None, "ttl": None}
@@ -291,7 +314,12 @@ class _DeckStructure(HTMLParser):
             self._text_targets.append(self._open_section["h2"])
 
         if tag not in _VOID_ELEMENTS:
+            close = self.text.find(">", start)
+            tag_open_end = len(self.text) if close < 0 else close + 1
+            self._tag_spans.append((tag, start, tag_open_end))
             self._stack.append(tag)
+            if tag == "body" and self._body_depth is None:
+                self._body_depth = len(self._stack)
 
     def handle_data(self, data: str) -> None:
         if self._text_targets:
@@ -304,6 +332,9 @@ class _DeckStructure(HTMLParser):
 
         if tag not in _VOID_ELEMENTS and self._stack:
             self._stack.pop()
+            if self._tag_spans:
+                popped_tag, popped_start, _popped_open_end = self._tag_spans.pop()
+                self.close_starts[(popped_tag, popped_start)] = start
         depth = len(self._stack)
 
         # Close whichever text capture this tag's own end belongs to, before
@@ -337,6 +368,7 @@ class _DeckStructure(HTMLParser):
             self.acts.append(act)
             self.items.append(("act", act))
             self._open_act = None
+            self.last_item_outer_chain = list(self._tag_spans[self._body_depth or 0 :])
         elif self._open_section is not None and tag == "section" and depth == self._open_section["depth"]:
             heading = "".join(self._open_section["h2"] or []).strip()
             children = [(s, e) for s, e in self._open_section["children"] if e is not None]
@@ -346,6 +378,7 @@ class _DeckStructure(HTMLParser):
             self.sections.append(section)
             self.items.append(("sec", section))
             self._open_section = None
+            self.last_item_outer_chain = list(self._tag_spans[self._body_depth or 0 :])
 
 
 # ---------------------------------------------------------------- transform
@@ -760,8 +793,8 @@ def main(argv: list[str] | None = None) -> int:
             ap.error(str(exc))
         if len(measurements) != len(deck_parser.sections):
             ap.error(
-                f"{rel_poster}: measured {len(measurements)} sections but parsed "
-                f"{len(deck_parser.sections)} sections -- refusing rather than "
+                f"{rel_poster}: measured {len(measurements)} section(s) but parsed "
+                f"{len(deck_parser.sections)} section(s) -- refusing rather than "
                 "guessing which measurement belongs to which section"
             )
 
@@ -775,8 +808,30 @@ def main(argv: list[str] | None = None) -> int:
         last_item = deck_parser.items[-1][1]
         first_start = first_item.span[0]  # type: ignore[attr-defined]
         last_end = last_item.span[1]  # type: ignore[attr-defined]
-        masthead_raw = poster_text[body_start:first_start]
-        closing_raw = poster_text[last_end:body_end]
+
+        # Ambient wrapper exclusion (Design Notes): the family's own
+        # standard authoring template wraps the ENTIRE body -- masthead
+        # through closing band -- in one page-frame div. A raw
+        # body_start/body_end slice would cut straight through that div's
+        # own tag pair (unclosed opening tag in the masthead, orphaned
+        # closing tag in the closing band). When the same open-tag chain
+        # (excluding <body>) is still open both at the first item's own
+        # open and at the last item's own close, it is one unbroken
+        # wrapper spanning both bookends -- slice from ITS OWN
+        # inner-content bounds instead. Any other shape (no such wrapper,
+        # or a different chain at each end) falls back to the unchanged
+        # body_start/body_end slice.
+        wrap_start, wrap_end = body_start, body_end
+        first_chain = deck_parser.first_item_outer_chain or []
+        last_chain = deck_parser.last_item_outer_chain or []
+        if first_chain and last_chain and first_chain == last_chain:
+            wrapper_tag, wrapper_start, wrapper_open_end = first_chain[0]
+            wrapper_close_start = deck_parser.close_starts.get((wrapper_tag, wrapper_start))
+            if wrapper_close_start is not None:
+                wrap_start, wrap_end = wrapper_open_end, wrapper_close_start
+
+        masthead_raw = poster_text[wrap_start:first_start]
+        closing_raw = poster_text[last_end:wrap_end]
         masthead = masthead_raw if masthead_raw.strip() else None
         closing = closing_raw if closing_raw.strip() else None
 
