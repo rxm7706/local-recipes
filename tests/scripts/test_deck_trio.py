@@ -201,6 +201,64 @@ WRAPPED_BOOKEND_POSTER = """<!DOCTYPE html>
 </html>
 """
 
+# HTML5 void elements inside numbered sections: a bare <br> nested inside a
+# child (five of the six real posters that derive today carry bare <br>
+# inside their .sec sections -- doctor 8, mason 9, scribe 6, steward 27,
+# warden 3) and a self-closing <hr/> as a section's own direct child.
+# _DeckStructure's depth stack must never push a void tag (there is no
+# closing tag to pop it), or the section never closes at its own depth and
+# every later section silently vanishes -- with no fixture carrying one, a
+# regression in _VOID_ELEMENTS kept the suite green while the live posters
+# lost roughly half their sections (Verification Gap, follow-up review
+# pass, 2026-09-15).
+VOID_CHILDREN_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.act { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+  <span class="ttl">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Breaks and rules</h2></div>
+  <p>Line one<br>Line two</p>
+  <hr/>
+  <p>After the rule.</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">02</span><h2>Plain</h2></div>
+  <p>Plain content.</p>
+</section>
+</body>
+</html>
+"""
+
+# An act label and a section heading carrying an HTML entity -- the live
+# Warden poster's own "Local &amp; workstation mode" heading shape. handle_data
+# hands _DeckStructure the DECODED text ("&"), so _escape_attr must re-escape
+# it on the way back into data-label="..." or the attribute is malformed.
+ENTITY_LABEL_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.act { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I &amp; only</span>
+  <span class="ttl">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Local &amp; workstation mode</h2></div>
+  <p>content</p>
+</section>
+</body>
+</html>
+"""
+
 # No <div class="act"> anywhere -- the "no act bands" refusal row.
 NO_ACTS_POSTER = """<!DOCTYPE html>
 <html>
@@ -639,6 +697,21 @@ def test_deck_happy_path_first_run_writes_derived_deck(root, capsys):
     # The act's own full outer span is wrapped verbatim.
     assert '<div class="act">' in text
     assert "<p>Some content.</p>" in text
+    # Verification Gap (follow-up review pass, 2026-09-15): the poster's own
+    # <link>/<style> content must land INSIDE <helmet> (Always #3 -- the
+    # same relocation --head performs, asserted the same way its happy-path
+    # test does), and every slide must carry the family's page frame
+    # (Always #8) -- a deck emitting an empty helmet or dropping the frame
+    # div previously passed this test unchanged.
+    assert '<link rel="preconnect" href="https://fonts.googleapis.com">' in text
+    assert ".act { background: #201e1d; color: #f3f2f2; }" in text
+    assert (
+        text.index("<helmet>")
+        < text.index('<link rel="preconnect" href="https://fonts.googleapis.com">')
+        < text.index(".act { background: #201e1d; color: #f3f2f2; }")
+        < text.index("</helmet>")
+    )
+    assert text.count(f'<div style="{deck_trio.PAGE_FRAME_STYLE}">') == 5  # one per slide
 
 
 def test_deck_and_head_together_derive_both_in_one_invocation(root):
@@ -736,6 +809,27 @@ def test_deck_ambient_wrapper_excluded_from_masthead_and_closing_slides(root):
     assert close_slide.count("<div") == close_slide.count("</div>")
 
 
+def test_deck_ambient_wrapper_with_gt_in_attribute_is_sliced_at_its_real_end(root):
+    """The wrapper's own open-tag end offset comes from ``get_starttag_text()``
+    (the same exact-source technique ``_PosterStructure`` uses), not a naive
+    ``find(">")`` -- a ``>`` inside a quoted attribute value would otherwise
+    end the span early and ship the Cover slide opening with the attribute's
+    own tail as literal text (Blind Hunter + Edge Case Hunter, follow-up
+    review pass, 2026-09-15)."""
+    poster = WRAPPED_BOOKEND_POSTER.replace(
+        '<div style="width:1240px; margin:0 auto; padding:56px 56px 0;">',
+        '<div data-note="a > b" style="width:1240px; margin:0 auto; padding:56px 56px 0;">',
+    )
+    _write(root / "presentations/pyforge-mu/project/Mu Infographic standalone.html", poster)
+    assert deck_trio.main(["pyforge-mu", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-mu", "Mu").read_text(encoding="utf-8")
+    cover_slide = text[text.index('<section data-label="Cover"') : text.index('<section data-label="ACT I"')]
+    assert "Masthead content for Mu." in cover_slide
+    assert ' b"' not in cover_slide
+    assert "data-note" not in cover_slide
+    assert cover_slide.count("<div") == cover_slide.count("</div>")
+
+
 def test_deck_mid_deck_banner_produces_no_slide(root):
     """Never (Boundaries & Constraints): a non-numbered full-bleed banner
     sitting BETWEEN act/section elements is neither a masthead, a closing
@@ -754,6 +848,49 @@ def test_deck_slide_count_matches_formula_with_bookends(root):
     text = _deck_path_for(root, "pyforge-eta", "Eta").read_text(encoding="utf-8")
     assert text.count("<section data-label=") == 7  # 2 acts + 3 sections + Cover + Close
     assert 'data-label=""' not in text
+
+
+def test_deck_void_elements_inside_sections_do_not_disturb_section_boundaries(root):
+    """Verification Gap (follow-up review pass, 2026-09-15): the void-element
+    depth guard (``_VOID_ELEMENTS``) is load-bearing on five of the six real
+    posters that derive today (bare ``<br>`` inside ``.sec`` sections), yet no
+    fixture carried one -- dropping ``"br"`` from the set kept the suite green
+    while the live posters silently lost roughly half their sections. Pin the
+    parser directly (section and per-section direct-child counts) AND the
+    derived slide count, so either regression fails loudly."""
+    parser = deck_trio._DeckStructure(VOID_CHILDREN_POSTER)
+    parser.feed(VOID_CHILDREN_POSTER)
+    parser.close()
+    assert len(parser.acts) == 1
+    assert [s.heading for s in parser.sections] == ["Breaks and rules", "Plain"]
+    # sechead div + <p>..<br>..</p> + self-closing <hr/> + <p> = 4 direct
+    # children; the bare <br> nested inside the <p> is not one of them.
+    assert [len(s.children) for s in parser.sections] == [4, 2]
+
+    _write(root / "presentations/pyforge-nu/project/Nu Infographic standalone.html", VOID_CHILDREN_POSTER)
+    assert deck_trio.main(["pyforge-nu", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-nu", "Nu").read_text(encoding="utf-8")
+    assert text.count("<section data-label=") == 3  # 1 act + 2 sections
+    assert 'data-label="Breaks and rules"' in text
+    assert 'data-label="Plain"' in text
+    assert "<p>Line one<br>Line two</p>" in text
+    assert "<hr/>" in text
+    assert "<p>After the rule.</p>" in text
+
+
+def test_deck_entity_in_label_is_re_escaped_into_data_label(root):
+    """``handle_data`` hands the parser decoded text, so a heading authored as
+    ``Local &amp; workstation mode`` (the live Warden poster's own shape) must
+    come back out of ``_escape_attr`` as ``&amp;`` inside ``data-label`` -- a
+    raw ``&`` there is a malformed attribute (Blind Hunter, follow-up review
+    pass, 2026-09-15: no fixture exercised the round trip)."""
+    _write(root / "presentations/pyforge-xi/project/Xi Infographic standalone.html", ENTITY_LABEL_POSTER)
+    assert deck_trio.main(["pyforge-xi", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-xi", "Xi").read_text(encoding="utf-8")
+    assert 'data-label="ACT I &amp; only"' in text
+    assert 'data-label="Local &amp; workstation mode"' in text
+    assert 'data-label="ACT I & only"' not in text
+    assert 'data-label="Local & workstation mode"' not in text
 
 
 # --------------------------------------------------------- --deck refusals
@@ -819,7 +956,7 @@ def test_deck_empty_act_label_exits_two_and_writes_nothing(root, capsys):
         deck_trio.main(["pyforge-alpha", "--deck"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "empty .lbl label" in err
+    assert "empty or missing .lbl label" in err
     assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
 
 
@@ -832,7 +969,7 @@ def test_deck_empty_section_heading_exits_two_and_writes_nothing(root, capsys):
         deck_trio.main(["pyforge-alpha", "--deck"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "empty <h2> label" in err
+    assert "empty or missing <h2> label" in err
     assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
 
 
@@ -1138,16 +1275,22 @@ class _FakeDeckPage:
     ``measure_section`` actually wires the same networkidle/fonts.ready fix
     ``measure_height`` needed (Design Notes § One browser launch per --deck
     run), rather than trusting a wholesale-monkeypatched stand-in. Also
-    captures the last rendered HTML so a test can assert the margin-collapse
-    fix's own precondition (a positioned measurement container)."""
+    captures the last rendered HTML so a test can assert the measurement
+    container carries the id ``_MEASURE_SCRIPT`` looks up. ``raise_on`` names
+    a page method that raises instead, for the failure-path test."""
 
-    def __init__(self, total: int, children: list, calls: list) -> None:
+    def __init__(
+        self, total: int, children: list, calls: list, raise_on: str | None = None
+    ) -> None:
         self._total = total
         self._children = children
         self._calls = calls
+        self._raise_on = raise_on
         self.last_html: str | None = None
 
     def set_content(self, html, wait_until=None):  # noqa: D102
+        if self._raise_on == "set_content":
+            raise RuntimeError("synthetic set_content failure")
         self.last_html = html
         self._calls.append(("set_content", wait_until))
 
@@ -1187,14 +1330,26 @@ def test_measure_section_renders_children_inside_the_identified_container():
     ``_MEASURE_SCRIPT`` can find it via ``getElementById`` -- the
     margin-collapse-safe height technique (Design Notes § Overflow split)
     reads every child's ``getBoundingClientRect().top``, which needs no
-    positioned ancestor (unlike an ``offsetTop`` delta, which is unreliable
-    on ``<svg>`` children -- verified live against the Warden poster's own
-    inline diagrams)."""
+    positioned ancestor (unlike an ``offsetTop`` delta -- an ``HTMLElement``
+    property that an inline ``<svg>`` root never carries, seen live against
+    the Warden poster's own inline diagrams)."""
     page = _FakeDeckPage(total=100, children=[50], calls=[])
     deck_trio.measure_section(page, "<style></style>", ["<p>a</p>"])
     assert page.last_html is not None
     assert deck_trio._MEASURE_CONTAINER_ID in page.last_html
     assert "<p>a</p>" in page.last_html
+
+
+def test_measure_section_wraps_page_failure_in_runtime_error():
+    """``measure_section``'s own ``except (Exception, SystemExit)`` wrapper
+    was never exercised -- every failure-path test monkeypatched
+    ``measure_all_sections`` wholesale (Blind Hunter, follow-up review pass,
+    2026-09-15). A page-level failure must surface as the tool's own
+    ``RuntimeError`` (which ``main()`` turns into exit 2), never a raw
+    traceback."""
+    page = _FakeDeckPage(total=100, children=[50], calls=[], raise_on="set_content")
+    with pytest.raises(RuntimeError, match="section measurement failed"):
+        deck_trio.measure_section(page, "<style></style>", ["<p>a</p>"])
 
 
 def test_measure_all_sections_reuses_one_page_across_every_section(monkeypatch):

@@ -914,9 +914,9 @@
    "presentations/pyforge-warden/src/pptx/pyforge-warden-deck-2026-09-10.pptx": "2bc45a7f579202e418f4fb85d6be64e4dfd41be0",
    "presentations/pyforge-warden/src/pptx/pyforge-warden_infographic_deck-2026-07-15.pptx": "f960c93dd26f96be5f03ab1ffc590feb0dc57457",
    "scripts/deck_facts.py": "f3c4e36a23d9605c51007103947526b6456a820d",
-   "scripts/deck_trio.py": "13ef81a6b91636bbf31b3f709b3e2a3ff55fab95"
+   "scripts/deck_trio.py": "f0c27340a3ca3ec4574358f741de3fac35b12ff5"
   },
-  "memlog": "a7bebe4b521d480bf4d77275eb956849bc073e4f"
+  "memlog": "55dbb8ef8bf1f5fb4f326f4735de756a91886cd8"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},

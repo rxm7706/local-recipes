@@ -26,8 +26,11 @@ band (``<div class="act">``, never split), one-or-more per numbered section
 overflows a slide's content budget, packed at its own direct-child
 boundaries), and one closing-band slide (``data-label="Close"``, when the
 standalone carries content after its last act/section) -- each wrapped in the
-family's own ``width:1240px`` page frame so content renders unchanged from
-the standalone. A non-numbered full-bleed banner sitting BETWEEN act/section
+family's own ``width:1240px`` page frame so content renders at the same width
+as the standalone (no reflow, no redesign; a section slide carries the
+section's direct children, not the ``<section class="sec">`` tag itself, so
+that tag's own CSS does not apply on the slide). A non-numbered full-bleed
+banner sitting BETWEEN act/section
 elements (e.g. a mid-deck "doctrine" band) is neither a masthead, a closing
 band, nor a numbered section, and produces no slide.
 
@@ -87,13 +90,13 @@ _MEASURE_CONTAINER_ID = "__deck_trio_frame__"
 # "fitting" packed group's true height once isolated could exceed the
 # budget; this position-delta technique captures the real gap instead
 # (Design Notes § Overflow split). A same-page ``offsetTop`` delta would
-# capture the identical gap, but ``offsetTop`` is unreliable on ``<svg>``
-# root elements (verified live against the Warden poster's own inline
-# diagrams: some Chromium builds return ``undefined`` for an SVG's
-# ``offsetTop``, poisoning the delta with ``NaN``) -- every real poster in
-# this family carries inline SVGs (infographic-standard.md's own floor is
-# >= 3), so ``getBoundingClientRect().top`` (defined on every ``Element``,
-# SVG included) is used instead. Both children's rects and the container's
+# capture the identical gap, but ``offsetTop`` is an ``HTMLElement``
+# property that ``SVGElement`` never carries -- ``undefined`` on an
+# inline ``<svg>`` root in every browser, poisoning the delta with ``NaN``
+# (seen live against the Warden poster's own inline diagrams) -- and every
+# real poster in this family carries inline SVGs (infographic-standard.md's
+# own floor is >= 3), so ``getBoundingClientRect().top`` (defined on every
+# ``Element``, SVG included) is used instead. Both children's rects and the container's
 # own bottom are read in the same synchronous pass, so no scroll can occur
 # between them and no positioned-ancestor requirement applies.
 _MEASURE_SCRIPT = (
@@ -314,8 +317,10 @@ class _DeckStructure(HTMLParser):
             self._text_targets.append(self._open_section["h2"])
 
         if tag not in _VOID_ELEMENTS:
-            close = self.text.find(">", start)
-            tag_open_end = len(self.text) if close < 0 else close + 1
+            # get_starttag_text() is the tag's exact source text (as
+            # _PosterStructure.handle_starttag already uses), so a ">" inside
+            # a quoted attribute value can never end the span early.
+            tag_open_end = start + len(self.get_starttag_text() or "")
             self._tag_spans.append((tag, start, tag_open_end))
             self._stack.append(tag)
             if tag == "body" and self._body_depth is None:
@@ -517,7 +522,7 @@ def render_deck(helmet_content: str, slides: list[tuple[str, str]]) -> str:
     matching the family's own established 14-file skeleton (``<x-import
     component-from-global-scope="deck-stage" ...>`` inside ``<x-dc>``) and
     laying every slide out at the family's own page frame so content renders
-    exactly as it did in the standalone -- no reflow, no redesign. Never
+    at the same width as the standalone -- no reflow, no redesign. Never
     fabricates ``data-speaker-notes`` (Never #4): the attribute is simply
     never emitted.
     """
@@ -778,14 +783,18 @@ def main(argv: list[str] | None = None) -> int:
             ap.error(f'{rel_poster}: no <div class="act"> bands found')
         if not deck_parser.sections:
             ap.error(f'{rel_poster}: no <section class="sec"> elements found')
+        # "empty or missing": a band/section authored without any .lbl span
+        # / <h2> at all (not merely an empty one) refuses with the same
+        # message, so the wording must not send the author hunting for an
+        # empty element that is not there.
         for i, act in enumerate(deck_parser.acts, start=1):
             if not act.lbl:
-                ap.error(f"{rel_poster}: act band {i} has an empty .lbl label")
+                ap.error(f"{rel_poster}: act band {i} has an empty or missing .lbl label")
         for i, section in enumerate(deck_parser.sections, start=1):
             if not section.children:
                 ap.error(f"{rel_poster}: numbered section {i} has zero direct children")
             if not section.heading:
-                ap.error(f"{rel_poster}: numbered section {i} has an empty <h2> label")
+                ap.error(f"{rel_poster}: numbered section {i} has an empty or missing <h2> label")
 
         try:
             measurements = measure_all_sections(deck_parser.sections, poster_text, helmet_content)
