@@ -2,7 +2,7 @@
 title: They mail a dated list; we mail a dated list
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # They mail a dated list; we mail a dated list
@@ -99,12 +99,50 @@ history. Epic 8 only on an **allowed-pair** list **inside our walls**.
 
 ## Open questions for the Spec
 
-- Transport of the file (email, share, app upload) — not the corridor itself.
-- When larva starts (N Drop Nights vs a date).
-- After week two, reject inbound rows with no passport vs keep minting.
-- Second vendor in v1 (`vendor_id` is already implied) vs later.
-- Named outbound signer role.
-- If standup will not open the app: same table → mailed query vs Herald slide.
+Answered 2026-09-15. Recorded in § *Operator rulings* below. They bind the
+Spec re-derive. The Dream is `specified` only after that Spec is `ready`.
+
+1. **Transport** — email, share folder, or app upload?
+2. **Larva trigger** — after N Drop Nights, or a date / explicit start?
+3. **Missing passport after week two** — keep minting, or reject?
+4. **Second vendor in v1** — operate two, or schema-ready only?
+5. **Outbound signer** — named role, or implicit operator?
+6. **Standup glass if the app is refused** — mailed query, or Herald slide?
+
+## Operator rulings (accepted 2026-09-15)
+
+Operator approved the session plan. **Egg** is this first cut. **Larva** is
+later. **Waybill** = which drop and which clocks. **Passport** = the UUID we
+mint. Do not treat steward Epic 8 as this product.
+
+1. **Default transport is upload into the existing app.** Email and a shared
+   folder are extra transports that drop the same file into the same loader.
+   v1 does not require a mailbox parser. Tables: Spec companion
+   `transports-and-vendors.md`.
+
+2. **Larva does not start automatically.** Not after N Drop Nights. CAP-6
+   and CAP-7 stay later empty slots. Live collectors start when the operator
+   flips a date or an explicit "start larva" story.
+
+3. **First two weeks (config; default 14 days): mint a passport and
+   quarantine until a human links nicknames.** After that, do not mint. The
+   row stays in quarantine as "no passport" until a human overrides. Never
+   match by title.
+
+4. **Schema has `vendor_id` from day one. v1 runs one vendor.** A second
+   vendor is config, not a rewrite. No second standup pane until turned on.
+
+5. **Named role: outbound signer.** A person or GitHub team on the existing
+   app, recorded on the waybill. Default: the steward operator running Drop
+   Night. Unsigned or over-broad files do not leave.
+
+6. **App views `standup` and `shipped` are the product.** A mailed/export
+   of the same table (CSV or markdown of the last waybill) is a plugin so
+   standup can run from a file. A Herald slide is a later empty slot, not
+   required for egg.
+
+Do not flip Epic 44 `blocked` keys. Do not aim Epic 8 or `steward sync` at
+the vendor private project.
 
 ## Realization log
 
@@ -113,3 +151,8 @@ history. Epic 8 only on an **allowed-pair** list **inside our walls**.
   join, existing app, kinship to Epic 8). Chain Spec seeded `draft` the same
   day so dream-chain INV-1 holds; Dream stays `dreamt` until that Spec is
   `ready`.
+- **2026-09-15** — Operator approved Q1–6 (upload default; email/share
+  plugins; larva not auto; mint-then-reject after two weeks; one vendor
+  operated, `vendor_id` ready; named outbound signer; mailed query plugin;
+  Herald later). Spec `ready`. Steward Epic **61** (61.1–61.5 `backlog`)
+  is the marshal dispatch home. Dream `dreamt` → `specified`.

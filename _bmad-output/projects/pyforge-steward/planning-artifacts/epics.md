@@ -4021,3 +4021,61 @@ install hint)
 **And** it is not an App Store, MyBMAD, Collab, or nebari-frames
 **Status:** backlog
 
+## Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..7)
+
+Minted 2026-09-15 from `docs/dreams/work-passports-dated-extracts.md` after the
+operator approved Q1–6. Spec `ready`. **CAP-6** and **CAP-7** (larva) are
+empty later slots — no story. Do not treat Epic 8 as this product. Do not
+flip any Epic 44 `blocked` key. Do not PAT into the vendor private GitHub.
+
+### Story 61.1: Corridor transports — upload default
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-work-passports-dated-extracts CAP-1
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-work-passports-dated-extracts/transports-and-vendors.md`;
+the existing Postgres app / a steward load duty.
+**Given** vendor and estate lists have no idempotent drop path
+**When** this story lands
+**Then** inbound and outbound files load by batch sha + waybill
+**And** default transport is app upload; email and share-folder are plugins
+**Status:** backlog
+
+### Story 61.2: Work passport and core schema
+
+**Type:** feature • **Effort:** M • **Deps:** S-61.1 • **FR/AD:** spec-work-passports-dated-extracts CAP-2
+**Surface:** the existing Postgres join store.
+**Given** Jira keys and GitHub numbers can collide across rooms
+**When** this story lands
+**Then** identity is a UUID we mint; keys and numbers are nicknames
+**And** `vendor_id` is on inbound rows; v1 operates one vendor
+**Status:** backlog
+
+### Story 61.3: As-of glass and mailed query
+
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-3
+**Surface:** existing app views `standup` and `shipped`; optional CSV/markdown export.
+**Given** standup asks "any news from the vendor?"
+**When** this story lands
+**Then** standup cites a waybill; empty on-time file fails; late drop leaves yesterday stale; unborn before first waybill
+**And** a mailed/export of the same table is a switchable plugin
+**Status:** backlog
+
+### Story 61.4: Signed outbound slice
+
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-4
+**Surface:** outbound loader; named `outbound-signer` role on the existing app.
+**Given** a dump of Jira or factory BMAD can leave unsigned
+**When** this story lands
+**Then** default deny; a named slice plus recorded signer is required
+**And** the vendor loads our file — we do not PAT into their org
+**Status:** backlog
+
+### Story 61.5: Quarantine — mint then reject
+
+**Type:** feature • **Effort:** M • **Deps:** S-61.2 • **FR/AD:** spec-work-passports-dated-extracts CAP-5
+**Surface:** quarantine shelf on the existing app.
+**Given** inbound rows arrive without a passport
+**When** this story lands
+**Then** first 14 days (config) mint into quarantine; after that, no mint
+**And** no title-match endpoint exists
+**Status:** backlog
+
