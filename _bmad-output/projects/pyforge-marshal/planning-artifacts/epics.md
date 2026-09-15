@@ -5755,3 +5755,102 @@ reopened one. One story; the Spec's CAP-6 is the contract.
 **Given** `ad_citation_check` prints at most ten NEW rows per class (`new[:10]`, `cap_new[:10]`) beneath a headline that reports the full count, so the 2026-09-14 red on `origin/main` — 4 ad + 57 cap NEW — was read and recorded as 14 from the printed rows, the same "head truncates findings out of view" class CLAUDE.md § Reading a detector's result warns about, implemented inside the detector; and `--write-baseline` / `--write-cap-baseline` stamp `recorded:` with hard-coded literals (`"2026-09-08"`, `"2026-09-10"`), so a baseline re-stamped on any later date still claims those dates **When** every NEW row is printed (the NEW set *is* the actionable set; the baselined set is already summarised by count, and a detector that exits 1 must show what it exits on) and the stamps carry the actual stamping date **Then** the printed NEW rows equal `len(new)` and `len(cap_new)` for any size, proven by a test with more than ten synthetic findings in each class
 **And** `--write-baseline` / `--write-cap-baseline` write today's ISO date, proven by a test that reads it back; the two existing baseline files are re-stamped once so their `recorded:` reflects the 2026-09-14 shrink rather than the literals
 **And** no other behaviour of the detector changes — the ratchet semantics, the "since fixed" accounting, the `[:10]`-free summary lines and the exit codes are byte-for-byte the same, proven by the existing `tests/scripts/` suite staying green
+
+## Epic 44: The operator stops re-pasting the status prompt — marshal watches its own runs (spec-marshal-run-watch CAP-1..5)
+
+Minted 2026-09-15 from `docs/dreams/marshal-run-watch.md`. A live, hand-driven `/loop` session
+watching pyforge-herald run `20260914-201759-bd47` (Epic 21) worked out a repeatable ground-truth
++ delta + boundary-pacing ritual and captured it as a Claude-only project skill
+(`.claude/skills/marshal-run-watch/`) — proven correct against a real multi-hour run, but
+invisible to marshal's own CLI, unified grammar, MCP face, persona, and portal. Story 44.1 ports
+that proven logic into a real `marshal watch` CLI verb (CAP-1+CAP-2, this epic's implementable
+round); Stories 44.2–44.4 name the three follow-on faces (MCP, persona menu, portal view) as
+separate, deferrable stories per the Spec's own "CLI first" constraint.
+
+### Story 44.1: `marshal watch` ports the operator's ritual into a real CLI verb
+
+As a fleet operator,
+I want a `marshal watch` CLI verb that gathers ground truth for a pinned run, a station's
+current run, or the whole fleet, diffs it against the last observation, and reports only
+what changed plus a recommended next-check delay,
+So that watching a live `bmad-loop` run or `bmad-build-auto` dispatch is a marshal capability
+I can run from any terminal, not a chat ritual I re-paste by hand every time.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-run-watch CAP-1, CAP-2
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` (new),
+`cli/main.py` (subparser wiring, mirroring `status`/`homes`/`check`), and its test suite under
+`src/shared/packages/pyforge-marshal/tests/`. Reuses `bmad-loop status <run_id> --json` /
+`bmad-loop list --json` (bmad-loop pattern) and `marshal status --project <slug>`'s `dispatch_*`
+fields (bmad-build-auto pattern) as ground truth — no new data source.
+**Given** `marshal watch --project <slug> --run <run_id>` is invoked against a live `bmad-loop`
+run, or `marshal watch --project <slug>` with no run pinned (auto-detecting the station's
+current run, either pattern), or `marshal watch --fleet` (every project under
+`_bmad-output/projects/*/`, discovered live, never a hardcoded list)
+**When** ground truth is gathered and diffed against the immediately-prior persisted observation
+**Then** the report states only what changed (a story's phase or `commit_sha`, the run's overall
+status, a new escalation, the loop-branch SHA, a PR's state) — or plainly that nothing changed —
+in the five-section shape (Session Completions / Delta Since Last Update / Currently Running /
+Up Next & Full Queue / User Action Required) for a pinned/station run, or the compact
+per-project snapshot (escalated/paused projects sorted first) for `--fleet`
+**And** the command also prints a recommended next-check delay and a one-line reason, using the
+validated pacing (`min(300s, seconds-to-next-:00/:30-boundary)` while a run is actively
+progressing, boundary-only while paused/escalated, no recommendation once a run is finished)
+**And** for the `bmad-loop` pattern, `marshal watch` never reads `marshal status`'s `dispatch_*`
+fields as that run's per-story ground truth — a test fixture where `dispatch_*` describes a
+different, older run than the live `bmad-loop status` result proves the report uses only the
+`bmad-loop` result and states plainly that a stale unrelated dispatch record was present and
+ignored
+**And** the persisted last-observation cache is a local, regenerable file; deleting it or
+pointing at a slug/run with no prior cache produces a first-observation report, never a
+fabricated delta
+**And** every path above is covered by a test that drives the same diff+report logic against
+fixture journals/state, not a live `bmad-loop` process
+**Status:** backlog
+
+### Story 44.2: `marshal watch` is reachable over MCP
+
+As an agent acting through the marshal station's service face,
+I want `marshal watch`'s report available as a named tool on `POST /stations/marshal/mcp`,
+So that I can watch a run without shelling out to the CLI directly.
+
+**Type:** feature • **Effort:** S • **Deps:** S-44.1 • **FR/AD:** spec-marshal-run-watch CAP-3
+**Surface:** `src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py` — a new
+`@server.tool(...)`-registered tool alongside the existing `publish_loop_run` /
+`heartbeat_loop_run` / `complete_loop_run` / `list_loop_story_tasks` tools.
+**Given** Story 44.1 has landed
+**When** the new tool is called with the same project/run/fleet parameters `marshal watch`
+accepts
+**Then** it returns the same report shape Story 44.1 produces, and is callable by the
+`bmad-agent-marshal` persona's `mcp` action kind (`POST /stations/marshal/mcp` only, no other
+URL/method/host)
+**Status:** backlog
+
+### Story 44.3: The Marshal persona can offer "watch a run" as a menu action
+
+As the Marshal station persona,
+I want a menu entry that dispatches `pyforge marshal watch ...` grammar,
+So that an operator addressing me as Marshal can watch a run without leaving the persona.
+
+**Type:** feature • **Effort:** XS • **Deps:** S-44.1 • **FR/AD:** spec-marshal-run-watch CAP-4
+**Surface:** `bmad-agent-marshal`'s persona customization (`agent.menu` entry) — no change to
+the persona skill's Allowed/Forbidden actions, since `pyforge marshal watch ...` is already a
+permitted `grammar` action kind (CAP-16).
+**Given** Story 44.1 has landed
+**When** the operator selects the new menu entry
+**Then** the persona issues a `grammar` action kind starting `pyforge marshal watch`, and the
+resulting transcript shows only FR-13 grammar (no direct filesystem, no ad-hoc HTTP)
+**Status:** backlog
+
+### Story 44.4: `marshal watch`'s report is viewable in the portal
+
+As an operator using the browser portal,
+I want to see `marshal watch`'s report for a project or run I select, without a terminal,
+So that watching a run doesn't require CLI access.
+
+**Type:** feature • **Effort:** M • **Deps:** S-44.1 • **FR/AD:** spec-marshal-run-watch CAP-5
+**Surface:** `src/shared/packages/django-marshal/src/django_marshal_portal/views.py` (new view,
+alongside `chrome_home`) and `urls.py` (new route).
+**Given** Story 44.1 has landed
+**When** an operator selects a project/run in the portal
+**Then** the new view renders Story 44.1's report for that selection, with no terminal required
+**Status:** backlog

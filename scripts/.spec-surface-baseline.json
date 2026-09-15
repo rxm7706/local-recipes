@@ -3113,6 +3113,12 @@
   },
   "memlog": "62cecff1296147371c0dae1f19959b4f90f8846e"
  },
+ "pyforge-marshal/spec-marshal-run-watch": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "99362b292f2850cbdcd088a34fb18bed29a29ed4"
+  },
+  "memlog": "e784e71c90f89b421eae2d322156622961de5e7b"
+ },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
    ".claude/skills/bmad-build-auto/spec-template.md": "910f67c85b2ba13fcdb4c7e3a52c12aa50dd7b79",
