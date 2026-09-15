@@ -120,14 +120,10 @@ DEFERRED_SPECS: dict[str, str] = {
         "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
         "describe undone work an epic could pick up today. De-register once the operator "
         "publishes the human/agent/team measure set CAP-1 needs",
-    "spec-work-passports-dated-extracts":
-        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
-        "INV-1). Its six open questions are DESIGN leftovers after converge (file transport, "
-        "when larva starts, mint-vs-reject a missing passport, second vendor in v1, outbound "
-        "signer role, glass if standup refuses the app) — the egg corridor itself is named "
-        "but not ready to decompose. CAP-1..7 are explicitly candidates. Sibling of "
-        "spec-jira-github-projects-sync; do not treat Epic 8 as this product. De-register "
-        "once the open_questions are cleared and the Spec reaches `ready`",
+    # `spec-work-passports-dated-extracts` was registered here 2026-09-14 as a
+    # `draft` seed whose six open questions blocked decompose. De-registered
+    # 2026-09-15: operator approved Q1–6; Spec `ready`; steward Epic 61
+    # (61.1–61.5) is the dispatch home. Do not treat Epic 8 as this product.
     # `spec-coverage-gate-independence` was registered here 2026-09-14 (morning) as a `draft`
     # seed whose five open questions were unanswerable design decisions. De-registered the
     # same day: the operator ruled its home the Guild (Charter §5 amendment), so the Spec moved
