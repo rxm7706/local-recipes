@@ -233,10 +233,11 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
                                         │
                  ┌──────────────────────┼───────────────────────────┐
                  ▼                      ▼                           ▼
-   ★ PyForge <Name> -         PyForge <Name> Infographic     PyForge <Name> -
+   PyForge <Name> -         ★ PyForge <Name> Infographic     PyForge <Name> -
      Infographic.dc.html      standalone.html                Infographic Deck.dc.html
-     (HEAD — edit here)       (same body, no x-dc wrapper,   (same sections re-laid
-                              styles inlined in <head>)       as 1920×1080 slides)
+     (derived —               (HEAD — edit here;             (same sections re-laid
+      deck-trio --head)        same body, no x-dc wrapper,    as 1920×1080 slides)
+                               styles inlined in <head>)
 ```
 
 **Where to edit WHAT:**
@@ -244,20 +245,15 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
 | You want to change… | Edit surface | Propagates to |
 |---|---|---|
 | The deck's story / slides | `PyForge <Name>.dc.html` in Design | pull → extract → build → deck-export (React deck, deck pptx) |
-| Infographic content | ★ `PyForge <Name> - Infographic.dc.html` in Design (the trio's head) | standalone + Infographic Deck (Path A/B below); optionally the marp `.md` → infographic pptx |
+| Infographic content | ★ `PyForge <Name> Infographic standalone.html` (the trio's source) | `pixi run -e local-recipes deck-trio <slug> --head` writes the Infographic.dc.html head; Infographic Deck is Story 21.2; optionally the marp `.md` → infographic pptx |
 | Executive summary | `PyForge <Name> - Executive Summary.dc.html` in Design; keep its marp `.md` in step | exec pages both sides |
 | Exports only (pptx / marp standalone) | `src/marp/pyforge-<slug>-*.md` in git, then `pixi run -e local-recipes deck-export <slug>` | pptx + marp-rendered standalone |
-| A number / version / status / date the poster shows | an **already-marked** literal: `pixi run -e local-recipes deck-facts <slug> --refresh` re-derives `facts.yaml` and rewrites the literal in the poster from it, keeping its shape — no hand edit. A **new** literal: edit the poster and mark it by hand with `data-fact`, then `deck-facts <slug>` to add its row | the standalone (head + Infographic Deck in the lockstep slice) |
+| A number / version / status / date the poster shows | an **already-marked** literal: `pixi run -e local-recipes deck-facts <slug> --refresh` re-derives `facts.yaml` and rewrites the literal in the poster from it, keeping its shape — no hand edit. A **new** literal: edit the poster and mark it by hand with `data-fact`, then `deck-facts <slug>` to add its row | the standalone; then `deck-trio <slug> --head` for the derived head (Infographic Deck is Story 21.2) |
 | Visual design / palette / tokens | the **Modernist design system** project (`fbc1d6c8`), NOT per-artifact; per-artifact layout tweaks in that artifact's dc.html | every Modernist-bound deck |
 
-**Propagating an infographic edit** (the trio must stay in lockstep):
-- **Path A — in Design:** append to the edit prompt: *"…then mirror the change
-  into `PyForge <Name> - Infographic Deck.dc.html` as a slide in the same style,
-  and update `PyForge <Name> Infographic standalone.html` so its body matches
-  the one-pager exactly (same markup, no x-dc wrapper, styles in `<head>`)."*
-- **Path B — via the repo:** edit only the head in Design, then ask the agent to
-  *"pull <slug> infographics"* — it pulls byte-exact (strip path above),
-  re-derives standalone + deck forms, parity-checks, and commits.
+**Propagating an infographic edit** (the trio must stay in lockstep; the standalone is the source, the head is derived):
+- **Path A — in Design:** do not treat `PyForge <Name> - Infographic.dc.html` as an authoring surface — `deck-trio <slug> --head` overwrites it from the standalone. Edit `PyForge <Name> Infographic standalone.html` (typically git, not Design), then derive the head. Infographic Deck is Story 21.2.
+- **Path B — via the repo:** edit only the standalone, then `pixi run -e local-recipes deck-trio <slug> --head` — it writes `PyForge <Name> - Infographic.dc.html` (`x-dc` wrapper, styles and links in `<helmet>`, `./support.js`, `$preview`). A second run on unchanged bytes is a no-op (`unchanged`).
 
 **What never auto-flows:** the infographic **pptx** comes from the marp `.md`
 via `deck-export`, not from the dc.html — sync the marp after Design edits when
