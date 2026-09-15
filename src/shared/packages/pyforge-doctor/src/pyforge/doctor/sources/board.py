@@ -142,14 +142,6 @@ DEFERRED_SPECS: dict[str, str] = {
     # to docs/governance/spec-coverage-gate-independence/ -- outside `pa.glob("specs/spec-*")`
     # above, exactly like spec-pyforge-charter -- and the mechanism stories live in doctor's
     # epics.md (Epic 24), where INV-A can see them.
-    "spec-vocabulary-one-name-one-job":
-        "a `draft` Spec seeded 2026-09-14 so the Dream's chain link is durable (dream-chain "
-        "INV-1). All eleven of its open questions are operator decisions about constitutional "
-        "vocabulary — whether the Spec status ladder is reduced, whether `in-progress` survives "
-        "on Specs, how the Hub/BMAD `Track` collision is ruled — and none may be answered by "
-        "inference from the research alone. Its CAP-1..5 are explicitly candidates, not "
-        "commitments, so an epic today would decompose choices nobody has made. De-register "
-        "once the open_questions are cleared and the Spec reaches `ready`",
     "spec-golden-path-conda-blind-spot":
         "a `ready` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
         "its five CAPs were gated by five open questions (selector grammar, provisioning, "

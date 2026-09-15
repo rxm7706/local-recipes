@@ -2,7 +2,7 @@
 title: One name, one job — reconciling three vocabularies
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # One name, one job — reconciling three vocabularies
@@ -433,3 +433,8 @@ the ledger.** No mass rename, no history rewrite, no Lexicon-noun change.
   Status stays `dreamt`: a `draft` Spec still has unanswered `open_questions:` in its
   frontmatter until `bmad-spec` re-derives the contract from this file. No epic. No
   `SPEC.md` hand-edit.
+- **2026-09-15 (later)** — Operator: decompose all the way to stories ready for
+  marshal dispatch. `bmad-spec` re-derived `spec-vocabulary-one-name-one-job` to
+  `ready` (CAP-1..8; CAP-4 already met; `open_questions: []`). This Dream flips
+  `dreamt` → `specified`. Steward Epic **59** (59.1–59.7 `backlog`) is the
+  dispatch home. `DEFERRED_SPECS` drops this slug.
