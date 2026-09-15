@@ -3967,3 +3967,57 @@ except `type(scope):` under `recipes/` and the CFE changelog
 **Then** those sites put the data in `evidence` and `check=` stays a kebab code
 **Status:** backlog
 
+## Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..7)
+
+Minted 2026-09-15 from `docs/dreams/self-hosted-bmad-marketplace.md` after the
+operator approved Q1–7. Spec `ready`. **CAP-5** (Claude-skill source slot)
+is an empty later slot — no story. **CAP-6** (Hub Layer 3) is a recorded
+non-goal — no story. Do not flip any Epic 44 `blocked` key. Creating a new
+GitHub catalog repo needs operator confirm at 60.1.
+
+### Story 60.1: The catalog config names backends and sources
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-1
+**Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-self-hosted-bmad-marketplace/backends-and-sources.md`;
+a config the installer and Claude/Codex `extraKnownMarketplaces` can point at.
+**Given** listings have no estate home and no named source
+**When** this story lands
+**Then** git is the edit store and backends/sources are declared in config
+**And** a new backend or source is a plugin, not a rewrite
+**Status:** backlog
+
+### Story 60.2: Publish uses tools we wield; steward records the review
+
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-2
+**Surface:** Builder / module-template / SKF publish path; the estate catalog
+registry YAML.
+**Given** a module can appear without a recorded review
+**When** this story lands
+**Then** a listing cannot appear without steward review, unless it is already
+in the wielded suite (Certified)
+**And** tiers are Unverified / Community Reviewed / BMad Certified
+**Status:** backlog
+
+### Story 60.3: Ship backends — conda channel default
+
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-3
+**Surface:** a noarch catalog-index recipe under `recipes/`; the existing
+SelfExplainML / Artifactory channel path.
+**Given** an air-gapped host cannot install without github.com
+**When** this story lands
+**Then** the default ship path is a pixi/conda index package on that channel
+**And** object storage and git bundle / tarball are switchable extras
+**Status:** backlog
+
+### Story 60.4: Frame index and a thin browse list
+
+**Type:** feature • **Effort:** M • **Deps:** S-60.1 • **FR/AD:** spec-self-hosted-bmad-marketplace CAP-4 CAP-7
+**Surface:** `docs/foundry/frames/`; a generated index or existing chrome page.
+**Given** operators read YAML by hand and Frames have no catalog row
+**When** this story lands
+**Then** a read-only list shows modules and Frames (name, tier, link or
+install hint)
+**And** a Frame listing is a reviewed git add; share uses CAP-3 backends
+**And** it is not an App Store, MyBMAD, Collab, or nebari-frames
+**Status:** backlog
+

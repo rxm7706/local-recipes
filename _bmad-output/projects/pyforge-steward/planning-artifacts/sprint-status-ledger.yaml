@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 369
+# stories: 375
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -246,6 +246,10 @@ development_status:
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
+  60-1-the-catalog-config-names-backends-and-sources: backlog
+  60-2-publish-uses-tools-we-wield-steward-records-the-review: backlog
+  60-3-ship-backends-conda-channel-default: backlog
+  60-4-frame-index-and-a-thin-browse-list: backlog
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -377,6 +381,8 @@ development_status:
   epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
+  epic-60: backlog
+  epic-60-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done
