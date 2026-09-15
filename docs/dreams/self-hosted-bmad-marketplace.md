@@ -2,7 +2,7 @@
 title: The estate hosts its own BMAD catalog, not Claude's public marketplace
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # The estate hosts its own BMAD catalog, not Claude's public marketplace
@@ -211,19 +211,67 @@ SQLite single-writer, `replicaCount: 1` — a fourth infra kind, already parked
 
 ## Open questions for the Spec
 
+Answered 2026-09-15. Recorded in § *Operator rulings* below. They bind the
+Spec re-derive. The Dream is `specified` only after that Spec is `ready`.
+
 1. **v1 SKU** — A only, or A plus a consumed skillsctl face (B) in the same
    contract?
 2. **Browse UI in v1** — git + `extraKnownMarketplaces` is enough, or do we
    invent a hosted browse/install surface (and where does it run)?
-3. **Registry home** — internal git, object storage, or both (git as source
-   of record, object storage as air-gap blob)?
+3. **Registry home** — internal git, object storage, conda channel, or a
+   switchable set?
 4. **Fork vs mirror** of `bmad-plugins-marketplace` — and do we carry their
-   three-module public index or start empty?
+   public index or start empty?
 5. **Trust review** — who reviews our listings, and do we reuse their trust
    tiers or write our own?
 6. **Billing** — non-goal for v1, or a named later-cap on *this* Spec?
-7. **LC-3** — sibling chain (this Dream owns SKU A; Hub keeps C) or hoist
-   Layer 3 into this Spec?
+7. **Layer 3 / Frames** — hoist the whitepaper marketplace, or only estate
+   Frame list/share/add on the same rails?
+
+## Operator rulings (accepted 2026-09-15)
+
+Operator approved the session plan. Short names from the seed stay; each is
+defined in prose here.
+
+**SKU A** = our BMAD module catalog (YAML the installer already understands).
+**SKU B** = a Claude Code skill store (`skillsctl`). **SKU C / Layer 3** =
+buying and selling Frames, Cogs, Ops, Guards across independent Hubs, plus
+billing. **LC-2** = Hub's parked "Frame registry." **LC-3** = Hub's parked
+"skills / agent marketplace" ticket (this Dream owns the BMAD-catalog half).
+
+1. **v1 is our BMAD catalog plus estate Frames on the same rails.** Not the
+   Claude-skill store. That store gets an empty *source slot* so it can plug
+   in later without a rewrite.
+
+2. **A thin browse list in v1.** Operators can read the catalog (modules and
+   Frames, trust tier, link or install hint). Not a click-to-install App
+   Store. Not MyBMAD, Collab Desktop, or Nebari's Frames website. Install
+   still uses `bmad-method install` / pixi.
+
+3. **Git is where listings are edited. Shipping is a config switch.**
+   Default ship path: a small pixi/conda package on the channel we already
+   use (SelfExplainML locally; Artifactory when air-gapped). Object storage
+   and a git bundle / tarball are extra backends you can turn on. Adding a
+   backend later is a plugin, not a new product.
+
+4. **Our repo, their file format. Not an automatic mirror.** Start with no
+   community modules. We may point at official modules we already wield.
+   Their public catalog is an optional *source plugin*, default off. The
+   2026-09-14 "three modules" count is stale — do not bake in a number.
+
+5. **Steward reviews our list.** Reuse their tier *names*: Unverified
+   (validator passed), Community Reviewed (steward approved our PR), BMad
+   Certified (operator endorsed, or already in the wielded suite). Their
+   team does not review us. Every listing names which *source* produced it.
+
+6. **No billing on this Spec.**
+
+7. **No Layer 3.** Frame list / share / add-as-a-reviewed-git-listing is in
+   (Hub LC-2 is done here). Frame files stay under `docs/foundry/frames/`.
+   Do not stand up Nebari Frames or trade with other Hubs.
+
+Creating a new GitHub repo for the catalog still needs operator confirm at
+that story. Do not flip Epic 44 `blocked` keys.
 
 ## Kinships
 
@@ -248,3 +296,8 @@ chosen) · [[pyforge-steward]] (owner) · [[pyforge-unifying-strategy]]
   answer. Next act: `bmad-spec` under steward once the open questions close;
   until then the stub Spec is the chain link only (`status: draft`, Dream
   stays `dreamt`).
+- **2026-09-15** — Operator approved Q1–7 (thin browse; git to edit; conda /
+  Artifactory default ship backend; object storage and bundles as plugins;
+  Frames list/share on the same rails; no Layer 3; no billing). Spec `ready`.
+  Steward Epic **60** (60.1–60.4 `backlog`) is the marshal dispatch home.
+  Dream `dreamt` → `specified`.

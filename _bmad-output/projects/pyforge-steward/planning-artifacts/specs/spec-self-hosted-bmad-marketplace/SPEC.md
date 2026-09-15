@@ -1,121 +1,112 @@
 ---
 spec: self-hosted-bmad-marketplace
-status: draft   # 2026-09-14 — seeded so the Dream's chain link is durable (dream-chain INV-1).
-                # Seven open questions remain; every capability below is a candidate.
-                # Per docs/dreams/README.md:71-78 a `draft` Spec establishes the CHAIN, not the
-                # CONTRACT — the owning Dream therefore stays `dreamt`.
+status: ready
 created: "2026-09-14"
-updated: "2026-09-14"
+updated: "2026-09-15"
 owner-dream: docs/dreams/self-hosted-bmad-marketplace.md
 surface: []
-companions: []
+companions:
+  - backends-and-sources.md
 sources:
   - ../../../../../../docs/dreams/self-hosted-bmad-marketplace.md
-open_questions:
-  - v1-sku-a-only-or-a-plus-skillsctl
-  - browse-ui-in-v1
-  - registry-home-git-or-object-storage
-  - fork-vs-mirror-and-public-index
-  - trust-review-owner-and-tiers
-  - billing-v1-nongoal-or-later-cap
-  - lc3-sibling-or-hoist
+open_questions: []
 ---
 
-> **Seed Spec — the chain, not the contract.** Derived 2026-09-14 from
-> `docs/dreams/self-hosted-bmad-marketplace.md`. It exists so `dream-chain` INV-1
-> has a durable link and so the dated org inventory is where research and a later
-> `bmad-spec` re-derive can see it. **Every capability below is a candidate.
-> Nothing is chosen.**
+> **Canonical contract.** Derived 2026-09-15 from
+> `docs/dreams/self-hosted-bmad-marketplace.md` § *Operator rulings (accepted
+> 2026-09-15)* and this folder's `.memlog.md`. CAP-1..6 IDs are stable from the
+> 2026-09-14 seed (CAP-5 is a later empty slot; CAP-6 is a recorded non-goal).
+> CAP-7 is the Frame index. CAP-4 is in v1 (thin list, not an App Store).
 
 # SPEC — the estate hosts its own BMAD catalog
 
 ## Why
 
-The suite on A is fully wielded. Air-gap and estate installers still have only
-Claude's public plugin marketplace and github.com as an index. The BMAD org
-already ships the YAML registry, schema, trust tiers, and installer hook
-(`bmad-plugins-marketplace` + `extraKnownMarketplaces`). OpenTeams / Nebari /
-ownyourintelligence.ai ship Frame and Claude-skill *adjacent* registries and
-OCI pack plumbing — not a BMAD App Store. Hub Layer 3 is still thesis. This
-Spec is the later product `spec-bmad-suite-lifecycle` and Hub LC-3 deferred.
+The suite on A is fully wielded. Installers still treat Claude's public
+plugin list and github.com as the only index. This Spec is the later product
+`spec-bmad-suite-lifecycle` and Hub LC-3 deferred: a catalog we host and
+review, plus estate Frames listed on the same rails. Owner: **steward**.
 
-Owner: **steward**.
+## Capabilities
 
-## What the 2026-09-14 inventory CLEARED (do not re-litigate)
+- **CAP-1 — estate catalog and config.**
+  - **intent:** listings are edited in git we control; backends and sources
+    are named in config so ship path and feed can swap without a rewrite.
+  - **success:** `bmad-method install` / `--custom-content` and Claude/Codex
+    `extraKnownMarketplaces` can resolve our catalog; every listing names a
+    source; a new backend or source is a plugin. Tables:
+    `backends-and-sources.md`.
 
-Recorded in the Dream § *What is real*. Short form:
+- **CAP-2 — publish path plus steward trust review.**
+  - **intent:** a module enters the catalog through Builder / module-template
+    / SKF, then a named steward review — not a silent copy from labs or
+    Claude.
+  - **success:** a listing cannot appear without a recorded review, unless it
+    is already in the wielded suite (Certified). Tiers: Unverified,
+    Community Reviewed, BMad Certified (their names; our reviewers).
 
-- **No store on A, no store at ownyourintelligence.ai, no store in openteams-ai.**
-  Public marketplace is thesis (field guide 2026-08-18). Collab Desktop exists
-  and is the Desktop/Web Application we will not rebuild.
-- **SKU A lives in bmad-code-org.** Fork/mirror `bmad-plugins-marketplace`;
-  Builder + template + SKF are the publish path already on A.
-- **SKU B is skillsctl**, still the Claude Code skill registry; nebari-frames
-  is its successor *for Frames*, SQLite single-writer, wrong artifact.
-- **SKU C is Hub Layer 3.** catalog-pack / Harbor / nebi are OCI-pack
-  miniature, not `extraKnownMarketplaces`.
-- **Scribe planning recall** that morning: no grounded prior answer.
+- **CAP-3 — ship backends.**
+  - **intent:** an air-gapped or estate-local machine gets a snapshot without
+    github.com or Claude's public store at install time.
+  - **success:** default ship path is a noarch pixi/conda index package on
+    the channel we already use (Artifactory when air-gapped). Object storage
+    and git bundle / tarball are switchable extras. Harbor/OCI packs do not
+    satisfy this.
 
-## Capabilities — all candidates, none chosen
+- **CAP-4 — thin browse list.**
+  - **intent:** an operator can read the catalog without opening YAML by
+    hand.
+  - **success:** a generated index and/or a page in existing chrome lists
+    modules and Frames (name, trust tier, link or install hint). Not a
+    hosted buy/install App Store. Not MyBMAD, Collab, or nebari-frames.
 
-- **CAP-1 — estate-owned BMAD registry (SKU A).**
-  - *intent:* `registry/` is served from a clone we control (git and/or object
-    storage), not only github.com.
-  - *success:* `bmad-method install` and Claude/Codex `extraKnownMarketplaces`
-    resolve listings from that clone. *(Open: fork vs mirror; git vs object
-    storage; empty index vs carry the public three.)*
-- **CAP-2 — publish path is Builder / template / SKF plus our trust review.**
-  - *intent:* a module or skill enters the estate catalog through tools we
-    already wield, then a named review — not a silent copy from labs or Claude.
-  - *success:* a listing cannot appear without a recorded trust review.
-    *(Open: who reviews; reuse upstream tiers or write our own.)*
-- **CAP-3 — air-gap index.**
-  - *intent:* an air-gapped host can install from an index that does not
-    require github.com or Claude's public marketplace at install time.
-  - *success:* one documented index blob or git bundle plus a pointer in the
-    installer. Harbor/catalog-pack do **not** satisfy this unless the artifact
-    is OCI packs (SKU C / later).
-- **CAP-4 — hosted browse/install UI** *(contingent on open question 2).*
-  - *intent:* operators can browse and install without reading YAML by hand.
-  - *success:* a surface that is not MyBMAD, not Collab, not nebari-frames.
-    *(Open: whether v1 invents this at all.)*
-- **CAP-5 — optional skillsctl face (SKU B)** *(contingent on open question 1).*
-  - *intent:* Claude Code skills use the existing skillsctl registry pointed
-    at an internal clone — consume, do not remint.
-  - *success:* `skillsctl explore` / `install` hit our clone; we do not operate
-    its SQLite as a new Helm kind.
-- **CAP-6 — Hub Layer 3 (SKU C)** *(contingent on open question 7).*
-  - *intent:* only if LC-3 is hoisted here. Otherwise this CAP is a recorded
-    non-goal of *this* Spec and stays on Hub `later-caps.md`.
-  - *success:* named later, not inferred.
+- **CAP-5 — Claude-skill source slot (SKU B).** *(Later; empty in v1.)*
+  - **intent:** a future `skillsctl` feed can plug in without reminting the
+    catalog.
+  - **success:** the slot exists in config; v1 does not operate skillsctl or
+    its SQLite.
+
+- **CAP-6 — Hub Layer 3 (SKU C).** *(Recorded non-goal of this Spec.)*
+  - **intent:** buying/selling Frames, Cogs, Ops, Guards across Hubs, and
+    billing, stay on Hub `later-caps.md` LC-3.
+  - **success:** this Spec does not implement them.
+
+- **CAP-7 — estate Frame index.**
+  - **intent:** list, share, and add-as-a-reviewed-listing the Frames that
+    already live in git. Hub LC-2 is realized here.
+  - **success:** `docs/foundry/frames/` is a source; a new Frame listing is a
+    reviewed git add; share uses the same ship backends as CAP-3. Frame
+    authoring and Foundry regenerate stay Hub / those files. No nebari-frames
+    server.
 
 ## Constraints
 
-- AD-1 lock: do not self-host skillsctl or nebari-frames SQLite as a fourth
-  kind we operate. Object storage is consumed (Epic 50).
-- Do not replace Foundry with Nebari or `conda-forge-expert` with anything.
-- Do not endorse/market OpenTeams; cite `inthub-whitepaper` by tag.
+- AD-1: do not self-host skillsctl or nebari-frames SQLite as a new kind.
+  Object storage, if enabled, is consumed (Epic 50).
+- Do not replace Foundry with Nebari or `conda-forge-expert`.
+- Do not endorse OpenTeams; cite `inthub-whitepaper` by tag.
 - Do not bind ACs to `frame-spec`'s unlicensed validator.
-- Do not remint Hub Launch CAP-1..4. Do not flip Epic 44 blocked keys.
+- Do not remint Hub Launch CAP-1..4. Do not flip Epic 44 `blocked` keys.
 - Suite-lifecycle "whole labs marketplace" remains that Spec's non-goal.
-- A-only (factory / suite / Hub). No foundry-product Dream on B.
+- A-only. Creating a new GitHub catalog repo needs operator confirm at the
+  story.
+- Git remains the edit store; backends only ship snapshots.
 
 ## Non-goals
 
 - Dumping the labs marketplace into `.claude/skills/`.
 - Rebuilding Collab / Desktop-Web Application / MyBMAD-as-store.
 - Folding `src/shared/packages/` (44.4). First-install on B / P18.
-- Billing, four-class exchange, or Layer 3 in v1 unless an open question
-  answers that way.
+- Billing, four-class exchange, Layer 3, or a hosted App Store.
+- A blind mirror of the public BMAD catalog.
 
 ## Success signal
 
-An air-gapped or estate-local installer resolves BMAD module listings from a
-catalog we host and review, without depending on Claude's public marketplace
-as the only index. Layer 3 and billing are either explicit later-caps or
-explicit non-goals — never silent.
+An estate or air-gapped installer resolves BMAD listings from a catalog we
+host and review; Frames appear on the same list and ship through the same
+configured backends; a reader can name the source and backend for any row.
 
-## Open Questions
+## Assumptions
 
-All seven are carried from the Dream's § *Open questions for the Spec*.
-Nothing downstream may bind until they are answered.
+- Steward Epic 60 is the dispatch home (60.1–60.4).
+- Channel publish follows the `bmad-suite` metapackage shape already on A.
