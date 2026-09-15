@@ -1,13 +1,15 @@
-"""Unit tests for scripts/deck_trio.py (spec-21-1-deck-trio-derives-the-infographic-
-head-from-the-standalone, herald Story 21.1): deriving a deck's Infographic HEAD
-(``project/<Persona> - Infographic.dc.html``) from its standalone poster via the
-three documented mechanical transforms, refusing rather than guessing on malformed
-input, and never touching the standalone. Covers every I/O matrix row.
+"""Unit tests for scripts/deck_trio.py: deriving a deck's Infographic HEAD
+(``project/<Persona> - Infographic.dc.html``, spec-21-1, herald Story 21.1) and its
+Infographic Deck (``project/<Persona> - Infographic Deck.dc.html``, spec-21-2, herald
+Story 21.2) from its standalone poster via the documented mechanical transforms,
+refusing rather than guessing on malformed input, and never touching the standalone.
+Covers every I/O matrix row of both specs.
 
 Fixture style mirrors tests/scripts/test_deck_facts.py: a synthetic repo root under
 tmp_path, the module reached through sys.path since scripts/ has no __init__.py, and
-``deck_trio.ROOT`` / ``deck_trio.measure_height`` monkeypatched so the run is offline,
-independent of the live tree, and needs no real browser.
+``deck_trio.ROOT`` / ``deck_trio.measure_height`` / ``deck_trio.measure_all_sections``
+monkeypatched so the run is offline, independent of the live tree, and needs no real
+browser.
 """
 
 from __future__ import annotations
@@ -72,6 +74,274 @@ NO_STYLE_POSTER = """<!DOCTYPE html>
 </html>
 """
 
+# A synthetic standalone with two act bands and three numbered sections, in
+# document order -- body's direct children are the acts/sections themselves
+# (no wrapping content div), so there is no content before the first item or
+# after the last: the clean "no masthead / no closing band" baseline for
+# --deck happy-path/idempotency/combined-flag tests.
+DECK_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Zeta — Infographic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  body { margin: 0; background: #eee; }
+  .act { background: #201e1d; color: #f3f2f2; }
+</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+  <span class="ttl">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>First section</h2></div>
+  <p>Some content.</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">02</span><h2>Second section</h2></div>
+  <p>More content.</p>
+</section>
+<div class="act">
+  <span class="lbl">ACT II</span>
+  <span class="ttl">Closing</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">03</span><h2>Third section</h2></div>
+  <p>Even more content.</p>
+</section>
+</body>
+</html>
+"""
+
+# Carries real masthead content before the first act, a non-numbered mid-deck
+# banner (no .num, no class="sec" -- the "doctrine band" shape) BETWEEN two
+# real sections, and a closing band after the last section -- exercises the
+# masthead/closing-band bookends and the mid-deck-banner exclusion together.
+BOOKEND_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  .act { background: #201e1d; }
+</style>
+</head>
+<body>
+<header>Masthead content for Eta.</header>
+<div class="act">
+  <span class="lbl">ACT I</span>
+  <span class="ttl">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>First section</h2></div>
+  <p>Some content.</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">02</span><h2>Second section</h2></div>
+  <p>More content.</p>
+</section>
+<section style="background:#201e1d;">
+  <div>The doctrine band -- not numbered, must not become a slide.</div>
+</section>
+<div class="act">
+  <span class="lbl">ACT II</span>
+  <span class="ttl">Closing</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">03</span><h2>Third section</h2></div>
+  <p>Even more content.</p>
+</section>
+<section style="background:#ec3013;">
+  <div>The creed -- closing band content.</div>
+</section>
+</body>
+</html>
+"""
+
+# No <div class="act"> anywhere -- the "no act bands" refusal row.
+NO_ACTS_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Only section</h2></div>
+  <p>content</p>
+</section>
+</body>
+</html>
+"""
+
+# No <section class="sec"> anywhere -- the "no numbered sections" refusal row.
+NO_SECTIONS_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.act { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+</body>
+</html>
+"""
+
+# An act whose .lbl span is empty -- the "empty act label" refusal row.
+EMPTY_ACT_LABEL_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.act { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl"></span>
+  <span class="ttl">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Only section</h2></div>
+  <p>content</p>
+</section>
+</body>
+</html>
+"""
+
+# A section with a direct child (so it is NOT the zero-children case) but no
+# <h2> anywhere -- isolates the "empty section label" refusal row from the
+# "zero direct children" one.
+EMPTY_SECTION_HEADING_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec">
+  <p>A paragraph but no h2 heading anywhere.</p>
+</section>
+</body>
+</html>
+"""
+
+# A numbered section with literally zero direct children -- the "zero direct
+# children" refusal row.
+ZERO_CHILDREN_SECTION_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec"></section>
+</body>
+</html>
+"""
+
+# One section whose direct children (sechead + 3 paragraphs) overflow the
+# slide budget once packed -- exercises the split-at-child-boundaries path.
+# Carries one act band too so it satisfies the "no act bands" precondition.
+OVERSIZED_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Busy section</h2></div>
+  <p>Para A</p>
+  <p>Para B</p>
+  <p>Para C</p>
+</section>
+</body>
+</html>
+"""
+
+# One direct child that alone exceeds the budget -- the "single child alone
+# exceeds budget" best-effort row (no deeper split attempted). Carries one
+# act band too so it satisfies the "no act bands" precondition.
+SINGLE_CHILD_OVERSIZED_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Giant section</h2></div>
+  <div>Enormous single block</div>
+</section>
+</body>
+</html>
+"""
+
+# A section whose ONLY direct child (not the second of two, unlike
+# SINGLE_CHILD_OVERSIZED_POSTER above) exceeds the budget -- _pack_children on
+# a length-1 list always yields exactly one group, so this must produce one
+# plain slide with no "(cont.)" suffix.
+ONE_CHILD_OVERSIZED_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec">
+  <div><h2>Solo section</h2> Only child, alone exceeds the slide budget.</div>
+</section>
+</body>
+</html>
+"""
+
+# Three sections where only the middle one overflows -- exercises the
+# oversized-section matrix row's own "other sections unaffected" clause.
+MULTI_SECTION_ONE_OVERSIZED_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>.sec { padding: 0; }</style>
+</head>
+<body>
+<div class="act">
+  <span class="lbl">ACT I</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>Calm section</h2></div>
+  <p>Fits fine.</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">02</span><h2>Busy section</h2></div>
+  <p>Para A</p>
+  <p>Para B</p>
+  <p>Para C</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">03</span><h2>Also calm</h2></div>
+  <p>Also fits fine.</p>
+</section>
+</body>
+</html>
+"""
+
 
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,11 +351,19 @@ def _write(path: Path, text: str) -> None:
 @pytest.fixture
 def root(tmp_path, monkeypatch) -> Path:
     """A synthetic repo with one deck (``pyforge-alpha``) carrying a standalone
-    poster; ``deck_trio.ROOT`` and ``deck_trio.measure_height`` are monkeypatched
-    so every test runs offline against tmp_path, with no live browser."""
+    poster; ``deck_trio.ROOT``, ``deck_trio.measure_height`` and
+    ``deck_trio.measure_all_sections`` are monkeypatched so every test runs
+    offline against tmp_path, with no live browser. The default
+    ``measure_all_sections`` reports every section as fitting (total=0), so
+    most --deck tests need not think about splitting unless they override it."""
     _write(tmp_path / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", POSTER)
     monkeypatch.setattr(deck_trio, "ROOT", tmp_path)
     monkeypatch.setattr(deck_trio, "measure_height", lambda poster: MEASURED_HEIGHT)
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [(0, [0] * len(s.children)) for s in sections],
+    )
     return tmp_path
 
 
@@ -95,6 +373,10 @@ def _head_path(root: Path) -> Path:
 
 def _standalone_path(root: Path) -> Path:
     return root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html"
+
+
+def _deck_path_for(root: Path, slug: str, persona: str) -> Path:
+    return root / f"presentations/{slug}/project/{persona}{deck_trio.DECK_SUFFIX}"
 
 
 # --------------------------------------------------------------- happy path
@@ -218,10 +500,15 @@ def test_style_block_unlocatable_exits_two_and_writes_nothing(root, capsys):
     assert not _head_path(root).exists()
 
 
-def test_head_flag_is_required(root):
+def test_neither_head_nor_deck_given_names_the_fix(root, capsys):
+    """--head is no longer individually required (Boundaries & Constraints,
+    Always #8: the two flags are independently combinable) -- but at least
+    one of --head/--deck must be given, and the refusal names the fix."""
     with pytest.raises(SystemExit) as exc:
         deck_trio.main(["pyforge-alpha"])
     assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "specify --head and/or --deck" in err
     assert not _head_path(root).exists()
 
 
@@ -274,6 +561,371 @@ def test_non_font_link_is_still_swept_into_helmet(root):
         < text.index('<link rel="icon" href="favicon.ico">')
         < text.index("</helmet>")
     )
+
+
+# ------------------------------------------------------ --deck happy path
+
+def test_deck_happy_path_first_run_writes_derived_deck(root, capsys):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    out = capsys.readouterr().out
+    assert "wrote" in out
+    assert "Zeta - Infographic Deck.dc.html" in out
+
+    deck_path = _deck_path_for(root, "pyforge-zeta", "Zeta")
+    text = deck_path.read_text(encoding="utf-8")
+    # Boundaries & Constraints, Always #6: the established 14-file skeleton.
+    assert '<script src="./support.js"></script>' in text
+    assert "<x-dc>" in text and "<helmet>" in text
+    assert (
+        '<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" '
+        'width="1920" height="1080" hint-size="100%,100%" data-uneditable="">' in text
+    )
+    # Acceptance: no masthead/closing content in this poster, so slide count ==
+    # act-band count + numbered-section count, and every slide has a label.
+    assert text.count("<section data-label=") == 5  # 2 acts + 3 sections
+    assert 'data-label=""' not in text
+    assert 'data-label="Cover"' not in text
+    assert 'data-label="Close"' not in text
+    assert 'data-label="ACT I"' in text
+    assert 'data-label="ACT II"' in text
+    assert 'data-label="First section"' in text
+    assert 'data-label="Second section"' in text
+    assert 'data-label="Third section"' in text
+    # Never fabricate data-speaker-notes (Never #4).
+    assert "data-speaker-notes" not in text
+    # The act's own full outer span is wrapped verbatim.
+    assert '<div class="act">' in text
+    assert "<p>Some content.</p>" in text
+
+
+def test_deck_and_head_together_derive_both_in_one_invocation(root):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--head", "--deck"]) == 0
+    assert (root / "presentations/pyforge-zeta/project/Zeta - Infographic.dc.html").is_file()
+    assert _deck_path_for(root, "pyforge-zeta", "Zeta").is_file()
+
+
+def test_deck_only_does_not_also_write_head(root):
+    """Verification Gap (Review pass, 2026-09-14): assert the head artifact's
+    absence directly, not merely by a substring check on stdout."""
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    assert not (root / "presentations/pyforge-zeta/project/Zeta - Infographic.dc.html").exists()
+
+
+# ----------------------------------------------------- --deck idempotency
+
+def test_deck_second_run_unchanged_poster_leaves_deck_untouched(root, capsys):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    deck_path = _deck_path_for(root, "pyforge-zeta", "Zeta")
+    first_bytes = deck_path.read_bytes()
+    first_mtime = deck_path.stat().st_mtime_ns
+
+    capsys.readouterr()
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    out = capsys.readouterr().out
+    assert "unchanged" in out
+
+    assert deck_path.read_bytes() == first_bytes
+    assert deck_path.stat().st_mtime_ns == first_mtime
+
+
+# ------------------------------------------------ --deck masthead/closing
+
+def test_deck_masthead_present_becomes_first_cover_slide(root):
+    _write(root / "presentations/pyforge-eta/project/Eta Infographic standalone.html", BOOKEND_POSTER)
+    assert deck_trio.main(["pyforge-eta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-eta", "Eta").read_text(encoding="utf-8")
+    assert "Masthead content for Eta." in text
+    assert text.index('data-label="Cover"') < text.index('data-label="ACT I"')
+    # The masthead is the FIRST slide, never split.
+    assert text.index('<section data-label="Cover"') == text.index("<section data-label=")
+
+
+def test_deck_masthead_absent_no_cover_slide(root):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-zeta", "Zeta").read_text(encoding="utf-8")
+    assert 'data-label="Cover"' not in text
+
+
+def test_deck_closing_band_present_becomes_last_close_slide(root):
+    _write(root / "presentations/pyforge-eta/project/Eta Infographic standalone.html", BOOKEND_POSTER)
+    assert deck_trio.main(["pyforge-eta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-eta", "Eta").read_text(encoding="utf-8")
+    assert "The creed -- closing band content." in text
+    assert text.rindex('data-label="Close"') > text.rindex('data-label="Third section"')
+
+
+def test_deck_closing_band_absent_no_close_slide(root):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    assert deck_trio.main(["pyforge-zeta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-zeta", "Zeta").read_text(encoding="utf-8")
+    assert 'data-label="Close"' not in text
+
+
+def test_deck_mid_deck_banner_produces_no_slide(root):
+    """Never (Boundaries & Constraints): a non-numbered full-bleed banner
+    sitting BETWEEN act/section elements is neither a masthead, a closing
+    band, nor a numbered section -- it produces no slide and its content is
+    dropped, not merged into a neighbor."""
+    _write(root / "presentations/pyforge-eta/project/Eta Infographic standalone.html", BOOKEND_POSTER)
+    assert deck_trio.main(["pyforge-eta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-eta", "Eta").read_text(encoding="utf-8")
+    assert "doctrine band" not in text
+
+
+def test_deck_slide_count_matches_formula_with_bookends(root):
+    """Acceptance: slide count == acts + sections + 1 (masthead) + 1 (closing)."""
+    _write(root / "presentations/pyforge-eta/project/Eta Infographic standalone.html", BOOKEND_POSTER)
+    assert deck_trio.main(["pyforge-eta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-eta", "Eta").read_text(encoding="utf-8")
+    assert text.count("<section data-label=") == 7  # 2 acts + 3 sections + Cover + Close
+    assert 'data-label=""' not in text
+
+
+# --------------------------------------------------------- --deck refusals
+
+def test_deck_missing_poster_exits_two_and_writes_nothing(root, capsys):
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-nope", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "no poster" in err
+    assert not (root / "presentations/pyforge-nope").exists()
+
+
+def test_deck_ambiguous_poster_exits_two_and_writes_nothing(root, capsys):
+    _write(root / "presentations/pyforge-alpha/project/Zulu Infographic standalone.html", POSTER)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "ambiguous poster" in err
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_style_block_unlocatable_exits_two_and_writes_nothing(root, capsys):
+    """The <style>-block refusal is a SHARED precondition (both --head and
+    --deck need the collected helmet content), so it must also gate a
+    --deck-only invocation."""
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_STYLE_POSTER)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "<style>" in err
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_no_act_bands_exits_two_names_missing_structure(root, capsys):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_ACTS_POSTER)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "act" in err.lower()
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_no_numbered_sections_exits_two_names_missing_structure(root, capsys):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_SECTIONS_POSTER)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "section" in err.lower()
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_empty_act_label_exits_two_and_writes_nothing(root, capsys):
+    _write(
+        root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html",
+        EMPTY_ACT_LABEL_POSTER,
+    )
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "empty .lbl label" in err
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_empty_section_heading_exits_two_and_writes_nothing(root, capsys):
+    _write(
+        root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html",
+        EMPTY_SECTION_HEADING_POSTER,
+    )
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "empty <h2> label" in err
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_section_zero_children_exits_two_and_writes_nothing(root, capsys):
+    _write(
+        root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html",
+        ZERO_CHILDREN_SECTION_POSTER,
+    )
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "zero direct children" in err
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+def test_deck_reports_measure_all_sections_failure_as_exit_two(root, monkeypatch, capsys):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+
+    def _raise(sections, poster_text, helmet_content):
+        raise RuntimeError("no usable chromium: synthetic failure")
+
+    monkeypatch.setattr(deck_trio, "measure_all_sections", _raise)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-zeta", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "no usable chromium" in err
+    assert not _deck_path_for(root, "pyforge-zeta", "Zeta").exists()
+
+
+def test_deck_measure_all_sections_length_mismatch_exits_two(root, monkeypatch, capsys):
+    """Never (Boundaries & Constraints): a length mismatch between measured
+    and parsed sections must not raise an uncaught exception."""
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [(0, [])],  # DECK_POSTER has 3 sections
+    )
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-zeta", "--deck"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "measured 1" in err
+    assert "parsed 3" in err
+    assert not _deck_path_for(root, "pyforge-zeta", "Zeta").exists()
+
+
+def test_head_and_deck_together_deck_failure_leaves_head_unwritten(root, capsys):
+    """Boundaries & Constraints, Always #8: when --deck's own precondition
+    fails after --head's own would otherwise succeed, --head must not have
+    already written its file -- both modes are validated before either is
+    written."""
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_ACTS_POSTER)
+    with pytest.raises(SystemExit) as exc:
+        deck_trio.main(["pyforge-alpha", "--head", "--deck"])
+    assert exc.value.code == 2
+    assert not _head_path(root).exists()
+    assert not _deck_path_for(root, "pyforge-alpha", "Alpha").exists()
+
+
+# ------------------------------------------------------ --deck overflow split
+
+def test_oversized_section_splits_at_child_boundaries(root, monkeypatch):
+    _write(root / "presentations/pyforge-theta/project/Theta Infographic standalone.html", OVERSIZED_POSTER)
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [(1300, [100, 400, 400, 400])],
+    )
+    assert deck_trio.main(["pyforge-theta", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-theta", "Theta").read_text(encoding="utf-8")
+
+    assert text.count("<section data-label=") == 3  # 1 act + 2 split slides
+    assert 'data-label="Busy section"' in text
+    assert 'data-label="Busy section (cont. 2/2)"' in text
+
+    slide2_pos = text.index('data-label="Busy section (cont. 2/2)"')
+    before, after = text[:slide2_pos], text[slide2_pos:]
+    assert "Para A" in before and "Para B" in before
+    assert "Para C" not in before
+    assert "Para C" in after
+    assert "Para A" not in after and "Para B" not in after
+
+
+def test_single_child_alone_exceeds_budget_becomes_its_own_best_effort_slide(root, monkeypatch):
+    _write(
+        root / "presentations/pyforge-iota/project/Iota Infographic standalone.html",
+        SINGLE_CHILD_OVERSIZED_POSTER,
+    )
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [(2100, [100, 2000])],
+    )
+    assert deck_trio.main(["pyforge-iota", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-iota", "Iota").read_text(encoding="utf-8")
+
+    assert text.count("<section data-label=") == 3  # 1 act + 2 split slides
+    assert 'data-label="Giant section (cont. 2/2)"' in text
+    assert "Enormous single block" in text
+
+
+def test_section_with_only_one_child_that_alone_exceeds_budget_yields_one_plain_slide(root, monkeypatch):
+    """Distinct from the test above: there the oversized child is the SECOND
+    of two children in its section, so the section still splits into two
+    slides. Here the oversized child is the section's ONLY child --
+    ``_pack_children`` on a length-1 list always yields exactly one group
+    (Design Notes § Overflow split), so the result must be one plain slide
+    carrying the section's own heading, with no "(cont.)" suffix."""
+    _write(
+        root / "presentations/pyforge-kappa/project/Kappa Infographic standalone.html",
+        ONE_CHILD_OVERSIZED_POSTER,
+    )
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [(2000, [2000])],
+    )
+    assert deck_trio.main(["pyforge-kappa", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-kappa", "Kappa").read_text(encoding="utf-8")
+
+    assert text.count("<section data-label=") == 2  # 1 act + 1 plain slide, no split
+    assert 'data-label="Solo section"' in text
+    assert "(cont." not in text
+    assert "Only child, alone exceeds the slide budget." in text
+
+
+def test_oversized_section_does_not_affect_other_sections_in_a_multi_section_poster(root, monkeypatch):
+    """The oversized-section matrix row's own "other sections unaffected"
+    clause, exercised in a poster with 2+ sections where only the middle one
+    overflows -- the existing OVERSIZED_POSTER fixture has exactly one
+    section, so it cannot exercise this clause."""
+    _write(
+        root / "presentations/pyforge-lambda/project/Lambda Infographic standalone.html",
+        MULTI_SECTION_ONE_OVERSIZED_POSTER,
+    )
+    monkeypatch.setattr(
+        deck_trio,
+        "measure_all_sections",
+        lambda sections, poster_text, helmet_content: [
+            (100, [50, 50]),
+            (1300, [100, 400, 400, 400]),
+            (100, [50, 50]),
+        ],
+    )
+    assert deck_trio.main(["pyforge-lambda", "--deck"]) == 0
+    text = _deck_path_for(root, "pyforge-lambda", "Lambda").read_text(encoding="utf-8")
+
+    assert text.count("<section data-label=") == 5  # 1 act + 1 + 2 (split) + 1
+    assert text.count('data-label="Calm section"') == 1
+    assert text.count('data-label="Also calm"') == 1
+    assert 'data-label="Busy section"' in text
+    assert 'data-label="Busy section (cont. 2/2)"' in text
+    assert text.count("(cont.") == 1
+
+
+def test_pack_children_greedy_budget():
+    assert deck_trio._pack_children([100, 400, 400, 400], 1024) == [[0, 1, 2], [3]]
+    assert deck_trio._pack_children([100, 2000], 1024) == [[0], [1]]
+    assert deck_trio._pack_children([200, 200, 200], 1024) == [[0, 1, 2]]
+    assert deck_trio._pack_children([], 1024) == []
 
 
 # --------------------------------------------------- real playwright shape
@@ -407,6 +1059,133 @@ def test_new_page_failure_raises_runtime_error(root, monkeypatch):
         _REAL_MEASURE_HEIGHT(_standalone_path(root))
 
 
+# --------------------------------------------- --deck real playwright shape
+
+class _FakeDeckPage:
+    """Records every ``set_content``/``evaluate`` call so a test can assert
+    ``measure_section`` actually wires the same networkidle/fonts.ready fix
+    ``measure_height`` needed (Design Notes § One browser launch per --deck
+    run), rather than trusting a wholesale-monkeypatched stand-in. Also
+    captures the last rendered HTML so a test can assert the margin-collapse
+    fix's own precondition (a positioned measurement container)."""
+
+    def __init__(self, total: int, children: list, calls: list) -> None:
+        self._total = total
+        self._children = children
+        self._calls = calls
+        self.last_html: str | None = None
+
+    def set_content(self, html, wait_until=None):  # noqa: D102
+        self.last_html = html
+        self._calls.append(("set_content", wait_until))
+
+    def evaluate(self, script):  # noqa: D102
+        self._calls.append(("evaluate", script))
+        if script == deck_trio._MEASURE_SCRIPT:
+            return {"total": self._total, "children": self._children}
+        return None
+
+    def close(self):  # noqa: D102
+        pass
+
+
+def test_measure_section_waits_for_networkidle_and_fonts_ready():
+    """Exercises the real ``measure_section`` (not a wholesale monkeypatch),
+    mirroring ``test_measure_height_waits_for_networkidle_and_fonts_ready``:
+    ``page.set_content`` must receive ``wait_until="networkidle"`` and
+    ``document.fonts.ready`` must be evaluated before the layout is read --
+    an unfixed font-load race here could change which children land on which
+    slide between runs (Design Notes § One browser launch per --deck run)."""
+    calls: list = []
+    page = _FakeDeckPage(total=1080, children=[300.4, 299.6], calls=calls)
+
+    total, children = deck_trio.measure_section(page, "<style></style>", ["<p>a</p>", "<p>b</p>"])
+
+    assert total == 1080 - deck_trio.PAGE_FRAME_PADDING_TOP - deck_trio.PAGE_FRAME_PADDING_BOTTOM
+    assert children == [300, 300]
+    assert calls[0] == ("set_content", "networkidle")
+    assert ("evaluate", "document.fonts.ready") in calls
+    fonts_index = calls.index(("evaluate", "document.fonts.ready"))
+    script_index = calls.index(("evaluate", deck_trio._MEASURE_SCRIPT))
+    assert fonts_index < script_index
+
+
+def test_measure_section_renders_children_inside_the_identified_container():
+    """The measurement container must carry ``_MEASURE_CONTAINER_ID`` so
+    ``_MEASURE_SCRIPT`` can find it via ``getElementById`` -- the
+    margin-collapse-safe height technique (Design Notes § Overflow split)
+    reads every child's ``getBoundingClientRect().top``, which needs no
+    positioned ancestor (unlike an ``offsetTop`` delta, which is unreliable
+    on ``<svg>`` children -- verified live against the Warden poster's own
+    inline diagrams)."""
+    page = _FakeDeckPage(total=100, children=[50], calls=[])
+    deck_trio.measure_section(page, "<style></style>", ["<p>a</p>"])
+    assert page.last_html is not None
+    assert deck_trio._MEASURE_CONTAINER_ID in page.last_html
+    assert "<p>a</p>" in page.last_html
+
+
+def test_measure_all_sections_reuses_one_page_across_every_section(monkeypatch):
+    """Design Notes § One browser launch per --deck run: --deck launches
+    Chromium ONCE and reuses a single page across every section's
+    measurement, unlike measure_height's per-call launch for --head."""
+    calls: list = []
+    page = _FakeDeckPage(total=100, children=[50], calls=calls)
+
+    class _OnePageBrowser:
+        def __init__(self) -> None:
+            self.new_page_calls = 0
+
+        def new_page(self, viewport=None):  # noqa: D102
+            self.new_page_calls += 1
+            return page
+
+        def close(self):  # noqa: D102
+            pass
+
+    class _OnePageChromium:
+        def __init__(self, browser) -> None:
+            self._browser = browser
+
+        def launch(self, **kwargs):  # noqa: D102
+            return self._browser
+
+    browser = _OnePageBrowser()
+    fake_pkg = types.ModuleType("playwright")
+    fake_sync_api = types.ModuleType("playwright.sync_api")
+    fake_sync_api.sync_playwright = lambda: _FakePlaywrightCtx(_OnePageChromium(browser))  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "playwright", fake_pkg)
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", fake_sync_api)
+
+    sections = [
+        deck_trio._Section(heading="A", children=[(0, 1)], span=(0, 2)),
+        deck_trio._Section(heading="B", children=[(1, 2)], span=(1, 3)),
+    ]
+    results = deck_trio.measure_all_sections(sections, "xy", "<style></style>")
+
+    assert browser.new_page_calls == 1
+    assert results == [(100 - deck_trio.PAGE_FRAME_PADDING_TOP - deck_trio.PAGE_FRAME_PADDING_BOTTOM, [50])] * 2
+
+
+def test_measure_all_sections_no_usable_chromium_raises_even_on_system_exit(monkeypatch):
+    """Mirrors ``test_measure_height_no_usable_chromium_raises_even_on_system_exit``:
+    playwright's own internals have raised ``SystemExit`` live, so the
+    launch-fallback except clauses must catch it too."""
+    chromium = _FakeChromium(0, [], launch_raises=SystemExit("playwright internals raised this"))
+    _patch_fake_playwright(monkeypatch, chromium)
+
+    with pytest.raises(RuntimeError, match="no usable chromium"):
+        deck_trio.measure_all_sections([], "", "")
+
+
+def test_measure_all_sections_new_page_failure_raises_runtime_error(monkeypatch):
+    chromium = _FakeChromium(0, [], fail_new_page=True)
+    _patch_fake_playwright(monkeypatch, chromium)
+
+    with pytest.raises(RuntimeError, match="page creation failed"):
+        deck_trio.measure_all_sections([], "", "")
+
+
 # --------------------------------------------------------- standalone safety
 
 def test_standalone_is_never_modified_happy_path(root):
@@ -420,4 +1199,19 @@ def test_standalone_is_never_modified_on_refusal(root):
     before = _standalone_path(root).read_bytes()
     with pytest.raises(SystemExit):
         deck_trio.main(["pyforge-alpha", "--head"])
+    assert _standalone_path(root).read_bytes() == before
+
+
+def test_deck_standalone_is_never_modified_happy_path(root):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+    before = (root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html").read_bytes()
+    deck_trio.main(["pyforge-zeta", "--deck"])
+    assert (root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html").read_bytes() == before
+
+
+def test_deck_standalone_is_never_modified_on_refusal(root):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_ACTS_POSTER)
+    before = _standalone_path(root).read_bytes()
+    with pytest.raises(SystemExit):
+        deck_trio.main(["pyforge-alpha", "--deck"])
     assert _standalone_path(root).read_bytes() == before

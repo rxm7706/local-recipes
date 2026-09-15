@@ -247,8 +247,20 @@ derives it mechanically FROM the standalone (x-dc/helmet wrap, verbatim
 `<style>`+`<link>` relocation, `support.js` + a measured `$preview` height)
 and refuses rather than guesses on a missing/ambiguous poster or an
 unlocatable `<style>` block. This is a one-time catch-up tool, not a change to
-which artifact is authoritative going forward. Only the Infographic Deck
-(`--deck`) still awaits its own derivation (Story 21.2).
+which artifact is authoritative going forward. `--deck` (Story 21.2) does the
+same for the Infographic Deck: it parses the standalone's masthead (content
+before the first act/section, when present), act bands (`<div class="act">`),
+numbered sections (`<section class="sec">`), and closing band (content after
+the last act/section, when present) in document order, emits one `<section
+data-label>` slide per masthead / act band / numbered section / closing band
+(splitting a section mechanically across multiple slides only when its
+content overflows the slide height — the masthead and closing-band slides
+never split; a non-numbered banner sitting BETWEEN act/section elements, e.g.
+a mid-deck "doctrine" band, produces no slide), and writes `project/<Persona>
+- Infographic Deck.dc.html` — the same refuse-rather-than-guess and
+compare-before-write conventions as `--head`, and independently combinable
+with it (`deck-trio <slug> --head --deck` derives both in one invocation,
+validating both before writing either).
 
 **Where to edit WHAT:**
 
