@@ -239,6 +239,17 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
                               styles inlined in <head>)       as 1920×1080 slides)
 ```
 
+**Catching up existing drift:** the head above is still the edit surface for
+ongoing work (Path A/B below still describe how a Design-side head edit
+propagates forward) — but where a head has already fallen behind its
+standalone by hand, `pixi run -e local-recipes deck-trio <slug> --head`
+derives it mechanically FROM the standalone (x-dc/helmet wrap, verbatim
+`<style>`+`<link>` relocation, `support.js` + a measured `$preview` height)
+and refuses rather than guesses on a missing/ambiguous poster or an
+unlocatable `<style>` block. This is a one-time catch-up tool, not a change to
+which artifact is authoritative going forward. Only the Infographic Deck
+(`--deck`) still awaits its own derivation (Story 21.2).
+
 **Where to edit WHAT:**
 
 | You want to change… | Edit surface | Propagates to |
