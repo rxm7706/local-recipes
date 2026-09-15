@@ -740,7 +740,7 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "docs/specs/presentation-deck.md": "2227be6ab3a5865b2ba46815f3ff292f30b1d93f",
+   "docs/specs/presentation-deck.md": "0d4395b6e36efad235650822ade9023e76d9694f",
    "pixi.toml": "73635d7df65dc40270aef023f9ad7c4f5af99e05",
    "presentations/README.md": "260bc5f31cc5cb21ffd8507b3d119b3b55713e83",
    "presentations/pyforge-atlas/README.md": "daa6d2a892094441acae540f9c40775946f5aa2b",
@@ -775,7 +775,7 @@
    "presentations/pyforge-warden/project/Warden Infographic standalone.html": "c99d791c274b9548f7a48b143f70a851d60ffbba",
    "scripts/deck_facts.py": "f3c4e36a23d9605c51007103947526b6456a820d"
   },
-  "memlog": "749e942599d6d80f010ba6ecd7284226ef88214e"
+  "memlog": "6e54db0370300372f9d3ab1d83596ea021ea1348"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
@@ -914,9 +914,9 @@
    "presentations/pyforge-warden/src/pptx/pyforge-warden-deck-2026-09-10.pptx": "2bc45a7f579202e418f4fb85d6be64e4dfd41be0",
    "presentations/pyforge-warden/src/pptx/pyforge-warden_infographic_deck-2026-07-15.pptx": "f960c93dd26f96be5f03ab1ffc590feb0dc57457",
    "scripts/deck_facts.py": "f3c4e36a23d9605c51007103947526b6456a820d",
-   "scripts/deck_trio.py": "918e90e0dc61518a4ea289a8dc5e09fb9aeb2414"
+   "scripts/deck_trio.py": "13ef81a6b91636bbf31b3f709b3e2a3ff55fab95"
   },
-  "memlog": "35c60272d8079e6f631a5ebf6331dac3c6df1bd8"
+  "memlog": "a7bebe4b521d480bf4d77275eb956849bc073e4f"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
