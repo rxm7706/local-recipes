@@ -187,3 +187,33 @@ operator's redesign dropped the fleet-count strip, so the 32 `unshown` ledger ro
 decision, not staleness, and the 3 `unmarked` narrative dates were left per this deck's house
 style. Re-marking those surfaces is the Design-side pass carried on `DW-VOCAB-2026-09-14-3` and
 Epic 21, not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-unifying-strategy --head` at tree `a407cd03f6`
+mechanically re-derived the head from the standalone (x-dc/helmet wrap, verbatim
+`<style>`/`<link>` relocation, a measured `$preview` height): `PyForge Unifying Strategy -
+Infographic.dc.html` now 236,873 B. A second `--head` run changed nothing on disk (verified).
+`--deck` refuses per **DW-4** (open, `_bmad-output/implementation-artifacts/deferred-work.md:522`):
+`no <section class="sec"> elements found` — this poster's 7 acts use `.act-num`/`.act-title`, not
+`.lbl`, and its sections are inline-styled, not `section.sec`; the pre-existing `- Infographic
+Deck.dc.html` on disk is untouched (not re-derived, not regressed). Widening the selector or
+re-authoring the poster is out of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-unifying-strategy --refresh` then `--check` at the
+same tree rewrote **nothing** (poster carries no drifted marked literal this cycle; the freshly-
+derived head carries the same zero `data-fact` marks as the poster, so it too has nothing to
+rewrite). Re-check reads exactly the 2026-09-14 sweep's numbers, unchanged: `3 unmarked, 0
+mismatch, 0 drifted, 0 unsourced, 32 unshown; facts 4/7` — the pre-existing, already-tracked
+`DW-VOCAB-2026-09-14-3` state, re-verified live today, not a new gap this story introduces or
+could close (fixing it means marking the poster by hand, which this story's boundaries forbid).
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. "Standalone ahead" narrows to: the head is now re-derived on disk (facts already
+current, no rewrite needed), not yet mirrored to Design; the Infographic Deck remains blocked on
+DW-4, unrelated to the credential.

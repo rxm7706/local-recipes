@@ -109,3 +109,37 @@ serve URL with the injected harness stripped — **byte-identical to disk**.
 Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
 still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
 (Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-marshal --head` at tree `a407cd03f6` mechanically
+re-derived the head from the standalone (x-dc/helmet wrap, verbatim `<style>`/`<link>`
+relocation, a measured `$preview` height): `PyForge Marshal - Infographic.dc.html` now 112,992 B.
+A second `--head` run changed nothing on disk (verified). `--deck` refuses per **DW-4** (open,
+`_bmad-output/implementation-artifacts/deferred-work.md:522`): `no <section class="sec">
+elements found` — this poster's 19 sections are inline-styled divs, not `section.sec`; the
+pre-existing `- Infographic Deck.dc.html` on disk is untouched (not re-derived, not regressed).
+Widening the selector or re-authoring the poster is out of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-marshal --refresh` then `--check` at the same tree
+rewrote **30** stale `data-fact` literals across poster and head (`fleet_epics_done_total`,
+`fleet_stories_done_total`, `herald_epics_done_total`, `herald_stories_done_total`,
+`poster_last_commit_date`, `tree_commit_date` — drift since the 2026-09-14 sweep). Because a
+plain `--refresh` omits `tests_collected` (only derived under `--with-tests`), that first
+`--check` flagged the deck's 10 pre-existing `tests_collected` marks (5 on the poster, inherited
+onto the freshly-derived head) as `mismatch … no such row in facts.yaml` — a regression from
+this deck's established convention (the 2026-09-13 ledger's `1 unsourced (tests_collected,
+--with-tests only)`, not a `mismatch`). Re-ran `deck-facts pyforge-marshal --refresh
+--with-tests` (pytest `--collect-only` over `pyforge-marshal`'s own suite; count unchanged at
+7934) to restore the persisted row. Final re-check reads `0 unmarked, 0 mismatch, 0 drifted, 1
+unsourced, 0 unshown; facts 256/256` — the intended state restored, not a new gap.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. "Standalone ahead" narrows to: the head is now re-derived and facts-current on
+disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
+credential.

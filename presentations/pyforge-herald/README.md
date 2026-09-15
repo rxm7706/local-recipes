@@ -93,3 +93,31 @@ serve URL with the injected harness stripped — **byte-identical to disk**.
 Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
 still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
 (Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-herald --head` at tree `a407cd03f6` mechanically
+re-derived the head from the standalone (x-dc/helmet wrap, verbatim `<style>`/`<link>`
+relocation, a measured `$preview` height): `PyForge Herald - Infographic.dc.html` now 137,686 B.
+A second `--head` run changed nothing on disk (verified). `--deck` refuses per **DW-4** (open,
+`_bmad-output/implementation-artifacts/deferred-work.md:522`): `no <div class="act"> bands
+found` — this poster carries no act-band markup at all; there is no pre-existing `- Infographic
+Deck.dc.html` on disk for this deck. Widening the selector or re-authoring the poster is out of
+this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-herald --refresh` then `--check` at the same tree
+brought poster and head current: **20** stale `data-fact` literals rewritten
+(`epics_done_total`, `fleet_epics_done_total`, `fleet_stories_done_total`,
+`herald_epics_done_total`, `herald_stories_done_total`, `stories_done_total`, `tree_commit_date`
+— drift since the 2026-09-14 sweep); re-check reads `0 unmarked, 0 mismatch, 0 drifted, 0
+unsourced, 1 unshown; facts 106/106`.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. "Standalone ahead" narrows to: the head is now re-derived and facts-current on
+disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
+credential.

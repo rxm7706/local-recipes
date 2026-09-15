@@ -12,18 +12,899 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-flex; align-items:center; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster shapes — the Unifying Strategy section / act-band markup as classes. */
+.xh { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .l { display:flex; align-items:baseline; gap:16px; }
+.act .n { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .t { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .p { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+section.sec { padding:36px 0 8px; }
+.sh { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px; }
+.sh .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sh h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.sh .cap { margin-left:auto; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent); }
+.lede { font-size:17px; line-height:1.5; margin:0 0 22px; max-width:1080px; }
+.stat { border-left:2px solid var(--color-divider); padding:0 24px; }
+.stat .v { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+.stat .c { font-size:14px; line-height:1.4; margin-top:8px; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.box-accent { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14px; line-height:1.5; }
+.card { border:2px solid var(--color-text); padding:18px 20px; }
+.card h3 { font-size:17px; margin:0 0 6px; }
+.card .k { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14px; line-height:1.45; margin:8px 0 0; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:var(--font-heading); font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station p { font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500; }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station .chips { display:flex; gap:6px; }
+.chip { display:inline-block; border:1.5px solid var(--color-text); padding:2px 8px; font-size:11px; font-weight:700; letter-spacing:0.02em; }
+.chip-accent { border-color:var(--color-accent); color:var(--color-accent-700); background:var(--color-accent-100); }
+table.t { border-collapse:collapse; width:100%; }
+table.t th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13px; letter-spacing:0.02em; }
+table.t td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.t td.k { font-weight:700; white-space:nowrap; }
+table.t tr.hi td { background:#fbe4de; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.doctrine { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:44px 56px; }
+.doctrine .line { border-top:1px solid color-mix(in srgb, #f3f2f2 30%, transparent); padding:16px 0; display:grid; grid-template-columns:300px 1fr; gap:24px; }
+.doctrine .line b { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:16px; color:var(--color-accent-400); }
+.doctrine .line span { font-size:14px; line-height:1.5; opacity:0.92; }
 </style>
 </helmet>
-<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;"><header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;"><div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;"><span style="color:var(--color-accent-700);">PYFORGE FAMILY · PROJECT DECK · THE INTELLIGENCE LAYER</span><span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">SHIPPED 2026-07-18 · PRs #58–#105</span></div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:86px; line-height:.94; letter-spacing:-0.02em; margin:0;">Atlas</h1><div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 55%, transparent);">pyforge-atlas</div><p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The intelligence layer of the packaging factory — and the migration that re-shaped it: a <b>10,000-LOC procedural orchestrator</b> became declarative Kedro dataflow, 23 phases as pure nodes in <b>seven fixed pipelines</b>, built wave-by-wave by an agent workforce and <span style="color:var(--color-accent-700); font-weight:700;">shipped whole</span>.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;"><span class="tag tag-accent">Shipped 2026-07-18</span><span class="tag tag-neutral">Kedro · Dagster · DuckDB</span><span class="tag tag-neutral">19,726 feedstocks</span><span class="tag tag-outline">pyforge.atlas</span></div></header><div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);"><div style="padding:20px 20px 20px 0px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div><div style="font-size:18px; font-weight:700; margin-top:6px;">RXM</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Module</div><div style="font-size:18px; font-weight:700; margin-top:6px;">pyforge.atlas</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Shipped (32/32 stories)</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div><div style="font-size:18px; font-weight:700; margin-top:6px;">data pipeline + read surface</div></div><div style="padding:20px 20px 20px 20px; "><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Motto</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Declare the node</div></div></div><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">01</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2></div><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">The legacy orchestrator demonstrably shipped — but every phase re-implemented <b>checkpointing, TTL gating and backoff by hand</b>, lineage was implicit, and execution was observable only via stdout. It landed hardest on the factory's real workforce: <b>agents cannot safely extend a 10,000-line procedural monolith</b>.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">23</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">cataloged phases, each hand-wiring its own resume machinery</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">28</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">bespoke read CLIs with no ad-hoc query path</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">02</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Before and after</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Legacy — procedural monolith</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">~10k LOC; per-phase state tables; one 1800s cap silently dropping phases; credentials injected on every request; lineage in the developer's head.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Migrated — declared DAG</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Pure nodes (DataFrame in &#8594; out); catalog-owned IO with per-host credentials; per-node timeouts; incremental TTL re-materialization over DuckDB/Parquet.</p></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">03</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Add phase 24 without hand-wiring</h2></div><div style="display:flex; align-items:stretch; margin-top:22px;"><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 1</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Declare</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Source + output as datasets in catalog.yml — no IO in the node</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 2</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Write the node</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">A pure function, DataFrame in &#8594; out; unit-tests on IO</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 3</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Contract it</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">An inline pandera schema — bad data halts, A2A alert</div></div></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:14px 20px; margin-top:16px; font-size:16px; line-height:1.45;"><b>Inherited, zero code:</b> TTL gating · resume · backoff · lineage + OTel · profiles · DAG order. The new signals B8–B10 (Basilisk, velocity, readiness) landed through exactly this path.</div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">04</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">An agent workforce built it</h2></div><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Mode</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Stories</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">What</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Attended</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">6</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">wave-boundary events: parity, bring-up, benchmark, publish</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Dev-auto</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">4</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">scaffold, catalog and judgment-heavy stories</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Loop · per-story</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">11</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">node ports approved before each run</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Loop · per-epic</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">11</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the relaxed tier once the harness held</td></tr></tbody></table><p style="font-size:15px; margin:14px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">~21 of 32 loop-drivable — and the six deterministic gates (each a wave's first deliverable) were never weakened to raise that share.</p></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">05</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Shipped, verified</h2></div><div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:16px;"><div style="padding:20px 0px 4px 0px; "><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">32/32</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">stories shipped — 8 waves, 22 FRs, epics 0–9 done</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">48</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">merged PRs (#58–#105), agent-built</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">7</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">fixed pipelines owning all 23 phases</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">0</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">hand-wired checkpoints in the new DAG</div></div></div></section><section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;"><div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; opacity:.85;">The close</div><div style="font-family:var(--font-heading); font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Never hand-wire story 33.</div><div style="font-size:18px; line-height:1.5; margin-top:18px; max-width:900px; opacity:.94;">The real deliverable is not speed — the cold rebuild is network-bound. It is a DAG an autonomous agent can extend without hand-wiring a single checkpoint.</div><div class="code" style="font-size:13px; margin-top:26px; opacity:.85;">pyforge-atlas &nbsp;·&nbsp; pyforge crew &nbsp;·&nbsp; Dream to Code</div></section></div>
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · STATION 03 · ATLAS CHAIN · SPEC-PYFORGE-ATLAS</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Spec <span data-fact="spec_status">shipped</span> · Dream <span data-fact="dream_status">realized</span> · re-derived from the ledgers <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 class="xh" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Atlas</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-atlas · the intelligence layer an agent workforce can maintain</div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;"><b>Chart the dependencies. Map the world. Define the floor.</b> Atlas is the Guild's Navigator — the station that maps the Python ecosystem across PyPI and conda-forge before anything is audited or packaged. Its legacy orchestrator did ship real signal for years, but as a hand-rolled procedural monolith whose lineage lived in one developer's head. Atlas was reborn as <b>declarative Kedro dataflow over DuckDB and Parquet, scheduled by Dagster</b>: pure nodes, catalog-declared IO, per-dataset TTLs, one execution plane, a semantic layer read by a Vizro board, an MCP face and an A2A channel — a DAG small enough, pure enough and contract-guarded enough that <span style="color:var(--color-accent-700); font-weight:700;">an agent adds the next signal by declaring a node, and inherits everything else.</span></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">pyforge atlas run --pipeline &lt;name&gt;</span>
+      <span class="tag tag-neutral">Kedro · Dagster · DuckDB · Parquet</span>
+      <span class="tag tag-neutral">Boring Semantic Layer · Vizro · Vizro-AI</span>
+      <span class="tag tag-neutral">MCP face · A2A channel · DuckDB-WASM</span>
+      <span class="tag tag-accent"><span data-fact="spec_capabilities">31</span> capabilities · <span data-fact="spec_capabilities">CAP-1..31</span></span>
+    </div>
+  </header>
+
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">94/95</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">23/24</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Spec capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">31</span> · <span data-fact="spec_status">shipped</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span class="code">pyforge-atlas</span> <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Fleet stories done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="fleet_stories_done_total">926/972</span></div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why Atlas was rebuilt</div>
+    <h2 class="xh" style="font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">A map maintained by agents, not heroes. <span style="color:var(--color-accent);">Declare the node. Inherit the rest.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">I</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The problem &amp; the model</div><div style="font-size:11.5px; margin-top:2px;" class="muted">monolith → declared DAG</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">II</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The cast</div><div style="font-size:11.5px; margin-top:2px;" class="muted">the Guild · the workforce</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">III</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Running the line</div><div style="font-size:11.5px; margin-top:2px;" class="muted">journey · flows · gradient · relay</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">IV</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The product</div><div style="font-size:11.5px; margin-top:2px;" class="muted">CLI · MCP · doctrine · stack</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">V</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Who it serves, where it runs</div><div style="font-size:11.5px; margin-top:2px;" class="muted">leaders · air-gap · seams</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xh" style="font-size:20px; font-weight:800; color:var(--color-accent);">VI</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Proof &amp; road</div><div style="font-size:11.5px; margin-top:2px;" class="muted">gates · ledgers · now / next / later</div></div>
+    </div>
+  </div>
+
+  <!-- ACT I -->
+  <div class="act">
+    <div class="l"><span class="n">ACT I</span><span class="t">The map nobody could redraw</span></div>
+    <span class="p">The friction · the insight</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section class="sec">
+    <div class="sh"><span class="num">01</span><h2>The problem</h2><span class="cap">chronic, compounding — never acute</span></div>
+    <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">The legacy <span class="code">cf_atlas</span> orchestrator built a database over the whole conda-forge feedstock population — versions, downloads, maintainers, vulnerabilities, readiness — and read it back through bespoke CLIs and MCP tools. It demonstrably shipped. But <b>every phase re-implemented checkpointing, TTL gating and backoff by hand</b>; lineage was implicit; execution was observable only through stdout; ad-hoc questions meant hand-written SQL against a single SQLite file; and a coarse per-run timeout could <b>silently drop a phase and still score the run green</b>. The cost was never performance. As the factory's workforce shifted from one developer to loop-driven agents adding the next phase unattended, a procedural monolith became <b>the single largest risk to the whole packaging factory's autonomy story</b>.</p>
+      <div class="stat">
+        <div class="v"><span data-fact="groundtruth_atlas_phases">22</span></div>
+        <div class="c">phases still registered in the legacy <span class="code">cf_atlas</span> catalog today — each once hand-wiring its own resume machinery (<span class="code">bmad-groundtruth</span>)</div>
+      </div>
+      <div class="stat">
+        <div class="v"><span data-fact="groundtruth_schema_version">29</span></div>
+        <div class="c">the legacy store's global <span class="code">SCHEMA_VERSION</span> — a constant the migrated DAG deliberately has no equivalent of: schema evolution is per dataset, additive-first</div>
+      </div>
+      <div class="stat" style="padding-right:0;">
+        <div class="v"><span data-fact="recipes_count">7864</span></div>
+        <div class="c">recipe folders in the factory's local mirror that Atlas's signals steer — staleness, health, CVEs, cadence, readiness</div>
+      </div>
+    </div>
+    <div class="box" style="margin-top:26px;"><b>The load-bearing justification is agent-maintainability, not speed.</b> The cold rebuild is network-bound, so the honest headline is <b>incremental re-materialization</b>, query-time analytics and Parquet reads — never an engine-swap cold-start miracle. Atlas is conda-forge-only by name, serving one operator and one agent workforce; <span class="muted">that narrowness is the design, not a gap to close later.</span></div>
+  </section>
+
+  <!-- 02 · THE DATAFLOW -->
+  <section class="sec">
+    <div class="sh"><span class="num">02</span><h2>From procedural phases to a declared dataflow</h2><span class="cap">the topology · CAP-1 · CAP-2 · CAP-6 · CAP-8</span></div>
+    <p class="lede">Every unit of ingestion or compute is a <b>pure function with declared inputs and outputs</b>; execution order is resolved from the dependency graph, never called procedurally. Sources and outputs are entries in <span class="code">conf/base/catalog.yml</span>; credentials attach to a dataset's destination host only; partitioned Parquet is the canonical store and <b>DuckDB the only engine</b> — analytical compute, recursive-CTE graph traversal and <span class="code">vss</span> vector similarity alike. Above the store, metric logic is declared exactly once in the Boring Semantic Layer and every read surface translates through it.</p>
+    <svg viewBox="0 0 1128 640" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker>
+        <marker id="arr1i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#201e1d"/></marker>
+      </defs>
+      <!-- tier labels -->
+      <text x="0" y="26" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">SOURCES · CATALOG-DECLARED, HOST-SCOPED CREDENTIALS</text>
+      <text x="0" y="185" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">THE SEALED DOMAIN PIPELINES · PURE NODES · ONE PRODUCER PER DATASET</text>
+      <text x="0" y="372" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">ONE STORE, ONE ENGINE</text>
+      <text x="0" y="530" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">THE READ SURFACES</text>
+      <!-- sources row -->
+      <g font-size="12" fill="#201e1d">
+        <rect x="0" y="40" width="176" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="88" y="68" text-anchor="middle" font-weight="800" font-size="13">conda-forge</text><text x="88" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">repodata · channeldata · cf-graph</text>
+        <rect x="190" y="40" width="176" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="278" y="68" text-anchor="middle" font-weight="800" font-size="13">PyPI</text><text x="278" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">simple index · JSON · BigQuery</text>
+        <rect x="380" y="40" width="176" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="468" y="68" text-anchor="middle" font-weight="800" font-size="13">VCS &amp; registries</text><text x="468" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">GitHub · GitLab · Codeberg · more</text>
+        <rect x="570" y="40" width="176" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="658" y="68" text-anchor="middle" font-weight="800" font-size="13">Vulnerability feeds</text><text x="658" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">VDB · OSV · KEV · EPSS · Basilisk</text>
+        <rect x="760" y="40" width="176" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="848" y="68" text-anchor="middle" font-weight="800" font-size="13">Manifests &amp; seeds</text><text x="848" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">SBOM intake · tracked JSON seeds</text>
+        <rect x="950" y="40" width="178" height="70" fill="#eae9e9" stroke="#9b9797" stroke-width="2"/><text x="1039" y="68" text-anchor="middle" font-weight="800" font-size="13">Discovery &amp; enterprise</text><text x="1039" y="88" text-anchor="middle" fill="#605d5d" font-size="10.5">GitHub trending · Artifactory AQL</text>
+      </g>
+      <!-- arrows sources -> pipelines -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr1i)">
+        <line x1="88" y1="110" x2="88" y2="164"/><line x1="278" y1="110" x2="278" y2="164"/><line x1="468" y1="110" x2="468" y2="164"/><line x1="658" y1="110" x2="658" y2="164"/><line x1="848" y1="110" x2="848" y2="164"/><line x1="1039" y1="110" x2="1039" y2="164"/>
+      </g>
+      <!-- pipelines row -->
+      <g>
+        <rect x="0" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="66" y="220" text-anchor="middle" font-size="13" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">core</text><text x="66" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">enumeration · attribution</text><text x="66" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">downloads · graph · health</text>
+        <rect x="142" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="208" y="220" text-anchor="middle" font-size="13" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">vcs_health</text><text x="208" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">upstream versions</text><text x="208" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">maintainers · archived · live</text>
+        <rect x="284" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="350" y="220" text-anchor="middle" font-size="12" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">pypi_intelligence</text><text x="350" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">universe · name mapping</text><text x="350" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">versions · readiness score</text>
+        <rect x="426" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="492" y="220" text-anchor="middle" font-size="13" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">vulnerability</text><text x="492" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">VDB rollup · per-version</text><text x="492" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">KEV/EPSS/CWE · Basilisk</text>
+        <rect x="568" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="634" y="220" text-anchor="middle" font-size="13" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">seed_gaps</text><text x="634" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">read-only suggesters</text><text x="634" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">CWE · SPDX · license · LTS</text>
+        <rect x="710" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="776" y="220" text-anchor="middle" font-size="13" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">universal_sbom</text><text x="776" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">manifest → CycloneDX</text><text x="776" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">resolve · bucket · gate</text>
+        <rect x="852" y="192" width="132" height="84" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="918" y="220" text-anchor="middle" font-size="12" font-weight="800" fill="#201e1d" font-family="ui-monospace, Menlo, monospace">derived_artifacts</text><text x="918" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">universe BOM · exports</text><text x="918" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">under the freshness gate</text>
+        <rect x="996" y="192" width="132" height="84" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/><text x="1062" y="220" text-anchor="middle" font-size="12" font-weight="800" fill="#ae1800" font-family="ui-monospace, Menlo, monospace">upstream_discovery</text><text x="1062" y="240" text-anchor="middle" font-size="10.5" fill="#605d5d">trending ingest · tiers</text><text x="1062" y="256" text-anchor="middle" font-size="10.5" fill="#605d5d">identity join · handoff</text>
+      </g>
+      <text x="564" y="304" text-anchor="middle" font-size="11" fill="#605d5d">riders that joined the same plane later: <tspan font-family="ui-monospace, Menlo, monospace">artifactory_downloads · semantic_packages · query_plane_cache</tspan> — each a pipeline plus a module, never a new ad-hoc path</text>
+      <!-- arrows pipelines -> store -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arr1)">
+        <line x1="66" y1="312" x2="300" y2="380"/><line x1="350" y1="312" x2="440" y2="380"/><line x1="634" y1="312" x2="610" y2="380"/><line x1="918" y1="312" x2="760" y2="380"/>
+      </g>
+      <!-- store -->
+      <rect x="214" y="384" width="700" height="72" fill="#ec3013"/>
+      <text x="564" y="412" text-anchor="middle" fill="#f3f2f2" font-size="18" font-weight="900" letter-spacing="1">PARTITIONED PARQUET · DUCKDB</text>
+      <text x="564" y="436" text-anchor="middle" fill="#ffe0d9" font-size="12">per-dataset fetch TTL · consumer freshness contract · recursive-CTE graph · vss vectors · zero SQLite in the migrated surface</text>
+      <!-- semantic layer -->
+      <rect x="214" y="466" width="700" height="34" fill="#201e1d"/>
+      <text x="564" y="489" text-anchor="middle" fill="#f3f2f2" font-size="13" font-weight="800">BORING SEMANTIC LAYER · Ibis → DuckDB · declared once, consumed everywhere</text>
+      <!-- arrows semantic -> surfaces -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr1i)">
+        <line x1="232" y1="500" x2="120" y2="546"/><line x1="360" y1="500" x2="360" y2="546"/><line x1="564" y1="500" x2="564" y2="546"/><line x1="768" y1="500" x2="768" y2="546"/><line x1="896" y1="500" x2="1010" y2="546"/>
+      </g>
+      <!-- surfaces -->
+      <g>
+        <rect x="0" y="550" width="220" height="76" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="110" y="576" text-anchor="middle" font-size="14" font-weight="800" fill="#201e1d">Vizro board</text><text x="110" y="596" text-anchor="middle" font-size="10.5" fill="#605d5d">every page honest about its state</text><text x="110" y="612" text-anchor="middle" font-size="10.5" fill="#605d5d">grounded · BSL shell · no-BSL shell</text>
+        <rect x="250" y="550" width="220" height="76" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="360" y="576" text-anchor="middle" font-size="14" font-weight="800" fill="#201e1d">Vizro-AI NL field</text><text x="360" y="596" text-anchor="middle" font-size="10.5" fill="#605d5d">grounded in declared metrics</text><text x="360" y="612" text-anchor="middle" font-size="10.5" fill="#605d5d">backend from repo config only</text>
+        <rect x="454" y="550" width="220" height="76" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/><text x="564" y="576" text-anchor="middle" font-size="14" font-weight="800" fill="#ae1800">MCP face</text><text x="564" y="596" text-anchor="middle" font-size="10.5" fill="#605d5d" font-family="ui-monospace, Menlo, monospace">POST /stations/atlas/mcp</text><text x="564" y="612" text-anchor="middle" font-size="10.5" fill="#605d5d">run_* · read · list · query</text>
+        <rect x="658" y="550" width="220" height="76" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="768" y="576" text-anchor="middle" font-size="14" font-weight="800" fill="#201e1d">A2A channel</text><text x="768" y="596" text-anchor="middle" font-size="10.5" fill="#605d5d">AtlasInsight · AtlasAlert</text><text x="768" y="612" text-anchor="middle" font-size="10.5" fill="#605d5d">typed, stamped, never prose</text>
+        <rect x="908" y="550" width="220" height="76" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1018" y="576" text-anchor="middle" font-size="14" font-weight="800" fill="#201e1d">DuckDB-WASM · static host</text><text x="1018" y="596" text-anchor="middle" font-size="10.5" fill="#605d5d">Parquet by HTTP Range</text><text x="1018" y="612" text-anchor="middle" font-size="10.5" fill="#605d5d">no backend at all</text>
+      </g>
+    </svg>
+    <div class="grid3" style="margin-top:22px;">
+      <div class="box"><b>The producer owns the dataset.</b> Each dataset has exactly one producing pipeline; consumers reference it by catalog name and cross-pipeline edges resolve by name — <span class="code">core_cf_graph_raw</span> feeds <span class="code">vcs_health</span>, <span class="code">core_packages_enumerated</span> feeds <span class="code">pypi_intelligence</span>. Two pipelines writing one dataset is the failure the closure rules out.</div>
+      <div class="box"><b>Incremental state is a dataset concern.</b> <span class="code">IncrementalParquetDataset</span> round-trips <span class="code">*_fetched_at</span> TTL state: stale rows re-fetch, fresh rows skip, with the TTL declared per dataset in the catalog. The bespoke <span class="code">phase_state</span> checkpoint table is gone — resumability comes from the runner plus persisted intermediates.</div>
+      <div class="box"><b>Two freshness clocks, never conflated.</b> The <b>fetch TTL</b> asks "is this row stale enough to re-fetch?" and re-fetches it. The <b>consumer freshness</b> contract asks "is this dataset too old to be <i>read</i>?" and makes the consumer refuse the input — degrading the affected read or policy axis to <span class="code">indeterminate</span>, never a silent pass.</div>
+    </div>
+  </section>
+
+  <!-- 03 · THE CONTRACT -->
+  <section class="sec">
+    <div class="sh"><span class="num">03</span><h2>The contract at a glance — <span data-fact="spec_capabilities">CAP-1..CAP-31</span></h2><span class="cap">spec-pyforge-atlas · <span data-fact="spec_status">shipped</span></span></div>
+    <p class="lede">The Spec is the unit of contract; the planning chain is its decomposition. The primary capabilities are the migration's own promise, each verified by named fixture tests. The satellite capabilities were folded in on <span data-fact="dream_log_2026-08-02">2026-08-02</span> by explicit operator decision: <b>Unity Data Stack</b> (an enterprise, air-gap-first Python monorepo platform) and <b>Wasm Analytics Stack</b> (a WASI-sandboxed analytical pipeline for hardened OpenShift) — planning-complete, unscheduled, with zero stories and zero code by design.</p>
+    <table class="t">
+      <thead><tr><th style="width:110px;">Capability</th><th style="width:330px;">Intent</th><th>What proves it</th></tr></thead>
+      <tbody>
+        <tr><td class="k">CAP-1</td><td>The DAG is the orchestrator</td><td>The legacy phases run as DAG-resolved nodes across the sealed domain pipelines; the combined DAG resolves topologically with no procedural order; no dataset is written by two pipelines.</td></tr>
+        <tr><td class="k">CAP-2</td><td>All IO is catalog-declared, credentials host-scoped</td><td><span class="code">kedro-catalog-check</span>: no inline IO in any node body, every <span class="code">resolve_*_urls</span> override point survives as dataset config, a non-JFrog host never receives the JFrog API header.</td></tr>
+        <tr><td class="k">CAP-3</td><td>Incremental state is a dataset concern</td><td>TTL round-trip and stale-mask tests on <span class="code">IncrementalParquetDataset</span>; per-dataset TTLs asserted by the catalog gate.</td></tr>
+        <tr><td class="k">CAP-4</td><td>One execution plane, orchestrated and budgeted</td><td><span class="code">dagster-dryrun</span>: jobs resolve, schedules enumerate, every op carries its own timeout, an overrun in one phase cannot abort its siblings, the highest-cost phase exists but is unscheduled.</td></tr>
+        <tr><td class="k">CAP-5</td><td>Event-driven ingestion on the same plane</td><td>Sensors enumerate, each targets a real existing job, a simulated event yields exactly one run request, no event yields an explicit skip reason.</td></tr>
+        <tr><td class="k">CAP-6</td><td>One engine for compute, graph and vector</td><td><span class="code">duckdb-singularity</span>: no SQLite path in the migrated surface, one <span class="code">duckdb-server</span> launch site; similarity queries ranked by DuckDB with <span class="code">vss</span> loaded offline.</td></tr>
+        <tr><td class="k">CAP-7</td><td>Retirement earned by recorded parity</td><td><span class="code">parity-diff</span> fixture gate green; the credentialed sign-off is an attended boundary event — by design out of a test's reach.</td></tr>
+        <tr><td class="k">CAP-8</td><td>The read surface is declared once</td><td><span class="code">bsl-metric-check</span> + <span class="code">dashboard-dryrun</span> (real-server Playwright/ARIA) + <span class="code">vizro-ai-dryrun</span>; the full page inventory shipped via Stories 20.5 and 21.9.</td></tr>
+        <tr><td class="k">CAP-9</td><td>Agents trigger and read natively</td><td>Every read target is a declared catalog dataset; trigger tools match registered pipelines; the surface imports and triggers with the third-party <span class="code">kedro-mcp</span> plugin genuinely absent.</td></tr>
+        <tr><td class="k">CAP-10</td><td>One structured channel between agents</td><td>Insight and alert round-trips are exact; the analytical-to-authoring hand-off is typed; the build stamp is required and injected.</td></tr>
+        <tr><td class="k">CAP-11</td><td>Bad data halts before it persists</td><td>A malformed payload raises natively before persist and rides the real A2A channel; a stub second validator needs no node change.</td></tr>
+        <tr><td class="k">CAP-12</td><td>Every run is traceable to the API call</td><td>OpenLineage start/complete per node with row-count facets; one trace, nested pipeline → node → dataset spans.</td></tr>
+        <tr><td class="k">CAP-13</td><td>Any manifest becomes one comparable inventory</td><td>CycloneDX normalization keeps the <span class="code">cfe:*</span> namespace and channel qualifier; the policy gate exits on the frozen convention and halts before the report persists.</td></tr>
+        <tr><td class="k">CAP-14</td><td>New signals ride in additively, failure modes fixture-pinned</td><td>Basilisk matches by package name; <span class="code">fix_available</span> never collapses unknown to false; velocity computes against first availability.</td></tr>
+        <tr><td class="k">CAP-15</td><td>The derived layer refuses to go stale</td><td>The <span class="code">atlas_built_at</span> stamp arms the freshness gate; seed files are byte-identical before and after a full run.</td></tr>
+        <tr><td class="k">CAP-16</td><td>The read surface runs with no backend</td><td><span class="code">publish-range</span>: real partial-content HTTP Range reads, manifest-driven chunks, host-agnostic emitter; <span class="code">wasm-smoke</span> asserts zero non-loopback requests.</td></tr>
+        <tr><td class="k">CAP-17</td><td>The knowledge factory maintains itself, never writes back</td><td>The <span class="code">raw/ → compiled/ → outputs/</span> tree with a traversal guard; compile, lint and Q&amp;A crews on a fixture wiki; CMS sync idempotent by content hash.</td></tr>
+        <tr class="hi"><td class="k">CAP-18..26</td><td>Satellite · Unity Data Stack</td><td>One workspace lock across native and PyPI dependencies, Raw → Curated → Consumption data products, a trusted-committer model, a machine-classified Constitution, one <span class="code">check-all</span> gate, compliance by integrating Warden — planned, unscheduled.</td></tr>
+        <tr class="hi"><td class="k">CAP-27..31</td><td>Satellite · Wasm Analytics Stack</td><td>A WASI-sandboxed Excel-upload validation step ahead of a <span class="code">dlt → dbt-duckdb</span> pipeline, natively traced end-to-end, with a non-hollow isolation-verification gate — planned, unscheduled.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ACT II -->
+  <div class="act">
+    <div class="l"><span class="n">ACT II</span><span class="t">The cast</span></div>
+    <span class="p">The Guild outside · the workforce on the floor</span>
+  </div>
+
+  <!-- 04 · THE GUILD -->
+  <section class="sec">
+    <div class="sh"><span class="num">04</span><h2>The Guild — the stations Atlas measures for</h2><span class="cap">chips read each station's tracked sprint ledger</span></div>
+    <p class="lede">Every station renders its own verdict — <b>the hand that builds is never the gate that judges</b>. Atlas measures; Warden judges; Mason builds; Marshal alone owns execution. Chips show stories done and epics done from each project's <span class="code">sprint-status-ledger.yaml</span>, read with the real parser on the day this poster was derived.</p>
+    <div class="grid2">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">01 · The Proclaimer</span><span class="chips"><span class="chip"><span data-fact="herald_stories_done_total">82/100</span> stories</span><span class="chip"><span data-fact="herald_epics_done_total">19/23</span> epics</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p>First to touch the Dream and last to ship it: the deck family and the Claude Design bridge, telemetry infographics, progress and success notices, the scheduler. This poster is Herald's work — derived from Atlas's fact ledger, not remembered.</p>
+        <div class="code verbs">herald deck seed · pull · push · status · progress · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">02 · The Commander</span><span class="chips"><span class="chip"><span data-fact="marshal_stories_done_total">270/274</span> stories</span><span class="chip"><span data-fact="marshal_epics_done_total">40/43</span> epics</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p>Turns the Spec into validated code: drives the gated story loops that built Atlas wave by wave, mobilizes sub-agents, contains context, lands the PRs. Sequences on verdicts it never authors — Atlas's signals and Warden's gate included.</p>
+        <div class="code verbs">marshal init · preflight · factory · dispatch · gate · land</div>
+      </div>
+      <div class="station" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">03 · The Navigator</span><span class="chips"><span class="chip chip-accent"><span data-fact="atlas_stories_done_total">94/95</span> stories</span><span class="chip chip-accent"><span data-fact="atlas_epics_done_total">23/24</span> epics</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p>Maps the dependency terrain before anything is audited or packaged — PyPI and conda-forge graphed together, names and versions bridged across registries, floating requirements refused. The Kedro / Dagster / DuckDB dataflow shipped end to end, then kept growing: the query-plane faces, catalog expansion, Vizro identity parity, the zero-deferred export, the MCP face, the realization-gate effect stories.</p>
+        <div class="code verbs">pyforge atlas run --pipeline &lt;name&gt; · catalog list · --version</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">04 · The Guardian</span><span class="chips"><span class="chip"><span data-fact="warden_stories_done_total">49/49</span> stories</span><span class="chip"><span data-fact="warden_epics_done_total">12/12</span> epics</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Security &amp; Hygiene Auditor</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p>One CLI, one gate, zero trust: hygiene, security, license and currency axes composed into a single verdict on its status lattice. Consumes Atlas data as one input and never imports Atlas; Atlas's own policy gate consumes Warden's report schema by import through an optional extra — the one code edge, pointing one way.</p>
+        <div class="code verbs">warden scan · warden scan --doctor</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">05 · The Artisan Builder</span><span class="chips"><span class="chip"><span data-fact="mason_stories_done_total">70/70</span> stories</span><span class="chip"><span data-fact="mason_epics_done_total">17/17</span> epics</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p>Binds raw ingredients into shippable structures — authors recipes through the <span class="code">conda-forge-expert</span> craft, resolves lockfiles, ships to conda-forge in one deterministic pass. The downstream of Atlas's discovery engine: Atlas proposes a candidate as structured data; Mason, and only Mason, authors the recipe.</p>
+        <div class="code verbs">mason recipe new · validate · diagnose · optimize · scan · submit · mason doctor</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">06 · The Physician</span><span class="chips"><span class="chip"><span data-fact="doctor_stories_done_total">95/105</span> stories</span><span class="chip"><span data-fact="doctor_epics_done_total">22/24</span> epics</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p>Pre-flight self-check before the factory spins, then a continuous pulse on fleet and feedstock — freshness, drift, CVEs, abandonment — turned into ranked remediation worklists. Findings stay advisory, never a second PR gate. Owns the health screen a discovered candidate must pass before Mason ever sees it.</p>
+        <div class="code verbs">doctor check · monitor · diagnose · backlog-intake · flags</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">07 · The Chronicler</span><span class="chips"><span class="chip"><span data-fact="scribe_stories_done_total">35/35</span> stories</span><span class="chip"><span data-fact="scribe_epics_done_total">18/18</span> epics</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p>Where Herald tells the world, Scribe tells the team: captures every load-bearing decision, compiles the knowledge graph, answers with citations for humans and agents alike — a grounded miss is explicit. Its graph port is one of the query plane's clients, dual-written during the cutover the steward chain owns.</p>
+        <div class="code verbs">scribe capture · graph compile · recall · index build</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">08 · The Provisioner</span><span class="chips"><span class="chip"><span data-fact="steward_stories_done_total">231/244</span> stories</span><span class="chip"><span data-fact="steward_epics_done_total">56/58</span> epics</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p>Runs the estate the factory stands on — the Canopy that mounts every station under one chrome, one session, one grammar and one query plane. Hosts Atlas's station face at <span class="code">/stations/atlas/</span>; Atlas is the plane's Kedro home and its writer, Steward its custodian. No privilege outlives its deployment.</p>
+        <div class="code verbs">steward provision · deploy · duty · keys · budget · suite · upgrade</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · THE WORKFORCE -->
+  <section class="sec">
+    <div class="sh"><span class="num">05</span><h2>The workforce on the floor</h2><span class="cap">who built it · who maintains it</span></div>
+    <p class="lede">Atlas was built by an agent workforce under Marshal's gated loops, and it carries a second, smaller workforce inside: the knowledge-factory crews of CAP-17. Both are governed the same way — the roster is frozen by contract, an overlay may refine a persona but never rename or add one, and every unattended step is bounded by a deterministic gate.</p>
+    <div class="grid2">
+      <div>
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:10px;">The build workforce — how the stories were driven</div>
+        <table class="t">
+          <thead><tr><th>Mode</th><th>What ran this way</th><th>Bound by</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Attended</td><td>wave-boundary events: the credentialed parity run, service bring-ups, the benchmark, the publish decision</td><td>an operator present; gates never demoted to reach unattended</td></tr>
+            <tr><td class="k">Dev-auto</td><td>scaffold, catalog and judgment-heavy stories — the <span class="code">nebi</span> project, the first catalog, the semantic models</td><td>a review checkpoint after every story</td></tr>
+            <tr><td class="k">Loop · per story</td><td>the node ports, each approved before its run, each carrying its captured legacy snapshot</td><td><span class="code">parity-diff</span> fixture mode in the loop</td></tr>
+            <tr><td class="k">Loop · per epic</td><td>the relaxed tier once the harness held — the query plane, catalog expansion, identity parity, the complete export</td><td>the wave's own gate as first deliverable</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:10px;">The factory-layer crews — CAP-17, frozen roster</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="card"><h3>Ingester</h3><div class="muted" style="font-size:12px;">Analyst · writes <span class="code">raw/</span></div><p>Deep-research ingestion of source documents — <span class="code">search_ops</span>, <span class="code">pdf_parser</span>.</p></div>
+          <div class="card"><h3>Compiler</h3><div class="muted" style="font-size:12px;">Architect · writes <span class="code">compiled/</span></div><p>Turns raw material into wiki pages — <span class="code">markdown_generator</span>; fired by the new-raw-file sensor.</p></div>
+          <div class="card"><h3>Linker</h3><div class="muted" style="font-size:12px;">Developer · writes <span class="code">compiled/</span></div><p>Cross-links the compiled tree so a page never dangles.</p></div>
+          <div class="card"><h3>Linter</h3><div class="muted" style="font-size:12px;">QA/Reviewer · writes <span class="code">compiled/</span></div><p>Weekly quality pass over the wiki on the same Dagster plane — <span class="code">search_ops</span>.</p></div>
+          <div class="card" style="grid-column:1 / -1;"><h3>Oracle</h3><div class="muted" style="font-size:12px;">Product Owner · writes <span class="code">outputs/</span></div><p>Answers questions over the compiled wiki and publishes to the La Suite CMS — <span class="code">lasuite_client</span>, idempotent by content hash. Consumes atlas data; <b>never writes an atlas dataset</b>, and carries source staleness markers forward so republication never launders freshness.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · PERSONA × SKILLS -->
+  <section class="sec">
+    <div class="sh"><span class="num">06</span><h2>Who reaches Atlas how — persona × surface × skill</h2><span class="cap">grammar and MCP only · no freelancing against the filesystem</span></div>
+    <table class="t">
+      <thead><tr><th style="width:190px;">Persona</th><th>Reaches Atlas through</th><th style="width:300px;">Skill or governance it loads</th><th style="width:260px;">Never</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Operator</td><td><span class="code">pyforge atlas run --pipeline &lt;name&gt;</span>, <span class="code">catalog list</span>, the pixi gates, the Vizro board served locally, <span class="code">kedro viz</span></td><td>the station's pixi tasks; the Dream, Spec and epics as the contract</td><td>a credentialed run unattended</td></tr>
+        <tr><td class="k">Atlas persona (BMAD)</td><td><span class="code">pyforge atlas …</span> grammar and <span class="code">POST /stations/atlas/mcp</span></td><td><span class="code">bmad-agent-atlas</span>, consulting the <span class="code">pyforge-atlas</span> SKF content skill; wields <span class="code">mcp-builder</span> for new tools</td><td>importing <span class="code">pyforge.atlas</span> internals; consulting <span class="code">cf-atlas-legacy</span> for station tasks; a second MCP server or port</td></tr>
+        <tr><td class="k">Authoring agent (Mason)</td><td>the A2A inbox — <span class="code">AtlasInsight</span> and <span class="code">AtlasAlert</span> payloads; the trending-candidates handoff record</td><td><span class="code">conda-forge-expert</span> for every recipe action (repo Rule 1)</td><td>treating a pipeline snapshot as a substitute for the live re-verify</td></tr>
+        <tr><td class="k">Loop agent (Marshal)</td><td>MCP <span class="code">run_*_pipeline</span> and <span class="code">read_atlas_dataset</span> — the same plane, budgets and lineage as a scheduled run</td><td>the story spec; <span class="code">bmad-loop</span> gates</td><td>weakening a gate to raise the autonomy share</td></tr>
+        <tr><td class="k">Judging agent (Warden)</td><td>Atlas <i>data</i> — optional-if-present; the four-axis report schema Atlas imports through the <span class="code">[gate]</span> extra</td><td>its own lattice and verdict</td><td>importing Atlas; letting Atlas score a maintenance axis</td></tr>
+        <tr><td class="k">Health screen (Doctor)</td><td>a verdict supplied to <span class="code">hand_off_candidate</span> — abandonment signal and license clarity</td><td>advisory findings, never a second PR gate</td><td>computing the screen inside Atlas</td></tr>
+        <tr><td class="k">Human reader</td><td>the Vizro board, the Vizro-AI field, the static DuckDB-WASM page, this poster</td><td>the semantic layer's declared metrics — one definition per era</td><td>raw SQL against the store from a read surface</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ACT III -->
+  <div class="act">
+    <div class="l"><span class="n">ACT III</span><span class="t">Running the line</span></div>
+    <span class="p">Mechanics, in time</span>
+  </div>
+
+  <!-- 07 · ONE SIGNAL'S JOURNEY -->
+  <section class="sec">
+    <div class="sh"><span class="num">07</span><h2>One signal's journey — add the next phase without hand-wiring</h2><span class="cap">the whole bet, proven mechanically</span></div>
+    <div style="display:flex; align-items:stretch;">
+      <div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 1</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Declare</div><div style="font-size:14px; line-height:1.4;" class="muted">Source and output as datasets in <span class="code">catalog.yml</span>, TTL in <span class="code">parameters.yml</span>, endpoint through a <span class="code">${globals:…}</span> override point — no IO in the node.</div></div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 2</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Write the node</div><div style="font-size:14px; line-height:1.4;" class="muted">A pure function, DataFrame in → DataFrame out, wired by catalog-name strings. Carries a <span class="code"># legacy: Phase &lt;ID&gt;</span> provenance comment when it ports something.</div></div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 3</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Contract it</div><div style="font-size:14px; line-height:1.4;" class="muted">An inline pandera contract behind the validator-agnostic after-node hook — bad data raises natively, halts the run, and raises an <span class="code">AtlasAlert</span> on the A2A channel.</div></div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 4</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Pin the failure mode</div><div style="font-size:14px; line-height:1.4;" class="muted">One fixture per measured failure mode joins the tracked test tree — the verify set grows and never shrinks. Parity scope is untouched: a new signal is an additive rider.</div></div>
+    </div>
+    <div class="box-accent" style="margin-top:16px; font-size:16px;"><b>Inherited, zero code:</b> TTL gating · resume · backoff · per-node timeout and retry budget · run admission · lineage and tracing · profiles · DAG order · a Dagster asset, schedule slot and MCP trigger. The three riders — <b>Basilisk</b> conda-native advisories, <b>release-to-availability velocity</b>, <b>migration readiness</b> — landed through exactly this path, and the discovery engine after them.</div>
+  </section>
+
+  <!-- 08 · THE WAYS WORK FLOWS -->
+  <section class="sec">
+    <div class="sh"><span class="num">08</span><h2>The ways work flows — every entry point rides identical machinery</h2><span class="cap">one execution plane · CAP-4 · CAP-5 · CAP-9 · CAP-12</span></div>
+    <p class="lede">A scheduled tick, a sensor event, an MCP trigger and a CLI run all execute <b>the identical named pipeline with identical machinery</b>: budgets, validation hooks, lineage and trace instrumentation, profile definitions — all declared in run configuration, none in a node. Admission is dispatched first: one OS file lock per output dataset, so two triggers of the same dataset set are rejected fast with a typed error naming the holder, or wait to a bounded deadline if the run asked to — never interleaved.</p>
+    <svg viewBox="0 0 1128 440" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker>
+        <marker id="arr2i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#201e1d"/></marker>
+      </defs>
+      <!-- entry points -->
+      <g font-size="12">
+        <rect x="0" y="20" width="200" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="100" y="46" text-anchor="middle" font-weight="800" fill="#201e1d" font-size="14">Scheduled tick</text><text x="100" y="66" text-anchor="middle" fill="#605d5d" font-size="10.5">Dagster cadence table · daily / weekly jobs</text>
+        <rect x="0" y="102" width="200" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="100" y="128" text-anchor="middle" font-weight="800" fill="#201e1d" font-size="14">Sensor event</text><text x="100" y="148" text-anchor="middle" fill="#605d5d" font-size="10.5">pypi_release_sensor · vcs_release_sensor</text>
+        <rect x="0" y="184" width="200" height="66" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/><text x="100" y="210" text-anchor="middle" font-weight="800" fill="#ae1800" font-size="14">MCP trigger</text><text x="100" y="230" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">run_&lt;pipeline&gt;_pipeline</text>
+        <rect x="0" y="266" width="200" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="100" y="292" text-anchor="middle" font-weight="800" fill="#201e1d" font-size="14">CLI run</text><text x="100" y="312" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">pyforge atlas run --pipeline core</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr2i)">
+        <line x1="200" y1="53" x2="262" y2="160"/><line x1="200" y1="135" x2="262" y2="170"/><line x1="200" y1="217" x2="262" y2="182"/><line x1="200" y1="299" x2="262" y2="192"/>
+      </g>
+      <!-- the plane -->
+      <rect x="266" y="20" width="596" height="312" fill="#201e1d"/>
+      <text x="564" y="48" text-anchor="middle" fill="#ff9783" font-size="11" font-weight="800" letter-spacing="1.5">ONE EXECUTION PLANE · THE SAME NAMED PIPELINE, THE SAME MACHINERY</text>
+      <g>
+        <rect x="286" y="66" width="170" height="60" fill="#f3f2f2"/><text x="371" y="90" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Run admission</text><text x="371" y="108" text-anchor="middle" fill="#605d5d" font-size="10">one flock per output dataset</text>
+        <rect x="478" y="66" width="170" height="60" fill="#f3f2f2"/><text x="563" y="90" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Profile &amp; budgets</text><text x="563" y="108" text-anchor="middle" fill="#605d5d" font-size="10">maintainer · admin · consumer</text>
+        <rect x="670" y="66" width="172" height="60" fill="#f3f2f2"/><text x="756" y="90" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">DAG order</text><text x="756" y="108" text-anchor="middle" fill="#605d5d" font-size="10">resolved from declared edges</text>
+      </g>
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arr2)"><line x1="371" y1="126" x2="371" y2="150"/><line x1="563" y1="126" x2="563" y2="150"/><line x1="756" y1="126" x2="756" y2="150"/></g>
+      <g>
+        <rect x="286" y="154" width="170" height="60" fill="#ec3013"/><text x="371" y="178" text-anchor="middle" fill="#f3f2f2" font-size="13" font-weight="800">Dataset load</text><text x="371" y="196" text-anchor="middle" fill="#ffe0d9" font-size="10">stale rows re-fetch · fresh skip</text>
+        <rect x="478" y="154" width="170" height="60" fill="#ec3013"/><text x="563" y="178" text-anchor="middle" fill="#f3f2f2" font-size="13" font-weight="800">Pure node</text><text x="563" y="196" text-anchor="middle" fill="#ffe0d9" font-size="10">DataFrame in → DataFrame out</text>
+        <rect x="670" y="154" width="172" height="60" fill="#ec3013"/><text x="756" y="178" text-anchor="middle" fill="#f3f2f2" font-size="13" font-weight="800">After-node hook</text><text x="756" y="196" text-anchor="middle" fill="#ffe0d9" font-size="10">contract raises · halts · alerts</text>
+      </g>
+      <g stroke="#f3f2f2" stroke-width="2" fill="none"><line x1="456" y1="184" x2="476" y2="184"/><line x1="648" y1="184" x2="668" y2="184"/></g>
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arr2)"><line x1="371" y1="214" x2="371" y2="238"/><line x1="563" y1="214" x2="563" y2="238"/><line x1="756" y1="214" x2="756" y2="238"/></g>
+      <g>
+        <rect x="286" y="242" width="170" height="60" fill="#f3f2f2"/><text x="371" y="266" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Persist</text><text x="371" y="284" text-anchor="middle" fill="#605d5d" font-size="10">Parquet · last-good always kept</text>
+        <rect x="478" y="242" width="170" height="60" fill="#f3f2f2"/><text x="563" y="266" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Lineage &amp; trace</text><text x="563" y="284" text-anchor="middle" fill="#605d5d" font-size="10">OpenLineage · one OTel trace</text>
+        <rect x="670" y="242" width="172" height="60" fill="#f3f2f2"/><text x="756" y="266" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Release</text><text x="756" y="284" text-anchor="middle" fill="#605d5d" font-size="10">on success and on error alike</text>
+      </g>
+      <text x="564" y="322" text-anchor="middle" fill="#bab6b6" font-size="10.5">per-node timeout and retry budget · an overrun in one node never aborts its siblings</text>
+      <!-- outputs -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arr2)"><line x1="862" y1="90" x2="924" y2="70"/><line x1="862" y1="176" x2="924" y2="176"/><line x1="862" y1="262" x2="924" y2="282"/></g>
+      <g>
+        <rect x="928" y="40" width="200" height="60" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1028" y="64" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Catalog datasets</text><text x="1028" y="82" text-anchor="middle" fill="#605d5d" font-size="10.5">read by the BSL, the board, MCP</text>
+        <rect x="928" y="146" width="200" height="60" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1028" y="170" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">A2A payloads</text><text x="1028" y="188" text-anchor="middle" fill="#605d5d" font-size="10.5">insight or alert · build-stamped</text>
+        <rect x="928" y="252" width="200" height="60" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1028" y="276" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Lineage events</text><text x="1028" y="294" text-anchor="middle" fill="#605d5d" font-size="10.5">rows · latency · cache hits per node</text>
+      </g>
+      <!-- cadence footnote -->
+      <g font-size="11" fill="#605d5d">
+        <text x="0" y="356" fill="#605d5d" font-size="11">offline: an unreachable endpoint skips, keeps the last-good dataset intact and stamps a machine-readable staleness marker — never an empty write, never a raise</text>
+        <text x="0" y="390" font-weight="800" fill="#ae1800" font-size="10.5" letter-spacing="1">CADENCE, AS ENCODED</text>
+        <text x="0" y="410">daily — Phase F anaconda downloads · Phase H PyPI versions · Phase G vdb summary · Phase E.5 archived feedstocks · Phase K upstream versions · weekly — the bootstrap job and the wiki lint crew</text>
+        <text x="0" y="428">the highest-cost phase (Phase P, PyPI BigQuery downloads) exists as an admin-only job and is never a default schedule · schedules and sensors ship STOPPED — turning them RUNNING is the attended daemon bring-up</text>
+      </g>
+    </svg>
+  </section>
+
+  <!-- 09 · THE AUTONOMY GRADIENT -->
+  <section class="sec">
+    <div class="sh"><span class="num">09</span><h2>The autonomy gradient — what runs unattended, what waits for a human</h2><span class="cap">gates are fixtures, never credentials — and never weakened</span></div>
+    <p class="lede">Every wave's first deliverable was its own deterministic, non-credentialed, fixture-based gate, living in the tracked test tree. The share of loop-drivable work was raised by making the harness hold, <b>never by demoting an attended event to unattended</b>. Attended boundary events are features, not friction: each ships a seam that defaults safe, and the contract is that the seam exists — not that a service is running.</p>
+    <svg viewBox="0 0 1128 400" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker></defs>
+      <!-- gradient rail -->
+      <line x1="60" y1="340" x2="1068" y2="340" stroke="#201e1d" stroke-width="3" marker-end="url(#arr3)"/>
+      <text x="60" y="372" fill="#201e1d" font-size="12" font-weight="800">OPERATOR PRESENT</text>
+      <text x="1068" y="372" text-anchor="end" fill="#ec3013" font-size="12" font-weight="800">UNATTENDED, GATED</text>
+      <text x="564" y="372" text-anchor="middle" fill="#605d5d" font-size="11">the gradient is climbed by proof, never by relaxing a gate</text>
+      <!-- steps -->
+      <g>
+        <rect x="30" y="220" width="250" height="104" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="48" y="246" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">ATTENDED BOUNDARY EVENTS</text>
+        <text x="48" y="268" fill="#201e1d" font-size="12" font-weight="700">credentialed parity + sign-off</text>
+        <text x="48" y="286" fill="#201e1d" font-size="12" font-weight="700">the cold / warm benchmark</text>
+        <text x="48" y="304" fill="#201e1d" font-size="12" font-weight="700">daemon · CMS · Artifactory bring-ups</text>
+        <line x1="155" y1="324" x2="155" y2="340" stroke="#201e1d" stroke-width="2"/>
+      </g>
+      <g>
+        <rect x="296" y="160" width="250" height="164" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="314" y="186" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">ATTENDED, REPEATABLE</text>
+        <text x="314" y="208" fill="#201e1d" font-size="12" font-weight="700">wave-boundary reviews</text>
+        <text x="314" y="226" fill="#201e1d" font-size="12" font-weight="700">the publish decision</text>
+        <text x="314" y="244" fill="#201e1d" font-size="12" font-weight="700">vss / postgres provisioning</text>
+        <text x="314" y="262" fill="#201e1d" font-size="12" font-weight="700">re-acquiring tracked JSON seeds</text>
+        <text x="314" y="290" fill="#605d5d" font-size="10.5">the network step happens once, by hand,</text>
+        <text x="314" y="306" fill="#605d5d" font-size="10.5">under git review — never on the consumer path</text>
+        <line x1="421" y1="324" x2="421" y2="340" stroke="#201e1d" stroke-width="2"/>
+      </g>
+      <g>
+        <rect x="562" y="100" width="250" height="224" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="580" y="126" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">LOOP-DRIVABLE, GATE-BOUND</text>
+        <text x="580" y="148" fill="#201e1d" font-size="12" font-weight="700">node ports vs captured snapshots</text>
+        <text x="580" y="166" fill="#201e1d" font-size="12" font-weight="700">riders with pinned failure modes</text>
+        <text x="580" y="184" fill="#201e1d" font-size="12" font-weight="700">pages behind dashboard-dryrun</text>
+        <text x="580" y="202" fill="#201e1d" font-size="12" font-weight="700">MCP tools behind the parity gate</text>
+        <text x="580" y="220" fill="#201e1d" font-size="12" font-weight="700">catalog expansion, E2E-gated</text>
+        <text x="580" y="250" fill="#605d5d" font-size="10.5">kedro-test · kedro-catalog-check · parity-diff</text>
+        <text x="580" y="266" fill="#605d5d" font-size="10.5">dagster-dryrun · bsl-metric-check</text>
+        <text x="580" y="282" fill="#605d5d" font-size="10.5">duckdb-singularity · wasm-smoke · publish-range</text>
+        <text x="580" y="306" fill="#605d5d" font-size="10.5">frozen, non-credentialed, in the tracked tree</text>
+        <line x1="687" y1="324" x2="687" y2="340" stroke="#ec3013" stroke-width="2"/>
+      </g>
+      <g>
+        <rect x="828" y="40" width="270" height="284" fill="#201e1d"/>
+        <text x="846" y="66" fill="#ff9783" font-size="11" font-weight="800" letter-spacing="1">UNATTENDED, BY CONSTRUCTION</text>
+        <text x="846" y="90" fill="#f3f2f2" font-size="12" font-weight="700">a scheduled job on the cadence table</text>
+        <text x="846" y="108" fill="#f3f2f2" font-size="12" font-weight="700">a sensor turning one release into one run</text>
+        <text x="846" y="126" fill="#f3f2f2" font-size="12" font-weight="700">an MCP trigger from a loop agent</text>
+        <text x="846" y="144" fill="#f3f2f2" font-size="12" font-weight="700">derived layer re-run after a rebuild</text>
+        <text x="846" y="162" fill="#f3f2f2" font-size="12" font-weight="700">the wiki crews compiling and linting</text>
+        <text x="846" y="190" fill="#bab6b6" font-size="10.5">what makes it safe: per-node budgets,</text>
+        <text x="846" y="206" fill="#bab6b6" font-size="10.5">run admission, contracts that halt,</text>
+        <text x="846" y="222" fill="#bab6b6" font-size="10.5">skip-and-mark-stale offline, lineage on</text>
+        <text x="846" y="238" fill="#bab6b6" font-size="10.5">every node, and a factory layer that</text>
+        <text x="846" y="254" fill="#bab6b6" font-size="10.5">reads atlas data and never writes it</text>
+        <text x="846" y="290" fill="#ffe0d9" font-size="11" font-weight="700">snapshots stay advisory: the authoring</text>
+        <text x="846" y="306" fill="#ffe0d9" font-size="11" font-weight="700">loop re-verifies live before it acts</text>
+        <line x1="963" y1="324" x2="963" y2="340" stroke="#ec3013" stroke-width="2"/>
+      </g>
+      <text x="40" y="26" fill="#605d5d" font-size="11">Doctrine: <tspan font-weight="800" fill="#201e1d">gates are never weakened, removed, or demoted from attended to unattended to raise the autonomy share</tspan> — the verify set grows and never shrinks.</text>
+    </svg>
+  </section>
+
+  <!-- 10 · PIPELINE × PERSONA × SKILLS -->
+  <section class="sec">
+    <div class="sh"><span class="num">10</span><h2>Pipeline × persona × gate — who owns what, who reads it, what holds it</h2><span class="cap">the catalog contract · one producer per dataset</span></div>
+    <table class="t">
+      <thead><tr><th style="width:170px;">Pipeline</th><th>Owns</th><th style="width:230px;">Read by</th><th style="width:250px;">Held by</th></tr></thead>
+      <tbody>
+        <tr><td class="k code">core</td><td>The conda-side backbone: package enumeration, umbrella-vs-dedicated feedstock attribution, latest-status detection, downloads and their breakdowns, per-version download history (once a side effect, now a declared node), the dependency graph, feedstock health.</td><td>every other pipeline by catalog name; the board's feedstock-health and whodepends pages; Warden's currency inputs</td><td><span class="code">parity-diff</span> snapshots; the archived-feedstock scope filter at the write site</td></tr>
+        <tr><td class="k code">vcs_health</td><td>Upstream version tracking across GitHub, GitLab, Codeberg and the extra registries, maintainer enrichment, archived-feedstock detection, live health.</td><td>behind-upstream and release-cadence pages; Doctor's abandonment signal</td><td>the single-worker token bucket; per-registry concurrency caps; rate-limit-stderr detection</td></tr>
+        <tr><td class="k code">pypi_intelligence</td><td>The PyPI universe, the PyPI ↔ conda name mapping (the only bridge), current versions behind the serial gate, monthly downloads behind the layered cost gate, cross-channel flags, enrichment and readiness scoring.</td><td>the discovery classifier; Mason's mapping lookups; the readiness pages</td><td>no-clobber writeback; the single-write-path property; <span class="code">notes</span> overrides survive re-runs</td></tr>
+        <tr><td class="k code">vulnerability</td><td>The VDB rollup with KEV overlay and EPSS aggregation, per-version vulns — the only query-time-correct source — and the conda-native Basilisk advisories matched by package name.</td><td>cve-watcher page; Warden's security axis as data; the A2A alert family</td><td>None ≠ zero in the overlays; <span class="code">fix_available</span> keeps its explicit unknown</td></tr>
+        <tr><td class="k code">seed_gaps</td><td>The read-only suggesters proposing CWE, SPDX, license-map and LTS-registry seed entries — the curated maps stay hand-owned, git review decides.</td><td>the operator, through report datasets</td><td>the byte-identical-seed test: no node writes a seed dataset</td></tr>
+        <tr><td class="k code">universal_sbom</td><td>Manifest intake normalized to CycloneDX, transitive resolution with depth and fan-out recorded, the fixed bucket classification, and the terminal policy-gate node assembling Warden's report schema.</td><td>CI, through one artifact and one exit code</td><td>the frozen exit convention; halt-and-alert before the report persists</td></tr>
+        <tr><td class="k code">derived_artifacts</td><td>Cross-pipeline exports under the consumer freshness gate: purl exports, the full-universe BOM, the workbook-free inventory universe, the canonical identity export, the priority assignments.</td><td>Mason's inventory quartet; the identity pages; enterprise consumers</td><td>the <span class="code">atlas_built_at</span> stamp; a consumer refuses stale input</td></tr>
+        <tr class="hi"><td class="k code">upstream_discovery</td><td>GitHub-trending ingest (scrape-primary, Search-API fallback, never hard-failing on layout drift), tier classification with an explicit <span class="code">skip_reason</span> on every row, the fixed-source org-audit track, the identity join, the ranked export feeding Vizro.</td><td><span class="code">trending-candidates</span> CLI and MCP tool; the handoff to Mason</td><td>no row silently dropped; Atlas proposes and never authors a recipe</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 11 · THE RELAY -->
+  <section class="sec">
+    <div class="sh"><span class="num">11</span><h2>The relay — from a rising repo to a shipped recipe</h2><span class="cap">the discovery engine and its Mason handoff</span></div>
+    <p class="lede">The factory should not wait for requests. Discovery senses what the ecosystem is adopting and carries worthy candidates toward conda-forge before anyone files an issue — but <b>Atlas proposes, never authors, and never auto-submits</b>. The baton changes hands as structured data at every step.</p>
+    <div class="grid2" style="gap:0 40px;">
+      <div>
+        <div class="relaystep"><div class="relaynum">1</div><div><b>Sense.</b> <span class="code">upstream_discovery</span> ingests GitHub trending Python repos (daily, weekly, monthly) through an injected fetcher — HTML scrape primary, GitHub Search API fallback. A layout break keeps the last-good snapshot and exits non-fatal.</div></div>
+        <div class="relaystep"><div class="relaynum">2</div><div><b>Classify.</b> Each repo is joined against Atlas's own signals — on conda-forge already, in the PyPI universe, license, <span class="code">requires_python</span>, packaging shape, downloads, readiness — and labelled <b>tier 1</b> (curated gap: <span class="code">noarch: python</span>, one recipe), <b>tier 2</b> (compiled, multi-output, or needing a prerequisite closure) or <b>skip</b>, with a reason on every row.</div></div>
+        <div class="relaystep"><div class="relaynum">3</div><div><b>Ask.</b> <span class="code">trending-candidates --period --tier --top --not-on-cf --min-stars --json</span> and the MCP tool <span class="code">query_trending_candidates</span> answer "what is worth packaging next?" from the same read seam — offline-safe, zero network after ingest.</div></div>
+      </div>
+      <div>
+        <div class="relaystep"><div class="relaynum">4</div><div><b>Re-verify.</b> The fixed-source audit track re-checks each org-audit candidate's <i>current</i> state through the same classifier — one that shipped independently since the list was written is dropped, not re-proposed.</div></div>
+        <div class="relaystep"><div class="relaynum">5</div><div><b>Screen.</b> <span class="code">hand_off_candidate</span> requires a caller-supplied passing health-screen verdict — abandonment signal and license clarity, Doctor's domain — and raises on a failing or missing one with no catalog write.</div></div>
+        <div class="relaystep" style="border-bottom:0;"><div class="relaynum">6</div><div><b>Hand off.</b> One structured, schema-documented record — <b>never a recipe, never a staged-recipes PR</b> — reaches Mason, whose <span class="code">conda-forge-expert</span>-governed craft authors, validates, scans, builds green and submits. Warden judges; Herald proclaims; Scribe remembers.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT IV -->
+  <div class="act">
+    <div class="l"><span class="n">ACT IV</span><span class="t">The product</span></div>
+    <span class="p">What shipped · CLI · MCP · doctrine · stack</span>
+  </div>
+
+  <!-- 12 · THE SHIPPED SURFACE -->
+  <section class="sec">
+    <div class="sh"><span class="num">12</span><h2>The shipped surface — one grammar, one MCP face, one plane behind both</h2><span class="cap"><span class="code"><span data-fact="console_entry">pyforge-atlas</span></span> <span data-fact="package_version">0.1.0</span> · CAP-9 · Story 25.3</span></div>
+    <div class="grid3">
+      <div class="card">
+        <div class="k">The CLI — Kedro's own command surface</div>
+        <h3 class="code" style="font-size:15px; margin-top:8px;">pyforge atlas …</h3>
+        <p>Unified dispatch onto the <span class="code"><span data-fact="console_entry">pyforge-atlas</span></span> console script. <span class="code">--version</span> is intercepted before Kedro loads so the station prints one clean line like every other station; every other argv forwards to Kedro after <span class="code">configure_project("pyforge.atlas")</span>. Atlas is the one station the unified front door cannot AST-introspect — so its verb inventory is <b>discovered from Kedro's project command group at runtime</b>, never hand-typed.</p>
+        <div class="code" style="font-size:12.5px; margin-top:10px; line-height:1.7;">pyforge atlas run --pipeline core<br>pyforge atlas catalog list<br>pyforge atlas --version<br><span class="muted">ipython · package — CLI-only by declared reason</span></div>
+      </div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">The MCP face — thin tools over session and catalog</div>
+        <h3 class="code" style="font-size:15px; margin-top:8px;">POST /stations/atlas/mcp</h3>
+        <p>Authored directly over Kedro session and catalog APIs — the third-party plugin may be absent and the surface still imports and triggers. Tool bodies are exactly one of two shapes, <span class="code">session.run(pipeline_name=…)</span> or <span class="code">load_with_provenance(catalog, …)</span>, AST-scanned: no metric or business logic, no pandas, no duckdb import. A triggered run inherits the same budgets, hooks, profiles and lineage as a scheduled one.</p>
+        <div class="code" style="font-size:12.5px; margin-top:10px; line-height:1.7;">run_core_pipeline · run_vcs_health_pipeline<br>run_pypi_intelligence_pipeline · run_vulnerability_pipeline<br>run_seed_gaps_pipeline · run_universal_sbom_pipeline<br>run_derived_artifacts_pipeline · run_upstream_discovery_pipeline<br>read_atlas_dataset · list_atlas_pipelines · list_atlas_datasets<br>query_vizro_ai · query_trending_candidates</div>
+      </div>
+      <div class="card">
+        <div class="k">The parity gate — CLI ⇄ tool, a number not a review</div>
+        <h3 style="font-size:15px; margin-top:8px;">Every verb has a tool, every tool a verb</h3>
+        <p>Story 25.3 turned the cross-station finding — Atlas's tools, like the <span data-fact="groundtruth_mcp_tools">46</span> conda-forge-expert tools, had no CLI ⇄ tool parity gate — into a meta-test: <span class="code">TOOL_SPECS</span> must cover exactly the registered server tools; each <span class="code">run_*_pipeline</span> tool's argv tail must name the pipeline it triggers; a CLI-only verb needs a reason sentence; a tool-only name sits on a declared allowlist. Fixture injections prove a deliberate mismatch fails.</p>
+        <div class="code" style="font-size:12.5px; margin-top:10px; line-height:1.7;">tool-only: read_atlas_dataset · list_* · query_*<br>cli-only: ipython · package<br>gate: tests/meta/test_cli_tool_parity.py</div>
+      </div>
+    </div>
+    <div class="grid4" style="margin-top:14px;">
+      <div class="box"><b>Read with provenance.</b> Every <span class="code">read_atlas_dataset</span> answer carries the data's <i>own</i> recorded build time, resolved by dataset kind — an incremental dataset's oldest and newest <span class="code">fetched_at</span>, a Parquet file's mtime, a live API's read moment — or <span class="code">null</span> with a stated reason. Never a read-time clock standing in for a build stamp.</div>
+      <div class="box"><b>The Vizro board.</b> Pages for feedstock health, my feedstocks, the estate cache, staleness, query-atlas, detail, behind-upstream, whodepends, cve-watcher, version downloads, the identity catalog, ops and workbook, factory status — each honest about its state: grounded, BSL-wired shell, or no-BSL-model shell, with a provenance line.</div>
+      <div class="box"><b>The NL field.</b> <span class="code">query_vizro_ai</span> grounds a natural-language question in the semantic models and resolves its language backend from repo model-backend configuration — never a hardcoded public endpoint. Unconfigured, it returns an advisory; configured, a receipt naming the resolved endpoint. No live call in-container.</div>
+      <div class="box"><b>The query plane's faces.</b> One boot script raises both: the in-process library face through the single DuckDB writer seam, and the Mosaic <span class="code">duckdb-server</span> HTTP/Arrow face — launched from the one and only launch site in the atlas surface, and only when the platform stack is up. Stack down: library face only, a structured notice, never a crash.</div>
+    </div>
+  </section>
+
+  <!-- 13 · DOCTRINE BAND -->
+  <section class="doctrine">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-400);">13 · Doctrine — the lines Atlas holds</div>
+    <h2 class="xh" style="color:var(--color-bg); font-size:34px; font-weight:900; margin:12px 0 22px; letter-spacing:-0.015em;">The DAG is the single source of truth. Everything else is replaceable glue.</h2>
+    <div class="line"><b>Atlas measures; Warden judges.</b><span>An upstream-maintenance signal is a Warden axis, never an Atlas gate. Atlas may join and expose it as a feed; the verdict is not Atlas's to render. The Charter's <i>the hand that builds is never the gate that judges</i>, applied to signals.</span></div>
+    <div class="line"><b>No data access in a node body, ever.</b><span>Sources, outputs, credentials, endpoints and physical layout are catalog concerns. Nodes are pure functions taking and returning dataframes; they carry no retries, no backoff, no checkpointing — those belong to datasets and the orchestrator.</span></div>
+    <div class="line"><b>One execution plane.</b><span>Scheduled job, sensor, MCP trigger and CLI execute the identical named pipeline with identical machinery. An MCP trigger names a profile explicitly or inherits <span class="code">maintainer</span>. A dataset has one writing run at a time — admission is dispatched first, by <span class="code">tryfirst</span>, not by its place in the hooks tuple.</span></div>
+    <div class="line"><b>Skip and mark stale, never raise.</b><span>An unreachable endpoint skips gracefully, keeps the last-good dataset intact and stamps a machine-readable staleness marker. Consumers surface the marker and apply the freshness contract: stale beyond its bound degrades the read or policy axis to <span class="code">indeterminate</span>, never a silent pass.</span></div>
+    <div class="line"><b>One store, one engine.</b><span>Partitioned Parquet is canonical; DuckDB is the only compute, graph and vector engine. No separate graph, vector or dataframe engine returns, no dual store survives, and the performance claim stays honestly scoped: incremental re-materialization is the headline, cold-start is benchmarked, never promised.</span></div>
+    <div class="line"><b>Gates are fixtures, never credentials — and never weakened.</b><span>Every wave's first deliverable is its own deterministic gate, frozen, non-credentialed, in the tracked test tree. The verify set grows and never shrinks. Credentialed runs are attended-only; attended boundary events are features, not friction.</span></div>
+    <div class="line"><b>Snapshots are advisory.</b><span>Before acting, the recipe-authoring loop re-verifies live; no surface may position its datasets as a substitute for that check, and every payload that feeds an authoring decision carries its build timestamp.</span></div>
+    <div class="line"><b>The factory layer consumes; it never writes atlas data.</b><span>Wiki and CMS components read pipeline outputs through the catalog and semantic layer and write only the wiki tree and the CMS. Staleness markers ride forward into compiled output, so republication never launders freshness.</span></div>
+    <div class="line" style="border-bottom:1px solid color-mix(in srgb, #f3f2f2 30%, transparent);"><b>Scope is closed at the committed source set.</b><span>New external sources are candidate feeds — recorded, never committed — until measured evidence becomes a requirement and a story. Seeds, template trees, authoring-time fetches and user inputs are declared inputs, never pipeline products.</span></div>
+  </section>
+
+  <!-- 14 · THE STACK -->
+  <section class="sec">
+    <div class="sh"><span class="num">14</span><h2>The stack — conda-forge-sourced, pixi-managed, each layer a thin seam</h2><span class="cap">the named exit ramps are recorded</span></div>
+    <table class="t">
+      <thead><tr><th style="width:170px;">Layer</th><th style="width:230px;">Component</th><th>Role in Atlas</th><th style="width:300px;">Boundary that makes it replaceable</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Dataflow</td><td>Kedro · <span class="code">conf/base/catalog.yml</span></td><td>The DAG, the catalog, the pipeline registry; <span class="code">find_pipelines</span> wires every package under <span class="code">pipelines/</span> by declared edges.</td><td>The single source of truth — everything below and above is glue to it.</td></tr>
+        <tr><td class="k">Incremental state</td><td><span class="code">IncrementalParquetDataset</span></td><td>TTL-gated re-fetch per dataset; <span class="code">ttl_seconds</span> injected post-construction by the hooks from <span class="code">params:ttls.&lt;name&gt;</span>.</td><td>One reusable class; no node re-implements freshness.</td></tr>
+        <tr><td class="k">Orchestration</td><td>Dagster via <span class="code">kedro-dagster</span></td><td>Jobs, the cadence schedules, upstream release sensors, the wiki-crew assets and sensor; per-op timeouts; profile job configs.</td><td>A thin adapter; no node, dataset or hook may import it — the import-direction meta-test ships with the catalog gate.</td></tr>
+        <tr><td class="k">Store &amp; engine</td><td>DuckDB · partitioned Parquet · <span class="code">vss</span> · <span class="code">postgres</span> READ_ONLY attach</td><td>Analytics, recursive-CTE graph traversal, vector similarity ranked in SQL, read-only federation onto the Canopy's OLTP.</td><td>Extensions are LOADed from a pre-provisioned cache, never INSTALLed on the consumer path.</td></tr>
+        <tr><td class="k">Semantic layer</td><td>Boring Semantic Layer · Ibis → DuckDB</td><td>Staleness, adoption stage, feedstock health, actionable scope, release trend, python-min bump status, identity verification buckets — declared once.</td><td>Pure Ibis expressions, never pandas or raw SQL; the metric-parity gate anchors the handover.</td></tr>
+        <tr><td class="k">Read surfaces</td><td>Vizro · Vizro-AI · DuckDB-WASM + Pyodide</td><td>The board and its page inventory; the NL field; the backend-free static page over HTTP-Range Parquet.</td><td><span class="code">vizro_ai</span> is replaceable glue confined to <span class="code">nl/</span>; the emitter is host-agnostic.</td></tr>
+        <tr><td class="k">Agent faces</td><td>FastMCP server · pydantic A2A schema family</td><td><span class="code">POST /stations/atlas/mcp</span>; <span class="code">AtlasInsight</span> / <span class="code">AtlasAlert</span>, frozen and <span class="code">extra="forbid"</span>, discriminated by <span class="code">kind</span>.</td><td><span class="code">mcp/server.py</span> lazy-imports fastmcp; the single schema module is the sole source for alerts and insights.</td></tr>
+        <tr><td class="k">Validation</td><td>pandera (shipped default) · Great Expectations behind the hook</td><td>Inline dataframe contracts run behind one validator-agnostic after-node hook; a second backend needs no node change.</td><td>Version-capped by policy; validator-integration plugins banned; a violation raises natively.</td></tr>
+        <tr><td class="k">Observability</td><td>OpenLineage · OpenTelemetry</td><td>Start and complete events per node with row-count facets; one trace nested pipeline → node → dataset, resolving to named API calls.</td><td><span class="code">observability.py</span> is the sole module allowed to import either; both no-op by default.</td></tr>
+        <tr><td class="k">Compliance edge</td><td><span class="code">pyforge-warden</span> through the <span class="code">[gate]</span> extra</td><td>Warden's report schema consumed by import at the terminal policy-gate node — unmodified, never vendored.</td><td>The one cross-package code edge; absent the extra, the gate node fails with an install hint and every other pipeline runs.</td></tr>
+        <tr><td class="k">Factory layer</td><td>agno crews · La Suite / Wagtail client</td><td>Compile, lint and Q&amp;A over the <span class="code">raw/ → compiled/ → outputs/</span> wiki; CMS sync idempotent by content hash against a mock API.</td><td>Consumes atlas data through catalog and semantic layer; never a second writer.</td></tr>
+        <tr><td class="k">Provisioning</td><td>pixi · conda-forge only · the <span class="code">nebi</span> scaffold</td><td>A lean station environment — one of the workspace's <span data-fact="groundtruth_pixi_envs">31</span> pixi environments — so loop worktrees never materialize the fat repo env; no standalone binaries, no JVM.</td><td>PyPI-sourced components are recorded exceptions with packaging as a candidate task; a dependency change updates the library catalog in the same change.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 15 · WHICH TOOL, WHEN -->
+  <section class="sec">
+    <div class="sh"><span class="num">15</span><h2>Which surface, when</h2><span class="cap">the same declared metric, whichever door you use</span></div>
+    <div class="grid4">
+      <div class="card"><div class="k">I want to refresh a signal</div><p><span class="code">pyforge atlas run --pipeline &lt;name&gt;</span> from a shell, or the matching <span class="code">run_&lt;name&gt;_pipeline</span> MCP tool from an agent. Same plane, same budgets, same lineage. Only fresh-enough rows re-fetch.</p></div>
+      <div class="card"><div class="k">I want the number</div><p>The Vizro board page, or a BSL query through <span class="code">bsl_query</span> — the metric is defined once in <span class="code">semantic/metrics.py</span>. Never raw SQL from a read surface.</p></div>
+      <div class="card"><div class="k">I want the rows</div><p><span class="code">read_atlas_dataset</span> — catalog passthrough with a provenance envelope. It computes nothing; it tells you how old what it hands you is.</p></div>
+      <div class="card"><div class="k">I want to ask in English</div><p><span class="code">query_vizro_ai</span>. Grounded in declared metrics, backend from repo config, an honest advisory when no backend is configured.</p></div>
+      <div class="card"><div class="k">I want to know what to package next</div><p><span class="code">pixi run -e pyforge-atlas trending-candidates</span> or <span class="code">query_trending_candidates</span>; then <span class="code">trending-handoff</span> with Doctor's verdict in hand.</p></div>
+      <div class="card"><div class="k">I want to see the DAG</div><p><span class="code">pixi run -e pyforge-atlas viz</span> — kedro-viz over the real pipeline registry; the published DAG is re-derived continuously, never a hand-drawn picture.</p></div>
+      <div class="card"><div class="k">I want to trust a run</div><p>Its lineage events and its trace — rows, latency, cache hits per node, spans down to the API call. Diagnose from records, not by re-reading source.</p></div>
+      <div class="card"><div class="k">I want a verdict</div><p>Not here. <span class="code">warden scan</span>. Atlas's own policy gate on a manifest emits Warden's four-axis report and the frozen exit code — and that is the only judging Atlas ever does, on Warden's schema.</p></div>
+    </div>
+  </section>
+
+  <!-- 16 · ESCALATION AND THE LEDGER -->
+  <section class="sec">
+    <div class="sh"><span class="num">16</span><h2>Escalation and the ledger — how Atlas degrades, exits and records what it owes</h2><span class="cap">the markers · one exit projection · attended events on the ledger</span></div>
+    <div class="grid2" style="align-items:start;">
+      <div>
+        <table class="t">
+          <thead><tr><th>Marker</th><th>Means</th><th>Policy outcome</th><th style="width:60px;">Exit</th></tr></thead>
+          <tbody>
+            <tr><td class="k code">not-applicable</td><td>Nothing existed to assess — no data is the correct answer.</td><td>reports <span class="code">not-applicable</span></td><td class="k">0</td></tr>
+            <tr><td class="k code">unresolved</td><td>A resolver could not run — offline resolver, missing mapping, unmatched identity. Absence is meaningful.</td><td>routes to <span class="code">indeterminate</span></td><td class="k">1</td></tr>
+            <tr><td class="k code">stale</td><td>Data exists but is past its consumer freshness bound.</td><td>beyond its contract → <span class="code">indeterminate</span>; within it → reports normally, marker surfaced</td><td class="k">1 · 0</td></tr>
+          </tbody>
+        </table>
+        <div class="box" style="margin-top:14px;"><b>The frozen exit convention, everywhere a CLI or gate exits:</b> <span class="code">0</span> pass — including <span class="code">not-applicable</span> and within-contract stale · <span class="code">1</span> policy failure — including every <span class="code">indeterminate</span> · <span class="code">2</span> operational error · <span class="code">130</span> interrupt. The markers are never interchanged; the report is Warden's four-axis schema unmodified; exactly one terminal node assembles it.</div>
+      </div>
+      <div>
+        <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+          <div class="k">The deferred-work ledger — attended, not debt</div>
+          <p>The Spec says plainly what <span data-fact="spec_status">shipped</span> does and does not mean: the stories merged; the attended boundary events are recorded on the ledger and discharged by an operator-present event, never by a story that pretends to.</p>
+          <div style="margin-top:12px; font-size:13.5px; line-height:1.55;">
+            <div style="border-top:1px solid var(--color-divider); padding:8px 0;"><b class="code">DW-B4-2</b> — the credentialed parity run, human sign-off, and retirement of the legacy orchestrator; the retirement gate refuses fixture mode by design.</div>
+            <div style="border-top:1px solid var(--color-divider); padding:8px 0;"><b class="code">DW-F1-1</b> — the cold / warm benchmark; the pass threshold is fixed in the story spec <i>before</i> it runs.</div>
+            <div style="border-top:1px solid var(--color-divider); padding:8px 0;"><b class="code">DW-C1-1 · DW-G3 · DW-H4</b> — the live Dagster daemon: schedules and sensors ship STOPPED; definitions build and validate offline.</div>
+            <div style="border-top:1px solid var(--color-divider); padding:8px 0;"><b class="code">DW-H3</b> — the live Wagtail / La Suite instance, defined against the client's frozen contract and rehearsed locally before the attended bring-up.</div>
+          </div>
+        </div>
+        <div class="box" style="margin-top:14px;"><b>Run admission's typed refusals.</b> A second writer on the same output set is rejected fast with an error naming the holder, or polls to a finite deadline when asked (<span class="code">admission_wait_seconds</span>). The lock store is the data tree's <i>sibling</i>, so <span class="code">rm -rf data/</span> cannot reach it, and an override that would put it back inside is refused. The boundaries are stated, not hidden — file locks are single-machine; a failed Dagster run releases nothing in-process; a later raising before-hook leaves locks held until exit; unlinking a lock file never frees its holder.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT V -->
+  <div class="act">
+    <div class="l"><span class="n">ACT V</span><span class="t">Who it serves, where it runs</span></div>
+    <span class="p">Value, by leader · enterprise · seams</span>
+  </div>
+
+  <!-- 17 · PER-LEADER VALUE -->
+  <section class="sec">
+    <div class="sh"><span class="num">17</span><h2>What each leader gets</h2><span class="cap">one operator, one agent workforce — by design</span></div>
+    <div class="grid3">
+      <div class="card"><div class="k">The operator</div><h3>Runs you can watch, not tail</h3><p>Scheduled, retried, per-node-budgeted runs in the Dagster UI; structural lineage in the browser; a board that says on every page whether it is grounded; and a pipeline that adds the next phase without a hand-wired checkpoint. The silent-drop class of failure is structurally retired, not patched.</p></div>
+      <div class="card"><div class="k">The packaging lead — Mason</div><h3>A proposal, never a chore list</h3><p>A tiered, reasoned candidate list with an explicit skip reason on every row; a name-mapping bridge and readiness scores for the recipe at hand; the inventory quartet thinned to orchestration over Atlas's own Parquet exports — the canonical identity export and the priority assignments.</p></div>
+      <div class="card"><div class="k">The security lead — Warden</div><h3>Signals, not a second verdict</h3><p>Per-version vulnerability truth from the only query-time-correct source, KEV and EPSS overlays that keep None distinct from zero, conda-native advisories matched by package name — offered as data Warden may consume, with the judging left where the Charter puts it.</p></div>
+      <div class="card"><div class="k">The platform officer — Steward</div><h3>A plane with one writer</h3><p>Atlas is the CAP-19 query plane's Kedro home and its writer; the Canopy mounts its station face and its MCP face; the plane's OLTP is attached read-only, never installed onto. Everything egress-blockable: extensions from cache, seeds from git, endpoints from override points.</p></div>
+      <div class="card"><div class="k">The build supervisor — Marshal</div><h3>Stories a loop can drive</h3><p>Every wave's gate as its first deliverable; fixture-mode parity in the loop; a verb inventory the parity meta-test checks; a lean station environment so a worktree never materializes the fat repo env. The autonomy share rose because the harness held — not because a gate was demoted.</p></div>
+      <div class="card"><div class="k">The Guild's memory — Herald and Scribe</div><h3>Facts with a source line</h3><p>This poster's every count, version, status and date is a row in <span class="code">presentations/pyforge-atlas/facts.yaml</span>, re-derived from the tracked ledgers on <span data-fact="tree_commit_date">2026-09-15</span>. Scribe's graph port is a plane client, dual-written through the cutover; Herald re-derives, never remembers.</p></div>
+    </div>
+  </section>
+
+  <!-- 18 · ENTERPRISE AND AIR-GAP -->
+  <section class="sec">
+    <div class="sh"><span class="num">18</span><h2>Enterprise and air-gap — the consumer profile is fully offline by design</h2><span class="cap">CAP-2 · CAP-13 · CAP-16 · the Unity and Wasm satellites</span></div>
+    <div class="grid2">
+      <div>
+        <p class="lede" style="font-size:16px;">Enterprise routing is runtime-driven and declarative. Every <span class="code">resolve_*_urls</span> override point survives as dataset-level endpoint config through <span class="code">${globals:…}</span>, so an internal mirror substitutes without a code change. Credentials are a catalog fact — an entry either has a <span class="code">credentials:</span> key or it does not — asserted against a fixed allowlist with a real suffix match on the hostname, so <b>a non-JFrog host never receives the JFrog API header</b>: the legacy global-injection defect was closed, not ported.</p>
+        <div class="grid2" style="gap:10px;">
+          <div class="box"><b>Tracked seeds.</b> The Google AOSS free-tier list and the Anaconda Distribution package table live as git-tracked JSON under <span class="code">conf/base/seeds/</span> — the air-gap fetch mode. No pipeline writes them; re-acquire by running the pure parsers over the live docs and hand-commit under review.</div>
+          <div class="box"><b>Extensions from cache.</b> <span class="code">vss</span> and <span class="code">postgres</span> are LOADed from the pre-provisioned extension cache; a missing one raises a clear error naming the one-time attended provisioning step — never a silent network INSTALL, never a silent wrong answer.</div>
+          <div class="box"><b>Static host, any host.</b> The emitter writes chunked Parquet plus a byte-stable <span class="code">manifest.json</span> with relative paths and checksums; the WASM page pulls footer and row groups by HTTP Range from whichever host serves it. Zero non-loopback requests is asserted by the gate.</div>
+          <div class="box"><b>Artifactory, mock-first.</b> The download-intelligence pipeline answers what <i>this</i> organization pulls from <i>its own</i> Artifactory — built against an injectable AQL transport with no live instance named anywhere; the live transport is the attended operator's to plug in (Story 25.4).</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+          <div class="k">The satellites Atlas's chain carries — planned, unscheduled</div>
+          <h3>Unity Data Stack · CAP-18..26</h3>
+          <p>An enterprise Python-first, air-gap-first innersource monorepo platform: one workspace lock across native and PyPI dependencies; domain-owned data products in a Raw → Curated → Consumption layering with one reference domain, <span class="code">customer</span>; a named trusted-committer contribution model; a machine-classified governance Constitution; a single <span class="code">check-all</span> gate mirroring CI; compliance delivered by integrating Warden rather than reimplementing it.</p>
+          <h3 style="margin-top:14px;">Wasm Analytics Stack · CAP-27..31</h3>
+          <p>A WASI Preview-sandboxed Excel-upload validation step ahead of a <span class="code">dlt → dbt-duckdb</span> pipeline, natively traced end to end — one W3C trace id, OTel plus OpenLineage to Marquez — for OpenShift's restricted SCC. Its sandbox claim is proven, not asserted: a non-hollow isolation-verification gate fails mechanically if the component's declared capability surface widens without a matching WIT change. Honestly narrowed in-Spec: DuckDB itself has no WASI build.</p>
+          <p class="muted" style="font-size:13px; margin-top:12px;">Both were seeded <span data-fact="dream_log_2026-07-23">2026-07-23</span> from stranded gists, planned to Spec → PRD → Architecture depth by <span data-fact="dream_log_2026-07-25">2026-07-25</span>, and folded into Atlas's single chain on <span data-fact="dream_log_2026-08-02">2026-08-02</span>. Zero epics, zero stories, zero code — confirmed by audit, kept as genuine unscheduled intent.</p>
+        </div>
+        <div class="box" style="margin-top:14px;"><b>The factory Atlas serves is itself an enterprise surface.</b> Its local recipe mirror holds <span data-fact="recipes_count">7864</span> recipe folders; its conda-forge-expert craft is at version <span data-fact="cfe_skill_version">8.90.5</span>; the whole estate is conda-forge-sourced and pixi-managed — no standalone binaries, no JVM, PyPI only as a recorded exception.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 · INTEGRATION SEAMS -->
+  <section class="sec">
+    <div class="sh"><span class="num">19</span><h2>Integration seams — every edge named, every direction fixed</h2><span class="cap">code edges · data edges · the Canopy</span></div>
+    <div class="grid3">
+      <div class="card"><div class="k">Atlas → Warden · code, one way</div><p>Atlas may import <span class="code">pyforge-warden</span> only through the optional <span class="code">[gate]</span> extra, to consume the compliance-report schema unmodified. Warden never imports Atlas. Both install and run independently; the import-direction meta-test keeps it so.</p></div>
+      <div class="card"><div class="k">Warden → Atlas · data, optional</div><p>Warden's consumption of Atlas signals — currency, per-version vulns, health — is data-level and optional-if-present. Missing data degrades an axis to <span class="code">indeterminate</span>, never to a pass.</p></div>
+      <div class="card"><div class="k">Atlas → Mason · a record, never a recipe</div><p>The handoff record and the A2A payload family are the only things that cross. Every recipe action downstream is governed by <span class="code">conda-forge-expert</span> (skill <span data-fact="cfe_skill_version">8.90.5</span>, gotcha catalogue through G<span data-fact="groundtruth_gotcha_max">117</span>) — the repo's Rules 1 and 2, which this contract does not override.</p></div>
+      <div class="card"><div class="k">Doctor → Atlas · a verdict, supplied</div><p>The health screen a candidate must pass — abandonment signal, license clarity — is Doctor's logic and arrives as an input. Atlas validates that both evidence fields are present, never their truth; the operator or agent is trusted for accuracy.</p></div>
+      <div class="card"><div class="k">Steward ↔ Atlas · the Canopy</div><p>The station face at <span class="code">/stations/atlas/</span> and the MCP face at <span class="code">/stations/atlas/mcp</span> are mounted by the Canopy; Atlas writes the CAP-19 plane, Steward hosts it; the OLTP is attached READ_ONLY. The one-line <span class="code">pyforge-core</span> edit a parity story implies is Steward's surface — split, or memlogged first.</p></div>
+      <div class="card"><div class="k">Marshal · Herald · Scribe</div><p>Marshal drives Atlas's stories through gated loops and lands them; Herald derives this poster and the deck family from Atlas's fact ledger; Scribe's graph port reads the plane. None of the three writes an atlas dataset.</p></div>
+    </div>
+    <div class="box-accent" style="margin-top:14px;"><b>Skill routing at the seams.</b> The atlas persona wields <span class="code">mcp-builder</span> for new MCP tools, under the constraint that generated tools call <span class="code">pyforge atlas …</span> verbs only — never a second server, never a second port, never an import of <span class="code">pyforge.atlas</span> internals. The legacy <span class="code">cf-atlas-legacy</span> skill exists for reading the monolith it retires, never for station tasks.</div>
+  </section>
+
+  <!-- ACT VI -->
+  <div class="act">
+    <div class="l"><span class="n">ACT VI</span><span class="t">Proof and road</span></div>
+    <span class="p">Receipts, then the map</span>
+  </div>
+
+  <!-- 20 · PROOF -->
+  <section class="sec">
+    <div class="sh"><span class="num">20</span><h2>Proof — what the gates hold, what the ledgers say</h2><span class="cap">Spec <span data-fact="spec_status">shipped</span> · Dream <span data-fact="dream_status">realized</span> · re-confirmed under the exercised gate</span></div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); margin-bottom:26px; border-top:2px solid var(--color-divider);">
+      <div style="padding:20px 0 4px 0;"><div class="xh" style="font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);"><span data-fact="stories_done_total">94/95</span></div><div style="font-size:14px; font-weight:600; margin-top:8px;" class="muted">Atlas stories done — the migration, then the query plane, catalog expansion, identity parity, the complete export, the MCP face, the effect stories</div></div>
+      <div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div class="xh" style="font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);"><span data-fact="epics_done_total">23/24</span></div><div style="font-size:14px; font-weight:600; margin-top:8px;" class="muted">Atlas epics done, per the tracked sprint ledger — Epic 25's effect stories are the one still open</div></div>
+      <div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div class="xh" style="font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);"><span data-fact="fleet_epics_done_total">207/219</span></div><div style="font-size:14px; font-weight:600; margin-top:8px;" class="muted">Guild-wide epics done across the station ledgers; <span data-fact="fleet_stories_done_total">926/972</span> stories</div></div>
+      <div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div class="xh" style="font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);"><span data-fact="spec_capabilities">31</span></div><div style="font-size:14px; font-weight:600; margin-top:8px;" class="muted">capability definitions in <span class="code">spec-pyforge-atlas/SPEC.md</span> — the primary migration promise plus the two folded satellites</div></div>
+    </div>
+    <table class="t">
+      <thead><tr><th style="width:190px;">Gate · pixi task</th><th style="width:80px;">Wave</th><th>What it proves</th><th style="width:300px;">What it refuses to do</th></tr></thead>
+      <tbody>
+        <tr><td class="k code">kedro-test</td><td>A</td><td><span class="code">pyforge.atlas</span> import smokes, the Kedro namespace seam and the scaffold layout hold; the full unit and contract fixture set runs.</td><td>run a credentialed fetch</td></tr>
+        <tr><td class="k code">kedro-catalog-check</td><td>A</td><td>The catalog resolves offline with stub credentials; <b>no inline IO</b> in any node body; the import-direction ban holds; naming, layer, TTL and path conventions hold; every override point and per-host credential scoping asserted.</td><td>let a host be detected at runtime — scoping is declarative</td></tr>
+        <tr><td class="k code">parity-diff</td><td>B</td><td>Each migrated node's output frame matches its captured legacy snapshot (fixture mode). The credentialed full run is the attended boundary.</td><td>retire the legacy orchestrator on fixtures alone</td></tr>
+        <tr><td class="k code">dagster-dryrun</td><td>C</td><td>Definitions build; jobs resolve; schedules and sensors enumerate; each op carries its own timeout; Phase P is admin-only; profile precedence holds; an overrun cannot abort siblings.</td><td>tick a schedule or start a daemon</td></tr>
+        <tr><td class="k code">bsl-metric-check</td><td>D</td><td>Each core metric, declared once as Ibis → DuckDB, answers as the legacy CLI did.</td><td>write raw SQL from a read surface</td></tr>
+        <tr><td class="k code">duckdb-singularity</td><td>F</td><td>No <span class="code">sqlite3</span> read or write path survives anywhere in the migrated surface; only the boot module launches <span class="code">duckdb-server</span>.</td><td>tolerate a dual store</td></tr>
+        <tr><td class="k code">wasm-smoke · publish-range</td><td>G</td><td>Headless Chromium loads the built artifact and queries client-side with zero non-loopback requests; the emitter serves real partial-content Range reads from a manifest, host-agnostic.</td><td>pass on a blank page or an in-page error</td></tr>
+        <tr><td class="k code">dashboard-dryrun · vizro-ai-dryrun</td><td>D · 20</td><td>The Dashboard object builds offline and the real-server Playwright / ARIA suite passes; the NL field resolves its backend from repo config, never a public endpoint.</td><td>fabricate a chart without a backend</td></tr>
+        <tr><td class="k code">test_cli_tool_parity</td><td>25</td><td>Every on-surface CLI verb has a tool and every tool a verb, with declared allowlists; fixture injections prove a deliberate mismatch fails.</td><td>accept a hand-typed verb list</td></tr>
+      </tbody>
+    </table>
+    <p class="lede" style="font-size:15px; margin-top:22px;">Build steps are not gates: <span class="code">wasm-build</span>, the conda and wheel builds and <span class="code">pyforge-atlas-bootstrap</span> produce artifacts; the gates above judge them. Beside the gates stand the grep proof that no SQLite path survives, the exit-code and schema fixtures on the policy gate, the byte-identical-seed test on the read-only suggesters, and one fixture per named measurement failure mode on the new signals.</p>
+    <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin:26px 0 8px;">The realization log — every date a row in the ledger</div>
+    <svg viewBox="0 0 1128 250" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#201e1d"/></marker></defs>
+      <line x1="20" y1="120" x2="1110" y2="120" stroke="#201e1d" stroke-width="3" marker-end="url(#arr4)"/>
+      <g>
+        <circle cx="60" cy="120" r="9" fill="#f3f2f2" stroke="#201e1d" stroke-width="3"/>
+        <text x="60" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-06-20">2026-06-20</tspan></text>
+        <text x="60" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Spec authored</text>
+        <text x="60" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">and analyzed</text>
+        <circle cx="222" cy="120" r="11" fill="#ec3013"/>
+        <text x="222" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-07-17">2026-07-17</tspan></text>
+        <text x="222" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Planned and BUILT</text>
+        <text x="222" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">Waves 0 + A–H via bmad-loop,</text>
+        <text x="222" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">finishing the following day</text>
+        <circle cx="384" cy="120" r="9" fill="#f3f2f2" stroke="#201e1d" stroke-width="3"/>
+        <text x="384" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-07-23">2026-07-23</tspan></text>
+        <text x="384" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Dream retro-seeded</text>
+        <text x="384" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">chapter deck; satellites</text>
+        <text x="384" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">seeded from the gist audit</text>
+        <circle cx="546" cy="120" r="9" fill="#f3f2f2" stroke="#201e1d" stroke-width="3"/>
+        <text x="546" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-07-25">2026-07-25</tspan></text>
+        <text x="546" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Satellites planned</text>
+        <text x="546" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">Unity + Wasm to PRD and</text>
+        <text x="546" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">Architecture; discovery re-specced</text>
+        <circle cx="708" cy="120" r="9" fill="#f3f2f2" stroke="#201e1d" stroke-width="3"/>
+        <text x="708" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-07-29">2026-07-29</tspan></text>
+        <text x="708" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Post-audit truth-up</text>
+        <text x="708" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">Epic 10 shipped; run admission</text>
+        <text x="708" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">made real, not claimed</text>
+        <circle cx="870" cy="120" r="9" fill="#f3f2f2" stroke="#201e1d" stroke-width="3"/>
+        <text x="870" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-08-02">2026-08-02</tspan></text>
+        <text x="870" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Exemplar closure</text>
+        <text x="870" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">duplicate dream retired; retros</text>
+        <text x="870" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">written; satellites folded in</text>
+        <circle cx="1032" cy="120" r="11" fill="#ec3013"/>
+        <text x="1032" y="88" text-anchor="middle" fill="#ae1800" font-size="12" font-weight="800"><tspan data-fact="dream_log_2026-09-09">2026-09-09</tspan></text>
+        <text x="1032" y="150" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="700">Readiness pass</text>
+        <text x="1032" y="166" text-anchor="middle" fill="#605d5d" font-size="10.5">realized re-confirmed; stale</text>
+        <text x="1032" y="180" text-anchor="middle" fill="#605d5d" font-size="10.5">claims corrected, not silenced</text>
+      </g>
+      <text x="564" y="30" text-anchor="middle" fill="#605d5d" font-size="11">the Dream's own Realization log, <tspan font-family="ui-monospace, Menlo, monospace">docs/dreams/pyforge-atlas.md</tspan> — dates the poster may print, because the ledger derived them</text>
+      <text x="564" y="232" text-anchor="middle" fill="#605d5d" font-size="11">this poster: re-derived from the ledgers at tree date <tspan font-weight="800" fill="#201e1d" data-fact="tree_commit_date">2026-09-15</tspan> · BMAD core <tspan font-weight="800" fill="#201e1d" data-fact="bmad_core_version">6.12.0</tspan> · bmad-loop <tspan font-weight="800" fill="#201e1d" data-fact="bmad_loop_version">0.11.1</tspan> · conda-forge-expert <tspan font-weight="800" fill="#201e1d" data-fact="groundtruth_skill_version">8.90.5</tspan></text>
+    </svg>
+  </section>
+
+  <!-- 21 · THE SEED -->
+  <section class="sec">
+    <div class="sh"><span class="num">21</span><h2>The seed — where the map came from</h2><span class="cap">Dream → Spec → epics → stories → this poster</span></div>
+    <div class="grid2" style="gap:24px;">
+      <div>
+        <div class="box" style="font-size:16px; line-height:1.55;"><b>The Dream.</b> <i>Chart the dependencies, map the world, define the floor — and make the map maintainable by agents, not heroes.</i> The legacy orchestrator was a hand-rolled monolith whose lineage lived in one developer's head, each phase hand-rolling its own checkpointing and backoff, a coarse timeout able to silently drop a phase and still score the run green. The dream was its rebirth as declarative dataflow — a DAG small enough, pure enough and contract-guarded enough that an autonomous agent can add the next phase by writing a node and declaring its datasets, inheriting checkpointing, TTL, validation, lineage and scheduling for free.</div>
+        <div class="box" style="margin-top:14px;"><b>Lineage.</b> Atlas's stack descends directly from the Sentinel ancestor — Kedro, Dagster, the Boring Semantic Layer, OTel and OpenLineage, La Suite — which dreamed the stack; Atlas built it against the conda-forge domain. It also realized two long-standing roadmap wishes: the unified DAG orchestrator and the interactive dashboard.</div>
+        <div class="box" style="margin-top:14px;"><b>The craft is general; the implementation is Python-scoped.</b> "Chart the dependencies" names no ecosystem. Today Atlas maps PyPI and conda-forge, and the sealed pipelines are a Python-era allocation. The trajectory: lift the registry clients, the name-mapping bridge, the PEP 440 comparator and the channel qualifier into separate modules behind the declared-dataset seam, so a new ecosystem arrives as a pipeline plus a module — never a rewrite.</div>
+      </div>
+      <div>
+        <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+          <div class="k">How this poster is made — the fact ledger</div>
+          <p>Every count, version, status and date on this page is a row in <span class="code">presentations/pyforge-atlas/facts.yaml</span>, re-derived by <span class="code">pixi run -e local-recipes deck-facts pyforge-atlas</span> from tracked sources only — the sprint ledgers through the real parser, <span class="code">pyproject.toml</span>, the BMAD manifest, the Spec's capability definitions, the Dream's frontmatter and Realization log, <span class="code">bmad-groundtruth</span> — and wrapped in the markup as a <span class="code">data-fact</span> mark. A fact the derivation cannot source is dropped from the poster, never guessed. <span class="code">deck-facts pyforge-atlas --check</span> reads the page back against the ledger and names any unmarked, mismatched or drifted token — advisory, always exit <span class="code">0</span>.</p>
+          <table class="t" style="margin-top:12px;">
+            <thead><tr><th>Ledger row</th><th style="white-space:nowrap;">Value shown</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td class="k">tree_commit_date</td><td style="white-space:nowrap;"><span data-fact="tree_commit_date">2026-09-15</span></td><td>HEAD commit date at derivation</td></tr>
+              <tr><td class="k">bmad_core_version</td><td style="white-space:nowrap;"><span data-fact="bmad_core_version">6.12.0</span></td><td><span class="code">_bmad/_config/manifest.yaml</span></td></tr>
+              <tr><td class="k">bmad_loop_version</td><td style="white-space:nowrap;"><span data-fact="bmad_loop_version">0.11.1</span></td><td>the locked <span class="code">bmad-loop</span> conda package</td></tr>
+              <tr><td class="k">cfe_skill_version</td><td style="white-space:nowrap;"><span data-fact="cfe_skill_version">8.90.5</span></td><td><span class="code">conda-forge-expert/SKILL.md</span> frontmatter</td></tr>
+              <tr><td class="k">package_version</td><td style="white-space:nowrap;"><span data-fact="package_version">0.1.0</span></td><td><span class="code">pyforge-atlas/pyproject.toml</span></td></tr>
+              <tr><td class="k">spec_status · dream_status</td><td style="white-space:nowrap;"><span data-fact="spec_status">shipped</span> · <span data-fact="dream_status">realized</span></td><td>SPEC and Dream frontmatter</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box" style="margin-top:14px;"><b>The chain that governs the code.</b> A change under the Spec's declared surface that does not move its memlog is a checker finding — the migration's code cannot drift out from under its contract. Behavioral change flows through Atlas's BMAD chain: a Dream seed first, <span class="code">bmad-spec</span> for the Spec, epics and stories before any file outside the Dream or Spec folder changes, and a retrospective at every closeout. The status words above are those artifacts' own frontmatter, not this poster's opinion.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 · NOW / NEXT / LATER -->
+  <section class="sec">
+    <div class="sh"><span class="num">22</span><h2>Now · next · later</h2><span class="cap">the road, honestly scoped</span></div>
+    <div class="grid3">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — shipped and running</div>
+        <h3>The plane, the faces, the board</h3>
+        <p>The sealed pipelines and their riders run on one plane; the MCP face answers at <span class="code">POST /stations/atlas/mcp</span> with a parity-gated tool inventory; the BSL models answer as the legacy CLIs did; the Vizro board's full page inventory is live behind <span class="code">dashboard-dryrun</span>; the discovery engine proposes and hands off; the complete identity export is zero-deferred. Spec <span data-fact="spec_status">shipped</span>, Dream <span data-fact="dream_status">realized</span>, <span data-fact="stories_done_total">94 of 95</span> stories done.</p>
+      </div>
+      <div class="card">
+        <div class="k">Next — turn on what is built</div>
+        <h3>Epic 25's effect stories, and the attended events</h3>
+        <p>The realization-gate effect stories ask of every done epic: <i>does it have a caller outside its own test file?</i> The second Lane-3 runtime is retired; one recorded run materializes the canonical Parquets; the CLI ⇄ tool parity gate holds; a live Artifactory transport exists for the attended operator to plug in. On the ledger, still owed to an operator-present event: the credentialed parity sign-off, the cold / warm benchmark, the live Dagster daemon, the live CMS.</p>
+      </div>
+      <div class="card">
+        <div class="k">Later — named now, unscheduled by decision</div>
+        <h3>The satellites and the next ecosystem</h3>
+        <p>Unity Data Stack and Wasm Analytics Stack stay planning-complete inside Atlas's chain until measured need makes them a story. The sealed pipelines' Python-era membership opens only when a new ecosystem arrives as a pipeline plus a module behind the dataset seam. The head and Infographic Deck of this deck family re-derive from the same fact ledger in the lockstep slice; the Design mirror carries these exact bytes once pushed.</p>
+      </div>
+    </div>
+    <div class="box" style="margin-top:14px;"><b>What the chain refuses to build.</b> A second engine, store or scheduler; a performance promise it cannot benchmark; a verdict on a maintenance metric; a node that reaches for the network; a gate weakened to raise autonomy; a recipe authored by Atlas; a wiki that writes back; a schema-version constant; a new external source without a story. <span class="muted">Every refusal above is a Spec constraint or non-goal, not a preference.</span></div>
+  </section>
+
+  <!-- CLOSING CREED -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <p class="xh" style="font-weight:800; font-size:33px; line-height:1.14; letter-spacing:-0.015em; margin:16px 0 0; max-width:1080px;">Declare the node. Inherit the rest. Chart the dependencies, map the world, define the floor — and let the map be redrawn by agents who write a node and a contract, never a checkpoint. Measure everything; judge nothing. When the world is unreachable, keep the last good map and say so. The real deliverable was never speed. It is a DAG an autonomous agent can extend without hand-wiring a single line of its machinery.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Atlas</b> · station 03 · <span class="code">spec-pyforge-atlas</span> · <span data-fact="spec_capabilities">CAP-1..31</span> · <span data-fact="spec_status">shipped</span></span>
+      <span style="text-align:right;">docs/dreams/pyforge-atlas.md · <span class="code">src/shared/packages/pyforge-atlas/</span><br>facts from <span class="code">presentations/pyforge-atlas/facts.yaml</span></span>
+    </div>
+  </section>
+
+</div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:2200}}"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:20776}}"></script>
 </body>
 </html>
