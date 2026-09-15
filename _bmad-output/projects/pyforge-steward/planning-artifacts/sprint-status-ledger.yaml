@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 359
+# stories: 369
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -236,6 +236,13 @@ development_status:
   58-1-a-station-s-real-mcp-tool-is-reachable-through-a-deployed-cluster: done
   58-2-a-station-with-no-real-app-keeps-the-slice-1-stub-unchanged: done
   58-3-the-one-unproven-run-state-row-flips-to-pass: done
+  59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule: backlog
+  59-2-detectors-read-one-declaration-in-progress-is-grandfathered: backlog
+  59-3-the-charter-carries-the-bmad-cross-walk-and-pitched-stays-optional: backlog
+  59-4-design-teaching-is-named-the-pull-cannot-silently-rot: backlog
+  59-5-one-mint-time-slugify-and-two-dw-families: backlog
+  59-6-shape-hygiene-roster-s-n-n-commits-status-comments: backlog
+  59-7-atlas-check-is-a-finding-code-only: backlog
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -366,6 +373,8 @@ development_status:
   epic-57-retrospective: optional
   epic-58: done
   epic-58-retrospective: optional
+  epic-59: backlog
+  epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
   epic-7: done

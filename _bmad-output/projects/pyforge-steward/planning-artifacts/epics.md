@@ -3869,3 +3869,101 @@ server answering the call **When** this story lands **Then**
 run's evidence
 **And** the run's timing is queryable after the workstation that drove it is gone
 **Status:** done — shipped `20a85dcc79` (2026-09-12)
+
+## Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..8)
+
+Minted 2026-09-15 from `docs/dreams/vocabulary-one-name-one-job.md` after the
+operator accepted Q1–20. Spec `ready`. **CAP-4** (`Track` / `Gate`) is already
+met — no story. Herald executes the deck half of CAP-5; doctor sources consume
+CAP-2; atlas owns CAP-8's six `check=` sites. Do not flip any Epic 44 `blocked`
+key. Do not retro-rename existing slugs or `DW-` ids.
+
+### Story 59.1: The Spec ladder is declared and the Charter states the rule
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-1
+**Surface:** `docs/governance/`; `docs/dreams/pyforge-charter.md`;
+`docs/dreams/README.md` stays the Dream ladder only.
+**Given** eight Spec statuses are live and only `extension-point` is defined
+**When** this story lands
+**Then** all eight are defined, the three ended-acts are not collapsed, and
+`shipped` remains Spec-terminal
+**And** the enum is recommended, not required; unknown values are preserved
+and warned, never reset
+**Status:** backlog
+
+### Story 59.2: Detectors read one declaration; in-progress is grandfathered
+
+**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-2
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py`,
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`,
+`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py`,
+exit-code domains named in the same declaration file (different key;
+`DW-VOCAB-2026-09-14-8`).
+**Given** those modules each keep a private status set
+**When** this story lands
+**Then** they import the CAP-1 declaration
+**And** new Specs are not written `in-progress`; live `in-progress` files stay
+open until next edited
+**And** Doctor⊂Warden remains a declared subset
+**Status:** backlog
+
+### Story 59.3: The Charter carries the BMAD cross-walk and pitched stays optional
+
+**Type:** docs • **Effort:** S • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-3
+**Surface:** `docs/dreams/pyforge-charter.md`; `docs/governance/guild-roster.json`.
+**Given** Hub has a Charter walk and BMAD's daily nouns do not
+**When** this story lands
+**Then** the Charter maps Epic / Story / Sprint / PRD / Retrospective (never
+join) and records Spec `shipped` ≠ story `done` ≠ Dream `realized`
+**And** `pitched` remains declared and optional; no Dream is backfilled
+**Status:** backlog
+
+### Story 59.4: Design teaching is named; the pull cannot silently rot
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-5
+**Surface:** `presentations/agentic-sdlc/`; `DW-VOCAB-2026-09-14-3`.
+Herald executes the pull; steward wrote the ruling.
+**Given** the deck teaches four-phases / three-tracks and is 13.5 KB behind
+**When** this story lands
+**Then** the deck names itself teaching-only (except method-vs-machinery and
+project-context-as-constitution)
+**And** retired BMAD skill names and Paige are gone from the pulled deck
+**And** a detector flags a silent size/etag drift
+**Status:** backlog
+
+### Story 59.5: One mint-time slugify and two DW families
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-6
+**Surface:** `scripts/deferred_work_promote.py`
+**Given** one story is spelled three non-derivable ways and `DW-` has eleven grammars
+**When** this story lands
+**Then** a new story's heading, ledger key, and `spec-<ledger-key>.md` derive
+from one function
+**And** a new `DW-` id is story-scoped or sweep-scoped and includes the short
+station token
+**And** the 53 divergent slugs and 1338 existing `DW-` ids are untouched
+**Status:** backlog
+
+### Story 59.6: Shape hygiene — roster, S-N.N, commits, status comments
+
+**Type:** feature • **Effort:** M • **Deps:** S-59.1 • **FR/AD:** spec-vocabulary-one-name-one-job CAP-7
+**Surface:** `docs/governance/guild-roster.json`; Dream files under `docs/dreams/`;
+commit-subject convention (hook or detector). `S-N.N` stays prose-only.
+**Given** four `STATIONS` lists disagree and 19 Dreams comment on `status:`
+**When** this story lands
+**Then** one roster of eight exists (LONG paths/packages/envs, SHORT
+`owner:` / `Source` / prose)
+**And** a trailing `#` on Dream `status:` is a finding
+**And** commit subjects are Capitalized sentences with no trailing period,
+except `type(scope):` under `recipes/` and the CFE changelog
+**Status:** backlog
+
+### Story 59.7: atlas check= is a finding code only
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-vocabulary-one-name-one-job CAP-8
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py`
+**Given** six sites put runtime data in the finding-code field
+**When** this story lands
+**Then** those sites put the data in `evidence` and `check=` stays a kebab code
+**Status:** backlog
+
