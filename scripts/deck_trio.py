@@ -40,8 +40,8 @@ _BODY = re.compile(r"<body\b[^>]*>(.*)</body>", re.DOTALL | re.IGNORECASE)
 _STYLE = re.compile(r"<style\b[^>]*>.*?</style>", re.DOTALL | re.IGNORECASE)
 _LINK = re.compile(r"<link\b[^>]*>", re.IGNORECASE)
 # Property form, not the tail of max-width / min-height.
-_WIDTH = re.compile(r"(?<![\w-])width:(\d+)px")
-_HEIGHT = re.compile(r"(?<![\w-])height:(\d+)px")
+_WIDTH = re.compile(r"(?<![\w-])width:\s*(\d+)px")
+_HEIGHT = re.compile(r"(?<![\w-])height:\s*(\d+)px")
 
 
 class MissingStyleError(ValueError):

@@ -260,9 +260,12 @@ via `deck-export`, not from the dc.html — sync the marp after Design edits whe
 the PowerPoint must match. The deck prototype and exec summary are separate
 branches; infographic edits never touch them.
 
-**Always finish with a pull.** Design is the editing surface; **git is the
-archive of record** — every Design-side edit session ends with a byte-exact
-pull to `presentations/<slug>/project/` and a commit (per-deck README ledgers
+**Always finish with a pull.** Design remains the editing surface for the
+deck prototype, exec summary, and other dc.html files; the infographic trio
+is authored on the standalone and the head is derived with
+`deck-trio <slug> --head`. **git is the archive of record** — every
+Design-side edit session ends with a byte-exact pull to
+`presentations/<slug>/project/` and a commit (per-deck README ledgers
 track etags). **The infographic standard** — floors, act arc, section set, diagram set,
 authoring template and the README ledger entry — has one home:
 `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md`

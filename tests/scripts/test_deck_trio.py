@@ -70,6 +70,14 @@ def _xdc_after_helmet(head_text: str) -> str:
     return after.split("</x-dc>", 1)[0]
 
 
+def test_spaced_width_preview():
+    text = deck_trio.derive_head(
+        "<html><head><style>.x{}</style></head>"
+        '<body><div style="width: 1240px">x</div></body></html>'
+    )
+    assert "width&quot;:1240" in text
+
+
 def test_happy_path(root, capsys):
     assert deck_trio.main([SLUG, "--head"]) == 0
     assert capsys.readouterr().out.strip() == "wrote"
