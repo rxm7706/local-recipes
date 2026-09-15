@@ -256,6 +256,130 @@ every count is in `technical-identifier-shapes-inventory-2026-09-14.md`.
     `atlas.py` say the field has two jobs. Either it has one and the data moves to `evidence`, or
     the code vocabulary is declared open and nothing downstream may enumerate it.
 
+Answers for 1–20 were accepted 2026-09-15 and are recorded in § *Operator rulings* below.
+They bind a later `bmad-spec` re-derive. They do **not** make this Dream `specified` — the
+Spec is still `draft` until that re-derive lands the same answers in the contract.
+
+## Operator rulings (accepted 2026-09-15)
+
+Operator accepted the full recommended batch in session. Recorded here so the Dream carries
+the *why*, not only a key. The test that judged every answer is the one this Dream already
+had: **each state names the act that completed, never what is happening; remaining work is
+the ledger.** No mass rename, no history rewrite, no Lexicon-noun change.
+
+### Word side
+
+1. **Declare all eight Spec values. Do not collapse `absorbed` / `superseded` / `archived`.**
+   They look like one “ended” act and are not. `board.py` already treats them as different
+   obligations: `shipped` still owes a story trail; `absorbed` is credited on the absorbing
+   chain; `archived` / `superseded` were abandoned, not delivered; `extension-point` is a
+   seam. Collapsing them would make INV-A lie. Keep `shipped` as *our* Spec-terminal. That
+   it is illegal on an upstream *story* is a cross-walk footnote, not a rename of the
+   ~67 live `shipped` Specs.
+
+2. **Stop putting `in-progress` on Specs.** It is the `building` state the Dream ladder
+   refused, and it collides with BMAD’s story lattice and our ledger. Live Specs already
+   use it as leftover-CAP accounting (`deferred-work-visibility`; `developer-machine-bootstrap`
+   still `in-progress` after Epic 17 is 2/2 `done`). A contract that exists is `ready` until
+   every CAP is delivered (`shipped`) or the chain is ended. **Grandfather** today’s files —
+   no mass rewrite. Detectors may keep treating the old value as open until each file is
+   next edited.
+
+3. **One machine-readable declaration detectors import; the Charter states the rule in a
+   short paragraph.** The Dream README stays the Dream ladder only. The coupling
+   (`specified` requires Spec `ready`; `extension-point` keeps the Dream `dreamt`) must not
+   live only in `docs/dreams/README.md` while `board.py` / `chain.py` /
+   `status_body_consistency.py` each keep a private set.
+
+4. **Yes — recommended, not required, and a reader must preserve an unregistered value.**
+   Frame v0.3 chose that so its own examples stayed valid. A closed enum would red ~163
+   `SPEC.md` files on day one. Unknown values: preserve, warn, do not reset (the fail-open
+   BMAD already does is why `STICKY_STATUSES` exists).
+
+5. **Yes — a BMAD↔Lexicon cross-walk belongs in the Charter, same shape as the Hub walk:
+   map, never join.** Epic / Story / Sprint / PRD / Retrospective are the daily nouns and
+   have no walk. Record the divergences in the open: Spec `shipped` ≠ story `done` ≠ Dream
+   `realized`; ledger `blocked` is ours; `optional` is BMAD’s retrospective lattice used
+   where it belongs.
+
+6. **Keep `pitched`. Do not require it. Do not backfill.** Use it when Herald has actually
+   made the case (a deck exists) and the Spec is still `draft`. `guild-roster.json` already
+   declares it; zero live Dreams use it. Forcing the rung would invent ceremony the
+   factory does not run.
+
+7. **Yes — one declared source for status sets.** Exit-code lattices sit in the **same
+   file, a different key** — do not mash “what a Spec may say” with “what a process may
+   return.” That leftover design half is `DW-VOCAB-2026-09-14-8` (docs half already in
+   `CLAUDE.md`).
+
+8. **Design practice vocabulary is teaching-only, and the deck must say so.** Do not
+   import four-phases / three-tracks / party mode / execution matrix into
+   `vocabulary-map.md`. Upstream 6.12 already says those phases are independent tools, not
+   stages, and “three tracks” collides with *evidence Track*. **Exception:**
+   method-vs-machinery and project-context-as-constitution already describe this estate —
+   they belong next to the Charter, not as new Lexicon nouns.
+
+9. **Already ruled 2026-09-14; restated.** Write **evidence Track** vs **planning track**.
+   Gate has three senses; `verdict` is the narrow word. Charter amendments, not edits.
+
+10. **Herald owns the Design→repo pull; a detector owns recurrence (etag/size).** Manual
+    cadence failed twice (2026-08-01 pull; 2026-09-14 deck 13.5 KB behind). Do not accept
+    “we’ll remember.” This is CAP-5 / `DW-VOCAB-2026-09-14-3`.
+
+11. **Steward writes the vocabulary ruling; Herald changes the deck.** Same split already
+    on `DW-VOCAB-2026-09-14-3`.
+
+### Shape side
+
+12. **Heading is human-canonical (`### Story N.N:`). Ledger key is machine-canonical.
+    Spec filename is `spec-` plus that ledger key. One slugify, at mint time only.**
+    Headings already hold 952/952. 53 of 842 number-pairs have divergent slugs — no
+    retro-rename.
+
+13. **New `DW-` ids only: two families.** Story-scoped and sweep-scoped (the two that
+    already carry information). Ban the other nine shapes for anything minted after this
+    ruling. A grammar without a mint-time guard will not hold —
+    `deferred_work_promote.py` copies generic Tier-3 ids verbatim.
+
+14. **Yes — every new `DW-` id includes the short station token.** Bare `DW-1`…`DW-10`
+    collide across ledgers; this Dream’s own `DW-VOCAB` sequence split across steward and
+    marshal. No retro-rename of the 1338 existing ids.
+
+15. **Both casings stay, as context rules.** Named `SPEC.md` is kebab-led (`owner-dream`)
+    with `open_questions` beside it; numbered story specs are snake-led. Do not move
+    either key — detectors read both. A single “winner” is a detector break.
+
+16. **Declare `S-N.N` as a legal short form in prose only.** The heading stays
+    `### Story N.N:`. Retiring 2615 uses is a planning-prose migration with no reader
+    benefit.
+
+17. **Capitalized sentence, no trailing period, no `Co-Authored-By`.** Conventional
+    `type(scope):` is allowed only under `recipes/` and the CFE changelog. This is the
+    one shape a commit hook can enforce; the last-200 mix punctuates in opposite
+    directions.
+
+18. **Per-context, plus one declared roster of eight.** LONG for paths, packages, pixi
+    envs; SHORT for Dream `owner:`, `Source`, and prose. Collapse the four disagreeing
+    `STATIONS` lists. `DREAM_STATIONS` omitting doctor and scribe is the defect a single
+    list prevents. Do not pick one form for every surface.
+
+19. **Forbid a trailing `# …` on the same line as Dream `status:`.** Put the comment on
+    the next line. 19 of 165 Dreams make a five-value ladder parse as 40+. Fix-on-touch
+    or one hygiene PR; add a detector. This protects the Dream ladder this file exists
+    to extend.
+
+20. **`check=` is a finding code only. Runtime data goes in `evidence`.** Six `atlas.py`
+    call sites put a feedstock or package name (or `"<unknown feedstock>"`) in the field
+    that elsewhere carries `spec-surface`. That is a small code fix once the Spec is
+    `ready`, not a second vocabulary.
+
+### Deliberately not in this batch
+
+- Renaming Spec `shipped` to `done` (fights the story lattice and ~67 files).
+- Unifying branch names (most are machine-generated and short-lived).
+- Retro-fixing the 53 divergent slugs or the 1338 `DW-` ids.
+- Re-opening Frame v0.3 (adopted on steward Story 53.6).
+
 ## Kinships
 
 - [[intelligence-hub]] — the Hub half of the vocabulary; its CAP-1 landed the Charter cross-walk
@@ -303,3 +427,9 @@ every count is in `technical-identifier-shapes-inventory-2026-09-14.md`.
   (raised → fixed → closed, 214 epic keys against 214 headings fleet-wide, no story orphaned),
   and the exposure is durability, not correctness — the whole chain, this Dream included, sits in
   a 46-file changeset **staged on `main` and uncommitted**, none of it reachable from `HEAD`.
+- **2026-09-15** — Operator accepted the full recommended ruling batch (word-side Q1–11,
+  shape-side Q12–20) and directed that the answers and their reasons be appended to **this
+  Dream** before any Spec re-derive. Recorded in § *Operator rulings (accepted 2026-09-15)*.
+  Status stays `dreamt`: a `draft` Spec still has unanswered `open_questions:` in its
+  frontmatter until `bmad-spec` re-derives the contract from this file. No epic. No
+  `SPEC.md` hand-edit.
