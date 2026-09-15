@@ -777,6 +777,211 @@ def test_refresh_with_no_previous_ledger_rewrites_by_shape(root, capsys):
     assert not list((root / "presentations/pyforge-alpha/project").glob("*.tmp"))  # temp file + os.replace
 
 
+# --- Story 21.3 (spec-deck-family-lockstep CAP-2): both verbs now walk every
+# MARKED surface of the deck -- poster, head, Infographic Deck, exec summary,
+# and the three marp sources -- not the poster alone. A surface only enters the
+# walk once it exists AND already carries at least one `data-fact` occurrence;
+# a deck where nothing but the poster is marked (the whole fleet, as of this
+# story) is provably unaffected -- every test above this comment passes with
+# zero changes, and `test_extra_surfaces_with_no_marks_behave_exactly_as_today`
+# pins it explicitly.
+
+def test_discover_surfaces_gates_optional_surfaces_on_marks(root):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Infographic.dc.html", "<p>82/94 no marks at all here</p>")
+    _write(project / "Alpha - Infographic Deck.dc.html", '<p data-fact="stories_done_total">2/3</p>')
+    notes: list[str] = []
+    names = [n for n, _ in deck_facts.discover_surfaces(root, "pyforge-alpha", notes)]
+    assert names == ["poster", "infographic-deck"]  # head unmarked -> excluded; poster always present
+    assert notes == []
+
+
+def test_discover_surfaces_reports_the_poster_slot_even_when_missing(root):
+    notes: list[str] = []
+    assert deck_facts.discover_surfaces(root, "pyforge-beta", notes) == [("poster", None)]
+
+
+def test_discover_surfaces_marp_date_glob_skips_the_narration_sibling(root):
+    """A real fleet sibling: `<slug>-infographic-deck-narration-<date>.md` starts
+    with the same `<slug>-infographic-` prefix as the genuine source and sorts
+    after it by date -- deck_export.py's own looser glob would pick it as
+    "newest". The date must anchor immediately after the kind."""
+    marp = root / "presentations/pyforge-alpha/src/marp"
+    _write(marp / "pyforge-alpha-infographic-2026-07-24.md", '<p data-fact="x">1</p>')
+    _write(marp / "pyforge-alpha-infographic-deck-narration-2026-07-31.md", '<p data-fact="x">1</p>')
+    notes: list[str] = []
+    surfaces = dict(deck_facts.discover_surfaces(root, "pyforge-alpha", notes))
+    assert surfaces["marp-infographic"].name == "pyforge-alpha-infographic-2026-07-24.md"
+
+
+def test_discover_surfaces_picks_the_newest_dated_marp_source(root):
+    marp = root / "presentations/pyforge-alpha/src/marp"
+    _write(marp / "pyforge-alpha-infographic-2026-07-24.md", '<p data-fact="x">1</p>')
+    _write(marp / "pyforge-alpha-infographic-2026-08-31.md", '<p data-fact="x">1</p>')
+    notes: list[str] = []
+    surfaces = dict(deck_facts.discover_surfaces(root, "pyforge-alpha", notes))
+    assert surfaces["marp-infographic"].name == "pyforge-alpha-infographic-2026-08-31.md"
+
+
+def test_discover_surfaces_names_ambiguous_suffix_matches(root):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Executive Summary.dc.html", '<p data-fact="x">1</p>')
+    _write(project / "Zeta - Executive Summary.dc.html", '<p data-fact="x">1</p>')
+    notes: list[str] = []
+    surfaces = dict(deck_facts.discover_surfaces(root, "pyforge-alpha", notes))
+    assert any("multiple matches" in n and "Executive Summary" in n for n in notes)
+    # the tie-break itself, not just the stderr note: sorted-first, matching
+    # poster_hits'/derive's own precedent (test_multiple_posters_are_named_and_the_first_is_used)
+    assert surfaces["exec-summary"].name == "Alpha - Executive Summary.dc.html"
+
+
+def test_check_names_the_surface_and_a_clean_surface_is_silent(root, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    # fleet_epics_done_total resolves cleanly on the poster already ("2 / 4");
+    # planting a stale mark on head isolates a mismatch to that surface alone.
+    _write(project / "Alpha - Infographic.dc.html",
+           '<p>epics <span data-fact="fleet_epics_done_total">9 / 9</span></p>')
+    _write(project / "Alpha - Infographic Deck.dc.html", "<p>no marks here, just 1/2 prose</p>")
+    deck_facts.main(["pyforge-alpha"])
+    out = _check_lines(capsys, "pyforge-alpha")
+    assert "head: presentations/pyforge-alpha/project/Alpha - Infographic.dc.html" in out
+    assert not any(l.startswith("infographic-deck:") for l in out)  # unmarked: never walked
+    head_mismatch = [l for l in _kind(out, "mismatch") if "fleet_epics_done_total" in l and '"9/9"' in l]
+    assert len(head_mismatch) == 1
+    assert not any("1/2" in l for l in _kind(out, "unmarked"))  # the unmarked surface was never swept
+
+
+def test_check_prints_no_header_for_a_marked_but_fully_clean_surface(root, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Executive Summary.dc.html",
+           '<p>epics <span data-fact="fleet_epics_done_total">2/4</span></p>')  # already resolves
+    deck_facts.main(["pyforge-alpha"])
+    out = _check_lines(capsys, "pyforge-alpha")
+    assert not any(l.startswith("exec-summary:") for l in out)
+
+
+def test_unshown_aggregates_across_every_walked_surface(root, capsys):
+    """`package_version` ("0.1.0") appears nowhere in the poster fixture and is
+    `unshown` there alone; marking it correctly on another surface must clear it
+    deck-wide, since `unshown` asks whether ANY walked surface shows the value."""
+    project = root / "presentations/pyforge-alpha/project"
+    deck_facts.main(["pyforge-alpha"])
+    baseline = _check_lines(capsys, "pyforge-alpha")
+    assert "package_version" in {l.split()[1] for l in _kind(baseline, "unshown")}
+    _write(project / "Alpha - Executive Summary.dc.html",
+           '<p>version <span data-fact="package_version">0.1.0</span></p>')
+    out = _check_lines(capsys, "pyforge-alpha")
+    assert "package_version" not in {l.split()[1] for l in _kind(out, "unshown")}
+
+
+def test_extra_surfaces_with_no_marks_behave_exactly_as_today(root, capsys):
+    """The AC's own wording: a deck whose extra surfaces carry no marks behaves
+    exactly as today. Real content, real files, zero `data-fact` anywhere in
+    them -- output must be byte-identical to the poster-only baseline."""
+    project = root / "presentations/pyforge-alpha/project"
+    marp = root / "presentations/pyforge-alpha/src/marp"
+    extras = {
+        project / "Alpha - Infographic.dc.html": "<p>82/94 completely unmarked prose</p>",
+        project / "Alpha - Infographic Deck.dc.html": "<p>more unmarked prose, 2026-01-01</p>",
+        project / "Alpha - Executive Summary.dc.html": "<p>yet more, v1.2.3</p>",
+        marp / "pyforge-alpha-deck-2026-07-24.md": "# unmarked deck\n",
+    }
+    for path, text in extras.items():
+        _write(path, text)
+    deck_facts.main(["pyforge-alpha"])
+    with_extras = _check_lines(capsys, "pyforge-alpha")
+    for path in extras:
+        path.unlink()
+    without_extras = _check_lines(capsys, "pyforge-alpha")
+    assert with_extras == without_extras
+
+
+def test_refresh_rewrites_every_marked_surface_and_sums_the_summary(root, stale, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Infographic.dc.html",
+           '<p>fleet <span data-fact="fleet_stories_done_total">4/6</span></p>')
+    out = _refresh_lines(capsys)
+    assert "head: presentations/pyforge-alpha/project/Alpha - Infographic.dc.html" in out
+    assert 'refreshed  fleet_stories_done_total  "4/6" -> "5/6"' in _kind(out, "refreshed")
+    # 4 refreshed + 2 skipped from the poster (base fixture) + 1 refreshed from head
+    assert out[-1] == "summary   pyforge-alpha: 5 refreshed, 2 skipped"
+    assert (project / "Alpha - Infographic.dc.html").read_text(encoding="utf-8") == (
+        '<p>fleet <span data-fact="fleet_stories_done_total">5/6</span></p>')
+
+
+def test_refresh_never_touches_an_unmarked_surface(root, stale, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    deck_path = project / "Alpha - Infographic Deck.dc.html"
+    _write(deck_path, "<p>no marks here, just 1/2 prose</p>")
+    before = deck_path.read_bytes()
+    before_mtime = deck_path.stat().st_mtime_ns
+    out = _refresh_lines(capsys)
+    assert not any(l.startswith("infographic-deck:") for l in out)
+    assert deck_path.read_bytes() == before
+    assert deck_path.stat().st_mtime_ns == before_mtime
+
+
+def test_refresh_reads_every_marked_surface_before_it_advances_the_ledger(root, monkeypatch):
+    """The poster-only invariant (`test_refresh_reads_the_poster_before_it_advances_the_ledger`),
+    generalized: an unreadable NON-poster marked surface must equally abort
+    before the ledger is written, leaving nothing stale with no comparison left."""
+    ghost = root / "presentations/pyforge-alpha/project/Ghost - Infographic.dc.html"
+    real_suffix_hit = deck_facts._suffix_hit
+    monkeypatch.setattr(
+        deck_facts, "_suffix_hit",
+        lambda project, suffix, notes: ghost if suffix == deck_facts.HEAD_SUFFIX
+        else real_suffix_hit(project, suffix, notes))
+    monkeypatch.setattr(deck_facts, "_has_marks", lambda path: True)
+    with pytest.raises(OSError):
+        deck_facts.main(["pyforge-alpha", "--refresh"])
+    assert not (root / "presentations/pyforge-alpha/facts.yaml").exists()
+
+
+def test_check_reports_non_utf8_on_a_non_poster_surface_instead_of_crashing(root, capsys):
+    """`_check_surface` reads with the same undefended `encoding="utf-8"` the
+    poster always has, but --check now walks MORE files than just the poster --
+    a marked non-UTF-8 head must be reported and skipped, not raise out of an
+    advisory tool that promises exit 0 always."""
+    project = root / "presentations/pyforge-alpha/project"
+    (project / "Alpha - Infographic.dc.html").write_bytes(
+        b'<p><span data-fact="fleet_epics_done_total">9 / 9 \xff\xfe</span></p>\n')
+    deck_facts.main(["pyforge-alpha"])
+    out = _check_lines(capsys, "pyforge-alpha")
+    assert "skipped head: not UTF-8" in out
+    assert not any("fleet_epics_done_total" in l for l in _kind(out, "mismatch"))
+    assert out[-1].startswith("summary")  # advisory: reaches the end, never raises
+
+
+def test_refresh_skip_reasons_apply_on_a_non_poster_surface(root, stale, capsys):
+    """The skip machinery (`refresh()`, unchanged) is exercised on the poster
+    extensively elsewhere; this pins that the SAME reasons fire when the
+    surface is something other than the poster, since Story 21.3's own AC says
+    they "apply per surface"."""
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Infographic.dc.html",
+           '<p><b data-fact="cli_verbs"><i>1</i></b> · '
+           '<span data-fact="fleet_stories_done_total">4/6</span></p>')
+    out = _refresh_lines(capsys)
+    assert "skipped  cli_verbs  nested mark" in _kind(out, "skipped")
+    assert 'refreshed  fleet_stories_done_total  "4/6" -> "5/6"' in _kind(out, "refreshed")
+
+
+def test_unvisited_cross_check_applies_on_a_non_poster_surface(root, monkeypatch, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha - Infographic.dc.html",
+           '<p><span data-fact="fleet_stories_done_total">4/6</span> · '
+           '<span data-fact="fleet_epics_done_total">2 of 4</span></p>')
+    deck_facts.main(["pyforge-alpha"])
+    _write(
+        root / "_bmad-output/projects/pyforge-gamma/planning-artifacts/sprint-status-ledger.yaml",
+        GAMMA_LEDGER.replace("1-2-g: backlog", "1-2-g: done").replace("epic-1: backlog", "epic-1: done"))
+    real = deck_facts._mark_spans
+    monkeypatch.setattr(deck_facts, "_mark_spans",
+                        lambda text: [m for m in real(text) if m["id"] != "fleet_epics_done_total"])
+    out = _refresh_lines(capsys)
+    assert "unvisited  fleet_epics_done_total  mark not reachable by --refresh" in out
+
+
 # --- DW-FU-20-2: the collect-count regex against REAL pytest output ---------
 #
 # The suite above stubs `tests_collected` wholesale, so `_PYTEST_COLLECTED` and
