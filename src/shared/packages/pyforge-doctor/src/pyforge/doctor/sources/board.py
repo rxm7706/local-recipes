@@ -114,12 +114,10 @@ DEFERRED_SPECS: dict[str, str] = {
     "spec-agentic-sdlc-autonomy":
         "a standing position, explicitly 'not a deliverable' by its own text — "
         "there is nothing to decompose and an FR would manufacture one",
-    "spec-build-league-scorecard":
-        "explicitly self-parked by its own SPEC.md: 'Parked contract... Do not implement a "
-        "board until the operator drafts the measure set.' Unifying Strategy Q5 named the "
-        "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
-        "describe undone work an epic could pick up today. De-register once the operator "
-        "publishes the human/agent/team measure set CAP-1 needs",
+    # `spec-build-league-scorecard` was registered here while Q5 had no numbers.
+    # De-registered 2026-09-15: operator published eight already-counted
+    # signals with on/off/archived config; Spec `ready`; steward Epic 62
+    # (62.1–62.3) is the dispatch home. Do not invent weights.
     # `spec-work-passports-dated-extracts` was registered here 2026-09-14 as a
     # `draft` seed whose six open questions blocked decompose. De-registered
     # 2026-09-15: operator approved Q1–6; Spec `ready`; steward Epic 61
