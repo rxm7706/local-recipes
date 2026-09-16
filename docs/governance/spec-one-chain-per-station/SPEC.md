@@ -1,11 +1,14 @@
 ---
 spec: one-chain-per-station
-status: draft   # 2026-09-16 — seeded the same morning the token-savings fold (PRs #1382/#1383)
-                # proved one Dream -> one Spec -> one epic chain on marshal. Six operator rulings
-                # are already in the memlog (entries 5-10); three open questions below gate CAP-6
-                # and the pyforge-core placement, not the rule or the pilot. Lives under
-                # docs/governance/ because its Dream is guild-owned (chain.py `_expected_spec_dir`:
-                # guild -> docs/governance/spec-<slug>/) — it amends the Charter's Lexicon reading.
+status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fold (PRs #1382/#1383)
+                # proved one Dream -> one Spec -> one epic chain on marshal; ruled and flipped the
+                # same day. Six operator rulings (memlog 5-10) settled the rule and the pilot; the
+                # three open questions were ruled by delegated research (memlog 26-28): no fifth
+                # Dream status (the existing ladder yields `specified` once CAP-6 lands);
+                # pyforge-core is the first cross-station-seam exemption, marshal-owned; the
+                # Charter's only ritual is CAP-1, applied in this PR. Lives under docs/governance/
+                # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
+                # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
 updated: "2026-09-16"
 owner-dream: docs/dreams/one-chain-per-station.md
@@ -16,17 +19,25 @@ surface: []     # Deliberately empty until the mechanism stories land: chain-spr
 companions: []
 sources:
   - ../../../docs/dreams/one-chain-per-station.md
-open_questions:
-  - "Do station Dreams get a fifth README status ('living'), or the rule 'a station Dream is perpetually specified'? (README change either way; gates CAP-6.)"
-  - "Where does spec-pyforge-core live after the fold — a package, not a station (marshal-owned, 528 governed files)? A marshal CAP range, or the Guild chain beside unifying-strategy?"
-  - "Does the Lexicon amendment need the Charter's §5 Guild ritual, or is the operator ruling as recorded sufficient?"
+open_questions: []
+  # RAISED 2026-09-16 (morning) AND CLOSED 2026-09-16 (delegated research, memlog 26-28):
+  #   fifth-dream-status-or-perpetually-specified -> neither is a new rule; the roster's
+  #     act-based ladder rejects 'living' (same failure as the rejected 'building'), and
+  #     README's "specified requires a Spec at ready or beyond" yields `specified` for
+  #     every station Dream once CAP-6 flips its Spec to in-progress. Zero vocabulary change.
+  #   pyforge-core-placement -> first cross-station-seam exemption; marshal stays accountable;
+  #     Guild ruled out by the Charter's structural test (serves every Smith, judges none);
+  #     a marshal CAP range ruled out because seven stations append against the kernel's
+  #     contract and the foundry regenerates core as its own leaf. Same for testing-charter.
+  #   charter-ritual -> none beyond CAP-1 (no vote exists); the ruling suffices as the decision
+  #     and is fully applied by the Charter memlog + Dream log entries in the same PR.
 ---
 
-> **Canonical contract (draft).** Derived from `.memlog.md` (25 entries, the
-> decision-of-record) and the Dream in `sources:`. The rule (CAP-1/2), the fold
-> procedure (CAP-3), and the marshal pilot (CAP-8) are settled by operator
-> ruling; the three `open_questions` gate only CAP-6's status vocabulary and
-> one placement. Do not hand-edit — append the memlog and re-derive.
+> **Canonical contract.** Derived from `.memlog.md` (34 entries, the
+> decision-of-record) and the Dream in `sources:`. Every question is ruled;
+> the precedence order (standard > history > implementation) and the
+> sequence (marshal, then steward) are operator constraints. Downstream may
+> bind. Do not hand-edit — append the memlog and re-derive.
 
 # SPEC — One Dream, one Spec, one PRD, one architecture, one epic chain — per station
 
@@ -70,9 +81,13 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     `absorbed` pointers keeping their memlogs; (d) Dreams archived in place
     with `Consolidated into` banners pointing at `pyforge-<s>.md`; (e) surface
     manifests merged with scoped baseline stamps; (f) PRD re-derived with
-    FR ← CAP; (g) epics and ledger untouched except one new fold Epic.
-    Nothing deleted.
-  - **success:** Exactly one Spec folder with an open status per station;
+    FR ← CAP; (g) epics and ledger untouched except one new fold Epic. The
+    record survives; derived bodies are disposable (Constraints, precedence).
+  - **success:** Exactly one Spec folder with an open status per station
+    **plus its declared seams** — a folder that survives the fold carries
+    `fold-exemption: cross-station-seam` (marshal: `spec-pyforge-core`,
+    `spec-pyforge-testing-charter` — the kernel and the testing kit, imported
+    by every other station, regenerated by the foundry as their own leaves);
     `dream-chain`, `dreams-hygiene`, `spec-surface`, `chain-completeness`,
     `story-status` green; every prior memlog entry still present.
 - **CAP-4 — Memlog sharding.**
@@ -87,17 +102,27 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     step of each fold PR, never backfilled later; doctor `fr-without-cap`
     flags a post-date FR with no CAP.
   - **success:** Zero post-date FRs without a CAP fleet-wide.
-- **CAP-6 — Living station tiers.**
+- **CAP-6 — Living station tiers, with zero new vocabulary.**
   - **intent:** The eight `spec-pyforge-<s>` flip `shipped` → `in-progress`
-    and stay; `shipped` belongs to CAPs and stories. Station Dreams get a
-    status that does not flip on every fold (open question 1).
-  - **success:** No station Spec is terminal; no station Dream changes status
-    because a fold landed.
-- **CAP-7 — The foundry on-ramp is recorded.**
+    and stay; `shipped` belongs to CAPs and stories. Station Dreams then read
+    `specified` by the README's existing rule ("a Spec at `ready` or beyond")
+    and never flip again — no fifth status (the roster's act-based ladder
+    rejected `building` for the same reason it would reject `living`). One
+    README sentence records the consequence; the eight `realized` station
+    Dreams that today carry progress phrases under a terminal label
+    (`status-body-consistency` warns on herald, marshal, mason) are corrected
+    by the same act.
+  - **success:** No station Spec is terminal; every station Dream reads
+    `specified`; `status-body-consistency` reports zero findings on the eight
+    station Dreams; `dream_statuses` in the roster is unchanged.
+- **CAP-7 — The foundry on-ramp is recorded, standard included.**
   - **intent:** `spec-foundry-regenerate-not-fold`'s memlog names the eight
     folded station Specs as B's starting five-fields (its CAP-5, "one
-    starting contract across two git roots").
-  - **success:** The entry exists before the second station fold lands.
+    starting contract across two git roots") **and names this standard** —
+    Dream-append-first, the exemption list, the seam rule, FR ← CAP — as
+    B's starting discipline, so the shape is evergreen across both roots.
+  - **success:** The entry exists before the second station fold (steward)
+    lands.
 - **CAP-8 — The marshal pilot.**
   - **intent:** CAP-3 executed on pyforge-marshal: 58 Spec folders → 1,
     55 Dreams → 1 (eight already folded 2026-08-08), CAP-4 sharding live,
@@ -108,12 +133,32 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
 
 ## Constraints
 
+- **Precedence (operator, 2026-09-16): the evergreen standard > historical
+  accuracy > current implementation.** CAP re-mint renumbers freely into the
+  station namespace — provenance is a memlog line, not preserved numbering.
+  An absorbed folder is reduced to a pointer header plus its memlog; derived
+  bodies are disposable, git is the historical record. The PRD is re-derived
+  *to* the standard, never reconciled to past FR numbering. Where a detector,
+  doc, or README convention encodes the old shape, the standard wins and the
+  artifact moves — never the reverse.
+- **Eventual consistency.** The fleet converges one station PR at a time; a
+  folded station and an unfolded one both pass every detector throughout.
+  `chain-sprawl-check` baselines from a dated snapshot — only *new*
+  unexempted folders are findings. No flag day.
+- **Evergreen and portable.** Written once, applied to both roots —
+  local-recipes now, pyforge-foundry on cutover. B inherits Dream-append-
+  first, the exemption vocabulary, the seam rule, and FR ← CAP as its
+  starting discipline (CAP-7 records the standard, not just the eight Specs).
+- **Sequence.** Marshal (CAP-8), then steward, then scribe · herald · doctor
+  · atlas · warden; mason is already one Spec. CAP-1/2 land before marshal's
+  fold so it does not refill while underway.
 - No new machinery beyond CAP-2 and CAP-5's check; every fold mechanism
   already exists with precedent (archive-in-place ×14, `covers-dreams:`,
   `absorbed` ×5, `superseded` ×2, `bmad-spec` ID preservation, INV-A ranges,
   surface-overlap tolerance).
 - Never hand-edit a `SPEC.md`; a fold is memlog appends plus re-derive.
-- Never delete a Dream or Spec folder; archive and point.
+- The decision **record** is never deleted — memlogs and git history survive
+  every fold. Folders archive and point; their bodies need not.
 - The PRD stays a BMAD artifact — derived, not retired (operator, 2026-09-16).
 - Eight station chains plus the Guild's; never one fleet chain.
 - Known costs accepted and named: surface drift degrades from "which Spec"

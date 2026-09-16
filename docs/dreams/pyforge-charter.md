@@ -1104,3 +1104,23 @@ herald broadcast slack,email --channel engineering-updates
     that remains: **CAP-7 / CAP-2** — Guildhall referent still open; no
     successor surface refuses an unattributable row. Autonomy L1–L5 stays
     teaching-only on steward 59.4 until that hall exists.
+- **2026-09-16 (§5 second instance; and a reading under CAP-1, not an
+  amendment)** — **`guild_dreams` gains [[one-chain-per-station]]**, the
+  second instance of the 09-14 shape ("a gate that judges all eight Smiths").
+  The structural test holds: its `chain-sprawl-check` grades every Smith's
+  Dream/Spec count — steward alone carries 22 open Dreams and cannot judge
+  itself — where the counter-precedent [[vocabulary-one-name-one-job]] stays
+  steward's because it grades no one's row. The 09-14 entry's "first and only
+  instance" is historical from this date. Mechanism stories stay Doctor's;
+  per-station fold stories stay each Smith's. **Same entry, a reading:**
+  Dream-first is read as Dream-**append**-first — new work is a dated section
+  in the station Dream, a `CAP-n` on the station Spec, and a Story; a *new*
+  Dream or Spec folder carries `fold-exemption:` from `{different-owner,
+  different-lifecycle, cross-station-seam, governance}`. No Lexicon text is
+  superseded (§1 and §2 define Dream and Spec without per-file granularity;
+  the §-amendment bar is adopting a new noun) — recorded here so the reading
+  is auditable. **Enforcement gap recorded** (Constraint *Gating amendments
+  on tooling*): the detector does not exist yet; the reading is asserted, not
+  enforced, until it lands. Artifacts moved in the same commit:
+  `guild-roster.json`, README row, this entry, the Spec memlog. `SPEC.md`
+  not hand-edited; re-derive on the next amendment (09-14 precedent).
