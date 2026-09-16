@@ -83,9 +83,9 @@ development_status:
   24-1-the-evaluator-and-the-thresholds-move-out-of-marshals-package-together: backlog
   24-2-an-import-linter-contract-catches-the-class-structurally: backlog
   24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all: backlog
-  25-1-a-new-dream-or-spec-folder-without-a-declared-exemption-is-a-finding: backlog
-  25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: backlog
-  25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: backlog
+  25-1-a-new-dream-or-spec-folder-without-a-declared-exemption-is-a-finding: done
+  25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done
+  25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done
   3-3-root-cause-naming: done
@@ -156,7 +156,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: backlog
   epic-24-retrospective: optional
-  epic-25: backlog
+  epic-25: done
   epic-25-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
