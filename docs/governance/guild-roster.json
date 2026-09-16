@@ -44,7 +44,8 @@
 
   "guild_dreams": [
     "pyforge-charter",
-    "coverage-gate-independence"
+    "coverage-gate-independence",
+    "one-chain-per-station"
   ],
   "$comment_guild_dreams": [
     "The Dreams that may name no station. `guild` is NOT a ninth station.",
@@ -62,7 +63,16 @@
     "applied to itself). `coverage-gate-independence` is that gate. The test",
     "is structural: cross-cutting, shared or unowned does NOT qualify; the",
     "artifact must judge every Smith. Its mechanism stories stay a Smith's",
-    "(Doctor's) under the outcome/mechanism rule."
+    "(Doctor's) under the outcome/mechanism rule.",
+    "",
+    "2026-09-16: the same shape a second time. `one-chain-per-station` amends",
+    "the Lexicon's reading of Dream-first (Dream-append-first) and mints",
+    "`chain-sprawl-check`, a gate over every Smith's planning tree -- no Smith",
+    "can own a rule that grades its own Dream and Spec count (steward alone",
+    "carries 22 open Dreams). Operator-ruled 2026-09-16 (six rulings in the",
+    "Spec memlog). Mechanism stories stay Doctor's; the per-station fold",
+    "stories stay each Smith's. Whether the Lexicon amendment also needs the",
+    "Section 5 ritual is the Spec's third open question."
   ],
 
   "dream_statuses": [
