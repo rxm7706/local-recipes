@@ -2,10 +2,17 @@
 title: The tier map names Cursor models Cursor can serve
 type: dream
 owner: marshal
-status: specified
+status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+                   # token-savings consolidation: one starting point). Was `specified`.
 ---
 
 # The tier map names Cursor models Cursor can serve
+
+> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
+> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
+> place: its **Spec stays live and remains the contract** — archiving the Dream
+> tier never retires the chain below it. Kept, not deleted, so the reasoning
+> that produced the Spec is still readable.
 
 ## The Dream
 
@@ -39,3 +46,7 @@ Dream.
   remaps all eight `marshal-policy.toml` `model_tier_map` stages to explicit
   `{ harness = "cursor", model = "…" }` tables. Unattended drain stays off
   until 28.29 is separately proven.
+- **2026-09-16** — Folded into [[marshal-token-economy]] (operator-ruled token-savings
+  consolidation) and archived in place. Prior status: `specified`. The Spec
+  (`spec-cursor-native-tier-map`) stays live and remains the contract; the
+  narrative continues in the parent's § Fold (2026-09-16).

@@ -2,12 +2,19 @@
 title: Claude spends the tokens the factory already learned to save
 type: dream
 owner: marshal
-status: dreamt   # 2026-09-16 — operator asked for a seed after a live session
-                 # found Claude still paying the uncompressed tax while Epic 28/33
-                 # machinery sits on marshal dispatch and Cursor-first policy.
+status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+                   # token-savings consolidation: one starting point). Was `dreamt`;
+                   # seeded the same day. Its Spec stays live and re-derives against
+                   # the parent Dream.
 ---
 
 # Claude spends the tokens the factory already learned to save
+
+> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
+> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
+> place: its **Spec stays live and remains the contract** — archiving the Dream
+> tier never retires the chain below it. Kept, not deleted, so the reasoning
+> that produced the Spec is still readable.
 
 ## The Dream
 
@@ -186,3 +193,10 @@ for symbols) · [[pyforge-marshal]] (the station).
   story, the substrate CAP (bootstrap, write-back ritual, canonical
   bundle, freshness SLA), and per-layer benchmark legs with cache-hit
   rates.
+- **2026-09-16 (fold)** — Folded into [[marshal-token-economy]] (operator-ruled
+  token-savings consolidation) and archived in place, the same day it was
+  seeded. Prior status: `dreamt`. The Spec (`spec-token-economy-claude-session-path`,
+  `draft`) stays live and remains the contract — its re-derive repoints
+  `owner-dream` at the parent; the ten-entry memlog carries the full decision
+  record (OQ answers, multi-harness matrix, adversarial review, substrate-
+  primary reordering).
