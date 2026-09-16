@@ -705,7 +705,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_pixi_currency.py": "a63522c082fa2ab4b00e0c847f178a1bd06e0c5a",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py": "cf274795254ee26a6826c5c707a86dd72644ee9f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py": "147877ac90c8019430507859e411d2e59b7a2458",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "33ba23a7713839ad5b65a279625ae7340ff533b9",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "ffd01df7bd2fa0f19007136bf14466dc5f43373e",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": "b9752634c30a6fea831d914230a416d777440e91",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": "21d0669309ac33ba2f79b90260bfbb4b3e51296c",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": "a0d092a2bbc5c474b33957f12849c62f1824aba6",
@@ -714,7 +714,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "e746df5658909a6775463391e223a3fc1fda500e"
+  "memlog": "51a65fd7bda6e1bd7da256f2e81eff3b7170ab1c"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
