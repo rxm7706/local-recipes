@@ -10,19 +10,23 @@ network, no adapter); every local-prove call is against a hand-written
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pptx import Presentation
 from pyforge.herald import deck_pipeline as deck_pipeline_module
-from pyforge.herald import state
+from pyforge.herald import registry, stamps, state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
     ExportPushResult,
     NpmLocalProver,
+    PixiDeckExporter,
+    PptxTemplateExporter,
     PullResult,
     SeedResult,
     SubprocessGitCommitter,
@@ -32,11 +36,13 @@ from pyforge.herald.deck_pipeline import (
     pull_standalone_bundle,
     push_exports,
     seed,
+    select_exporter,
 )
 from pyforge.herald.errors import (
     AuthError,
     ExportConflictError,
     HeraldError,
+    PptxTemplateError,
     SeedConflictError,
     TransportCallError,
 )
@@ -1604,3 +1610,274 @@ def test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_confli
 
     with pytest.raises(AuthError):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+
+# --- Story 23.5: PptxTemplateExporter / select_exporter ----------------------
+
+
+def _init_git_repo(root: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=root, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+    (root / "README.md").write_text("scratch repo\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=root, check=True)
+
+
+def _make_potx_deck(tmp_path: Path, slug: str, *, template_rel: str) -> Path:
+    """A deck directory with a real (blank) ``.pptx`` template at
+    ``template_rel``, a README declaring it via ``register_potx_template``,
+    and a minimal valid ``content_plan.json`` -- the shape
+    ``PptxTemplateExporter``/``select_exporter`` need to run for real,
+    without mocking ``pptx_pipeline`` itself (it is already covered by
+    ``test_pptx_pipeline.py``)."""
+    deck_dir = tmp_path / "presentations" / slug
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text(f"# {slug}\n\nBody.\n", encoding="utf-8")
+    template_path = tmp_path / template_rel
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    Presentation().save(str(template_path))
+    registry.register_potx_template(deck_dir / "README.md", template_rel)
+    (deck_dir / "src").mkdir(parents=True, exist_ok=True)
+    (deck_dir / "src" / "content_plan.json").write_text(
+        json.dumps({"slides": [{"layout": 0, "placeholders": {}}]}), encoding="utf-8"
+    )
+    return deck_dir
+
+
+def test_select_exporter_returns_pixi_exporter_when_no_potx_declared(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+
+    exporter = select_exporter(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert isinstance(exporter, PixiDeckExporter)
+
+
+def test_select_exporter_returns_pptx_template_exporter_when_potx_declared(
+    tmp_path: Path,
+):
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+
+    exporter = select_exporter(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert isinstance(exporter, PptxTemplateExporter)
+
+
+def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap: with no injected
+    ``exporter=``, ``pull_prototype`` must resolve via ``select_exporter``
+    (and therefore honor a declared ``.potx`` template) rather than always
+    defaulting straight to ``PixiDeckExporter``."""
+    deck_dir = _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "old"})
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="PyForge Warden.dc.html", etag="new", body="<html>v2</html>", unchanged=False
+        )
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+    )
+
+    assert calls == ["pyforge-warden"]
+    assert (deck_dir / "project" / "PyForge Warden.dc.html").read_text(
+        encoding="utf-8"
+    ) == "<html>v2</html>"
+
+
+def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap (mirrors
+    ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
+    with no injected ``exporter=``, ``pull_marp_source`` must resolve via
+    ``select_exporter`` (and therefore honor a declared ``.potx`` template)
+    rather than always defaulting straight to ``PixiDeckExporter``. Without
+    this test, a future revert of just this call site back to a hardcoded
+    ``PixiDeckExporter()`` would pass every existing test."""
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="new", body="# Deck", unchanged=False)
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert calls == ["pyforge-warden"]
+
+
+def test_pull_standalone_bundle_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap (mirrors
+    ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
+    with no injected ``exporter=``, ``pull_standalone_bundle`` must resolve
+    via ``select_exporter`` (and therefore honor a declared ``.potx``
+    template) rather than always defaulting straight to
+    ``PixiDeckExporter``. Without this test, a future revert of just this
+    call site back to a hardcoded ``PixiDeckExporter()`` would pass every
+    existing test."""
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="new", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert calls == ["pyforge-warden"]
+
+
+def test_pptx_template_exporter_fills_the_template_and_stamps_the_pptx(
+    tmp_path: Path,
+):
+    deck_dir = _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    html_exporter = FakeExporter()
+
+    PptxTemplateExporter(
+        html_exporter=html_exporter, now=lambda: datetime(2026, 9, 16, tzinfo=timezone.utc)
+    ).export(slug="pyforge-warden", repo_root=tmp_path)
+
+    out_path = deck_dir / "src" / "pptx" / "pyforge-warden-deck-2026-09-16.pptx"
+    assert out_path.is_file()
+    # A real, filled presentation -- not a Marp render.
+    prs = Presentation(str(out_path))
+    assert len(prs.slides) == 1
+    # html/infographic-pptx still produced via deck-export, explicit
+    # targets excluding deck-pptx.
+    assert html_exporter.calls == [("pyforge-warden", tmp_path)]
+    # The filled PPTX is stamped; deck-export's own subprocess is
+    # responsible for stamping html/infographic-pptx (out of this class's
+    # scope).
+    assert stamps.read_stamp(out_path) is not None
+
+
+def test_pptx_template_exporter_raises_when_no_potx_registered(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+
+    with pytest.raises(HeraldError, match="no PowerPoint template registered"):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_raises_naming_the_missing_content_plan(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+    template_path = deck_dir / "project" / "deck.pptx"
+    template_path.parent.mkdir(parents=True)
+    Presentation().save(str(template_path))
+    registry.register_potx_template(
+        deck_dir / "README.md", "presentations/pyforge-warden/project/deck.pptx"
+    )
+
+    content_plan_path = deck_dir / "src" / "content_plan.json"
+    with pytest.raises(HeraldError, match=str(content_plan_path)):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_propagates_a_missing_template_as_pptx_template_error(
+    tmp_path: Path,
+):
+    """The template-file-missing case propagates unchanged from
+    ``pptx_pipeline.run_fill`` (unlike the content-plan case above, which
+    this class pre-checks itself)."""
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+    registry.register_potx_template(
+        deck_dir / "README.md", "presentations/pyforge-warden/project/missing.pptx"
+    )
+    (deck_dir / "src").mkdir(parents=True)
+    (deck_dir / "src" / "content_plan.json").write_text(
+        json.dumps({"slides": []}), encoding="utf-8"
+    )
+
+    with pytest.raises(PptxTemplateError):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_propagates_an_html_exporter_failure(tmp_path: Path):
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    html_exporter = FakeExporter(fails=HeraldError("deck-export failed"))
+
+    with pytest.raises(HeraldError, match="deck-export failed"):
+        PptxTemplateExporter(html_exporter=html_exporter).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )

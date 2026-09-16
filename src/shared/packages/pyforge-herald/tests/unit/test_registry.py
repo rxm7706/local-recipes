@@ -13,9 +13,16 @@ from pathlib import Path
 
 import pytest
 from pyforge.herald.errors import HeraldError
-from pyforge.herald.registry import DesignProject, read, register
+from pyforge.herald.registry import (
+    DesignProject,
+    read,
+    read_potx_template,
+    register,
+    register_potx_template,
+)
 
 _HEADING = "## Design project (the bridge's far end)"
+_POTX_HEADING = "## PowerPoint template (the .potx path)"
 
 
 def test_register_into_a_readme_with_no_section_appends_it(tmp_path: Path):
@@ -369,3 +376,240 @@ def test_read_counts_a_blank_line_under_the_heading_as_a_body_line(
         HeraldError, match=r"found 3 \(blank lines inside the section count"
     ):
         read(readme_path)
+
+
+# --- Story 23.5: § *PowerPoint template* (the .potx path) -------------------
+
+
+def test_read_potx_template_of_a_readme_with_no_section_returns_none(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\nNothing about a .potx template here.\n")
+
+    assert read_potx_template(readme_path) is None
+
+
+def test_read_potx_template_of_a_missing_file_returns_none(tmp_path: Path):
+    readme_path = tmp_path / "does-not-exist" / "README.md"
+
+    assert read_potx_template(readme_path) is None
+
+
+def test_register_potx_template_into_a_readme_with_no_section_appends_it(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\nSome existing content.\n")
+
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/deck.potx")
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\nSome existing content.\n\n"
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/project/deck.potx\n"
+    )
+
+
+def test_read_after_register_potx_template_round_trips(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/deck.potx")
+
+    assert (
+        read_potx_template(readme_path)
+        == "presentations/pyforge-demo/project/deck.potx"
+    )
+
+
+def test_register_potx_template_updates_in_place_without_duplicating_the_heading(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/a.potx")
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/b.potx")
+
+    text = readme_path.read_text()
+    assert text.count(_POTX_HEADING) == 1
+    assert read_potx_template(readme_path) == "presentations/pyforge-demo/project/b.potx"
+
+
+def test_register_potx_template_replaces_span_up_to_the_next_heading_leaving_it_intact(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# My Deck\n\n"
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/project/old.potx\n\n"
+        "## Quick start\n"
+        "Some instructions.\n"
+    )
+
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/new.potx")
+
+    text = readme_path.read_text()
+    assert text.count(_POTX_HEADING) == 1
+    assert text == (
+        "# My Deck\n\n"
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/project/new.potx\n\n"
+        "## Quick start\n"
+        "Some instructions.\n"
+    )
+
+
+def test_potx_template_section_coexists_with_the_design_project_section(
+    tmp_path: Path,
+):
+    """The two sections are separate and additive -- registering one never
+    disturbs the other, in either order."""
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    register(readme_path, "PyForge Demo deck", "proj-1", "https://example.com/p")
+    register_potx_template(readme_path, "presentations/pyforge-demo/project/deck.potx")
+
+    assert read(readme_path) == DesignProject(
+        project_name="PyForge Demo deck",
+        project_id="proj-1",
+        file_url="https://example.com/p",
+    )
+    assert (
+        read_potx_template(readme_path)
+        == "presentations/pyforge-demo/project/deck.potx"
+    )
+
+
+def test_register_potx_template_against_a_missing_file_raises_herald_error(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "does-not-exist" / "README.md"
+
+    with pytest.raises(HeraldError, match=str(readme_path)):
+        register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
+    assert not readme_path.exists()
+
+
+@pytest.mark.parametrize(
+    "template_path",
+    ["", "multi\nline", 123],
+)
+def test_register_potx_template_refuses_an_empty_multiline_or_non_string_path(
+    tmp_path: Path, template_path
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    with pytest.raises(HeraldError, match="non-empty, single-line"):
+        register_potx_template(readme_path, template_path)
+    assert read_potx_template(readme_path) is None
+
+
+def test_register_potx_template_refuses_a_path_starting_with_a_hash(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    with pytest.raises(HeraldError, match="must not start with '#'"):
+        register_potx_template(readme_path, "#fragment-only")
+    assert readme_path.read_text() == "# My Deck\n"
+
+
+@pytest.mark.parametrize(
+    "template_path",
+    ["/etc/passwd", "../../escape.potx", "presentations/pyforge-demo/../../escape.potx"],
+)
+def test_register_potx_template_refuses_an_absolute_or_dot_dot_path(
+    tmp_path: Path, template_path
+):
+    """``deck_pipeline.py``'s ``PptxTemplateExporter.export`` does
+    ``repo_root / template_rel`` -- for an absolute ``template_rel`` that
+    pathlib ``/`` silently discards ``repo_root`` entirely, resolving
+    outside the repo. A ``..`` segment has the same effect via traversal."""
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    with pytest.raises(HeraldError, match="repo-root-relative"):
+        register_potx_template(readme_path, template_path)
+    assert read_potx_template(readme_path) is None
+
+
+def test_read_potx_template_of_a_section_with_two_body_lines_raises_herald_error(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/deck.potx\n"
+        "one line too many\n"
+    )
+
+    with pytest.raises(HeraldError, match="expected exactly one body line"):
+        read_potx_template(readme_path)
+
+
+def test_read_potx_template_of_a_heading_with_no_body_raises_herald_error(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\n## PowerPoint template (the .potx path)\n")
+
+    with pytest.raises(HeraldError, match="expected exactly one body line, found 0"):
+        read_potx_template(readme_path)
+
+
+def test_both_potx_functions_wrap_a_binary_corrupt_readme_as_herald_error(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_bytes(b"\x80\x81 not utf-8")
+
+    with pytest.raises(HeraldError, match="could not be read from"):
+        read_potx_template(readme_path)
+    with pytest.raises(HeraldError, match="could not be registered"):
+        register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
+
+
+def test_register_potx_template_collapses_multiple_trailing_blank_lines_before_appending(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\n\n\n")
+
+    register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\n"
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/deck.potx\n"
+    )
+
+
+def test_read_potx_template_tolerates_trailing_blank_lines_at_end_of_file(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "## PowerPoint template (the .potx path)\n"
+        "presentations/pyforge-demo/deck.potx\n\n\n"
+    )
+
+    assert read_potx_template(readme_path) == "presentations/pyforge-demo/deck.potx"
+
+
+def test_register_potx_template_wraps_a_failed_replace_and_leaks_no_temp_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    def _refuse(src, dst):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("pyforge.core.atomic_write.os.replace", _refuse)
+    with pytest.raises(HeraldError, match="disk full"):
+        register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
+
+    assert readme_path.read_text() == "# My Deck\n"
+    assert list(tmp_path.iterdir()) == [readme_path]

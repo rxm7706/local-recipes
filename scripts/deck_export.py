@@ -29,6 +29,9 @@ import re
 import shutil
 import subprocess
 import sys
+from pathlib import Path
+
+from pyforge.herald import stamps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATE_RE = re.compile(r"-(\d{4}-\d{2}-\d{2})\.md$")
@@ -48,6 +51,26 @@ def find_source(marp_dir: str, slug: str, kind: str):
     src = sorted(cands)[-1]  # newest by name == latest date
     m = DATE_RE.search(os.path.basename(src))
     return src, (m.group(1) if m else None)
+
+
+def chrome_available() -> bool:
+    """Whether a Chrome/Chromium binary the ``--pptx`` targets need
+    (``marp --pptx`` shells a headless render) can actually be found --
+    checked before those targets run so a missing browser skips them
+    instead of crashing mid-``marp`` (Story 23.5).
+
+    Checks the hardcoded ``CHROME`` path, a handful of common binary names
+    on ``PATH``, and an already-set ``CHROME_PATH`` env var (``marp``'s own
+    override, per its docs) -- a machine with a real but differently
+    named/located Chrome must not silently report "no chrome"."""
+    return bool(
+        os.path.exists(CHROME)
+        or shutil.which("chromium")
+        or shutil.which("chromium-browser")
+        or shutil.which("google-chrome")
+        or shutil.which("google-chrome-stable")
+        or os.environ.get("CHROME_PATH")
+    )
 
 
 def run_marp(extra: list[str]) -> None:
@@ -93,6 +116,7 @@ def main() -> None:
     if os.path.exists(CHROME):
         os.environ.setdefault("CHROME_PATH", CHROME)
 
+    chrome_ok = chrome_available()
     produced: list[str] = []
     if "html" in targets:
         if not info_md:
@@ -102,18 +126,27 @@ def main() -> None:
         )
         run_marp([info_md, "-o", out])
         produced.append(out)
+        stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
     if "infographic-pptx" in targets:
         if not info_md:
             sys.exit("error: no infographic .md source for 'infographic-pptx'")
-        out = os.path.join(pptx_dir, f"{args.slug}_infographic_deck-{info_date}.pptx")
-        run_marp(["--pptx", info_md, "-o", out])
-        produced.append(out)
+        if not chrome_ok:
+            print(f"{args.slug}: derive-skipped: no chrome (infographic-pptx)")
+        else:
+            out = os.path.join(pptx_dir, f"{args.slug}_infographic_deck-{info_date}.pptx")
+            run_marp(["--pptx", info_md, "-o", out])
+            produced.append(out)
+            stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
     if "deck-pptx" in targets:
         if not deck_md:
             sys.exit("error: no deck .md source for the 'deck-pptx' target")
-        out = os.path.join(pptx_dir, f"{args.slug}-deck-{deck_date}.pptx")
-        run_marp(["--pptx", deck_md, "-o", out])
-        produced.append(out)
+        if not chrome_ok:
+            print(f"{args.slug}: derive-skipped: no chrome (deck-pptx)")
+        else:
+            out = os.path.join(pptx_dir, f"{args.slug}-deck-{deck_date}.pptx")
+            run_marp(["--pptx", deck_md, "-o", out])
+            produced.append(out)
+            stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
 
     print(f"\n{args.slug}: regenerated {len(produced)} artifact(s):")
     for p in produced:

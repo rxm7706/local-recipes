@@ -55,7 +55,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pyforge.core.atomic_write import atomic_write_text as core_atomic_write_text
 
-from . import errors, registry, state
+from . import errors, pptx_pipeline, registry, stamps, state
 
 if TYPE_CHECKING:
     from .transport.base import DesignTransport, FileRead, ListedFile, ProjectRef
@@ -527,6 +527,120 @@ class PixiDeckExporter:
             )
 
 
+class _PixiPartialDeckExporter:
+    """``PptxTemplateExporter``'s own subprocess seam: ``pixi run -e
+    local-recipes deck-export <slug> html infographic-pptx`` -- explicit
+    targets that exclude ``deck-pptx`` (Design Notes: "``.potx`` replaces
+    only the 'deck' PPTX target"), one bounded subprocess call. Mirrors
+    ``PixiDeckExporter``'s subprocess pattern exactly, over a fixed partial
+    target list instead of no arguments (which would regenerate all three,
+    including the one target this story replaces). A separate class rather
+    than a new ``PixiDeckExporter`` parameter, so ``PixiDeckExporter``
+    itself (and every existing caller/test of it) stays untouched. Never
+    invoked by this package's own tests (every test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_EXPORT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        cmd = [
+            "pixi",
+            "run",
+            "-e",
+            "local-recipes",
+            "deck-export",
+            slug,
+            "html",
+            "infographic-pptx",
+        ]
+        try:
+            completed = subprocess.run(
+                cmd,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} "
+                f"exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: could not run {' '.join(cmd)!r} in "
+                f"{repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"deck-export failed: {' '.join(cmd)!r} in {repo_root} "
+                f"exited {completed.returncode}: {tail}"
+            )
+
+
+class PptxTemplateExporter:
+    """CAP-1's ``.potx`` template-fill path (Story 23.5): routed to in
+    place of ``PixiDeckExporter`` only for a deck whose README declares a
+    ``.potx`` template (``select_exporter``, below). Replaces ONLY the
+    "deck" PPTX target -- the one target whose content shape (a linear
+    slide list) matches ``content_plan.json`` (Design Notes) -- with a
+    genuinely editable PowerPoint via ``pptx_pipeline.run_fill``, never a
+    Marp render. ``html``/``infographic-pptx`` still derive from Marp via
+    ``deck-export``, shelled here with explicit targets that exclude
+    ``deck-pptx`` (``_PixiPartialDeckExporter``); those two are already
+    stamped by ``deck_export.py``'s own subprocess, so this class stamps
+    only the filled PPTX it wrote itself."""
+
+    def __init__(
+        self,
+        *,
+        html_exporter: DeckExporter | None = None,
+        now: Callable[[], datetime] | None = None,
+    ) -> None:
+        self._html_exporter = html_exporter or _PixiPartialDeckExporter()
+        self._now = now or _default_now
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        deck_dir = repo_root / "presentations" / slug
+        readme_path = deck_dir / "README.md"
+        template_rel = registry.read_potx_template(readme_path)
+        if template_rel is None:
+            raise errors.HeraldError(
+                f"cannot export {slug!r} via the .potx path: no PowerPoint "
+                f"template registered in {readme_path}"
+            )
+        content_plan_path = deck_dir / "src" / "content_plan.json"
+        if not content_plan_path.is_file():
+            raise errors.HeraldError(
+                f"cannot export {slug!r} via the .potx path: no content "
+                f"plan at {content_plan_path} (hand-authored, looked up by "
+                f"convention -- never auto-generated)"
+            )
+        template_path = repo_root / template_rel
+        date_str = self._now().strftime("%Y-%m-%d")
+        out_path = deck_dir / "src" / "pptx" / f"{slug}-deck-{date_str}.pptx"
+
+        pptx_pipeline.run_fill(template_path, content_plan_path, out_path)
+        self._html_exporter.export(slug=slug, repo_root=repo_root)
+        stamps.write_stamp(out_path, repo_root=repo_root, slug=slug)
+
+
+def select_exporter(slug: str, repo_root: Path) -> DeckExporter:
+    """Routes a deck's derive path (Story 23.5): ``PptxTemplateExporter``
+    when the deck's README declares a ``.potx`` template
+    (``registry.read_potx_template``), else the existing
+    ``PixiDeckExporter`` -- routing strictly on that one declaration
+    (Boundaries & Constraints: "no other deck's output changes"). Used as
+    the default (an explicit ``exporter=`` argument to any ``pull_*``
+    function always wins) by each of this module's three pull functions."""
+    readme_path = repo_root / "presentations" / slug / "README.md"
+    if registry.read_potx_template(readme_path) is not None:
+        return PptxTemplateExporter()
+    return PixiDeckExporter()
+
+
 def _default_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -667,7 +781,9 @@ def pull_prototype(
         )
 
     (prover or NpmLocalProver()).prove(deck_dir)
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
+        slug=slug, repo_root=repo_root
+    )
     # Review finding: the etag is now recorded only after prove+export both
     # succeed -- see `_pull_and_land`'s docstring for why recording it any
     # earlier makes a failed re-derivation unrecoverable via retry.
@@ -776,7 +892,9 @@ def pull_marp_source(
             committed=False,
         )
 
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
+        slug=slug, repo_root=repo_root
+    )
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
@@ -875,7 +993,9 @@ def pull_standalone_bundle(
             committed=False,
         )
 
-    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(
+        slug=slug, repo_root=repo_root
+    )
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
     _record_pull_etag(
