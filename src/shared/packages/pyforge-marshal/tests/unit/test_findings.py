@@ -387,6 +387,11 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-BENCH-002",
             "MRS-BENCH-003",
             "MRS-BENCH-004",
+            # Story 44.1 (marshal watch).
+            "MRS-WATCH-001",
+            "MRS-WATCH-002",
+            "MRS-WATCH-003",
+            "MRS-WATCH-004",
         }
     )
 

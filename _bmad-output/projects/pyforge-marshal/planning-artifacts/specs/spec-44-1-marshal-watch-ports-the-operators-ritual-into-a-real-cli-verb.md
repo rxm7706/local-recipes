@@ -2,7 +2,7 @@
 title: '44.1: marshal watch ports the operator''s ritual into a real CLI verb'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-15'
-status: 'ready-for-dev' # draft | ready-for-dev | in-progress | in-review | done | blocked
+status: 'done' # draft | ready-for-dev | in-progress | in-review | done | blocked
 baseline_revision: 'c717dfaca05'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
