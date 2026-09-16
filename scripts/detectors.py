@@ -251,6 +251,12 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     ("general-docs-consistency", "general-docs-consistency-check"),
     # Story 55.2 (fcl:CAP-2): CAP extract vs capability-ledger.yaml.
     ("capability-ledger", "capability-ledger-check"),
+    # Doctor Epic 25 (spec-one-chain-per-station CAP-2 / CAP-5, guild outcome
+    # / doctor mechanism): the sprawl gate and the FR<-CAP check. Both
+    # offline, deterministic, baselined from a dated snapshot so a folded and
+    # an unfolded station both pass (eventual consistency).
+    ("chain-sprawl", "chain-sprawl-check"),
+    ("fr-without-cap", "fr-without-cap-check"),
 )
 
 

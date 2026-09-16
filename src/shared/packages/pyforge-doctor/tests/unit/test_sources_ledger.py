@@ -553,3 +553,120 @@ def test_ok_finding_reports_how_many_ledgers_were_compared(tmp_path: Path) -> No
     vacuous = ledger.gather(empty, base="origin/main", head="HEAD")[0]
     assert vacuous.status is DoctorStatus.OK
     assert vacuous.evidence["ledgers_compared"] == 0
+
+
+# --- Story 25.3: the fold PR's re-key map ------------------------------------
+#
+# spec-one-chain-per-station CAP-3(g): a station fold renumbers every key and
+# ships planning-artifacts/rekey-<date>.md. A `done` row whose key moves per
+# the map -- INCLUDING a slug change, which `_tail` continuity cannot see --
+# is the same row; a status flip through the map is still a regression; a map
+# line naming a key that exists on neither side is dangling.
+
+
+def _write_rekey(repo: Path, project: str, text: str, name: str = "rekey-2026-09-20.md") -> Path:
+    p = repo / "_bmad-output" / "projects" / project / "planning-artifacts" / name
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
+def _rebased_repo(tmp_path: Path) -> Path:
+    """Base: a 3-epic ledger with legacy numbering and one divergent slug.
+    Head: renumbered sequentially, slug fixed, map shipped."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {
+        "46-1-old-slug": "done",
+        "46-2-keep": "done",
+        "47-1-thing": "backlog",
+        "epic-46": "done",
+    })
+    base_sha = _commit_all(repo, "seed legacy numbering")
+    _branch_at(repo, "origin/main", base_sha)
+    return repo
+
+
+def test_rekey_pure_renumber_with_slug_change_is_continuity(tmp_path: Path) -> None:
+    repo = _rebased_repo(tmp_path)
+    _write_ledger(repo, "pyforge-marshal", {
+        "1-1-new-slug": "done",      # number AND slug changed -- only the map can see it
+        "1-2-keep": "done",
+        "2-1-thing": "backlog",
+        "epic-1": "done",
+    })
+    _write_rekey(repo, "pyforge-marshal",
+                 "# fold\n46-1-old-slug -> 1-1-new-slug\n46-2-keep -> 1-2-keep\n"
+                 "47-1-thing -> 2-1-thing\nepic-46 -> epic-1\n")
+    _commit_all(repo, "rebase marshal chain")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+    assert [f.check for f in findings] == ["ledger-regression"]
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_rekey_without_a_map_a_slug_change_still_regresses(tmp_path: Path) -> None:
+    """Pins that the map is load-bearing: `_tail` continuity covers a numeric
+    prefix change on a story key, not a slug change -- and never an epic
+    row (`epic-46` -> `epic-1` has no tail), so both regress without it."""
+    repo = _rebased_repo(tmp_path)
+    _write_ledger(repo, "pyforge-marshal", {
+        "1-1-new-slug": "done", "1-2-keep": "done", "2-1-thing": "backlog", "epic-1": "done",
+    })
+    _commit_all(repo, "rebase without shipping the map")
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+    (f,) = findings
+    assert f.check == "done-key-regressed" and f.status is DoctorStatus.FAIL
+    assert f.evidence["keys"] == ["46-1-old-slug", "epic-46"]
+
+
+def test_rekey_status_flip_through_the_map_is_still_a_regression(tmp_path: Path) -> None:
+    repo = _rebased_repo(tmp_path)
+    _write_ledger(repo, "pyforge-marshal", {
+        "1-1-new-slug": "backlog",   # moved AND un-finished
+        "1-2-keep": "done",
+        "2-1-thing": "backlog",
+        "epic-1": "done",
+    })
+    _write_rekey(repo, "pyforge-marshal",
+                 "46-1-old-slug -> 1-1-new-slug\n46-2-keep -> 1-2-keep\n"
+                 "47-1-thing -> 2-1-thing\nepic-46 -> epic-1\n")
+    _commit_all(repo, "rebase and regress one row")
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+    (f,) = findings
+    assert f.check == "done-key-regressed" and f.status is DoctorStatus.FAIL
+    assert f.evidence["transitions"] == [{"key": "1-1-new-slug", "from": "done", "to": "backlog"}]
+
+
+def test_rekey_dangling_line_is_its_own_fail(tmp_path: Path) -> None:
+    repo = _rebased_repo(tmp_path)
+    _write_ledger(repo, "pyforge-marshal", {
+        "1-1-new-slug": "done", "1-2-keep": "done", "2-1-thing": "backlog", "epic-1": "done",
+    })
+    _write_rekey(repo, "pyforge-marshal",
+                 "46-1-old-slug -> 1-1-new-slug\n46-2-keep -> 1-2-keep\n"
+                 "47-1-thing -> 2-1-thing\nepic-46 -> epic-1\n"
+                 "99-9-never-existed -> 1-9-nope\n"      # old key not on base
+                 "46-2-keep -> 1-2-keep\n")               # duplicate old key -> malformed map
+    _commit_all(repo, "rebase with a bad map")
+    checks = sorted(f.check for f in ledger.gather(repo, base="origin/main", head="HEAD"))
+    assert checks == ["rekey-map-dangling", "rekey-map-malformed"]
+
+
+def test_rekey_map_already_on_base_is_inert(tmp_path: Path) -> None:
+    """Once merged, the map is in both revisions; its old keys no longer
+    exist anywhere, and that must NOT read as dangling forever."""
+    repo = _rebased_repo(tmp_path)
+    _write_ledger(repo, "pyforge-marshal", {
+        "1-1-new-slug": "done", "1-2-keep": "done", "2-1-thing": "backlog", "epic-1": "done",
+    })
+    _write_rekey(repo, "pyforge-marshal",
+                 "46-1-old-slug -> 1-1-new-slug\n46-2-keep -> 1-2-keep\n"
+                 "47-1-thing -> 2-1-thing\nepic-46 -> epic-1\n")
+    merged = _commit_all(repo, "fold merged")
+    _git(repo, "branch", "-f", "origin/main", merged)
+    (repo / "later.txt").write_text("x\n", encoding="utf-8")
+    _commit_all(repo, "a later, unrelated PR")
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+    assert [f.check for f in findings] == ["ledger-regression"]
+    assert findings[0].status is DoctorStatus.OK

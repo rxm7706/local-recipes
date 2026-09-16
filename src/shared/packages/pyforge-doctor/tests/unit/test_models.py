@@ -214,6 +214,10 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "pixi-currency-ledger",
         "general-docs-consistency",
         "capability-ledger",
+        # Doctor Epic 25 (spec-one-chain-per-station, guild outcome / doctor
+        # mechanism): 25.1 sprawl gate, 25.2 FR<-CAP check.
+        "chain-sprawl",
+        "fr-without-cap",
     }
 
 

@@ -2062,3 +2062,121 @@ both)
 **And** `git ls-files` shows every new path tracked before the stamp (the baseline reads
 `git ls-files`)
 **Status:** backlog
+
+## Epic 25: One chain per station — the sprawl gate, the FR check, and a ledger that survives a rebase (spec-one-chain-per-station CAP-2, CAP-5, CAP-3(g))
+
+Minted 2026-09-16 from `docs/governance/spec-one-chain-per-station/SPEC.md` (owner Dream
+`docs/dreams/one-chain-per-station.md`, **`owner: guild`** — the second instance of the Charter §5
+shape amended 2026-09-14: a gate that judges all eight Smiths, registered in `guild_dreams` the
+same day, PR #1384). The **outcome** is the Guild's; the **mechanism** is Doctor's under §5's
+outcome/mechanism rule — the same relay as Epic 24. Every story below binds to a CAP id on a Spec
+that lives in `docs/governance/`, not in this project's `specs/` tree; INV-A does not scan that
+directory, so the citations here are the only place the Spec's stories are enumerated.
+**Ruled and closed before minting** (do not re-open; Spec memlog 5–10, 26–43): Dream-**append**-
+first with a closed `fold-exemption:` list `{different-owner, different-lifecycle,
+cross-station-seam, governance}`; eventual consistency — a folded station and an unfolded one both
+pass throughout, so the sprawl gate baselines from a dated snapshot and only *new* unexempted
+folders are findings; a fold is a **rebase** — CAPs, epics and stories renumber sequentially and
+every fold PR ships a re-key map, so `ledger-regression` must read that map or every fold reds on
+its own renumbering; the standard every fold conforms to is
+`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` (§7 is the checklist). These three
+stories land **before** the marshal pilot begins (Spec Constraint *Sequence*: "CAP-1/2 land before
+marshal's fold so it does not refill while underway"). What is NOT in scope: any station's fold
+(each is that Smith's own effort), the story-identity mint function (`vocabulary-one-name-one-job`
+CAP-6, steward's), and the declared status-vocabulary source (vocabulary CAP-2, steward's) — Story
+25.1 reads the exemption list from one declared source but does not mint that source's shape.
+
+### Story 25.1: A new Dream or Spec folder without a declared exemption is a finding
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-1,
+CAP-2 (`SPEC.md` success: "a Dream or Spec folder minted after the rule date without
+`fold-exemption:` is a FAIL"; Constraint *Eventual consistency*: "baselines from a dated snapshot —
+only new unexempted folders are findings")
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (new
+`gather_chain_sprawl`), `sources/__init__.py` (`Source.CHAIN_SPRAWL` registration, scope `repo`),
+`sources/__main__.py` (dispatcher row), `pixi.toml` (`chain-sprawl-check` task),
+`scripts/detectors.py` (row in the `detectors-ci` list), `docs/governance/guild-roster.json`
+(`fold_exemptions` — the one declared source of the closed list, with a dated `$comment`),
+`docs/governance/chain-sprawl-baseline.json` (the dated snapshot: every `docs/dreams/*.md` and every
+`specs/spec-*/` folder present at the ruling SHA `e630e43330`, PR #1384's merge), doctor unit +
+conformance tests.
+**Given** the fleet holds 171 Dreams and 172 Spec folders for eight stations and the 2026-08-08
+61-Dream fold regrew in five weeks because nothing refused a new file **When** the detector lists
+every `docs/dreams/*.md` (excluding `README.md` and `archive/`) and every
+`_bmad-output/projects/*/planning-artifacts/specs/spec-*/` and `docs/governance/spec-*/` folder,
+subtracts the baseline, and for each remainder reads `fold-exemption:` from the Dream's or
+`SPEC.md`'s frontmatter **Then** a remainder with no `fold-exemption:` or a value outside the
+declared list is `check=chain-sprawl-unexempted` FAIL naming the path and the eight station Dreams
+it could have been a section of; a remainder carrying a listed value is `check=chain-sprawl-exempt`
+info (so the exemption is visible, never silent); a baseline entry is never a finding **and** the
+station Dreams `pyforge-<s>.md`, the station Specs `spec-pyforge-<s>/`, and story-spec files
+`spec-<E>-<S>-<slug>.md` are structurally excluded (they are the chain, not sprawl) **and** the
+exemption list is read from `guild-roster.json` `fold_exemptions` — a value hard-coded in
+`chain.py` is a meta-test failure — **and** `python scripts/spec_surface_check.py`-style scoped
+`--write-baseline` for this detector only *removes* entries (a fold that archived a Dream or
+absorbed a Spec), never adds one: adding is what the exemption is for **and** the task is in
+`detectors-ci`, so the merge gate measures it as no-new-findings against `main` from the first PR
+after this one **and** the doctor unit suite pins the finding codes and the exclusion set, and a
+conformance test runs the detector on the live tree expecting zero FAIL at the merge SHA.
+
+### Story 25.2: A product requirement minted after the rule date names its source capability
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5
+(`SPEC.md` success: "every FR minted after the rule date carries its source CAP; `fr-without-cap`
+holds it"; CHAIN-STANDARD § 2 "an FR cites its source CAP (`FR-n ← CAP-m`)")
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py` or a new
+`sources/prd.py` (new `gather_fr_without_cap`), `sources/__init__.py`, `sources/__main__.py`,
+`pixi.toml` (`fr-without-cap-check`), `scripts/detectors.py` (`detectors-ci` row),
+`docs/governance/fr-baseline.json` (every `FR-n` / `NFR-n` id per station PRD at the ruling SHA —
+the pre-rule population that is never a finding), doctor tests.
+**Given** the fleet carries two requirement namespaces — 1,626 `FR-` citations and 3,161 `CAP-`
+citations — with no rule joining them, so a PRD can grow a requirement no Spec ever contracted
+**When** the detector parses each station's `prds/prd-pyforge-<s>-*/prd.md`, collects every
+`FR-n` / `NFR-n` heading or list id, subtracts the baseline, and for each new id looks for a
+`← CAP-m` (or `(CAP-m)`) citation on the same line or its first body line **Then** a new FR with
+no CAP citation is `check=fr-without-cap` FAIL naming the PRD, the FR id and the station's Spec
+folder; a new FR citing a `CAP-m` that does not exist in that station's `spec-pyforge-<s>/SPEC.md`
+(or, before the station's fold, in *any* open Spec folder under that station — eventual
+consistency) is `check=fr-cap-unresolved` FAIL; a baseline FR is never a finding **and** the
+baseline is regenerated only by a scoped `--write-baseline --project <s>` at a station's fold PR,
+when the PRD is re-derived FR ← CAP in full (CHAIN-STANDARD § 7 item 7) **and** the task is in
+`detectors-ci` **and** a unit test pins both codes and the "same line or first body line" rule; a
+conformance test runs on the live tree expecting zero FAIL at the merge SHA.
+
+### Story 25.3: The ledger-regression verdict reads a re-key map, so a rebase moves done rows as done
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-3(g)
+(`SPEC.md`: "the ledger regenerated from the Tier-3 feed through a re-key map … so a `done` row
+moves as `done`, never as drop+add"); Constraint *Re-key, never regress*: "`ledger-regression-check`
+and `story-status-check` must stay green through a renumbering; the re-key map is what makes that
+true"; CHAIN-STANDARD § 7 item 1 (`planning-artifacts/rekey-<date>.md`, one line per old → new key)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py`
+(`gather` learns the map), a small `pyforge/doctor/rekey.py` parser (the map's one shape: one
+`old-key -> new-key` per line, `#` comments, no other syntax), `scripts/promote_sprint_status.py`
+(`--rekey <map>`: regenerate the tracked twin with keys translated, statuses carried; refuses if any
+translated key collides or any `done` row would be dropped), `pixi.toml` (`sprint-ledger-sync`
+passes the flag through), `story-status-check`'s heading↔key comparison (reads the same map for the
+PR's diff), doctor tests with a fixture ledger + map.
+**Given** `ledger-regression` compares the PR head's `sprint-status-ledger.yaml` to `main`'s by key
+with one built-in continuity rule — a `done` story whose numeric prefix changed but whose kebab
+tail survived is the same story (`_tail`) — so a *pure* renumber already passes, but a fold also
+fixes the 53 slug divergences (the tail changes) and renumbers every `epic-N` row (no tail at
+all), and `story-status` confirms a `done` story by merge subjects that name its *old* id; each
+of those reads as a regression or a false green today *(corrected at implementation 2026-09-16:
+the first draft of this story said every row would drop; only the slug-changed and epic rows do)*
+**When** the fold PR ships
+`planning-artifacts/rekey-<date>.md` and the detector, finding that file changed in the PR's diff,
+applies the map to `main`'s ledger before comparing **Then** a `done` row whose key moves per the
+map and stays `done` is not a finding; a `done` row whose key is absent from both the map and the
+head ledger is `check=ledger-regression-dropped` FAIL (unchanged behaviour); a `done → backlog`
+transition through the map is still `check=ledger-regression` FAIL (the map moves keys, never
+statuses); a map line whose old key does not exist on `main` or whose new key is not in the head
+ledger is `check=rekey-map-dangling` FAIL naming the line **and** `promote_sprint_status.py
+--rekey` produces the head ledger the detector then accepts, byte-stable on a second run **and**
+without a map in the diff, behaviour is byte-identical to today (the existing doctor unit tests
+for `ledger.py` pass unchanged) **and** a fixture test rebases a 3-epic ledger to sequential
+numbering and asserts zero findings, then flips one row's status through the same map and asserts
+exactly one.
+
+_Status (2026-09-16): all three `backlog`; they gate the marshal pilot (the first fold PR runs
+CHAIN-STANDARD § 7 with these three green)._

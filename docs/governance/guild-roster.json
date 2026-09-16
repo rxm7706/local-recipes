@@ -82,6 +82,23 @@
     "realized",
     "archived"
   ],
+  "$comment_fold_exemptions": [
+    "The CLOSED list of reasons a NEW docs/dreams/*.md file or specs/spec-*/ folder may exist",
+    "outside a station's one chain (spec-one-chain-per-station CAP-1, operator 2026-09-16).",
+    "Dream-APPEND-first: new work is a dated section of the station Dream + a CAP on the station",
+    "Spec + a Story -- never a new file. chain-sprawl-check (doctor 25.1) reads THIS list and",
+    "nothing else (vocabulary-one-name-one-job CAP-2: one declared source). Adding a value here",
+    "is a governance act; the four are: different-owner (the work has a different accountable",
+    "Smith), different-lifecycle (it ends when the station does not), cross-station-seam (a",
+    "shared package every station imports -- pyforge-core, the testing kit), governance (a",
+    "Lexicon amendment cannot be a section of a station Dream)."
+  ],
+  "fold_exemptions": [
+    "different-owner",
+    "different-lifecycle",
+    "cross-station-seam",
+    "governance"
+  ],
   "$comment_dream_statuses": [
     "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
     "deliberately no `building` state: status declares what EXISTS (stable,",

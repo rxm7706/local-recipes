@@ -60,6 +60,7 @@ from . import (
     general_docs_consistency,
     ledger,
     marshal,
+    one_chain,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -124,6 +125,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     Source.GENERAL_DOCS_CONSISTENCY.value: general_docs_consistency.gather,
     # Story 55.2 -- extract detector vs capability-ledger.yaml.
     Source.CAPABILITY_LEDGER.value: capability_ledger.gather,
+    # Doctor Epic 25 (spec-one-chain-per-station CAP-2 / CAP-5): both
+    # repo-scope, offline, deterministic -- in detectors-ci from day one.
+    Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
+    Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

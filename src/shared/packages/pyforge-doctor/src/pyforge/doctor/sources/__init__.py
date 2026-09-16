@@ -482,6 +482,24 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 55.2 -- sources/capability_ledger.py. subject_station=
     # "steward": A authors the tracked capability ledger; doctor judges it.
     # A DISPATCH member; CAN FAIL (unclassified / undated A-only).
+    SourceRegistration(
+        source=Source.CHAIN_SPRAWL,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 25.1 -- sources/one_chain.py. Dream-append-first enforced:
+    # new Dream file / Spec folder vs docs/governance/chain-sprawl-baseline.json
+    # (dated snapshot, only ever pruned); exemption list read from
+    # guild-roster.json `fold_exemptions`. Fleet subject: it grades every
+    # station's planning tree. CAN FAIL.
+    SourceRegistration(
+        source=Source.FR_WITHOUT_CAP,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 25.2 -- sources/one_chain.py. A PRD FR minted after the rule
+    # date cites a CAP that an open Spec under its station declares;
+    # docs/governance/fr-baseline.json is the pre-rule population. CAN FAIL.
 )
 
 

@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-13"
+updated: "2026-09-16"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -1301,3 +1301,67 @@ capabilities:
     mode: A-only
     expiry: 2026-12-31
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-dev-boots-local/SPEC.md
+  # 2026-09-16 classified (doctor Epic 25 PR, fix-now rule): marshal-token-economy CAP-19..24 folded
+  # from spec-token-economy-claude-session-path (PR #1383) -- same Spec, same mode as CAP-1..18;
+  # build-league-scorecard CAP-1..4 -- a product capability (measure catalog / league table), rebuild
+  # like steward's other product Specs, not a repo-local mechanic (A-only).
+  - id: marshal-token-economy:CAP-19
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-20
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-21
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-22
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-23
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: marshal-token-economy:CAP-24
+    spec: marshal-token-economy
+    station: pyforge-marshal
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
+  - id: build-league-scorecard:CAP-1
+    spec: build-league-scorecard
+    station: pyforge-steward
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/SPEC.md
+  - id: build-league-scorecard:CAP-2
+    spec: build-league-scorecard
+    station: pyforge-steward
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/SPEC.md
+  - id: build-league-scorecard:CAP-3
+    spec: build-league-scorecard
+    station: pyforge-steward
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/SPEC.md
+  - id: build-league-scorecard:CAP-4
+    spec: build-league-scorecard
+    station: pyforge-steward
+    heading: ""
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/SPEC.md
