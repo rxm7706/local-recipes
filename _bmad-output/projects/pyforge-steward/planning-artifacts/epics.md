@@ -4120,3 +4120,70 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 **And** Hub Outcome Guards are not implemented here — they read later
 **Status:** backlog
 
+
+## Epic 63: The Guild environment — `pyforge-guild` is the default for every agent (spec-pyforge-steward CAP-5)
+
+Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — The
+Guild environment* (no new Dream file, no satellite Spec; `spec-one-chain-per-station` CAP-1).
+Operator ruling: `local-recipes` (222 conda deps, 171 tasks, 10 GB) predates the Guild and is the
+wrong default for pixi.toml, for Claude/Cursor/Copilot/Gemini and for Cursor Cloud Agents in
+RXM-LOCAL-RECIPES. Measured at `41e29805b5`: 48 of its 171 tasks are Guild/planning work whose
+scripts import only `pyforge.*`, `yaml`, `tomli`, `pixi_version_registry`; 86 are recipe-factory
+(Mason's). **Tasks move, never duplicate** (Spec Constraint CAP-5). `local-recipes` keeps its name
+and every task by *including* the new feature. Foundry mode `rebuild`. Do not touch `recipes/`; do
+not invoke `conda-forge-expert`. `pixi.toml` changes: regenerate `environment.yaml` in the same PR
+and run `pyforge-station-tests` (shared surface, all eight fire in CI).
+
+### Story 63.1: The `pyforge-guild` feature and environment exist and the Guild tasks live in it
+
+**Type:** infra • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5
+**Surface:** `pixi.toml` (`[feature.pyforge-guild]`, `[environments]`, the 48 moved `[feature.pyforge-guild.tasks.*]`), `pixi.lock`, `environment.yaml`, `scripts/detectors.py` if it names an env.
+**Given** every planning task is reachable only through a 10 GB environment
+**When** this story lands
+**Then** `pixi install -e pyforge-guild` from cold is under 1 GB on disk and `pixi run -e pyforge-guild detectors-ci` is green on `main`
+**And** every moved task still runs as `pixi run -e local-recipes <task>` because `local-recipes` includes `pyforge-guild`; no task name exists in two features
+**And** `pyforge-station-tests` and `pr-preflight` pass from `pyforge-guild`; `environment.yaml` is regenerated
+**And** the token-economy kit is on the floor, not assumed: `headroom` and `node` resolve on PATH in `pyforge-guild`, `marshal seed check` reports the headroom kit item present, and a dispatch dry-run raises no `MRS-DISP-033` (the 2026-09-01 silent no-op shape)
+**Status:** backlog
+
+### Story 63.2: Every agent surface names `pyforge-guild` as the session default
+
+**Type:** docs • **Effort:** S • **Deps:** S-63.1 • **FR/AD:** spec-pyforge-steward CAP-5
+**Surface:** `AGENTS.md` (`bmad:context` block via `bmad-project-context`), `CLAUDE.md`, `.cursor/rules/*.mdc`, `.claude/skills/pyforge-*/SKILL.md`, `.cursor/one-chain-folds/README.md` briefs, the Cursor cloud-environment install command, `docs/reference/library-llms-full.md` env-membership rows (`llms-full-check` green).
+**Given** every document tells an agent `pixi run -e local-recipes …` for planning work
+**When** this story lands
+**Then** the planning/detector invocations read `-e pyforge-guild`; recipe invocations still read `-e local-recipes`; scribe recall still reads `-e pyforge-scribe`
+**And** `governance-currency`, `general-docs-consistency-check` and `llms-full-check` are green
+**Status:** backlog
+
+## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
+
+Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame
+draft re-grounding*; Frames remain `spec-intelligence-hub` CAP-2's subject (Epic 53 shipped the
+adoption 09-13/14). What changed upstream since our grounding, measured read-only: #28's 09-14
+commit removes the draft's version number (examples read bare `type: frame`); #29 (81 commits)
+adds the reference validator, composition fixtures, `--self-check`, and conformance profiles,
+which §7 makes a MUST for every implementation. Upstream's own `validate_frame.py` at #29's head
+passes our nine Frames 9/9. **No commits or comments to openteams-ai repositories** — the
+validator is fetched to a temp dir at a pinned SHA, never vendored. Not a gate: `frame-preflight`
+and `frame-upstream-check` never join `detectors-ci`; Warden stays the sole PR verdict.
+
+### Story 64.1: The nine Frames go bare `type: frame` and the README pins the upstream heads
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-6 (a), (b), (c)
+**Surface:** `docs/foundry/frames/pyforge.frame.md`, `docs/foundry/frames/stations/*.frame.md`, `docs/foundry/frames/README.md` (Upstream pin block), `src/shared/packages/pyforge-steward/src/pyforge/steward/frames.py` docstring, `pixi.toml` `[feature.pyforge-steward.tasks.frame-upstream-check]`, deferred-work ledger accepted-risk entry.
+**Given** our Frames stamp `frame [0.3]`, a version no release has assigned
+**When** this story lands
+**Then** all nine read `type: frame`; `frame-preflight` is green; the README names the #28 and #29 SHAs we conform to
+**And** `pixi run -e pyforge-steward frame-upstream-check` clones frame-spec at the pinned SHA into a temp dir and reports 9/9 OK, exiting non-zero on any FAIL; it is opt-in and appears in no aggregate
+**Status:** backlog
+
+### Story 64.2: PyForge publishes its Frame conformance profile
+
+**Type:** docs • **Effort:** S • **Deps:** S-64.1 • **FR/AD:** spec-pyforge-steward CAP-6 (d); Constraint CAP-6
+**Surface:** `docs/foundry/frames/conformance-profile.yaml`, `docs/foundry/frames/README.md` § Conformance profile.
+**Given** §7 requires every implementation to publish a profile and PyForge has none
+**When** this story lands
+**Then** the profile states all ten §7 items for the in-repo reader (reads Markdown, writes none, resolves no composition, `visibility` is declared intent, `specification: draft-mcandrew-frame-spec-00`) and declares under §9 that no trust configuration exists yet
+**And** upstream `validate_frame.py --check-profile` at the pinned SHA accepts it via `frame-upstream-check`
+**Status:** backlog

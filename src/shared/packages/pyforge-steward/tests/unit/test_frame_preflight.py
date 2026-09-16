@@ -296,3 +296,202 @@ def test_cli_exits_zero_on_ok(tmp_path: Path, capsys: pytest.CaptureFixture[str]
     out = capsys.readouterr().out
     assert "ok" in out
     assert "9 Frames" in out
+
+
+# ---------------------------------------------------------------------------
+# Story 64.1 / 64.2 -- bare type, the pin, and --upstream-check (offline)
+# ---------------------------------------------------------------------------
+
+import subprocess  # noqa: E402
+
+import yaml  # noqa: E402
+
+from pyforge.steward import frames as frames_mod  # noqa: E402
+from pyforge.steward.frames import (  # noqa: E402
+    CONFORMANCE_PROFILE_RELATIVE,
+    EXIT_COULD_NOT_RUN,
+    EXIT_FAIL,
+    EXIT_OK,
+    UPSTREAM_PIN_RELATIVE,
+    UpstreamPin,
+    load_upstream_pin,
+    upstream_check,
+)
+
+_SHA = "4596579f714aca5cc6492d36d9dbd48d0dba2441"
+
+
+def test_live_frames_are_bare_type_frame() -> None:
+    """64.1: the draft carries no version number until a release assigns one."""
+    root = _repo_root() / "docs" / "foundry" / "frames"
+    paths = [root / "pyforge.frame.md", *sorted((root / "stations").glob("*.frame.md"))]
+    assert len(paths) == EXPECTED_COUNT
+    for p in paths:
+        fm = p.read_text(encoding="utf-8").split("\n---\n", 1)[0]
+        assert "\ntype: frame\n" in fm, f"{p.name}: type must be bare `frame`"
+        assert "[0.3]" not in fm, f"{p.name}: no invented version token"
+
+
+def test_bare_type_frame_passes_type_check() -> None:
+    assert _type_is_frame("frame")
+    assert _type_is_frame("frame [0.2]")
+    assert not _type_is_frame("cog")
+
+
+def test_live_pin_and_profile_are_well_formed() -> None:
+    repo = _repo_root()
+    pin = load_upstream_pin(repo)
+    assert pin.repository == "https://github.com/openteams-ai/frame-spec"
+    assert pin.pr == 29 and len(pin.sha) == 40
+    profile = yaml.safe_load((repo / CONFORMANCE_PROFILE_RELATIVE).read_text(encoding="utf-8"))
+    assert profile["specification"] == "draft-mcandrew-frame-spec-00"
+    assert profile["resolves_composition"] == "none"
+    assert profile["encodings_read"] == ["markdown"]
+    # §9: trust posture is declared, never inferred.
+    assert "trusts every source" in profile["notes"]
+
+
+def _write_pin(repo: Path, *, sha: str = _SHA, entrypoint: str = "tools/validate_frame.py") -> None:
+    path = repo / UPSTREAM_PIN_RELATIVE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "repository": "https://github.com/openteams-ai/frame-spec",
+                "validator": {"pr": 29, "sha": sha, "entrypoint": entrypoint},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda repo: (repo / UPSTREAM_PIN_RELATIVE).unlink(),
+        lambda repo: (repo / UPSTREAM_PIN_RELATIVE).write_text("- not a mapping\n"),
+        lambda repo: _write_pin(repo, sha="abc123"),
+        lambda repo: _write_pin(repo, entrypoint=""),
+    ],
+    ids=["missing", "not-mapping", "short-sha", "empty-entrypoint"],
+)
+def test_upstream_check_bad_pin_is_could_not_run(tmp_path: Path, mutate) -> None:
+    _write_pin(tmp_path)
+    mutate(tmp_path)
+    code, text = upstream_check(tmp_path, run=lambda *a, **k: pytest.fail("must not run anything"))
+    assert code == EXIT_COULD_NOT_RUN
+    assert "could not run" in text
+
+
+def test_upstream_check_fetch_failure_is_could_not_run(tmp_path: Path) -> None:
+    _write_pin(tmp_path)
+
+    def failing_fetch(pin: UpstreamPin, dest: Path) -> None:
+        raise RuntimeError("network unreachable")
+
+    code, text = upstream_check(tmp_path, run=lambda *a, **k: pytest.fail("no tool run"), fetch=failing_fetch)
+    assert code == EXIT_COULD_NOT_RUN
+    assert "network unreachable" in text
+
+
+def test_upstream_check_missing_entrypoint_in_tree_is_could_not_run(tmp_path: Path) -> None:
+    _write_pin(tmp_path)
+
+    def empty_fetch(pin: UpstreamPin, dest: Path) -> None:
+        dest.mkdir(parents=True, exist_ok=True)
+
+    code, text = upstream_check(tmp_path, run=lambda *a, **k: pytest.fail("no tool run"), fetch=empty_fetch)
+    assert code == EXIT_COULD_NOT_RUN
+    assert "not in the pinned tree" in text
+
+
+def _fake_tree(pin: UpstreamPin, dest: Path) -> None:
+    (dest / "tools").mkdir(parents=True, exist_ok=True)
+    (dest / pin.entrypoint).write_text("# stand-in\n", encoding="utf-8")
+
+
+def _runner(frames_rc: int, profile_rc: int):
+    calls: list[list[str]] = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        rc = profile_rc if "--check-profile" in argv else frames_rc
+        return subprocess.CompletedProcess(argv, rc, stdout=f"stand-in exit {rc}", stderr="")
+
+    run.calls = calls  # type: ignore[attr-defined]
+    return run
+
+
+def test_upstream_check_runs_both_legs_and_reports_ok(tmp_path: Path) -> None:
+    _write_pin(tmp_path)
+    _write_frame(tmp_path / "docs/foundry/frames/pyforge.frame.md", type_="frame", identifier=COMPANY_IDENTIFIER)
+    (tmp_path / CONFORMANCE_PROFILE_RELATIVE).write_text("implementation: x\n", encoding="utf-8")
+    run = _runner(0, 0)
+    code, text = upstream_check(tmp_path, run=run, fetch=_fake_tree)
+    assert code == EXIT_OK
+    assert [("--check-profile" in c) for c in run.calls] == [False, True]
+    assert run.calls[0][1].endswith("tools/validate_frame.py")
+    assert "--- frames (exit 0)" in text and "--- profile (exit 0)" in text
+
+
+def test_upstream_check_upstream_fail_is_exit_1_and_worst_leg_wins(tmp_path: Path) -> None:
+    _write_pin(tmp_path)
+    _write_frame(tmp_path / "docs/foundry/frames/pyforge.frame.md", type_="frame", identifier=COMPANY_IDENTIFIER)
+    (tmp_path / CONFORMANCE_PROFILE_RELATIVE).write_text("implementation: x\n", encoding="utf-8")
+    code, _ = upstream_check(tmp_path, run=_runner(0, 1), fetch=_fake_tree)
+    assert code == EXIT_FAIL
+    # a crash (rc 2+) in either leg is could-not-run, and outranks a FAIL
+    code, _ = upstream_check(tmp_path, run=_runner(1, 3), fetch=_fake_tree)
+    assert code == EXIT_COULD_NOT_RUN
+
+
+def test_upstream_check_without_profile_skips_that_leg(tmp_path: Path) -> None:
+    _write_pin(tmp_path)
+    _write_frame(tmp_path / "docs/foundry/frames/pyforge.frame.md", type_="frame", identifier=COMPANY_IDENTIFIER)
+    run = _runner(0, 0)
+    code, text = upstream_check(tmp_path, run=run, fetch=_fake_tree)
+    assert code == EXIT_OK
+    assert len(run.calls) == 1 and "absent — leg skipped" in text
+
+
+def test_fetch_pinned_checkout_is_read_only_depth_one(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fetch is init / remote add / fetch --depth 1 <sha> / checkout --detach.
+    No branch, no push, no clone of history."""
+    monkeypatch.setattr(frames_mod.shutil, "which", lambda name: "/usr/bin/git")
+    seen: list[list[str]] = []
+
+    def run(argv, **kwargs):
+        seen.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    pin = UpstreamPin(repository="https://example.invalid/r", sha=_SHA, entrypoint="tools/validate_frame.py", pr=29)
+    frames_mod.fetch_pinned_checkout(pin, tmp_path / "co", run=run)
+    verbs = [a[1] if a[1] != "-C" else a[3] for a in seen]
+    assert verbs == ["init", "remote", "fetch", "checkout"]
+    assert "--depth" in seen[2] and _SHA in seen[2]
+    assert not any("push" in a for a in seen)
+
+
+def test_fetch_pinned_checkout_surfaces_git_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(frames_mod.shutil, "which", lambda name: "/usr/bin/git")
+
+    def run(argv, **kwargs):
+        rc = 128 if argv[1] == "-C" and argv[3] == "fetch" else 0
+        return subprocess.CompletedProcess(argv, rc, stdout="", stderr="fatal: could not read from remote")
+
+    pin = UpstreamPin(repository="https://example.invalid/r", sha=_SHA, entrypoint="tools/validate_frame.py")
+    with pytest.raises(RuntimeError, match="could not read from remote"):
+        frames_mod.fetch_pinned_checkout(pin, tmp_path / "co", run=run)
+
+
+def test_fetch_pinned_checkout_without_git_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(frames_mod.shutil, "which", lambda name: None)
+    pin = UpstreamPin(repository="https://example.invalid/r", sha=_SHA, entrypoint="tools/validate_frame.py")
+    with pytest.raises(RuntimeError, match="git is not on PATH"):
+        frames_mod.fetch_pinned_checkout(pin, tmp_path / "co")
+
+
+def test_main_upstream_check_flag_routes_and_returns_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    monkeypatch.setattr(frames_mod, "upstream_check", lambda repo_root: (EXIT_FAIL, "stand-in report"))
+    assert main(["--repo", str(tmp_path), "--upstream-check"]) == EXIT_FAIL
+    assert "stand-in report" in capsys.readouterr().out

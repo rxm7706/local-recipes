@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 387
+# stories: 395
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -258,6 +258,10 @@ development_status:
   62-1-the-catalog-names-eight-measures-and-their-states: backlog
   62-2-add-switch-and-archive-without-a-rewrite: backlog
   62-3-consumers-cite-on-rows-only: backlog
+  63-1-the-pyforge-guild-feature-and-environment-exist-and-the-guild-tasks-live-in-it: backlog
+  63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: backlog
+  64-1-the-nine-frames-go-bare-type-frame-and-the-readme-pins-the-upstream-heads: backlog
+  64-2-pyforge-publishes-its-frame-conformance-profile: backlog
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -395,6 +399,10 @@ development_status:
   epic-61-retrospective: optional
   epic-62: backlog
   epic-62-retrospective: optional
+  epic-63: backlog
+  epic-63-retrospective: optional
+  epic-64: backlog
+  epic-64-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

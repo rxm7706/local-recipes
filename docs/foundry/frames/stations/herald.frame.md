@@ -1,5 +1,5 @@
 ---
-type: frame [0.3]
+type: frame
 identifier: pyforge/herald
 license: https://www.apache.org/licenses/LICENSE-2.0
 name: PyForge Herald
