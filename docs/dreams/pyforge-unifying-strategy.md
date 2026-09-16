@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=43f8c1cb44434d13 -->
+<!-- pixi-env-matrix:begin lock-sha256=c287fd8ca978110c -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -485,22 +485,24 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``mcp-host`` | ``3.14.*`` | 83 | ``linux-64`` |
 | ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
 | ``platform-ci-test`` | ``3.14.*`` | 356 | ``linux-64`` |
-| ``platform-dev`` | ``3.14.*`` | 531 | ``linux-64``, ``osx-arm64-min`` |
+| ``platform-dev`` | ``3.14.*`` | 533 | ``linux-64``, ``osx-arm64-min`` |
 | ``platform-object-storage`` | ``3.14.*`` | 27 | ``linux-64`` |
 | ``pyforge-atlas`` | ``3.14.*`` | 457 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-ci`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-container`` | ``3.14.*`` | 599 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-container`` | ``3.14.*`` | 627 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-doctor`` | ``3.14.*`` | 98 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-guild`` | ``3.14.*`` | 167 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-herald`` | ``3.14.*`` | 141 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-marshal`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-mason`` | ``3.14.*`` | 139 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-scribe`` | ``3.14.*`` | 88 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-scribe-pg`` | ``3.14.*`` | 97 | ``linux-64``, ``osx-arm64-min`` |
+| ``pyforge-scribe`` | ``3.14.*`` | 117 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-scribe-pg`` | ``3.14.*`` | 126 | ``linux-64``, ``osx-arm64-min`` |
 | ``pyforge-steward`` | ``3.14.*`` | 84 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.14.*`` | 52 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 166 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``python-agent-platform`` | ``3.14.*`` | 507 | ``linux-64``, ``osx-arm64-min`` |
+| ``site`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``vuln-db`` | ``3.14.*`` | 244 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``win`` | ``3.14.*`` | 297 | ``win-64`` |
 
