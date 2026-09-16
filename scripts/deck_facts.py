@@ -14,30 +14,49 @@ Deterministic on purpose: facts are sorted by ``id``, ``tree`` is the HEAD sha
 (suffixed ``-dirty`` when tracked files were uncommitted) and ``derived_at`` the
 HEAD commit date, so a re-run on an unchanged tree writes identical bytes.
 
-``--check`` reads the deck's ``project/<Persona> Infographic standalone.html``
-(visible text only -- ``<style>``/``<script>``/``<title>`` skipped) and reports,
-one line per finding plus a summary:
+Both verbs walk every MARKED surface of the deck (Story 21.3, CAP-2) -- the
+poster (always, whether marked or not, as before), plus the head, the
+Infographic Deck, the exec summary and the three marp sources, each included
+only when it exists AND already carries at least one ``data-fact`` occurrence
+(``discover_surfaces``). A surface with no marks is invisible to both verbs, so
+a deck where only the poster is marked -- the whole fleet as of this story --
+behaves exactly as before.
 
+``--check`` reads each walked surface's visible text (``<style>``/``<script>``/
+``<title>`` skipped) and reports, per surface, one line per finding, headed by
+which surface it is; a clean surface prints no block at all:
+
+    <surface>: presentations/<slug>/<file>   only printed when that surface has a finding
     unmarked   a visible n/n, x.y.z (optional leading v) or YYYY-MM-DD token
-               matching no row
+               matching no row (per surface)
     mismatch   a ``data-fact="<id>"`` element whose text is neither the row's
-               value nor one of its shown_as literals
-    drifted    a row whose fresh derivation differs from the file
-    unsourced  a row the current run could not derive (its omit reason follows)
-    unshown    a row neither marked nor shown anywhere in the poster
+               value nor one of its shown_as literals (per surface)
+    drifted    a row whose fresh derivation differs from the file (ledger-wide,
+               not surface-scoped)
+    unsourced  a row the current run could not derive (its omit reason follows;
+               ledger-wide)
+    unshown    a row neither marked nor shown anywhere across every walked
+               surface (deck-wide)
+    summary   <slug>: N unmarked, M mismatch, D drifted, U unsourced, S unshown; facts R/T
 
-``--refresh`` (CAP-6, herald Story 20.14) re-derives and writes the ledger, then
-rewrites the text of every ``data-fact="<id>"`` element whose text is neither the
-fresh row's value nor one of its shown_as literals. The replacement is the fresh
-literal with the OLD text's shape (``848/878`` -> ``852/878``, ``848 of 878`` ->
-``852 of 878``, ``v0.11.1`` -> ``v0.11.2``), so authored shapes survive; only the
-text inside a rewritten mark changes, everything else stays byte-identical. Marks
-are located with the same tag bookkeeping ``--check`` uses, so ``--refresh``
-rewrites only what ``--check`` reads -- never a mark buried in a comment, a
-script/style/title body, another mark, or a start tag that does not tokenize.
-One line per rewrite or skip, then a summary::
+N/M/R/T above are summed across every walked surface, so this final line is
+byte-identical to the pre-21.3 poster-only line whenever nothing but the poster
+is marked.
 
-    poster: presentations/<slug>/project/<file>  the file about to be rewritten
+``--refresh`` (CAP-6, herald Story 20.14; walked per surface since Story 21.3)
+re-derives and writes the ledger, then rewrites the text of every
+``data-fact="<id>"`` element -- on every walked surface -- whose text is
+neither the fresh row's value nor one of its shown_as literals. The
+replacement is the fresh literal with the OLD text's shape (``848/878`` ->
+``852/878``, ``848 of 878`` -> ``852 of 878``, ``v0.11.1`` -> ``v0.11.2``), so
+authored shapes survive; only the text inside a rewritten mark changes,
+everything else stays byte-identical. Marks are located with the same tag
+bookkeeping ``--check`` uses, so ``--refresh`` rewrites only what ``--check``
+reads -- never a mark buried in a comment, a script/style/title body, another
+mark, or a start tag that does not tokenize. One line per rewrite or skip per
+surface, then one aggregate summary::
+
+    <surface>: presentations/<slug>/<file>  the file about to be rewritten (every walked surface, even when clean)
     refreshed  <id>  "<old>" -> "<new>"
     skipped  <id>  nested mark      the span holds another tag: left to the author
     skipped  <id>  not a plain span void, self-closing, or never closed
@@ -46,8 +65,8 @@ One line per rewrite or skip, then a summary::
     skipped  <id>  unparsed tag     the start tag does not tokenize
     skipped  <id>  entities         entity-encoded text: the bytes stay the author's
     skipped  <id>  no row           no fresh row for this id: never guessed
-    unvisited  <id>  mark not reachable by --refresh   (a --check mark was missed)
-    summary   <slug>: N refreshed, M skipped
+    unvisited  <id>  mark not reachable by --refresh   (a --check mark was missed, per surface)
+    summary   <slug>: N refreshed, M skipped   (summed across every walked surface)
 
 ``--refresh --check`` runs the check after the refresh, against the ledger just
 written.
@@ -86,6 +105,16 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from fleet_scan import parse_sprint_status
 
 POSTER_SUFFIX = " Infographic standalone.html"
+# The other surfaces Story 21.3 walks (spec-deck-family-lockstep CAP-2), mirroring
+# scripts/deck_trio.py's own HEAD/DECK suffix literals -- kept as separate
+# constants here rather than imported, matching this script's existing
+# no-cross-import-between-scripts convention.
+HEAD_SUFFIX = " - Infographic.dc.html"
+DECK_SUFFIX = " - Infographic Deck.dc.html"
+EXEC_SUMMARY_SUFFIX = " - Executive Summary.dc.html"
+# The three Standard-export-set marp sources (docs/specs/presentation-deck.md
+# "Marp sources"), in report order.
+MARP_SOURCE_KINDS = ("deck", "executive-summary", "infographic")
 STATION_PREFIX = "pyforge-"
 # The one deck whose "own" ledger is another station's: the Unifying Strategy
 # poster reports steward's sprint ledger (spec-deck-family-currency
@@ -287,6 +316,74 @@ def cli_verbs(root: Path, pkg_dir: Path, station: str, entry: str) -> tuple[list
 
 def poster_hits(root: Path, slug: str) -> list[Path]:
     return sorted((root / "presentations" / slug / "project").glob(f"*{POSTER_SUFFIX}"))
+
+
+# ------------------------------------------------------------- surface walk
+# Story 21.3 (spec-deck-family-lockstep CAP-2): `--check`/`--refresh` no longer
+# read the poster alone -- they walk every "marked surface" of the deck, where
+# marked means the file exists AND already carries at least one `data-fact`
+# occurrence. The poster is the one mandatory exception (walked whether marked
+# or not, as it always has been). A deck where nothing else is marked -- the
+# whole fleet, as of this story -- therefore walks exactly what it always has,
+# byte-for-byte: the gate is content-based, not merely file-existence-based.
+
+def _has_marks(path: Path) -> bool:
+    try:
+        return b"data-fact" in path.read_bytes()
+    except OSError:
+        return False
+
+
+def _suffix_hit(project: Path, suffix: str, notes: list[str]) -> Path | None:
+    """The single ``project/*<suffix>`` file, or ``None``. Multiple matches are
+    named in ``notes`` and the first (sorted) is used -- the same tolerance
+    ``poster_hits``/``derive`` already give the poster itself."""
+    hits = sorted(project.glob(f"*{suffix}")) if project.is_dir() else []
+    if len(hits) > 1:
+        notes.append(f"multiple matches for project/*{suffix}: "
+                      f"{', '.join(p.name for p in hits)} -- using {hits[0].name}")
+    return hits[0] if hits else None
+
+
+def _marp_source(marp_dir: Path, slug: str, kind: str) -> Path | None:
+    """The newest ``<slug>-<kind>-YYYY-MM-DD.md`` under ``marp_dir``, or ``None``.
+
+    The date must anchor immediately after ``kind`` so, e.g.,
+    ``pyforge-atlas-infographic-2026-07-24.md`` is never shadowed by the real
+    sibling file ``pyforge-atlas-infographic-deck-narration-2026-07-31.md`` --
+    a narration script, not one of the three Standard-export-set sources, that
+    a looser ``{slug}-{kind}-*.md`` glob (deck_export.py's own ``find_source``
+    pattern) would otherwise pick as "newest".
+    """
+    if not marp_dir.is_dir():
+        return None
+    pat = re.compile(rf"^{re.escape(slug)}-{re.escape(kind)}-\d{{4}}-\d{{2}}-\d{{2}}\.md$")
+    hits = sorted(p for p in marp_dir.glob(f"{slug}-{kind}-*.md") if pat.match(p.name))
+    return hits[-1] if hits else None
+
+
+def discover_surfaces(root: Path, slug: str, notes: list[str]) -> list[tuple[str, Path | None]]:
+    """``[(surface name, path)]`` in a fixed report order: ``poster`` first
+    (``None`` when missing -- the one surface always reported on), then
+    ``head``, ``infographic-deck``, ``exec-summary``, ``marp-deck``,
+    ``marp-executive-summary`` and ``marp-infographic`` -- each included only
+    when it exists AND is marked (see ``_has_marks``). Ambiguous multi-hit
+    globs are named in ``notes`` (the caller prints them to stderr).
+    """
+    project = root / "presentations" / slug / "project"
+    marp_dir = root / "presentations" / slug / "src" / "marp"
+    hits = poster_hits(root, slug)
+    surfaces: list[tuple[str, Path | None]] = [("poster", hits[0] if hits else None)]
+    for name, suffix in (("head", HEAD_SUFFIX), ("infographic-deck", DECK_SUFFIX),
+                          ("exec-summary", EXEC_SUMMARY_SUFFIX)):
+        path = _suffix_hit(project, suffix, notes)
+        if path is not None and _has_marks(path):
+            surfaces.append((name, path))
+    for kind in MARP_SOURCE_KINDS:
+        path = _marp_source(marp_dir, slug, kind)
+        if path is not None and _has_marks(path):
+            surfaces.append((f"marp-{kind}", path))
+    return surfaces
 
 
 # ------------------------------------------------------------------- derive
@@ -649,6 +746,46 @@ def _literals(row: dict) -> list[str]:
     return [str(row["value"]), *(str(s) for s in row.get("shown_as") or [])]
 
 
+def _check_surface(path: Path, rows: dict, literals: dict,
+                    by_literal: dict) -> tuple[list[str], set[str], str, int, int, int, int]:
+    """(lines, marked ids, visible text, resolved, shown, n_mismatch, n_unmarked)
+    for one surface -- the mismatch check plus the unmarked-token sweep, reused
+    per marked surface (poster, head, Infographic Deck, exec summary, a marp
+    source). Identical to the poster-only logic this replaces."""
+    lines: list[str] = []
+    marked_ids: set[str] = set()
+    resolved = shown = n_mismatch = n_unmarked = 0
+    parser = _PosterText()
+    parser.feed(path.read_text(encoding="utf-8"))
+    parser.close()
+    all_text = _join([t for t, _ in parser.segments])
+    for fid, text in parser.marks:
+        shown += 1
+        marked_ids.add(fid)
+        if fid not in rows:
+            n_mismatch += 1
+            lines.append(f'mismatch  {fid}  shows "{text}" -- no such row in facts.yaml')
+        elif _LEADING_V.sub("", text) not in literals[fid]:
+            n_mismatch += 1
+            lines.append(f'mismatch  {fid}  shows "{text}", ledger "{rows[fid]["value"]}"')
+        else:
+            resolved += 1
+    # Marked segments become a boundary so text on either side never fuses.
+    sweep = _join([t if mark is None else " " for t, mark in parser.segments])
+    seen: list[str] = []
+    for m in _TOKEN.finditer(sweep):
+        if m.group(1) not in seen:
+            seen.append(m.group(1))
+    for tok in seen:
+        shown += 1
+        if tok in by_literal:
+            resolved += 1
+        else:
+            n_unmarked += 1
+            lines.append(f"unmarked  {tok}  no facts.yaml row matches this visible token")
+    return lines, marked_ids, all_text, resolved, shown, n_mismatch, n_unmarked
+
+
 def check(root: Path, slug: str, ledger: dict, fresh: dict,
           omitted: list[tuple[list[str], str]] | None = None) -> list[str]:
     rows = {f["id"]: f for f in ledger.get("facts") or []}
@@ -667,42 +804,31 @@ def check(root: Path, slug: str, ledger: dict, fresh: dict,
     lines: list[str] = []
     n_unmarked = n_mismatch = n_drifted = n_unsourced = n_unshown = 0
     resolved = shown = 0
-    marked_ids: set[str] = set()
+    all_marked_ids: set[str] = set()
+    all_text: list[str] = []
 
-    hits = poster_hits(root, slug)
-    poster = hits[0] if hits else None
-    if poster is None:
-        lines.append(f"no poster: presentations/{slug}/project/*{POSTER_SUFFIX}")
-        all_text = ""
-    else:
-        parser = _PosterText()
-        parser.feed(poster.read_text(encoding="utf-8"))
-        parser.close()
-        all_text = _join([t for t, _ in parser.segments])
-        for fid, text in parser.marks:
-            shown += 1
-            marked_ids.add(fid)
-            if fid not in rows:
-                n_mismatch += 1
-                lines.append(f'mismatch  {fid}  shows "{text}" -- no such row in facts.yaml')
-            elif _LEADING_V.sub("", text) not in literals[fid]:
-                n_mismatch += 1
-                lines.append(f'mismatch  {fid}  shows "{text}", ledger "{rows[fid]["value"]}"')
-            else:
-                resolved += 1
-        # Marked segments become a boundary so text on either side never fuses.
-        sweep = _join([t if mark is None else " " for t, mark in parser.segments])
-        seen: list[str] = []
-        for m in _TOKEN.finditer(sweep):
-            if m.group(1) not in seen:
-                seen.append(m.group(1))
-        for tok in seen:
-            shown += 1
-            if tok in by_literal:
-                resolved += 1
-            else:
-                n_unmarked += 1
-                lines.append(f"unmarked  {tok}  no facts.yaml row matches this visible token")
+    notes: list[str] = []
+    for name, path in discover_surfaces(root, slug, notes):
+        if path is None:
+            lines.append(f"no poster: presentations/{slug}/project/*{POSTER_SUFFIX}")
+            continue
+        try:
+            s_lines, marked_ids, text, s_resolved, s_shown, s_mismatch, s_unmarked = \
+                _check_surface(path, rows, literals, by_literal)
+        except UnicodeDecodeError:
+            lines.append(f"skipped {name}: not UTF-8")
+            continue
+        n_mismatch += s_mismatch
+        n_unmarked += s_unmarked
+        resolved += s_resolved
+        shown += s_shown
+        all_marked_ids |= marked_ids
+        all_text.append(text)
+        if s_lines:
+            lines.append(f"{name}: {path.relative_to(root).as_posix()}")
+            lines.extend(s_lines)
+    for note in notes:
+        print(note, file=sys.stderr)
 
     fresh_rows = {f["id"]: f for f in fresh.get("facts") or []}
     for fid in sorted(set(rows) | set(fresh_rows)):
@@ -719,9 +845,12 @@ def check(root: Path, slug: str, ledger: dict, fresh: dict,
             show = lambda v: f'"{v}"' if v is not None else "absent"
             lines.append(f"drifted   {fid}  ledger {show(lv)}, fresh {show(fv)}")
 
-    if poster is not None:
+    if all_text:  # at least one surface was actually read -- otherwise there is
+                  # nothing to call a row "shown" against, so the finding is
+                  # omitted rather than flooding every row as a false positive
+        combined_text = " ".join(all_text)
         for fid in sorted(rows):
-            if fid in marked_ids or any(_shown(lit, all_text) for lit in literals[fid]):
+            if fid in all_marked_ids or any(_shown(lit, combined_text) for lit in literals[fid]):
                 continue
             n_unshown += 1
             lines.append(f'unshown   {fid}  "{rows[fid]["value"]}"')
@@ -902,8 +1031,11 @@ def _replacement(old: str, previous: dict | None, row: dict) -> str:
     return same_shape or fresh[0]
 
 
-def refresh(slug: str, previous: dict, fresh: dict, poster_text: str) -> tuple[str, list[str]]:
-    """(rewritten poster text, report lines) -- CAP-6.
+def refresh(previous: dict, fresh: dict, surface_text: str) -> tuple[str, list[str], int, int]:
+    """(rewritten surface text, report lines, n_refreshed, n_skipped) -- CAP-6,
+    reusable for any marked surface (poster, head, Infographic Deck, exec
+    summary, a marp source) -- the caller names the surface and prints the
+    aggregate summary; this is the per-surface splice.
 
     Every plain `data-fact` mark (`_mark_spans`) whose text -- normalised as
     --check normalises it, a leading `v` stripped and remembered -- is neither the
@@ -924,7 +1056,7 @@ def refresh(slug: str, previous: dict, fresh: dict, poster_text: str) -> tuple[s
     n_refreshed = n_skipped = 0
     pos = 0
     visited: set[str] = set()
-    for mark in _mark_spans(poster_text):
+    for mark in _mark_spans(surface_text):
         fid = mark["id"]
         visited.add(fid)
         if mark["skip"]:
@@ -935,7 +1067,7 @@ def refresh(slug: str, previous: dict, fresh: dict, poster_text: str) -> tuple[s
             n_skipped += 1
             lines.append(f"skipped  {fid}  no row")
             continue
-        raw = poster_text[mark["text_start"]:mark["text_end"]]
+        raw = surface_text[mark["text_start"]:mark["text_end"]]
         shown = _norm(html.unescape(raw))
         bare = _LEADING_V.sub("", shown)
         if bare in _literals(rows[fid]):
@@ -951,19 +1083,18 @@ def refresh(slug: str, previous: dict, fresh: dict, poster_text: str) -> tuple[s
             new = "v" + new
         lead = raw[: len(raw) - len(raw.lstrip())]
         trail = raw[len(raw.rstrip()):] if raw.strip() else ""
-        out += [poster_text[pos: mark["text_start"]], lead + new + trail]
+        out += [surface_text[pos: mark["text_start"]], lead + new + trail]
         pos = mark["text_end"]
         n_refreshed += 1
         lines.append(f'refreshed  {fid}  "{shown}" -> "{new}"')
-    out.append(poster_text[pos:])
+    out.append(surface_text[pos:])
 
     seen = _PosterText()
-    seen.feed(poster_text)
+    seen.feed(surface_text)
     seen.close()
     for fid in sorted({f for f, _ in seen.marks} - visited):
         lines.append(f"unvisited  {fid}  mark not reachable by --refresh")
-    lines.append(f"summary   {slug}: {n_refreshed} refreshed, {n_skipped} skipped")
-    return "".join(out), lines
+    return "".join(out), lines, n_refreshed, n_skipped
 
 
 # --------------------------------------------------------------------- main
@@ -1011,19 +1142,19 @@ def main(argv: list[str] | None = None) -> int:
             print(line)
         return 0
 
-    # The poster is read and decoded BEFORE the ledger is written: a poster that
-    # cannot be read must not leave the ledger advanced and the poster stale.
-    poster = raw = poster_text = None
+    # Every marked surface's raw bytes are read BEFORE the ledger is written: a
+    # surface that cannot be read must not leave the ledger advanced and that
+    # surface stale with nothing left to compare it against (Story 20.14's
+    # poster-only invariant, generalized to every surface Story 21.3 walks).
+    surfaces: list[tuple[str, Path | None]] = []
+    raw_by_name: dict[str, bytes] = {}
+    discovery_notes: list[str] = []
     if args.refresh:
-        hits = poster_hits(root, args.slug)
-        if hits:
-            poster = hits[0]
-            # Bytes in, bytes out: the poster's encoding and line endings are not ours.
-            raw = poster.read_bytes()
-            try:
-                poster_text = raw.decode("utf-8")
-            except UnicodeDecodeError:
-                poster_text = None
+        surfaces = discover_surfaces(root, args.slug, discovery_notes)
+        for name, path in surfaces:
+            if path is not None:
+                # Bytes in, bytes out: a surface's encoding and line endings are not ours.
+                raw_by_name[name] = path.read_bytes()
 
     text = render_yaml(fresh)
     changed = not ledger_file.is_file() or ledger_file.read_text(encoding="utf-8") != text
@@ -1033,24 +1164,35 @@ def main(argv: list[str] | None = None) -> int:
     if not args.refresh:
         return 0
 
-    if poster is None:
-        print(f"no poster: presentations/{args.slug}/project/*{POSTER_SUFFIX}")
-        print(f"summary   {args.slug}: 0 refreshed, 0 skipped")
-    elif poster_text is None:
-        print("skipped poster: not UTF-8")
-        print(f"summary   {args.slug}: 0 refreshed, 0 skipped")
-    else:
-        print(f"poster: {poster.relative_to(root).as_posix()}")
-        new_text, lines = refresh(args.slug, previous or {}, fresh, poster_text)
+    for note in discovery_notes:
+        print(note, file=sys.stderr)
+
+    n_refreshed = n_skipped = 0
+    for name, path in surfaces:
+        if path is None:
+            print(f"no poster: presentations/{args.slug}/project/*{POSTER_SUFFIX}")
+            continue
+        raw = raw_by_name[name]
+        try:
+            surface_text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            print(f"skipped {name}: not UTF-8")
+            continue
+        print(f"{name}: {path.relative_to(root).as_posix()}")
+        new_text, lines, refreshed, skipped = refresh(previous or {}, fresh, surface_text)
+        n_refreshed += refreshed
+        n_skipped += skipped
         new_raw = new_text.encode("utf-8")
         if new_raw != raw:
             # Temp file + os.replace: an interrupted write never truncates the
-            # tracked poster, and the glob cannot pick the temp file up.
-            tmp = poster.with_name(poster.name + ".deck-facts.tmp")
+            # tracked file, and the glob cannot pick the temp file up.
+            tmp = path.with_name(path.name + ".deck-facts.tmp")
             tmp.write_bytes(new_raw)
-            os.replace(tmp, poster)
+            os.replace(tmp, path)
         for line in lines:
             print(line)
+    print(f"summary   {args.slug}: {n_refreshed} refreshed, {n_skipped} skipped")
+
     if args.check:
         ledger = yaml.safe_load(ledger_file.read_text(encoding="utf-8")) or {}
         for line in check(root, args.slug, ledger, fresh, omitted):

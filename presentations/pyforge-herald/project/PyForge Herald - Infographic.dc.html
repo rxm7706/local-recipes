@@ -12,18 +12,992 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-flex; align-items:center; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+/* Poster-local helpers — same shapes as the Unifying Strategy poster, factored so every
+   cast card, table and chip renders identically. */
+.muted { color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.lede { font-size:14px; margin:0 0 18px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.station { border:2px solid var(--color-text); padding:18px 20px; display:flex; flex-direction:column; }
+.station.self { border-color:var(--color-accent); background:var(--color-accent-100); }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:21px; font-weight:800; margin:8px 0 2px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; line-height:1.35; color:color-mix(in srgb, var(--color-text) 65%, transparent); }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station p { font-size:13.5px; line-height:1.45; margin:10px 0 0; }
+.station .verbs { font-size:12.5px; margin-top:auto; padding-top:12px; color:var(--color-accent-700); font-weight:700; }
+.chip { display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border:1.5px solid var(--color-text); }
+.chip.ink { background:var(--color-text); color:var(--color-bg); border-color:var(--color-text); }
+.chip.acc { background:var(--color-accent); color:var(--color-bg); border-color:var(--color-accent); }
+table.grid { border-collapse:collapse; width:100%; font-size:13.5px; line-height:1.4; }
+table.grid th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:9px 12px; font-size:12px; letter-spacing:0.04em; text-transform:uppercase; }
+table.grid td { border:1px solid var(--color-divider); padding:8px 12px; vertical-align:top; }
+table.grid td.k { font-weight:700; white-space:nowrap; }
+.card { border:2px solid var(--color-text); padding:18px 20px; }
+.card.acc { border-color:var(--color-accent); background:var(--color-accent-100); }
+.card .kicker { font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card h4 { font-size:16px; font-weight:800; margin:6px 0 4px; }
+.card p { font-size:13.5px; line-height:1.45; margin:6px 0 0; }
+.callout { border-left:2px solid var(--color-divider); padding:0 24px; }
+.callout .big { font-size:44px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+.callout .cap { font-size:13.5px; line-height:1.4; margin-top:8px; }
+.rule-box { border:2px solid var(--color-text); padding:16px 22px; margin-top:24px; font-size:14px; line-height:1.5; }
+.rule-box.acc { border-color:var(--color-accent); background:var(--color-accent-100); }
 </style>
 </helmet>
-<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;"><header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;"><div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;"><span style="color:var(--color-accent-700);">PYFORGE GUILD · CHAPTER DECK · THE PROCLAIMER</span><span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Charter scoped 2026-07-23 · bridge piloted</span></div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:86px; line-height:.94; letter-spacing:-0.02em; margin:0;">Herald</h1><div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 55%, transparent);">pyforge-herald</div><p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The voice of the factory. <b>First in:</b> the Dream becomes The Deck. <b>Last out:</b> the release becomes the story. In between, Herald owns the <span style="color:var(--color-accent-700); font-weight:700;">Design&#8596;repo bridge</span> — seed, pull, extract, build, export — with etags instead of hope.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;"><span class="tag tag-accent">The bridge</span><span class="tag tag-neutral">10-deck family</span><span class="tag tag-neutral">Marp + PPTX exports</span><span class="tag tag-outline">herald deck seed / pull</span></div></header><div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);"><div style="padding:20px 20px 20px 0px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div><div style="font-size:18px; font-weight:700; margin-top:6px;">RXM</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Module</div><div style="font-size:18px; font-weight:700; margin-top:6px;">pyforge.herald</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status</div><div style="font-size:18px; font-weight:700; margin-top:6px;">CLI spec'd (SPEC-design-code-bridge)</div></div><div style="padding:20px 20px 20px 20px; border-right:2px solid var(--color-divider);"><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div><div style="font-size:18px; font-weight:700; margin-top:6px;">comms + bridge</div></div><div style="padding:20px 20px 20px 20px; "><div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Motto</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Make it seen</div></div></div><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">01</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2></div><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">The factory ships constantly — but its story lived in commit logs and terminal scrollback. Decks drifted from repos, downloads were manual, and every transfer through an agent's context risked silent corruption. Herald exists so the work is <b>seen, current and byte-exact</b> everywhere it appears.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">12</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">bytes of drift on a 7&#8201;KB hand-relay — the failure the bridge retired</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">0</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">manual downloads since the MCP bridge landed 2026-07-23</div></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">02</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The bridge — one loop, both directions</h2></div><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Step</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Direction</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">What crosses</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>seed</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">repo &#8594; Design</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">prototype + runtime, Modernist-bound project</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>design</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">in Design</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the human refines visually</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>pull</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Design &#8594; repo</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">etag-checked prototype, byte-exact strip of the serve harness</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>extract &#8594; build</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">in repo</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">slides &#8594; React deck, byte-identical engine</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>export</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">in repo</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Marp &#8594; standalone HTML + editable PPTX</td></tr></tbody></table><p style="font-size:15px; margin:14px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Uploads go server-side (DesignSync localPath) and pulls strip a fixed harness — nothing relays through an agent context in either direction.</p></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">03</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The deck family Herald keeps</h2></div><div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Origin</div><div style="font-family:var(--font-heading); font-size:22px; font-weight:800; line-height:1.1; margin-top:8px;">agentic-sdlc</div><p style="font-size:15px; line-height:1.45; margin:10px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The 45-slide worked example that established the extract &#8594; build &#8594; export pipeline and the Modernist house style.</p></div><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Master</div><div style="font-family:var(--font-heading); font-size:22px; font-weight:800; line-height:1.1; margin-top:8px;">Genesis</div><p style="font-size:15px; line-height:1.45; margin:10px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The Dream-to-Code factory deck — the model every chapter deck hangs off.</p></div><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Chapters</div><div style="font-family:var(--font-heading); font-size:22px; font-weight:800; line-height:1.1; margin-top:8px;">8 Smith decks</div><p style="font-size:15px; line-height:1.45; margin:10px 0 0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Warden, Atlas, Marshal, Mason, Doctor, Scribe, Steward, Herald — each with the full 6-artifact family, synced disk&#8596;Design.</p></div></div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">04</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The megaphone loop</h2></div><div style="display:flex; align-items:stretch; margin-top:22px;"><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 1</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Harvest</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Run telemetry: Atlas maps, Warden verdicts, loop journals, dashboards</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 2</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Illustrate</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Infographics, timelines, velocity charts in the house style</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 3</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Compile</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Weekly briefs and executive highlights, persona-aware</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 4</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Broadcast</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Slack · email · wikis · the live Pages console</div></div></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:14px 20px; margin-top:16px; font-size:16px; line-height:1.45;"><b>Stations own verdicts; Herald owns the story.</b> Nothing is invented at broadcast time — every claim traces to a run artifact.</div></section><section style="padding:36px 0 8px;"><div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:12px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:22px; color:var(--color-accent);">05</span><h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The boundary</h2></div><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">What moved out</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">The multiproject machinery and agent portability belong to <b>Marshal</b> — the 2026-07-23 ownership audit re-scoped them off Herald's charter.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">What Herald keeps</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Their <b>communication face</b>: the bridge, the deck family, the proclamations — everything the world (and the team) actually sees.</p></div></div></section><section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;"><div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; opacity:.85;">The creed</div><div style="font-family:var(--font-heading); font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Make the factory seen.</div><div style="font-size:18px; line-height:1.5; margin-top:18px; max-width:900px; opacity:.94;">First in, last out. The Dream arrives as a deck; the release leaves as a story; and every byte that crosses the boundary arrives exactly as it left.</div><div class="code" style="font-size:13px; margin-top:26px; opacity:.85;">pyforge-herald &nbsp;·&nbsp; PyForge Guild &nbsp;·&nbsp; Dream to Code</div></section></div>
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE PROCLAIMER · HERALD CHAIN · SPEC-PYFORGE-HERALD</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Spec <span data-fact="spec_status">shipped</span> · Dream <span data-fact="dream_status">realized</span> · facts re-derived <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Herald</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-herald · module pyforge.herald · console script <span data-fact="console_entry">herald</span> · the voice and visual surface of the Dream-to-Code factory</div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;"><b>Invisible engineering is failed engineering.</b> Herald exists so nothing the factory does stays invisible — the Dream argued as a deck, the build in flight made legible, the ship proclaimed with its evidence attached, the long tail of fixes and retirements actually announced. It owns the <span style="color:var(--color-accent-700); font-weight:700;">Design&#8596;Code bridge</span> that moves every deck byte-exact between Claude Design and git, the deck family and its one written standard, and the discipline this very poster obeys: <b>every number on the page is a row in a ledger, re-derived from the tree — never remembered.</b></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">herald deck seed · pull · status · watch · push · qa</span>
+      <span class="tag tag-neutral">Four Moments of Proclamation</span>
+      <span class="tag tag-neutral">One deck family · one standard · one fact ledger per deck</span>
+      <span class="tag tag-neutral">Etags, not hope</span>
+      <span class="tag tag-accent"><span data-fact="spec_capabilities">HER-1..13</span> · the whole contract</span>
+    </div>
+  </header>
+
+  <!-- META STRIP — every stat a ledger row -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">82/100</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">19/23</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">13</span> · HER-1..HER-13</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">pyforge-herald <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI verbs</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">23</span> distinct subparsers</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why a Herald</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">The factory ships constantly. <span style="color:var(--color-accent);">Herald makes sure anyone can see it.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">I</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Pitch</div><div style="font-size:11.5px; margin-top:2px;" class="muted">a Dream must be argued, not filed — the deck family</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">II</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Progress</div><div style="font-size:11.5px; margin-top:2px;" class="muted">a build in flight is not self-explaining — <span class="code">herald progress</span></div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">III</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Success</div><div style="font-size:11.5px; margin-top:2px;" class="muted">shipping is not being known to have shipped — <span class="code">herald success</span></div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">IV</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Operations</div><div style="font-size:11.5px; margin-top:2px;" class="muted">the long tail nobody announces — <span class="code">herald notice</span></div></div>
+    </div>
+  </div>
+
+  <!-- ACT I -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT I</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">The problem &amp; the model</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Friction → insight</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">01</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem — the work was real and nobody could see it</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">Eight stations shipped code, verdicts, maps and packages — and the story of it lived in <b>commit logs and terminal scrollback</b>. Decks drifted from the repos they described; the one bridge to a visual editing surface was a hand relay through an agent's context, which once <b>silently corrupted a file in transit</b>. And the posters that did exist were frozen at their authoring day: numbers quoted from memory, no source for any of them, so nothing could even detect that they had gone stale.</p>
+      <div class="callout">
+        <div class="big"><span data-fact="fleet_stories_done_total">926/972</span></div>
+        <div class="cap">stories done across the eight stations' tracked sprint ledgers — the motion Herald must make visible, read by the real parser, never a regex</div>
+      </div>
+      <div class="callout">
+        <div class="big"><span data-fact="fleet_epics_done_total">207/219</span></div>
+        <div class="cap">epics done fleet-wide, the literal <span class="code">done</span> on the epic key — a figure this page can prove, because it names its row</div>
+      </div>
+      <div class="callout" style="padding-right:0;">
+        <div class="big">0</div>
+        <div class="cap">bytes may change between Design and git without the bridge refusing the write — the drift that a hand relay produced is the failure the bridge retired</div>
+      </div>
+    </div>
+    <div class="rule-box"><b>The mandate riding on it is truth, not decoration.</b> A poster that quotes last month's ledger is a claim the estate can no longer stand behind. So Herald's doctrine is the same as the factory's: <b>derive, never declare</b> — a count, version, status or date ships only when a tracked source can reproduce it, and the check that reads this page against its ledger is advisory by construction, never a second PR gate.</div>
+  </section>
+
+  <!-- 02 · THE FOUR MOMENTS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">02</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The model — four Moments of Proclamation, one continuous voice</h2>
+    </div>
+    <p class="lede">Herald's work is <b>continuous, not a bookend</b>. The early framing — "first to touch a Dream, last to touch a release" — was retired because it reads as two touchpoints with silence between them. Every product and every station passes through all four Moments; Moment I was the first thing Herald had to build, not the extent of the job.</p>
+    <table class="grid">
+      <thead><tr><th style="width:9%;">Moment</th><th style="width:22%;">The claim it answers</th><th style="width:30%;">What Herald owes</th><th style="width:21%;">Lands as</th><th>Verb</th></tr></thead>
+      <tbody>
+        <tr><td class="k">I · Pitch</td><td>A Dream must be argued, not merely filed</td><td>The case made legible to humans who did not dream it — decks, infographics, executive summaries, narration scripts</td><td>The deck family under <span class="code">presentations/</span>, mirrored in Claude Design</td><td class="code">herald deck seed · pull · push</td></tr>
+        <tr><td class="k">II · Progress</td><td>A build in flight is not self-explaining</td><td>What changed, what it cost, what it unblocked — cost transparency and the unblock narrative</td><td>Progress records and a weekly view; run telemetry as imagery</td><td class="code">herald progress &lt;station&gt; --update</td></tr>
+        <tr><td class="k">III · Success</td><td>Shipping is not the same as being known to have shipped</td><td>A structured claim with retrievable evidence attached — tests, metrics, adoption — gated on operator review before publish</td><td>The success archive; every claim dated, none without proof</td><td class="code">herald success create · review · publish</td></tr>
+        <tr><td class="k">IV · Operations</td><td>The long tail nobody announces</td><td>Deprecations, fixes and end-of-life notices with a permanent, indexed archive and rename redirects</td><td>The notice board; old names redirect, nothing just stops appearing</td><td class="code">herald notice author · publish · close · archive</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:22px;">
+      <div class="card"><div class="kicker">Tier 0 → Tier 2 → the poster</div><h4>Everything on this page traces upward</h4><p>The Dream <span class="code">docs/dreams/pyforge-herald.md</span> is the intent; <span class="code">spec-pyforge-herald/SPEC.md</span> is the contract agreed from it; the epics decompose the contract; the sprint ledger records what landed. Herald reads that chain to render the story — it never invents a link in it.</p></div>
+      <div class="card acc"><div class="kicker">The boundary, ruled twice</div><h4>Voice and surface — not machinery</h4><p>The multi-project machinery and cross-agent portability belong to <b>Marshal</b>: the ownership review moved them, and the fleet-chain regeneration machinery followed for the same reason. Herald keeps their <b>communication face</b> — the bridge, the deck family, the proclamations — everything the team and the world actually see.</p></div>
+    </div>
+  </section>
+
+  <!-- 03 · THE CONTRACT AT A GLANCE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">03</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The contract at a glance — <span data-fact="spec_capabilities">HER-1..HER-13</span></h2>
+    </div>
+    <p class="lede">One canonical Spec for the station, consolidated from three formerly separate chains: the station-level trio, Moment I's deck-family orchestration (folded in as HER-4..HER-10) and Moments II–IV's proclamation surfaces (HER-11..HER-13). Spec status <span class="chip ink" data-fact="spec_status">shipped</span> — every folded-in source is archived unmodified, never deleted.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-1 · station</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">A Dream becomes a deck</div><div style="font-size:11.5px;" class="muted"><span class="code">herald deck seed</span> renders a Dream into a deck; <span class="code">pull</span> brings the designed result back</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-2 · station</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Releases proclaimed from the ledger</div><div style="font-size:11.5px;" class="muted">notables compile from pipeline data, never hand-written — the CLI-triggered v1 lives; the ledger-triggered version is its own Spec</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-3 · station</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One visual identity</div><div style="font-size:11.5px;" class="muted">decks, infographics and the hall share the Modernist vocabulary</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-4 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Design-Code-Bridge framework</div><div style="font-size:11.5px;" class="muted">seed → design → pull; etags on every transfer; zero downloads, zero copy-paste</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-5 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Deckcraft — editable PowerPoint</div><div style="font-size:11.5px;" class="muted">Markdown plus Modernist tokens → an editable <span class="code">.pptx</span>, regenerable in seconds</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-6 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Video-scripts framework</div><div style="font-size:11.5px;" class="muted">narration extracted from speaker notes and fed to the manticore studio; real footage only, no fabricated demos</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-7 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Modernist-identity framework</div><div style="font-size:11.5px;" class="muted">Archivo throughout; light, ink and red; visible grid, zero radius; tokens round-trip to Figma, PPTX, video</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-8 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Six-act deck framework</div><div style="font-size:11.5px;" class="muted">cover · friction · insight · mechanics · application · vision · call to action · persona appendix — full depth, inline SVG</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-9 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Multi-format export</div><div style="font-size:11.5px;" class="muted">one Design prototype → prototype, Marp sources, PPTX, narration, inline-SVG infographic, built HTML deck</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-10 · Moment I</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Station-specific customization</div><div style="font-size:11.5px;" class="muted">the eight station decks plus Genesis — each its own thesis, pain and diagrams; the framework constant</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-11 · Moment II</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Progress visibility surface</div><div style="font-size:11.5px;" class="muted">what shipped, what it cost, what it unblocked — <span class="code">herald progress</span> and its web tab</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-12 · Moment III</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Success proclamation surface</div><div style="font-size:11.5px;" class="muted">a claim with evidence links; no claim exists without proof — <span class="code">herald success</span></div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">HER-13 · Moment IV</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Operations proclamation surface</div><div style="font-size:11.5px;" class="muted">deprecation, fix and end-of-life notices in a permanent, indexed archive — <span class="code">herald notice</span></div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">binds, never re-mints</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The deck-family currency Spec</div><div style="font-size:11.5px;" class="muted">this poster's own contract names only what HER-1..3 leave open: the standard, the fact ledger, the rebuild, the mirror proof, the staleness check</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">satellite · visual QA</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">A deck is proven to look right</div><div style="font-size:11.5px;" class="muted">render gates prove a page RUNS; the PNG proves it LOOKS right — <span class="code">herald deck qa</span></div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">satellite · pptx</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Editable decks, PowerPoint-native</div><div style="font-size:11.5px;" class="muted">template-parse-then-fill; dense content as shapes that fit — <span class="code">herald deck pptx-spec · pptx-fill</span></div></div>
+    </div>
+  </section>
+
+  <!-- ACT II -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT II</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">The cast</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">The actors — eight stations, one voice</span>
+  </div>
+
+  <!-- 04 · THE GUILD -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">04</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The Guild — eight stations, and the one that tells their story</h2>
+    </div>
+    <p class="lede">Every station renders its own verdict — <b>the hand that builds is never the gate that judges</b> — and Herald renders none of them. It reads all eight ledgers and proclaims from them. Chips carry each station's stories and epics done, read from its tracked sprint ledger by the real parser; the Charter's roster order, Herald first.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+
+      <div class="station self">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Proclaimer · this poster</span><span><span class="chip acc">stories <span data-fact="herald_stories_done_total">82/100</span></span> <span class="chip">epics <span data-fact="herald_epics_done_total">19/23</span></span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p>Synthesizes abstract Dreams into decks, translates dependency graphs and run telemetry into clean infographics, compiles progress, proclaims the ship with its evidence and files the notices nobody else announces. Owns the Design&#8596;Code bridge, the deck family and its standard, the deck-QA gate and the PowerPoint-native pipeline. Rejects dry, unreadable logs; distils them into something scannable that still reflects the original vision.</p>
+        <div class="verbs code">herald deck seed · pull · status · watch · push · qa · pptx-spec · pptx-fill · herald progress · success · notice · scheduler run</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Commander</span><span><span class="chip ink">stories <span data-fact="marshal_stories_done_total">270/274</span></span> <span class="chip">epics <span data-fact="marshal_epics_done_total">40/43</span></span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p>Turns the Spec into validated code through gated story loops — spec marshalling, agent mobilization, defect containment, ruthless context containment. Owns the machinery Herald once carried: multi-project operation, concurrent loop homes, cross-agent portability, the PR lifecycle. Herald keeps the communication face of all of it.</p>
+        <div class="verbs code">marshal init · preflight · factory spin · gate evaluate · land</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Navigator</span><span><span class="chip ink">stories <span data-fact="atlas_stories_done_total">94/95</span></span> <span class="chip">epics <span data-fact="atlas_epics_done_total">23/24</span></span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p>Maps the dependency terrain before anything is audited or packaged — PyPI and conda graphed together, names and versions bridged across registries, floating requirements refused. The Kedro / DuckDB dataflow and the Vizro fleet board are Atlas's; Herald turns their output files into infographics and timelines.</p>
+        <div class="verbs code">atlas map --ecosystem dual · atlas graph · pyforge atlas …</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Guardian</span><span><span class="chip ink">stories <span data-fact="warden_stories_done_total">49/49</span></span> <span class="chip">epics <span data-fact="warden_epics_done_total">12/12</span></span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Six-Axis Ecosystem Security &amp; Hygiene Auditor</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p>One CLI, zero trust: hygiene, security, license and currency gate today; provenance and maintenance are the Vision tier. The sole PR-gate verdict in the estate — never false-green, unevaluable is failure. Warden's own poster is the family's density and visual-form reference, and the first real station deck through the PowerPoint pipeline.</p>
+        <div class="verbs code">warden scan · warden audit --axes … · pyforge warden scan</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Artisan Builder</span><span><span class="chip ink">stories <span data-fact="mason_stories_done_total">70/70</span></span> <span class="chip">epics <span data-fact="mason_epics_done_total">17/17</span></span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p>Authors modern v1 recipes, resolves environments into strict lockfiles and ships libraries to both indexes — PyPI for agility, conda-forge for compiled and accelerated builds. Recipe work runs through the <span class="code">conda-forge-expert</span> skill rather than a Mason skill of its own; the <span class="code">recipes/</span> tree it tends is the estate's largest single surface.</p>
+        <div class="verbs code">mason recipe build · mason package --ship pypi,conda-forge · mason environment lock</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Physician</span><span><span class="chip ink">stories <span data-fact="doctor_stories_done_total">95/105</span></span> <span class="chip">epics <span data-fact="doctor_epics_done_total">22/24</span></span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p>Pre-flight before the factory spins, continuous pulse after the crew ships — freshness, drift, new advisories, abandonment. Findings stay advisory, never a second gate. Holds the verdict on Marshal's own conformance row, and owns the BMAD-drift detector whose ground-truth JSON this poster's ledger reads.</p>
+        <div class="verbs code">doctor check --env --engines · doctor monitor --fleet · doctor diagnose --prescribe</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Chronicler</span><span><span class="chip ink">stories <span data-fact="scribe_stories_done_total">35/35</span></span> <span class="chip">epics <span data-fact="scribe_epics_done_total">18/18</span></span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p>The inward voice to Herald's outward: where Herald tells the world, Scribe tells the team. Every load-bearing decision lands in the record as it happens; the knowledge graph compiles from the tools the team already uses; recall never invents an uncited answer. The two stations are one pair — proclamation outward, memory inward.</p>
+        <div class="verbs code">scribe capture · scribe graph compile · scribe recall</div>
+      </div>
+
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The Provisioner</span><span><span class="chip ink">stories <span data-fact="steward_stories_done_total">231/244</span></span> <span class="chip">epics <span data-fact="steward_epics_done_total">56/58</span></span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p>Runs the estate the factory stands on — environments, runners, credentials, budgets, incident response — and owns the Canopy: one chrome, one session, one grammar over all eight stations. The Lane 1 CMS front door is Steward's, never Herald's; Herald's web surface is the Moments UI and its portal under <span class="code">/stations/herald/</span>.</p>
+        <div class="verbs code">steward provision · steward deploy · steward keys audit · steward budget enforce</div>
+      </div>
+    </div>
+    <div class="rule-box acc"><b>Why the chips are ratios and not adjectives.</b> A card that says "complete" is a claim; a card that says <span data-fact="warden_stories_done_total">49/49</span> names the ledger row that proves it. Every chip above resolves to a <span class="code">facts.yaml</span> row derived from that station's tracked <span class="code">sprint-status-ledger.yaml</span> — the same file the fleet board reads — so the cast stays true on the day you open this page, not the day it was drawn.</div>
+  </section>
+
+  <!-- 05 · THE STAGE AND THE TOOLBENCH -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">05</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The stage and the toolbench — Herald's topology</h2>
+    </div>
+    <p class="lede">Herald has no sub-agents of its own; it has <b>two far ends and a bench</b>. Claude Design is the visual editing surface, git is the archive of record, and every byte between them moves through a tool that reports an etag. Telemetry arrives from the other stations; proclamations leave for the channels. Nothing relays through an agent's context in either direction.</p>
+    <svg viewBox="0 0 1128 620" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#201e1d"/></marker>
+        <marker id="arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- left: Claude Design -->
+      <rect x="40" y="190" width="250" height="220" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="165" y="222" text-anchor="middle" fill="#201e1d" font-size="18" font-weight="800">Claude Design</text>
+      <text x="165" y="244" text-anchor="middle" fill="#605d5d" font-size="11.5">the visual editing surface</text>
+      <text x="60" y="276" fill="#201e1d" font-size="12.5" font-weight="700">PyForge &lt;Name&gt; deck</text>
+      <text x="60" y="296" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">PyForge &lt;Name&gt;.dc.html</text>
+      <text x="60" y="314" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">… - Infographic.dc.html</text>
+      <text x="60" y="332" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">… Infographic standalone.html</text>
+      <text x="60" y="350" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">… - Executive Summary.dc.html</text>
+      <text x="60" y="380" fill="#ae1800" font-size="11" font-weight="700">bound to Modernist · every write etagged</text>
+      <text x="60" y="396" fill="#ae1800" font-size="11" font-weight="700">reference/Warden poster seeded in each</text>
+      <!-- right: git -->
+      <rect x="838" y="190" width="250" height="220" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="963" y="222" text-anchor="middle" fill="#201e1d" font-size="18" font-weight="800">git — the archive</text>
+      <text x="963" y="244" text-anchor="middle" fill="#605d5d" font-size="11.5">the record every session can pull from</text>
+      <text x="858" y="276" fill="#201e1d" font-size="12.5" font-weight="700">presentations/&lt;slug&gt;/</text>
+      <text x="858" y="296" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">project/*.dc.html · standalone.html</text>
+      <text x="858" y="314" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">src/marp/ · src/pptx/ · dist/ (built)</text>
+      <text x="858" y="332" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">facts.yaml · README ledger</text>
+      <text x="858" y="350" fill="#605d5d" font-size="11.5" font-family="ui-monospace, Menlo, monospace">.herald/bridge-state.json</text>
+      <text x="858" y="380" fill="#ae1800" font-size="11" font-weight="700">Design edits; git archives —</text>
+      <text x="858" y="396" fill="#ae1800" font-size="11" font-weight="700">every edit session ends with a pull</text>
+      <!-- hub: Herald -->
+      <rect x="414" y="220" width="300" height="160" fill="#ec3013"/>
+      <text x="564" y="256" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">HERALD</text>
+      <text x="564" y="278" text-anchor="middle" fill="#f3f2f2" font-size="12.5" font-family="ui-monospace, Menlo, monospace">herald deck · progress · success · notice</text>
+      <text x="564" y="302" text-anchor="middle" fill="#ffe0d9" font-size="12">bridge.py · transport/ · registry.py · state.py</text>
+      <text x="564" y="321" text-anchor="middle" fill="#ffe0d9" font-size="12">deck_pipeline.py · deck_qa.py · pptx_pipeline.py</text>
+      <text x="564" y="340" text-anchor="middle" fill="#ffe0d9" font-size="12">claims · notices · progress · evidence · scheduler</text>
+      <text x="564" y="364" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="700" letter-spacing="0.5">MOVES BYTES · NEVER AUTHORS THE RUNTIME</text>
+      <!-- bridge arrows -->
+      <path d="M290 270 L414 270" stroke="#201e1d" stroke-width="2.5" fill="none" marker-end="url(#arr-ink)"/>
+      <text x="352" y="262" text-anchor="middle" fill="#201e1d" font-size="11" font-weight="800">pull · watch</text>
+      <path d="M414 330 L290 330" stroke="#ec3013" stroke-width="2.5" fill="none" marker-end="url(#arr-acc)"/>
+      <text x="352" y="350" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800">seed · push</text>
+      <path d="M714 270 L838 270" stroke="#201e1d" stroke-width="2.5" fill="none" marker-end="url(#arr-ink)"/>
+      <text x="776" y="262" text-anchor="middle" fill="#201e1d" font-size="11" font-weight="800">extract · build · export</text>
+      <path d="M838 330 L714 330" stroke="#ec3013" stroke-width="2.5" fill="none" marker-end="url(#arr-acc)"/>
+      <text x="776" y="350" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800">facts.yaml · ledgers</text>
+      <!-- top: telemetry in -->
+      <rect x="150" y="30" width="828" height="64" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="56" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">TELEMETRY IN — the other seven stations' verdicts, maps, ledgers and runs</text>
+      <text x="564" y="78" text-anchor="middle" fill="#605d5d" font-size="11.5">sprint ledgers · Warden verdicts · Atlas maps and the fleet board · Doctor's ground truth · Marshal's run journals · Steward's estate · Scribe's record</text>
+      <path d="M564 94 L564 220" stroke="#201e1d" stroke-width="2" fill="none" stroke-dasharray="6 5" marker-end="url(#arr-ink)"/>
+      <text x="580" y="160" fill="#605d5d" font-size="11" font-weight="700">read, never re-judged</text>
+      <!-- bottom: channels out -->
+      <path d="M564 380 L564 500" stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arr-acc)"/>
+      <text x="580" y="446" fill="#ae1800" font-size="11" font-weight="700">proclaimed, with evidence attached</text>
+      <rect x="60" y="502" width="240" height="88" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="180" y="532" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">The deck family</text>
+      <text x="180" y="552" text-anchor="middle" fill="#605d5d" font-size="11">decks · infographic trio · exec summary</text>
+      <text x="180" y="570" text-anchor="middle" fill="#605d5d" font-size="11">Marp sources · editable PPTX · narration</text>
+      <rect x="316" y="502" width="240" height="88" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="436" y="532" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">The Moments surfaces</text>
+      <text x="436" y="552" text-anchor="middle" fill="#605d5d" font-size="11">progress records · success archive</text>
+      <text x="436" y="570" text-anchor="middle" fill="#605d5d" font-size="11">notice board with redirects · web tabs</text>
+      <rect x="572" y="502" width="240" height="88" fill="#fff2ef" stroke="#ec3013" stroke-width="2"/>
+      <text x="692" y="532" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">The Canopy faces</text>
+      <text x="692" y="552" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">/stations/herald/ · POST …/herald/mcp</text>
+      <text x="692" y="570" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">pyforge herald &lt;noun&gt; &lt;verb&gt;</text>
+      <rect x="828" y="502" width="240" height="88" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="948" y="532" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">The studio and the wire</text>
+      <text x="948" y="552" text-anchor="middle" fill="#605d5d" font-size="11">manticore video studio · changelog + social</text>
+      <text x="948" y="570" text-anchor="middle" fill="#605d5d" font-size="11">webhooks CI calls · the weekly scheduler</text>
+    </svg>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:22px;">
+      <div class="card"><div class="kicker">Bench · the far-end transports</div><h4>claude-design MCP · DesignSync</h4><p>The MCP surface for project creation, etagged reads and small writes; DesignSync's <span class="code">finalize_plan</span> → <span class="code">write_files</span> with a local path for anything large — read, encoded and uploaded server-side, byte-exact.</p></div>
+      <div class="card"><div class="kicker">Bench · the renderers</div><h4>Vite · Marp · python-pptx · Playwright</h4><p>The React deck engine and its static bundle; Marp for the portable exports; the template-parse-then-fill PowerPoint pipeline; headless Chromium for the deck-QA contact sheet and this poster's own full-page render.</p></div>
+      <div class="card"><div class="kicker">Bench · the ledgers</div><h4>deck-facts · deck-export · the README</h4><p><span class="code">deck-facts &lt;slug&gt;</span> re-derives a deck's <span class="code">facts.yaml</span> and <span class="code">--check</span> reads the poster against it; <span class="code">deck-export</span> regenerates the derived set; the deck README carries the Design project id and the sync ledger.</p></div>
+      <div class="card acc"><div class="kicker">Bench · the relays Herald wields</div><h4>manticore · changelog · slides-generator</h4><p>The video studio is a separate root fed narration and real footage only; release comms run through <span class="code">bmad-os-changelog</span> and <span class="code">-social</span>; quick draft slides through <span class="code">slides-generator</span> — never a deck head, never the source of record.</p></div>
+    </div>
+  </section>
+
+  <!-- 06 · PERSONA & SKILLS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">06</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Persona and skills — the five tiers Herald owes as a station</h2>
+    </div>
+    <p class="lede">A station in the Canopy owes all five tiers: a CLI, a portal, a service face, a skill and a persona. Herald carries every one — and the persona acts <b>only</b> through the grammar and the MCP face, never freelance against the filesystem.</p>
+    <table class="grid">
+      <thead><tr><th style="width:12%;">Tier</th><th style="width:30%;">Herald's instance</th><th>What it is for</th><th style="width:22%;">Rule it keeps</th></tr></thead>
+      <tbody>
+        <tr><td class="k">CLI</td><td><span class="code">herald</span> console script · <span class="code">pyforge herald &lt;noun&gt; &lt;verb&gt;</span></td><td>The sole public contract: <span data-fact="cli_verbs">23</span> distinct verbs under <span class="code">deck</span>, <span class="code">progress</span>, <span class="code">success</span>, <span class="code">notice</span> and <span class="code">scheduler</span>; the unified grammar dispatches to the same argv</td><td>Run from the repo root; JSON where a machine reads it; <span class="code">__init__</span> exports the version only</td></tr>
+        <tr><td class="k">Portal</td><td><span class="code">/stations/herald/</span> — the first slice is deck status for one slug</td><td>A Lane 2 reusable Django app under the shared chrome; zero domain models; adding it changed no host code outside its registration</td><td>Lane 1 CMS stays Steward's; Herald's React web surface is the Moments UI, not a front door</td></tr>
+        <tr><td class="k">Service face</td><td><span class="code">POST /stations/herald/mcp</span> · the webhook routes on the station API seam</td><td>Agents drive the same verbs over MCP on the host ASGI; CI calls <span class="code">…/api/v1/webhooks/on-ship</span> and <span class="code">on-pr-close</span> with a signed, timestamped payload</td><td>Unknown payload fields are refused outright; a missing signature is refused, never logged-and-accepted</td></tr>
+        <tr><td class="k">Skill</td><td><span class="code">pyforge-herald</span> — SKF content skill compiled from the package</td><td>Teaches an agent the CLI grammar, the seed → pull → status loop, and what not to do (no <span class="code">pyforge.herald</span> imports; no conda-forge authoring; no Lane 1)</td><td>Source-cited lines, re-forged from the package; the CLI is the contract, not the modules</td></tr>
+        <tr><td class="k">Persona</td><td><span class="code">bmad-agent-herald</span> — "Herald", the addressable station persona</td><td>Answers when the operator addresses the herald station; routes release comms to the changelog skills and files the operational record with <span class="code">herald notice author</span> or <span class="code">herald success create</span></td><td>Grammar and MCP only; no ad-hoc HTTP, no direct filesystem writes in its own transcript</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span style="font-size:12.5px;" class="muted">Herald's row in the five-tier matrix:</span>
+      <span class="tag tag-outline code">CLI ✓</span><span class="tag tag-outline code">portal ✓</span><span class="tag tag-outline code">service ✓</span><span class="tag tag-outline code">skill ✓</span><span class="tag tag-outline code">persona ✓</span>
+      <span style="font-size:12.5px;" class="muted">— with an owner and an SLA declared on the registration seam.</span>
+    </div>
+  </section>
+
+  <!-- ACT III -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT III</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">Running the line</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Mechanics, in time</span>
+  </div>
+
+  <!-- 07 · ONE DECK'S JOURNEY -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">07</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">One deck's journey — from a Dream file to a byte-exact mirror</h2>
+    </div>
+    <p class="lede">The loop the herald CLI wraps was first proven by hand across a family of decks in one day, then mechanized. Every hop carries an etag; a concurrent Design edit <b>conflicts instead of being clobbered</b>; only the prototype crosses the bridge, never a mirrored app tree.</p>
+    <svg viewBox="0 0 1128 520" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr-j" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#201e1d"/></marker>
+        <marker id="arr-ja" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- lane labels -->
+      <rect x="20" y="40" width="1088" height="130" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="36" y="64" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">REPO SIDE · git is the archive of record</text>
+      <rect x="20" y="200" width="1088" height="130" fill="#fff2ef" stroke="#ec3013" stroke-width="2"/>
+      <text x="36" y="224" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">DESIGN SIDE · Claude Design is the editing surface</text>
+      <rect x="20" y="360" width="1088" height="130" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="36" y="384" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">REPO SIDE · derived, checked, proclaimed</text>
+      <!-- repo top row -->
+      <rect x="40" y="84" width="150" height="66" fill="#201e1d"/>
+      <text x="115" y="111" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="800">The Dream</text>
+      <text x="115" y="131" text-anchor="middle" fill="#bab6b6" font-size="10.5" font-family="ui-monospace, Menlo, monospace">docs/dreams/&lt;slug&gt;.md</text>
+      <rect x="230" y="84" width="170" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="315" y="111" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">Starter prototype</text>
+      <text x="315" y="131" text-anchor="middle" fill="#605d5d" font-size="10.5">1920×1080 · Archivo · six acts</text>
+      <rect x="440" y="84" width="170" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="525" y="111" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">Prove it locally</text>
+      <text x="525" y="131" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">npm run extract · build</text>
+      <rect x="650" y="84" width="170" height="66" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="735" y="111" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">herald deck seed</text>
+      <text x="735" y="131" text-anchor="middle" fill="#605d5d" font-size="10.5">create · finalize_plan · write · etag "0"</text>
+      <rect x="860" y="84" width="220" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="970" y="111" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">README § Design project</text>
+      <text x="970" y="131" text-anchor="middle" fill="#605d5d" font-size="10.5">project id + file URL — the durable link</text>
+      <path d="M190 117 L230 117" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M400 117 L440 117" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M610 117 L650 117" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M820 117 L860 117" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <!-- down to design -->
+      <path d="M735 150 L735 244" stroke="#ec3013" stroke-width="2.5" fill="none" marker-end="url(#arr-ja)"/>
+      <text x="748" y="190" fill="#ae1800" font-size="11" font-weight="700">the exact bytes that passed the local proof</text>
+      <!-- design row -->
+      <rect x="650" y="246" width="170" height="66" fill="#ec3013"/>
+      <text x="735" y="273" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="800">The human designs</text>
+      <text x="735" y="293" text-anchor="middle" fill="#ffe0d9" font-size="10.5">iterates visually · every save re-etags</text>
+      <rect x="440" y="246" width="170" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="525" y="273" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">herald deck watch</text>
+      <text x="525" y="293" text-anchor="middle" fill="#605d5d" font-size="10.5">etag-only polls · debounce · backoff</text>
+      <rect x="230" y="246" width="170" height="66" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="315" y="273" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">herald deck pull</text>
+      <text x="315" y="293" text-anchor="middle" fill="#605d5d" font-size="10.5">if-none-match · {unchanged} short-circuit</text>
+      <rect x="40" y="246" width="150" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="115" y="273" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">Byte-exact land</text>
+      <text x="115" y="293" text-anchor="middle" fill="#605d5d" font-size="10.5">decode entities · strip harness</text>
+      <path d="M650 279 L610 279" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M440 279 L400 279" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M230 279 L190 279" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <text x="970" y="273" text-anchor="middle" fill="#ae1800" font-size="11.5" font-weight="800">CONFLICT → REFUSED</text>
+      <text x="970" y="291" text-anchor="middle" fill="#605d5d" font-size="10.5">a stale if-match never overwrites</text>
+      <text x="970" y="307" text-anchor="middle" fill="#605d5d" font-size="10.5">an auth error halts the watcher</text>
+      <!-- down to derived -->
+      <path d="M115 312 L115 404" stroke="#ec3013" stroke-width="2.5" fill="none" marker-end="url(#arr-ja)"/>
+      <text x="128" y="352" fill="#ae1800" font-size="11" font-weight="700">into presentations/&lt;slug&gt;/project/</text>
+      <!-- derived row -->
+      <rect x="40" y="406" width="150" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="115" y="433" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">extract → build</text>
+      <text x="115" y="453" text-anchor="middle" fill="#605d5d" font-size="10.5">slides → React deck → dist/</text>
+      <rect x="230" y="406" width="170" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="315" y="433" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">deck-export · pptx-fill</text>
+      <text x="315" y="453" text-anchor="middle" fill="#605d5d" font-size="10.5">Marp standalone · editable PPTX</text>
+      <rect x="440" y="406" width="170" height="66" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="525" y="433" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">herald deck qa</text>
+      <text x="525" y="453" text-anchor="middle" fill="#605d5d" font-size="10.5">PNG per slide · contact sheet · report</text>
+      <rect x="650" y="406" width="170" height="66" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="735" y="433" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">deck-facts · --check</text>
+      <text x="735" y="453" text-anchor="middle" fill="#605d5d" font-size="10.5">facts.yaml · every token a row</text>
+      <rect x="860" y="406" width="220" height="66" fill="#201e1d"/>
+      <text x="970" y="433" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="800">herald deck push · commit</text>
+      <text x="970" y="453" text-anchor="middle" fill="#bab6b6" font-size="10.5">derived set back to Design · git records</text>
+      <path d="M190 439 L230 439" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M400 439 L440 439" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M610 439 L650 439" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+      <path d="M820 439 L860 439" stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr-j)"/>
+    </svg>
+    <div style="font-size:13px; margin-top:12px;" class="muted">The commit is always the operator's move (or an explicit <span class="code">--commit</span>) — never implicit. The pull decodes the entity-escaped body and strips the contiguous serve-harness block the preview injects, then verifies the byte count against the listing. Nothing is hand-transcribed at any hop.</div>
+  </section>
+
+  <!-- 08 · THE BRIDGE, VERB BY VERB -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">08</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The bridge, verb by verb — what crosses, and what refuses</h2>
+    </div>
+    <table class="grid">
+      <thead><tr><th style="width:17%;">Verb</th><th style="width:13%;">Direction</th><th>What crosses</th><th style="width:30%;">The guard</th></tr></thead>
+      <tbody>
+        <tr><td class="k code">herald deck seed &lt;slug&gt;</td><td>repo → Design</td><td>A contract-compliant prototype plus the server-written runtime, into a project bound to the Modernist design system; the project is registered in the deck README</td><td>The design-prompt gate is mandatory before any write; new files carry etag <span class="code">"0"</span>; the runtime is never authored by hand</td></tr>
+        <tr><td class="k code">herald deck pull &lt;slug&gt;</td><td>Design → repo</td><td>The prototype (or, by target, a Marp source or a Design-authored standalone bundle), decoded and landed at its repo path, then re-derived</td><td><span class="code">if-none-match</span> on the last-seen etag: <span class="code">{unchanged}</span> means the repo is already current and nothing is transferred</td></tr>
+        <tr><td class="k code">herald deck status [slug]</td><td>read-only</td><td>One JSON array of bridge state — linked or not, last etags, stale-mirror flags — for one deck or every known deck</td><td>Machine-readable only; a hand-mirrored copy of an app tree is exactly what the stale-mirror detector flags</td></tr>
+        <tr><td class="k code">herald deck watch &lt;slugs&gt;</td><td>Design → repo, polled</td><td>Etag-only polls; a pull fires only when the etag has been stable for a full interval (Design saves continuously mid-edit)</td><td>Idle backoff doubles and caps; a jittered floor; <b>halt on an auth error — never retry it</b></td></tr>
+        <tr><td class="k code">herald deck push &lt;slug&gt;</td><td>repo → Design</td><td>The regenerated derived set after <span class="code">deck-export</span>, so Design holds the complete family too; names mirror the repo filenames verbatim</td><td>Each file with its last-known etag; unchanged files skipped by hash; any conflict refused structurally — no partial clobber</td></tr>
+        <tr><td class="k code">herald deck qa &lt;slug&gt;</td><td>repo, report-only</td><td>A gate-id-keyed JSON report plus render artifacts under <span class="code">.herald/deck-qa/&lt;slug&gt;/</span>: a PNG per slide, a contact sheet, an image-slot scan</td><td>Never mutates deck sources, never rebuilds; failures inform review and are not a second PR gate</td></tr>
+        <tr><td class="k code">herald deck pptx-spec · pptx-fill</td><td>repo</td><td>A parsed template spec, then a genuinely editable <span class="code">.pptx</span> filled from a <span class="code">content_plan.json</span> — real text runs, dense slides as shapes that fit</td><td>Template-parse-then-fill; the bundled PyForge template by default; the interim image-slide export is the fallback, never the target</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 09 · THREE WAYS WORK FLOWS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">09</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Three ways a proclamation reaches Herald</h2>
+    </div>
+    <p class="lede">Moments II–IV shipped first as the <b>CLI-triggered, locally stored v1</b> — records exist because an operator ran a verb. The live-service version adds the two other paths; its routes exist, its store exists, and the one story that makes a real ship record itself end to end still waits on a perimeter to host the listener.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <div class="card acc">
+        <div class="kicker">Path 1 · the operator's verb — today</div>
+        <h4>A human runs it, on purpose</h4>
+        <p><span class="code">herald progress &lt;station&gt; --update</span> records the day's progress with cost and the unblock narrative; <span class="code">herald success create</span> drafts a claim from evidence links, <span class="code">review</span> shows the proof, <span class="code">publish</span> needs the operator role; <span class="code">herald notice author</span> drafts, <span class="code">--publish</span> releases. Every write is a deliberate act with a name on it.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Path 2 · the webhook — wired</div>
+        <h4>CI tells Herald a ship happened</h4>
+        <p>Two routes on the station API seam — <span class="code">…/webhooks/on-ship</span> and <span class="code">…/webhooks/on-pr-close</span> — accept a signed, timestamped payload with an exact field set; anything unknown is refused with a client error, and delivery retries with backoff before it gives up loudly. The routes moved onto the seam so the Canopy hosts them, not a bespoke server.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Path 3 · the scheduler — composed</div>
+        <h4>The weekly jobs run unconditionally</h4>
+        <p><span class="code">herald scheduler run</span> composes two independent jobs every invocation: evidence re-validation over every published claim, then progress aggregation. Neither skips or early-returns for the other; a link that went dead is named, not silently kept. What was displayed is what gets enforced.</p>
+      </div>
+    </div>
+    <div class="rule-box"><b>No silent shipping is the rule; the trigger is the frontier.</b> Every completed project owes a Moment III claim with at least one evidence link. Today the claim exists because a human wrote it; the live backend exists so that an unrecorded ship stops being indistinguishable from no ship at all.</div>
+  </section>
+
+  <!-- 10 · THE AUTONOMY GRADIENT -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">10</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The autonomy gradient — who moves the bytes, and who may publish</h2>
+    </div>
+    <p class="lede">Herald's autonomy is graduated by <b>what the action can damage</b>. Reading is free; moving bytes is mechanized but guarded; anything that speaks for the estate in public keeps a human on the trigger.</p>
+    <svg viewBox="0 0 1128 400" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr-l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- baseline + rising steps -->
+      <line x1="40" y1="340" x2="1088" y2="340" stroke="#201e1d" stroke-width="2"/>
+      <path d="M60 318 L1060 62" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="7 6" marker-end="url(#arr-l)"/>
+      <text x="1000" y="46" text-anchor="end" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.6">MORE CONSEQUENCE → MORE HUMAN</text>
+      <!-- step 1 -->
+      <rect x="40" y="250" width="196" height="90" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="56" y="276" fill="#ae1800" font-size="11" font-weight="800">UNATTENDED · READ</text>
+      <text x="56" y="298" fill="#201e1d" font-size="14" font-weight="800">status · qa · --check</text>
+      <text x="56" y="318" fill="#605d5d" font-size="10.5">JSON reports; advisory; never a gate</text>
+      <!-- step 2 -->
+      <rect x="252" y="210" width="196" height="130" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="268" y="236" fill="#ae1800" font-size="11" font-weight="800">UNATTENDED · POLL</text>
+      <text x="268" y="258" fill="#201e1d" font-size="14" font-weight="800">watch</text>
+      <text x="268" y="278" fill="#605d5d" font-size="10.5">etag-only polls, debounced,</text>
+      <text x="268" y="294" fill="#605d5d" font-size="10.5">idle backoff with a cap;</text>
+      <text x="268" y="310" fill="#605d5d" font-size="10.5">halts on an auth error</text>
+      <!-- step 3 -->
+      <rect x="464" y="170" width="196" height="170" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="480" y="196" fill="#ae1800" font-size="11" font-weight="800">ON COMMAND · MOVE BYTES</text>
+      <text x="480" y="218" fill="#201e1d" font-size="14" font-weight="800">seed · pull · push</text>
+      <text x="480" y="238" fill="#605d5d" font-size="10.5">an operator verb; etag on every</text>
+      <text x="480" y="254" fill="#605d5d" font-size="10.5">transfer; conflict refused;</text>
+      <text x="480" y="270" fill="#605d5d" font-size="10.5">bytes never enter model context;</text>
+      <text x="480" y="286" fill="#605d5d" font-size="10.5">commit stays explicit</text>
+      <text x="480" y="318" fill="#ae1800" font-size="10.5" font-weight="800">the production ceiling today</text>
+      <!-- step 4 -->
+      <rect x="676" y="130" width="196" height="210" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="692" y="156" fill="#ae1800" font-size="11" font-weight="800">GATED · SPEAK FOR THE ESTATE</text>
+      <text x="692" y="178" fill="#201e1d" font-size="14" font-weight="800">publish · notice --publish</text>
+      <text x="692" y="198" fill="#605d5d" font-size="10.5">requires the operator role;</text>
+      <text x="692" y="214" fill="#605d5d" font-size="10.5">a claim needs an evidence link;</text>
+      <text x="692" y="230" fill="#605d5d" font-size="10.5">review before publish;</text>
+      <text x="692" y="246" fill="#605d5d" font-size="10.5">archive is permanent, redirects kept</text>
+      <!-- step 5 -->
+      <rect x="888" y="90" width="200" height="250" fill="#201e1d"/>
+      <text x="904" y="116" fill="#ff9783" font-size="11" font-weight="800">HUMAN ONLY · AUTHOR</text>
+      <text x="904" y="138" fill="#f3f2f2" font-size="14" font-weight="800">the Design edit itself</text>
+      <text x="904" y="158" fill="#bab6b6" font-size="10.5">a person iterates the visual;</text>
+      <text x="904" y="174" fill="#bab6b6" font-size="10.5">no Design-chat authoring or</text>
+      <text x="904" y="190" fill="#bab6b6" font-size="10.5">polish inside a rebuild slice;</text>
+      <text x="904" y="206" fill="#bab6b6" font-size="10.5">every session ends with a pull</text>
+      <text x="904" y="238" fill="#f3f2f2" font-size="10.5" font-weight="800">and the video studio:</text>
+      <text x="904" y="254" fill="#bab6b6" font-size="10.5">real footage only — a fabricated</text>
+      <text x="904" y="270" fill="#bab6b6" font-size="10.5">demo is a hard gate failure</text>
+      <!-- footer -->
+      <text x="40" y="372" fill="#605d5d" font-size="11.5">Left to right: reports → polls → moves → publishes → authors. The bridge lives at the middle step by design — mechanized, guarded, and always on command.</text>
+    </svg>
+  </section>
+
+  <!-- 11 · PHASE × PERSONA × SKILLS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">11</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The SDLC, narrated — phase × persona × Herald's skills</h2>
+    </div>
+    <p class="lede">Every pipeline stage has an owner; Herald is present at all of them, but owns the <b>telling</b> at each — today (shipped and running) and at the frontier (specced or dreamed).</p>
+    <table class="grid">
+      <thead><tr><th style="width:15%;">Phase</th><th style="width:18%;">Personas</th><th>Herald today</th><th style="width:27%;">Herald at the frontier</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Dream &amp; Pitch</td><td>Human · Herald</td><td>The Dream file becomes a seeded deck; the deck family under one standard; infographics and executive summaries; narration extracted from speaker notes for the studio</td><td>The trio back in lockstep from the same fact ledger; the first station video rendered from Herald's studio</td></tr>
+        <tr><td class="k">Plan &amp; Spec</td><td>Marshal + the BMAD team</td><td>Herald's own chain runs Dream → <span class="code">bmad-spec</span> → epics → ledger like every station's; this poster is Story 20.5 of that chain</td><td>Quick draft slides for a planning session through <span class="code">slides-generator</span> — never a deck head</td></tr>
+        <tr><td class="k">Build</td><td>Marshal · the loop</td><td><span class="code">herald progress</span> records what changed, what it cost, what it unblocked; run telemetry rendered as imagery</td><td>Progress written by the webhook when CI ships, not by a hand</td></tr>
+        <tr><td class="k">Verify</td><td>Warden · Doctor · Herald</td><td><span class="code">herald deck qa</span> renders a deck and reports by gate id; <span class="code">deck-facts --check</span> reads a poster against its ledger — both advisory</td><td>The staleness check invocable as a routine over the whole family, naming the first stale poster the moment a ledger moves</td></tr>
+        <tr><td class="k">Ship</td><td>Mason · Marshal · Herald</td><td><span class="code">herald success create</span> — a claim with tests, metrics and adoption attached; operator review; then publish. Release comms through the changelog and social skills</td><td>One real ship records itself against a persistent store, end to end, with no human on the trigger</td></tr>
+        <tr><td class="k">Operate</td><td>Steward · Doctor · Herald</td><td><span class="code">herald notice</span> — deprecation, fix and end-of-life with a permanent archive and rename redirects; the weekly scheduler re-validates every evidence link</td><td>Notices raised from Doctor findings and Steward retirements automatically — ending is one act, someone is always told</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 · THE RELAY -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">12</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The Master Pipeline relay — opened and closed by Herald</h2>
+    </div>
+    <p class="lede">One automation loop: the crew hands configurations and assets to one another in sequence, supervised start to finish by Marshal. Herald holds the baton twice — the Dream in as a deck, the release out as a story — and speaks at every hand-off in between.</p>
+    <svg viewBox="0 0 1128 200" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c22a10"/></marker></defs>
+      <rect x="4" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="16" y="74" fill="#201e1d" font-size="15" font-weight="800">Doctor</text><text x="16" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">check ✓</text>
+      <rect x="145" y="46" width="118" height="70" fill="#ec3013" stroke="#ec3013" stroke-width="2"/><text x="157" y="74" fill="#f3f2f2" font-size="15" font-weight="800">Herald</text><text x="157" y="96" fill="#ffe0d9" font-size="10" font-family="ui-monospace, Menlo, monospace">deck seed · pull</text>
+      <rect x="286" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="298" y="74" fill="#201e1d" font-size="15" font-weight="800">Marshal</text><text x="298" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+      <rect x="427" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="439" y="74" fill="#201e1d" font-size="15" font-weight="800">Atlas</text><text x="439" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">map</text>
+      <rect x="568" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="580" y="74" fill="#201e1d" font-size="15" font-weight="800">Warden</text><text x="580" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">scan</text>
+      <rect x="709" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="721" y="74" fill="#201e1d" font-size="15" font-weight="800">Mason</text><text x="721" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">package --ship</text>
+      <rect x="850" y="46" width="118" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="862" y="74" fill="#201e1d" font-size="15" font-weight="800">Doctor</text><text x="862" y="96" fill="#5a5654" font-size="10" font-family="ui-monospace, Menlo, monospace">monitor</text>
+      <rect x="991" y="46" width="118" height="70" fill="#ec3013" stroke="#ec3013" stroke-width="2"/><text x="1003" y="74" fill="#f3f2f2" font-size="15" font-weight="800">Herald</text><text x="1003" y="96" fill="#ffe0d9" font-size="10" font-family="ui-monospace, Menlo, monospace">success · notice</text>
+      <path d="M122 81 L145 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M263 81 L286 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M404 81 L427 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M545 81 L568 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M686 81 L709 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M827 81 L850 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M968 81 L991 81" stroke="#c22a10" stroke-width="2.5" fill="none" marker-end="url(#arr-r)"/>
+      <path d="M204 116 L204 150 L1050 150 L1050 116" stroke="#201e1d" stroke-width="1.5" fill="none" stroke-dasharray="5 4"/>
+      <text x="627" y="144" text-anchor="middle" fill="#5a5654" font-size="10.5" font-weight="700">herald progress at every hand-off — the build in flight is not self-explaining</text>
+      <text x="4" y="186" fill="#5a5654" font-size="11">Stations own verdicts; Herald owns the story. Nothing is invented at broadcast time — every claim traces to a run artifact.</text>
+    </svg>
+  </section>
+
+  <!-- ACT IV -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT IV</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">The product</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">What shipped</span>
+  </div>
+
+  <!-- 13 · SHIPPED — THE HERALD CLI -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">13</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Shipped — the <span data-fact="console_entry">herald</span> CLI, <span data-fact="cli_verbs">23</span> verbs across five commands</h2>
+    </div>
+    <p class="lede">One console script, one argparse tree, one catch point for every station error. The verb count is read from the parser source by a static scan of literal <span class="code">add_parser("…")</span> calls — the same way the fact ledger reads it — so this heading cannot drift from the code without the check saying so.</p>
+    <div style="display:grid; grid-template-columns:1.1fr 1fr 1fr 1fr 0.9fr; gap:0; border:2px solid var(--color-text);">
+      <div style="padding:16px 18px; border-right:1px solid var(--color-divider); background:var(--color-accent-100);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:20px; color:var(--color-accent-700);">deck</div>
+        <div style="font-size:12.5px; font-weight:700; margin-top:4px;">the bridge and the pipeline</div>
+        <div class="code" style="font-size:12px; line-height:1.7; margin-top:8px;">seed · pull · status · watch<br>push · qa · pptx-spec · pptx-fill</div>
+      </div>
+      <div style="padding:16px 18px; border-right:1px solid var(--color-divider);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:20px;">progress</div>
+        <div style="font-size:12.5px; font-weight:700; margin-top:4px;">Moment II</div>
+        <div class="code" style="font-size:12px; line-height:1.7; margin-top:8px;">progress &lt;station&gt;<br>--update · --list<br>--capability · --compute-hours<br>--token-spend · --unblock</div>
+      </div>
+      <div style="padding:16px 18px; border-right:1px solid var(--color-divider);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:20px;">success</div>
+        <div style="font-size:12.5px; font-weight:700; margin-top:4px;">Moment III</div>
+        <div class="code" style="font-size:12px; line-height:1.7; margin-top:8px;">create · review · publish<br>list · get · validate [--all]</div>
+      </div>
+      <div style="padding:16px 18px; border-right:1px solid var(--color-divider);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:20px;">notice</div>
+        <div style="font-size:12.5px; font-weight:700; margin-top:4px;">Moment IV</div>
+        <div class="code" style="font-size:12px; line-height:1.7; margin-top:8px;">list · author · publish<br>get · close · archive</div>
+      </div>
+      <div style="padding:16px 18px;">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:20px;">scheduler</div>
+        <div style="font-size:12.5px; font-weight:700; margin-top:4px;">the weekly jobs</div>
+        <div class="code" style="font-size:12px; line-height:1.7; margin-top:8px;">run</div>
+      </div>
+    </div>
+    <div style="border-left:3px solid var(--color-accent); padding:10px 0 10px 18px; margin-top:18px;">
+      <p style="font-size:14px; line-height:1.55; margin:0;"><b>Every distinct verb, as the ledger lists it:</b> <span class="code" data-fact="cli_verbs">archive, author, close, create, deck, get, list, notice, pptx-fill, pptx-spec, progress, publish, pull, push, qa, review, run, scheduler, seed, status, success, validate, watch</span>.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;">
+      <div class="card"><div class="kicker">Shared conventions</div><h4>One dispatcher, one error seam</h4><p>Every operation runs through a single dispatch that is the sole <span class="code">HeraldError</span> catch point; <span class="code">--json</span> where a machine reads; <span class="code">--repo-root</span> defaults to the working directory; the frozen exit domain never leaks a traceback as a verdict.</p></div>
+      <div class="card"><div class="kicker">Roles</div><h4>Operator role on anything that publishes</h4><p>Recording progress, publishing a claim, authoring or closing a notice all require the operator role; reading, listing and validating never do. The evidence-link validation protocol is shared infrastructure across all three Moments.</p></div>
+      <div class="card"><div class="kicker">Storage</div><h4>Local JSON and SQLite first, a real DB behind the same seam</h4><p>The v1 stores sit under <span class="code">.herald/</span>; the live backend put DB-backed storage with migrations behind the existing seam and made the state layer survive a second writer before adding any trigger.</p></div>
+    </div>
+  </section>
+
+  <!-- 14 · DOCTRINE BAND -->
+  <section style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:44px 56px 40px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-bg); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent-400);">14</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em; color:var(--color-bg);">The doctrine — eight lines Herald does not cross</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:18px 28px;">
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">01</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Invisible engineering is failed engineering</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Nothing the factory does stays unseen. A ship nobody was told about is indistinguishable from no ship.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">02</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Derive, never declare</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">No count, version, status or date ships without a ledger row a tracked source can reproduce. Memory is not a source. A prior poster is not a source.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">03</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Etags, not hope</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Every Design↔Code transfer carries one. A concurrent edit conflicts; it is never silently overwritten. Bytes never relay through a model's context.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">04</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Design edits; git archives</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Design is the editing surface, git the record. Every Design session ends with a byte-exact pull and a commit; the README ledger tracks the etags.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">05</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Stations own verdicts; Herald owns the story</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Herald renders no verdict of its own and never publishes a second PR gate. It reads the ledgers the console reads and proclaims from them.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">06</div><div style="font-size:16px; font-weight:800; margin-top:6px;">Never restrict size at authoring</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Lay everything out at full depth — six acts, inline diagrams, the long class. Cutting is a later, visual act, never a shortcut taken while writing.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">07</div><div style="font-size:16px; font-weight:800; margin-top:6px;">No fabricated demos</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">Every screen recording in a Herald video is real. The studio receives real footage and real narration only — synthetic UI is a hard gate failure.</div></div>
+      <div><div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:var(--color-accent-400);">08</div><div style="font-size:16px; font-weight:800; margin-top:6px;">The rendered page is looked at</div><div style="font-size:13px; line-height:1.5; margin-top:6px; color:#bab6b6;">A render gate proves a page RUNS; only a full-page PNG a reviewer actually opens proves it LOOKS right. Both, every time.</div></div>
+    </div>
+  </section>
+
+  <!-- 15 · THE STACK -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">15</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The stack Herald drives — modules, tools and the estate it runs in</h2>
+    </div>
+    <table class="grid">
+      <thead><tr><th style="width:24%;">Module / tool</th><th style="width:16%;">Layer</th><th>What it does</th><th style="width:24%;">Contract it keeps</th></tr></thead>
+      <tbody>
+        <tr><td class="k code">bridge.py · transport/</td><td>Bridge core</td><td>Seed, pull, push against the Design far end through a transport port — the MCP client adapter primary, an agent-SDK adapter as fallback</td><td>Deterministic boundary; state and errors typed; the transport is a port, not an import</td></tr>
+        <tr><td class="k code">registry.py · state.py</td><td>Bridge record</td><td>The deck README's <span class="code">## Design project</span> section is the human-readable registry; <span class="code">.herald/bridge-state.json</span> the operational one</td><td>No second registry is ever invented; a fresh clone reproduces state from the READMEs alone</td></tr>
+        <tr><td class="k code">watch.py</td><td>Bridge</td><td>Etag-only poll loop with quiescence debounce, idle backoff and a hard halt on an auth error</td><td>Never retries a rejected credential</td></tr>
+        <tr><td class="k code">deck_pipeline.py · deck_qa.py</td><td>Deck pipeline</td><td>Slug → paths → status; the gate registry with the <span class="code">render</span> and <span class="code">image-slot</span> gates; a PNG per slide, a contact sheet, a gate-id-keyed report</td><td>Report-only; never mutates sources; parked pptx-contingent gates keep a reserved slot</td></tr>
+        <tr><td class="k code">pptx_pipeline.py · templates/</td><td>Deck pipeline</td><td>Template-parse-then-fill: <span class="code">pptx-spec</span> reads the bundled PyForge template, <span class="code">pptx-fill</span> writes real text runs from a content plan, with cards, metric boxes, tables and section labels for dense slides</td><td>Genuinely editable output; the image-slide export is the interim fallback</td></tr>
+        <tr><td class="k code">exporters.py</td><td>Hooks</td><td>Marp, PPTX and dc-html export plugins on the shared <span class="code">pyforge.core.hooks</span> group; a new format is another plugin</td><td>Canonical group only — never a parallel herald hook group; export success is a recorded station result</td></tr>
+        <tr><td class="k code">progress.py · claims.py · notices.py · evidence.py</td><td>Moments II–IV</td><td>Records, claims with evidence links, notices with lifecycle and rename redirects; the shared evidence-link validation protocol</td><td>No claim without proof; the archive is permanent; drafts never show in the default listing</td></tr>
+        <tr><td class="k code">webhook.py · station_api.py · webhook_host.py</td><td>Service face</td><td>The two signed webhook routes, hosted on the station API seam as ASGI; retry with backoff; unknown fields refused</td><td>Signature and timestamp headers required; a route rejects what it does not know</td></tr>
+        <tr><td class="k code">scheduler.py · db.py · locking.py · auth.py</td><td>Live backend</td><td>The composed weekly jobs; DB-backed storage with migrations behind the existing seam; a state layer that survives a second writer; the operator role</td><td>Both jobs run unconditionally every invocation; concurrency was the first story, not an afterthought</td></tr>
+        <tr><td class="k code">scripts/deck_export.py · scripts/deck_facts.py</td><td>Repo-side tasks</td><td>Regenerate the derived export set from dated Marp sources; derive a deck's <span class="code">facts.yaml</span> and check its poster — one script, one pixi task each</td><td>The facts check exits zero and warns; it never joins the detector gates</td></tr>
+        <tr><td class="k">The estate today</td><td>Ground truth</td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert skill <span data-fact="cfe_skill_version">8.90.5</span> · the herald package <span data-fact="package_version">0.1.0</span></td><td>Read from the manifest, the lock and the skill frontmatter — the versions a poster must not remember</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 16 · WHICH TOOL, WHEN -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">16</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Which surface, when — edit at a branch's head, re-derive everything below it</h2>
+    </div>
+    <p class="lede">Every deck carries the same artifact family in three branches. Edit at the head; what hangs below is derived and gets re-derived, <b>never hand-patched</b>. This is the table a contributor reads before touching anything under <span class="code">presentations/</span>.</p>
+    <table class="grid">
+      <thead><tr><th style="width:28%;">You want to change…</th><th style="width:34%;">Edit surface</th><th>Propagates to</th></tr></thead>
+      <tbody>
+        <tr><td class="k">The deck's story or slides</td><td><span class="code">PyForge &lt;Name&gt;.dc.html</span> in Design</td><td>pull → extract → build → <span class="code">deck-export</span> — the React deck and the deck PPTX</td></tr>
+        <tr><td class="k">Infographic content</td><td>★ <span class="code">PyForge &lt;Name&gt; - Infographic.dc.html</span>, the trio's head — in this slice the standalone leads, a dated exception</td><td>standalone + Infographic Deck (mirror in Design, or pull via the repo); optionally the Marp source for the infographic PPTX</td></tr>
+        <tr><td class="k">A number, version, status or date the poster shows</td><td><span class="code">deck-facts &lt;slug&gt;</span> re-derives <span class="code">facts.yaml</span>; then edit the poster and mark the literal with <span class="code">data-fact</span></td><td>the standalone now; head and Infographic Deck in the lockstep slice</td></tr>
+        <tr><td class="k">The executive summary</td><td><span class="code">PyForge &lt;Name&gt; - Executive Summary.dc.html</span> in Design; keep its Marp source in step</td><td>the exec pages on both sides</td></tr>
+        <tr><td class="k">Exports only — Marp standalone, PPTX</td><td><span class="code">src/marp/pyforge-&lt;slug&gt;-*.md</span> in git, then <span class="code">deck-export &lt;slug&gt;</span></td><td>the Marp-rendered standalone and both PPTX files</td></tr>
+        <tr><td class="k">An editable PowerPoint that people will actually edit</td><td><span class="code">src/content_plan.json</span>, then <span class="code">herald deck pptx-fill</span></td><td>a <span class="code">.pptx</span> with real text runs; Warden's is the exemplar</td></tr>
+        <tr><td class="k">Whether a built deck looks right</td><td><span class="code">pixi run -e pyforge-herald deck-qa &lt;slug&gt;</span> after a build</td><td>a report and a contact sheet under <span class="code">.herald/deck-qa/</span> — advisory, for a reviewer to open</td></tr>
+        <tr><td class="k">Visual design, palette, tokens</td><td>The <b>Modernist design system</b> project — not per artifact</td><td>every Modernist-bound deck at once</td></tr>
+        <tr><td class="k">Release comms · quick draft slides</td><td><span class="code">bmad-os-changelog</span> and <span class="code">-social</span>; <span class="code">slides-generator</span></td><td>the changelog, the social posts, a draft deck — never a deck head, never the source of record</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 17 · ESCALATION & THE LEDGER -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">17</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">What refuses, what records — escalation and the ledgers</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:40px;">
+      <div>
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; margin-bottom:14px;" class="muted">Refusals — each one structural, none of them a log line</div>
+        <div style="display:flex; flex-direction:column; gap:9px; font-size:13.5px; line-height:1.45;">
+          <div><b>A stale etag.</b> <span class="code">write_files</span> with an <span class="code">if-match</span> that no longer matches fails explicitly; the push refuses the whole set rather than clobber part of it.</div>
+          <div><b>An auth error mid-watch.</b> The watcher halts and says so; it never retries a rejected credential.</div>
+          <div><b>An unknown webhook field.</b> Both routes reject the payload outright instead of quietly dropping the field — a caller who can reach the route cannot smuggle state in.</div>
+          <div><b>A publish without the operator role.</b> Progress updates, claim publishing, notice authoring and closing all refuse; reads never do.</div>
+          <div><b>A claim without evidence.</b> A success claim needs at least one retrievable link; the weekly job re-validates every published link and names the dead ones.</div>
+          <div><b>A poster below a floor.</b> Fewer than six act bands, fewer than eighteen sections, fewer than three inline diagrams, under the length class, or any fact without a ledger row — it is not marked current.</div>
+          <div><b>A fabricated demo.</b> The video studio's gates fail the render; there is no override.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; margin-bottom:14px;" class="muted">The ledgers — where the truth is written down</div>
+        <div style="display:flex; flex-direction:column; gap:0; border:2px solid var(--color-text);">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">README § Design project · § Ledger</span> <span style="font-size:13px;">— per deck: project name, id, file URL, and the sync ledger of etags and byte counts at last sync; the durable link any session pulls from.</span></div>
+          <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">facts.yaml</span> <span style="font-size:13px;">— per deck: every count, version, status and date the poster may print, each with its source and method, under a header naming the tree it was derived from.</span></div>
+          <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">.herald/bridge-state.json</span> <span style="font-size:13px;">— the operational record of linked decks and last-seen etags; gitignored, re-derivable from the READMEs.</span></div>
+          <div style="padding:12px 16px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">.herald/herald.db · the JSON stores</span> <span style="font-size:13px;">— progress records, claims and notices; migrations behind the seam.</span></div>
+          <div style="padding:12px 16px;"><span class="code" style="font-weight:700;">sprint-status-ledger.yaml</span> <span style="font-size:13px;">— the tracked twin of each station's sprint status; the source of every stories/epics ratio on this page.</span></div>
+        </div>
+        <div class="rule-box acc" style="margin-top:16px; font-size:13.5px;"><b>The check is advisory on purpose.</b> <span class="code">deck-facts --check</span> exits zero and reports <span class="code">unmarked</span>, <span class="code">mismatch</span>, <span class="code">drifted</span>, <span class="code">unsourced</span> and <span class="code">unshown</span> rows. It becomes a PR verdict only if a later Spec promotes it — Warden stays the sole gate.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT V -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT V</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">Who it serves, where it runs</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Value, by leader · enterprise · seams</span>
+  </div>
+
+  <!-- 18 · WHAT EACH LEADER GETS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">18</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">What each leader gets</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <div class="card"><div class="kicker">Engineering lead</div><h4>The build in flight, legible</h4><p>Progress by station with cost and unblock narrative; a deck whose slides match the repo because the pipeline, not a person, moved them; a contact sheet before anyone presents. Fewer "what's the status" meetings — the status is a record.</p></div>
+      <div class="card"><div class="kicker">Product and program</div><h4>The Dream argued, then the ship proclaimed</h4><p>A seeded deck days after the Dream file lands; success claims with the tests, metrics and adoption attached; an executive summary and an editable PowerPoint from the same source, so the stakeholder who edits is never handed an image.</p></div>
+      <div class="card"><div class="kicker">Security and compliance</div><h4>Announcements with evidence, and a permanent archive</h4><p>Deprecations, fixes and end-of-life notices that redirect instead of vanish; evidence links re-validated on a schedule; a webhook that refuses what it does not know and requires a signature. Herald never publishes a competing gate verdict.</p></div>
+      <div class="card"><div class="kicker">Executive</div><h4>One poster that is true today</h4><p>Every number on a station poster is a ledger row re-derived from the tree; the README says when it was rendered and how tall the page was; a check names the first stale fact the moment a ledger moves. A brief you can forward without a caveat.</p></div>
+      <div class="card"><div class="kicker">The team itself</div><h4>Outward voice, inward memory</h4><p>Herald tells the world; Scribe tells the team. Release comms run through the changelog and social skills; the operational record files as a notice or a success claim; what was decided lands in the team memory Scribe keeps. Neither station invents a line.</p></div>
+      <div class="card acc"><div class="kicker">The agent on the line</div><h4>A station it can drive without guessing</h4><p>An SKF skill that teaches the CLI grammar with source-cited lines; a persona that acts only through <span class="code">pyforge herald …</span> and the MCP face; a fact ledger with an id per number, so a poster can be rebuilt by an agent that never saw the previous one.</p></div>
+    </div>
+  </section>
+
+  <!-- 19 · ENTERPRISE & AIR-GAP -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">19</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">At enterprise scale — offline by construction, mounted under the Canopy</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:36px;">
+      <div>
+        <p style="font-size:15px; line-height:1.55; margin:0 0 14px;">The deployment target is <b>air-gapped and regulated</b>, so every Herald artifact is built to work with the network off. This poster renders from disk; its only remote resource is the web-font link, and the system fallback stack is declared. Decks build to a static bundle that opens as <span class="code">file://</span>. Exports are Marp and python-pptx, both local. The headless browser for QA and for this page's own full-page render ships in the station's pixi environment — no new browser dependency was ever added.</p>
+        <div style="display:flex; flex-direction:column; gap:0; border:2px solid var(--color-text);">
+          <div style="padding:11px 16px; border-bottom:1px solid var(--color-divider); font-size:13.5px;"><b>Inline SVG only.</b> No raster images anywhere in a poster; diagrams are vector, in the Modernist tokens, and survive any bundle.</div>
+          <div style="padding:11px 16px; border-bottom:1px solid var(--color-divider); font-size:13.5px;"><b>No external scripts.</b> The standalone has no runtime wrapper and no support script — that wrapper belongs to the trio head and is re-derived in the lockstep slice.</div>
+          <div style="padding:11px 16px; border-bottom:1px solid var(--color-divider); font-size:13.5px;"><b>Bytes never enter model context.</b> Large uploads go server-side through DesignSync's local-path pipeline; large pulls come down the preview URL straight to disk, then the injected harness is stripped and the byte count verified against the listing.</div>
+          <div style="padding:11px 16px; font-size:13.5px;"><b>The serve URL is never persisted.</b> It is short-lived by design; nothing in git or in a README ever records one.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; margin-bottom:12px;" class="muted">Under the Canopy — one chrome, one session, one grammar</div>
+        <div class="card" style="margin-bottom:12px;"><h4 style="margin-top:0;"><span class="code">/stations/herald/</span></h4><p>Herald's portal under the shared chrome, behind the one OIDC session; the first slice shows deck status for a slug. Adding it changed no host code outside its registration.</p></div>
+        <div class="card" style="margin-bottom:12px;"><h4 style="margin-top:0;"><span class="code">POST /stations/herald/mcp</span></h4><p>The service face on the host ASGI. An agent starts a long operation, loses the connection, comes back and gets the result. The webhook routes ride the same station API seam.</p></div>
+        <div class="card acc"><h4 style="margin-top:0;"><span class="code">pyforge herald &lt;noun&gt; &lt;verb&gt;</span></h4><p>The unified grammar dispatches to the <span class="code">herald</span> binary with the same argv; the station CLI stays a first-class entry point. A parity matrix gates divergence between the two.</p></div>
+        <div style="font-size:13px; margin-top:12px;" class="muted">Infrastructure is exactly PostgreSQL, Redis and Kubernetes; Herald's own stores sit behind a seam that started as local JSON and SQLite and gained migrations without changing a caller. The Lane 1 CMS front door remains Steward's.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 · INTEGRATION SEAMS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">20</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Integration seams — where Herald plugs in, and where others plug into Herald</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <div class="card"><div class="kicker">Hook · export formats</div><h4><span class="code">pyforge.core.hooks</span></h4><p>Marp, PPTX and dc-html export plugins register on the shared hook group; a new format is another plugin, never a fork of the exporter. Export success is a station result recorded on the hook context.</p></div>
+      <div class="card"><div class="kicker">Registry · QA gates</div><h4><span class="code">DEFAULT_GATES</span></h4><p>The render and image-slot gates register by id into a report interface that shipped empty on purpose; the parked PowerPoint-contingent gates hold a reserved slot with zero schema change.</p></div>
+      <div class="card"><div class="kicker">Seam · station API</div><h4>webhooks as ASGI</h4><p>The on-ship and on-PR-close routes attach to the station API app the Canopy hosts; signature, timestamp and an exact field set are the contract. No bespoke server.</p></div>
+      <div class="card"><div class="kicker">Far end · Design</div><h4>claude-design MCP · DesignSync</h4><p>Project creation bound to Modernist through the MCP; large byte moves through DesignSync's local-path pipeline; every deck project already holds the Warden poster as a reference for Design chats.</p></div>
+      <div class="card"><div class="kicker">Inward · Scribe</div><h4>the team record</h4><p>Decisions Herald makes about the family land in memlogs and the team memory; recall is grounded, never invented. Outward voice and inward memory are one pair of stations.</p></div>
+      <div class="card"><div class="kicker">Upstream · Marshal and the ledgers</div><h4>sprint status, run journals</h4><p>Progress and every stories/epics ratio come from the tracked sprint ledgers Marshal's loop writes; the fleet board reads the same files, so the poster and the board cannot disagree by source.</p></div>
+      <div class="card"><div class="kicker">Downstream · Steward</div><h4>the perimeter</h4><p>A persistent listener for the live backend needs a perimeter to host it; that perimeter is Steward's to render. The dependency is named in the ledger rather than worked around.</p></div>
+      <div class="card acc"><div class="kicker">Sideways · Doctor's ground truth</div><h4><span class="code">bmad-groundtruth</span></h4><p>The live factory facts — skill version, schema, tool and phase counts — are Doctor's JSON; the fact ledger reads them rather than re-counting, so two stations never publish two numbers for one thing.</p></div>
+    </div>
+  </section>
+
+  <!-- ACT VI -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT VI</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">Proof &amp; road</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Receipts, then the map</span>
+  </div>
+
+  <!-- 21 · PROGRAMS SHIPPED -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">21</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Programs shipped through Herald — <span data-fact="epics_done_total">19/23</span> epics, <span data-fact="stories_done_total">82/100</span> stories</h2>
+    </div>
+    <p class="lede">Epics as the ledger numbers them. The two still open are the ones this page is honest about: the realization-gate vessel with its one story waiting on a perimeter, and the deck-family currency effort this poster is a story of.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epics 1–5 · the bridge</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Package spine, transports, seed, pull, status, watch, push</div><div style="font-size:11.5px;" class="muted">stale-mirror detection; etag short-circuit; conflict refusal on export push</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epics 6–7 · foundations</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">CLI dispatcher, roles, evidence protocol, web layout</div><div style="font-size:11.5px;" class="muted">shared argument conventions; first-day usability; tooltips and inline help</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epics 8–10 · the Moments</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Progress, success, notices — CLI, web tabs, archives</div><div style="font-size:11.5px;" class="muted">the CLI-triggered v1 with local stores; notice lifecycle and redirects</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epics 11–12 · reliability and docs</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Integration tests, automation reliability, runbooks</div><div style="font-size:11.5px;" class="muted">cross-Moment evidence linking; operator and troubleshooting guides</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 13 · the live backend</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Second-writer safety, DB storage, webhooks, scheduler</div><div style="font-size:11.5px;" class="muted">a ship records itself end to end — code-complete, awaiting its perimeter</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 14 · visual QA</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Gate report interface, headless render, image-slot scan</div><div style="font-size:11.5px;" class="muted">a PNG per slide and a contact sheet a reviewer actually opens</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 15 · editable decks</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Template-parse-then-fill; dense content as shapes</div><div style="font-size:11.5px;" class="muted">real text runs; Warden's deck the first real one through</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epics 16–17 · hooks, skill, persona, portal</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Export plugins; the SKF skill; the persona; deck status in the Canopy</div><div style="font-size:11.5px;" class="muted">no Canopy machinery copied — Lane 1 stays Steward</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 18 · with the suite</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The manticore studio, changelog and social comms, quick slides</div><div style="font-size:11.5px;" class="muted">the studio is a separate root; the repo's BMAD install is never touched by a render</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 19 · Herald in effect</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Webhook routes on the seam; the QA gate gets a caller; a real deck through pptx</div><div style="font-size:11.5px;" class="muted">one story open: a real ship against a persistent store</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">Epic 20 · the deck family stays current</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One standard, a fact ledger per deck, ten posters rebuilt</div><div style="font-size:11.5px;" class="muted">this page is Story 20.5 — the third station poster rebuilt to the standard</div></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><div style="font-size:11px; font-weight:800; color:var(--color-accent-700);">The family, today</div><div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Eight station decks, Genesis, the Canopy — plus four chain decks</div><div style="font-size:11.5px;" class="muted">every PyForge-branded deck seeded in a Modernist-bound Design project</div></div>
+    </div>
+    <div style="margin-top:22px; display:grid; grid-template-columns:repeat(6,1fr); border:2px solid var(--color-text);">
+      <div style="padding:14px 16px; border-right:1px solid var(--color-divider);"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">recipes tended</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);"><span data-fact="recipes_count">7864</span></div></div>
+      <div style="padding:14px 16px; border-right:1px solid var(--color-divider);"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">MCP tools</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);"><span data-fact="groundtruth_mcp_tools">46</span></div></div>
+      <div style="padding:14px 16px; border-right:1px solid var(--color-divider);"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">atlas phases</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);"><span data-fact="groundtruth_atlas_phases">22</span></div></div>
+      <div style="padding:14px 16px; border-right:1px solid var(--color-divider);"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">pixi envs</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);"><span data-fact="groundtruth_pixi_envs">31</span></div></div>
+      <div style="padding:14px 16px; border-right:1px solid var(--color-divider);"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">atlas schema</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);">v<span data-fact="groundtruth_schema_version">29</span></div></div>
+      <div style="padding:14px 16px;"><div style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;" class="muted">CFE gotchas, highest</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:800; color:var(--color-accent);">G<span data-fact="groundtruth_gotcha_max">117</span></div></div>
+    </div>
+    <div style="font-size:12.5px; margin-top:10px;" class="muted">The estate Herald reports on, as Doctor's ground truth states it — the skill at <span data-fact="groundtruth_skill_version">8.90.5</span>, the recipe tree counted directly. These are the facts a Herald brief may quote; each is a ledger row.</div>
+  </section>
+
+  <!-- 22 · THE SEED -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">22</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The seed — how a new station deck starts, and how a poster is rebuilt</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+      <div style="border:2px solid var(--color-text); padding:26px 24px; display:flex; flex-direction:column;">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">1</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Scaffold from a sibling on the Archivo system</div>
+        <p style="font-size:14px; line-height:1.5; margin:0;">Copy the deck engine and glue verbatim from <span class="code">pyforge-atlas</span> or <span class="code">pyforge-warden</span> — never from the origin deck on its own theme. Engine files stay byte-identical across every deck; an engine fix goes to all of them in one change.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); padding:26px 24px; display:flex; flex-direction:column;">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">2</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Seed, register, design, pull</div>
+        <p style="font-size:14px; line-height:1.5; margin:0;"><span class="code">herald deck seed &lt;slug&gt;</span> after a local proof; the README <span class="code">## Design project</span> section is the durable link; the human designs; <span class="code">herald deck pull</span> lands it byte-exact and the derived set regenerates.</p>
+      </div>
+      <div style="border:2px solid var(--color-accent); padding:26px 24px; display:flex; flex-direction:column; background:var(--color-accent-100);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">3</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Facts first, then the poster, then the PNG</div>
+        <p style="font-size:14px; line-height:1.5; margin:0;"><span class="code">deck-facts &lt;slug&gt;</span> derives the ledger; author to the standard — six acts, the full section set, inline SVG, every literal marked; <span class="code">--check</span> until nothing is unmarked or mismatched; render full-page and look; record the measurements in the README ledger.</p>
+      </div>
+    </div>
+    <div class="rule-box" style="margin-top:24px;"><b>The standard has one home.</b> The floors, the act arc, the section set, the diagram set, the authoring template and the README ledger entry live in <span class="code">spec-deck-family-currency/infographic-standard.md</span>; the deck workflow spec points there and never restates them. Unifying Strategy is the structure, acts and length reference; Warden is the density and visual-form reference.</div>
+  </section>
+
+  <!-- 23 · NOW / NEXT / LATER -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">23</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Now, next and later — the road as the ledger has it</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <div class="card acc">
+        <div class="kicker">Now — this slice</div>
+        <h4>Wave A of the deck-family currency</h4>
+        <p>The standard written once and pointed to; <span class="code">deck-facts</span> deriving a ledger per deck and checking a poster against it; the station posters rebuilt repo-side at full depth — this page among them, its facts re-derived on <span data-fact="tree_commit_date">2026-09-15</span>. The standalone leads; the trio head and the Infographic Deck are marked "standalone ahead" in each README until the lockstep slice.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Next — the rest of the family</div>
+        <h4>Wave B, the mirror proof, the bridge view</h4>
+        <p>Genesis and the Canopy posters re-derived, the Canopy's Design project created and bound to Modernist; every rebuilt poster pushed through DesignSync and read back byte-identical, its etag in the README; <span class="code">herald deck status</span> reporting all ten PyForge-branded decks linked from the READMEs alone; the advisory staleness check as a routine.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Later — the Dreams still open</div>
+        <h4>Lockstep, the live trigger, the studio</h4>
+        <p>The trio head, Infographic Deck and Executive Summary re-derived from the same ledger; the four chain decks in their own wave; Design-side polish as its own act, closed by a pull. One real ship recording itself against a persistent store once a perimeter exists to host the listener. The first station video rendered from the studio, real footage only.</p>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+      <div style="border-left:3px solid var(--color-accent); padding:8px 0 8px 18px; font-size:13.5px; line-height:1.5;"><b>Dated in the Dream's own log.</b> The station's chains were consolidated into one Brief, one PRD, one Architecture and one Spec on <span data-fact="dream_log_2026-08-02">2026-08-02</span>, every folded source archived unmodified; the fleet readiness pass of <span data-fact="dream_log_2026-09-09">2026-09-09</span> re-grounded the Dream's body, held its status at <span data-fact="dream_status">realized</span>, and minted the realization-gate vessel for the three satellites that did not yet clear the gate.</div>
+      <div style="border-left:3px solid var(--color-text); padding:8px 0 8px 18px; font-size:13.5px; line-height:1.5;"><b>What this page will not claim.</b> No count it could not source: not the size of any drift, not the number of posters that were stubs, not a test count, not a date outside the ledger's date rows. Where a number was wanted and no row existed, the sentence was written without it. That is the standard, applied to the poster that describes the standard.</div>
+    </div>
+  </section>
+
+  <!-- CLOSING POSTER — THE CREED -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Make the factory seen — and make every claim traceable.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">The Dream arrives as a deck. The build in flight is narrated. The ship is proclaimed with its evidence attached, and the long tail is announced instead of vanishing. Every byte that crosses the bridge arrives exactly as it left; every number on the page names the row that proves it. Invisible engineering is failed engineering — so nothing here stays invisible, and nothing here is remembered when it can be derived.</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Herald</b> · herald chain · <span class="code">spec-pyforge-herald</span> · <span data-fact="spec_capabilities">HER-1..13</span> · PyForge Guild · Dream to Code</span>
+      <span>docs/dreams/pyforge-herald.md · <span class="code">src/shared/packages/pyforge-herald/</span> · <span class="code">presentations/pyforge-herald/facts.yaml</span></span>
+    </div>
+  </section>
+
+</div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:2200}}"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:17773}}"></script>
 </body>
 </html>

@@ -12,34 +12,1077 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-block; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; line-height:1.5; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster helpers — the Unifying Strategy section / act-band shapes, named once. */
+.xp { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.sec { padding:36px 0 8px; }
+.sechead { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px; }
+.sechead .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sechead h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.lede { font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .lbl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .ttl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .cap { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.tint { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14.5px; line-height:1.5; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.kicker { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.bignum { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+table.tbl { border-collapse:collapse; width:100%; margin-top:18px; }
+table.tbl th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13.5px; }
+table.tbl td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.tbl tr.hi td { background:#fbe4de; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station.me { background:#fbe4de; border-color:var(--color-accent); }
+.card { border:2px solid var(--color-text); padding:20px 22px; }
+.card .k { font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14.5px; line-height:1.5; margin:10px 0 0; font-weight:500; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.chip { font-size:9.5px; font-weight:700; padding:1px 6px; background:var(--color-text); color:var(--color-bg); letter-spacing:.04em; text-transform:uppercase; }
+.chip.ok { background:var(--color-accent); }
+.rung { border-left:3px solid var(--color-accent); padding:4px 0 4px 16px; }
+.rung b { font-size:15px; }
+.rung div { font-size:13.5px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 72%, transparent); }
 </style>
 </helmet>
-<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
 
-<section data-label="Cover" data-speaker-notes="Scribe is the memory: capture, curate, compile, answer." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;"><div style="display:flex; justify-content:space-between; font-family:ui-monospace,Menlo,monospace; font-size:16px; letter-spacing:.08em; text-transform:uppercase;"><span style="color:#c22a10; font-weight:600;">PYFORGE CREW · CHAPTER DECK · THE CHRONICLER</span><span style="opacity:.6;">Charter scoped 2026-07-23 · inherits Sentinel</span></div><div><div class="code" style="font-size:22px; letter-spacing:.3em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:24px;">Infographic</div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:130px; line-height:.9; letter-spacing:-0.03em; margin:0;">Scribe</h1><p style="font-size:30px; line-height:1.4; font-weight:500; margin:34px 0 0; max-width:1400px;">The factory's memory. Every decision <b>captured</b> where it happens, <b>curated</b> so the record stays true, <b>compiled</b> into a knowledge graph, and <b>answerable</b> — by humans and agents alike. Where Herald tells the world, <span style="color:var(--color-accent-700); font-weight:700;">Scribe tells the team</span>.</p></div><div style="border-top:3px solid #201e1d; padding-top:18px; font-family:ui-monospace,Menlo,monospace; font-size:15px; display:flex; justify-content:space-between;"><span style="font-weight:700;">PYFORGE-SCRIBE</span><span>The graph is the product · Append-only memlogs · Curated auto-memory</span></div></div></div></section>
+  <section data-label="Cover" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
 
-<section data-label="The problem" data-speaker-notes="Context loss is the real cause of rework and hallucination." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">01</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The problem</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">An engineer touches six tools in their first hour; an agent session starts from zero every time. Knowledge scattered across chats, wikis, commit messages and heads is knowledge <b>lost at every handoff</b> — and a memory that only accumulates becomes a landfill that misleads. Hallucination is a <b>context problem</b>, not a model problem.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">6</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">tools a newcomer must reconcile in hour one — the graph is where they agree</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">0</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">handoffs that drop context, by design</div></div></div></div></div></section>
 
-<section data-label="Where decisions live today" data-speaker-notes="The capture surfaces already run; Scribe consolidates them." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">02</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">Where decisions live today</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Record</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Discipline</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Who reads it</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>memlogs</b> (<span class="code">.memlog.md</span>)</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">append-only; artifacts re-render from the log</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">bmad-spec + downstream skills</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>Dream realization logs</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">dated entries where the aspiration lives</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the board, the crew</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>auto-memory</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">curated entries — superseded, never silently overwritten</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">every agent session</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>CHANGELOGs + retros</b></td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">Rule 2: every effort lands its lessons</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">the next effort</td></tr></tbody></table></div></div></section>
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE CHRONICLER · SCRIBE CHAIN · SPEC-PYFORGE-SCRIBE</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Scribe</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-scribe · module pyforge.scribe · console script <span data-fact="console_entry">scribe</span> · spec-pyforge-scribe <span data-fact="spec_capabilities">CAP-1..4</span></div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">A team that runs many agents at once knows a great deal and remembers almost none of it. The decisions were made — in a chat, a memlog, a commit message, one operator's private auto-memory — and every new session started from zero. <b>Scribe is the inward voice:</b> <span class="code">capture</span> the decision the moment it happens into memory the whole team commits, <span class="code">graph compile</span> the record nightly into a knowledge graph built from the tools the team already uses, and <span class="code">recall</span> from it — one grounded, cited answer, identical for every operator and every worktree, or an explicit "no grounded answer found". <span style="color:var(--color-accent-700); font-weight:700;">Where Herald tells the world, Scribe tells the team. The graph is derived; the record is the truth; nothing is ever invented.</span></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">pyforge scribe &lt;verb&gt;</span>
+      <span class="tag tag-accent">Append-only capture</span>
+      <span class="tag tag-neutral">A derived, rebuildable graph</span>
+      <span class="tag tag-neutral">Supersede, never delete</span>
+      <span class="tag tag-neutral">Air-gapped by construction</span>
+      <span class="tag tag-ink">Recall never fabricates a citation</span>
+    </div>
+  </header>
 
-<section data-label="The compile loop" data-speaker-notes="Sentinel&#x27;s inheritance: index, compile, curate, answer." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">03</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The compile loop</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:flex; align-items:stretch; margin-top:22px;"><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 1</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Index</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Sources land in raw — chats, logs, diffs, docs</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 2</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Compile</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Incremental build into a linked wiki: summaries, backlinks, concepts</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 3</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Curate</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Supersede, dedup, link — correct at the source, on the record</div></div><div style="display:flex; align-items:center; padding:0 8px; font-size:24px; color:var(--color-accent); font-weight:800;">&#8594;</div><div style="flex:1; border:2px solid var(--color-text); padding:16px;"><div class="code" style="font-size:13px; font-weight:700; color:var(--color-accent);">STEP 4</div><div style="font-size:18px; font-weight:800; margin:8px 0 6px;">Answer</div><div style="font-size:14px; line-height:1.4; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Humans and agents query the graph, not their memory of it</div></div></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:14px 20px; margin-top:16px; font-size:16px; line-height:1.45;"><b>The graph is the product.</b> Derived artifacts are never hand-patched — they re-render from the record.</div></div></div></section>
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">35/35</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">18/18</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">4</span> · all <span data-fact="spec_status">shipped</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">pyforge-scribe <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="dream_status">realized</span></div>
+      <div class="muted code" style="font-size:12px; font-weight:700; margin-top:2px; white-space:nowrap;">since <span data-fact="dream_log_2026-08-08">2026-08-08</span></div>
+    </div>
+  </div>
 
-<section data-label="Proof the habit already beats" data-speaker-notes="The disciplines exist; Scribe gives them one owner." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">04</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">Proof the habit already beats</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:16px;"><div style="padding:20px 0px 4px 0px; "><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">30+</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">curated auto-memory entries steering live sessions</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">10+</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">append-only memlogs across spec kernels</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">25</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Dreams with dated realization logs</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">100%</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">derived artifacts re-rendered, never hand-patched</div></div></div></div></div></section>
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why a chronicler</div>
+    <h2 class="xp" style="font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">Capture the decision. Keep the graph. <span style="color:var(--color-accent);">Answer from memory.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">capture</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The write path</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">a decision lands verbatim in <span class="code">.claude/memory/&lt;type&gt;/</span> the moment it is made — append-only, indexed, committed with the code</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">--promote</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The promotion boundary</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">personal auto-memory and raw session transcripts scanned, rewritten in team voice, <b>proposed then confirmed</b> — never silently promoted</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">graph compile</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The projection</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">the record rebuilt from scratch into a graph, nightly, unattended, through a storage port — never hand-edited, always re-computable</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">recall</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The read path</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);"><span class="code">scribe recall "why did we …"</span> — one answer with a resolvable <span class="code">[source: …]</span>, or the explicit miss; never synthesized prose without a citation</div></div>
+    </div>
+  </div>
 
-<section data-label="The differentiator" data-speaker-notes="Curation is the job." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">05</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The differentiator</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The landfill</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Accumulation without curation misleads: stale entries outnumber true ones, agents trust confidently wrong context, and the archive becomes noise.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">The chronicle</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Scribe supersedes, dedups and links. A wrong memory is corrected at the source, visibly — the record stays true enough to answer from.</p></div></div></div></div></section>
+  <!-- ACT I -->
+  
+    </div>
+  </section>
 
-<section data-label="The close" data-speaker-notes="What the team knows, every agent knows." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; flex-direction:column; justify-content:center; height:100%; background:#ec3013; margin:-88px -96px; padding:96px; color:#f3f2f2;"><div style="font-size:19px; letter-spacing:.12em; text-transform:uppercase; font-weight:800;">The creed</div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:96px; line-height:.95; letter-spacing:-0.02em; margin:26px 0 0; max-width:1560px;">What the team knows, every agent knows.</h1><p style="font-size:28px; line-height:1.45; margin:34px 0 0; max-width:1300px; opacity:.95;">Capture at the source. Curate without mercy. Compile the graph. Answer from the record — and the record only.</p><div class="code" style="font-size:16px; margin-top:44px; opacity:.85;">pyforge-scribe · pyforge crew · Dream to Code</div></div></div></section>
+  <section data-label="ACT I" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT I</span>
+      <span class="ttl">Knowledge everywhere, memory nowhere</span>
+    </div>
+    <span class="cap">The problem and the model</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The problem" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead" style="margin-bottom:26px;">
+      <span class="num">01</span>
+      <h2>The problem</h2>
+    </div>
+<div style="display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">A disease diagnosed twice before it was given an owner. The Sentinel Dream found that <i>knowledge is lossy; the graph is there; nobody writes it down.</i> The team-memory Dream found its present-day instance: Claude Code's auto-memory is per-machine and per-operator — invisible to teammates and to every other agent session — and the only escape hatch was a hand edit of <span class="code">CLAUDE.md</span> that people skipped. The dated, real case is the <span class="code">d43899c1cb</span> duplication incident: work re-discovered because the record of it lived in one person's head. <b>Accumulation alone is not the cure</b> — a memory that only grows becomes a landfill that misleads; one that is curated, superseded and cited stays true enough to answer from.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_gotcha_max">117</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">numbered gotchas in the conda-forge-expert skill — lessons that survived only because a retro wrote each one down; the habit Scribe generalizes to the whole team</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_pixi_envs">31</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">pixi environments in one workspace — thirty places a newcomer's first session must reconcile, before a single decision has been explained to them</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
+        <div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="fleet_stories_done_total">926/972</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">stories done across the eight stations' tracked ledgers — every one a chain of decisions, tradeoffs and rejected paths that ought to be answerable afterwards</div>
+      </div>
+    </div>
+<div class="box" style="margin-top:26px;"><b>Hallucination is a context problem, not a model problem.</b> An agent that cannot see the decision will re-make it, differently; an agent handed a confident stale entry will trust it. This repo runs many BMAD projects and agent worktrees at once, so "what the team knows" has to survive across parallel sessions, not just across humans. The Chronicler's remedy is not a bigger store — it is capture at the source, a compiled graph every session can read, and a recall path structurally unable to answer without a citation. <span class="muted">Charter § Scribe — the station is the post, not the person; what the team knows, every agent and every session knows.</span></div>
+    </div>
+  </section>
+
+  <section data-label="The record — where decisions already live, and what Scribe adds" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">02</span>
+      <h2>The record — where decisions already live, and what Scribe adds</h2>
+    </div>
+<p class="lede">Scribe invents no new place for knowledge. It formalizes the disciplines the repo already keeps — the <span class="code">bmad-spec</span> memlog, the retro, the Dream's dated realization log — and adds the one surface that was missing: memory that belongs to the team and is committed with the code.</p>
+<table class="tbl">
+      <thead><tr><th>Record</th><th>Discipline</th><th>Who writes it</th><th>Scribe's relationship</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>Team memory</b> <span class="code">.claude/memory/&lt;type&gt;/*.md</span> + <span class="code">MEMORY.md</span></td><td>checked in, append-only, one index line per entry; frontmatter byte-compatible with user-local auto-memory (AD-3)</td><td><span class="code">scribe capture</span> — the only write path (AD-1)</td><td><b>owns it</b>; imported into every session by root <span class="code">CLAUDE.md</span></td></tr>
+        <tr><td><b>User-local auto-memory</b> <span class="code">~/.claude/projects/&lt;repo&gt;/memory/</span></td><td>per-operator, per-machine; personal preference and working habit stay here</td><td>the operator's own sessions</td><td>foreign input — read for promotion, mutated only to a <span class="code">promoted: true</span> pointer stub after confirmation (AD-2)</td></tr>
+        <tr><td><b>Raw session transcripts</b> <span class="code">~/.claude/projects/&lt;repo&gt;/*.jsonl</span></td><td>everything a session said, including what nobody wrote down</td><td>Claude Code, automatically</td><td>read-only, bounded, deliberate: <span class="code">capture --transcripts</span> proposes; compile cites <span class="code">transcript:</span> provenance</td></tr>
+        <tr><td><b>memlogs</b> <span class="code">.memlog.md</span></td><td>the <span class="code">bmad-spec</span> append-only log beside every Spec; derived artifacts re-render from it</td><td>bmad-spec and downstream skills</td><td>a named compile surface</td></tr>
+        <tr><td><b>Dream realization logs</b> <span class="code">docs/dreams/*.md</span></td><td>dated entries where the aspiration lives — the act that completed, never a projection</td><td>the operator, the stations</td><td>a named compile surface</td></tr>
+        <tr><td><b>git history · retros · CHANGELOGs</b></td><td>commits as decisions of record; Rule 2's lessons landing in the skill after every conda-forge effort</td><td>every contributor</td><td>named compile surfaces, read with bounded timeouts</td></tr>
+      </tbody>
+    </table>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>The team-relevance test.</b> Before anything lands in <span class="code">.claude/memory/</span> it passes one question: <i>would a brand-new contributor to this repo, on their first session, without ever having talked to me, benefit from this rule?</i> Yes — it belongs to the team. No — it stays personal. The layer is additive and selective, never a replacement for user-local memory.</div>
+      <div class="tint"><b>Passive is forbidden; retrospective is not.</b> The Spec's original non-goal read as a blanket veto on mining transcripts. It was amended, not deleted: capture is always a deliberate, authored act; no <span class="code">Stop</span> / <span class="code">SessionEnd</span> / <span class="code">PreCompact</span> hook ever triggers it; chat logs and Slack stay out entirely. A scan an operator runs, read-only against its inputs, that never auto-promotes — that is retrospective, and it is Scribe's.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="The topology — the tools the team already uses in, one graph out" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">03</span>
+      <h2>The topology — the tools the team already uses in, one graph out</h2>
+    </div>
+<p class="lede">Event-sourced capture with a derived, rebuildable read-model. Six named surfaces feed the compile; a storage <b>port</b>, not an engine, receives the nodes; every consumer reads through the CLI or the compiled projection — never the raw log, never a driver's client library.</p>
+<svg viewBox="0 0 1128 720" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- source rail (left) -->
+      <text x="60" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">SURFACES · THE TOOLS THE TEAM ALREADY USES</text>
+      <g>
+        <rect x="60" y="64" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="76" y="90" fill="#201e1d" font-size="15" font-weight="800">.claude/memory/</text>
+        <text x="76" y="110" fill="#605d5d" font-size="10.5">team memory — capture writes it,</text>
+        <text x="76" y="125" fill="#605d5d" font-size="10.5">compile reads it as-is (AD-9)</text>
+
+        <rect x="60" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="180" fill="#201e1d" font-size="15" font-weight="800">.memlog.md files</text>
+        <text x="76" y="200" fill="#605d5d" font-size="10.5">the bmad-spec log beside every Spec,</text>
+        <text x="76" y="215" fill="#605d5d" font-size="10.5">across every BMAD project</text>
+
+        <rect x="60" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="270" fill="#201e1d" font-size="15" font-weight="800">git history</text>
+        <text x="76" y="290" fill="#605d5d" font-size="10.5">commits as decisions of record —</text>
+        <text x="76" y="305" fill="#605d5d" font-size="10.5">a bounded, timeout-guarded log read</text>
+
+        <rect x="60" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="360" fill="#201e1d" font-size="15" font-weight="800">retros · CHANGELOGs</text>
+        <text x="76" y="380" fill="#605d5d" font-size="10.5">Rule 2's lessons; every skill's dated</text>
+        <text x="76" y="395" fill="#605d5d" font-size="10.5">release entry — corrections on the record</text>
+
+        <rect x="60" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="450" fill="#201e1d" font-size="15" font-weight="800">docs/dreams/</text>
+        <text x="76" y="470" fill="#605d5d" font-size="10.5">realization logs — dated entries where</text>
+        <text x="76" y="485" fill="#605d5d" font-size="10.5">each aspiration records what completed</text>
+
+        <rect x="60" y="514" width="250" height="70" fill="#eae7e7" stroke="#9b9797" stroke-width="2" stroke-dasharray="6 4"/>
+        <text x="76" y="540" fill="#201e1d" font-size="15" font-weight="800">raw session transcripts</text>
+        <text x="76" y="560" fill="#605d5d" font-size="10.5">per-user *.jsonl — read-only, capped,</text>
+        <text x="76" y="575" fill="#605d5d" font-size="10.5">cached by mtime, transcript: provenance</text>
+      </g>
+      <!-- spokes into the hub -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr)">
+        <path d="M310 99 C 380 99, 380 300, 430 300"/>
+        <path d="M310 189 C 380 189, 380 310, 430 310"/>
+        <path d="M310 279 C 380 279, 380 320, 430 320"/>
+        <path d="M310 369 C 380 369, 380 335, 430 335"/>
+        <path d="M310 459 C 380 459, 380 350, 430 350"/>
+        <path d="M310 549 C 380 549, 380 365, 430 365" stroke-dasharray="6 4"/>
+      </g>
+      <!-- hub -->
+      <rect x="430" y="200" width="268" height="280" fill="#ec3013"/>
+      <text x="564" y="238" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">PYFORGE SCRIBE</text>
+      <text x="564" y="260" text-anchor="middle" fill="#f3f2f2" font-size="12" font-family="ui-monospace, Menlo, monospace">pyforge.scribe · console script scribe</text>
+      <line x1="452" y1="276" x2="676" y2="276" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="300" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">capture → append-only record (AD-1)</text>
+      <text x="564" y="322" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">compile → full rebuild, one atomic write</text>
+      <text x="564" y="344" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">supersede → invalidate, never delete</text>
+      <text x="564" y="366" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">stale → git-timestamp flag, no LLM</text>
+      <text x="564" y="388" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">recall → cited answer or explicit miss</text>
+      <line x1="452" y1="408" x2="676" y2="408" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="428" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">ZERO NETWORK CALLS BY DEFAULT</text>
+      <text x="564" y="446" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">ONE STORAGE PLUGIN PER RUN</text>
+      <text x="564" y="464" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">THE CLI IS THE CONTRACT</text>
+      <!-- spokes out to consumers -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arrA)">
+        <path d="M698 300 C 760 300, 760 99, 818 99"/>
+        <path d="M698 320 C 760 320, 760 189, 818 189"/>
+        <path d="M698 340 C 760 340, 760 279, 818 279"/>
+        <path d="M698 360 C 760 360, 760 369, 818 369"/>
+        <path d="M698 380 C 760 380, 760 459, 818 459"/>
+        <path d="M698 400 C 760 400, 760 549, 818 549"/>
+      </g>
+      <!-- consumer rail (right) -->
+      <text x="818" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">CONSUMERS · ANSWER FROM THE RECORD</text>
+      <g>
+        <rect x="818" y="64" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="834" y="90" fill="#201e1d" font-size="15" font-weight="800">Every agent session</text>
+        <text x="834" y="110" fill="#605d5d" font-size="10.5">root CLAUDE.md @imports MEMORY.md —</text>
+        <text x="834" y="125" fill="#605d5d" font-size="10.5">the index is in context before prompt one</text>
+
+        <rect x="818" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="180" fill="#201e1d" font-size="15" font-weight="800">The human contributor</text>
+        <text x="834" y="200" fill="#605d5d" font-size="10.5">scribe recall "why did we …" — one cited</text>
+        <text x="834" y="215" fill="#605d5d" font-size="10.5">answer, the same in every worktree</text>
+
+        <rect x="818" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="270" fill="#201e1d" font-size="15" font-weight="800">Marshal — by grammar only</text>
+        <text x="834" y="290" fill="#605d5d" font-size="10.5">derived_context + the scribe_cli adapter;</text>
+        <text x="834" y="305" fill="#605d5d" font-size="10.5">a stale node → its own non-graph path</text>
+
+        <rect x="818" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="360" fill="#201e1d" font-size="15" font-weight="800">The Canopy portal</text>
+        <text x="834" y="380" fill="#605d5d" font-size="10.5">/stations/scribe/ submits one recall</text>
+        <text x="834" y="395" fill="#605d5d" font-size="10.5">through PortalClient — no raw HTTP</text>
+
+        <rect x="818" y="424" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="450" fill="#201e1d" font-size="15" font-weight="800">Herald — the outward voice</text>
+        <text x="834" y="470" fill="#605d5d" font-size="10.5">briefs, decks and this poster's seed are</text>
+        <text x="834" y="485" fill="#605d5d" font-size="10.5">told from what the inward voice kept</text>
+
+        <rect x="818" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="540" fill="#201e1d" font-size="15" font-weight="800">Doctor · Steward</text>
+        <text x="834" y="560" fill="#605d5d" font-size="10.5">incidents of record — the ledger loss, the</text>
+        <text x="834" y="575" fill="#605d5d" font-size="10.5">credential leak — captured, not remembered</text>
+      </g>
+      <!-- port rail -->
+      <rect x="230" y="626" width="668" height="60" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="652" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">GraphStore — a typing.Protocol port, three plugin drivers, exactly one selected per run</text>
+      <text x="564" y="672" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">flat-file (default · scribe) · PostgreSQL + pgvector (steward) · the CAP-19 query plane (atlas) — open_graph_store(owner=…)</text>
+      <line x1="564" y1="480" x2="564" y2="624" stroke="#201e1d" stroke-width="2" marker-end="url(#arr)"/>
+    </svg>
+<div style="font-size:13px; margin-top:12px;" class="muted">Reproducibility is per-machine, not repo-wide, and the module docstring says so: five of the six surfaces are repo artifacts, the transcript surface is a per-user tree outside the repository. Two operators compiling the same commit get the same five-surface core plus whatever transcript nodes their own machine holds — by design; that local-only content is exactly the gap the transcript epic exists to close.</div>
+    </div>
+  </section>
+
+  <section data-label="Four capabilities — the whole contract at a glance" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">04</span>
+      <h2>Four capabilities — the whole contract at a glance</h2>
+    </div>
+<p class="lede">Every capability carries a success criterion written to fail when the capability is absent, and every one carries a <span class="code">verified:</span> line from a mechanical re-verification at a named HEAD — live <span class="code">--help</span> output, live recall against gibberish and against a real topic, a fleet-wide grep for forbidden imports. The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>.</p>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:16px 18px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip">capture · promote</span></div>
+        <div style="font-size:15px; font-weight:800; margin:5px 0 3px;">Capture at the moment, promote with review</div>
+        <div style="font-size:12.5px; line-height:1.5; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">scribe capture --type --text</span> writes <span class="code">.claude/memory/&lt;type&gt;/*.md</span> with frontmatter schema-identical to user-local auto-memory; <span class="code">--promote</span> halts after a structured proposal and writes nothing until explicit confirmation; a promoted entry is rewritten in team voice, its source becomes a <span class="code">promoted: true</span> pointer stub, never deleted; re-invoking skips what is already promoted; nothing is written outside <span class="code">.claude/memory/</span>, Scribe's own paths and the one stub exception.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:16px 18px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-2</span><span class="chip">compile</span></div>
+        <div style="font-size:15px; font-weight:800; margin:5px 0 3px;">Nightly compile from the tools the team already uses</div>
+        <div style="font-size:12.5px; line-height:1.5; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">scribe graph compile --nightly</span> reads the named surfaces — team memory, memlogs, git history, retros, CHANGELOGs, Dreams, transcripts, plus an optional graphify surface gated on <span class="code">SCRIBE_GRAPHIFY_EXTRA</span> — and rebuilds the graph unattended. Every node traces to its source file or commit; a re-run with no new activity yields an unchanged graph; a superseding capture leaves the prior record queryable with ended validity; no prompt, no human present.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:16px 18px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-3</span><span class="chip">recall</span></div>
+        <div style="font-size:15px; font-weight:800; margin:5px 0 3px;">Grounded recall, identical for every caller</div>
+        <div style="font-size:12.5px; line-height:1.5; color:color-mix(in srgb, var(--color-text) 68%, transparent);"><span class="code">scribe recall &lt;query&gt;</span> answers from the compiled graph with at least one citation resolvable to a real file or record, or returns the explicit "no grounded answer found" — never a fabricated or generic answer. Two callers querying the same repo state get the identical answer, because the graph is the single shared source, never per-session state. Verified live: gibberish yields the miss; a real topic yields a resolvable <span class="code">[source: …]</span>.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:16px 18px; background:var(--color-accent-100);">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-4</span><span class="chip ok">the contract</span></div>
+        <div style="font-size:15px; font-weight:800; margin:5px 0 3px;">An installable package whose CLI is the sole public contract</div>
+        <div style="font-size:12.5px; line-height:1.5; color:color-mix(in srgb, var(--color-text) 68%, transparent);">dist <span class="code">pyforge-scribe</span>, module <span class="code">pyforge.scribe</span>, console script <span class="code"><span data-fact="console_entry">scribe</span></span>; <span class="code">capture</span>, <span class="code">graph</span> and <span class="code">recall</span> as the independently invocable top-level commands. Other stations integrate through the CLI or a documented, versioned API — never by importing internals. Verified fleet-wide: the only two hits for an internal import are docstrings in Marshal's adapter and derived-context modules, each explicitly forbidding it.</div>
+      </div>
+    </div>
+<div class="tint" style="margin-top:18px;"><b>Why the Spec's § Why had to be re-grounded before this poster could be.</b> The Spec read <span data-fact="spec_status">shipped</span> while its own prose still described "three of nine stories" and an untouched graph epic — frozen at the day the chain was derived. A reader who trusted the prose drew the opposite conclusion from one who trusted the status. On <span data-fact="dream_log_2026-09-09">2026-09-09</span> the body was rewritten with the superseded wording quoted, the way the Charter asks — and that is the discipline this poster inherits: every number here is a ledger row, re-derived at tree <span data-fact="tree_commit_date">2026-09-15</span>, never remembered from the last time someone looked.</div>
+    </div>
+  </section>
+
+  <section data-label="ACT II" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT II</span>
+      <span class="ttl">The cast</span>
+    </div>
+    <span class="cap">Eight stations outside · three drivers behind the port</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one chronicler" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">05</span>
+      <h2>The Guild — eight stations, one chronicler</h2>
+    </div>
+<p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Scribe holds none of the verdicts and all of the record: every other station's decisions, incidents and retros are captures it keeps and answers from. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one chronicler (cont. 2/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The outward voice to Scribe's inward one: the Claude Design bridge and the deck family, telemetry infographics, weekly updates, omnichannel broadcasts. Owns this poster and the standard it is built to. What Herald proclaims was decided somewhere first — and Scribe is where that somewhere is written down.</p>
+        <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The one owner of execution: turns the Spec into validated code through gated story loops. Scribe's primary <b>machine</b> consumer — its derived-context and planning-graph retrieval reach Scribe through the <span class="code">scribe_cli</span> adapter by grammar only, and fall back to their own non-graph path the moment a node is flagged stale.</p>
+        <div class="verbs code">marshal factory spin · gate evaluate · run · land · deploy</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Maps the Python ecosystem — PyPI and conda-forge — into the cf_atlas graph, Kedro pipelines and the MCP intelligence surface. Owner of the <span class="code">PlaneGraphStore</span> driver: Scribe's graph nodes and their embeddings can live on Atlas's query plane, behind the same port, selected by owner — the plane is Atlas's, the record is Scribe's.</p>
+        <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher · feedstock-health</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Dependency Compliance Gate</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The sole PR-gate verdict — hygiene, security, license, currency over Python, Conda and Pixi manifests. The packaging precedent Scribe's own package copied verbatim: the same <span class="code">hatchling</span> backend, the same lean <span class="code">no-default-feature</span> environment shape. Its lost-and-recovered story specs are the proof that raw transcripts hold what curated memory drops.</p>
+        <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Authors v1 <span class="code">recipe.yaml</span> recipes with rattler-build, resolves lockfiles, ships to conda-forge — wielding <span class="code">conda-forge-expert</span> rather than a skill of its own. Every conda-forge effort ends in a retro that lands its lessons in the skill's CHANGELOG: the oldest Scribe-shaped habit in the repo, and a named compile surface.</p>
+        <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Pre-flight before the run, pulse after the ship, prescriptions with root causes. Its verdicts are advisory and never a second PR gate — and Scribe's graph-freshness check follows the same rule: the age of <span class="code">graph.json</span> is reachable from the detector set as an advisory finding, proof the nightly trigger fired, nothing more.</p>
+        <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
+      </div>
+      <div class="station me">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span> · <span data-fact="scribe_epics_done_total">18/18</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The inward voice. Owns team memory — the shared, version-controlled <span class="code">.claude/memory/</span> layer and the capture and promotion workflow that fills it; the knowledge graph compiled nightly from the tools the team already uses; grounded recall for agents and humans; and the curation surfaces it grows into — the Dreams index, doc hygiene, the three docs skills it wields. The cure for the disease Sentinel diagnosed.</p>
+        <div class="verbs code">scribe capture · capture --promote · capture --transcripts · graph compile · recall · index</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Runs the estate the factory stands on — runners, environments, the Canopy host, credentials, budgets. Owner of the <span class="code">PostgresGraphStore</span> driver and the local PostgreSQL + pgvector cluster Scribe's durable tests need (<span class="code">scribe-pg-up</span>); compiled the first SKF shape of Scribe's skill before Scribe took ownership; carries the semantic-recall outcome as its own story, calling Scribe's verb.</p>
+        <div class="verbs code">steward provision · deploy · keys audit · keys rotate · budget enforce</div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one chronicler (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · steward <span data-fact="steward_epics_done_total">56/58</span></span></div>
+    </div>
+  </section>
+
+  <section data-label="The drivers behind the port — Scribe's team on the floor" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">06</span>
+      <h2>The drivers behind the port — Scribe's team on the floor</h2>
+    </div>
+<p class="lede">Where Marshal has sub-agents, Scribe has a <span class="code">GraphStore</span> port and the drivers registered behind it on the shared <span class="code">pyforge.core.hooks</span> plugin contract. <span class="code">compile.py</span> and <span class="code">recall.py</span> speak only to the port — write as upsert-node and invalidate-edge operations, read as query-by-citation — and no module outside a concrete adapter may import an engine's client library (AD-5). Exactly one driver is selected per run, by owner.</p>
+<table class="tbl">
+      <thead><tr><th>Driver</th><th>Owner</th><th>Where the graph lives</th><th>Selected by</th><th>What it is for</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><span class="code">FlatFileGraphStore</span> · <span class="code">scribe-graphstore-flatfile</span></td><td>scribe</td><td>one deterministic JSON file — <span class="code">.claude/data/pyforge-scribe/graph.json</span>, gitignored, derived, disposable</td><td>the default; no env var, no service</td><td>lexical recall, every session, air-gapped; the v1 engine that won without the spike the spine had planned</td></tr>
+        <tr><td><span class="code">PostgresGraphStore</span> · <span class="code">scribe-graphstore-pg</span></td><td>steward</td><td>pgvector in the schema-isolated <span class="code">scribe_schema</span> of the per-user local cluster, started by <span class="code">scribe-pg-up</span></td><td><span class="code">PYFORGE_GRAPHSTORE_OWNER=steward</span> · DSN via <span class="code">SCRIBE_GRAPH_DSN</span></td><td>the durable store; semantic recall behind the same port; parametrized in CI against a pgvector service so the same operations pass on both drivers</td></tr>
+        <tr><td><span class="code">PlaneGraphStore</span> · <span class="code">scribe-graphstore-plane</span></td><td>atlas</td><td>node snapshot plus HNSW-rankable embeddings on the CAP-19 query plane, <span class="code">atlas.duckdb</span></td><td><span class="code">PYFORGE_GRAPHSTORE_OWNER=atlas</span> · path via <span class="code">QUERY_PLANE_DUCKDB</span></td><td>the plane as primary under the operator's dual-write decision; refuses in-memory DuckDB and Chroma by construction</td></tr>
+        <tr><td><span class="code">extras.graphify</span> · <span class="code">scribe index build | report</span></td><td>scribe</td><td>writes <span class="code">code</span>-kind nodes <b>through the same persist port</b>; report and move list land as derived, gitignored artifacts</td><td>the <span class="code">pyforge-scribe[graphify]</span> extra; invoking the verb is the opt-in</td><td>code-structure ingest and the foundry-cutover move list — never a second graph product, never a <span class="code">graphify-out/</span> dir</td></tr>
+        <tr><td><span class="code">extras.cocoindex_flow</span> · <span class="code">scribe index refresh</span></td><td>scribe</td><td>a fingerprint index beside the derived artifacts</td><td><span class="code">SCRIBE_COCOINDEX_EXTRA</span> truthy; only the standalone <span class="code">memo_fingerprint</span> primitive, never the reactive runtime</td><td>skip-if-unchanged over declared artifacts — the freshness engine, never a store of record; deliberately not hooked into the full-rebuild compile</td></tr>
+      </tbody>
+    </table>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Why exactly one plugin per run, and why dual-write is not "safer".</b> Writing the same graph to two stores would break AD-1's hundred-percent-derived property and give supersession two truths. The port fixes the swap point, not the engine — the spine's KuzuDB lesson, an embedded engine archived after an acquisition, is why no module ever imports a driver directly.</div>
+      <div class="tint"><b>The plugin contract is shared, not Scribe's own.</b> Drivers register on <span class="code">pyforge.core.hooks</span> — the same loader every station's plugins use — and <span class="code">open_graph_store(owner=…)</span> is the one factory. Scribe declares three CAP-18 ports: <span class="code">graph_store</span>, <span class="code">compile_surface</span>, <span class="code">recall_ranker</span>. "Behind GraphStore" means ingest writes nodes <i>through</i> the persist port; the mem0-style <span class="code">recall_ranker</span> extra is deliberately not built.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Persona, grammar and the skills wielded" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">07</span>
+      <h2>Persona, grammar and the skills wielded</h2>
+    </div>
+<p class="lede">Skills are wielded, never worn: the Smith authors and upgrades them, and the harness that governs the agent is deliberately not a skill. Scribe's identity is a persona plus one content skill plus three docs utility skills it is the sole wielder of.</p>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <div class="card"><div class="k">Persona</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-agent-scribe</h3><p>The addressable station persona. Acts only through <span class="code">pyforge scribe …</span> grammar and <span class="code">POST /stations/scribe/mcp</span>; never freelances against the filesystem — no hand edits of <span class="code">.claude/memory/</span> or graph JSON — never makes an ad-hoc HTTP call. Greets, then dispatches.</p></div>
+      <div class="card"><div class="k">Content skill</div><h3 style="font-size:17px; margin:8px 0 4px;">pyforge-scribe (SKF)</h3><p>Compiled from <span class="code">src/shared/packages/pyforge-scribe/</span> as an agentskills.io content skill — quick start, the CLI grammar, key types, the exit codes, the extras' opt-in rules — so an agent reads documented behaviour instead of training data. Consulted, never imported.</p></div>
+      <div class="card"><div class="k">Utility skills wielded</div><h3 style="font-size:17px; margin:8px 0 4px;">the three docs skills</h3><p><span class="code">bmad-os-diataxis</span> for doc structure, <span class="code">bmad-os-audit-file-refs</span> for stale-reference sweeps, <span class="code">bmad-os-editorial-review-translation</span> for translated prose. One wielding station per skill, routed in the persona and the adoption register — never in <span class="code">CLAUDE.md</span>. The first audit pass over <span class="code">docs/reference/</span> landed its findings as a scribe capture.</p></div>
+      <div class="card"><div class="k">Craft it never replaces</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Recipe work belongs to the CFE craft, at skill version <span data-fact="cfe_skill_version">8.90.5</span> with gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span>. Its retro-then-CHANGELOG discipline is a compile surface Scribe reads; Scribe authors no recipe, edits no <span class="code">CLAUDE.md</span> and no <span class="code">AGENTS.md</span> — that wiring stays a human edit (AD-2).</p></div>
+    </div>
+<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-top:16px;">
+      <div class="box"><b>The two doors, and only two.</b> Path B is the unified grammar — <span class="code">pyforge scribe capture …</span>, <span class="code">pyforge scribe recall "why did we pin typer"</span> — dispatched from the repo root, because the CLI resolves <span class="code">.claude/memory/</span> and <span class="code">.claude/data/</span> relative to the working directory; never a hardcoded absolute path, never the bare <span class="code">scribe</span> binary as a second public grammar for personas. The service face is <span class="code">POST /stations/scribe/mcp</span> on the Canopy host, identity tool <span class="code">station_face</span>.</div>
+      <div class="tint"><b>What the persona may never do.</b> No direct filesystem against memory, graph, recipes or source; no <span class="code">curl</span>, <span class="code">requests</span>, <span class="code">httpx</span> or <span class="code">WebFetch</span>; no import of <span class="code">pyforge.scribe</span> internals; no invented answer. A transcript of a completed station task shows only grammar and MCP plus the one permitted skill consult — anything else is a failing contract.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT III" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT III</span>
+      <span class="ttl">Running the line</span>
+    </div>
+    <span class="cap">One decision's journey · the flow · the gradient · the relay</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="One decision's journey — from the moment it is made to the session that asks" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">08</span>
+      <h2>One decision's journey — from the moment it is made to the session that asks</h2>
+    </div>
+<p class="lede">Follow a single decision from a live session through team memory, the nightly compile and back out as a cited answer. Every stage is a module with one job and one invariant; no stage may reach around another.</p>
+<table class="tbl">
+      <thead><tr><th>Stage</th><th>What happens</th><th>Module</th><th>Invariant it must hold</th></tr></thead>
+      <tbody>
+        <tr><td><b>Decide</b></td><td>a tradeoff is settled in a session — a pin loosened, a tool rejected, a runbook written at an unreasonable hour</td><td>the human or the agent</td><td>capture is deliberate: no hook fires it, no session-end sweep infers it</td></tr>
+        <tr class="hi"><td><b>Capture</b></td><td><span class="code">scribe capture --type &lt;feedback|project|reference&gt; --text "…"</span> writes the record verbatim under <span class="code">.claude/memory/&lt;type&gt;/</span> and appends one index line to <span class="code">MEMORY.md</span></td><td><span class="code">capture</span> · <span class="code">models.CaptureRecord</span></td><td>the only mutation path for decisions (AD-1); a slug collision appends a suffix, never overwrites; nothing outside <span class="code">.claude/memory/</span> is touched</td></tr>
+        <tr><td><b>Commit</b></td><td>the entry rides the next commit like any other file — reviewable in a PR, present in every clone</td><td>git</td><td>memory is committed, not personal; the index stays short enough to load whole</td></tr>
+        <tr><td><b>Load</b></td><td>root <span class="code">CLAUDE.md</span> imports <span class="code">@.claude/memory/MEMORY.md</span>, so the index is in every session's context before the first prompt</td><td><span class="code">CLAUDE.md</span> (a human edit)</td><td>the import line stays bare — a backticked path is an inert code span, not an import</td></tr>
+        <tr class="hi"><td><b>Compile</b></td><td>nightly, unattended: <span class="code">store.reset()</span>, every surface re-read from scratch, one <span class="code">GraphNode</span> per source item, one atomic <span class="code">store.commit()</span></td><td><span class="code">compile</span> · <span class="code">graph_store</span></td><td>a FULL rebuild, never a patch; node ids derived from source identity, so unchanged sources yield byte-identical output (AD-1)</td></tr>
+        <tr class="hi"><td><b>Supersede</b></td><td>a later capture naming the earlier record marks its validity ended — bi-temporal, the Graphiti-shaped pattern the domain research pointed at</td><td><span class="code">compile</span> · <span class="code">invalidate_edge</span></td><td>never deleted, never overwritten; the superseded record stays queryable with ended validity, distinguishable from the current one (AD-4)</td></tr>
+        <tr><td><b>Flag</b></td><td>a current node whose citation's source file has a commit after the node's own <span class="code">valid_from</span>, and no <span class="code">supersedes:</span> edge naming it, is marked <span class="code">stale: true</span></td><td><span class="code">compile</span> · <span class="code">GraphNode.stale</span></td><td>a git-timestamp comparison only — no LLM call, no new dependency; recall never serves a stale node</td></tr>
+        <tr class="hi"><td><b>Recall</b></td><td><span class="code">scribe recall "why did we …"</span> — lexical by default, <span class="code">--semantic</span> opt-in, <span class="code">--scope</span> to one project's citation tree</td><td><span class="code">recall</span> · <span class="code">RecallAnswer</span></td><td>the answer carries a resolvable citation or is the explicit miss; <span class="code">grounded=False</span> is a valid result and exits zero (AD-8)</td></tr>
+        <tr><td><b>Prune</b></td><td>when a rule goes obsolete a human removes its index line and archives the entry — standard git review</td><td>the human</td><td>no TTL, no decay, no auto-delete; Scribe may surface a staleness signal at compile time but never removes anything</td></tr>
+      </tbody>
+    </table>
+<div class="box" style="margin-top:18px;"><b>The write-boundary rides every row.</b> The only write Scribe ever performs outside <span class="code">.claude/memory/**</span> and its own package and graph-store paths is the pointer-stub rewrite of a confirmed-promoted user-local entry — gated by explicit confirmation and an idempotent <span class="code">promoted: true</span> check. It must not write to other skills, <span class="code">.claude/scripts/</span>, <span class="code">.mcp.json</span>, <span class="code">recipes/</span>, <span class="code">_bmad/</span>, another project's <span class="code">_bmad-output/</span>, or root <span class="code">CLAUDE.md</span> (AD-2).</div>
+    </div>
+  </section>
+
+  <section data-label="Write path, projection, read path — the way work flows" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">09</span>
+      <h2>Write path, projection, read path — the way work flows</h2>
+    </div>
+<p class="lede">CQRS-lite: three write verbs land records; one projection builder rebuilds the graph from every named surface through the port; one read verb queries the projection only, never the raw log. It is the shape the repo's own memlog discipline already proved — append-only log, derived artifacts re-rendered on demand.</p>
+<svg viewBox="0 0 1128 500" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <!-- write column -->
+      <text x="20" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">WRITE PATH</text>
+      <rect x="20" y="52" width="170" height="64" fill="#ec3013"/><text x="105" y="78" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900" font-family="ui-monospace, Menlo, monospace">capture</text><text x="105" y="98" text-anchor="middle" fill="#ffe0d9" font-size="10">--type … --text … verbatim</text>
+      <rect x="20" y="192" width="170" height="64" fill="#ec3013"/><text x="105" y="218" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900" font-family="ui-monospace, Menlo, monospace">capture --promote</text><text x="105" y="238" text-anchor="middle" fill="#ffe0d9" font-size="10">propose → confirm → team voice</text>
+      <rect x="20" y="332" width="170" height="64" fill="#ec3013"/><text x="105" y="358" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900" font-family="ui-monospace, Menlo, monospace">capture --transcripts</text><text x="105" y="378" text-anchor="middle" fill="#ffe0d9" font-size="10">scan *.jsonl → propose → confirm</text>
+      <!-- record column -->
+      <text x="250" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">THE RECORD</text>
+      <rect x="250" y="52" width="210" height="64" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/><text x="355" y="76" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">.claude/memory/&lt;type&gt;/</text><text x="355" y="94" text-anchor="middle" fill="#605d5d" font-size="10">+ one MEMORY.md index line</text><text x="355" y="108" text-anchor="middle" fill="#605d5d" font-size="10">append-only · committed</text>
+      <rect x="250" y="192" width="210" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="355" y="216" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">memlogs · git · retros</text><text x="355" y="234" text-anchor="middle" fill="#605d5d" font-size="10">CHANGELOGs · docs/dreams/</text><text x="355" y="248" text-anchor="middle" fill="#605d5d" font-size="10">read as-is, never rewritten</text>
+      <rect x="250" y="332" width="210" height="64" fill="#eae7e7" stroke="#9b9797" stroke-width="2" stroke-dasharray="6 4"/><text x="355" y="356" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">user-local memory · transcripts</text><text x="355" y="374" text-anchor="middle" fill="#605d5d" font-size="10">foreign input — read-only, except</text><text x="355" y="388" text-anchor="middle" fill="#605d5d" font-size="10">the confirmed pointer stub (AD-2)</text>
+      <!-- projection -->
+      <text x="520" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">PROJECTION</text>
+      <rect x="520" y="52" width="170" height="344" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="605" y="150" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="900" font-family="ui-monospace, Menlo, monospace">graph compile</text>
+      <text x="605" y="168" text-anchor="middle" fill="#201e1d" font-size="11" font-weight="700">--nightly</text>
+      <text x="605" y="196" text-anchor="middle" fill="#605d5d" font-size="10.5">store.reset()</text>
+      <text x="605" y="212" text-anchor="middle" fill="#605d5d" font-size="10.5">read every surface</text>
+      <text x="605" y="228" text-anchor="middle" fill="#605d5d" font-size="10.5">one GraphNode per item</text>
+      <text x="605" y="244" text-anchor="middle" fill="#605d5d" font-size="10.5">invalidate the superseded</text>
+      <text x="605" y="260" text-anchor="middle" fill="#605d5d" font-size="10.5">flag stale by git timestamp</text>
+      <text x="605" y="276" text-anchor="middle" fill="#605d5d" font-size="10.5">store.commit() — atomic</text>
+      <text x="605" y="304" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">full rebuild, never a patch</text>
+      <text x="605" y="320" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">prompt-free · lock-guarded</text>
+      <text x="605" y="336" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">overlap skips with exit zero</text>
+      <!-- port column -->
+      <text x="750" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">THE PORT</text>
+      <rect x="750" y="52" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="845" y="76" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">FlatFileGraphStore</text><text x="845" y="94" text-anchor="middle" fill="#605d5d" font-size="10">graph.json — the default</text><text x="845" y="108" text-anchor="middle" fill="#605d5d" font-size="10">owner scribe · no service</text>
+      <rect x="750" y="192" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="845" y="216" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">PostgresGraphStore</text><text x="845" y="234" text-anchor="middle" fill="#605d5d" font-size="10">scribe_schema + pgvector</text><text x="845" y="248" text-anchor="middle" fill="#605d5d" font-size="10">owner steward · local cluster</text>
+      <rect x="750" y="332" width="190" height="64" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="845" y="356" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">PlaneGraphStore</text><text x="845" y="374" text-anchor="middle" fill="#605d5d" font-size="10">atlas.duckdb — the query plane</text><text x="845" y="388" text-anchor="middle" fill="#605d5d" font-size="10">owner atlas · HNSW-rankable</text>
+      <!-- read -->
+      <text x="1000" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">READ PATH</text>
+      <rect x="1000" y="52" width="108" height="344" fill="#201e1d"/>
+      <text x="1054" y="160" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900" font-family="ui-monospace, Menlo, monospace">recall</text>
+      <text x="1054" y="184" text-anchor="middle" fill="#bab6b6" font-size="10">lexical default</text>
+      <text x="1054" y="200" text-anchor="middle" fill="#bab6b6" font-size="10">--semantic opt-in</text>
+      <text x="1054" y="216" text-anchor="middle" fill="#bab6b6" font-size="10">--scope &lt;project&gt;</text>
+      <text x="1054" y="248" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">answer +</text>
+      <text x="1054" y="264" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">[source: …]</text>
+      <text x="1054" y="290" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">or "no grounded</text>
+      <text x="1054" y="306" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">answer found"</text>
+      <text x="1054" y="338" text-anchor="middle" fill="#bab6b6" font-size="10">never a stale node</text>
+      <text x="1054" y="354" text-anchor="middle" fill="#bab6b6" font-size="10">never the raw log</text>
+      <!-- arrows -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr2)">
+        <line x1="190" y1="84" x2="248" y2="84"/><line x1="190" y1="224" x2="248" y2="224"/><line x1="190" y1="364" x2="248" y2="364"/>
+        <line x1="460" y1="84" x2="518" y2="84"/><line x1="460" y1="224" x2="518" y2="224"/><line x1="460" y1="364" x2="518" y2="364"/>
+        <line x1="690" y1="84" x2="748" y2="84"/><line x1="690" y1="224" x2="748" y2="224"/><line x1="690" y1="364" x2="748" y2="364"/>
+        <line x1="940" y1="84" x2="998" y2="84"/><line x1="940" y1="224" x2="998" y2="224"/><line x1="940" y1="364" x2="998" y2="364"/>
+      </g>
+      <!-- promote loop-back: the confirmed stub is written back into user-local memory -->
+      <path d="M355 396 C 355 430, 105 430, 105 396" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="6 5" marker-end="url(#arr2)"/>
+      <text x="230" y="446" text-anchor="middle" fill="#ae1800" font-size="10.5" font-weight="700">after confirmation only: the source entry becomes a promoted: true pointer stub</text>
+      <!-- footnote rail -->
+      <text x="20" y="476" fill="#605d5d" font-size="11.5">Exactly one driver is open per run — selected by <tspan font-family="ui-monospace, Menlo, monospace">open_graph_store(owner=…)</tspan> — so the compiled graph stays hundred-percent derived and supersession has one truth (AD-1, AD-5).</text>
+      <text x="20" y="494" fill="#605d5d" font-size="11.5">Zero outbound calls on every path by default; the graphify and cocoindex ingest extras are imported lazily, only inside their adapters, only when explicitly enabled (AD-6).</text>
+    </svg>
+    </div>
+  </section>
+
+  <section data-label="The autonomy gradient — what Scribe may do on its own" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">10</span>
+      <h2>The autonomy gradient — what Scribe may do on its own</h2>
+    </div>
+<p class="lede">Scribe runs unattended where the record is mechanical and stops dead where judgement enters. It appends what it is told, rebuilds the graph nightly without a human present, and flags staleness from timestamps — and every act that changes what the team believes is proposed, then confirmed, by a person.</p>
+<svg viewBox="0 0 1128 300" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker></defs>
+      <!-- gradient rail -->
+      <rect x="40" y="130" width="1048" height="8" fill="#eae7e7"/>
+      <rect x="40" y="130" width="628" height="8" fill="#ec3013"/>
+      <line x1="668" y1="60" x2="668" y2="250" stroke="#201e1d" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="668" y="48" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900" letter-spacing="1">THE LINE SCRIBE NEVER CROSSES</text>
+      <text x="360" y="48" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">SCRIBE ACTS ALONE</text>
+      <text x="940" y="48" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="800" letter-spacing="1.5">A HUMAN DECIDES · SCRIBE PROPOSES</text>
+      <!-- rungs -->
+      <g>
+        <circle cx="90" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="90" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">write</text>
+        <text x="90" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Capture</text><text x="90" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">verbatim, append-only,</text><text x="90" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">exactly what it was told</text>
+
+        <circle cx="290" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="290" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">build</text>
+        <text x="290" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Compile</text><text x="290" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">nightly, prompt-free, from</text><text x="290" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">scratch — derived, disposable</text>
+
+        <circle cx="490" cy="134" r="16" fill="#ec3013" stroke="#ec3013" stroke-width="3"/><text x="490" y="139" text-anchor="middle" fill="#f3f2f2" font-size="9.5" font-weight="900">flag</text>
+        <text x="490" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Flag stale</text><text x="490" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">git timestamps only — a signal,</text><text x="490" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">never a deletion, never an LLM</text>
+
+        <circle cx="740" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="740" y="139" text-anchor="middle" fill="#201e1d" font-size="9.5" font-weight="900">ask</text>
+        <text x="740" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Promote</text><text x="740" y="194" text-anchor="middle" fill="#605d5d" font-size="10">proposal first; nothing written</text><text x="740" y="208" text-anchor="middle" fill="#605d5d" font-size="10">until you confirm</text>
+
+        <circle cx="900" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="900" y="139" text-anchor="middle" fill="#201e1d" font-size="9.5" font-weight="900">ask</text>
+        <text x="900" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Mine transcripts</text><text x="900" y="194" text-anchor="middle" fill="#605d5d" font-size="10">read-only scan; the same</text><text x="900" y="208" text-anchor="middle" fill="#605d5d" font-size="10">propose-then-confirm gate</text>
+
+        <circle cx="1046" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="1046" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">never</text>
+        <text x="1046" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Prune · delete</text><text x="1046" y="194" text-anchor="middle" fill="#605d5d" font-size="10">humans decide, in review;</text><text x="1046" y="208" text-anchor="middle" fill="#605d5d" font-size="10">no TTL, no decay,</text><text x="1046" y="222" text-anchor="middle" fill="#605d5d" font-size="10">no auto-delete</text>
+      </g>
+      <line x1="60" y1="270" x2="640" y2="270" stroke="#ec3013" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="350" y="290" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">mechanical acts run alone; anything that changes what the team believes waits for a person</text>
+    </svg>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;">
+      <div class="rung"><b>Manual-only invocation</b><div>no <span class="code">Stop</span>, <span class="code">SessionEnd</span> or <span class="code">PreCompact</span> hook triggers capture in any wave — every invocation is deliberate, permanently</div></div>
+      <div class="rung"><b>Unattended where it is safe</b><div><span class="code">graph compile --nightly</span> never prompts; a degraded surface prints a warning and is skipped; an overlapping firing takes the lock, skips, exits zero</div></div>
+      <div class="rung"><b>Proposal, then confirmation</b><div>promotion and transcript mining print the full proposal — target path, rewritten content, index line — and write nothing until confirmed; decline exits cleanly with zero files changed</div></div>
+      <div class="rung"><b>Supersede, never delete</b><div>a wrong memory is corrected at the source, on the record: a superseding capture ends the prior record's validity and leaves it queryable — history survives</div></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Phase × persona × skills — where the chronicler stands in the pipeline" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">11</span>
+      <h2>Phase × persona × skills — where the chronicler stands in the pipeline</h2>
+    </div>
+<p class="lede">The Charter's master pipeline flow, read as a rota: which station holds each phase, what Scribe does there, and which skill is wielded. Scribe holds no phase of its own — it stands beside every one, and is the first thing the next phase reads.</p>
+    </div>
+  </section>
+
+  <section data-label="Phase × persona × skills — where the chronicler stands in the pipeline (cont. 2/2)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl">
+      <thead><tr><th>Phase</th><th>Station on the floor</th><th>Scribe's part</th><th>Verb / surface</th><th>Skill wielded</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>Session start</b></td><td>every agent</td><td>the team-memory index is already in context via the <span class="code">CLAUDE.md</span> import; a "did we already decide this?" is one <span class="code">recall</span> away</td><td><span class="code">scribe recall "…"</span></td><td><span class="code">pyforge-scribe</span> (SKF)</td></tr>
+        <tr><td><b>Capture</b></td><td>Herald</td><td>the Dream's dated realization log is a named compile surface; the deck's seed is told from the record</td><td><span class="code">docs/dreams/</span> surface</td><td><span class="code">bmad-agent-herald</span> · deck bridge</td></tr>
+        <tr><td><b>Spec → stories</b></td><td>Marshal · BMAD team</td><td>the <span class="code">bmad-spec</span> memlog beside every Spec is a named compile surface; its open-question closures become answerable</td><td><span class="code">.memlog.md</span> surface</td><td><span class="code">bmad-spec</span> · <span class="code">bmad-create-epics-and-stories</span></td></tr>
+        <tr class="hi"><td><b>Build</b></td><td>Marshal (bmad-loop, bmad-build-auto)</td><td>a decision made mid-story is captured where it happens; Marshal's derived context and planning-graph retrieval call Scribe by grammar and fall back on a stale node</td><td><span class="code">scribe capture</span> · <span class="code">scribe_cli</span> adapter</td><td><span class="code">bmad-build-auto</span> · <span class="code">bmad-review</span></td></tr>
+        <tr><td><b>Map</b></td><td>Atlas</td><td>the plane driver: Scribe's nodes and embeddings may live on Atlas's query plane behind the same port</td><td><span class="code">PlaneGraphStore</span></td><td><span class="code">pyforge-atlas</span> (SKF)</td></tr>
+        <tr><td><b>Audit</b></td><td>Warden</td><td>none in the loop; the one PR verdict stays Warden's, and Scribe mints no second one</td><td>—</td><td><span class="code">pyforge-warden</span> (SKF)</td></tr>
+        <tr><td><b>Ship</b></td><td>Mason</td><td>Rule 2: every conda-forge effort ends in a retro that lands in the skill's CHANGELOG — a compile surface</td><td>retros · CHANGELOGs surface</td><td><span class="code">conda-forge-expert</span></td></tr>
+        <tr><td><b>Post-ship pulse</b></td><td>Doctor</td><td>incidents become captures; the graph-freshness advisory sits in the same detector set as Doctor's sources</td><td><span class="code">scribe-graph-freshness-check</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr class="hi"><td><b>Retrospective</b></td><td>the effort's owner → Scribe</td><td>corrections, refinements and additions land as captures and CHANGELOG entries; a superseding capture retires the wrong rule on the record</td><td><span class="code">scribe capture</span> · supersession</td><td><span class="code">bmad-retrospective</span></td></tr>
+        <tr class="hi"><td><b>The night</b></td><td>Scribe</td><td>the compile fires on the operator machine that holds the three surfaces — the checkout's memory tree, the per-user transcripts, the derived store</td><td><span class="code">pyforge-scribe-nightly-compile</span></td><td><span class="code">pyforge-scribe</span> (SKF)</td></tr>
+        <tr><td><b>Docs upkeep</b></td><td>Scribe</td><td>structure, stale references and translated prose reviewed with the three wielded utility skills; findings land as captures</td><td>the docs skills</td><td><span class="code">bmad-os-diataxis</span> · <span class="code">bmad-os-audit-file-refs</span> · <span class="code">bmad-os-editorial-review-translation</span></td></tr>
+        <tr><td><b>Operate</b></td><td>Steward</td><td>the durable PostgreSQL driver and the local cluster; the semantic-recall outcome owned as Steward's story, calling Scribe's verb</td><td><span class="code">scribe-pg-up</span> · <span class="code">recall --semantic</span></td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="The relay — beside every hand-off, read at every start" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">12</span>
+      <h2>The relay — beside every hand-off, read at every start</h2>
+    </div>
+<p class="lede">The crew hands configurations and assets to one another in sequence, supervised start to finish by Marshal and framed by Herald. Scribe holds no leg of the relay; it runs alongside the whole track, writing down what each runner decided — and the next runner starts by reading it.</p>
+<svg viewBox="0 0 1128 220" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <g>
+        <rect x="8" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="78" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP ONE</text><text x="78" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="78" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deck generate</text>
+        <rect x="170" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="240" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP TWO</text><text x="240" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Marshal</text><text x="240" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+        <rect x="332" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="402" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP THREE</text><text x="402" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Atlas</text><text x="402" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">map</text>
+        <rect x="494" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="564" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP FOUR</text><text x="564" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Warden</text><text x="564" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">audit</text>
+        <rect x="656" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="726" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP FIVE</text><text x="726" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Mason</text><text x="726" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">package</text>
+        <rect x="818" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="888" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP SIX</text><text x="888" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Doctor</text><text x="888" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">monitor --fleet</text>
+        <rect x="980" y="30" width="140" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1050" y="56" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP SEVEN</text><text x="1050" y="76" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="1050" y="92" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">broadcast</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr4)">
+        <line x1="148" y1="65" x2="168" y2="65"/><line x1="310" y1="65" x2="330" y2="65"/><line x1="472" y1="65" x2="492" y2="65"/><line x1="634" y1="65" x2="654" y2="65"/><line x1="796" y1="65" x2="816" y2="65"/><line x1="958" y1="65" x2="978" y2="65"/>
+      </g>
+      <!-- the chronicler's rail -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="5 4">
+        <line x1="78" y1="100" x2="78" y2="148"/><line x1="240" y1="100" x2="240" y2="148"/><line x1="402" y1="100" x2="402" y2="148"/><line x1="564" y1="100" x2="564" y2="148"/><line x1="726" y1="100" x2="726" y2="148"/><line x1="888" y1="100" x2="888" y2="148"/><line x1="1050" y1="100" x2="1050" y2="148"/>
+      </g>
+      <rect x="8" y="150" width="1112" height="50" fill="#ec3013"/>
+      <text x="26" y="171" fill="#f3f2f2" font-size="12" font-weight="900" letter-spacing="1.5">SCRIBE · BESIDE EVERY HAND-OFF</text>
+      <text x="26" y="190" fill="#ffe0d9" font-size="11" font-family="ui-monospace, Menlo, monospace">memlog at spec · capture at decision · retro at close · compile in the night · recall at the next start</text>
+      <text x="1102" y="181" text-anchor="end" fill="#f3f2f2" font-size="11" font-weight="700">what the team knows, every session knows</text>
+      <text x="564" y="216" text-anchor="middle" fill="#605d5d" font-size="11">supervised start to finish by Marshal — each hand-off a durable, revision-pinned artifact; each decision behind it a record Scribe can cite</text>
+    </svg>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-top:8px;">
+      <div>
+        <div class="relaystep"><span class="relaynum">1</span><div><b>Capture · Herald</b> — the raw Dream becomes the strategic vision deck; the Dream's realization log is the first dated record Scribe compiles. <span class="code">herald deck generate</span></div></div>
+        <div class="relaystep"><span class="relaynum">2</span><div><b>Build · Marshal</b> — the factory floor spins code from the Spec contract; the memlog beside the Spec logs every closed question, and a decision made mid-story is captured where it happens. <span class="code">marshal factory spin --method bmad</span></div></div>
+        <div class="relaystep"><span class="relaynum">3</span><div><b>Map · Atlas</b> — the multi-registry dependency map of the generated code; the query plane that can host Scribe's own graph nodes. <span class="code">atlas map --ecosystem dual</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">4</span><div><b>Audit · Warden</b> — the strict multi-axis audit on code and mapped packages; the one PR gate, never seconded. <span class="code">warden audit --axes …</span></div></div>
+      </div>
+      <div>
+        <div class="relaystep"><span class="relaynum">5</span><div><b>Ship · Mason</b> — safe assets bound into platform structures and shipped to conda-forge; the retro afterwards lands its lessons in the skill's CHANGELOG, on the record. <span class="code">mason package --ship conda-forge</span></div></div>
+        <div class="relaystep"><span class="relaynum">6</span><div><b>Pulse · Doctor</b> — fleet and feedstock health monitored post-ship; an incident is a capture, and the graph's own freshness is one of Doctor's advisory findings. <span class="code">doctor monitor --fleet --watch staleness,cve</span></div></div>
+        <div class="relaystep"><span class="relaynum">7</span><div><b>Proclaim · Herald</b> — release telemetry harvested into notables and infographics, told from what the inward voice kept. <span class="code">herald updates compile · herald broadcast</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">∞</span><div><b>The night · Scribe</b> — the compile rebuilds the graph from every surface, unattended; tomorrow's first session starts already knowing what today decided. <span class="code">scribe graph compile --nightly</span></div></div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT IV" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT IV</span>
+      <span class="ttl">The product</span>
+    </div>
+    <span class="cap">The CLI · the doctrine · the stack · which tool when · escalation</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The shipped CLI — three top-level commands, one contract" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">13</span>
+      <h2>The shipped CLI — three top-level commands, one contract</h2>
+    </div>
+<p class="lede">Console script <span class="code"><span data-fact="console_entry">scribe</span></span>, package <span class="code">pyforge-scribe</span> <span data-fact="package_version">0.1.0</span>, run from the repo root through the unified grammar <span class="code">pyforge scribe …</span>. <span class="code">capture</span>, <span class="code">graph</span> and <span class="code">recall</span> are the Spec's three independently invocable commands and its sole public contract; the <span class="code">index</span> group carries the two ingest extras' explicit verbs. <span class="code">--version</span> is top-level only. Subcommand additions are MINOR; a breaking flag or output change is MAJOR.</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · the write path</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">scribe capture</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">--type &lt;feedback|project|reference&gt;<br>--text "&lt;raw text&gt;"</div><p>Appends a new record under <span class="code">.claude/memory/&lt;type&gt;/</span> — verbatim, no team-voice rewrite, no <span class="code">Why:</span> structuring; direct capture is deliberately fast — and one index line to <span class="code">MEMORY.md</span>. Prints <span class="code">captured: &lt;path&gt;</span>. The type taxonomy is closed at three: a fourth would break byte-identical parity with user-local auto-memory (AD-3).</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · the promotion boundary</div><h3 style="font-size:18px; margin:8px 0 6px; white-space:nowrap;" class="code">scribe capture --promote</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">[--source PATH]</div><p>Scans the auto-detected user-local memory directory, classifies each entry — team-relevant · personal · already-promoted · stale — mechanically rewrites the team-relevant ones into team voice (no LLM, no network: first-person framing stripped, bare-hash asides dropped), prints the full proposal and writes nothing until you confirm. On confirmation the source becomes a <span class="code">promoted: true</span> pointer stub; re-running skips it.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">verb · one layer deeper</div><h3 style="font-size:18px; margin:8px 0 6px; white-space:nowrap;" class="code">scribe capture --transcripts</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">[--source PATH]</div><p>Mines the raw <span class="code">*.jsonl</span> session transcripts for un-curated decision and fact sentences — what a session said but nobody wrote down — and routes every candidate through the same proposal-then-confirm gate, with the session cited. Mutually exclusive with <span class="code">--promote</span> and with <span class="code">--type</span>/<span class="code">--text</span>; the conflict exits two.</p></div>
+      <div class="card"><div class="k">verb · the projection</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">scribe graph compile</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">[--nightly]</div><p>Full rebuild of the compiled graph from every named surface, through the port. Never prompts; a degraded surface warns and is skipped; a missing <span class="code">.claude/memory/</span> — the wrong directory — exits two. Prints <span class="code">compiled N node(s), N invalidated, N stale -&gt; &lt;store&gt;</span>. <span class="code">--nightly</span> changes no behaviour; it exists so the trigger and its logs read plainly.</p></div>
+      <div class="card"><div class="k">verb · the read path</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">scribe recall</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">&lt;query&gt; [--semantic] [--scope &lt;project&gt;]</div><p>Prints the answer plus <span class="code">[source: …]</span> when grounded, else exactly <span class="code">no grounded answer found</span> — exit zero either way; only an unreadable store is an error. Lexical token overlap by default; <span class="code">--semantic</span> is opt-in and honest about what it is; <span class="code">--scope</span> restricts candidates to one project's citation tree, because token overlap alone has no notion of project.</p></div>
+      <div class="card"><div class="k">verb group · the ingest extras</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">scribe index</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">build | report | move-list | refresh<br>[--target PATH]</div><p><span class="code">build</span> ingests a folder through graphifyy and writes code-kind nodes through the same persist port; <span class="code">report</span> writes a GRAPH_REPORT-style summary with God-node findings; <span class="code">move-list</span> scans the foundry-cutover signals and needs no extra at all; <span class="code">refresh</span> recomputes only what changed when the cocoindex extra is on. Missing extras exit two with a plain message.</p></div>
+    </div>
+<div class="box" style="margin-top:16px;"><b>The outputs are the contract, not the modules.</b> Consumers bind to the CLI's exit codes and its printed lines — <span class="code">captured: …</span>, <span class="code">compiled … -&gt; …</span>, <span class="code">[source: …]</span>, <span class="code">no grounded answer found</span>, <span class="code">refreshed: …; skipped (unchanged): …</span> — never to <span class="code">pyforge.scribe.*</span> internals. The package's public <span class="code">__init__.py</span> exports only its version; the eight public exports the SKF skill documents are all <span class="code">cli.py</span>'s own command functions, plus <span class="code">main</span>.</div>
+    </div>
+  </section>
+
+  <section data-label="The stack — lean by doctrine" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">15</span>
+      <h2>The stack — lean by doctrine</h2>
+    </div>
+<p class="lede">A dedicated lean package in the parent pixi workspace, adopted verbatim from Warden's shape — the only precedent in the repo for a <span class="code">pyforge-*</span> workspace member: <span class="code">no-default-feature</span>, so the <span class="code">pyforge-scribe</span> environment carries only the built package, its runtime dependencies and a test runner. Nothing listens on a port by default; there is no daemon in either wave.</p>
+    </div>
+  </section>
+
+  <section data-label="The stack — lean by doctrine (cont. 2/2)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl">
+      <thead><tr><th>Layer</th><th>Component</th><th>Why it is there</th><th>Pinned where</th></tr></thead>
+      <tbody>
+        <tr><td><b>Language</b></td><td>Python — the workspace's single supported interpreter</td><td>the floor raised fleet-wide by the consistency standard; no environment ever exercised an older one</td><td><span class="code">pyproject.toml</span> <span class="code">requires-python</span> · <span class="code">pixi.toml</span></td></tr>
+        <tr><td><b>CLI</b></td><td><span class="code">typer</span></td><td>the command surface — <span class="code">app</span>, <span class="code">graph_app</span>, <span class="code">index_app</span> — matching the deckcraft precedent; its parser is not argparse-literal, which is why this poster names the verbs in prose rather than counting them</td><td>package run-dep</td></tr>
+        <tr><td><b>Models</b></td><td><span class="code">pydantic</span> · <span class="code">pyforge-core</span></td><td><span class="code">CaptureRecord</span> isolates the exact frontmatter shape in one place; <span class="code">GraphNode</span> carries id, kind, citation, validity, <span class="code">stale</span>; <span class="code">pyforge-core</span> supplies the <span class="code">hooks</span> plugin contract the drivers register on</td><td>package run-deps</td></tr>
+        <tr class="hi"><td><b>The port and its drivers</b></td><td><span class="code">GraphStore</span> Protocol · <span class="code">psycopg</span> (extra <span class="code">postgres</span>) · DuckDB via the query plane</td><td>flat-file needs nothing; the PostgreSQL driver is an optional extra and the local pgvector cluster is a separate pixi feature; the plane driver rides Atlas's own DuckDB — engine clients imported only inside their adapters</td><td><span class="code">[project.optional-dependencies]</span> · <span class="code">[feature.scribe-pg]</span> · entry points under <span class="code">pyforge.core.hooks</span></td></tr>
+        <tr><td><b>Ingest extras</b></td><td><span class="code">graphifyy</span> (extra <span class="code">graphify</span>) · <span class="code">cocoindex</span> (extra <span class="code">cocoindex</span>)</td><td>imported lazily, only inside <span class="code">pyforge.scribe.extras</span>, only when enabled; cocoindex contributes one standalone fingerprint primitive and never its reactive runtime</td><td><span class="code">[project.optional-dependencies]</span> · <span class="code">SCRIBE_GRAPHIFY_EXTRA</span> · <span class="code">SCRIBE_COCOINDEX_EXTRA</span></td></tr>
+        <tr><td><b>The trigger</b></td><td><span class="code">python-crontab</span> · systemd-user unit templates · apscheduler · supercronic</td><td>the checked-in nightly trigger, installed by one repeatable task with a pluggable backend — crontab by default, because it survives full logout with no linger step</td><td><span class="code">scribe-install-nightly-trigger</span> · <span class="code">ops/systemd/</span> · <span class="code">PYFORGE_SCRIBE_TRIGGER_BACKEND</span></td></tr>
+        <tr><td><b>Build</b></td><td>hatchling · pixi-build-python</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-scribe-build</span> task — Warden's precedent, followed exactly</td><td><span class="code">pixi.toml</span> tasks</td></tr>
+        <tr><td><b>Tests</b></td><td>pytest · unit, meta, fixtures</td><td>meta-tests pin the doctrine: the SKF skill's ownership, the persona's grammar-only contract, the portal's PortalClient-only rule; the conftest parametrizes the graph operations over both the flat-file and PostgreSQL drivers with no skip-green; a coverage gate ratchets upward only</td><td><span class="code">pyforge-scribe-test</span> · <span class="code">pyforge-scribe-test-coverage</span> · <span class="code">scribe-pg-up</span></td></tr>
+        <tr><td><b>The factory it remembers for</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="groundtruth_skill_version">8.90.5</span></td><td>the memlog discipline Scribe formalizes is <span class="code">bmad-spec</span>'s; the retro-then-CHANGELOG discipline it compiles is the CFE skill's</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter</td></tr>
+        <tr><td><b>The estate it serves</b></td><td><span data-fact="groundtruth_pixi_envs">31</span> pixi environments · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="recipes_count">7864</span> recipes</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports — the surfaces a newcomer's first session has to reconcile, and the reason the index is loaded before the first prompt</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Which tool, when" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">16</span>
+      <h2>Which tool, when</h2>
+    </div>
+<p class="lede">The estate has several memory-shaped surfaces. They are not rivals; each holds a different kind of knowledge, and Scribe's verbs sit at the seams between them.</p>
+<table class="tbl">
+      <thead><tr><th>You want to…</th><th>Run / read</th><th>What comes back</th><th>Whose record</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>record a decision the moment it is made, for the whole team</td><td><span class="code">pyforge scribe capture --type feedback --text "…"</span></td><td><span class="code">captured: .claude/memory/feedback/&lt;slug&gt;.md</span>; one index line appended</td><td>team memory — committed with the code</td></tr>
+        <tr><td>keep a personal preference or working habit</td><td>user-local auto-memory, as today</td><td>a per-user, per-machine entry nobody else sees</td><td>yours — Scribe reads it only to propose a promotion</td></tr>
+        <tr class="hi"><td>move what you learned into team memory, safely</td><td><span class="code">pyforge scribe capture --promote</span></td><td>a classified proposal in team voice; nothing written until confirmed; the source becomes a pointer stub</td><td>team memory, with the personal entry redirected, never deleted</td></tr>
+        <tr class="hi"><td>find what a session said but nobody wrote down</td><td><span class="code">pyforge scribe capture --transcripts</span></td><td>candidate decisions from the raw transcripts, session-cited, through the same confirm gate</td><td>team memory, with <span class="code">transcript:</span> provenance</td></tr>
+        <tr><td>close an open question on a Spec, on the record</td><td>the Spec's <span class="code">.memlog.md</span> via <span class="code">bmad-spec</span></td><td>an appended, dated memlog entry; derived artifacts re-render from it</td><td>the Spec's — a named compile surface</td></tr>
+        <tr><td>record what an effort taught the conda-forge craft</td><td><span class="code">bmad-retrospective</span> → the CFE skill's CHANGELOG (Rule 2)</td><td>a dated skill version entry, one line per finding</td><td>the skill's — a named compile surface</td></tr>
+        <tr><td>record that an aspiration reached a state</td><td>the Dream's Realization log in <span class="code">docs/dreams/</span></td><td>a dated entry naming the act that completed</td><td>the Dream's — a named compile surface</td></tr>
+        <tr class="hi"><td>ask "why did we …" and get one cited answer</td><td><span class="code">pyforge scribe recall "why did we drop Kùzu?"</span></td><td>the answer plus <span class="code">[source: …]</span>, or <span class="code">no grounded answer found</span> — identical for every caller</td><td>the compiled graph — derived, never a second source of truth</td></tr>
+        <tr><td>know whether the graph is fresh enough to trust</td><td><span class="code">pixi run -e local-recipes scribe-graph-freshness-check</span></td><td>an advisory age report on <span class="code">graph.json</span>; missing means the trigger never fired here</td><td>Scribe's — advisory, never a PR gate</td></tr>
+        <tr><td>retire a rule that is no longer true</td><td>a superseding capture, or edit <span class="code">MEMORY.md</span> and archive the entry in git review</td><td>the prior record's validity ended in the graph; nothing deleted</td><td>the human's decision, Scribe's record of it</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Escalation and the ledger — how a memory stays true" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">17</span>
+      <h2>Escalation and the ledger — how a memory stays true</h2>
+    </div>
+<p class="lede">A memory nobody can correct is a liability. Scribe's records travel a fixed route from a session to the durable index and back through review, and every hop that changes what the team believes is owned by a person — which is the point.</p>
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="kicker">1 · capture</div><div style="font-size:15px; font-weight:800; margin:6px 0;">the entry file</div><div style="font-size:12.5px; line-height:1.45;">verbatim under <span class="code">.claude/memory/&lt;type&gt;/</span>, frontmatter in the live auto-memory shape, one <span class="code">MEMORY.md</span> line — reviewable in the PR that carries it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">2 · index</div><div style="font-size:15px; font-weight:800; margin:6px 0;"><span class="code">MEMORY.md</span></div><div style="font-size:12.5px; line-height:1.45;">the checked-in index every session imports; kept short enough to load whole, pruned under standard git review rather than left to grow unbounded.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">3 · compile</div><div style="font-size:15px; font-weight:800; margin:6px 0;">the graph</div><div style="font-size:12.5px; line-height:1.45;">nightly, from every surface; a node whose source moved with no supersession is flagged stale, and recall refuses to serve it.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">4 · supersede</div><div style="font-size:15px; font-weight:800; margin:6px 0;">the correction</div><div style="font-size:12.5px; line-height:1.45;">a later capture names the wrong record; its validity ends in the graph and it stays queryable — corrected at the source, visibly, on the record.</div></div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);"><div class="kicker">5 · prune</div><div style="font-size:15px; font-weight:800; margin:6px 0;">a human's hands</div><div style="font-size:12.5px; line-height:1.45;">obsolete rules leave by an edit to the index and an archived file, in git — no TTL, no decay, no tooling required, and never Scribe's own decision.</div></div>
+    </div>
+<div style="display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-top:22px;">
+      <div>
+        <div class="kicker" style="margin-bottom:8px;">Exit codes — a small, honest domain</div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>Surface</th><th>Code</th><th>Means</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="2"><span class="code">scribe</span> CLI<br><span class="muted" style="font-size:12px;">every verb</span></td><td><span class="code">0</span></td><td>success — including a recall that found no grounded answer, a declined promotion with zero files changed, and a compile that skipped because another already held the lock</td></tr>
+            <tr><td><span class="code">2</span></td><td>a usage or environment fault — conflicting capture flags, a missing <span class="code">.claude/memory/</span> (the wrong working directory), or an ingest extra invoked without its package installed</td></tr>
+            <tr class="hi"><td rowspan="2">the nightly trigger<br><span class="muted" style="font-size:12px;">scripts/scribe_nightly_trigger.py</span></td><td><span class="code">0</span></td><td>the compile ran, or was skipped cleanly — an overlapping firing, or a PostgreSQL driver whose local cluster this machine cannot confirm live; never a red scheduled run for a store it could not check</td></tr>
+            <tr class="hi"><td>compile's own</td><td>otherwise the compile's exit code, propagated unchanged</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tint" style="display:flex; flex-direction:column; justify-content:center;"><div><b>Why "no grounded answer found" is a success.</b> An honest miss is the product working: the alternative — a plausible, uncited paragraph — is the failure mode the whole station exists to prevent. So the miss exits zero, prints the same fixed sentence every time, and a test asserts both the blank query and the nonsense query produce it.<br><br><b>And why the freshness check is advisory.</b> The age of <span class="code">graph.json</span> proves whether the nightly trigger fired on this machine, nothing more. It is reachable from the detector set, excluded from the CI subset because a runner never holds the store, and never a PR gate — Warden's is the only one.</div></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT V" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT V</span>
+      <span class="ttl">Who it serves, where it runs</span>
+    </div>
+    <span class="cap">Value by leader · air-gap · the seams</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="What each leader gets" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">18</span>
+      <h2>What each leader gets</h2>
+    </div>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card"><div class="k">The new contributor, day one</div><p>A first session that already knows the team's rules — the index is in context before the first prompt, every entry passes the "would a newcomer benefit?" test, and "did we already decide this?" is one <span class="code">recall</span> away with a citation you can open. No archaeology, no asking the one person who remembers.</p></div>
+      <div class="card"><div class="k">The operator running many agents</div><p>Parallel worktrees that agree: the compiled graph is the single shared source, so two agents asking the same question get the identical cited answer, and a decision one of them made mid-story is on the record before the other starts. A correction is a superseding capture, not a hunt through private memories.</p></div>
+      <div class="card"><div class="k">Marshal — the machine consumer</div><p>Planning context retrieved by grammar, never by import, with a hard rule on staleness: a node whose source moved since compile arrives flagged, and the retrieval falls back to its own non-graph path rather than serving it. The derived-context adapter binds to printed lines and exit codes that are versioned.</p></div>
+      <div class="card"><div class="k">The security and compliance lead</div><p>Zero outbound calls on every default path — capture, compile, recall — verifiable with the network blocked; transcripts read but never raw-dumped into team memory; the one write outside Scribe's own paths gated by explicit confirmation. A memory layer that can be audited in a PR because it lives in one.</p></div>
+      <div class="card"><div class="k">The Spec author and the retro owner</div><p>The memlog and the CHANGELOG are already compile surfaces, so a closed question or a landed lesson is answerable the next morning without any extra step. When prose and status disagree — as this station's own Spec once did — the superseded wording is quoted, not erased, and the record shows both.</p></div>
+      <div class="card"><div class="k">The executive reader</div><p>A station whose Dream reads <span data-fact="dream_status">realized</span> and whose tracked ledger reads <span data-fact="stories_done_total">35/35</span> stories and <span data-fact="epics_done_total">18/18</span> epics — with the honest gap that was recorded rather than papered over: a compile that was unattended-safe but unscheduled, until the trigger the estate owns was checked in and made installable by one command.</p></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Enterprise and air-gap — a chronicler that phones no one" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">19</span>
+      <h2>Enterprise and air-gap — a chronicler that phones no one</h2>
+    </div>
+<p class="lede">Air-gap is not a deployment mode Scribe supports; it is the construction. The default configuration performs zero outbound network calls for capture, compile and recall, and the two research reports behind the Spec single that out as the station's primary durable differentiator — git-native, capture-as-you-decide, repo-scoped — over any retrieval benchmark.</p>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+      <div class="box"><b>Everything it reads is operator-local.</b> The checked-in <span class="code">.claude/memory/</span> of <i>this</i> checkout, <i>this</i> operator's per-user session transcripts, and the gitignored derived store under <span class="code">.claude/data/pyforge-scribe/</span>. Nothing leaves the machine; nothing is fetched. Team memory reaches teammates the way code does — through git.</div>
+      <div class="box"><b>Why the nightly compile is never a GitHub Actions workflow.</b> A hosted runner has none of the three surfaces — it checks out a fresh, transcript-free clone and throws it away — so a scheduled workflow would faithfully compile an empty machine every night and prove nothing. The trigger is checked in and installed on the machine that holds the surfaces; this is a hard boundary, recorded so the next pass does not re-propose the alternative.</div>
+      <div class="box"><b>Bounded on the unattended path.</b> The transcript surface is per-user and unbounded in principle, so three bounds apply on every compile: a file-count cap and a byte budget allocated newest-first, a per-file timeout that keeps partial results with a warning, and an mtime-keyed scan cache so unchanged files are not re-read. A capped scan says how many files it skipped.</div>
+      <div class="box"><b>The durable driver is opt-in, and refuses cleanly.</b> The flat-file default needs no service. Pointing a scheduled run at the PostgreSQL driver needs the local cluster up; the trigger starts it with the same idempotent command an operator runs by hand, and if that fails for any reason it prints why and exits zero rather than reporting a red run for a store it could not confirm. The owner setting is baked into the installed trigger, because scheduled runs inherit no interactive shell.</div>
+    </div>
+<div class="tint" style="margin-top:16px;"><b>The transcript constraint, written as a rule.</b> Provenance matters more here, not less: a fact recovered from a raw transcript cites which session it came from, the same way a committed source cites its file or commit. Raw content is never dumped into team memory — the same curation discipline the promote path already has applies one layer deeper, so the fix for "things discussed but never written down" cannot become a bigger, noisier version of the problem it solves.</div>
+    </div>
+  </section>
+
+  <section data-label="Integration seams — every edge, and its direction" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">20</span>
+      <h2>Integration seams — every edge, and its direction</h2>
+    </div>
+<p class="lede">Scribe's boundaries are enforced by meta-tests and by the plugin contract, not by convention. Each seam below has a stated direction and a check that fails when the direction is violated.</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card"><div class="k">CLAUDE.md → scribe (a human edit)</div><p>Root <span class="code">CLAUDE.md</span> imports <span class="code">@.claude/memory/MEMORY.md</span> so the index loads in every session. That wiring — and any de-duplication of the BMAD ↔ CFE sections — stays a human-driven edit; Scribe must not write to <span class="code">CLAUDE.md</span>, <span class="code">.claude/skills/</span> beyond its own, <span class="code">.claude/scripts/</span> or <span class="code">.mcp.json</span> (AD-2).</p></div>
+      <div class="card"><div class="k">marshal → scribe (grammar only)</div><p><span class="code">core/derived_context.py</span> and <span class="code">adapters/scribe_cli.py</span> call the CLI; their docstrings are the only fleet-wide hits for the internal import — and each forbids it. A retrieval that resolves to a <span class="code">stale: true</span> node falls back to Marshal's own non-graph path; token-economy layers consume <span class="code">scribe index …</span> by grammar.</p></div>
+      <div class="card"><div class="k">steward → scribe (a driver, a cluster, a story)</div><p><span class="code">PostgresGraphStore</span> is owned by Steward and registers as a second plugin, not a fork; the per-user pgvector cluster the durable tests need starts with <span class="code">scribe-pg-up</span>. The semantic-recall outcome is Steward's story calling Scribe's verb — the Charter's rule that the outcome's owner writes the story and the mechanism's owner owns the verb.</p></div>
+      <div class="card"><div class="k">atlas → scribe (the plane driver)</div><p><span class="code">PlaneGraphStore</span> puts the node snapshot and HNSW-rankable embeddings on the CAP-19 query plane, owner <span class="code">atlas</span>, refusing in-memory DuckDB and Chroma by construction. Under the operator's dual-write decision the plane is primary and <span class="code">scribe_schema</span> stays the safety net; retiring it is a future explicit decision, never an implication.</p></div>
+      <div class="card"><div class="k">scribe ← pyforge-core (the plugin contract)</div><p>All three drivers register on the shared <span class="code">pyforge.core.hooks</span> contract — the same loader every station's plugins use — under <span class="code">scribe-graphstore-flatfile</span>, <span class="code">-pg</span> and <span class="code">-plane</span>; <span class="code">open_graph_store(owner=…)</span> is the one factory, and exactly one driver is open per run.</p></div>
+      <div class="card"><div class="k">The Canopy → scribe</div><p><span class="code">pyforge scribe …</span> is the unified grammar; <span class="code">POST /stations/scribe/mcp</span> the service face, identity tool <span class="code">station_face</span>. The <span class="code">/stations/scribe/</span> portal's first job submits one recall and renders its cited result through the host's PortalClient only — no raw HTTP, no <span class="code">pyforge.*</span> under <span class="code">src/platform/</span>, asserted by a meta-test.</p></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT VI" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT VI</span>
+      <span class="ttl">Proof and road</span>
+    </div>
+    <span class="cap">Receipts · the seed · now, next, later</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">21</span>
+      <h2>Proof — the receipts, from the ledgers</h2>
+    </div>
+<p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the Dream and the manifests at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The poster this replaces was a stub that quoted counts with no source at all.</p>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">35/35</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">18/18</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from team memory to the compile that runs on a schedule the estate owns</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">4</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a mechanical <span class="code">verified:</span> PASS at a named HEAD; Spec <span data-fact="spec_status">shipped</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — the act that completed, not a promise</div></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers (cont. 2/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl">
+      <thead><tr><th>Capability</th><th>What was proven, mechanically</th><th>Pinned by</th></tr></thead>
+      <tbody>
+        <tr><td><b>CAP-1</b> capture · promote</td><td>live <span class="code">scribe capture --help</span> shows <span class="code">--type {feedback,project,reference}</span>, <span class="code">--text</span> and <span class="code">--promote</span>; the promotion path halts on a structured proposal and writes nothing until confirmed; a re-run skips the already-promoted stub</td><td><span class="code">test_capture.py</span> · <span class="code">test_promote.py</span> · <span class="code">test_cli.py</span></td></tr>
+        <tr><td><b>CAP-2</b> compile</td><td><span class="code">compile.py</span> enumerates the named surfaces plus the gated graphify surface; idempotency and supersession are covered in the green suite; a grep of <span class="code">compile.py</span> finds no <span class="code">input()</span> or prompt call — consistent with unattended operation</td><td><span class="code">test_compile.py</span> · <span class="code">test_supersession.py</span> · <span class="code">test_transcripts.py</span></td></tr>
+        <tr class="hi"><td><b>CAP-3</b> recall</td><td>live <span class="code">scribe recall</span> against real gibberish returns exactly <span class="code">no grounded answer found</span>; against a real topic it returns a resolvable <span class="code">[source: …/.memlog.md]</span> citation, not a generic answer; the blank query is the miss too</td><td><span class="code">test_recall.py::test_no_coverage_returns_explicit_no_grounded_answer</span> · <span class="code">test_blank_query_returns_no_grounded_answer</span></td></tr>
+        <tr><td><b>CAP-4</b> the contract</td><td><span class="code">scribe --help</span> lists <span class="code">capture</span>, <span class="code">graph</span> and <span class="code">recall</span> at the top level; the only two fleet-wide hits for an internal import are docstring prose in Marshal forbidding it — AD-7 holds</td><td><span class="code">test_cli.py</span> · the fleet-wide grep in the Spec's own <span class="code">verified:</span> line</td></tr>
+        <tr><td><b>the port</b> AD-5</td><td><span class="code">GraphStore</span> is a <span class="code">typing.Protocol</span>; three concrete drivers sit behind it, selected at runtime by <span class="code">open_graph_store(owner=…)</span>; the same graph operations pass against both the flat-file and PostgreSQL drivers, parametrized in the conftest with no skip-green</td><td><span class="code">test_graph_store.py</span> · <span class="code">test_graph_store_pg.py</span> · <span class="code">test_graph_store_plane.py</span> · <span class="code">test_graph_store_plugins.py</span></td></tr>
+        <tr><td><b>the persona and the portal</b></td><td>the SKF skill is owned with scribe provenance; the persona uses only grammar and MCP; the portal slice submits one recall through PortalClient with no raw HTTP and no <span class="code">pyforge.*</span> under <span class="code">src/platform/</span></td><td><span class="code">tests/meta/test_skf_skill_ownership.py</span> · <span class="code">test_station_persona.py</span> · <span class="code">test_first_portal_slice.py</span></td></tr>
+        <tr class="hi"><td><b>in effect</b> Epic 8</td><td>the nightly trigger is a checked-in definition installed by one repeatable task with a pluggable backend; the graph-freshness advisory is reachable from the detector set; the reasoning for "never a GitHub Actions workflow" is recorded in the runbook's scope note</td><td><span class="code">scripts/scribe_install_nightly_trigger.py</span> · <span class="code">scripts/scribe_graph_freshness_check.py</span> · <span class="code">docs/cli-runbooks.md</span></td></tr>
+      </tbody>
+    </table>
+<div class="kicker" style="margin:26px 0 8px;">The fleet the chronicler keeps the record for — stories and epics done, per tracked ledger</div>
+<table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><b><span data-fact="scribe_stories_done_total">35/35</span></b></td><td><span data-fact="steward_stories_done_total">231/244</span></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><b><span data-fact="scribe_epics_done_total">18/18</span></b></td><td><span data-fact="steward_epics_done_total">56/58</span></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="box" style="margin-top:18px;"><b>The proof that the raw signal is real.</b> Before the transcript surface existed, thirteen of Warden's story specs were lost to a worktree teardown and recovered verbatim from Claude Code session transcripts — by hand, once, never generalized. That recovery is why the repo's own convention names transcripts as the highest-fidelity recovery source, and why <span class="code">capture --transcripts</span> and the transcript compile surface exist: the mechanism was proven before it was built. Scribe's own ledger shows the same discipline turned inward — <span data-fact="stories_done_total">35/35</span> is a count of tracked <span class="code">done</span> keys, not a claim.</div>
+    </div>
+  </section>
+
+  <section data-label="The seed — Dream to shipped station, dated" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">22</span>
+      <h2>The seed — Dream to shipped station, dated</h2>
+    </div>
+<p class="lede">Every claim below has a dated entry in the Dream's realization log. The dates are the log's own; nothing here is projected.</p>
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-23">2026-07-23</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Dreamt</div>
+        <div style="font-size:12px; line-height:1.45;">Seeded when the crew grew from six to eight — Scribe and Steward adopted the day an ownership audit found the knowledge station unowned; the exact disease Sentinel had diagnosed.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-25">2026-07-25</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Specified</div>
+        <div style="font-size:12px; line-height:1.45;"><span class="code">spec-pyforge-scribe</span> derived — <span data-fact="spec_capabilities">CAP-1..4</span>, the nine ADs, the CQRS-lite spine, two vertical-slice epics; the legacy <span class="code">claude-team-memory</span> intake superseded into this chain the same day.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-08-08">2026-08-08</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Realized</div>
+        <div style="font-size:12px; line-height:1.45;">Status flipped to <span data-fact="dream_status">realized</span> in the stale-status hygiene pass: capture, compile and recall all executing; the team-memory Dream consolidated into this one rather than left as a second live contract for the same surface.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-09-09">2026-09-09</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Re-grounded, honestly</div>
+        <div style="font-size:12px; line-height:1.45;">The fleet readiness pass rewrote a body frozen at "three of nine" with the superseded wording quoted; two honest gaps recorded — no scheduled compile, and a "semantic" recall that was a hash over a synonym map — and vessels named: Epic 8 here, a Steward story for the other. The transcripts satellite reached <span data-fact="dream_status">realized</span> the same day.</div>
+      </div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">In effect · re-derived</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">18/18</span> epics with the trigger the estate owns checked in — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+      </div>
+    </div>
+<div class="box" style="margin-top:22px;"><b>Why this is a consolidation, not an invention — and why that mattered for the record.</b> Scribe did not start from a blank page. It formalized the <span class="code">bmad-spec</span> memlog discipline, the personal auto-memory pipeline and its retro habit, and fully absorbed the validated-but-unstarted legacy team-memory spec as its first wave. The team-memory Dream's own three capabilities — memory is committed not personal, recall is scoped not a dump, entries carry provenance — were mapped onto CAP-1 and AD-1, CAP-3, and CAP-2 capability by capability rather than assumed, and no new capability resulted. The retirement record says so; the Dream you can read today is the real record.</div>
+    </div>
+  </section>
+
+  <section data-label="Now · next · later" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">23</span>
+      <h2>Now · next · later</h2>
+    </div>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — shipped and verified</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li><span class="code">capture</span>, <span class="code">capture --promote</span>, <span class="code">capture --transcripts</span>, <span class="code">graph compile --nightly</span>, <span class="code">recall</span> and the <span class="code">index</span> verbs behind one grammar</li>
+          <li><span data-fact="spec_capabilities">CAP-1..4</span> each carrying a mechanical <span class="code">verified:</span> PASS</li>
+          <li>The <span class="code">GraphStore</span> port with three plugin drivers and the supersession and staleness rules bound above them</li>
+          <li>SKF content skill, station persona, three wielded docs skills, the first <span class="code">/stations/scribe/</span> portal slice</li>
+          <li>The nightly trigger checked in and installable; the freshness advisory in the detector set</li>
+          <li>Tracked ledger <span data-fact="stories_done_total">35/35</span> · <span data-fact="epics_done_total">18/18</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Next — named, owned elsewhere or deferred</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>Real semantic recall — the mechanism is Scribe's (<span class="code">embeddings.py</span>, the plugin factory, the plane's vector index) but the outcome is Steward's story; the criterion must first name the mode it is graded against</li>
+          <li>Retiring the <span class="code">scribe_schema</span> safety net once the plane has operating history — a future explicit operator decision, never an implication</li>
+          <li>Reading a <i>target</i> repo's pre-existing <span class="code">docs/adr/</span> — filed as deferred work, not an open contract question</li>
+          <li>An adversarial review of <span class="code">promote.py</span>, the one path that rewrites another file — carried as open engineering debt</li>
+          <li>Consecutive scheduled runs recorded on the operator machine that installed the trigger — the Spec's own signal, now verifiable</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Later — named, deliberately not built</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>Ambient capture of any kind — no session hook, no Slack, no chat-log mining; capture stays a deliberate, authored act, permanently</li>
+          <li>ADR numbering — the repo's decision-of-record format is the memlog and the Realization log; a second scheme would break the closed type taxonomy</li>
+          <li>TTL, decay or staleness auto-scoring — humans prune; Scribe signals and never deletes</li>
+          <li>Cross-repo synchronization, plugin-marketplace packaging before a second consumer exists, and any claim of benchmark parity with hosted memory products</li>
+          <li>A second graph or vector store of record — cocoindex stays the freshness engine, graphify writes through the port, and the mem0-style ranker extra is not minted</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Close" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">What the team knows, every agent knows.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">Capture at the source. Curate without mercy — supersede, never delete. Compile the graph from the tools the team already uses, in the night, unattended. Answer from the record and the record only, with a citation you can open, or say plainly that there is none. Where Herald tells the world, Scribe tells the team.</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Scribe</b> · scribe chain · <span class="code">spec-pyforge-scribe</span> · <span data-fact="spec_capabilities">CAP-1..4</span> · <span class="code">pyforge-scribe</span> <span data-fact="package_version">0.1.0</span></span>
+      <span>docs/dreams/pyforge-scribe.md · <span class="code">src/shared/packages/pyforge-scribe/</span> · PyForge Guild · Dream to Code</span>
+    </div>
+  </section>
+
+
+    </div>
+  </section>
 
 </x-import>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080}}"></script>
 </body>
 </html>

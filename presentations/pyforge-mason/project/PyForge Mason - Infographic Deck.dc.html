@@ -12,34 +12,1129 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
 <style>
-:root{--color-bg:#f3f2f2;--color-text:#201e1d;--color-accent:#ec3013;--color-accent-700:#c22a10;--color-divider:#d3d0cf;--font-body:'Archivo',Arial,sans-serif;--font-heading:'Archivo Expanded','Archivo',Arial,sans-serif}
-body{margin:0;background:#cfcccb}
-.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.85em;letter-spacing:-0.01em}
-.tag{display:inline-block;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:.02em}
-.tag-accent{background:var(--color-accent);color:var(--color-bg)}
-.tag-neutral{background:#e4e2e1;color:var(--color-text)}
-.tag-outline{border:1.5px solid var(--color-text);color:var(--color-text)}
-a,a:hover{color:var(--color-accent-700)}
+/* Modernist — design-system tokens (family palette shared with the pyforge persona decks). */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4; --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6; --color-neutral-500: #9b9797; --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d; --color-neutral-800: #444141; --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783; --color-accent-500: #ff563c; --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800; --color-accent-800: #7c1405; --color-accent-900: #4d170e;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --radius-md: 0px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+h1,h2,h3,h4 { font-family:var(--font-heading); font-weight:var(--font-heading-weight); line-height:1.12; letter-spacing:-0.015em; margin:0 0 8px; }
+p { margin:0 0 12px; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.tag { display:inline-block; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:0; line-height:1.5; }
+.tag-accent { background:var(--color-accent-100); color:var(--color-accent-800); }
+.tag-neutral { background:var(--color-neutral-200); color:var(--color-neutral-800); }
+.tag-outline { border:1px solid var(--color-accent); color:var(--color-accent); }
+.tag-ink { background:var(--color-text); color:var(--color-bg); }
+svg text { font-family:'Archivo', system-ui, sans-serif; }
+
+/* Poster helpers — the Unifying Strategy section / act-band shapes, named once. */
+.xp { font-family:'Archivo Expanded','Archivo',sans-serif; }
+.sec { padding:36px 0 8px; }
+.sechead { display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px; }
+.sechead .num { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent); }
+.sechead h2 { font-size:26px; margin:0; letter-spacing:-0.01em; }
+.lede { font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent); }
+.act { margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline; }
+.act .lbl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400); }
+.act .ttl { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em; }
+.act .cap { font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7; }
+.box { border:2px solid var(--color-text); padding:16px 22px; font-size:14px; line-height:1.5; }
+.tint { border:2px solid var(--color-accent); background:#fbe4de; padding:16px 22px; font-size:14.5px; line-height:1.5; }
+.muted { color:color-mix(in srgb, var(--color-text) 62%, transparent); }
+.kicker { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.bignum { font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent); }
+table.tbl { border-collapse:collapse; width:100%; margin-top:18px; }
+table.tbl th { background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:13.5px; }
+table.tbl td { border:1px solid var(--color-divider); padding:9px 14px; font-size:14px; line-height:1.4; vertical-align:top; }
+table.tbl tr.hi td { background:#fbe4de; }
+.station { border:2px solid var(--color-text); padding:18px; }
+.station h3 { font-family:'Archivo Expanded','Archivo',sans-serif; font-size:19px; font-weight:800; margin:6px 0 4px; line-height:1.1; }
+.station .role { font-size:13px; font-weight:600; color:color-mix(in srgb, var(--color-text) 65%, transparent); line-height:1.35; }
+.station .motto { font-size:13.5px; font-weight:600; font-style:italic; margin-top:8px; line-height:1.35; color:var(--color-accent-700); }
+.station .verbs { font-size:12.5px; margin-top:10px; color:var(--color-accent-700); font-weight:700; }
+.station.me { background:#fbe4de; border-color:var(--color-accent); }
+.card { border:2px solid var(--color-text); padding:20px 22px; }
+.card .k { font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); }
+.card p { font-size:14.5px; line-height:1.5; margin:10px 0 0; font-weight:500; }
+.relaystep { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.relaynum { font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:22px; color:var(--color-accent); min-width:34px; }
+.chip { font-size:9.5px; font-weight:700; padding:1px 6px; background:var(--color-text); color:var(--color-bg); letter-spacing:.04em; text-transform:uppercase; }
+.chip.ok { background:var(--color-accent); }
+.rung { border-left:3px solid var(--color-accent); padding:4px 0 4px 16px; }
+.rung b { font-size:15px; }
+.rung div { font-size:13.5px; line-height:1.45; margin-top:4px; color:color-mix(in srgb, var(--color-text) 72%, transparent); }
 </style>
 </helmet>
-<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
 
-<section data-label="Cover" data-speaker-notes="Mason is the forge: 769 feedstocks, both Python worlds, deterministic out." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;"><div style="display:flex; justify-content:space-between; font-family:ui-monospace,Menlo,monospace; font-size:16px; letter-spacing:.08em; text-transform:uppercase;"><span style="color:#c22a10; font-weight:600;">PYFORGE GUILD · CHAPTER DECK · THE ARTISAN</span><span style="opacity:.6;">Realized · the original station</span></div><div><div class="code" style="font-size:22px; letter-spacing:.3em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:24px;">Infographic</div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:130px; line-height:.9; letter-spacing:-0.03em; margin:0;">Mason</h1><p style="font-size:30px; line-height:1.4; font-weight:500; margin:34px 0 0; max-width:1400px;">The forge. Raw ingredients in — PyPI, npm, CRAN, CPAN, LuaRocks, GitHub source — and <b>deterministic, cross-platform structures out</b>. Mason works both Python worlds with one craft: <span style="color:var(--color-accent-700); font-weight:700;">one release &#8594; two registries; one lockfile &#8594; every platform</span>.</p></div><div style="border-top:3px solid #201e1d; padding-top:18px; font-family:ui-monospace,Menlo,monospace; font-size:15px; display:flex; justify-content:space-between;"><span style="font-weight:700;">PYFORGE-MASON</span><span>769 feedstocks · rattler-build + CI parity · 106 encoded gotchas</span></div></div></div></section>
+  <section data-label="Cover" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
 
-<section data-label="The problem" data-speaker-notes="Packaging is craft knowledge that doesn&#x27;t scale without encoding." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">01</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The problem</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:1.5fr 1fr 1fr ; gap:0; margin-top:22px; align-items:center;"><p style="font-size:19px; line-height:1.5; margin:0; padding-right:36px; font-weight:500;">Packaging for conda-forge is deep craft: compilers and ABI discipline, selectors, multi-outputs, per-platform matrices, reviewer conventions — knowledge that lived in maintainers' heads and did not scale. Mason <b>encodes the craft</b> so an agent can carry a recipe from generation to merged PR, gates intact.</p><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">106</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">gotchas encoded from real build failures, each with its fix</div></div><div style="border-left:2px solid var(--color-divider); padding:0 26px;"><div style="font-family:var(--font-heading); font-size:64px; font-weight:900; line-height:.9; color:var(--color-accent);">~900</div><div style="font-size:15px; line-height:1.4; margin-top:10px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">governed local recipe mirrors behind the feedstock fleet</div></div></div></div></div></section>
 
-<section data-label="A recipe&#x27;s journey through the forge" data-speaker-notes="Six steps, each with a gate that must hold." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">02</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">A recipe's journey through the forge</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><table style="border-collapse:collapse; width:100%; margin-top:22px;"><thead><tr><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Step</th><th style="background:var(--color-text); color:var(--color-bg); text-align:left; padding:10px 14px; font-size:14px;">Gate</th></tr></thead><tbody><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>generate</b> — PyPI / npm / CRAN / CPAN / LuaRocks / GitHub</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">assumptions surfaced first</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>validate + lint</b> — schema, license, checksums</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">zero warnings advance</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>scan</b> — OSV vulnerabilities, KEV/EPSS overlays</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">no unexplained criticals</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>optimize</b> — 18 check codes</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">reviewer-grade before review</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>build</b> — rattler-build, native + Docker CI-parity</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">green on linux-64 minimum</td></tr><tr><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;"><b>submit</b> — staged-recipes or feedstock PR</td><td style="border:1px solid var(--color-divider); padding:9px 14px; font-size:15px; line-height:1.4;">verified strip, one review ping</td></tr></tbody></table></div></div></section>
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE ARTISAN BUILDER · MASON CHAIN · SPEC-PYFORGE-MASON</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+    </div>
+    <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Mason</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-mason · module pyforge.mason · console script <span data-fact="console_entry">mason</span> · spec-pyforge-mason <span data-fact="spec_capabilities">CAP-1..13</span></div>
+    <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The repository's packaging craft is real, proven and trapped: a full recipe lifecycle, a corpus of hard-won gotchas and an MCP tool surface, reachable only inside one session in one repository through one manifest. And the half it never had is the half nobody has — no single tool ships a library to PyPI <i>and</i> conda-forge. <b>Mason is the installable face of that craft plus the missing half:</b> <span class="code">mason recipe</span> wraps <span class="code">conda-forge-expert</span> through one port and never forks it; <span class="code">mason package</span> builds and ships to both ecosystems in one motion with a receipt that tells the truth; <span class="code">mason environment</span> binds conflicting worlds into one lockfile. <span style="color:var(--color-accent-700); font-weight:700;">Packaging a library should be a sentence, not an afternoon of YAML archaeology.</span></p>
+    <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">mason &lt;noun&gt; &lt;verb&gt;</span>
+      <span class="tag tag-accent">Wraps conda-forge-expert · never forks it</span>
+      <span class="tag tag-neutral">Three nouns · one port · five engines</span>
+      <span class="tag tag-neutral">Four ship targets · pending is never success</span>
+      <span class="tag tag-neutral">Dry run by default · rehearsal before the irreversible</span>
+      <span class="tag tag-ink">The hand that builds is never the gate that judges</span>
+    </div>
+  </header>
 
-<section data-label="Both worlds, one craft" data-speaker-notes="PyPI agility and conda-forge discipline, one workflow." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">03</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">Both worlds, one craft</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">PyPI</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Fast pure-Python agility — wheels, <span class="code">pyproject.toml</span>, rapid iteration for applications and libraries.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">conda-forge</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">Compiled analytics and ML/AI stacks — ABI discipline, selectors, multi-outputs, per-platform matrices, the scientific stack's home.</p></div></div></div></div></section>
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">70/70</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">17/17</span> done</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">13</span> · Spec <span data-fact="spec_status">shipped</span></div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">pyforge-mason <span data-fact="package_version">0.1.0</span></div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI surface</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="cli_verbs">12</span> verbs · three nouns</div>
+    </div>
+  </div>
 
-<section data-label="The forge today" data-speaker-notes="Live numbers from the atlas." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">04</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The forge today</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:repeat(4,1fr); margin-top:16px;"><div style="padding:20px 0px 4px 0px; "><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">769</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">maintained feedstocks under rxm7706</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">106</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">encoded gotchas steering every new recipe</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">15</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">atlas pipeline phases feeding 'what should I work on?'</div></div><div style="padding:20px 24px 4px 24px; border-left:2px solid var(--color-divider);"><div style="font-family:var(--font-heading); font-size:52px; font-weight:900; line-height:.95; color:var(--color-accent);">3</div><div style="font-size:14px; font-weight:600; margin-top:8px; color:color-mix(in srgb, var(--color-text) 72%, transparent);">standing campaigns: refresh, platform expansion, red-PR remediation</div></div></div></div></div></section>
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why an artisan</div>
+    <h2 class="xp" style="font-weight:900; font-size:56px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1080px;">Forge the blocks. Bind the environment. <span style="color:var(--color-accent);">Ship the structure.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 12px 18px 0; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">recipe</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The lifecycle, as a product face</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">new · validate · build · diagnose · optimize · scan · submit · update — every verb a timed subprocess into the craft, none of the judgement living in Mason</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">package</div><div style="font-size:14px; font-weight:700; margin-top:4px;">The dual-ship motion</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">wheel, sdist and <span class="code">.conda</span> from one manifest; ship to <span class="code">pypi</span>, <span class="code">pypi-test</span>, <span class="code">channel:&lt;name&gt;</span>, <span class="code">conda-forge</span> — the differentiator, built natively</div></div>
+      <div style="flex:1; padding:16px 12px 18px; border-right:2px solid var(--color-divider);"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">environment</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Dependency binding</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);"><span class="code">lock</span> mixed conda and pip manifests into one lockfile through conda-lock; <span class="code">check</span> in CI whether it went stale — Mason never solves</div></div>
+      <div style="flex:1; padding:16px 0 18px 12px;"><div class="xp" style="font-size:20px; font-weight:800; color:var(--color-accent);">doctor</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Truthful self-diagnosis</div><div style="font-size:11.5px; margin-top:2px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">which step found the craft, which interpreter, whether the import floor holds, which engines are present — and which verbs are unavailable, said plainly</div></div>
+    </div>
+  </div>
 
-<section data-label="The boundary with Steward" data-speaker-notes="Registry is the handoff line." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid currentColor; padding-bottom:16px; margin-bottom:34px;"><span style="font-family:var(--font-heading); font-weight:800; font-size:30px; color:var(--color-accent);">05</span><h2 style="font-size:44px; margin:0; letter-spacing:-0.02em; font-weight:800;">The boundary with Steward</h2></div><div style="font-size:1.25em; flex:1; display:flex; flex-direction:column; justify-content:center;"><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:22px;"><div style="border:2px solid var(--color-text); padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Mason ends</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">when the artifact reaches the registry — built deterministically, verified, published to conda-forge or PyPI.</p></div><div style="border:2px solid var(--color-accent); background:#fbe4de; padding:22px;"><div style="font-size:12px; letter-spacing:.09em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Steward begins</div><p style="font-size:17px; line-height:1.5; margin:10px 0 0; font-weight:500;">there: the running service, the environment estate, the keys and budgets that keep the line lit.</p></div></div></div></div></section>
+  <!-- ACT I -->
+  
+    </div>
+  </section>
 
-<section data-label="The close" data-speaker-notes="We forge the blocks. We bind the environment. We ship the structure." style="background:#f3f2f2"><div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:var(--font-body); color:#201e1d;"><div style="display:flex; flex-direction:column; justify-content:center; height:100%; background:#ec3013; margin:-88px -96px; padding:96px; color:#f3f2f2;"><div style="font-size:19px; letter-spacing:.12em; text-transform:uppercase; font-weight:800;">The creed</div><h1 style="font-family:var(--font-heading); font-weight:900; font-size:96px; line-height:.95; letter-spacing:-0.02em; margin:26px 0 0; max-width:1560px;">We forge the blocks. We bind the environment. We ship the structure.</h1><p style="font-size:28px; line-height:1.45; margin:34px 0 0; max-width:1300px; opacity:.95;">Structural integrity is not optional. Deterministic, binary-compatible, reproducible — or it does not ship.</p><div class="code" style="font-size:16px; margin-top:44px; opacity:.85;">pyforge-mason · PyForge Guild · Dream to Code</div></div></div></section>
+  <section data-label="ACT I" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT I</span>
+      <span class="ttl">A craft trapped in one room</span>
+    </div>
+    <span class="cap">The problem and the model</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The problem" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead" style="margin-bottom:26px;">
+      <span class="num">01</span>
+      <h2>The problem</h2>
+    </div>
+<div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">Packaging for conda-forge is deep craft — compilers and ABI discipline, selectors, multi-outputs, per-platform matrices, reviewer conventions — and this repository already encodes it: the <span class="code">conda-forge-expert</span> skill's autonomous loop, a build-failure protocol, a gotcha corpus grown one failure at a time, and an MCP server over it all. <b>Reachable only inside a Claude Code session, in one repository, through pixi tasks in one manifest.</b> You cannot install it. You cannot run it in CI. A colleague cannot use it. And the maintainer shipping a library still switches toolchains entirely for the conda half — a different metadata format, dependency namespace, build system, platform matrix and a volunteer review queue.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_mcp_tools">46</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">MCP tools on the conda-forge server — recipe-authoring, atlas-intelligence and project-scanning surfaces — the craft Mason fronts as a CLI instead of duplicating as a second server</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
+        <div class="bignum"><span data-fact="groundtruth_gotcha_max">117</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">the highest-numbered recipe-authoring gotcha in the skill — each one a real build failure with its fix, an appreciating asset that a fork would turn into a depreciating one</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
+        <div class="bignum"><span data-fact="recipes_count">7864</span></div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipes in the local mirror under <span class="code">recipes/</span> — the estate the craft tends, and the co-located source directory a conda-forge ship reads from</div>
+      </div>
+    </div>
+<div class="box" style="margin-top:26px;"><b>An unowned seam between two toolchains with different governance.</b> The domain survey is unambiguous: Hatch and maturin are structurally conda-unaware, <span class="code">pixi publish</span> targets conda channels with documentation silent on PyPI, and conda-smithy and the autotick-bot state in their own docs that they cannot be deployed outside conda-forge's infrastructure. That is not a missing feature in one product. <span class="muted">Charter § Mason — dual-ecosystem mastery: PyPI and conda as complementary building blocks rather than rivals; structural integrity: deterministic, binary-compatible, reproducible — or it does not ship.</span></div>
+    </div>
+  </section>
+
+  <section data-label="The seam — wrap by capability, not by product" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">02</span>
+      <h2>The seam — wrap by capability, not by product</h2>
+    </div>
+<p class="lede">The central decision, recorded as D-1 and enforced by test: Mason <b>wraps</b> the craft by subprocess for every recipe operation and <b>builds natively</b> for <span class="code">package</span> and <span class="code">environment</span>, because nothing in the wrapped machinery builds a wheel, uploads to an index or orchestrates a lock. The boundary is drawn by capability. Pure porcelain was rejected — two of the three verb families would have nothing to wrap. Extraction was rejected three times over.</p>
+<table class="tbl">
+      <thead><tr><th>Tier</th><th>What it covers</th><th>With the craft absent</th><th>Enforced by</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td><b>CFE-dependent</b></td><td>all eight <span class="code">mason recipe</span> verbs, <b>and only</b> the <span class="code">conda-forge</span> ship target</td><td>exits non-zero naming all four resolution steps and how to satisfy each — a structured degradation, never a traceback</td><td><span class="code">test_capability_tiers.py</span> · the one-entry allow-list, asserted structurally</td></tr>
+        <tr><td><b>CFE-independent</b></td><td>everything else in <span class="code">mason package</span>, all of <span class="code">mason environment</span>, <span class="code">mason doctor</span></td><td>runs unaffected — a <span class="code">pypi</span> ship must succeed with no craft on disk; the port is resolved per <i>target</i>, never per command</td><td><span class="code">test_cfe_independence.py</span> — every verb run with the root guaranteed unresolvable</td></tr>
+        <tr><td><b>The port</b></td><td><span class="code">pyforge.mason.cfe</span> — the single module permitted to name a wrapped script, hold its path or spawn its process</td><td>every invocation a timed subprocess returning a typed result; a non-zero return code is <b>data, not an exception</b></td><td><span class="code">test_adapter_sole_caller.py</span> · one declaration table, one adapter function per verb</td></tr>
+        <tr><td><b>Recipe knowledge</b></td><td>gotcha identifiers, policy constants, pin tables, format field defaults, selector rules</td><td>owned by the craft; <b>never</b> present in <span class="code">pyforge.mason</span> — it enters only as opaque data through the port</td><td><span class="code">test_no_recipe_knowledge.py</span> — a deny-list with planted-violation fixtures, so matching nothing is a <i>failing</i> test</td></tr>
+      </tbody>
+    </table>
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>Governance makes a fork adversarial.</b> Rule 1 makes the skill authoritative over any conflicting story; Rule 2 mandates that every conda-forge effort <i>edits the skill</i>. A fork is continuously invalidated by the loop that governs its own domain — a gotcha added to the craft after Mason ships changes Mason's behaviour with no change to Mason.</div>
+      <div class="box"><b>The in-repo precedent failed.</b> A sibling station rebuilt its orchestrator across dozens of merged stories, and the original is still the live runtime — nothing routes to the rebuild. Mason's Dream names Atlas as the cautionary tale, and Epic 5 exists to prove the seam holds with tests rather than prose.</div>
+      <div class="tint"><b>The accepted cost, paid deliberately.</b> Mason is not standalone: <span class="code">mason recipe</span> requires a discoverable installation and is inert without one — bought in exchange for zero knowledge duplication. Self-diagnosis reports the gap before a release is attempted; it is a stated boundary, never a hidden failure.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="The topology — the craft on the left, the engines on the right, one port between" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">03</span>
+      <h2>The topology — the craft on the left, the engines on the right, one port between</h2>
+    </div>
+<p class="lede">Dependencies point inward only, and no use-case imports <span class="code">subprocess</span>: that single rule stops recipe logic leaking inward one helper at a time. The craft is reached through <span class="code">cfe.py</span>; every engine through one adapter protocol; the receipt leaves through one renderer.</p>
+<svg viewBox="0 0 1128 748" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker>
+      </defs>
+      <!-- craft rail (left) -->
+      <text x="60" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">THE CRAFT · WRAPPED, NEVER FORKED</text>
+      <g>
+        <rect x="60" y="64" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="90" fill="#201e1d" font-size="15" font-weight="800">conda-forge-expert SKILL.md</text>
+        <text x="76" y="110" fill="#605d5d" font-size="10.5">operating principles · hard constraints</text>
+        <text x="76" y="125" fill="#605d5d" font-size="10.5">the gotcha corpus · build-failure protocol</text>
+
+        <rect x="60" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="180" fill="#201e1d" font-size="15" font-weight="800">The scripts tier</text>
+        <text x="76" y="200" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">validate_recipe · recipe-generator</text>
+        <text x="76" y="215" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">build-locally · submit_pr · updaters</text>
+
+        <rect x="60" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="270" fill="#201e1d" font-size="15" font-weight="800">The MCP server</text>
+        <text x="76" y="290" fill="#605d5d" font-size="10.5">conda_forge_server.py — recipe, atlas and</text>
+        <text x="76" y="305" fill="#605d5d" font-size="10.5">scan tools; Mason ships no second one</text>
+
+        <rect x="60" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="76" y="360" fill="#201e1d" font-size="15" font-weight="800">recipes/ — the local mirror</text>
+        <text x="76" y="380" fill="#605d5d" font-size="10.5">the co-located source directory a</text>
+        <text x="76" y="395" fill="#605d5d" font-size="10.5">conda-forge ship reads from</text>
+
+        <rect x="60" y="424" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="76" y="450" fill="#201e1d" font-size="15" font-weight="800">The Rule-2 retro loop</text>
+        <text x="76" y="470" fill="#605d5d" font-size="10.5">every conda-forge effort edits the skill;</text>
+        <text x="76" y="485" fill="#605d5d" font-size="10.5">Mason inherits the improvement for free</text>
+
+        <rect x="60" y="514" width="250" height="70" fill="#eae7e7" stroke="#9b9797" stroke-width="2" stroke-dasharray="6 4"/>
+        <text x="76" y="540" fill="#201e1d" font-size="15" font-weight="800">The pixi task surface</text>
+        <text x="76" y="560" fill="#605d5d" font-size="10.5">recipe-build · lint · generate-recipe —</text>
+        <text x="76" y="575" fill="#605d5d" font-size="10.5">additive: nothing removed or deprecated</text>
+      </g>
+      <!-- spokes into the hub (subprocess, through the port) -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr)">
+        <path d="M310 99 C 380 99, 380 296, 430 296"/>
+        <path d="M310 189 C 380 189, 380 306, 430 306"/>
+        <path d="M310 279 C 380 279, 380 316, 430 316" stroke-dasharray="6 4"/>
+        <path d="M310 369 C 380 369, 380 330, 430 330"/>
+        <path d="M310 459 C 380 459, 380 344, 430 344" stroke="#ec3013"/>
+        <path d="M310 549 C 380 549, 380 358, 430 358" stroke-dasharray="6 4"/>
+      </g>
+      <text x="185" y="608" text-anchor="middle" fill="#ae1800" font-size="10" font-weight="800" letter-spacing="1">SUBPROCESS ONLY</text>
+      <text x="185" y="622" text-anchor="middle" fill="#605d5d" font-size="9.5">never import · importlib · exec</text>
+      <!-- hub -->
+      <rect x="430" y="192" width="268" height="296" fill="#ec3013"/>
+      <text x="564" y="228" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">PYFORGE MASON</text>
+      <text x="564" y="250" text-anchor="middle" fill="#f3f2f2" font-size="12" font-family="ui-monospace, Menlo, monospace">pyforge.mason · console script mason</text>
+      <line x1="452" y1="266" x2="676" y2="266" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="290" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">cfe.py — the one port, one table</text>
+      <text x="564" y="312" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">resolve root → flag · env · cwd-walk</text>
+      <text x="564" y="334" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">timed subprocess · JSON body · rc is data</text>
+      <text x="564" y="356" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">recipe.py · package.py · environment.py</text>
+      <text x="564" y="378" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">render.py → text or one JSON document</text>
+      <text x="564" y="400" text-anchor="middle" fill="#ffe0d9" font-size="12.5" font-weight="700">exit_codes.py — the sole owner</text>
+      <line x1="452" y1="418" x2="676" y2="418" stroke="#ffe0d9" stroke-width="1"/>
+      <text x="564" y="438" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">KNOWLEDGE-FREE CORE</text>
+      <text x="564" y="456" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">THE PORT IS THE SOLE CALLER</text>
+      <text x="564" y="474" text-anchor="middle" fill="#f3f2f2" font-size="10.5" font-weight="700" letter-spacing="0.5">NO CREDENTIAL READS · NO STATE</text>
+      <!-- spokes out to engines and targets -->
+      <g stroke="#ec3013" stroke-width="2" fill="none" marker-end="url(#arrA)">
+        <path d="M698 296 C 760 296, 760 99, 818 99"/>
+        <path d="M698 310 C 760 310, 760 189, 818 189"/>
+        <path d="M698 324 C 760 324, 760 279, 818 279"/>
+        <path d="M698 338 C 760 338, 760 369, 818 369"/>
+        <path d="M698 352 C 760 352, 760 459, 818 459"/>
+        <path d="M698 366 C 760 366, 760 549, 818 549"/>
+      </g>
+      <text x="943" y="608" text-anchor="middle" fill="#ae1800" font-size="10" font-weight="800" letter-spacing="1">ONE ADAPTER PROTOCOL</text>
+      <text x="943" y="622" text-anchor="middle" fill="#605d5d" font-size="9.5">found on PATH · never downloaded</text>
+      <!-- engine rail (right) -->
+      <text x="818" y="44" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">ENGINES AND TARGETS · BUILT NATIVELY</text>
+      <g>
+        <rect x="818" y="64" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="90" fill="#201e1d" font-size="15" font-weight="800">pixi</text>
+        <text x="834" y="110" fill="#605d5d" font-size="10.5">pixi build → the .conda artifact;</text>
+        <text x="834" y="125" fill="#605d5d" font-size="10.5">pixi upload prefix → the channel target</text>
+
+        <rect x="818" y="154" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="180" fill="#201e1d" font-size="15" font-weight="800">pyproject-build · twine</text>
+        <text x="834" y="200" fill="#605d5d" font-size="10.5">wheel + sdist through PEP 517;</text>
+        <text x="834" y="215" fill="#605d5d" font-size="10.5">upload to TestPyPI, then PyPI</text>
+
+        <rect x="818" y="244" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="270" fill="#201e1d" font-size="15" font-weight="800">conda-lock</text>
+        <text x="834" y="290" fill="#605d5d" font-size="10.5">the sole lock engine — mixed conda and</text>
+        <text x="834" y="305" fill="#605d5d" font-size="10.5">pip manifests → one lockfile + provenance</text>
+
+        <rect x="818" y="334" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="360" fill="#201e1d" font-size="15" font-weight="800">gh</text>
+        <text x="834" y="380" fill="#605d5d" font-size="10.5">fork and pull-request plumbing behind</text>
+        <text x="834" y="395" fill="#605d5d" font-size="10.5">the craft's two-phase submission</text>
+
+        <rect x="818" y="424" width="250" height="70" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+        <text x="834" y="450" fill="#201e1d" font-size="15" font-weight="800">conda-forge — async target</text>
+        <text x="834" y="470" fill="#605d5d" font-size="10.5">the one CFE-dependent ship target; a PR</text>
+        <text x="834" y="485" fill="#605d5d" font-size="10.5">into a human queue → pending, never done</text>
+
+        <rect x="818" y="514" width="250" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="834" y="540" fill="#201e1d" font-size="15" font-weight="800">Warden — the gate</text>
+        <text x="834" y="560" fill="#605d5d" font-size="10.5">Mason's build does not pass because</text>
+        <text x="834" y="575" fill="#605d5d" font-size="10.5">Mason says so; it passes when Warden does</text>
+      </g>
+      <!-- receipt rail -->
+      <rect x="230" y="634" width="668" height="62" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="660" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">ShipReceipt — one shape for every target, never a new shape per target</text>
+      <text x="564" y="681" text-anchor="middle" fill="#605d5d" font-size="11" font-family="ui-monospace, Menlo, monospace">{ target, state: not_attempted | failed | pending | terminal, reference } · --format json → exactly one document on stdout</text>
+      <line x1="564" y1="488" x2="564" y2="632" stroke="#201e1d" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="20" y="718" fill="#605d5d" font-size="11.5">Idempotence by interrogating the target, never by local state: Mason persists no state directory, no receipt cache and no lock file of its own —</text>
+      <text x="20" y="736" fill="#605d5d" font-size="11.5">a local cache is a second source of truth that goes stale; an uninterrogable target yields pending with the reason stated, never an assumption in either direction.</text>
+    </svg>
+    </div>
+  </section>
+
+  <section data-label="Thirteen capabilities — the whole contract at a glance" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">04</span>
+      <h2>Thirteen capabilities — the whole contract at a glance</h2>
+    </div>
+<p class="lede">The kernel is seven capabilities, each carrying a success criterion written to fail when the capability is absent and a mechanical <span class="code">verified:</span> line from a re-verification at a named HEAD. Six more — the Presenton satellite — were folded in at the operator's direction as <span class="code">CAP-8..13</span>, continuing the numbering and keeping their own scope. The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>.</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip ok">the seam</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">One module is the entire boundary</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">no wrapped-script path outside the adapter; the root chain (flag → env → upward walk → structured degradation) and the interpreter chain each pure and unit-testable; every invocation timed, a typed error on expiry, no orphaned process; Mason reads no credential variable at all.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-2</span><span class="chip">recipe</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The lifecycle, as a product face</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">generate · validate · build · diagnose · optimize · scan · submit · update; finding identifiers preserved <b>verbatim</b>; native build the default, CI-parity behind an explicit flag, child output streamed; submit dry-run by default with the two-phase flow separately addressable.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-3</span><span class="chip">package</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The dual-ship motion</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">wheel, sdist and conda artifact from one manifest; exactly four targets, honoured independently; a wheel-versus-conda version disagreement aborts before any upload; a missing credential is caught <b>before</b> anything is built; a repeat conda-forge ship reports <span class="code">pending</span> and opens no second PR.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-4</span><span class="chip">environment</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Dependency binding</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">solving delegated entirely to conda-lock — Mason implements no resolution logic; manifests discovered and listed before solving, explicit paths override; <span class="code">check</span> exits non-zero on a stale lockfile with CI-ready JSON; runs with the craft absent.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-5</span><span class="chip">shell</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">The CLI shell and output contract</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">three nouns plus top-level self-diagnosis and version; a bare noun lists its verbs and exits non-zero, with exactly one documented alias exception; under machine output stdout carries one JSON document or nothing; exit codes from one module; <span class="code">doctor</span> exits zero when the non-wrapping verbs are usable and reports the gap.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-6</span><span class="chip">distribution</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Ships the way its siblings ship</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">one manifest drives the conda artifact and the wheel plus sdist through the three-task build triad; engines are conda run-dependencies with version ranges mirrored in code and held in sync by a meta-test; <span class="code">pyforge-core</span> is a hard dependency by a recorded cross-spec decision.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-7</span><span class="chip ok">the proof</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Proving the seam holds, closing the loop</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">the deny-list cites every entry and ships planted violations; the sole-caller test; the independence test behind a named one-entry allow-list; the governance check green with zero implementation commits on the governed surface; the delegation-fidelity test slow-marked and clean-skipping; the effort not done until the Rule-2 retro lands.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-8 · 9</span><span class="chip">presenton</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Air-gapped rendering · clean-room export</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">a bundled, air-gap-buildable Chromium with zero reachable public CDN; an editable <span class="code">.pptx</span> export from source-available components replacing the opaque upstream bundle — the satellite's two rendering capabilities.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
+        <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-10 · 11 · 12 · 13</span><span class="chip">presenton</span></div>
+        <div style="font-size:14px; font-weight:800; margin:5px 0 3px;">Tiered LLM · signed image · OCP ops · drift defence</div>
+        <div style="font-size:11.5px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">three OpenAI-compatible tiers behind one env-var contract; one pixi-locked, reproducibly built OCI image with SBOM and cosign attestation; a Helm chart on restricted-SCC defaults; a weekly upstream-drift harness whose egress never shares a runner with the air-gapped build. Parked at its Phase-0 decision gate.</div>
+      </div>
+    </div>
+<div class="tint" style="margin-top:18px;"><b>Why CAP-7 is the one that makes the rest believable.</b> This repository has already proven that intent alone does not prevent recipe knowledge from migrating into a wrapper one helper at a time. So the seam is not a convention: a deny-list whose planted-violation fixtures make an empty match a <i>failing</i> test; an allow-list with exactly one entry, structurally asserted; a governance check over the merged history that finds zero implementation commits touching the governed CFE surface. The counter-metrics are tracked on purpose — Mason's own line count, the recipe verb count, the adapter surface — because each one growing means the wrap decision has quietly inverted.</div>
+    </div>
+  </section>
+
+  <section data-label="ACT II" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT II</span>
+      <span class="ttl">The cast</span>
+    </div>
+    <span class="cap">Eight stations · the engines on the bench · the persona</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one builder" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">05</span>
+      <h2>The Guild — eight stations, one builder</h2>
+    </div>
+<p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Atlas maps the terrain, Warden clears the perimeter, then Mason takes raw ingredients and binds them into structures that install correctly on every platform a user might bring. Mason ships; Warden decides whether shipping was allowed. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one builder (cont. 2/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <h3>Herald</h3>
+        <div class="role">Visual Media Engine &amp; System Messenger</div>
+        <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">First to touch the Dream and last to ship it: the Claude Design bridge and the deck family, telemetry infographics, weekly updates, omnichannel broadcasts. Owns this poster and the standard it is built to. When Mason ships, Herald harvests the release telemetry into notables — a merged feedstock PR becomes a brief, not a log line.</p>
+        <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <h3>Marshal</h3>
+        <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
+        <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The one owner of execution: turns the Spec into validated code through gated story loops, sequencing on verdicts it never authors. Marshal's dev sessions pick up Mason's knowledge through the CFE craft without becoming Mason — Rule 1 binds every BMAD agent to invoke <span class="code">conda-forge-expert</span> before producing recipe code, and Mason is what that craft looks like installed.</p>
+        <div class="verbs code">marshal factory spin · gate evaluate · run · land · deploy</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span></span></div>
+        <h3>Atlas</h3>
+        <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
+        <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Maps the Python ecosystem — PyPI and conda-forge — into the cf_atlas graph, Kedro pipelines and the MCP intelligence surface. Maps before Mason builds: the trending-candidates engine hands a health-screened candidate to Mason as <b>structured data, never a recipe or a PR</b>. Also the cautionary tale — the rebuild whose legacy orchestrator is still the live runtime.</p>
+        <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher · feedstock-health</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span></span></div>
+        <h3>Warden</h3>
+        <div class="role">Multi-Axis Dependency Compliance Gate</div>
+        <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The sole PR-gate verdict — hygiene, security, license, currency over Python, Conda and Pixi manifests. The station Mason's product mirrors in shape (dist, module, CLI; a lean workspace member; a frozen exit domain) and the station whose bar Mason cannot lower: a build passes when Warden's gate says so, not because Mason says so.</p>
+        <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
+      </div>
+      <div class="station me">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span> · <span data-fact="mason_epics_done_total">17/17</span></span></div>
+        <h3>Mason</h3>
+        <div class="role">Package &amp; Release Craftsman</div>
+        <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Once Atlas has mapped the landscape and Warden has cleared the perimeter, Mason takes raw software ingredients and permanently binds them into production-ready structures: v1 <span class="code">recipe.yaml</span> recipes through the wrapped craft, wheels and conda packages from one manifest, conflicting worlds resolved into one lockfile. Rejects brittle runtimes — deterministic, binary-compatible, reproducible, or it does not ship.</p>
+        <div class="verbs code">mason recipe new · validate · build · diagnose · optimize · scan · submit · update · package build · ship · environment lock · check · doctor</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
+        <h3>Doctor</h3>
+        <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
+        <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Pre-flight before the run, pulse after the ship. The estate Mason ships is the estate Doctor watches: every stale feedstock, every new advisory on a shipped recipe lands back on Mason's bench as a ranked prescription with a root cause and a next safe hop — and the remediation is Mason's, never Doctor's. Findings advisory, never a second gate.</p>
+        <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
+        <h3>Scribe</h3>
+        <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
+        <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">The inward voice — where Herald tells the world, Scribe tells the team: memlogs, ADRs, retros and Dream realization logs captured as they happen, compiled into a graph any session can answer from. Mason's seam decision, the retired validator sibling and the Presenton consolidation are Scribe's decisions of record; a grounded miss is explicit, never invented.</p>
+        <div class="verbs code">scribe capture · graph compile · recall</div>
+      </div>
+      <div class="station">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span></span></div>
+        <h3>Steward</h3>
+        <div class="role">Platform, Deployment &amp; Operations Officer</div>
+        <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
+        <p style="font-size:14px; line-height:1.45; margin:10px 0 0; font-weight:500;">Runs the estate the factory stands on — runners, environments, the Canopy host, credentials and their rotation, budgets, the pager. Mason ends when the artifact reaches the registry; Steward begins there. Steward's foundry cutover carries two of Mason's own capabilities on its chain — <i>CFE comes home</i> and <i>Mason submits to conda-forge</i> — each bound to Mason's Rule 1 and Rule 2.</p>
+        <div class="verbs code">steward provision · deploy · keys audit · keys rotate · budget enforce</div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="The Guild — eight stations, one builder (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span> · steward <span data-fact="steward_epics_done_total">56/58</span></span></div>
+    </div>
+  </section>
+
+  <section data-label="The engines on the bench — orchestrated, never reimplemented" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">06</span>
+      <h2>The engines on the bench — orchestrated, never reimplemented</h2>
+    </div>
+<p class="lede">Where Marshal has sub-agents on the floor, Mason has engines on the bench: external tools discovered on <span class="code">PATH</span>, provisioned as conda run-dependencies with version ranges mirrored by in-code constants, <b>never downloaded at runtime</b>. A missing engine is a typed error naming the engine and how to provision it. Mason never solves and never builds from scratch.</p>
+<table class="tbl">
+      <thead><tr><th>Engine</th><th>Binary on PATH</th><th>What Mason asks of it</th><th>Adapter</th><th>Reached by</th></tr></thead>
+      <tbody>
+        <tr><td><b>pixi</b></td><td><span class="code">pixi</span></td><td><span class="code">pixi build</span> for the <span class="code">.conda</span> artifact; <span class="code">pixi upload prefix</span> for the <span class="code">channel:&lt;name&gt;</span> target — neither <span class="code">pixi publish</span> nor <span class="code">anaconda upload</span></td><td><span class="code">engines/pixi.py</span></td><td><span class="code">package build</span> · <span class="code">package ship</span></td></tr>
+        <tr><td><b>build</b></td><td><span class="code">pyproject-build</span></td><td>wheel and sdist through PEP 517 from the project's own <span class="code">pyproject.toml</span>; the binary is not called <span class="code">build</span>, and the probe knows it</td><td><span class="code">engines/pep517.py</span></td><td><span class="code">package build</span></td></tr>
+        <tr><td><b>twine</b></td><td><span class="code">twine</span></td><td>upload to TestPyPI (the rehearsal) and to PyPI (the irreversible one); credentials checked for <i>presence</i> before any build, never read into a rendered object</td><td><span class="code">engines/twine.py</span></td><td><span class="code">package ship --to pypi-test,pypi</span></td></tr>
+        <tr><td><b>conda-lock</b></td><td><span class="code">conda-lock</span></td><td>the sole lock engine: mixed conda and pip manifests into one lockfile, engine name and version written into its provenance; the staleness check reads conda-lock's own content hash</td><td><span class="code">engines/condalock.py</span></td><td><span class="code">environment lock</span> · <span class="code">environment check</span></td></tr>
+        <tr><td><b>gh</b></td><td><span class="code">gh</span></td><td>fork and pull-request plumbing behind the craft's two-phase submission — prepare the branch on the fork, then open the PR</td><td><span class="code">engines/gh.py</span></td><td><span class="code">recipe submit</span> · the <span class="code">conda-forge</span> target</td></tr>
+        <tr class="hi"><td><b>rattler-build · grayskull</b></td><td>through the craft</td><td>the recipe build and the recipe generator are the craft's own engines, reached only through <span class="code">cfe.py</span>; the replaceable build-engine hook keeps today's CFE-native path as the default plugin, with conda-build registered but never spawned</td><td><span class="code">cfe.py</span> · <span class="code">engines/build_hooks.py</span></td><td><span class="code">recipe build</span> · <span class="code">recipe new</span></td></tr>
+        <tr><td><b>The PyPI JSON index</b></td><td>—</td><td>interrogated for idempotence: has this exact version already landed? — the target is asked, never a local cache</td><td><span class="code">pypi_index.py</span></td><td><span class="code">package ship</span></td></tr>
+      </tbody>
+    </table>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+      <div class="box"><b>One protocol, every adapter.</b> <span class="code">EngineAdapter</span> is the shared shape every <span class="code">engines/*.py</span> module implements; a swap — uv for twine, a different lock engine — is a new adapter behind the same protocol, at rename cost and nothing else. The recorded decisions: twine stayed the uploader, conda-lock stayed the only lock engine; both are decisions, not oversights.</div>
+      <div class="tint"><b>Version ranges live in two places on purpose, and a test keeps them equal.</b> The conda run-dependency ranges in the member's own <span class="code">pixi.toml</span> are mirrored one-to-one as constants in <span class="code">engines/__init__.py</span>; <span class="code">test_engine_version_range_sync.py</span> fails when they drift. It earned its keep: a verification pass found the member's pixi pin lagging the workspace floor, so its environment installed an older pixi and both self-hosting proofs failed — fixed in the same pass.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Persona, grammar and the skill deliberately not minted" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">07</span>
+      <h2>Persona, grammar and the skill deliberately not minted</h2>
+    </div>
+<p class="lede">Skills are wielded, never worn. Every other station compiles an SKF content skill from its own package; Mason is the one that does not — by policy, not by omission. Its skill tier <i>is</i> <span class="code">conda-forge-expert</span>: a second recipe skill would be the fork the whole design exists to prevent.</p>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <div class="card"><div class="k">Persona</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-agent-mason</h3><p>The addressable station persona. <b>Consults <span class="code">conda-forge-expert</span></b>, then acts only through <span class="code">pyforge mason …</span> grammar and <span class="code">POST /stations/mason/mcp</span>; never freelances against the filesystem, never authors a recipe from training data. Greets, then dispatches.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">The craft it wraps</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Skill version <span data-fact="cfe_skill_version">8.90.5</span>, gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span>, an autonomous loop with a success criterion per step, a build-failure protocol, a pre-PR quality gate. Authoritative over Mason on all recipe semantics under Rule 1; improved by every effort under Rule 2. Mason edits none of it.</p></div>
+      <div class="card"><div class="k">The skill never minted</div><h3 style="font-size:17px; margin:8px 0 4px;">.claude/skills/pyforge-mason/</h3><p>A path that must never exist — named as such in <span class="code">AGENTS.md</span> and guarded by the governance-currency check. Epic 11 says it in one line: <i>never a SKF skill that replaces conda-forge-expert</i>. The persona uses the craft's grammar and the craft's MCP tools; no second recipe skill.</p></div>
+      <div class="card"><div class="k">The shared floor</div><h3 style="font-size:17px; margin:8px 0 4px;">pyforge-core</h3><p>One lattice, one envelope, one exception root: <span class="code">MasonError</span> re-parents to <span class="code">PyforgeError</span>, and the <span class="code">pyforge.core.hooks</span> loader carries Mason's <span class="code">pyforge.mason.build_engine</span> hook — rattler-build and conda-build as plugins on the shared contract, one loader, not a second.</p></div>
+    </div>
+<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-top:16px;">
+      <div class="box"><b>The two doors, and only two.</b> Path B is the unified grammar — <span class="code">pyforge mason recipe build …</span>, <span class="code">pyforge mason package ship …</span>, <span class="code">pyforge mason environment lock …</span> — dispatched from the repo root, never a hardcoded absolute path, never the bare binary as a second public contract for personas. The service face is <span class="code">POST /stations/mason/mcp</span> on the Canopy host; the <span class="code">/stations/mason/</span> portal's first job is the last diagnose, rendered through the host's PortalClient. Mason's own MCP tool surface passes the CLI-to-tool parity gate.</div>
+      <div class="tint"><b>What the persona may never do.</b> No recipe knowledge of its own; no replacing <span class="code">conda-forge-expert</span>; no direct filesystem against recipes or source; no second PR gate; no <span class="code">curl</span>, <span class="code">requests</span> or <span class="code">WebFetch</span>. Rule 1 in, Rule 2 out: consult the craft before any recipe code, end every conda-forge effort with the retro that improves it.</div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT III" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT III</span>
+      <span class="ttl">Running the line</span>
+    </div>
+    <span class="cap">One recipe's journey · the dual-ship flow · the gradient · the relay</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="One recipe's journey down the line" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">08</span>
+      <h2>One recipe's journey down the line</h2>
+    </div>
+<p class="lede">Follow a single PyPI library from ingredient to open pull request through the eight recipe verbs. Every verb is one adapter call into one wrapped script; the craft supplies every piece of packaging judgement, and Mason transforms presentation, never semantics.</p>
+<table class="tbl">
+      <thead><tr><th>Verb</th><th>What happens</th><th>Wrapped script</th><th>Invariant it must hold</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code"><b>recipe new</b></span></td><td><span class="code">--from-pypi</span> · <span class="code">--from-github</span> · <span class="code">--from-cran</span> · <span class="code">--from-npm</span> generate a v1 <span class="code">recipe.yaml</span> at a user-specified <span class="code">--output</span> path</td><td><span class="code">recipe-generator.py</span></td><td>Mason asserts no field defaults of its own; a hyphenated, physically unimportable script is exactly why the port is a subprocess</td></tr>
+        <tr class="hi"><td><span class="code"><b>recipe validate</b></span></td><td>schema, license, checksums, and the craft's lint — the one verb where a wrapped tool's pass/fail becomes the process exit code</td><td><span class="code">validate_recipe.py</span></td><td>finding identifiers and check codes preserved <b>verbatim</b> — never renumbered, never reworded; the result object is returned unmodified</td></tr>
+        <tr class="hi"><td><span class="code"><b>recipe build</b></span></td><td>native rattler-build by default, layered with conda-forge-pinning so <span class="code">python_min</span> resolves like upstream CI; <span class="code">--docker --config linux64</span> for the CI-parity container</td><td><span class="code">build-locally.py</span></td><td>native is the unconditional default; CI-parity is never implicit; child output streams as it is produced — never a silent terminal for a multi-minute build</td></tr>
+        <tr><td><span class="code"><b>recipe diagnose</b></span></td><td>a build-failure log in, a named cause and fix out</td><td><span class="code">failure_analyzer.py</span></td><td>says plainly when the craft returns no match rather than inventing one — the JSON body passes through, <span class="code">error</span> and <span class="code">hint</span> included</td></tr>
+        <tr><td><span class="code"><b>recipe optimize</b></span></td><td>reviewer-grade quality findings before a reviewer sees it</td><td><span class="code">recipe_optimizer.py</span></td><td>the craft's check codes untouched; Mason knows none of them</td></tr>
+        <tr><td><span class="code"><b>recipe scan</b></span></td><td>exactly-pinned dependencies against known vulnerabilities; range-pinned and unpinned deps are not scanned, and the help text says so</td><td><span class="code">vulnerability_scanner.py</span></td><td>network use is never implicit — the outbound call to the advisory database is documented on the verb</td></tr>
+        <tr class="hi"><td><span class="code"><b>recipe submit</b></span></td><td>the two-phase staged-recipes flow: prepare the branch on the fork, then open the PR; <span class="code">--prepare-only</span> stops after the push; <span class="code">--yes</span> confirms a real run</td><td><span class="code">submit_pr.py</span></td><td>dry-run by default; the two phases separately addressable; returns a ship receipt carrying the pull-request reference; the same call the <span class="code">conda-forge</span> ship target renders</td></tr>
+        <tr><td><span class="code"><b>recipe update</b></span></td><td>bump to the latest upstream — PyPI by default, <span class="code">--github</span> for GitHub Releases with <span class="code">--pre</span> and <span class="code">--repo</span>; <span class="code">--dry-run</span> shows the plan without writing</td><td><span class="code">recipe_updater.py</span> · <span class="code">github_updater.py</span></td><td>a recorded open finding: the plan-before-write exists as the opt-in alternative to writing, not as a preview gate ahead of it — flagged for a dedicated story, not silently fixed</td></tr>
+      </tbody>
+    </table>
+<div class="box" style="margin-top:18px;"><b>The craft's own loop rides underneath every row.</b> Generate → validate → edit and refine → security scan → optimize → check dependencies → native build → monitor → submit, each step with a success criterion and no advancing until it is met; the submission-ready gate is <span class="code">validate</span> + <span class="code">optimize</span> + <span class="code">scan</span> + a green linux-64 build, all four explicit. Mason adds nothing to that loop and removes nothing from it — it makes it callable from a shell that is not this repository.</div>
+    </div>
+  </section>
+
+  <section data-label="The dual-ship flow — one manifest, two ecosystems, one honest receipt" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">09</span>
+      <h2>The dual-ship flow — one manifest, two ecosystems, one honest receipt</h2>
+    </div>
+<p class="lede">The differentiator, built natively. <span class="code">package build</span> produces wheel, sdist and conda artifact from one project manifest and uploads nothing; <span class="code">package ship</span> builds first if artifacts are absent by reusing that implementation, passes two gates before any upload, then attempts each target independently. The receipt tells the truth: PyPI completes in seconds, conda-forge in days behind a human queue.</p>
+<svg viewBox="0 0 1128 500" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <!-- project column -->
+      <text x="20" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">PROJECT</text>
+      <rect x="20" y="52" width="150" height="180" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+      <text x="95" y="120" text-anchor="middle" fill="#201e1d" font-size="14" font-weight="800">one manifest</text>
+      <text x="95" y="142" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">pyproject.toml</text>
+      <text x="95" y="158" text-anchor="middle" fill="#605d5d" font-size="10.5" font-family="ui-monospace, Menlo, monospace">pixi.toml</text>
+      <text x="95" y="182" text-anchor="middle" fill="#ae1800" font-size="10" font-weight="700">library only in v1</text>
+      <!-- build column -->
+      <text x="230" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">BUILD · UPLOADS NOTHING</text>
+      <rect x="230" y="52" width="150" height="64" fill="#ec3013"/><text x="305" y="80" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900" font-family="ui-monospace, Menlo, monospace">package build</text><text x="305" y="100" text-anchor="middle" fill="#ffe0d9" font-size="10.5">runs with the craft absent</text>
+      <rect x="230" y="136" width="150" height="40" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="305" y="161" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">wheel + sdist · PEP 517</text>
+      <rect x="230" y="192" width="150" height="40" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="305" y="217" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="800">.conda · pixi build</text>
+      <!-- gates column -->
+      <text x="440" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">GATES · BEFORE ANY UPLOAD</text>
+      <rect x="440" y="52" width="180" height="80" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="530" y="78" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">versions agree?</text>
+      <text x="530" y="96" text-anchor="middle" fill="#605d5d" font-size="10.5">wheel vs conda package —</text>
+      <text x="530" y="111" text-anchor="middle" fill="#605d5d" font-size="10.5">a disagreement aborts, both shown</text>
+      <rect x="440" y="152" width="180" height="80" fill="#fbe4de" stroke="#ec3013" stroke-width="2"/>
+      <text x="530" y="178" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">credentials present?</text>
+      <text x="530" y="196" text-anchor="middle" fill="#605d5d" font-size="10.5">checked before building —</text>
+      <text x="530" y="211" text-anchor="middle" fill="#605d5d" font-size="10.5">presence only, never a value read</text>
+      <!-- targets column -->
+      <text x="680" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">TARGETS · EACH INDEPENDENT</text>
+      <rect x="680" y="52" width="200" height="52" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="780" y="74" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800" font-family="ui-monospace, Menlo, monospace">pypi-test</text><text x="780" y="92" text-anchor="middle" fill="#605d5d" font-size="10">the rehearsal — runs first, gates pypi</text>
+      <rect x="680" y="118" width="200" height="52" fill="#ec3013"/><text x="780" y="140" text-anchor="middle" fill="#f3f2f2" font-size="13" font-weight="800" font-family="ui-monospace, Menlo, monospace">pypi</text><text x="780" y="158" text-anchor="middle" fill="#ffe0d9" font-size="10">irreversible — terminal in seconds</text>
+      <rect x="680" y="184" width="200" height="52" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="780" y="206" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800" font-family="ui-monospace, Menlo, monospace">channel:&lt;name&gt;</text><text x="780" y="224" text-anchor="middle" fill="#605d5d" font-size="10">pixi upload prefix — synchronous</text>
+      <rect x="680" y="250" width="200" height="52" fill="#f3f2f2" stroke="#ec3013" stroke-width="2" stroke-dasharray="6 4"/><text x="780" y="272" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800" font-family="ui-monospace, Menlo, monospace">conda-forge</text><text x="780" y="290" text-anchor="middle" fill="#ae1800" font-size="10" font-weight="700">via the port — a PR into a human queue</text>
+      <!-- receipt column -->
+      <text x="940" y="34" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">RECEIPT</text>
+      <rect x="940" y="52" width="168" height="250" fill="#201e1d"/>
+      <text x="1024" y="84" text-anchor="middle" fill="#f3f2f2" font-size="14" font-weight="900">ShipReceipt</text>
+      <text x="1024" y="104" text-anchor="middle" fill="#bab6b6" font-size="10.5">per-target state + reference</text>
+      <line x1="956" y1="118" x2="1092" y2="118" stroke="#605d5d" stroke-width="1"/>
+      <text x="1024" y="142" text-anchor="middle" fill="#bab6b6" font-size="11" font-family="ui-monospace, Menlo, monospace">not_attempted</text>
+      <text x="1024" y="164" text-anchor="middle" fill="#ff9783" font-size="11" font-family="ui-monospace, Menlo, monospace">failed</text>
+      <text x="1024" y="186" text-anchor="middle" fill="#ff9783" font-size="11" font-weight="700" font-family="ui-monospace, Menlo, monospace">pending</text>
+      <text x="1024" y="208" text-anchor="middle" fill="#f3f2f2" font-size="11" font-family="ui-monospace, Menlo, monospace">terminal</text>
+      <line x1="956" y1="224" x2="1092" y2="224" stroke="#605d5d" stroke-width="1"/>
+      <text x="1024" y="248" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">exit fails only when a</text>
+      <text x="1024" y="263" text-anchor="middle" fill="#ff9783" font-size="10" font-weight="700">target failed to initiate</text>
+      <text x="1024" y="286" text-anchor="middle" fill="#bab6b6" font-size="10">pending is never success</text>
+      <!-- arrows -->
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr2)">
+        <line x1="170" y1="84" x2="228" y2="84"/>
+        <line x1="305" y1="116" x2="305" y2="134"/><line x1="305" y1="176" x2="305" y2="190"/>
+        <line x1="380" y1="156" x2="438" y2="92"/><line x1="380" y1="212" x2="438" y2="192"/>
+        <line x1="620" y1="92" x2="678" y2="78"/><line x1="620" y1="192" x2="678" y2="144"/><line x1="620" y1="200" x2="678" y2="210"/><line x1="620" y1="206" x2="678" y2="276"/>
+        <line x1="880" y1="78" x2="938" y2="78"/><line x1="880" y1="144" x2="938" y2="144"/><line x1="880" y1="210" x2="938" y2="210"/><line x1="880" y1="276" x2="938" y2="276"/>
+      </g>
+      <path d="M780 104 L780 116" stroke="#ec3013" stroke-width="3" marker-end="url(#arr2)"/>
+      <!-- the alias rail -->
+      <rect x="20" y="330" width="1088" height="52" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+      <text x="564" y="352" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">mason package ship --to pypi-test,pypi,conda-forge  ·  mason package --ship pypi,conda-forge  —  the one bare-noun alias; a test asserts it is the only one</text>
+      <text x="564" y="371" text-anchor="middle" fill="#605d5d" font-size="10.5">dry run by default: prints the plan and ships nothing · --yes confirms the real motion · --recipe-path names the co-located recipe directory for the conda-forge target and is inert for every other</text>
+      <!-- footnotes -->
+      <text x="20" y="418" fill="#605d5d" font-size="11.5">One target's failure never prevents the others being attempted: each target is wrapped in its own typed-error boundary, and the aggregate exit is failure only if a target failed to initiate.</text>
+      <text x="20" y="438" fill="#605d5d" font-size="11.5">A repeat ship to conda-forge for an already-open pull request reports pending with the existing reference and opens no second PR — the craft's own idempotence, passed through verbatim.</text>
+      <text x="20" y="458" fill="#605d5d" font-size="11.5">The rehearsal gate: the first pypi-test target runs once ahead of the loop, and every pypi target in the same invocation only runs for real when that rehearsal reached terminal.</text>
+      <text x="20" y="478" fill="#605d5d" font-size="11.5">No conda-forge ship from a project with no co-located recipe source directory — the honest v1 boundary, reported by self-diagnosis before a release is attempted; the PyPI half has no such limit.</text>
+    </svg>
+    </div>
+  </section>
+
+  <section data-label="The autonomy gradient — how far Mason may go on its own" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">10</span>
+      <h2>The autonomy gradient — how far Mason may go on its own</h2>
+    </div>
+<p class="lede">Safety by default: every mutating verb accepts a dry-run flag and defaults to it where the operation is irreversible. The further a motion travels toward a public registry, the more explicit the human's confirmation must be — and beyond the upload the decision belongs to Warden, to the forge's reviewers, or to the human. Mason never grades its own work.</p>
+<svg viewBox="0 0 1128 300" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ec3013"/></marker></defs>
+      <!-- gradient rail -->
+      <rect x="40" y="130" width="1048" height="8" fill="#eae7e7"/>
+      <rect x="40" y="130" width="628" height="8" fill="#ec3013"/>
+      <line x1="668" y1="60" x2="668" y2="250" stroke="#201e1d" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="668" y="48" text-anchor="middle" fill="#201e1d" font-size="12" font-weight="900" letter-spacing="1">THE LINE MASON NEVER CROSSES</text>
+      <text x="360" y="48" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1.5">MASON ACTS · THE HUMAN CONFIRMS</text>
+      <text x="940" y="48" text-anchor="middle" fill="#605d5d" font-size="11" font-weight="800" letter-spacing="1.5">OTHERS JUDGE · MASON REPORTS</text>
+      <!-- rungs -->
+      <g>
+        <circle cx="90" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="90" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">plan</text>
+        <text x="90" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Dry run</text><text x="90" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">the default — prints the plan,</text><text x="90" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">ships and writes nothing</text>
+
+        <circle cx="290" cy="134" r="16" fill="#f3f2f2" stroke="#ec3013" stroke-width="3"/><text x="290" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">--yes</text>
+        <text x="290" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Confirm</text><text x="290" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">an explicit flag for a real push,</text><text x="290" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">PR or upload — never implicit</text>
+
+        <circle cx="490" cy="134" r="16" fill="#ec3013" stroke="#ec3013" stroke-width="3"/><text x="490" y="139" text-anchor="middle" fill="#f3f2f2" font-size="9" font-weight="900">test</text>
+        <text x="490" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Rehearse, then ship</text><text x="490" y="194" text-anchor="middle" fill="#605d5d" font-size="10.5">pypi-test must reach terminal</text><text x="490" y="208" text-anchor="middle" fill="#605d5d" font-size="10.5">before the irreversible upload runs</text>
+
+        <circle cx="740" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="740" y="139" text-anchor="middle" fill="#201e1d" font-size="10" font-weight="900">gate</text>
+        <text x="740" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">The PR verdict</text><text x="740" y="194" text-anchor="middle" fill="#605d5d" font-size="10">Warden's alone — Mason cannot</text><text x="740" y="208" text-anchor="middle" fill="#605d5d" font-size="10">pass its build by lowering the bar</text>
+
+        <circle cx="900" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="900" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">queue</text>
+        <text x="900" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">The forge reviews</text><text x="900" y="194" text-anchor="middle" fill="#605d5d" font-size="10">a staged-recipes PR is pending</text><text x="900" y="208" text-anchor="middle" fill="#605d5d" font-size="10">for days; Mason reports, never waits</text>
+
+        <circle cx="1060" cy="134" r="16" fill="#f3f2f2" stroke="#9b9797" stroke-width="3"/><text x="1060" y="139" text-anchor="middle" fill="#201e1d" font-size="9" font-weight="900">merge</text>
+        <text x="1060" y="176" text-anchor="middle" fill="#201e1d" font-size="13" font-weight="800">Feedstock born</text><text x="1060" y="194" text-anchor="middle" fill="#605d5d" font-size="10">the reviewers' act; from here</text><text x="1060" y="208" text-anchor="middle" fill="#605d5d" font-size="10">Doctor's pulse watches it</text>
+      </g>
+      <line x1="60" y1="270" x2="640" y2="270" stroke="#ec3013" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="350" y="290" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">more irreversibility, more confirmation — the same receipt shape at every rung</text>
+    </svg>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;">
+      <div class="rung"><b>Dry run is the default</b><div>a PyPI upload is recognized as irreversible and the dry-run plan says so explicitly; <span class="code">submit</span> forwards <span class="code">--dry-run</span> to the craft; <span class="code">update --dry-run</span> shows the plan without writing</div></div>
+      <div class="rung"><b>Confirmation is a flag, never a prompt</b><div><span class="code">--yes</span> on <span class="code">ship</span> and <span class="code">submit</span>; no interactive question, so the same command is safe in CI and in a loop</div></div>
+      <div class="rung"><b>Degradation is designed, never a crash</b><div>an unresolvable craft root makes recipe commands exit non-zero naming all four resolution steps and how to satisfy each; the other two families run unaffected; no traceback, ever</div></div>
+      <div class="rung"><b>The one thing Mason may not decide</b><div>whether shipping was allowed — that is Warden's gate on the code and the forge's review on the recipe; Mason's receipt reports both truthfully and re-derives neither</div></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Phase × persona × skills — where the builder stands in the pipeline" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">11</span>
+      <h2>Phase × persona × skills — where the builder stands in the pipeline</h2>
+    </div>
+<p class="lede">The Charter's master pipeline flow, read as a rota: which station holds each phase, what Mason does there, and which skill is wielded. Mason holds one step — the fifth — and touches the map before it and the pulse after it.</p>
+    </div>
+  </section>
+
+  <section data-label="Phase × persona × skills — where the builder stands in the pipeline (cont. 2/2)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl">
+      <thead><tr><th>Phase</th><th>Station on the floor</th><th>Mason's part</th><th>Verb / surface</th><th>Skill wielded</th></tr></thead>
+      <tbody>
+        <tr><td><b>Pre-flight</b></td><td>Doctor</td><td><span class="code">mason doctor</span> is the same idea turned inward: root, interpreter, import floor, engines, unavailable verbs — exit zero with the gap reported</td><td><span class="code">mason doctor --format json</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr><td><b>Capture</b></td><td>Herald</td><td>none in the loop; a release is the telemetry Herald later illustrates</td><td>—</td><td><span class="code">bmad-agent-herald</span> · deck bridge</td></tr>
+        <tr><td><b>Spec → stories</b></td><td>Marshal · BMAD team</td><td>Rule 3 shapes every conda-forge story: no per-platform test matrix for <span class="code">noarch</span>; the four-check submission gate as explicit ACs; prepare-branch and open-PR as separate stories; a named build host for win-64</td><td><span class="code">epics.md</span> · the planner constraints</td><td><span class="code">bmad-spec</span> · <span class="code">bmad-create-epics-and-stories</span></td></tr>
+        <tr class="hi"><td><b>Build (recipe)</b></td><td>Marshal (bmad-loop) → the craft</td><td>Rule 1: every BMAD agent doing recipe work invokes <span class="code">conda-forge-expert</span> first; Mason's <span class="code">recipe</span> verbs are that craft installed, and the CI smoke lane runs <span class="code">mason recipe build</span> on every push</td><td><span class="code">mason recipe build recipes/&lt;name&gt;</span></td><td><span class="code">conda-forge-expert</span></td></tr>
+        <tr><td><b>Map</b></td><td>Atlas</td><td>consumes the trending-candidates handoff — a health-screened candidate as structured data; Atlas proposes, never authors a recipe</td><td><span class="code">hand_off_candidate</span> → Mason's bench</td><td><span class="code">pyforge-atlas</span> (SKF)</td></tr>
+        <tr><td><b>Audit</b></td><td>Warden</td><td>the built artifact and its manifests under the one PR gate; Mason's build does not pass because Mason says so</td><td><span class="code">warden scan</span></td><td><span class="code">pyforge-warden</span> (SKF)</td></tr>
+        <tr class="hi"><td><b>Ship</b></td><td>Mason</td><td>the safe assets bound into platform structures and shipped — wheel and sdist to PyPI after the rehearsal, <span class="code">.conda</span> to a channel, the recipe to conda-forge as a pending PR</td><td><span class="code">mason package --target library --ship pypi,conda-forge</span></td><td><span class="code">conda-forge-expert</span> for the forge half; native for the rest</td></tr>
+        <tr><td><b>Post-ship pulse</b></td><td>Doctor</td><td>every shipped recipe joins the estate the pulse watches; a stale or vulnerable feedstock comes back as a ranked prescription</td><td><span class="code">doctor monitor --fleet</span></td><td><span class="code">pyforge-doctor</span> (SKF)</td></tr>
+        <tr class="hi"><td><b>Remediate</b></td><td>Mason (on a Doctor finding)</td><td><span class="code">recipe update</span> bumps to the next safe version; <span class="code">recipe build</span> and <span class="code">submit</span> carry the fix to the feedstock — the hands hold the fix, the physician the verdict</td><td><span class="code">mason recipe update … · submit --yes</span></td><td><span class="code">conda-forge-expert</span> + the feedstock-remediation guide</td></tr>
+        <tr><td><b>Broadcast</b></td><td>Herald</td><td>the receipt and the merged PR are the notables Herald compiles</td><td>the ship receipt · <span class="code">--format json</span></td><td><span class="code">bmad-agent-herald</span></td></tr>
+        <tr class="hi"><td><b>Retro</b></td><td>Mason → the craft</td><td>Rule 2: every conda-forge effort ends with a retrospective that lands edits in the skill, a dated changelog entry and a semver bump — the sanctioned <span class="code">retro:</span> commit, the only one that touches the governed surface</td><td><span class="code">SKILL.md</span> · <span class="code">CHANGELOG.md</span></td><td><span class="code">bmad-retrospective</span></td></tr>
+        <tr><td><b>Operate</b></td><td>Steward</td><td>engines provisioned before Mason ever probes for them; upload credentials in the inherited environment; the registry mirror the artifacts land on</td><td><span class="code">PATH</span> · the process environment</td><td><span class="code">pyforge-steward</span> (SKF)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="The relay — step five holds the baton once, and ships" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">12</span>
+      <h2>The relay — step five holds the baton once, and ships</h2>
+    </div>
+<p class="lede">The crew hands configurations and assets to one another in sequence, supervised start to finish by Marshal and framed by Herald. Mason receives safe, mapped assets from Warden and hands a shipped structure — and its receipt — to Doctor's pulse.</p>
+<svg viewBox="0 0 1128 200" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#201e1d"/></marker></defs>
+      <g>
+        <rect x="8" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="69" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">PRE-FLIGHT</text><text x="69" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Doctor</text><text x="69" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">check</text>
+        <rect x="149" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="210" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP ONE</text><text x="210" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="210" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">deck generate</text>
+        <rect x="290" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="351" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP TWO</text><text x="351" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Marshal</text><text x="351" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">factory spin</text>
+        <rect x="431" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="492" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP THREE</text><text x="492" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Atlas</text><text x="492" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">map</text>
+        <rect x="572" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="633" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP FOUR</text><text x="633" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Warden</text><text x="633" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">audit</text>
+        <rect x="713" y="40" width="122" height="70" fill="#ec3013"/><text x="774" y="66" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="800" letter-spacing="1">STEP FIVE</text><text x="774" y="86" text-anchor="middle" fill="#f3f2f2" font-size="15" font-weight="900">Mason</text><text x="774" y="102" text-anchor="middle" fill="#ffe0d9" font-size="9.5" font-family="ui-monospace, Menlo, monospace">package --ship</text>
+        <rect x="854" y="40" width="122" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="915" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP SIX</text><text x="915" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Doctor</text><text x="915" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">monitor --fleet</text>
+        <rect x="995" y="40" width="125" height="70" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/><text x="1057" y="66" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="1">STEP SEVEN</text><text x="1057" y="86" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="900">Herald</text><text x="1057" y="102" text-anchor="middle" fill="#605d5d" font-size="9.5" font-family="ui-monospace, Menlo, monospace">broadcast</text>
+      </g>
+      <g stroke="#201e1d" stroke-width="2" fill="none" marker-end="url(#arr4)">
+        <line x1="130" y1="75" x2="147" y2="75"/><line x1="271" y1="75" x2="288" y2="75"/><line x1="412" y1="75" x2="429" y2="75"/><line x1="553" y1="75" x2="570" y2="75"/><line x1="694" y1="75" x2="711" y2="75"/><line x1="835" y1="75" x2="852" y2="75"/><line x1="976" y1="75" x2="993" y2="75"/>
+      </g>
+      <path d="M492 110 C 492 150, 774 150, 774 110" stroke="#ec3013" stroke-width="2" fill="none" stroke-dasharray="6 5"/>
+      <text x="633" y="170" text-anchor="middle" fill="#ae1800" font-size="11" font-weight="700">Atlas hands Mason a candidate as structured data, never a recipe — and Mason's ship is what Doctor's pulse watches next</text>
+      <text x="564" y="192" text-anchor="middle" fill="#605d5d" font-size="11">supervised start to finish by Marshal — sequencing on verdicts it never authors; each hand-off a durable, revision-pinned artifact</text>
+    </svg>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-top:8px;">
+      <div>
+        <div class="relaystep"><span class="relaynum">✓</span><div><b>Pre-flight · Doctor</b> — toolchain and environment verified healthy before the run. <span class="code">doctor check --env --engines</span></div></div>
+        <div class="relaystep"><span class="relaynum">1</span><div><b>Capture · Herald</b> — the raw Dream becomes the strategic vision deck. <span class="code">herald deck generate</span></div></div>
+        <div class="relaystep"><span class="relaynum">2</span><div><b>Build · Marshal</b> — the factory floor spins code from the Spec contract; any recipe story invokes the craft first. <span class="code">marshal factory spin --method bmad</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">3</span><div><b>Map · Atlas</b> — the multi-registry dependency map of the generated code; a trending candidate handed to the bench. <span class="code">atlas map --ecosystem dual</span></div></div>
+      </div>
+      <div>
+        <div class="relaystep"><span class="relaynum">4</span><div><b>Audit · Warden</b> — the strict multi-axis audit on code and mapped packages; the one PR gate. <span class="code">warden audit --axes …</span></div></div>
+        <div class="relaystep" style="background:#fbe4de; margin:0 -8px; padding:12px 8px;"><span class="relaynum">5</span><div><b>Ship · Mason</b> — safe assets bound into final platform structures and shipped; the receipt reports each target's true state. <span class="code">mason package --target library --ship conda-forge</span></div></div>
+        <div class="relaystep"><span class="relaynum">6</span><div><b>Pulse · Doctor</b> — fleet and feedstock health monitored post-ship; a prescription ranked when something moves. <span class="code">doctor monitor --fleet --watch staleness,cve,abandonment</span></div></div>
+        <div class="relaystep" style="border-bottom:none;"><span class="relaynum">7</span><div><b>Proclaim · Herald</b> — release telemetry harvested into notables and infographics. <span class="code">herald updates compile · herald broadcast</span></div></div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT IV" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT IV</span>
+      <span class="ttl">The product</span>
+    </div>
+    <span class="cap">The CLI · the doctrine · the stack · which tool when · escalation</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="The shipped CLI — 12 verbs under three nouns, one envelope" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">13</span>
+      <h2>The shipped CLI — <span data-fact="cli_verbs">12</span> verbs under three nouns, one envelope</h2>
+    </div>
+<p class="lede">Console script <span class="code"><span data-fact="console_entry">mason</span></span>, package <span class="code">pyforge-mason</span> <span data-fact="package_version">0.1.0</span>, run through the unified grammar <span class="code">pyforge mason …</span>. Plain <span class="code">argparse</span> — no CLI framework for ergonomics alone. A bare noun prints that noun's verbs and exits non-zero; <span class="code">--version</span> and <span class="code">doctor</span> are top-level, mirroring Warden.</p>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:14px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">noun · CFE-dependent · eight verbs</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">mason recipe</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">new --from-pypi|--from-github|--from-cran|--from-npm --output PATH<br>validate PATH · build PATH [--docker --config NAME]<br>diagnose LOG · optimize PATH · scan PATH<br>submit --recipe-path DIR [--yes] [--prepare-only]<br>update PATH [--dry-run] [--github --repo … --pre]</div><p>The lifecycle as a product face. Each verb calls exactly one adapter in <span class="code">cfe.py</span>; the wrapped script's own JSON body passes through verbatim; <span class="code">validate</span> is the one verb whose delegated pass/fail becomes the process exit. With no craft resolvable, every verb here exits naming the four resolution steps.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">noun · CFE-independent · two verbs + the alias</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">mason package</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">build PATH [--target library]<br>ship --to pypi,pypi-test,conda-forge,channel:&lt;name&gt; [--yes] [--recipe-path DIR]<br>--ship TARGETS &nbsp;(the one documented bare-noun alias)</div><p>Build produces wheel, sdist and <span class="code">.conda</span> and uploads nothing. Ship accepts exactly the four targets and rejects anything else while listing the valid set; a <span class="code">pypi-test</span> requested alongside <span class="code">pypi</span> always runs first and gates it. Only the <span class="code">conda-forge</span> target reaches for the craft.</p></div>
+      <div class="card"><div class="k">noun · CFE-independent · two verbs</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">mason environment</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">lock [MANIFEST…] --output PATH [--platform linux-64,osx-arm64]<br>check [MANIFEST…] --lockfile PATH [--platform …]</div><p>Manifests are discovered and listed before solving; explicit paths override discovery. The engine's default platform set is reported when none is given. <span class="code">check</span> exits non-zero when the lockfile is stale <i>or</i> the check itself failed — never a false fresh — with machine-readable output for CI.</p></div>
+      <div class="card"><div class="k">top-level · CFE-independent · self-diagnosis</div><h3 style="font-size:20px; margin:8px 0 6px;" class="code">mason doctor</h3><div class="code" style="font-size:12px; line-height:1.6; color:var(--color-accent-700);">[--format json] &nbsp;→ mason_version · cfe_root + cfe_root_step<br>cfe_interpreter + step · cfe_import_floor_satisfied · missing<br>unavailable_verbs · engines[name, version]</div><p>Composes the two pure resolution chains, the non-raising import-floor probe and the engine probe into one frozen report, never raising. Exits zero when the non-wrapping verbs are usable even with the craft missing — reporting the gap rather than failing. Imports <span class="code">cfe</span> lazily, and a meta-test guards that it never does so at module level.</p></div>
+    </div>
+<div class="kicker" style="margin:24px 0 6px;">Six global flags — the closed set — each with an environment form, precedence uniformly flag → environment → default</div>
+    </div>
+  </section>
+
+  <section data-label="The shipped CLI — 12 verbs under three nouns, one envelope (cont. 2/2)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Flag</th><th>Environment</th><th>Resolves to</th><th>Why it exists</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">--cfe-root PATH</span></td><td><span class="code">MASON_CFE_ROOT</span></td><td>flag → env → the upward walk from the working directory → structured degradation</td><td>the craft root is a location, not a package; the chain always records which step matched so <span class="code">doctor</span> reports without re-resolving</td></tr>
+        <tr><td><span class="code">--cfe-python PATH</span></td><td><span class="code">MASON_CFE_PYTHON</span></td><td>flag → env → the running interpreter</td><td>the wrapped scripts run under an interpreter whose import floor — <span class="code">pyyaml</span>, <span class="code">requests</span>, <span class="code">packaging</span>, <span class="code">truststore</span>, <span class="code">ruamel.yaml</span>, <span class="code">conda-forge-metadata</span> — is probed before first use</td></tr>
+        <tr><td><span class="code">--cfe-timeout SECONDS</span></td><td><span class="code">MASON_CFE_TIMEOUT</span></td><td>flag → env → none</td><td>every invocation carries a mandatory timeout; expiry is a distinct typed error and leaves no orphaned process</td></tr>
+        <tr><td><span class="code">--format text|json</span></td><td><span class="code">MASON_FORMAT</span></td><td>flag → env → <span class="code">text</span></td><td>under machine output stdout carries exactly one JSON document or nothing; every diagnostic, progress line and log record goes to stderr</td></tr>
+        <tr><td><span class="code">--verbose</span> · <span class="code">--quiet</span></td><td><span class="code">MASON_VERBOSE</span> · <span class="code">MASON_QUIET</span></td><td>flag → env → off</td><td>no code path logs an environment-variable <i>value</i> at any verbosity; no configuration file in v1 — two configuration systems with undefined precedence is the classic "works on my machine"</td></tr>
+      </tbody>
+    </table>
+<div class="box" style="margin-top:16px;"><b>One envelope, every verb.</b> Use-cases return frozen dataclasses — <span class="code">CfeResult</span>, <span class="code">BuildResult</span>, <span class="code">PackageBuildResult</span>, <span class="code">ShipReceipt</span>, <span class="code">LockResult</span>, <span class="code">CheckResult</span>, <span class="code">DoctorReport</span> — and one renderer turns them into text or JSON. No use-case writes to stdout. Every anticipated failure is a typed <span class="code">MasonError</span> carrying a stable identifier that <b>is API</b> — changing one is a major version bump — and an actionable message; none surfaces as a raw traceback. <span class="code">main</span> in <span class="code">cli.py</span> is the only place an outcome becomes an exit code.</div>
+    </div>
+  </section>
+
+  <section data-label="The stack — lean by doctrine" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">15</span>
+      <h2>The stack — lean by doctrine</h2>
+    </div>
+<p class="lede">A lean workspace member in the parent pixi workspace, mirroring the sibling packages wholesale rather than reconsidering their conventions: a member manifest with no workspace table, a namespace package with no initializer, one build manifest driving both artifacts, <span class="code">no-default-feature</span> so the <span class="code">pyforge-mason</span> environment carries only the built package, its engines and a test runner.</p>
+<table class="tbl">
+      <thead><tr><th>Layer</th><th>Component</th><th>Why it is there</th><th>Pinned where</th></tr></thead>
+      <tbody>
+        <tr><td><b>Language</b></td><td>Python ≥ 3.14</td><td>the interpreter the workspace actually installs; the fleet floor raised by the consistency standard</td><td><span class="code">pyproject.toml</span> <span class="code">requires-python</span></td></tr>
+        <tr><td><b>Runtime deps</b></td><td><span class="code">packaging</span> · <span class="code">pyforge-core</span> · <span class="code">PyYAML</span></td><td>only what the module imports: <span class="code">SpecifierSet</span> for the engine ranges; the shared exception root and hook loader; conda-lock's own content-hash parser for <span class="code">environment check</span> — no stdlib YAML exists</td><td><span class="code">[project] dependencies</span></td></tr>
+        <tr><td><b>CLI</b></td><td><span class="code">argparse</span></td><td>click and typer are forbidden by requirement — no CLI framework for ergonomics alone; the sibling stations' dispatchers are argparse for the same reason</td><td>stdlib</td></tr>
+        <tr><td><b>Engines</b></td><td>pixi · pyproject-build · twine · conda-lock · gh</td><td>conda run-dependencies with declared version ranges, mirrored in <span class="code">engines/__init__.py</span> and held equal by a meta-test; discovered on PATH, never fetched at runtime</td><td><span class="code">[package.run-dependencies]</span> · <span class="code">test_engine_version_range_sync.py</span></td></tr>
+        <tr class="hi"><td><b>The craft it wraps</b></td><td>conda-forge-expert <span data-fact="groundtruth_skill_version">8.90.5</span> · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools · gotchas to G<span data-fact="groundtruth_gotcha_max">117</span></td><td>a location resolved at run time, never a dependency: the scripts tier is what the port spawns; the import floor is probed under the selected interpreter before first use</td><td><span class="code">SKILL.md</span> frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
+        <tr><td><b>Build</b></td><td>hatchling · pixi build</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-mason-build</span> task — the triad that the "Mason ships Mason" proof compares itself against</td><td><span class="code">pixi.toml</span> tasks</td></tr>
+        <tr><td><b>Tests</b></td><td>pytest · a fake CFE root</td><td>the whole suite runs against a fixture root of stub scripts with canned output — no real installation, network or recipe directory; the one delegation-fidelity exception is slow-marked and skips cleanly; the CI smoke lane runs a real <span class="code">mason recipe build</span></td><td><span class="code">pyforge-mason-test</span> · <span class="code">-test-slow</span> · <span class="code">-recipe-build-smoke</span></td></tr>
+        <tr><td><b>The factory around it</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span></td><td>the planning chain and the unattended story loop that built the station; Rule 1 and Rule 2 bind every session that touches a recipe</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span></td></tr>
+        <tr><td><b>The estate it ships into</b></td><td><span data-fact="groundtruth_pixi_envs">31</span> pixi environments · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · <span data-fact="recipes_count">7864</span> recipes</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports — the mirror Mason's recipes live in and the intelligence surface that tells it what to package next</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Which tool, when" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">16</span>
+      <h2>Which tool, when</h2>
+    </div>
+<p class="lede">Mason does not replace the existing pixi task surface — it is additive; nothing is removed or deprecated. The sibling's failure was a rebuild with no migration. So the estate has two doors to the same craft, and each answers a different question.</p>
+<table class="tbl">
+      <thead><tr><th>You want to…</th><th>Run</th><th>What comes back</th><th>Gate?</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>Turn a PyPI library into a v1 recipe, outside this repository</td><td><span class="code">mason recipe new --from-pypi &lt;pkg&gt; --output recipes/&lt;name&gt;</span></td><td>a <span class="code">recipe.yaml</span> at the path, from the craft's generator, with no field defaults of Mason's own</td><td>no</td></tr>
+        <tr><td>Do the same thing the estate does today, in the estate</td><td><span class="code">pixi run -e local-recipes recipe-build recipes/&lt;name&gt;</span></td><td>the native rattler-build, conda-forge-pinning layered, platform auto-detected — the task Mason's <span class="code">recipe build</span> wraps</td><td>no</td></tr>
+        <tr class="hi"><td>Know whether a recipe is conda-forge-clean</td><td><span class="code">mason recipe validate recipes/&lt;name&gt;</span></td><td>the craft's finding identifiers verbatim; the exit code reflects the pass/fail outcome</td><td>no — a lint, not the PR gate</td></tr>
+        <tr><td>Reproduce what conda-forge CI will do</td><td><span class="code">mason recipe build … --docker --config linux64</span></td><td>the CI-parity container build, always opt-in, child output streamed</td><td>no</td></tr>
+        <tr><td>Understand a red build</td><td><span class="code">mason recipe diagnose build.log</span></td><td>cause and fix from the failure analyzer — or a plain statement that nothing matched</td><td>no</td></tr>
+        <tr class="hi"><td>Ship a library to both ecosystems in one motion</td><td><span class="code">mason package ship --to pypi-test,pypi,conda-forge --yes</span></td><td>a receipt: rehearsal terminal, PyPI terminal, conda-forge pending with the PR reference</td><td>no — Warden's gate and the forge's review decide</td></tr>
+        <tr><td>Bind mixed manifests into one lockfile</td><td><span class="code">mason environment lock pyproject.toml environment.yml -o conda-lock.yml</span></td><td>one lockfile via conda-lock, the engine's name and version in its provenance</td><td>no</td></tr>
+        <tr><td>Ask CI whether the lockfile went stale</td><td><span class="code">mason environment check -l conda-lock.yml --format json</span></td><td>non-zero when stale or when the check itself failed; machine-readable output</td><td>advisory — CI decides what to do with it</td></tr>
+        <tr><td>Find out what Mason can do on this machine</td><td><span class="code">mason doctor --format json</span></td><td>root and step, interpreter and step, the import floor, each engine's presence and version, the unavailable verbs</td><td>no — exits zero and reports the gap</td></tr>
+        <tr><td>Fix a red feedstock PR the estate maintains</td><td><span class="code">conda-forge-expert</span> + the failure-remediation guide</td><td>triage FLAKE / REAL_FIX / BLOCKED, execute locally first, push the maintainer edit, request a rerender</td><td>no — the feedstock's own CI</td></tr>
+        <tr><td>Know whether this PR's code is compliant</td><td><span class="code">warden scan</span></td><td>the one PR-gate verdict — hygiene, security, license, currency</td><td><b>yes — the only one</b></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Escalation and the ledger — how a gap becomes an improvement to the craft" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">17</span>
+      <h2>Escalation and the ledger — how a gap becomes an improvement to the craft</h2>
+    </div>
+<p class="lede">Behaviour Mason needs and the craft lacks is never a local patch and never a vendored copy: it is an open question routed to the craft's own retrospective. The route is fixed, each hop is owned, and the last hop lands in the one place a fork could never reach.</p>
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="kicker">1 · receipt</div><div style="font-size:15px; font-weight:800; margin:6px 0;">a typed result</div><div style="font-size:12.5px; line-height:1.45;">the wrapped script's own JSON body, or a typed <span class="code">MasonError</span> with a stable identifier — never a traceback; the gap is named in the output, not hidden in a log</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">2 · defer</div><div style="font-size:15px; font-weight:800; margin:6px 0;">deferred-work ledger</div><div style="font-size:12.5px; line-height:1.45;">work not taken now lands in the station's tracked <span class="code">deferred-work-ledger.md</span> — the <span class="code">update</span> plan-before-write finding lives there today, flagged for a story, not silently fixed</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">3 · route</div><div style="font-size:15px; font-weight:800; margin:6px 0;">to the craft's retro</div><div style="font-size:12.5px; line-height:1.45;">a behaviour the craft lacks is an open question for <span class="code">conda-forge-expert</span>'s own Rule-2 retrospective — Mason's governed-surface rule forbids the local patch that would be faster</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="kicker">4 · land</div><div style="font-size:15px; font-weight:800; margin:6px 0;">the sanctioned commit</div><div style="font-size:12.5px; line-height:1.45;">a <span class="code">retro:</span> subject plus a dated changelog entry and a semver bump, its own commit, never bundled with a Mason source change — the governance check asserts exactly this shape over the merged history</div></div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);"><div class="kicker">5 · inherit</div><div style="font-size:15px; font-weight:800; margin:6px 0;">for free</div><div style="font-size:12.5px; line-height:1.45;">the improvement reaches every Mason install through the port with no change to Mason — the free-inheritance verification is a story of its own, proven, not asserted</div></div>
+    </div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:22px;">
+      <div>
+        <div class="kicker" style="margin-bottom:8px;">Five exit codes, one owner — <span class="code">exit_codes.py</span>, and no other module may define one</div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>Code</th><th>Name</th><th>Means</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">0</span></td><td><span class="code">EXIT_OK</span></td><td>the command completed — including <span class="code">doctor</span> with the craft missing, the gap reported</td></tr>
+            <tr><td><span class="code">1</span></td><td><span class="code">EXIT_FAILED</span></td><td>an anticipated <span class="code">MasonError</span>, an escaped exception, or <span class="code">validate</span> projecting the wrapped tool's own non-zero outcome</td></tr>
+            <tr><td><span class="code">2</span></td><td><span class="code">EXIT_USAGE</span></td><td>a bare noun with no verb, or an argparse-rejected invocation — argparse's own convention</td></tr>
+            <tr class="hi"><td><span class="code">3</span></td><td><span class="code">EXIT_CFE_UNAVAILABLE</span></td><td>the craft root could not be resolved for a CFE-dependent command — the designed degradation, naming all four steps</td></tr>
+            <tr><td><span class="code">130</span></td><td><span class="code">EXIT_INTERRUPTED</span></td><td>SIGINT at the CLI boundary — the shell convention</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:8px;">Four ship states, one shape — <span class="code">ShipState</span>, never collapsed in any rendering</div>
+        <table class="tbl" style="margin-top:0;">
+          <thead><tr><th>State</th><th>Meaning</th><th>Drives</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">not_attempted</span></td><td>the target was not reached in this invocation</td><td>nothing</td></tr>
+            <tr><td><span class="code">failed</span></td><td>the target failed to <b>initiate</b></td><td>the aggregate failure exit</td></tr>
+            <tr class="hi"><td><span class="code">pending</span></td><td>initiated, not yet terminal — a conda-forge PR in a human queue, or an uninterrogable target with its reason stated</td><td>a truthful receipt; <b>never success</b></td></tr>
+            <tr><td><span class="code">terminal</span></td><td>complete — a PyPI or channel upload, a rehearsal that reached the test index</td><td>the <span class="code">pypi</span> gate after <span class="code">pypi-test</span></td></tr>
+          </tbody>
+        </table>
+        <div class="tint" style="margin-top:14px;"><b>Why two domains stay apart.</b> The exit code answers "did this invocation fail to initiate anything"; the ship state answers "where is each target now". Folding the second into the first is how a queued pull request gets reported as a release.</div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT V" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT V</span>
+      <span class="ttl">Who it serves, where it runs</span>
+    </div>
+    <span class="cap">Value by leader · air-gap · the seams</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="What each leader gets" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">18</span>
+      <h2>What each leader gets</h2>
+    </div>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card"><div class="k">The maintainer shipping a library</div><p>The wheel took ninety seconds and the conda half used to mean switching toolchains entirely. Now it is one sentence: <span class="code">mason package ship --to pypi-test,pypi,conda-forge --yes</span> — rehearsed on the test index first, the PR opened on the forge, and a receipt that never calls a queued review "done".</p></div>
+      <div class="card"><div class="k">The colleague who never touches a recipe</div><p>Two of the three verb families need no craft on disk at all. <span class="code">package build</span> and <span class="code">environment lock</span> run on a bare pixi install; <span class="code">doctor</span> says exactly which verbs are unavailable and why. The tool is honest about its own edges before a release is attempted.</p></div>
+      <div class="card"><div class="k">The conda-forge reviewer</div><p>Recipes that arrive already through the craft's own gates — validate, optimize, scan, a green linux-64 build — with finding identifiers untouched and the two-phase submission preserved. Mason adds no dialect: what the reviewer sees is what <span class="code">conda-forge-expert</span> would have produced.</p></div>
+      <div class="card"><div class="k">The platform and security lead</div><p>A tool that reads no credential variable of its own, checks upload credentials for presence before building and never logs a value; every engine a declared conda run-dependency, nothing fetched at runtime; every mutating verb dry-run by default. The attack surface is the inherited environment, and nothing else.</p></div>
+      <div class="card"><div class="k">The skill's own maintainer</div><p>A wrapper that cannot drift into a fork: a deny-list with planted violations, a sole-caller test, a one-entry allow-list, a governance check over merged history. Every gotcha added to the skill reaches every Mason install with no change to Mason — the loop that governs the domain keeps governing it.</p></div>
+      <div class="card"><div class="k">The executive reader</div><p>The repository's most-exercised capability, finally installable: <span data-fact="mason_stories_done_total">70/70</span> stories across <span data-fact="mason_epics_done_total">17/17</span> epics, a Spec that reads <span data-fact="spec_status">shipped</span>, a Dream that reads <span data-fact="dream_status">realized</span> — with the one honest caveat written down: the public publish of <span class="code">pyforge-mason</span> itself is still rehearsal-tier.</p></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Enterprise and air-gap — a builder that carries nothing in" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">19</span>
+      <h2>Enterprise and air-gap — a builder that carries nothing in</h2>
+    </div>
+<p class="lede">Offline-safe and enterprise-neutral by constraint: every command not inherently requiring the network runs offline, network use is never implicit, and Mason imposes no direct-internet assumption — proxy and mirror routing arrive through the process environment, exactly as the craft's own <span class="code">_http.py</span> chain (truststore, JFrog, GitHub, <span class="code">.netrc</span>) expects them.</p>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+      <div class="box"><b>Credential blindness, confined by process.</b> The craft's known unconditional credential-header injection stays inside the craft's own process; Mason passes the inherited environment through and reads nothing from it. A <span class="code">test_credential_isolation.py</span> real-tree scan — enterprise-credential variables, banned HTTP imports, environment mutation — runs clean across the whole <span class="code">pyforge.mason</span> tree.</div>
+      <div class="box"><b>Never downloaded at runtime.</b> pixi, pyproject-build, twine, conda-lock and gh are conda run-dependencies discovered on PATH; a missing one is a typed error naming the engine and how to provision it. Inside an air gap that means one mirrored channel set and nothing else to allow-list.</div>
+      <div class="box"><b>The air-gap distribution contract has a socket.</b> <span class="code">airgap_contract.py</span> ships the contract — a mirrored channel set, a pixi bootstrap path from a bare machine with no public egress, verification hooks that prove the mirror is usable — and an <i>empty</i> backend registry by design, so a Miniforge/constructor or vendor installer registers and validates as a separate deliverable. Sockets, never core builds.</div>
+      <div class="box"><b>The craft's own enterprise rules ride through the port.</b> PyPI sources route through <span class="code">pypi.org/packages/…</span>, never the hashed CDN host that bypasses Artifactory's PyPI remote; the Python floor is read from the installed pinning, never hardcoded; format is never silently upgraded. Mason inherits every one of them without knowing any.</div>
+    </div>
+<div class="tint" style="margin-top:16px;"><b>The satellite: Presenton, conda-native, inside the regulated enterprise.</b> Mason is the station registered to repackage the third-party Presenton deck-generation app as an air-gapped, conda-forge-native image for OpenShift — the six capabilities folded into this Spec as <span class="code">CAP-8..13</span>: a bundled air-gap-buildable Chromium with zero reachable public CDN, a clean-room editable <span class="code">.pptx</span> export, three LLM tiers behind one env-var contract, one pixi-locked and cosign-attested OCI image with a CycloneDX-plus-SPDX SBOM, a Helm chart on restricted-SCC defaults, and a drift harness whose online capture never shares a runner with the air-gapped build. Its Dream stays archived at its own Phase-0 decision gate — the planning chain was consolidated here at the operator's direction, the narrative deliberately kept separate, and the contradiction with the earlier separation decision recorded rather than silently resolved. Recipe content itself remains <span class="code">conda-forge-expert</span>'s under Rules 1 and 2, consistent with everything above.</div>
+    </div>
+  </section>
+
+  <section data-label="Integration seams — every edge, and its direction" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">20</span>
+      <h2>Integration seams — every edge, and its direction</h2>
+    </div>
+<p class="lede">Mason's boundaries are enforced by meta-tests, not by convention. Each seam below has a stated direction and a test — or a governance check — that fails when the direction is violated.</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <div class="card"><div class="k">mason → conda-forge-expert (subprocess)</div><p><span class="code">cfe.py</span> is the sole caller: one declaration table of wrapped scripts, one adapter function per verb, list argv never a shell string, a mandatory timeout, the child killed and waited on every exit. <span class="code">test_adapter_sole_caller.py</span> finds no wrapped path elsewhere; <span class="code">test_no_recipe_knowledge.py</span> finds no gotcha or check code anywhere.</p></div>
+      <div class="card"><div class="k">mason → engines (PATH)</div><p>Five engines behind one <span class="code">EngineAdapter</span> protocol, each an <span class="code">engines/*.py</span> module; the PyPI JSON index interrogated for idempotence. Version ranges mirrored from the member manifest and held equal by <span class="code">test_engine_version_range_sync.py</span>. No engine is ever imported, only spawned.</p></div>
+      <div class="card"><div class="k">mason ← pyforge-core</div><p>The exception root (<span class="code">MasonError</span> re-parents to <span class="code">PyforgeError</span>) and the <span class="code">pyforge.core.hooks</span> loader carrying <span class="code">pyforge.mason.build_engine</span> — rattler-build the default plugin, conda-build registered but never spawned. A hard dependency by a recorded fleet-wide decision, reconciled into the Spec.</p></div>
+      <div class="card"><div class="k">atlas → mason (structured handoff)</div><p>The trending-candidates engine's downstream handoff: a candidate reaching packaging carries a recorded health-screen verdict and arrives as one structured record — <b>never a recipe, never a PR</b>; a failing or missing verdict raises with no catalog write. Atlas proposes; Mason's bench decides what to forge.</p></div>
+      <div class="card"><div class="k">mason → warden · the forge (verdicts)</div><p>Mason's artifacts and manifests are Warden's inputs; Warden's exit is the one PR gate and Mason never re-derives or softens it. The <span class="code">conda-forge</span> target's outcome is the forge's review, reported as <span class="code">pending</span> with its reference until the reviewers act.</p></div>
+      <div class="card"><div class="k">The Canopy → mason · steward's chain</div><p><span class="code">pyforge mason …</span> is the unified grammar; <span class="code">POST /stations/mason/mcp</span> the service face; the <span class="code">/stations/mason/</span> portal's first job is the last diagnose. Steward's foundry cutover carries <i>CFE comes home</i> and <i>Mason submits to conda-forge</i> on its own epic, each bound to Mason's Rule 1 and Rule 2 — named in Mason's Kinships so the decomposition is not silently incomplete.</p></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="ACT VI" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="act">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span class="lbl">ACT VI</span>
+      <span class="ttl">Proof and road</span>
+    </div>
+    <span class="cap">Receipts · the seed · now, next, later</span>
+  </div>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">21</span>
+      <h2>Proof — the receipts, from the ledgers</h2>
+    </div>
+<p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the manifests and <span class="code">bmad-groundtruth</span> at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The July stub this poster replaces quoted a feedstock count and a gotcha count that no ledger could re-derive; neither appears here.</p>
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">70/70</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">17/17</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the installable shell to the realization-gate residue</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">13</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities — seven in the kernel, each re-verified mechanically at a named HEAD; six in the satellite; Spec <span data-fact="spec_status">shipped</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — retained at the realization-gate re-read, with its caveat written down</div></div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers (cont. 2/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<table class="tbl">
+      <thead><tr><th>Capability</th><th>What was proven, mechanically</th><th>Pinned by</th></tr></thead>
+      <tbody>
+        <tr><td><b>CAP-1</b> the seam</td><td>every subprocess path validates its timeout before spawning, raises a typed error on expiry and kills-and-waits the child on every exit; <span class="code">doctor --format json</span> live-reports which step matched (<span class="code">cwd-walk</span>, <span class="code">running-interpreter</span>); the credential-isolation scan runs clean over the whole tree</td><td><span class="code">test_adapter_sole_caller.py</span> · <span class="code">test_resolve.py</span> · <span class="code">test_cfe.py</span> · <span class="code">test_credential_isolation.py</span></td></tr>
+        <tr><td><b>CAP-2</b> recipe</td><td>live <span class="code">mason recipe --help</span> lists exactly the eight verbs; <span class="code">validate</span> returns the craft's result unmodified; build streams; <span class="code">diagnose</span> and <span class="code">optimize</span> pass the JSON body through including the no-match shape — with one recorded finding: <span class="code">update</span>'s plan exists only as the opt-in alternative to writing</td><td><span class="code">test_recipe.py</span> · the Spec's own <span class="code">verified:</span> line, flagged not fixed</td></tr>
+        <tr><td><b>CAP-3</b> package</td><td>exactly four target kinds; version disagreement aborts with both values; credentials checked before <span class="code">build()</span>; each target in its own error boundary; the rehearsal gate in code; the self-hosting proof re-run live — and a real environment bug found and fixed in the same pass</td><td><span class="code">test_package_build_self_hosting…</span> · <span class="code">test_delegation_fidelity.py</span> · <span class="code">test_engine_version_range_sync.py</span></td></tr>
+        <tr><td><b>CAP-4</b> environment</td><td>manifest discovery wired into <span class="code">lock</span> and <span class="code">check</span>, bypassed by explicit paths; conda-lock the only engine; <span class="code">environment.py</span> never imports <span class="code">cfe</span></td><td><span class="code">test_environment.py</span> · <span class="code">test_engines_condalock.py</span></td></tr>
+        <tr><td><b>CAP-5</b> shell</td><td>live: <span class="code">--version</span> exit zero; a bare <span class="code">recipe</span> lists its verbs and exits two; <span class="code">doctor --format json</span> is one document on stdout with empty stderr; the five exit codes exist in one module and nowhere else; <span class="code">package --ship</span> is the one alias and a test says so</td><td><span class="code">test_cli.py</span> · <span class="code">test_exit_code_ownership.py</span> · <span class="code">test_doctor.py</span> · <span class="code">test_render_ownership.py</span></td></tr>
+        <tr><td><b>CAP-6</b> distribution</td><td>the three-task build triad re-run live from one manifest pair — a <span class="code">.conda</span>, a wheel and an sdist; the console entry resolves and reports the version; <span class="code">pyforge-core</span> hard, by a reconciled cross-spec decision</td><td><span class="code">pyforge-mason-build</span> · <span class="code">pyproject.toml</span></td></tr>
+        <tr class="hi"><td><b>CAP-7</b> the proof</td><td>every deny-list entry carries a citation and a rationale; the detector fires on a planted gotcha identifier and a planted check code; the allow-list has exactly one entry, structurally; zero merged commits touch both Mason source and the governed CFE surface</td><td><span class="code">test_no_recipe_knowledge.py</span> · <span class="code">test_cfe_independence.py</span> · <span class="code">test_capability_tiers.py</span> · git history on <span class="code">origin/main</span></td></tr>
+        <tr><td><b>CAP-8..13</b> the satellite</td><td>specified in full, with confirmed recipes, fixture sets and acceptance ids; no story has entered implementation — its Phase-0 exit criteria, most load-bearingly the disconnected-stack check, remain unresolved</td><td><span class="code">SPEC.md</span> § Satellite: Presenton</td></tr>
+      </tbody>
+    </table>
+<div class="kicker" style="margin:26px 0 8px;">The fleet the builder ships within — stories and epics done, per tracked ledger</div>
+<table class="tbl" style="margin-top:0;">
+      <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
+      <tbody>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><b><span data-fact="mason_stories_done_total">70/70</span></b></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><span data-fact="steward_stories_done_total">231/244</span></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><b><span data-fact="mason_epics_done_total">17/17</span></b></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><span data-fact="steward_epics_done_total">56/58</span></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section data-label="Proof — the receipts, from the ledgers (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="box" style="margin-top:18px;"><b>The gap the realization gate found, and the two stories that closed it.</b> With the Dream already <span data-fact="dream_status">realized</span>, a fleet-readiness re-read found the station's differentiator unexercised in the estate that built it: <span class="code">mason doctor</span> in Mason's own pixi environment reported the import floor unsatisfied and the <span class="code">recipe</span> family unavailable, and nothing in the estate routed through <span class="code">mason recipe</span> at all. Two effect stories were minted on Mason's own epics rather than argued away — Story 16.1 (the environment satisfies the floor) and Story 16.2 (a first estate caller: the <span class="code">pyforge-mason-recipe-build-smoke</span> task in the station-tests lane). Both landed; a later live run of the same <span class="code">doctor</span> command reports the floor satisfied and no unavailable verbs. The status was retained with the caveat written down, not upgraded by assertion.</div>
+    </div>
+  </section>
+
+  <section data-label="The seed — Dream to shipped station, dated" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">22</span>
+      <h2>The seed — Dream to shipped station, dated</h2>
+    </div>
+<p class="lede">Every claim below has a dated entry in the Dream's realization log. The dates are the log's own; nothing here is projected.</p>
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-25">2026-07-25</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Dreamt and specified</div>
+        <div style="font-size:12px; line-height:1.45;">The persona Dream authored, closing the last asymmetry among the eight Smiths — Mason was the only station whose charter lived inside a practice Dream. The whole planning chain landed the same day: research, brief, PRD, architecture, five epics — and the D-1 seam decision.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-08-02">2026-08-02</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">Walking skeleton</div>
+        <div style="font-size:12px; line-height:1.45;">Epic 1's first slice shipped — the workspace scaffold, the noun-verb shell, the error taxonomy and exit-code contract, the dual output format. The same day a sibling Dream proposing a native linting engine inside Mason was retired as a direct conflict with D-1, and the Presenton Dream was archived separately.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-08-26">2026-08-26</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Realized</div>
+        <div style="font-size:12px; line-height:1.45;">Complete per the fleet ledger: the three verb families as dreamed, the seam-holds proof suite green, "Mason ships Mason" proven at the dry-run and TestPyPI-rehearsal tier. As-built truth-ups landed in the Spec, PRD, spine and brief; the chain-layers audit's behind-code flag retired by design.</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-09-09">2026-09-09</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The gate re-read</div>
+        <div style="font-size:12px; line-height:1.45;">Status retained, with a caveat: the differentiator was unexercised in the estate that built it. Two effect stories minted on Mason's own epics; the two Mason capabilities living on Steward's chain named in Kinships so the decomposition is not silently incomplete.</div>
+      </div>
+      <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Re-derived</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">17/17</span> epics, both gap stories landed — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+      </div>
+    </div>
+<div class="box" style="margin-top:22px;"><b>Why the origin is a practice, not a product — and why that mattered for the record.</b> Mason tends the repository's origin dream, the perpetual packaging factory: realized as a running factory, never "done". The factory's own body had drifted eleven minor versions behind the craft it describes when a currency pass caught it — the lesson the pass named fleet-wide is that a stamped literal version number cannot keep pace with a skill that ships several releases a day, and a <i>derived</i> pin is the durable shape. This poster is that lesson applied to itself: every version, count and date on it is a ledger row, re-derivable on demand.</div>
+    </div>
+  </section>
+
+  <section data-label="Now · next · later" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+<div class="sechead">
+      <span class="num">23</span>
+      <h2>Now · next · later</h2>
+    </div>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;">
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);">
+        <div class="k">Now — shipped and verified</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>Three nouns, <span data-fact="cli_verbs">12</span> verbs, one port, five engines, four ship targets, five exit codes — the whole surface behind <span class="code">pyforge mason …</span></li>
+          <li><span data-fact="spec_capabilities">CAP-1..CAP-13</span> — seven kernel capabilities re-verified mechanically at a named HEAD, six satellite capabilities specified</li>
+          <li>The seam-holds suite green: deny-list with planted violations, sole caller, one-entry allow-list, governance over merged history, delegation fidelity</li>
+          <li>The station persona consulting <span class="code">conda-forge-expert</span>, the <span class="code">/stations/mason/</span> portal slice, the CLI-to-tool parity gate, the build-engine hook on <span class="code">pyforge-core</span></li>
+          <li>The floor satisfied and a first estate caller of <span class="code">mason recipe</span> in the CI smoke lane; tracked ledger <span data-fact="stories_done_total">70/70</span> · <span data-fact="epics_done_total">17/17</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Next — named, on someone's chain</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>The public publish of <span class="code">pyforge-mason</span> itself — "Mason ships Mason" is proven at the rehearsal tier; the irreversible upload has not been executed, and the Spec says so in dated prose</li>
+          <li><span class="code">recipe update</span>'s plan-before-write: a preview gate ahead of the default real write, today only the opt-in alternative to it — a dedicated story, not a silent fix</li>
+          <li><i>CFE comes home</i> and <i>Mason submits to conda-forge</i> — Mason's two capabilities on Steward's foundry-cutover epic, each bound to Rules 1 and 2</li>
+          <li>The Spec's genuinely open questions: verbs beyond eight (counter-metric respected), multi-ecosystem autotick ownership, a minimum craft version, the positioning claim</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="k">Later — named, deliberately not built</div>
+        <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
+          <li>Multi-ecosystem autotick and scaffolders (CRAN, npm, cargo), the smart test extractor, the static dependency-version checker — the origin Dream's frontier, explicitly out of v1</li>
+          <li>Application and binary project shapes — v1 is <span class="code">library</span> only</li>
+          <li>A trusted-publishing credential flow — token-based only until then</li>
+          <li>Migration off the existing pixi task surface — Mason earns the surface first; migration is its own effort, because a rebuild with no migration is the sibling's failure</li>
+          <li>The Presenton satellite's build — parked at its Phase-0 decision gate until the disconnected-stack question and the memory-subsystem scope are answered</li>
+          <li>A second MCP server, a configuration file, persistent state, concurrency — each a named non-goal, not a gap</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section data-label="Close" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+    <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
+
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The creed</div>
+    <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">We forge the blocks. We bind the environment. We ship the structure.</div>
+    <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">Structural integrity is not optional. Deterministic, binary-compatible, reproducible — or it does not ship. The craft stays where it is governed and improves through the loop that governs it; Mason is its installable face, honest about every edge, with a receipt that never calls a queue a release. The hand that builds is never the gate that judges.</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>PyForge Mason</b> · mason chain · <span class="code">spec-pyforge-mason</span> · <span data-fact="spec_capabilities">CAP-1..13</span> · <span class="code">pyforge-mason</span> <span data-fact="package_version">0.1.0</span></span>
+      <span>docs/dreams/pyforge-mason.md · <span class="code">src/shared/packages/pyforge-mason/</span> · PyForge Guild · Dream to Code</span>
+    </div>
+  </section>
+
+
+    </div>
+  </section>
 
 </x-import>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080}}"></script>
 </body>
 </html>
