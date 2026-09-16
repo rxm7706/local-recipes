@@ -1,6 +1,6 @@
 # Unity Data Stack deck (`unity-data-stack`)
 
-**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6); Design push still pending. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
 product** deck (not a persona chapter); Dream: `docs/dreams/unity-data-stack.md`. Spec:
 `_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
@@ -63,3 +63,10 @@ Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 
 The three non-prototype `.dc.html` artifacts (exec summary, infographic, infographic deck) and the
 standalone live in git only so far — seed them on the next Design pass if they need visual editing.
+
+## Ledger — 2026-09-15 Wave C local rebuild (Story 21.6)
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Unity Data Stack Infographic standalone.html` | 145176 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 56/56 | `PENDING-PUSH` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; `poster_last_commit_date` unshown; head + Infographic Deck still July stubs |
+| `facts.yaml` | 32 facts at tree `506ad58622` | — | spec_status omitted (SPEC lives in archive under Atlas); no package/CLI rows |

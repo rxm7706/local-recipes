@@ -1,6 +1,6 @@
 # Wasm Analytics Stack deck (`wasm-analytics-stack`)
 
-**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.7); Design push still pending. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
 product** deck (not a persona chapter); Dream: `docs/dreams/wasm-analytics-stack.md`. Spec:
 `_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
@@ -68,3 +68,10 @@ Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 
 The three non-prototype `.dc.html` artifacts (exec summary, infographic, infographic deck) and the
 standalone live in git only so far — seed them on the next Design pass if they need visual editing.
+
+## Ledger — 2026-09-15 Wave C local rebuild (Story 21.7)
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Wasm Analytics Stack Infographic standalone.html` | 145188 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 58/58 | `PENDING-PUSH` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; `poster_last_commit_date` unshown |
+| `facts.yaml` | 33 facts at tree `506ad58622` | — | spec_status omitted (SPEC archived under Atlas); no package/CLI rows |

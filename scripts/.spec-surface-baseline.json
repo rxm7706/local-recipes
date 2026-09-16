@@ -976,7 +976,7 @@
    "scripts/deck_facts.py": "c1d9f29b0e2568baf8a91a424c81f57cebf01796",
    "scripts/deck_trio.py": "f0c27340a3ca3ec4574358f741de3fac35b12ff5"
   },
-  "memlog": "2d219ef94afe17bb8b8f7044fd4ecc4b66ea85dd"
+  "memlog": "82aff19f661502a6effb08a4b284ac443197b888"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -1925,7 +1925,8 @@
    "presentations/agentic-sdlc/src/slides/manifest.json": "3d60c934e028a179c7fd53185195f1bbe1a3a04c",
    "presentations/agentic-sdlc/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/deckcraft/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
-   "presentations/deckcraft/README.md": "7162b5feabf53b0e7332410151949a40d6534a9b",
+   "presentations/deckcraft/README.md": "8da1f456fb7b86a86ec8ec8cd53cf5e366a46abd",
+   "presentations/deckcraft/facts.yaml": "eebaaf95cddefaba30cccbc844b770c3da840bc5",
    "presentations/deckcraft/index.html": "ed71572a65acce808648958c72456a436ed5bf82",
    "presentations/deckcraft/package-lock.json": "d498544be644f983588f9fe732c45b53a6959e0b",
    "presentations/deckcraft/package.json": "bb3788844262ce0123cd147472eee06892db6bfc",
@@ -1933,7 +1934,7 @@
    "presentations/deckcraft/project/Deckcraft - Executive Summary.dc.html": "4f34e03203dcae847b740cf9d1fe282faa766d79",
    "presentations/deckcraft/project/Deckcraft - Infographic Deck.dc.html": "c74309376b697e879861dcc1c017731d80b5e560",
    "presentations/deckcraft/project/Deckcraft - Infographic.dc.html": "92f6bc5c93490add7bc8c648d55415ee779fb59d",
-   "presentations/deckcraft/project/Deckcraft Infographic standalone.html": "bd4bc757f2a962eca79bce11de344157f4f574fc",
+   "presentations/deckcraft/project/Deckcraft Infographic standalone.html": "4be83ff050ba487688a273b9c9ecbfe33381dcf5",
    "presentations/deckcraft/project/Deckcraft.dc.html": "4dae6fe9e593138e6f848a747f49883394083bdc",
    "presentations/deckcraft/public/assets/banners/.gitkeep": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "presentations/deckcraft/scripts/extract-slides.mjs": "35b6d110b703ca28d761bdd633b0fa72e3cfc0a1",
@@ -1970,7 +1971,8 @@
    "presentations/deckcraft/src/slides/manifest.json": "6d1acde9d46bdec9b748d65cf3bca052efe380cc",
    "presentations/deckcraft/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/presenton-pixi-image/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
-   "presentations/presenton-pixi-image/README.md": "d942eeeb7b94e31618a6adc5b14ed4c5dee6cb94",
+   "presentations/presenton-pixi-image/README.md": "d41e81de428e100488a450fc473c6fed0263cd8b",
+   "presentations/presenton-pixi-image/facts.yaml": "4a26241d429ac6c75336afc6575356c9123e036e",
    "presentations/presenton-pixi-image/index.html": "fe9fe4e5a1f61237e16af47987ec213c05ba206c",
    "presentations/presenton-pixi-image/package-lock.json": "dd5b893b69c5bf1eace6970de26a6a7cfc210c49",
    "presentations/presenton-pixi-image/package.json": "a4607afd78eb1e1d2d6681e0e7ec6389053586e2",
@@ -1978,7 +1980,7 @@
    "presentations/presenton-pixi-image/project/Presenton Conda-Native - Executive Summary.dc.html": "ea0611cf2fb4f4776267c4f4f97d724782c4b860",
    "presentations/presenton-pixi-image/project/Presenton Conda-Native - Infographic Deck.dc.html": "ab6515247a78c000e95719696bf8333c2f913f33",
    "presentations/presenton-pixi-image/project/Presenton Conda-Native - Infographic.dc.html": "e0652d04f8d3a6647ca8605137d276dc2417eae1",
-   "presentations/presenton-pixi-image/project/Presenton Conda-Native Infographic standalone.html": "816d541c7df6cb40e3d5b28ed4f20ee4c9628031",
+   "presentations/presenton-pixi-image/project/Presenton Conda-Native Infographic standalone.html": "a5515d632fa27c3022dd82845a4a7e804f34f57d",
    "presentations/presenton-pixi-image/project/Presenton Conda-Native.dc.html": "5447ef2c4374db3a2bf0336f638343b64e869846",
    "presentations/presenton-pixi-image/public/assets/banners/.gitkeep": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "presentations/presenton-pixi-image/scripts/extract-slides.mjs": "4b06271926b5a6abb8236299720df664904d6845",
@@ -2540,7 +2542,8 @@
    "presentations/pyforge-warden/src/slides/manifest.json": "43a54223fff1effc407308cc08945e297e98c366",
    "presentations/pyforge-warden/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/unity-data-stack/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
-   "presentations/unity-data-stack/README.md": "8c87192d77bf2989ec91b9b0c1f345aa39994a60",
+   "presentations/unity-data-stack/README.md": "cbc4675824f4ddd330aafada2b6f01930aeef4d0",
+   "presentations/unity-data-stack/facts.yaml": "8fea58578031221ddbc62c83b92606ac42536614",
    "presentations/unity-data-stack/index.html": "68eb831f355b388e6c640a618453c6ecc1bb2abf",
    "presentations/unity-data-stack/package-lock.json": "731979c340f597e5a4a692b01cca96b10857b61c",
    "presentations/unity-data-stack/package.json": "7e079cf23731ba60abf2cf4d7c9ce933255300f5",
@@ -2548,7 +2551,7 @@
    "presentations/unity-data-stack/project/Unity Data Stack - Executive Summary.dc.html": "13684504420f8c73139dae87081291b1b40c684e",
    "presentations/unity-data-stack/project/Unity Data Stack - Infographic Deck.dc.html": "6a5686ec0985f6c4581283fe1dfea450bb60a775",
    "presentations/unity-data-stack/project/Unity Data Stack - Infographic.dc.html": "907675055922b658fada61b53d76f84e7b502315",
-   "presentations/unity-data-stack/project/Unity Data Stack Infographic standalone.html": "cca433c1974157ff6aefb54b9ff5983d8041d7b8",
+   "presentations/unity-data-stack/project/Unity Data Stack Infographic standalone.html": "4dacc0a98ae67f267a369df622b0fb941c237bb0",
    "presentations/unity-data-stack/project/Unity Data Stack.dc.html": "71f7e5a08eba83944076b640661da230e9ec98b7",
    "presentations/unity-data-stack/public/assets/banners/.gitkeep": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "presentations/unity-data-stack/scripts/extract-slides.mjs": "7def1afe5df4db29e62adbbe6d30c6e2c2a22604",
@@ -2585,7 +2588,8 @@
    "presentations/unity-data-stack/src/slides/manifest.json": "16699c69f30a4823f904d6726d41530f60dc29e9",
    "presentations/unity-data-stack/vite.config.js": "9555726e7036b6116ae26d3197fb36df3c37def0",
    "presentations/wasm-analytics-stack/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
-   "presentations/wasm-analytics-stack/README.md": "e997ffa24ba72228322fe5ef2775d89f62720de3",
+   "presentations/wasm-analytics-stack/README.md": "c9cfe8f33f1a505699f2c66ad68bed1bfbb40fe0",
+   "presentations/wasm-analytics-stack/facts.yaml": "556fe1e98de42d9181e75488cdcbebe965b361e4",
    "presentations/wasm-analytics-stack/index.html": "af16b094e0f3606d76358acdd591071c882de125",
    "presentations/wasm-analytics-stack/package-lock.json": "228ce0f2c4c3ed6c5aa84518d79c11aa8ad83cad",
    "presentations/wasm-analytics-stack/package.json": "54971be827539b3c457c007f74a53a36ed1d932e",
@@ -2593,7 +2597,7 @@
    "presentations/wasm-analytics-stack/project/Wasm Analytics Stack - Executive Summary.dc.html": "d0fc2d69463463e19823f39c6262eef28197e46e",
    "presentations/wasm-analytics-stack/project/Wasm Analytics Stack - Infographic Deck.dc.html": "c21e092c99d22dc7dc9c83efc3e5cb7382861c98",
    "presentations/wasm-analytics-stack/project/Wasm Analytics Stack - Infographic.dc.html": "665ac054cee20346e5f20d2c805fb61a42efc81e",
-   "presentations/wasm-analytics-stack/project/Wasm Analytics Stack Infographic standalone.html": "0889276b54085ebc96cbcb4cfed4ce50a7ff5dd7",
+   "presentations/wasm-analytics-stack/project/Wasm Analytics Stack Infographic standalone.html": "222f317c5a95e4f1729a77ccde489d85be82b028",
    "presentations/wasm-analytics-stack/project/Wasm Analytics Stack.dc.html": "c9e42239d63867e5f6fb32f58a2874c30c2ae223",
    "presentations/wasm-analytics-stack/public/assets/banners/.gitkeep": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "presentations/wasm-analytics-stack/scripts/extract-slides.mjs": "80f49e3fbcc79f91626251958b01cbbdc8ce29b3",
@@ -2750,7 +2754,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "08fef40a87da2f530762ec4f9ef3938c83d1d22a"
+  "memlog": "0b068f5e98326544468263c3f157bd5e4658ea92"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
