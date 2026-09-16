@@ -139,6 +139,9 @@ def test_not_a_detectors_ci_member() -> None:
     detectors = _DETECTORS.read_text(encoding="utf-8") if _DETECTORS.is_file() else ""
     assert "steward guards" not in pixi
     assert "source-ground" not in detectors
-    start = pixi.find("[feature.local-recipes.tasks.detectors-ci]")
-    ci_block = pixi[start : start + 800] if start != -1 else ""
+    # detectors-ci lives in feature.guild-tasks since steward 63.1 (moved from
+    # feature.local-recipes); a missed anchor made this assertion vacuously true.
+    start = pixi.find("[feature.guild-tasks.tasks.detectors-ci]")
+    assert start != -1, "detectors-ci task block not found in pixi.toml"
+    ci_block = pixi[start : start + 800]
     assert "guards" not in ci_block
