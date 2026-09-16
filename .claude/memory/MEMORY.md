@@ -22,6 +22,7 @@ letting the index grow unbounded.
 
 ## Project
 
+- [fleet-inbox-is-not-a-second-decompose-wave](project/fleet-inbox-is-not-a-second-decompose-wave.md) — 2026-09-16: leftover intake/Dreams/deferred are not a second story-mint wave; dispatch 59–62 then doctor 23–24; next decompose is status-body-consistency only.
 - [the-stuck-orchestrator-baseline-bug-bmad-loop-s-task-baselin](project/the-stuck-orchestrator-baseline-bug-bmad-loop-s-task-baselin.md) — The stuck-orchestrator-baseline bug: bmad-loop's task.baseline_commit can drift to a later commit while a dev session i…
 
 ## Reference

@@ -2,7 +2,7 @@
 title: One spec's clean reconciliation should clear another's, when they share a file
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # One spec's clean reconciliation should clear another's, when they share a file
@@ -95,3 +95,6 @@ code).
   root-cause fix so the same class of noise does not keep recurring as new narrow specs
   get minted under existing kernel specs. Next act: `bmad-spec` derives the Spec under
   `pyforge-marshal`.
+- **2026-09-16** — `dreamt` → `realized` (fleet-inbox-disposition). Marshal Epic 42
+  (Stories 42.1–42.2) shipped in PR #1378: overlap OR on a clean co-governor. Record:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-inbox-disposition-2026-09-16.md`.

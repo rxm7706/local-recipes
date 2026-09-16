@@ -128,12 +128,11 @@ DEFERRED_SPECS: dict[str, str] = {
     # to docs/governance/spec-coverage-gate-independence/ -- outside `pa.glob("specs/spec-*")`
     # above, exactly like spec-pyforge-charter -- and the mechanism stories live in doctor's
     # epics.md (Epic 24), where INV-A can see them.
-    "spec-golden-path-conda-blind-spot":
-        "a `ready` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
-        "its five CAPs were gated by five open questions (selector grammar, provisioning, "
-        "coverage floor, warn-promotability, unscoped-union default) answered 2026-09-09; "
-        "warden Epic 12 now carries CAP-1..5. "
-        "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
+    # `spec-golden-path-conda-blind-spot` was registered here 2026-09-05 while five
+    # open questions gated CAP-1..5. De-registered 2026-09-16 (fleet-inbox-disposition):
+    # those questions were answered 2026-09-09; warden Epic 12 cites CAP-1..5 and is
+    # done. Do not mint Epic 13. Record:
+    # `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-inbox-disposition-2026-09-16.md`.
     # `spec-bmad-cursor-interactive-routing` was registered here 2026-09-07 while
     # CAP-1 (live Cursor-chat subagent probe) had not run. De-registered
     # 2026-09-15: probe PASS on Cursor Agent + Task; CAP-2 committed; CAP-3
