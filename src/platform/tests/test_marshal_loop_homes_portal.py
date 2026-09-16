@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from django.test import RequestFactory
+from django_marshal_portal import mcp_asgi as marshal_mcp
 from django_marshal_portal import views as marshal_views
 from django_pyforge.assertion.client import PortalClient
 
@@ -144,8 +145,6 @@ def test_watch_report_requires_marshal_role() -> None:
 
 
 def test_mcp_asgi_registers_marshal_watch_tool() -> None:
-    from django_marshal_portal import mcp_asgi as marshal_mcp
-
     class _FakeServer:
         def __init__(self) -> None:
             self.tools: dict[str, object] = {}
@@ -157,7 +156,7 @@ def test_mcp_asgi_registers_marshal_watch_tool() -> None:
 
             return deco
 
-    server = marshal_mcp._attach_held_loop_tools(_FakeServer())
+    server = marshal_mcp.attach_held_loop_tools(_FakeServer())
     assert marshal_mcp.WATCH_TOOL in server.tools
 
 

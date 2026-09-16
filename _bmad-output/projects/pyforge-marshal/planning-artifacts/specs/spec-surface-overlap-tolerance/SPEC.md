@@ -6,6 +6,7 @@ updated: "2026-09-12"
 owner-dream: docs/dreams/spec-surface-overlap-tolerance.md
 surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  - src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py
 companions: []
 sources:
   - ../../../../../../docs/dreams/spec-surface-overlap-tolerance.md

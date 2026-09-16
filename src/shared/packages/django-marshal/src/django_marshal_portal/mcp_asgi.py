@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
+import json
+import shutil
+import subprocess
 from typing import Any
 
-from django_pyforge.mcp_start_get import attach_supervised_start_get
-from django_pyforge.supervisor import LOOP_COMPLETE_TOOL
-from django_pyforge.supervisor import LOOP_HEARTBEAT_TOOL
-from django_pyforge.supervisor import LOOP_PUBLISH_TOOL
-from django_pyforge.supervisor import complete_held_run
-from django_pyforge.supervisor import heartbeat_held_run
-from django_pyforge.supervisor import list_published_story_tasks
-from django_pyforge.supervisor import publish_held_loop_bounded
 from django_pyforge.assertion.client import register_portal_job
-from django_pyforge.supervisor import register_runner
+from django_pyforge.mcp_start_get import attach_supervised_start_get
+from django_pyforge.supervisor import (
+    LOOP_COMPLETE_TOOL,
+    LOOP_HEARTBEAT_TOOL,
+    LOOP_PUBLISH_TOOL,
+    complete_held_run,
+    heartbeat_held_run,
+    list_published_story_tasks,
+    publish_held_loop_bounded,
+    register_runner,
+)
 
 MARSHAL_STATION = "marshal"
 RUN_LOOP_TOOL = "run_loop"
@@ -45,20 +50,46 @@ def _marshal_watch_job(
     """Portal/MCP job: same report shape as ``marshal watch`` (Story 44.2/44.4)."""
     del assertion
     data = payload if isinstance(payload, dict) else {}
-    from pyforge.marshal.mcp.tools import marshal_watch  # noqa: PLC0415
-
-    return marshal_watch(
-        project=data.get("project") or None,
-        run=data.get("run") or None,
-        fleet=bool(data.get("fleet")),
+    pyforge = shutil.which("pyforge")
+    argv = (
+        [pyforge, "marshal", "watch", "--format", "json"]
+        if pyforge
+        else ["marshal", "watch", "--format", "json"]
     )
+    project = data.get("project")
+    run = data.get("run")
+    if project:
+        argv.extend(["--project", str(project)])
+    if run:
+        argv.extend(["--run", str(run)])
+    if data.get("fleet"):
+        argv.append("--fleet")
+    completed = subprocess.run(argv, capture_output=True, text=True, check=False)
+    if completed.stdout.strip():
+        try:
+            parsed = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, dict):
+            return parsed
+    return {
+        "ok": False,
+        "exit_code": completed.returncode,
+        "stderr": completed.stderr,
+        "stdout": completed.stdout,
+    }
+
 
 
 def ensure_marshal_runner() -> None:
-    from django_pyforge.supervisor import register_runner  # noqa: PLC0415
+    from django_pyforge.supervisor import register_runner
 
     register_runner(MARSHAL_STATION, RUN_LOOP_TOOL, run_loop)
     register_portal_job(MARSHAL_STATION, WATCH_TOOL, _marshal_watch_job)
+
+
+def attach_held_loop_tools(server: Any) -> Any:
+    return _attach_held_loop_tools(server)
 
 
 def _attach_held_loop_tools(server: Any) -> Any:
@@ -127,10 +158,10 @@ def _attach_held_loop_tools(server: Any) -> Any:
 
 def build_marshal_mcp_asgi() -> Any:
     """Host POST face at ``/stations/marshal/mcp``."""
-    from django_pyforge.mcp_http import asgi_for_server  # noqa: PLC0415
+    from django_pyforge.mcp_http import asgi_for_server
 
     if _CACHE.get("app") is None:
-        from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
+        from mcp.server.mcpserver import MCPServer
 
         register_runner(MARSHAL_STATION, RUN_LOOP_TOOL, run_loop)
         server = attach_supervised_start_get(

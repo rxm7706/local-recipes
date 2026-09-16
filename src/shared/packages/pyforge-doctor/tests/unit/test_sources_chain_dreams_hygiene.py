@@ -314,14 +314,14 @@ def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
 
 def test_live_tree_dream_readme_missing_count() -> None:
     """Measured live 2026-09-11 (re-measured 2026-09-12, mason 15.1 recovery
-    pass): 66 Dream files lack a README.md table row (one more than the prior
-    2026-09-11 measurement — an unrelated Dream landed on `main` in between
+    pass): 67 Dream files lack a README.md table row (one more than the prior
+    2026-09-16 measurement — an unrelated Dream landed on `main` in between
     without its row; not chased down further here, this test only tracks the
     live count)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     missing = [f for f in findings if f.check == "dream-readme-missing"]
-    assert len(missing) == 66
+    assert len(missing) == 67
 
 
 def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:

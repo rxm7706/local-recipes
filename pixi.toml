@@ -1136,6 +1136,14 @@ cmd = "python -m pyforge.doctor.sources ledger-regression"
 description = "Detector: every architecture-decision citation resolves to exactly one spine. FAILs on an `AD-n` that names no AD anywhere in the fleet; reports (advisory) any project whose several spines share an id range, which makes a bare `AD-n` there unresolvable without reading the citing file. Measured 2026-09-08 at first run: 11,198 citations across 935 files, ZERO broken, 172 legitimately cross-project, and steward the one project with overlapping spines. The graph being healthy is exactly why a bulk renumber is dangerous -- it can only subtract correctness."
 cmd = "python scripts/ad_citation_check.py"
 
+[feature.local-recipes.tasks.bmad-cursor-mdc-check]
+description = "Detector: generated Cursor .mdc rules for the bmad-build / bmad-build-auto pilot match their SKILL.md sources (Marshal Stories 45.1–45.2 / spec-bmad-cursor-interactive-routing CAP-2 OQ-3). scope=repo. Exit 0 clean / 1 findings / 2 could-not-run. -- --write regenerates the two files."
+cmd = "python scripts/bmad_cursor_mdc_check.py"
+
+[feature.local-recipes.tasks.bmad-cursor-mdc-generate]
+description = "Regenerate .cursor/rules/bmad-build.mdc and bmad-build-auto.mdc from the pilot SKILL.md files (Marshal Story 45.1)."
+cmd = "python scripts/bmad_cursor_mdc_check.py --write"
+
 [feature.local-recipes.tasks.memlog-fidelity-check]
 description = "Harness: inventory every spec SPEC.md and architecture ARCHITECTURE-SPINE.md across the eight stations; verify sibling .memlog.md exists; optionally diff scratch bmad-spec/bmad-architecture re-derives against live rendered files (--compare SCRATCH). Reconcile by memlog append then headless re-derive (see --invoke-hints). Contract: spec-44-13-memlog-fidelity / fnd:AD-20."
 cmd = "python scripts/memlog_fidelity_check.py"

@@ -1673,7 +1673,14 @@ def _drift_findings(
     are absent from ``cur["files"]`` but still present in the baseline, so
     without this they would each be reported ``drift ... removed`` -- a
     confidently wrong claim about a file that is still on disk, already
-    carrying its own honest WARN."""
+    carrying its own honest WARN.
+
+    Story 42.1 / spec-surface-overlap-tolerance: drift is judged per *path*
+    across every co-governing spec, not per spec in isolation. The clean-pass
+    bar is unchanged (``spec_moved AND f in named``). One clean co-governor
+    clears the path for every spec. If none is clean, the residual finding
+    keeps the strongest severity among co-governors (``drift`` beats
+    ``drift-presumed``) so a second governor cannot hide a FAIL."""
     findings: list[dict] = []
     presumed: list[dict] = []
     baseline_path = target / BASELINE_REL
@@ -1692,6 +1699,10 @@ def _drift_findings(
             "detail": f"{baseline_path.relative_to(target)} is unreadable: run --write-baseline",
         })
         return findings, presumed
+
+    # path -> list of (rank, spec-name, kind, payload). rank 0 = clean,
+    # 1 = drift (FAIL), 2 = drift-presumed (WARN).
+    per_path: dict[str, list[tuple[int, str, str, dict]]] = {}
 
     for name, cur in current.items():
         b = base.get(name) if isinstance(base, dict) else None
@@ -1725,20 +1736,33 @@ def _drift_findings(
             if old == new:
                 continue
             what = "changed" if old and new else ("added" if new else "removed")
-            if not spec_moved:
-                findings.append({
+            if spec_moved and f in named:
+                per_path.setdefault(f, []).append((0, name, "clean", {}))
+            elif not spec_moved:
+                per_path.setdefault(f, []).append((1, name, "drift", {
                     "kind": "drift", "path": f,
                     "detail": (f"{name}: {f} {what} but the spec's memlog did "
                                f"not move — reconcile the spec, then "
                                f"--write-baseline --spec {name}"),
-                })
-            elif f not in named:
-                presumed.append({
+                }))
+            else:
+                per_path.setdefault(f, []).append((2, name, "drift-presumed", {
                     "kind": "drift-presumed", "path": f,
                     "detail": (f"{name}: {f} {what}; the memlog moved but does "
                                f"not name this path — confirm it was "
                                f"reconciled, then --write-baseline --spec {name}"),
-                })
+                }))
+
+    for f in sorted(per_path):
+        rows = per_path[f]
+        if any(rank == 0 for rank, _, _, _ in rows):
+            continue
+        rows.sort(key=lambda row: (row[0], row[1]))
+        _rank, _spec, kind, payload = rows[0]
+        if kind == "drift":
+            findings.append(payload)
+        else:
+            presumed.append(payload)
     return findings, presumed
 
 

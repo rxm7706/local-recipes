@@ -5717,7 +5717,7 @@ the module, marshal owns the contract.
 **And** the loop groups by path before judging, rather than iterating specs independently
 **And** the per-spec bar is UNCHANGED — still `spec_moved AND f in named` (the answered
 open question: the existing bar is the right predicate to OR; only the loop shape changes)
-**Status:** backlog
+**Status:** done
 
 ### Story 42.2: Overlap tolerance narrows a false positive without widening what counts as reconciled
 
@@ -5737,7 +5737,7 @@ whose memlog never moved yields `drift` (FAIL), so the group result is FAIL, nev
 downgraded to `drift-presumed` merely because another co-governor moved for an unrelated
 reason
 **And** the coverage half (`ungoverned`) is untouched
-**Status:** backlog
+**Status:** done
 
 ## Epic 43: The citation detector shows everything it knows (spec-fleet-consistency-standard CAP-6, fix)
 
@@ -5888,7 +5888,7 @@ frontmatter (`name`, `description`) plus the two-step trigger body.
 `render_skill.py → workflow.md` trigger Claude Code uses
 **And** generation is mechanical — no hand-edited body that can drift from `SKILL.md`
 **And** day-one scope is the two-skill pilot, not the full BMAD skill set
-**Status:** backlog
+**Status:** done
 
 ### Story 45.2: A drift detector fails a stale generated `.mdc`
 
@@ -5904,7 +5904,7 @@ wired into `detectors-ci`.
 **Then** it fails (findings), never a silent green
 **And** a matching pair is clean
 **And** a one-time untracked generate is not the lasting shape — the task + detector stay
-**Status:** backlog
+**Status:** done
 
 ### Story 45.3: The pilot pair uses Task when available and HALTs when it is not
 
@@ -5927,4 +5927,4 @@ does not shell out to `cursor-agent -p` as a substitute reviewer (CAP-3a is out 
 scope)
 **And** team-memory content is reachable via `Read` or `@file` of
 `.claude/memory/MEMORY.md`; no rule claims Claude Code's `@path` inline import
-**Status:** backlog
+**Status:** done
