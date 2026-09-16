@@ -5805,7 +5805,7 @@ pointing at a slug/run with no prior cache produces a first-observation report, 
 fabricated delta
 **And** every path above is covered by a test that drives the same diff+report logic against
 fixture journals/state, not a live `bmad-loop` process
-**Status:** backlog
+**Status:** done
 
 ### Story 44.2: `marshal watch` is reachable over MCP
 
@@ -5823,7 +5823,7 @@ accepts
 **Then** it returns the same report shape Story 44.1 produces, and is callable by the
 `bmad-agent-marshal` persona's `mcp` action kind (`POST /stations/marshal/mcp` only, no other
 URL/method/host)
-**Status:** backlog
+**Status:** done
 
 ### Story 44.3: The Marshal persona can offer "watch a run" as a menu action
 
@@ -5839,7 +5839,7 @@ permitted `grammar` action kind (CAP-16).
 **When** the operator selects the new menu entry
 **Then** the persona issues a `grammar` action kind starting `pyforge marshal watch`, and the
 resulting transcript shows only FR-13 grammar (no direct filesystem, no ad-hoc HTTP)
-**Status:** backlog
+**Status:** done
 
 ### Story 44.4: `marshal watch`'s report is viewable in the portal
 
@@ -5853,7 +5853,7 @@ alongside `chrome_home`) and `urls.py` (new route).
 **Given** Story 44.1 has landed
 **When** an operator selects a project/run in the portal
 **Then** the new view renders Story 44.1's report for that selection, with no terminal required
-**Status:** backlog
+**Status:** done
 
 ## Epic 45: BMAD from inside Cursor's own chat (spec-bmad-cursor-interactive-routing CAP-2..4)
 

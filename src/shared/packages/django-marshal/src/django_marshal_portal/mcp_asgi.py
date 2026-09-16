@@ -12,6 +12,7 @@ from django_pyforge.supervisor import complete_held_run
 from django_pyforge.supervisor import heartbeat_held_run
 from django_pyforge.supervisor import list_published_story_tasks
 from django_pyforge.supervisor import publish_held_loop_bounded
+from django_pyforge.assertion.client import register_portal_job
 from django_pyforge.supervisor import register_runner
 
 MARSHAL_STATION = "marshal"
@@ -19,6 +20,7 @@ RUN_LOOP_TOOL = "run_loop"
 START_LOOP_TOOL = "start_loop"
 GET_LOOP_TOOL = "get_loop"
 LIST_STORY_TASKS_TOOL = "list_loop_story_tasks"
+WATCH_TOOL = "marshal_watch"
 
 _CACHE: dict[str, Any] = {}
 
@@ -34,10 +36,29 @@ def run_loop(payload: dict[str, Any] | None) -> dict[str, Any]:
     return {"target": target, "completed": True}
 
 
+def _marshal_watch_job(
+    *,
+    assertion: str,
+    payload: dict[str, Any] | None = None,
+    **_: Any,
+) -> dict[str, Any]:
+    """Portal/MCP job: same report shape as ``marshal watch`` (Story 44.2/44.4)."""
+    del assertion
+    data = payload if isinstance(payload, dict) else {}
+    from pyforge.marshal.mcp.tools import marshal_watch  # noqa: PLC0415
+
+    return marshal_watch(
+        project=data.get("project") or None,
+        run=data.get("run") or None,
+        fleet=bool(data.get("fleet")),
+    )
+
+
 def ensure_marshal_runner() -> None:
     from django_pyforge.supervisor import register_runner  # noqa: PLC0415
 
     register_runner(MARSHAL_STATION, RUN_LOOP_TOOL, run_loop)
+    register_portal_job(MARSHAL_STATION, WATCH_TOOL, _marshal_watch_job)
 
 
 def _attach_held_loop_tools(server: Any) -> Any:
@@ -87,6 +108,18 @@ def _attach_held_loop_tools(server: Any) -> Any:
         return list_published_story_tasks(
             station=MARSHAL_STATION,
             project_slug=project_slug,
+        )
+
+    @server.tool(name=WATCH_TOOL)
+    def marshal_watch(
+        project: str | None = None,
+        run: str | None = None,
+        fleet: bool = False,
+    ) -> dict[str, Any]:
+        """Return ``marshal watch``'s report (Story 44.2 / spec-marshal-run-watch CAP-3)."""
+        return _marshal_watch_job(
+            assertion="",
+            payload={"project": project, "run": run, "fleet": fleet},
         )
 
     return server

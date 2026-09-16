@@ -50,6 +50,15 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "cli": ["refresh", "--format", "json"],
         "optional_flags": {"project": "--project", "base": "--base"},
     },
+    "marshal_watch": {
+        "description": (
+            "Watch a pinned run, a station's current run, or the fleet "
+            "(marshal watch --format json)."
+        ),
+        "cli": ["watch", "--format", "json"],
+        "optional_flags": {"project": "--project", "run": "--run"},
+        "store_true_flags": {"fleet": "--fleet"},
+    },
 }
 
 _ABS_PATH_RE = re.compile(r"^(/|[A-Za-z]:\\|\\\\)")
@@ -138,6 +147,9 @@ def _build_argv(spec_name: str, **kwargs: Any) -> list[str]:
         value = kwargs.get(kw)
         if value is not None and value != "":
             argv.extend([flag, str(value)])
+    for kw, flag in (spec.get("store_true_flags") or {}).items():
+        if kwargs.get(kw):
+            argv.append(flag)
     return argv
 
 
@@ -191,6 +203,19 @@ def marshal_refresh(
 ) -> dict[str, Any]:
     return run_marshal(
         _build_argv("marshal_refresh", project=project, base=base),
+        main=main,
+    )
+
+
+def marshal_watch(
+    project: str | None = None,
+    run: str | None = None,
+    fleet: bool = False,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(
+        _build_argv("marshal_watch", project=project, run=run, fleet=fleet),
         main=main,
     )
 
