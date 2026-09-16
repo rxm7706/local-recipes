@@ -900,7 +900,8 @@ build = ["python", "build"]
 grayskull = ["python", "grayskull", "crm"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
-pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, nodejs, bmad-method, spec-kit, truststore
+pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }
+default = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, nodejs, bmad-method, spec-kit, truststore
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
 # pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
@@ -1303,8 +1304,10 @@ Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `t
 
 Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivalent: `cfe-regression-net` failed on a stale spec-surface baseline (a scoped `--write-baseline` had been taken, then a governed file was edited again, silently invalidating it), and `named-module-gates (doctor)` failed on a coverage floor that only measures modules a branch touches — so it had been latent for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`.
 
-NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error)."""
-depends-on = ["detectors-ci", "test-ci", "pyforge-station-tests", "pyforge-station-coverage-gates"]
+NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
+
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use."""
+depends-on = ["detectors-ci", { task = "test-ci", environment = "local-recipes" }, "pyforge-station-tests", "pyforge-station-coverage-gates"]
 
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."

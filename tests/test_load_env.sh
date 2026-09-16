@@ -37,13 +37,13 @@ else
 fi
 
 # --- Test 2: Picks up default-env directive ---
-echo "Test 2: Picks up 'default-env: local-recipes' directive"
+echo "Test 2: Picks up 'default-env: pyforge-guild' directive"
 reset_vars
 export PIXI_PROJECT_ROOT="$SCRIPT_DIR"
 source "$LOAD_ENV"
 assert_eq "PIXI_PROJECT_MANIFEST set" "$PIXI_TOML" "$PIXI_PROJECT_MANIFEST"
-assert_eq "PIXI_DEFAULT_ENV=local-recipes" "local-recipes" "$PIXI_DEFAULT_ENV"
-assert_eq "PIXI_ENV=local-recipes" "local-recipes" "$PIXI_ENV"
+assert_eq "PIXI_DEFAULT_ENV=pyforge-guild" "pyforge-guild" "$PIXI_DEFAULT_ENV"
+assert_eq "PIXI_ENV=pyforge-guild" "pyforge-guild" "$PIXI_ENV"
 
 # --- Test 3: Respects caller-provided PIXI_ENV ---
 echo "Test 3: Does not override caller-provided PIXI_ENV"
@@ -52,7 +52,7 @@ export PIXI_PROJECT_ROOT="$SCRIPT_DIR"
 export PIXI_ENV=build
 source "$LOAD_ENV"
 assert_eq "PIXI_ENV still 'build'" "build" "$PIXI_ENV"
-assert_eq "PIXI_DEFAULT_ENV=local-recipes" "local-recipes" "$PIXI_DEFAULT_ENV"
+assert_eq "PIXI_DEFAULT_ENV=pyforge-guild" "pyforge-guild" "$PIXI_DEFAULT_ENV"
 
 # --- Test 4: Fallback to first env key when directive removed ---
 echo "Test 4: Fallback to first env key when directive is absent"
@@ -60,7 +60,7 @@ reset_vars
 export PIXI_PROJECT_ROOT="$SCRIPT_DIR"
 # Temporarily patch pixi.toml
 cp "$PIXI_TOML" "$PIXI_TOML.bak"
-sed -i 's/^# default-env: local-recipes/# (no directive)/' "$PIXI_TOML"
+sed -i 's/^# default-env: pyforge-guild/# (no directive)/' "$PIXI_TOML"
 source "$LOAD_ENV"
 assert_eq "PIXI_DEFAULT_ENV=linux (first key)" "linux" "$PIXI_DEFAULT_ENV"
 assert_eq "PIXI_ENV=linux" "linux" "$PIXI_ENV"
@@ -72,7 +72,7 @@ echo "Test 5: Changing directive to 'grayskull'"
 reset_vars
 export PIXI_PROJECT_ROOT="$SCRIPT_DIR"
 cp "$PIXI_TOML" "$PIXI_TOML.bak"
-sed -i 's/^# default-env: local-recipes/# default-env: grayskull/' "$PIXI_TOML"
+sed -i 's/^# default-env: pyforge-guild/# default-env: grayskull/' "$PIXI_TOML"
 source "$LOAD_ENV"
 assert_eq "PIXI_DEFAULT_ENV=grayskull" "grayskull" "$PIXI_DEFAULT_ENV"
 assert_eq "PIXI_ENV=grayskull" "grayskull" "$PIXI_ENV"

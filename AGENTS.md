@@ -17,7 +17,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling rejects it.
 - Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first. Never author a new file under `docs/specs/` (legacy).
 - Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`.
-- Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e local-recipes sprint-ledger-sync -- --project <station>`.
+- Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`.
 - Never track anything under `implementation-artifacts/`; it is Tier 3 and gitignored.
 - Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` and write physical `_bmad-output/projects/<slug>/` paths.
 - Never run a bare `spec_surface_check.py --write-baseline`; stamp scoped with `--spec <project>/<spec>` after `git add`, from a clean tree.
@@ -254,8 +254,11 @@ export/copy a Design file. Dream: `docs/dreams/pyforge-herald.md` (absorbed `des
 framework available in this repo's pixi environments — per-library capabilities, version pins,
 import-name gotchas, environment membership, and what is deliberately NOT installed. It is
 derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
-before importing a library or proposing a new dependency, and run all work through
-`pixi run -e local-recipes …`. Staleness check: `pixi run -e local-recipes llms-full-check`
+before importing a library or proposing a new dependency, and run all work through pixi:
+`pixi run -e pyforge-guild …` for planning-chain work (the session default — detectors, ledger
+sync, surface stamps, marshal dispatch/spin, the token-economy kit; ~860 MB), `-e local-recipes`
+for recipe-factory work (Mason's environment, 10 GB, includes every Guild task), `-e pyforge-scribe`
+for scribe recall (steward Story 63.1, `spec-pyforge-steward` CAP-5). Staleness check: `pixi run -e pyforge-guild llms-full-check`
 exits non-zero when the catalog drifts from `pixi.toml`.
 
 ## How each tool discovers this
@@ -272,7 +275,7 @@ exits non-zero when the catalog drifts from `pixi.toml`.
 ## Keeping the BMAD planning docs accurate
 
 The `_bmad-output/projects/pyforge-marshal/` artifacts are kept in sync with the live repo by a
-detector + reconciler loop — run `pixi run -e local-recipes bmad-drift-check` and follow
+detector + reconciler loop — run `pixi run -e pyforge-guild bmad-drift-check` and follow
 `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`. (Corrected 2026-09-07 by the CAP-6
 `governance-currency` detector on its first real run: this pointed at
 <!-- governance-currency:ignore-start (the dissolved path, quoted as the thing that was WRONG) -->

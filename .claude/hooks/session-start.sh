@@ -3,12 +3,13 @@
 #
 # Why: a remote session clones the repo fresh; `.pixi/envs` is gitignored, so
 # no pixi environment exists until something runs `pixi install`. The default
-# `local-recipes` env is ~9.8 GB / 1,100 packages and is NOT what a review or
+# `local-recipes` env is ~10 GB / 1,100 packages and is NOT what a review or
 # planning session needs. This hook installs pixi (if absent) and materializes
-# the LEAN envs from the frozen lock so the repo's detectors and station tests
-# work: `pyforge-doctor` carries `python -m pyforge.doctor.sources …`
-# (bmad-drift, dream-chain, chain-completeness, spec-surface). Measured
-# 2026-09-02: 8.5 s from an empty cache.
+# the Guild's session environment from the frozen lock: `pyforge-guild` (~860 MB;
+# steward Story 63.1, spec-pyforge-steward CAP-5) carries every detector, ledger
+# sync, surface stamp, marshal dispatch/spin and the token-economy kit
+# (headroom, node, gh, uv, tmux). Before 2026-09-16 this installed `pyforge-doctor`
+# alone (measured 2026-09-02: 8.5 s from an empty cache).
 #
 # Extra envs for a dev session (e.g. `python-agent-platform` / `platform-dev`
 # for src/platform work) are opt-in: PYFORGE_SESSION_ENVS="pyforge-doctor platform-dev".
@@ -38,7 +39,7 @@ fi
 echo "[session-start] $(pixi --version)"
 
 cd "$CLAUDE_PROJECT_DIR"
-ENVS="${PYFORGE_SESSION_ENVS:-pyforge-doctor}"
+ENVS="${PYFORGE_SESSION_ENVS:-pyforge-guild}"
 for env in $ENVS; do
   echo "[session-start] pixi install --frozen -e $env"
   pixi install --frozen -e "$env"
