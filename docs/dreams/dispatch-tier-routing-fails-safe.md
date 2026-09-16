@@ -2,10 +2,17 @@
 title: 'A cost-tier dispatch override that cannot resolve its harness must never launch'
 type: dream
 owner: marshal
-status: realized
+status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+                   # token-savings consolidation: one starting point). Was `realized`.
 ---
 
 # A cost-tier dispatch override that cannot resolve its harness must never launch
+
+> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
+> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
+> place: its **Spec stays live and remains the contract** — archiving the Dream
+> tier never retires the chain below it. Kept, not deleted, so the reasoning
+> that produced the Spec is still readable.
 
 ## The Dream
 
@@ -132,3 +139,7 @@ with a new, narrowly-scoped Dream rather than reopening a shipped one).
   live-verified harness with a model it was never meant to receive. Both
   dispatch engines now carry the identical guarantee; no known gap
   remains.
+- **2026-09-16** — Folded into [[marshal-token-economy]] (operator-ruled token-savings
+  consolidation) and archived in place. Prior status: `realized`. The Spec
+  (`spec-dispatch-tier-routing-fails-safe`) stays live and remains the contract;
+  the narrative continues in the parent's § Fold (2026-09-16).

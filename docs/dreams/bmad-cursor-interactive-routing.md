@@ -2,10 +2,17 @@
 title: BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
 type: dream
 owner: marshal
-status: specified
+status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+                   # token-savings consolidation: one starting point). Was `specified`.
 ---
 
 # BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
+
+> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
+> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
+> place: its **Spec stays live and remains the contract** — archiving the Dream
+> tier never retires the chain below it. Kept, not deleted, so the reasoning
+> that produced the Spec is still readable.
 
 ## The Dream
 
@@ -150,3 +157,9 @@ solved and live, and that the interactive-chat shape is a distinct, unverified s
   `.claude/memory/MEMORY.md` works; no `@path` inline import. Leaves
   `DEFERRED_SPECS`. Dispatch home: marshal Epic 45. Dream stays `specified` until
   that epic ships.
+- **2026-09-16** — Folded into [[marshal-token-economy]] (operator-ruled token-savings
+  consolidation) and archived in place. Prior status: `specified`. The Spec
+  (`spec-bmad-cursor-interactive-routing`) stays live and remains the contract;
+  the narrative continues in the parent's § Fold (2026-09-16). The Dream's own
+  "stays `specified` until Epic 45 ships" note is preserved by the Spec's
+  status, not this file's.

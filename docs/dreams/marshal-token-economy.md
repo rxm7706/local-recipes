@@ -400,8 +400,156 @@ takes the correction) mints marshal **Epic 33** — Epic 32 is the highest today
 entries above. Same shape as the 2026-09-02 red-team correction that minted
 steward Epic 40. No new Dream: this chain already asked both questions.
 
+## Fold (2026-09-16) — the token-savings Dreams come home
+
+Operator-ruled consolidation: every Dream whose center is the cost of an
+iteration folds into this one, so there is **one starting point** for the
+whitepapers, the analysis, and the continuity. The fold line (operator,
+2026-09-16): **same owner + same center + same lifecycle** — what rides
+this Dream but is not inside it is named in § *Seams* below. The five
+folded files stay in place as `archived` pointers so kinship links and
+Spec `owner-dream` links keep resolving; **their Specs stay live and
+remain the contracts** — archiving the Dream tier never retires the chain
+below it.
+
+### Folded — the session path (from `token-economy-claude-session-path`, `dreamt`)
+
+The seed: the factory already knows how to make an iteration cheap, but
+the session that costs money never uses the kit — interactive Claude pays
+the always-on doc tax and every station's policy prefers Cursor, which
+cannot take the wire wrap (28.29). The Dream asked for a **session path**,
+not a second compressor. Seeded 2026-09-16 and put through a deep
+analysis + adversarial review the same day; the full decision record is
+the Spec's ten-entry memlog. The load-bearing conclusions:
+
+- **Token savings is not one currency.** Claude meters billed tokens
+  (with prompt-cache discounts); Cursor meters subscription quota;
+  Copilot premium requests; Gemini rate limits; Devin ACUs. A layer that
+  helps one currency can be irrelevant to another — every saving is
+  reported in its harness's own currency, never a blended number.
+- **The five layers are two economies.** The shared substrate (codegraph,
+  cocoindex distills, planning graph, team memory) amortizes
+  understanding *once* and serves every harness — **primary**. The
+  per-harness wire (headroom, caveman) is capability-bound residue —
+  secondary. The biggest gap is sharing cache, knowledge, and memory
+  across every agent, harness, and model (operator, 2026-09-16).
+- **The substrate's four gaps:** it does not *travel* (cloud agents get
+  a bare clone — no bootstrap path); *write-back* is harness-fragmented
+  (`scribe capture` is the neutral ritual, habitual in none); the only
+  portable cache is a canonical digest-pinned context bundle; *freshness*
+  is the trust boundary (Scribe owns it). Centralization caveat: shared
+  knowledge centralizes error — provenance, the freshness SLA, and
+  capture hygiene are the mitigations.
+- **The three open questions answered:** dispatch is the *measured* path,
+  interactive a documented convenience path on the same instruments;
+  repo-default `[context]` with wire as a capability-aware `"auto"`
+  (resolves against the harness profile's declared `[wrapper]`; per-
+  station only as force-override); thinning `CLAUDE.md`/`AGENTS.md`
+  deferred to a later Dream.
+- **The multi-harness matrix:** claude = full kit; copilot = full kit
+  once one `[wrapper]` story lands (headroom ships `wrap copilot`);
+  cursor = harness-agnostic layers only — intended economics (cursor-first
+  dispatch *is* the spend avoidance), not a gap; gemini/devin resolve by
+  the same `auto` rule. Correction recorded: the output layer is
+  multi-harness (caveman ships 21 targets).
+- **The sharpest open risk:** the prompt-cache collision — a wire
+  compressor rewriting prefixes unstably can cost more in lost cache
+  discounts than it saves. Claude wire savings stay *unverified* until
+  per-layer benchmark legs with cache-hit rates exist.
+
+Status at fold: `dreamt`; Spec `draft`, re-derive repoints its
+owner-dream here and mints the front-door CAP, the silent-saves CAP
+(tri-state, journal taxonomy, per-currency rollup, persistence advisory),
+the copilot `[wrapper]` story, the substrate CAP (bootstrap, write-back
+ritual, canonical bundle, freshness SLA), and per-layer benchmark legs.
+
+### Folded — adaptive model tiering (from `adaptive-model-tiering`, `realized`)
+
+FR-51's difficulty→model chain (Story 6.1) shipped complete and was never
+fed — the Dream that taught this one its realized-guard. Corrected
+2026-09-09: CAP-1 *is* fed (57 story specs across six stations declare
+`difficulty:`; two stations carry real `model_tier_map` tables; two live
+dispatches resolved tiered models). The live gap: six of eight stations
+have no tier map and journal `"model": null`, and CAP-2's retry-triggered
+floor-raise is unreachable on the dispatch engine — both halves are
+Story 33.6. Status at fold: `realized` (2026-08-14 chain bookkeeping;
+facts corrected 2026-09-09).
+
+### Folded — the Cursor-native tier map (from `cursor-native-tier-map`, `specified`)
+
+The four-verb campaign runs in Cursor, so `model_tier_map` must tell the
+truth about that plane: easy/medium/heavy name Cursor-native models on
+the Ultra pool in the explicit `{ harness, model }` form, so a Cursor
+string never lands on `claude --model` again. Story 33.15 remaps all
+eight stations. Unattended drain stays off until the wire question is
+separately proven. Status at fold: `specified` (Spec
+`spec-cursor-native-tier-map`).
+
+### Folded — tier routing fails safe (from `dispatch-tier-routing-fails-safe`, `realized`)
+
+The 2026-09-12 incident: a bare-string tier entry (`composer-2.5-fast`,
+Cursor-only, all eight stations) resolved to no harness, so the base
+claude adapter launched with a Cursor model string and crashed instantly
+— zero tokens, reported only as "deferred." Realized the same day:
+`render_policy_toml` cross-checks each tier-mapped stage's model against
+the declared cost catalog (`provider_declaring_model`) and skips a
+cross-provider mismatch; `resolve_stage_candidate` no longer fabricates
+an answer; dispatch's own path carries the identical guard
+(`MRS-DISP-043`); all eight stations reverted to the sonnet/opus
+baseline. The standing rule: a cost-tier override exists only once a
+second harness is verified live, in explicit `{harness, model}` form,
+rolled out one station at a time.
+
+### Folded — interactive routing (from `bmad-cursor-interactive-routing`, `specified`)
+
+BMAD from inside Cursor's own chat, not just headless dispatch. The
+CAP-1 probe **passed** 2026-09-15 (Cursor Agent chat invoked the Task
+tool; context-free subagents work in-turn). CAP-2 is committed:
+mechanical `.mdc` generation from the `SKILL.md` files as a maintained
+pixi task plus a drift detector — never a hand-maintained fork. CAP-3b
+remains the residual HALT on a no-Task surface. Dispatch home: marshal
+Epic 45. Status at fold: `specified` until that epic ships.
+
+## Seams this Dream rides (not inside, and why)
+
+The fold line is center, not dependency — fold-by-dependency has no
+stopping rule (33.5 would pull in `risk-tiered-review-depth`, 33.8
+`marshal-parallel-dispatch-fanout`, the Hub track `intelligence-hub`,
+and the closure is half the marshal project). These seams are named so
+the boundary never has to be re-litigated:
+
+- [[run-state-one-publisher]] — the publishing seam this Dream's savings
+  telemetry (CAP-7 / Story 33.4) rides. Same owner, different center:
+  it publishes *all* run state, not savings; it is the dream-first
+  ruling's exemplar with its own `ready` Spec.
+- [[pixi-candidate-currency]] — the five instruments' pin home.
+  doctor-owned, `realized`, a perpetual currency practice — the wrong
+  lifecycle to import into a Dream whose realized-guard is a measured
+  saving.
+- The Scribe substrate — [[scribe-knowledge-layers]],
+  [[scribe-recall-modes]], [[scribe-planning-pointers]],
+  [[scribe-graphify-nightly-currency]],
+  [[scribe-code-navigation-owner]] — the knowledge layers this Dream's
+  substrate-primary economy *is*. scribe-owned by charter: *Marshal
+  consumes it, Scribe owns it* (§ Guardrails' ownership seam).
+- [[pyforge-marshal]] (the station) · [[adaptive-model-tiering]]'s
+  sibling lesson already cited above · [[risk-tiered-review-depth]]
+  (review depth scheduling) · [[durable-runs]] ·
+  [[marshal-parallel-dispatch-fanout]] · [[intelligence-hub]].
+
 ## Realization log
 
+- **2026-09-16 (consolidation)** — Operator-ruled Dream fold: the five
+  token-savings Dreams (`token-economy-claude-session-path`,
+  `adaptive-model-tiering`, `cursor-native-tier-map`,
+  `dispatch-tier-routing-fails-safe`, `bmad-cursor-interactive-routing`)
+  fold into this Dream as the single starting point for the token-savings
+  chain — same owner, same center, same lifecycle. Their files stay as
+  `archived` pointers; their Specs stay live and remain the contracts.
+  Exclusions named in § *Seams this Dream rides*. No status change: this
+  Dream stays `specified` until a benchmark artifact reports a measured
+  saving on a real story — the guard below stands, now for the whole
+  folded family.
 - **2026-08-30** — Seeded already `specified` (`da458df364`): `spec-marshal-token-economy` `ready`,
   decomposed as marshal Epic 28 (28.1–28.9, backlog). Same-day addendum — the price sheet becomes an
   instrument (CAP-11/CAP-12 → Stories 28.10/28.11).
