@@ -79,5 +79,6 @@ def test_deferred_specs_story_21_1_reconciliation() -> None:
     assert "spec-pyforge-charter" in board.DEFERRED_SPECS
     assert board.DEFERRED_SPECS["spec-pyforge-charter"] == (
         "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
-        "no story can pick up"
+        "no story can pick up; CAP-3 mechanism shipped as doctor 21.4; CAP-7/AUT-3 "
+        "wait on the Guildhall referent — do not mint a Charter epic"
     )

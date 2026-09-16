@@ -113,3 +113,16 @@ spec; status-body epic; marshal factory dispatch.
 2. Then doctor 23–24 (23.4 clears intake).
 3. Herald 22.1 + 23.x when wanted; Design for 21.6–21.9 before 21.10.
 4. Next decompose: `status-body-consistency` only.
+
+## 7. Operator follow-up 2026-09-16 — Charter / autonomy (not a remint)
+
+The operator confirmed three rulings and left the Guildhall referent (Q1) open.
+
+| Id | Ruling | What we do |
+|---|---|---|
+| **Q2** | Mint the doctor CAP-3 `CONSTITUTIVE` story now (named, local, not Charter decompose). | **Do not mint.** Doctor **21.4** already shipped 2026-09-10 (`spec-21-4-constitutive-is-derived-from-the-roster-not-hardcoded-beside-it`, ledger `done`). `chain.py` derives via `_load_constitutive()`; `_CONSTITUTIVE_FALLBACK` is the documented degrade path, not a second source of truth. A new epic would duplicate 21.4. |
+| **Q3** | Autonomy L1–L5 stays **teaching-only in the deck (59.4)** until the hall exists. Labels without AUT-3 would be a maturity score (autonomy non-goal). | Bind 59.4: no L-level / autonomy-% labels. Do not mint AUT-1..3. |
+| **Q4** | Charter Dream stays **`specified`**. `realized` would lie the same way `shipped` on the Spec would. | Frontmatter stays `specified`. CAP-3 leftover is closed in code; HELD is now **CAP-7 / CAP-2** (unbacked hall) only. |
+| **Q1** | Still open. | No Vizro / Wagtail / portal / Hub product until a Charter amendment names the hall. |
+
+Charter and autonomy stay in `DEFERRED_SPECS`. CAP-7 / AUT-3 wait on Q1. Charter `SPEC.md` still names `chain.py:96` as hardcoded — that body is stale; append the memlog, do not hand-edit the Spec; re-derive on the next Charter amendment.

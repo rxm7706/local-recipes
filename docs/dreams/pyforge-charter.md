@@ -2,7 +2,7 @@
 title: The PyForge Charter
 type: dream
 owner: guild
-status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized`: CAP-3 and CAP-7 name enforcement that no longer exists — see the Realization log.
+status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized` (held 2026-09-16): CAP-7's Guildhall half is still unbacked. CAP-3's chain.py:96 leftover closed as doctor 21.4 (2026-09-10) — see the Realization log.
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission
@@ -1093,3 +1093,14 @@ herald broadcast slack,email --channel engineering-updates
     (steward Story 53.1): the cross-walk, reverse block (Charter / Guild /
     Stations; Cogs collision), CAP-4 ruling, and rented-model tension. External
     terms still do not join the seven.
+  - **2026-09-16 (status held, not an amendment)** — operator confirmed: do not
+    advance this Dream to `realized` (that would lie the same way `shipped` on
+    the Spec would). The 2026-09-09 CAP-3 leftover — `chain.py:96` hardcoding
+    `CONSTITUTIVE` — is **closed in code** as doctor Story 21.4 (`done`
+    2026-09-10): `_load_constitutive()` reads `guild_dreams`; a second roster
+    entry is honored; roster failure warns and falls back. Do **not** mint a
+    second doctor epic for the same verb. The Spec body still names the old
+    mirror until the next `bmad-spec` re-derive (memlog appended). HELD reason
+    that remains: **CAP-7 / CAP-2** — Guildhall referent still open; no
+    successor surface refuses an unattributable row. Autonomy L1–L5 stays
+    teaching-only on steward 59.4 until that hall exists.
