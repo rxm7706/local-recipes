@@ -1,6 +1,6 @@
 # Presenton, Conda-Native deck (`presenton-pixi-image`)
 
-**Status: authored 2026-07-25 — 10 slides, extract + build green.** Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, extract + build green.** Local Wave C poster rebuild 2026-09-15 (Story 21.9); Design push still pending. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). Dream:
 `docs/dreams/presenton-pixi-image.md`; the Spec and its planning chain live in
 `_bmad-output/projects/presenton-pixi-image/planning-artifacts/`.
@@ -72,3 +72,10 @@ Seeded 2026-07-25 (every upload byte-verified against the local file):
 `- Infographic Deck.dc.html`). The `DesignSync` tool was not exposed in the authoring session
 and MCP `write_files` accepts inline `data` only, so these three await a DesignSync pass
 (`finalize_plan` with `localDir`, then `write_files` with `localPath`).
+
+## Ledger — 2026-09-15 Wave C local rebuild (Story 21.9)
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Presenton Conda-Native Infographic standalone.html` | 145236 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 60/60 | `PENDING-PUSH` | rendered 2026-09-15, page 18737 px at 1240 px; 0 unmarked / 0 mismatch; Dream status archived |
+| `facts.yaml` | 34 facts at tree `506ad58622` | — | spec_status omitted (SPEC archived under Mason); no package/CLI rows |
