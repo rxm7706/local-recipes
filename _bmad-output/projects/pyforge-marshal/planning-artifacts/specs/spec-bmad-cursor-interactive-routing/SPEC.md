@@ -3,7 +3,12 @@ spec: bmad-cursor-interactive-routing
 status: ready   # 2026-09-15: CAP-1 probe PASS (Cursor Agent + Task). CAP-2 committed. CAP-3 residual for no-Task surfaces. CAP-4 verified. Leaves DEFERRED_SPECS; marshal Epic 45 is the dispatch home.
 updated: "2026-09-15"
 owner-dream: docs/dreams/bmad-cursor-interactive-routing.md
-surface: []
+surface:
+  - .cursor/rules/bmad-build.mdc
+  - .cursor/rules/bmad-build-auto.mdc
+  - scripts/bmad_cursor_mdc_check.py
+  - tests/scripts/test_bmad_cursor_mdc_check.py
+  - pixi.toml
 companions: []
 sources:
   - ../../../../../../docs/dreams/bmad-cursor-interactive-routing.md

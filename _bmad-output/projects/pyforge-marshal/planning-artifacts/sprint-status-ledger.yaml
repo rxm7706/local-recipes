@@ -248,16 +248,16 @@ development_status:
   41-2-templated-fiction-is-replaced-with-real-content: done
   41-3-stale-pointers-and-off-convention-layouts-are-corrected: done
   41-4-the-currency-detector-is-fixed-before-its-data-is-caught-up: done
-  42-1-a-co-governed-file-is-clean-when-any-one-of-its-governing-specs-reconciled-it: backlog
-  42-2-overlap-tolerance-narrows-a-false-positive-without-widening-what-counts-as-reconciled: backlog
-  43-1-the-citation-detector-shows-everything-it-knows: backlog
+  42-1-a-co-governed-file-is-clean-when-any-one-of-its-governing-specs-reconciled-it: done
+  42-2-overlap-tolerance-narrows-a-false-positive-without-widening-what-counts-as-reconciled: done
+  43-1-the-citation-detector-shows-everything-it-knows: done
   44-1-marshal-watch-ports-the-operators-ritual-into-a-real-cli-verb: done
   44-2-marshal-watch-is-reachable-over-mcp: done
   44-3-the-marshal-persona-can-offer-watch-a-run-as-a-menu-action: done
   44-4-marshal-watchs-report-is-viewable-in-the-portal: done
-  45-1-a-pixi-task-generates-mdc-from-skillmd: backlog
-  45-2-a-drift-detector-fails-a-stale-generated-mdc: backlog
-  45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: backlog
+  45-1-a-pixi-task-generates-mdc-from-skillmd: done
+  45-2-a-drift-detector-fails-a-stale-generated-mdc: done
+  45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: done
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -367,13 +367,13 @@ development_status:
   epic-40-retrospective: optional
   epic-41: done
   epic-41-retrospective: optional
-  epic-42: backlog
+  epic-42: done
   epic-42-retrospective: optional
-  epic-43: backlog
+  epic-43: done
   epic-43-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
-  epic-45: backlog
+  epic-45: done
   epic-45-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

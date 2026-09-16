@@ -1220,3 +1220,87 @@ def test_unreadable_planning_artifacts_names_the_project_that_went_dark(
              if f.check == "spec-surface-unevaluable" and "pyforge-x" in f.message]
     assert named, f"nothing named the project that went dark: {findings}"
     assert named[0].status is DoctorStatus.WARN
+
+
+
+# --- Story 42.1 / 42.2: overlap tolerance ---------------------------------------
+
+
+def _two_specs_same_file(repo: Path):
+    """Two specs both govern governed.py. Returns (sd_a, sd_b)."""
+    import hashlib
+    sd_a = _write_spec(repo, "pyforge-x", "spec-narrow", surface=["governed.py"])
+    sd_b = _write_spec(repo, "pyforge-x", "spec-kernel", surface=["governed.py"])
+    (sd_a / ".memlog.md").write_text("initial a\n", encoding="utf-8")
+    (sd_b / ".memlog.md").write_text("initial b\n", encoding="utf-8")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [])
+    _add_commit(repo)
+    file_hash = hashlib.sha1((repo / "governed.py").read_bytes()).hexdigest()
+    _write_baseline(repo, {
+        "pyforge-x/spec-narrow": {
+            "memlog": hashlib.sha1((sd_a / ".memlog.md").read_bytes()).hexdigest(),
+            "files": {"governed.py": file_hash},
+        },
+        "pyforge-x/spec-kernel": {
+            "memlog": hashlib.sha1((sd_b / ".memlog.md").read_bytes()).hexdigest(),
+            "files": {"governed.py": file_hash},
+        },
+    })
+    return sd_a, sd_b
+
+
+def test_co_governed_file_is_clean_when_one_spec_reconciles_it(tmp_path: Path) -> None:
+    """CAP-1: one co-governor names the path → zero drift against either spec."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd_a, sd_b = _two_specs_same_file(repo)
+
+    (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
+    (sd_a / ".memlog.md").write_text(
+        "initial a\nreconciled governed.py\n", encoding="utf-8",
+    )
+    # kernel memlog does not move
+    _add_commit(repo, "narrow spec reconciles the shared file")
+
+    findings = chain.gather_spec_surface(repo)
+    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
+               and f.evidence.get("path") == "governed.py"]
+    assert drifted == [], drifted
+
+
+def test_co_governed_file_still_finds_when_neither_spec_names_it(tmp_path: Path) -> None:
+    """CAP-2: neither names the path → a finding remains."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _two_specs_same_file(repo)
+
+    (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
+    _add_commit(repo, "change file, no memlog")
+
+    findings = chain.gather_spec_surface(repo)
+    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
+               and f.evidence.get("path") == "governed.py"]
+    assert drifted, "unreconciled shared file produced no finding"
+    assert drifted[0].check == "drift"
+    assert drifted[0].status is DoctorStatus.FAIL
+
+
+def test_overlap_keeps_strongest_severity_when_one_spec_never_moved(tmp_path: Path) -> None:
+    """CAP-2: moved-but-unnamed + never-moved → FAIL, not WARN."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd_a, sd_b = _two_specs_same_file(repo)
+
+    (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
+    (sd_a / ".memlog.md").write_text(
+        "initial a\nunrelated note, never names the path\n", encoding="utf-8",
+    )
+    _add_commit(repo, "one memlog moved without naming")
+
+    findings = chain.gather_spec_surface(repo)
+    drifted = [f for f in findings if f.check in ("drift", "drift-presumed")
+               and f.evidence.get("path") == "governed.py"]
+    assert len(drifted) == 1, drifted
+    assert drifted[0].check == "drift"
+    assert drifted[0].status is DoctorStatus.FAIL
