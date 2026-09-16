@@ -5,6 +5,7 @@ status: ready
 owner-dream: docs/dreams/marshal-token-economy.md
 covers-dreams:
   - docs/dreams/marshal-dependency-aware-dispatch.md   # folded in 2026-08-31 as CAP-14..CAP-17; addendum F (2026-09-01) lives in spec-marshal-drain-self-resolution; INV-1 still this Dream
+  - docs/dreams/token-economy-claude-session-path.md   # folded in 2026-09-16 as CAP-19..CAP-24 (operator-ruled: no satellite Specs — one Dream, one Spec); the seed folder spec-token-economy-claude-session-path/ is superseded and keeps the eleven-entry decision memlog; INV-1 still that Dream
 companions:
   - integration-layers.md
   - model-economics.md
@@ -234,6 +235,93 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     read the published plane instead of `Path.home()/".bmad-loops"`; the front door shows live
     run state and the per-story timing survives the workstation; CAP-7's savings fields carry
     real numbers, not the four `None` stubs at `adapters/harness_bmadloop.py:1880-1898`.
+- **CAP-19**
+  - **intent:** One substrate, many harnesses (the session-path fold, primary — the
+    2026-09-16 analysis: the shared substrate amortizes understanding once and serves
+    every harness; the per-harness wire is the secondary residue). (a) A bootstrap
+    path: nightly-built substrate artifacts (codegraph, cocoindex distills,
+    planning-graph export) published as CI/release assets, plus a
+    `pyforge context bootstrap` fetch-or-rebuild command, so a cloud agent's bare
+    clone opens on the substrate instead of re-deriving privately at ACU/quota
+    cost. (b) A canonical, digest-pinned context bundle — extending Story 28.8's
+    declaration half — so every harness opens on identical bytes (prefix stability
+    is the only portable cache; provider prompt caches do not move across
+    vendors). (c) `scribe capture` blessed in the front-door docs as the
+    harness-neutral session-close write-back ritual. (d) The freshness SLA holds:
+    `scribe compile_surface` owns freshness and
+    `spec-scribe-recall-stale-between-nightlies` already surfaces staleness — this
+    CAP builds nothing new there.
+  - **success:** A bare clone plus one bootstrap command reaches the same substrate
+    a loop home has (or a loud, attributable rebuild); two harnesses on the same
+    commit open on byte-identical context bundles (digest compare); the
+    session-close ritual is named in the same docs that name the front door.
+- **CAP-20**
+  - **intent:** Silent saves — a repo default that no-ops honestly.
+    `_bmad-output/policy-defaults.toml` carries the repo-default `[context]` block
+    so both engines (spin and dispatch) gain the harness-agnostic layers by
+    default (Story 33.3's single declaration point). Wire is declared
+    `enabled = "auto"`: a tri-state (`true`/`false`/`"auto"`) that resolves
+    against the running harness profile's declared `[wrapper]` — on when the
+    harness can take it, honestly absent when it cannot. Per-station
+    `marshal-policy.toml` is a force-override, never the primary mechanism. The
+    journal taxonomy distinguishes silent saves (repo default) from configured
+    layers, and the savings rollup reports each harness's binding currency (USD
+    for Claude, quota-burn for Cursor/Copilot, request-count for Gemini, ACUs
+    for Devin) — never one blended token number. An interactive session whose
+    layers would lapse gets a persistence advisory.
+  - **success:** A fresh loop home with zero station config journals the
+    harness-agnostic layers; `auto` on a wrapper-less harness (Cursor) is a clean
+    skip, never a journaled wrap it cannot perform; wrapper declared but binary
+    missing stays a WARN (`MRS-DISP-033` class), never silent; the rollup output
+    is keyed per harness × currency.
+- **CAP-21**
+  - **intent:** Marshal is the execution front door. The docs rule (AGENTS.md /
+    CLAUDE.md / station skill notes) names `marshal factory dispatch` / `spin` as
+    the default way stories execute, because that is the path the layers
+    instrument. Bare `bmad-build-auto` remains sanctioned but is documented as
+    the unmeasured path. An advisory detector may flag a bare dispatch; never a
+    gate.
+  - **success:** The front-door rule is written where an agent actually reads it;
+    a bare `bmad-build-auto` run is documented, not forbidden; nothing new turns
+    red in CI because of this CAP.
+- **CAP-22**
+  - **intent:** The session path — dispatch measured, interactive documented.
+    Both Claude paths are sanctioned. Dispatch is the *measured* path (the
+    benchmark harness lives there). Interactive Claude on the shared checkout is
+    a *documented convenience* path on the same instruments — the wrap, the
+    caveman skill, and the retrieve/recall discipline written once, where a
+    session actually starts.
+  - **success:** The interactive path is one documented invocation, not a
+    re-discovery; a session on it is demonstrably wrapped or seeded according to
+    the declared `[context]` layers; wholesale `epics.md` / PRD loads are a miss
+    against retrieve/recall.
+- **CAP-23**
+  - **intent:** Per-layer benchmark legs with cache-hit rates.
+    `marshal benchmark compare` gains per-layer legs (one layer at a time, not
+    whole-kit on/off), each leg reporting the prompt-cache hit rate alongside
+    weighted tokens; the equivalence gate (28.5) applies per leg. Until this
+    exists, Claude wire savings are *unverified* — the prompt-cache collision (a
+    wire compressor rewriting prefixes unstably can cost more in lost cache
+    discount than it saves in tokens) is the sharpest open risk, and this CAP is
+    what closes it. NFR-14's live-zone-only admission requirement gets its
+    measurement here.
+  - **success:** A named story runs one leg per layer; each artifact reports
+    weighted tokens, dollars if the catalog is declared, and cache-hit rate; a
+    cache-colliding layer shows as worse weighted tokens, unmasked by other
+    layers' gains.
+- **CAP-24**
+  - **intent:** The multi-harness matrix tells the truth, per currency. Correct
+    the recorded matrix: the output layer is multi-harness (caveman ships 21
+    targets — copilot, cursor, gemini, devin among them); only enforcement
+    strength varies. Land the one `[wrapper]` story for Copilot (headroom ships
+    `wrap copilot`; the profile's own notes record a live 429 quota exhaustion)
+    so copilot dispatch gets the full kit. Probe the Gemini wire seam
+    (env/proxy or an upstream headroom target) before the matrix says never; if
+    none, `auto` skip stands as designed. Devin stays the deliberate unverified
+    stub — loud absence is correct.
+  - **success:** The matrix records each harness × layer × binding currency;
+    `copilot.toml` declares a verified `[wrapper]` or a dated finding; gemini's
+    wire cell reads "probed, none" with evidence or gains a target.
 
 ## Constraints
 
@@ -270,6 +358,20 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   layer is turned on for real work before a measured saving exists, and
   `docs/dreams/marshal-token-economy.md` stays `specified` until that benchmark reports one on
   a real story. Nothing else counts as the gate.
+- **`auto` fails honest (CAP-20):** wrapper declared but binary missing is a WARN
+  (`MRS-DISP-033` class), never silent; a wrapper-less harness is a clean skip,
+  never a journaled wrap it cannot perform. Cursor stays unwrapped (28.29 is
+  settled) — the `auto` skip there is the intended economics, not a gap.
+- **The rollup never blends currencies (CAP-20/CAP-24):** each harness reports
+  its own binding constraint (USD, quota-burn, request-count, ACUs); a single
+  tokens-saved number across harnesses is a category error.
+- **Centralizing knowledge centralizes error (CAP-19):** the substrate holds as
+  the default only while Scribe's never-uncited-answer contract, the freshness
+  SLA, and capture hygiene (no secrets, decision-grade facts only) hold. The
+  redundancy it removes was waste, not resilience, only while those three hold.
+- **Doc thinning is a later Dream:** thinning `CLAUDE.md` / `AGENTS.md` was
+  deferred by the operator (2026-09-16, OQ-3) and is out of scope for
+  CAP-19..CAP-24.
 
 ## Non-goals
 

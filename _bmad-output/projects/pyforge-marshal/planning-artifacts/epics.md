@@ -5928,3 +5928,211 @@ scope)
 **And** team-memory content is reachable via `Read` or `@file` of
 `.claude/memory/MEMORY.md`; no rule claims Claude Code's `@path` inline import
 **Status:** done
+
+## Epic 46: The session path — one substrate, silent saves, every harness (spec-marshal-token-economy CAP-19..24)
+
+Minted 2026-09-16 from the operator-ruled token-savings consolidation: the five
+token-savings Dreams folded into `docs/dreams/marshal-token-economy.md`, and the
+day-old session-path seed Spec folded into `spec-marshal-token-economy` as
+CAP-19..CAP-24 (no satellite Specs — one Dream, one Spec). The decision record
+is the superseded folder's eleven-entry memlog
+(`specs/spec-token-economy-claude-session-path/.memlog.md`): the OQ answers
+(dispatch measured / interactive documented; repo-default `[context]` with wire
+as capability-aware `auto`; doc thinning deferred), the multi-harness currency
+matrix, the adversarial review (prompt-cache collision is the sharpest risk),
+and the substrate-primary reordering.
+
+**CAP-19d** (freshness SLA) has no story — `scribe compile_surface` owns
+freshness and `spec-scribe-recall-stale-between-nightlies` already surfaces
+staleness. **Do not** flip the parent Dream to `realized` — the benchmark
+artifact is its realized-guard. **Do not** remint Epic 28/33 or re-litigate
+28.29 (Cursor wire is dead; `auto` skips it, and that is the intended
+economics). Savings telemetry stays advisory — no second PR gate.
+
+### Story 46.1: A bare clone bootstraps the substrate
+
+As an agent starting on a cloud runner (Devin, Copilot cloud, Cursor background),
+I want nightly-built substrate artifacts (codegraph, cocoindex distills,
+planning-graph export) published as CI/release assets and a
+`pyforge context bootstrap` fetch-or-rebuild command,
+So that a bare clone opens on the shared substrate instead of re-deriving it
+privately at ACU/quota cost.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-19(a)
+**Surface:** a publisher (nightly workflow or release-asset upload) for the
+substrate artifacts, plus the `pyforge context bootstrap` CLI in pyforge-core or
+marshal (fetch-or-rebuild; rebuild is loud and attributable, never silent).
+**Given** a fresh clone with no `.codegraph/`, no distills, no planning graph
+**When** `pyforge context bootstrap` runs
+**Then** it fetches the latest published artifacts and verifies their digests,
+or rebuilds locally with a named finding
+**And** the fetched substrate is byte-identical to what a loop home produced
+**Status:** backlog
+
+### Story 46.2: The canonical context bundle is digest-pinned
+
+As an operator running mixed harnesses,
+I want a canonical, digest-pinned context bundle extending Story 28.8's
+declaration half,
+So that every harness opens on identical bytes and prefix stability — the only
+portable cache — holds across Claude, Cursor, Copilot, Gemini, and Devin.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-19(b)
+**Surface:** the 28.8 context-declaration surface extended to a canonical bundle
+with a recorded digest; a compare surface two harnesses can be checked against.
+**Given** two harnesses on the same commit
+**When** each assembles its opening context
+**Then** the bundles compare byte-identical by digest
+**And** a drift in either assembly is a named finding, not a silent divergence
+**Status:** backlog
+
+### Story 46.3: `scribe capture` is the blessed session-close ritual
+
+As an operator who wants memory write-back from every harness,
+I want `scribe capture` named in the front-door docs as the harness-neutral
+session-close ritual,
+So that what a session learned lands in the shared substrate no matter which
+harness ran it.
+
+**Type:** docs • **Effort:** S • **Deps:** S-46.7 • **FR/AD:** spec-marshal-token-economy CAP-19(c)
+**Surface:** AGENTS.md / CLAUDE.md / the station skill notes — the same docs
+that name the front door — plus one line in each harness profile's notes.
+**Given** a session closes in any harness
+**When** the operator or agent follows the front-door docs
+**Then** the close ritual is `scribe capture` with decision-grade facts, and the
+docs say so in one place
+**And** capture hygiene is stated: no secrets, decision-grade facts only
+**Status:** backlog
+
+### Story 46.4: Wire auto resolves against the declared wrapper
+
+As an operator,
+I want `_bmad-output/policy-defaults.toml` to carry the repo-default `[context]`
+block with wire declared `enabled = "auto"` — a tri-state resolving against the
+running harness profile's declared `[wrapper]`,
+So that both engines gain the harness-agnostic layers by default and wire turns
+on exactly where the harness can take it, with zero per-station config.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-20
+**Surface:** `core/policy.py` (tri-state schema + resolution), the harness-profile
+`[wrapper]` declaration read, and `policy-defaults.toml`. Per-station
+`marshal-policy.toml` becomes force-override only.
+**Given** a fresh loop home with zero station config
+**When** a dispatch or spin launches
+**Then** the harness-agnostic layers journal as on (repo default) and wire is on
+iff the profile declares a `[wrapper]`
+**And** on Cursor the wire layer is a clean skip — never a journaled wrap it
+cannot perform (28.29)
+**And** wrapper declared but binary missing stays a WARN (`MRS-DISP-033` class),
+never silent
+**Status:** backlog
+
+### Story 46.5: The journal splits silent saves from configured layers, and the rollup speaks per-harness currency
+
+As an operator reading savings,
+I want the journal taxonomy to distinguish silent saves (repo default) from
+configured layers, and the rollup keyed per harness × binding currency,
+So that a Cursor-first station never reads a Claude-shaped number as its own —
+USD for Claude, quota-burn for Cursor/Copilot, request-count for Gemini, ACUs
+for Devin, never one blended token number.
+
+**Type:** feature • **Effort:** M • **Deps:** S-46.4 • **FR/AD:** spec-marshal-token-economy CAP-20
+**Surface:** `core/layer_savings_sources.py` journal schema and the rollup
+report surface.
+**Given** runs on at least two harnesses with different binding currencies
+**When** the rollup renders
+**Then** each harness's savings appear in their own currency with no blended
+total
+**And** silent saves and configured layers are distinguishable per journal row
+**Status:** backlog
+
+### Story 46.6: An interactive session whose layers lapse gets a persistence advisory
+
+As an operator on the interactive path,
+I want a persistence advisory when a session's declared layers would lapse,
+So that silent savings do not silently stop.
+
+**Type:** feature • **Effort:** S • **Deps:** S-46.4 • **FR/AD:** spec-marshal-token-economy CAP-20
+**Surface:** the session-path advisory surface (journal + session-close output).
+**Given** an interactive session whose `[context]` layers were active
+**When** the session ends or the layers lapse
+**Then** the journal carries a persistence advisory naming what lapsed
+**Status:** backlog
+
+### Story 46.7: The docs name marshal dispatch and spin the execution front door
+
+As an agent choosing how to run a story,
+I want AGENTS.md / CLAUDE.md / station skill notes to name `marshal factory
+dispatch` / `spin` as the default execution path and bare `bmad-build-auto` as
+the sanctioned-but-unmeasured path,
+So that the instrumented path is the default and the bare path is a conscious
+choice.
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-21
+**Surface:** AGENTS.md, CLAUDE.md, and the bmad-build-auto skill note; an
+advisory (never gating) doctor detector may flag a bare dispatch.
+**Given** an agent reads the repo's entry docs
+**When** it chooses an execution path for a story
+**Then** the docs point at marshal dispatch/spin as default and explain what the
+bare path forgoes (the layers, the journal, the benchmark)
+**And** nothing new turns red in CI because of this story
+**Status:** backlog
+
+### Story 46.8: The interactive Claude session path is one documented invocation
+
+As an operator starting an interactive Claude session on the shared checkout,
+I want the wrap + caveman skill + retrieve/recall discipline written once where
+a session actually starts,
+So that the convenience path runs on the same instruments as dispatch instead of
+re-discovering the repo.
+
+**Type:** docs • **Effort:** S • **Deps:** S-46.7 • **FR/AD:** spec-marshal-token-economy CAP-22
+**Surface:** the Claude-facing session docs (CLAUDE.md session-path note) naming
+the one invocation; dispatch remains the measured path.
+**Given** an operator starts interactive Claude on the shared checkout
+**When** they follow the documented path
+**Then** the session is demonstrably wrapped or seeded per the declared
+`[context]` layers, and wholesale `epics.md` / PRD loads are a miss against
+retrieve/recall
+**Status:** backlog
+
+### Story 46.9: Benchmark legs run per layer with cache-hit rates
+
+As an operator trusting the savings numbers,
+I want `marshal benchmark compare` to run one leg per layer — each leg reporting
+prompt-cache hit rate alongside weighted tokens, with the 28.5 equivalence gate
+applied per leg,
+So that a cache-colliding wire layer shows as worse weighted tokens, unmasked by
+other layers' gains, and Claude wire savings become verified instead of
+asserted.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-23
+**Surface:** `core/token_economy_benchmark.py` leg runner + per-leg artifact
+schema (cache-hit rate field).
+**Given** a named story and the five layers
+**When** the benchmark runs one leg per layer
+**Then** each artifact reports weighted tokens, dollars if the catalog is
+declared, and cache-hit rate, and a non-identical landing voids that leg only
+**Status:** backlog
+
+### Story 46.10: The matrix tells the truth, copilot wrapper, gemini probe, per-currency cells
+
+As an operator reading the multi-harness matrix,
+I want the output layer recorded as multi-harness (caveman's 21 targets), a
+verified `[wrapper]` in `copilot.toml` (headroom ships `wrap copilot`), and the
+Gemini wire seam probed,
+So that each harness × layer cell names what is real and its binding currency —
+and "never" appears only with evidence.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-token-economy CAP-24
+**Surface:** `data/harness_profiles/copilot.toml` `[wrapper]` declaration + one
+live copilot dispatch through the wrap; a dated gemini probe finding (env/proxy
+seam or upstream headroom target); the matrix doc corrected (output layer is
+multi-harness).
+**Given** the copilot profile declares a wrapper
+**When** a copilot dispatch launches
+**Then** `headroom wrap copilot` is on the argv and the run journals the wire
+layer — or the profile carries a dated finding and `auto` skips honestly
+**And** gemini's wire cell reads "probed, none" with evidence or gains a target
+**And** Devin stays the deliberate unverified stub (loud absence)
+**Status:** backlog
