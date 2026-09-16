@@ -17,9 +17,9 @@ name pyforge-atlas's and pyforge-scribe's direct declarations). Channels: conda-
 
 ## To regenerate (any session): ask Claude Code:
 
-> Regenerate `docs/reference/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e local-recipes llms-full-check`.
+> Regenerate `docs/reference/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e pyforge-guild llms-full-check`.
 
-**Staleness detector:** `pixi run -e local-recipes llms-full-check` (script:
+**Staleness detector:** `pixi run -e pyforge-guild llms-full-check` (script:
 `scripts/llms_full_check.py`) exits non-zero when this catalog drifts from `pixi.toml` —
 undocumented deps, ghost entries, or version-floor drift. Detector finds; the regeneration
 prompt above reconciles.

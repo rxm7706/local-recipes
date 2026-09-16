@@ -1,0 +1,30 @@
+# GitHub Copilot coding agent: pre-install the Guild's session environment before the agent
+# starts (steward Story 63.2, spec-pyforge-steward CAP-5). Copilot runs this job by NAME
+# (`copilot-setup-steps`) in its ephemeral sandbox; without it the agent has no pixi and every
+# `pixi run -e pyforge-guild …` in AGENTS.md / .github/copilot-instructions.md is dead. The same
+# lean env Claude Code remote (.claude/hooks/session-start.sh) and Cursor Cloud Agents
+# (.cursor/environment.json) install: pyforge-guild, ~860 MB, from the frozen lock.
+# local-recipes (10 GB) is Mason's recipe-factory env; a recipe task installs it explicitly.
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths: [.github/workflows/copilot-setup-steps.yml]
+  pull_request:
+    paths: [.github/workflows/copilot-setup-steps.yml]
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-guild
+          cache: true
+          frozen: true
+      - name: Prove the Guild env
+        run: pixi run --frozen -e pyforge-guild python -c "import pyforge.doctor, pyforge.marshal, pyforge.steward; print('pyforge-guild ready')"

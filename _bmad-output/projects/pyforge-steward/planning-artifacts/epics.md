@@ -4156,6 +4156,26 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **And** `governance-currency`, `general-docs-consistency-check` and `llms-full-check` are green
 **Status:** backlog
 
+### Story 63.3: One deny list, one hook — the Guild session guardrails are enforced, not asserted
+
+**Type:** feature • **Effort:** M • **Deps:** S-63.1 • **FR/AD:** spec-pyforge-steward CAP-5; marshal-token-economy:CAP-20 (silent saves; the front door)
+**Surface:** `docs/governance/guild-roster.json` (a new closed `session_denials` list, the ONE declared source), `.claude/hooks/pre-shell.py` (new; registered `PreToolUse` on `Bash` and on `Edit`/`Write` in `.claude/settings.json`, `permissionDecision: deny` + reason), `.cursor/hooks.json` (new, force-tracked; `beforeShellExecution` deny — Cursor has no before-edit deny, so file rules there are `afterFileEdit` warn), tests under `tests/` for the script (the hook is repo-level, not a station package).
+**Given** an agent — Claude Code local or web, Cursor IDE or Cloud — is about to run a shell command or edit a file in this repo
+**When** the command or path matches a `session_denials` entry: `pixi run -e local-recipes <guild task>` (the `guild-tasks` set read from `pixi.toml`, never a copy); `pip install` / `uv pip install` / `conda install` / `npx <x>` except `npx skills add`; `pixi add` / `pixi update`; `scripts/bmad-switch` when a worktree or `BMAD_ACTIVE_PROJECT` is present; `git commit` on `main` or in the primary checkout, or with `Co-Authored-By` / AI attribution; `gh pr merge --squash`; `gh pr create` without `--repo rxm7706/local-recipes`; `uv run` with cwd ≠ repo root; `spec_surface_check.py --write-baseline` without `--spec`; a direct write to `SPEC.md`, `sprint-status-ledger.yaml`, or a tracked path under `implementation-artifacts/`
+**Then** the hook denies with a one-line reason naming the sanctioned form (`-e pyforge-guild`, "a dependency is a pixi.toml change in a PR", "`uv run _bmad/scripts/memlog.py` then re-derive", …) — and never denies anything not on the list (the list is closed; adding to it is a governance act on `guild-roster.json`)
+**And** the same script serves both harnesses; harnesses without a verified deny surface (Gemini CLI, Copilot CLI, Devin) are named as instruction-only in `AGENTS.md`, not silently assumed covered
+**Status:** backlog
+
+### Story 63.4: `steward session check` — one verdict for the session preconditions, run from every entry point
+
+**Type:** feature • **Effort:** M • **Deps:** S-63.1, S-63.3 • **FR/AD:** spec-pyforge-steward CAP-5; AD-8 (`DutyResult` is frozen evidence; duties never `sys.exit`)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/` (new `session` duty, `pyforge steward session check`, exit domain `0` ok / `1` findings / `70` crash), `.claude/hooks/session-start.sh`, `.cursor/environment.json` (`start`), `.github/workflows/copilot-setup-steps.yml`, the Marshal dispatch preamble (`pyforge-marshal` calls the steward CLI, never imports it), station tests.
+**Given** a session begins on any harness, local or cloud
+**When** `pyforge steward session check` runs
+**Then** it reports, as findings not prose: pixi present and `pyforge-guild` materialised at the frozen lock; `bmad-method` at the pinned version (reuse doctor's drift verdict, do not re-implement); the token kit — `headroom` on PATH, this harness's caveman skill installed, the three context layers not `layer-off` (reuse `marshal seed check`); `gh auth status` and `gh api rate_limit` (an unauthenticated session is a finding, because drift probes fail open); the codegraph index present (absent in every fresh clone); **the Tier-3 feed present for the project in hand — and when absent, the one sanctioned remedy: seed it by copying the tracked twin (`cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml`; verified 2026-09-16 in a fresh clone: `sprint-ledger-sync` then reports `unchanged`, tree clean)**; scribe recall reachability (absent by design in `pyforge-guild` — reported, not failed)
+**And** the four entry points call this one command and nothing else for preconditions (vocabulary-one-name-one-job: one mechanism, many surfaces); a cloud clone with no feed can land a ledger flip by following the printed remedy
+**Status:** backlog
+
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame

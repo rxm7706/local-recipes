@@ -794,6 +794,57 @@ cmd = "python -m pytest tests/packaging -q"
 description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
 cmd = "python -m pytest tests/scripts -q"
 
+# --- pyforge-guild: the Guild's session environment (steward Story 63.1, spec-pyforge-steward CAP-5) ---
+# The DEFAULT environment for every agent and harness doing planning-chain work -- Claude,
+# Cursor (IDE + Cloud Agents), Copilot, Gemini, Marshal dispatch/spin. Carries the current
+# state of PyForge (core, doctor, marshal, steward, testing-kit) and NOTHING
+# of the recipe factory: local-recipes (222 deps, 171 tasks, 10 GB) is Mason's environment and
+# includes feature.guild-tasks (the moved tasks, no deps) so every `pixi run -e local-recipes
+# <guild task>` keeps working. Tasks MOVE, never duplicate (Spec Constraint CAP-5): a task name
+# exists in one feature. Deps live HERE, not in guild-tasks -- see the banner at the task blocks.
+# The token-economy kit is on the floor by construction (CAP-5 corrected 2026-09-16 after
+# probing the lean pyforge-marshal env: no headroom; caveman is a per-harness skill, so the
+# env guarantees nodejs for `npx skills add` via the python feature): headroom-ai is declared
+# here explicitly so wire `auto` never degrades to MRS-DISP-033 for want of a binary.
+# Scribe recall stays `-e pyforge-scribe` (cocoindex + graphify are heavy and already per-env).
+# Foundry mode: rebuild -- python-foundry re-derives the same split.
+[feature.pyforge-guild.dependencies]
+pyforge-core = { path = "src/shared/packages/pyforge-core" }
+pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps bring jsonschema, pyyaml, mcp, pyforge-core
+# pyforge-warden is deliberately NOT here (found at the first solve, 2026-09-16): warden range-pins
+# its engine to the empirically-verified minor (`osv-scanner >=2.4.0,<2.5`, package.run-dependencies,
+# meta-test-enforced) while the factory pins `osv-scanner >=2.5.1`, so a warden-carrying feature
+# cannot be included by local-recipes. Doctor does not require warden at runtime (its run-deps are
+# jsonschema, pyyaml, mcp, pyforge-core) and degrades that seam to cannot-evaluate -- exactly how
+# detectors-ci has always run in local-recipes. The warden seam stays `-e pyforge-doctor` / `-e pyforge-warden`.
+pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }    # dispatch / spin / seed check; run-dep bmad-loop
+pyforge-steward = { path = "src/shared/packages/pyforge-steward" }    # workspace start/clean, frame-preflight; run-dep age
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
+headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
+# The adopted bmad-suite members (adoption-register § 2, spec-bmad-suite-lifecycle AD-2) -- ~13 MB
+# together; `marshal seed check` reports each one missing as "referenced dependency is not
+# installed", so the Guild env carries them at the same pins local-recipes does. bmad-method itself
+# comes from the python feature; bmad-loop is pyforge-marshal's run-dep.
+bmad-builder = ">=2.2.2"
+bmad-creative-intelligence-suite = ">=0.3.2"
+bmad-dashboard = ">=1.2.2.dev0"
+bmad-eval-quality = ">=1.4.1"
+bmad-method-test-architecture-enterprise = ">=1.26.0"
+bmad-module-template = ">=0.1.0"
+bmad-utility-skills = ">=2.0.0"
+bmad-labs-skills = ">=1.0.0.dev0"
+bmad-manticore = ">=3.1.0.dev0"
+uv = ">=0.12.13"                  # `uv run _bmad/scripts/memlog.py` -- every Spec write goes through it
+pyyaml = ">=6.0.3"                # fleet_picture, failure_catalog_check, cfe_rebuild_guard_check, bmad_loop_baseline_drift_check
+"ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator.py behind failure_catalog_check (same reason as feature.detectors)
+jsonschema = ">=4.26.0"
+# (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
+pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
+pytest-cov = ">=7.1.0"
+
+[feature.pyforge-guild.target.linux-64.dependencies]
+tmux = ">=3.5"                    # bmad-loop's spin multiplexer (see feature.pyforge-marshal.target.linux-64 for the 2026-09-10 incident)
+
 # The Detectors workflow's environment (operator decision 2026-09-04, PR #1043): pixi
 # first, pip only as the documented fallback in .github/workflows/detectors.yml.
 # Deliberately tiny -- the repo-scope detectors are pyforge-doctor (+ its package
@@ -835,7 +886,8 @@ cmd = "python -m http.server 8000 --directory dist"
 depends-on = ["site-check"]
 
 [environments]
-# default-env: local-recipes
+# default-env: pyforge-guild
+# ^ Story 63.1 (CAP-5): the Guild's session environment is the default; `local-recipes` is Mason's.
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
 # to activate by default when entering this repository. Change the value to any
 # environment name defined below. If omitted, the first environment key is used.
@@ -847,7 +899,9 @@ win = ["win", "python", "build"]
 build = ["python", "build"]
 grayskull = ["python", "grayskull", "crm"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
-local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
+local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
+pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }
+default = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, nodejs, bmad-method, spec-kit, truststore
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
 # pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
@@ -987,7 +1041,18 @@ cmd = "python .claude/scripts/conda-forge-expert/env_inspect.py"
 description = "Per-maintainer feedstock portfolio + --triage punch list (ranks by KEV/Critical CVEs, CI-red, stuck bots, upstream lag, open PRs/issues). Defaults to $GITHUB_USERNAME or $USER; override with --maintainer."
 cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 
-[feature.local-recipes.tasks.bmad-preflight]
+# --- Guild / planning tasks live in feature.guild-tasks (steward Story 63.1, CAP-5) -----------
+# Detectors, ledger sync, surface stamps, fleet-picture and the three preflight aggregates.
+# guild-tasks carries TASKS ONLY (no dependencies) and is included by both `-e pyforge-guild`
+# (the session default; deps come from feature.pyforge-guild) and `-e local-recipes`. It is a
+# separate feature from pyforge-guild because a deps-carrying feature cannot be included by
+# local-recipes: station packages range-pin their engines to the empirically-verified minor
+# (pyforge-marshal `tomlkit >=0.13,<0.13.3`, pyforge-warden `osv-scanner >=2.4,<2.5`) while the
+# factory floats (`tomlkit >=0.15.1`, `osv-scanner >=2.5.1`) -- both found at the first solve,
+# 2026-09-16. One name, one feature: never re-add a copy under feature.local-recipes.
+# Interleaved with the factory tasks on purpose -- the move is a header rename, so
+# `git blame` on every description survives.
+[feature.guild-tasks.tasks.bmad-preflight]
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
@@ -1003,24 +1068,24 @@ cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
 description = "Story 46.3 (spec-bmad-suite-lifecycle CAP-4 half): headless run of TEA's bmad-testarch-test-review skill (steward provision --module tea) against the PR's changed test files -- a Marshal review-lens / Warden-advisory precursor, never this task itself. Default: --base origin/main --min-score 80. Override or add flags after `--`, e.g. `pixi run -e local-recipes tea-test-review -- --min-score 90`. Not a gate: never joins detectors/detectors-ci -- Warden's own PR-gate exit code is unaffected by this task's existence."
 cmd = "tea-test-review --base origin/main --min-score 80"
 
-[feature.local-recipes.tasks.bmad-drift-check]
+[feature.guild-tasks.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
 
-[feature.local-recipes.tasks.bmad-groundtruth]
+[feature.guild-tasks.tasks.bmad-groundtruth]
 description = "Print the live ground-truth factory facts (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) as JSON — the source of truth the BMAD docs must portray."
 cmd = "python -m pyforge.doctor.sources bmad-drift --groundtruth"
 
-[feature.local-recipes.tasks.llms-full-check]
+[feature.guild-tasks.tasks.llms-full-check]
 description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
 
-[feature.local-recipes.tasks.platform-ci-test-requirements-check]
+[feature.guild-tasks.tasks.platform-ci-test-requirements-check]
 description = "Detector (Story 16.1 / CAP-5): src/platform/requirements/{base,local,production}.txt stay retired — pixi.toml is the sole platform dep authority. Exits non-zero if those files are resurrected. Pass -- --json for machine output."
 cmd = "python scripts/platform_ci_test_requirements_check.py"
 
 
-[feature.local-recipes.tasks.pixi-version-check]
+[feature.guild-tasks.tasks.pixi-version-check]
 description = "Detector: every pixi-version pin site (CI workflows, both Containerfiles, environment.yaml, pixi.toml's own feature floors) agrees with pixi.toml's requires-pixi floor. Registry lives in scripts/pixi_version_registry.py, not a hand-maintained comment — that comment drifted three times before this existed, most recently 2026-08-21 when a pixi upgrade left 10 external sites stale and one (src/platform/compose/dbgpt/Containerfile) unregistered entirely, breaking container-dbgpt CI. Reconciler: bump-pixi-version. Pass -- --json for machine output."
 cmd = "python scripts/pixi_version_check.py"
 
@@ -1028,59 +1093,59 @@ cmd = "python scripts/pixi_version_check.py"
 description = "Mutator: rewrite every scripts/pixi_version_registry.py site to one target pixi version in a single pass (pixi.toml's $schema/requires-pixi/3 feature floors, dashboard.yml, kedro-viz-publish.yml, herald-live-demo.yml's 3 pins, sync-pypi-mappings/action.yml, staged-recipes-linter.yml's micromamba floor, both Containerfiles + the dbgpt-sidecar one), then regenerates environment.yaml with the real exporter and re-runs pixi-version-check to confirm convergence. Verifies the target ghcr.io/prefix-dev/pixi image tag exists first. Usage: pixi run -e local-recipes bump-pixi-version -- 0.78.0 (omit the version to re-converge sites to pixi.toml's current floor after fixing an unregistered one by hand)."
 cmd = "python scripts/bump_pixi_version.py"
 
-[feature.local-recipes.tasks.deferred-work-check]
+[feature.guild-tasks.tasks.deferred-work-check]
 description = "Detector: no deferred-work entry lives ONLY in gitignored Tier-3. bmad-loop's follow-up-review damping refiles a still-recommended review into implementation-artifacts/deferred-work.md, which is gitignored — so its own safety valve leaks. Fails when a Tier-3 DW-* id has no tracked twin in planning-artifacts/deferred-work-ledger.md, or when a project carries a substantive Tier-3 ledger and no tracked one at all. Reconcile by promoting into the tracked ledger. Contract: spec-regenerable-factory."
 cmd = "python -m pyforge.doctor.sources deferred-work"
 
-[feature.local-recipes.tasks.due-for-verification-check]
+[feature.guild-tasks.tasks.due-for-verification-check]
 description = "Batches every tracked planning-artifacts/deferred-work-ledger.md entry (every project) that has never been re-checked against live code (no `verified:` line) or was last checked past the DUE_FOR_VERIFICATION_STALENESS_DAYS staleness threshold (sources/chain.py) — informs only, always WARN, never gates. Every ID'd entry counts regardless of status: (closed/done entries are not exempt). Each due entry is additionally churn-checked: when every code path its ledger text cites (backtick-quoted, excluding `source_spec:`) has had zero git commits since the entry's churn-window start (its `verified:` date, or a derived authoring date when never verified), the SAME finding's evidence is tagged `skip_reason: no-churn` — deprioritized, not resolved; any unresolved or churned path, or zero extractable paths, leaves it fully due (safe default). Each due entry that SURVIVES the churn filter is further offered a mechanical check for ONE grep-recomputable claim shape: a backtick-quoted bare identifier claimed unused/unreferenced/never called/no callers/dead code within 80 characters. `git grep -n -w -I --untracked --no-exclude-standard` (whole repo, including not-yet-committed and gitignored-but-untracked files, excluding every `**/deferred-work-ledger.md` so an entry's own claim text never counts as a call site against itself, excluding the symbol's own `def`/`async def`/`class` line except for any further occurrence of the symbol on that same line) recomputes its live call-site count without an agent, tagging the finding `mechanical_verdict: still-open` (count still 0) or `mechanical_verdict: escalate` (count now nonzero — needs Story 11.4's agent judgment); never `resolved`. A verdict is only asserted when the symbol resolves to a real found declaration — a bare identifier with no `def`/`class` anywhere (e.g. a variable/constant) gets no verdict. No recognizable claim, a churn-skipped entry, an unresolved declaration, or a git failure leaves the finding with no `mechanical_*` keys. Reconcile by re-reading the entry against live code and appending a fresh `verified: <date> — ...` line. Contract: spec-deferred-work-resolution-sweep CAP-1 + CAP-2 + CAP-3."
 cmd = "python -m pyforge.doctor.sources due-for-verification"
 
-[feature.local-recipes.tasks.bmad-method-version-drift-check]
+[feature.guild-tasks.tasks.bmad-method-version-drift-check]
 description = "Compares this pixi.toml's own declared bmad-method floor (max across every dependencies/feature.*.dependencies/target-scoped table) against _bmad/_config/manifest.yaml's installed version, and separately against the latest bmad-method release actually published on npm (a live, fail-open registry query) — informs only, always WARN or OK, never gates. Reconcile by running the BMAD-METHOD installer to bring the installed core up to date, or by lowering the declared floor if an upgrade is not yet intended. Contract: spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported, spec-10-2-the-installed-core-is-compared-against-the-latest-upstream-release."
 cmd = "python -m pyforge.doctor.sources bmad-method-version-drift"
 
-[feature.local-recipes.tasks.story-status-check]
+[feature.guild-tasks.tasks.story-status-check]
 description = "Detector: no story reads `done` in a sprint feed without having landed. A bmad-loop dev pass self-marks its story `done`; if the REVIEW then fails to converge the story is deferred and NOTHING rolls the feed back — a false green in the artifact the dashboard renders and the next run dispatches from, so the board over-reports AND the next run SKIPS a story that was never finished. Caught 3 live on 2026-07-31 (marshal 1-6, doctor 1-4, mason 1-3), all in the same shape: dev completed, review failed. Confirms a landing via a merge commit on any ref OR a harness-recorded commit_sha (AD-33: git owns repository facts), and reports only when the harness positively says deferred/escalated — so hand-implemented stories with no run record are never flagged. The real fix belongs upstream in bmad-loop; this is the containment. Premise note (2026-08-22): BMAD 6.11's build-auto finalize writes `done` only at true finalize (post-review), shrinking — not closing — the dev-marks-done window; pre-6.11 feeds and interrupted runs keep the premise live, so detector behavior is unchanged. Contract: spec-regenerable-factory."
 cmd = "python -m pyforge.doctor.sources story-status"
 
-[feature.local-recipes.tasks.capability-effect-check]
+[feature.guild-tasks.tasks.capability-effect-check]
 description = "Detector: a shipped/realized Spec CAP carries no `verified:` line (Story 21.10/21.11, spec-capability-effect-check CAP-2). Answers \"is the capability reached\" beside story-status-check's \"did the story land\" in one detectors run. Read-only — never authors a verified line. Warn-only, never gates. Contract: spec-21-11-the-effect-check-renders-beside-story-status-check."
 cmd = "python -m pyforge.doctor.sources capability-effect"
 
-[feature.local-recipes.tasks.status-body-consistency-check]
+[feature.guild-tasks.tasks.status-body-consistency-check]
 description = "Detector: terminal-tier Dream/Spec bodies contradict their declared status (Story 21.12–21.16, spec-status-body-consistency CAP-1..5). Progress phrases, open-questions/memlog drift, measured promissory language, and status-comment/ledger contradictions — warn-only, read-only, fail-open. Surfaces beside dream-vocab and spec-status-missing in one detectors run and fleet-picture ATTENTION. Contract: spec-21-16-the-status-body-check-renders-where-the-operator-already-looks."
 cmd = "python -m pyforge.doctor.sources status-body-consistency"
 
-[feature.local-recipes.tasks.general-docs-consistency-check]
+[feature.guild-tasks.tasks.general-docs-consistency-check]
 description = "Detector: human-facing documentation identity contradictions (Story 22.3, spec-general-docs-consistency CAP-3). Cross-references station README vs skill-brief and AGENTS.md vs station Dream claims — bounded, textual, evidence-based. Warn-only, read-only, fail-open — never a second PR gate. Contract: spec-22-3-a-repeatable-doctor-detector-catches-this-class-of-drift-going-forward."
 cmd = "python -m pyforge.doctor.sources general-docs-consistency"
 
-[feature.local-recipes.tasks.pixi-currency-staleness-check]
+[feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
 cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"
 
-[feature.local-recipes.tasks.loop-stall-check]
+[feature.guild-tasks.tasks.loop-stall-check]
 description = "Watchdog: a live bmad-loop run has stopped making progress. `bmad-loop status` reports the last phase it WROTE, so a session blocked on an interactive startup dialog reads `dev-running` forever — and the dialog never reaches the session log, it renders only in the tmux pane, so the log just stops growing. The supervisor's stall ladder does not fire either. Live cost 2026-07-31: scribe 1.3 sat 74 min on the CLAUDE.md external-import dialog, seven times its 600s grace, while five siblings wrote every second. Compares now against the newest mtime across a run's logs + journal, for runs whose state.json says neither finished, stopped, paused, nor parked-only (a paused run is SUPPOSED to sit still, and since Story 25.5 a parked-only run — every task awaiting-operator — reports awaiting-operator (run bmad-loop confirm) and exits 0 instead of reading as a stall). Threshold 15m, override with -- --minutes N. Catches any cause: folder-trust prompt, external-import prompt, wedged model call, hung nested CLI. Contract: spec-bmad-loop-governance."
 cmd = "python scripts/loop_stall_check.py"
 
-[feature.local-recipes.tasks.baseline-drift-check]
+[feature.guild-tasks.tasks.baseline-drift-check]
 description = "Watchdog: a story permanently deferred by bmad-loop's stuck-orchestrator baseline-drift bug and not yet recovered. `task.baseline_commit`, stamped once when a story's isolated worktree opens, can drift to the shared loop/<slug> branch's later tip while a dev session is still running -- the verify gate then mismatches it against the session's own correct baseline and permanently defers real, reviewed work while the dispatcher silently opens the next story's worktree. Not ours to fix (bmad_loop ships git-pinned via pixi); this is the loud-defer containment. Hit 5 times in one session on 2026-08-14 (marshal 8.1-9.6, mason 3.6-3.9) before this containment existed, 3 more the same day (atlas 14-2, herald 14-2/14-3) — every occurrence's real commits survive as an attempt-preserve/<run>-<hash> branch, recoverable by hand (land/<slug>-<story> off origin/loop/<slug>, same shape as PRs #482-484/#510) but invisible until an operator notices. Scans every run's journal.jsonl under every ~/.bmad-loops loop home; a finding silences itself the moment the story reads `done` in that station's tracked sprint-status-ledger.yaml (the same source fleet-picture reads), so a landed recovery clears it with no commit-message archaeology. Contract: spec-bmad-loop-baseline-drift."
 cmd = "python scripts/bmad_loop_baseline_drift_check.py"
 
-[feature.local-recipes.tasks.index-freshness-check]
+[feature.guild-tasks.tasks.index-freshness-check]
 description = "Detector: codegraph and cocoindex indices in loop homes are present and fresh (Story 28.7, SPEC-marshal-token-economy CAP-10). Advisory only: staleness never blocks a run; the findings inform admission decisions. For each loop home, reads its rendered `.bmad-loop/policy.toml`, checks the `[context]` layer declarations, and for each ENABLED layer (structure-graph → codegraph, derived-context → cocoindex), verifies the index is present and its mtime is at or after HEAD's commit timestamp — the same git-timestamp discipline CAP-13 requires for graph-node staleness. If git cannot report HEAD (not a repo, no commits, no git binary), freshness is not evaluated; presence alone reports OK. scope=runtime (loop homes live in ~/.bmad-loops, a gitignored Tier-3 directory), excluded from detectors-ci."
 cmd = "python scripts/index_freshness_check.py"
 
-[feature.local-recipes.tasks.scribe-graph-freshness-check]
+[feature.guild-tasks.tasks.scribe-graph-freshness-check]
 description = "Detector (Story 8.1, spec-8-1): the compiled scribe knowledge graph (.claude/data/pyforge-scribe/graph.json) is fresh -- its mtime is no older than the nightly trigger's own 24h period (pyforge-scribe-nightly-compile.timer). Advisory only: never a PR gate, never a second verdict alongside the detector set's existing gates -- proof the nightly trigger fired, nothing more. Missing graph.json (never compiled, or the trigger was never installed) is its own advisory finding, not an error. scope=runtime (a gitignored, host-local derived artifact a CI runner never populates), excluded from detectors-ci."
 cmd = "python scripts/scribe_graph_freshness_check.py"
 
-[feature.local-recipes.tasks.missing-preserve-check]
+[feature.guild-tasks.tasks.missing-preserve-check]
 description = "Watchdog: an intent-gap halt left no preserve artifact (Story 20.5 / CAP-3 of spec-bmad-loop-intent-gap-work-preservation). Story 20.4 parks attempt-preserve/* or failed/<story>/changes.patch before the halt reverts; if that seam is bypassed or upstream shifts, the halt still looks clean while the attempt is gone. Scans marshal journals under ~/.bmad-loops for escalation-detected (intent-gap reason) or intent-gap-preserve-failed; trips when no preserve branch/patch is present. scope=runtime (excluded from detectors-ci), same placement as loop-stall-check / baseline-drift-check — NOT pyforge.doctor.sources. Never imports bmad_loop. Contract: spec-20-5-missing-preserve-detector."
 cmd = "python scripts/missing_preserve_check.py"
 
-[feature.local-recipes.tasks.forward-dependency-check]
+[feature.guild-tasks.tasks.forward-dependency-check]
 description = "Detector: a story's own documented **Deps:** names a story in a LATER epic, and bmad-loop cannot see it. `next_actionable` (bmad_loop.sprintstatus) is a strict file-order scan within the current epic with no depends_on concept at all — confirmed against the installed library. A plain `bmad-loop run` would dispatch the forward-dependent story the moment its own epic clears, burning a dev attempt on work that can't complete yet. Found live 2026-08-03 in marshal (2-3 deps S-3.2, 2-7 deps S-4.1, 8-5 deps S-10.2); the fix is the non-standard `blocked` status (the loader does not validate against STORY_STATUSES, same mechanism `optional` relies on), then `python scripts/promote_sprint_status.py`. COVERAGE is keyed on MACHINE-READABLE refs, four classes (reworked 2026-08-08): `measured` (every declaration resolved or explicitly none) · `partial` (a real dependency stated in a grammar DEP_RE cannot parse — the ratio is named, so a station can never read as fully verified; this is how mason reported clean with 0 of 30 declarations parseable) · `no-dispatch` (the ledger positively shows 0 actionable stories, so nothing can be dispatched early — a measured fact, NOT a parse-clean claim) · `unmeasured` (no declaration and work remains, or the ledger is unreadable). Grammar: `S-<epic>.<num>` story, `S-<epic>.*` whole epic, `<station>:S-<epic>.<num>` cross-station, `—` none; prose only as trailing context. Contract: docs/dreams/bmad-loop-forward-dependency-blindness.md + its Spec under pyforge-marshal."
 cmd = "python -m pyforge.doctor.sources forward-dependency"
 
@@ -1088,79 +1153,79 @@ cmd = "python -m pyforge.doctor.sources forward-dependency"
 description = "Pre-approve the Claude CLI's per-workspace STARTUP dialogs (folder-trust, CLAUDE.md external-import) for every loop home, so an interactive prompt cannot stall an unattended run. These are NOT tool-permission prompts: loop sessions already run --permission-mode bypassPermissions, which is a different layer and did not suppress them — scribe 1.3 stalled 74 min anyway. OPERATOR DECISION 2026-07-31: this removes the one moment a human sees the list of files imported into the model's system context, and the imported file (.claude/memory/MEMORY.md) is AGENT-WRITTEN — scribe's own output. The residual control is that .claude/memory/** is git-tracked, so review the diff as instructions, not notes; and loop-stall-check catches any FUTURE prompt within 15 min. Scope is guarded to git worktrees under ~/.bmad-loops; atomic write with a .bak. Run `-- --check` for a read-only report. Contract: spec-bmad-loop-governance."
 cmd = "python scripts/seed_claude_consent.py"
 
-[feature.local-recipes.tasks.spec-surface-check]
+[feature.guild-tasks.tasks.spec-surface-check]
 description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive). Contract: spec-regenerable-factory CAP-3."
 cmd = "python -m pyforge.doctor.sources spec-surface"
 
-[feature.local-recipes.tasks.platform-policy-suite-check]
+[feature.guild-tasks.tasks.platform-policy-suite-check]
 description = "Detector: src/platform's manifest-only tests/policy subset (retro action item 3, 2026-09-04) — catches a pixi.toml regression like the openfeature-provider-flagd/cachebox ceiling drop even when Platform CI itself is disabled. Shells out to the platform-ci-test pixi env's own interpreter (WARN, not FAIL, if that env is not installed here — install it with `pixi install -e platform-ci-test` to make this a real gate). Exits non-zero only on an actual policy-suite failure."
 cmd = "python -m pyforge.doctor.sources platform-policy-suite"
 
-[feature.local-recipes.tasks.bmad-render-config-ambiguity-check]
+[feature.guild-tasks.tasks.bmad-render-config-ambiguity-check]
 description = "Detector: render_skill.py's central-config merge (_bmad/config*.toml + _bmad/custom/config*.toml) holds no bare key ambiguous across two dotted paths — the class that HALTs every rendering skill (bmad-build, bmad-build-auto, ...) with `RenderError: ambiguous config value` (live 2026-09-06, fixed by 99e595cc6a). Warn-only, never gates."
 cmd = "python -m pyforge.doctor.sources bmad-render-config-ambiguity"
 
-[feature.local-recipes.tasks.frozen-path-changed-check]
+[feature.guild-tasks.tasks.frozen-path-changed-check]
 description = "Detector: no capability currently rebuilding/moving in the tracked capability ledger (docs/foundry/manifest.{yaml,yml,json}, absent pre-cutover) had one of its own frozen source paths touched by origin/main..HEAD (AD-22's freeze rule). OK when no ledger exists (today's real state, every real invocation until cutover begins). FAIL on a genuine violation, naming the capability and the changed path."
 cmd = "python -m pyforge.doctor.sources frozen-path-changed"
 
-[feature.local-recipes.tasks.capability-ledger-check]
+[feature.guild-tasks.tasks.capability-ledger-check]
 description = "Detector (Story 55.2 / fcl:CAP-2): live CAP-N extracts (heading + intent/success only) match docs/foundry/capability-ledger.yaml. FAIL on unclassified CAP-N or A-only without expiry; WARN --append for paths/Specs added after the ledger PIN SHA. Never inventories via _node_from_text_file / a 20k SPEC prefix."
 cmd = "python -m pyforge.doctor.sources capability-ledger"
 
-[feature.local-recipes.tasks.dream-chain-check]
+[feature.guild-tasks.tasks.dream-chain-check]
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources dream-chain"
 
-[feature.local-recipes.tasks.dreams-hygiene-check]
+[feature.guild-tasks.tasks.dreams-hygiene-check]
 description = "Detector: Dream-tier hygiene (Story 17-2 / FR-147) — per-Dream frontmatter validity (status vocab, owner in station/guild, title present), README table sync, realization-log presence for pitched+. Distinct from dream-chain-check INV-0..3. CLI spelling: dream-chain --dreams (chosen over folding into --inv). Warn-only."
 cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
 
-[feature.local-recipes.tasks.chain-sprawl-check]
+[feature.guild-tasks.tasks.chain-sprawl-check]
 description = "Detector: Dream-APPEND-first is enforced, not asserted (doctor Story 25.1, spec-one-chain-per-station CAP-2). Every docs/dreams/*.md and every specs/spec-*/ folder not present at the ruling SHA (docs/governance/chain-sprawl-baseline.json, a dated snapshot that only ever shrinks) must carry `fold-exemption:` from guild-roster.json `fold_exemptions` -- else FAIL chain-sprawl-unexempted. Station Dreams, station Specs and story-spec files are the chain, not sprawl. Exempt remainders are an OK finding so the exemption is visible. Standard: docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources chain-sprawl"
 
-[feature.local-recipes.tasks.fr-without-cap-check]
+[feature.guild-tasks.tasks.fr-without-cap-check]
 description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
 cmd = "python -m pyforge.doctor.sources fr-without-cap"
 
-[feature.local-recipes.tasks.chain-completeness-check]
+[feature.guild-tasks.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"
 
-[feature.local-recipes.tasks.chain-currency-sweep-check]
+[feature.guild-tasks.tasks.chain-currency-sweep-check]
 description = "Detector: the eight station planning spines are CURRENT -- the CAP-3 chain audit's staleness + coherence checkpoints swept across all 8 stations in one run (layers/orphans deliberately excluded: they are chain-completeness policy work, and folding the deck gap in would make this permanently red). scope=repo -- reads tracked planning artifacts, dreams, and tracked ledgers only. Exit 0 current / 1 findings (run the reconciler per _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md) / 2 could-not-run. Flags: -- --json, -- --project <slug>. Contract: docs/dreams/chain-currency-sweep.md."
 cmd = "python scripts/chain_currency_sweep_check.py"
 
-[feature.local-recipes.tasks.governance-currency]
+[feature.guild-tasks.tasks.governance-currency]
 description = "Detector: every skill, script and path named in the governance documents (_bmad-output/EXEMPLAR-STANDARD.md, AGENTS.md, CLAUDE.md, docs/reference/test-charter.md) still resolves. Story 32.6 / spec-fleet-consistency-standard CAP-6, written because EXEMPLAR-STANDARD spent two BMAD versions naming four skills that had not existed since 6.11 with no gate noticing -- INV-4's argument applied to the prose that governs the detectors. A name resolves as a skill, a script or a pixi task/dependency, all derived from the tree; deliberate historical citations are exempted only by an explicit governance-currency:ignore-start/end marker, never a heuristic. scope=repo. Exit 0 clean / 1 findings / 2 could-not-run. Flags: -- --json, -- --file <path>."
 cmd = "python scripts/governance_currency_check.py"
 
-[feature.local-recipes.tasks.chain-layers-audit-check]
+[feature.guild-tasks.tasks.chain-layers-audit-check]
 description = "Detector: Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3 — read-only per-project chain audit. Pass/fail per checkpoint (layers, coherence, staleness, orphan-freedom) seeded from pyforge.doctor.sources.fleet_scan + dream-chain (never a cached table). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Exit non-zero on checkpoint fail."
 cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
 
-[feature.local-recipes.tasks.ledger-regression-check]
+[feature.guild-tasks.tasks.ledger-regression-check]
 description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Compares origin/main..HEAD."
 cmd = "python -m pyforge.doctor.sources ledger-regression"
 
-[feature.local-recipes.tasks.ad-citation-check]
+[feature.guild-tasks.tasks.ad-citation-check]
 description = "Detector: every architecture-decision citation resolves to exactly one spine. FAILs on an `AD-n` that names no AD anywhere in the fleet; reports (advisory) any project whose several spines share an id range, which makes a bare `AD-n` there unresolvable without reading the citing file. Measured 2026-09-08 at first run: 11,198 citations across 935 files, ZERO broken, 172 legitimately cross-project, and steward the one project with overlapping spines. The graph being healthy is exactly why a bulk renumber is dangerous -- it can only subtract correctness."
 cmd = "python scripts/ad_citation_check.py"
 
-[feature.local-recipes.tasks.bmad-cursor-mdc-check]
+[feature.guild-tasks.tasks.bmad-cursor-mdc-check]
 description = "Detector: generated Cursor .mdc rules for the bmad-build / bmad-build-auto pilot match their SKILL.md sources (Marshal Stories 45.1–45.2 / spec-bmad-cursor-interactive-routing CAP-2 OQ-3). scope=repo. Exit 0 clean / 1 findings / 2 could-not-run. -- --write regenerates the two files."
 cmd = "python scripts/bmad_cursor_mdc_check.py"
 
-[feature.local-recipes.tasks.bmad-cursor-mdc-generate]
+[feature.guild-tasks.tasks.bmad-cursor-mdc-generate]
 description = "Regenerate .cursor/rules/bmad-build.mdc and bmad-build-auto.mdc from the pilot SKILL.md files (Marshal Story 45.1)."
 cmd = "python scripts/bmad_cursor_mdc_check.py --write"
 
-[feature.local-recipes.tasks.memlog-fidelity-check]
+[feature.guild-tasks.tasks.memlog-fidelity-check]
 description = "Harness: inventory every spec SPEC.md and architecture ARCHITECTURE-SPINE.md across the eight stations; verify sibling .memlog.md exists; optionally diff scratch bmad-spec/bmad-architecture re-derives against live rendered files (--compare SCRATCH). Reconcile by memlog append then headless re-derive (see --invoke-hints). Contract: spec-44-13-memlog-fidelity / fnd:AD-20."
 cmd = "python scripts/memlog_fidelity_check.py"
 
-[feature.local-recipes.tasks.ledger-direction-check]
+[feature.guild-tasks.tasks.ledger-direction-check]
 description = "Detector: the tracked sprint ledger versus git merge history, WITH DIRECTION (marshal FR-137/FR-138). `landed-but-unpromoted` — merge history names a story the ledger has not marked done — is the FAIL half and the incident this exists for. `done-but-unmerged` is advisory (WARN, never reds the run): a done flip absent from the ledger at the base ref AND unnamed by any merge subject. Both read git only, never the gitignored Tier-3 sprint-status.yaml — a statement of intent is not evidence of landing."
 cmd = "python -m pyforge.doctor.sources ledger-direction"
 
@@ -1172,7 +1237,7 @@ cmd = "python -m pyforge.doctor.sources check-layout"
 description = "Replay Platform CI (.github/workflows/platform-ci.yml) locally — the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier — against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host."
 cmd = "bash scripts/platform-ci-local.sh"
 
-[feature.local-recipes.tasks.fleet-picture]
+[feature.guild-tasks.tasks.fleet-picture]
 description = "PyForge fleet progress REPORT: per-station done / in-progress / projected / blocked, plus an ATTENTION block naming anything that needs a human (escalation, dead run, idle-with-backlog, open PR). Read-only and NEVER gating -- always exits 0, unlike the six detectors. Counts come from each station's TRACKED planning-artifacts/sprint-status-ledger.yaml (the twin of the gitignored Tier-3 feed), never from an ad-hoc regex over commit subjects and never from docs/dashboard/data.js, which lags until a merge to main. Running stations are detected live from `marshal status --format json`, so a finished run flips to `complete` on its own rather than rotting in a hardcoded list."
 cmd = "python scripts/fleet_picture.py"
 
@@ -1180,27 +1245,27 @@ cmd = "python scripts/fleet_picture.py"
 description = "Background hourly fleet poll at :30 past each hour — git pull/push on main and all pyforge loop homes, then emit AGENT_LOOP_TICK_fleet-poll to wake an agent for fleet-picture. Log: .cursor/fleet-poll.log"
 cmd = "bash scripts/fleet-poll-hourly.sh"
 
-[feature.local-recipes.tasks.unpushed-work-check]
+[feature.guild-tasks.tasks.unpushed-work-check]
 description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: docs/dreams/fidelity-enforcement.md. The standing signal for between-runs staleness now that the standalone interval-push watcher is retired (Story 4.15/FR-177): S-3.10's tip comparison already covers `loop/*` station branches."
 cmd = "python scripts/unpushed_work_check.py"
 
-[feature.local-recipes.tasks.mason-cfe-surface-check]
+[feature.guild-tasks.tasks.mason-cfe-surface-check]
 description = "Detector (FR-45/AD-15): Mason (src/shared/packages/pyforge-mason/**) never modifies the conda-forge-expert surface (.claude/skills/conda-forge-expert/**, .claude/scripts/conda-forge-expert/**, .claude/tools/conda_forge_server.py). Scans every commit touching the mason path (derived range, no hardcoded baseline) and flags any non-sanctioned one that also touches CFE — exactly one exception is allowed: a commit whose subject starts `retro:` AND whose diff includes the CFE CHANGELOG.md (subject alone never launders a CFE touch); a second such commit is itself a finding (`exception-reused`). scope=repo — reads tracked commit history only. Exits non-zero on any finding. Pass -- --json for machine output. Contract: _bmad-output/projects/pyforge-mason/planning-artifacts (Story 5.2)."
 cmd = "python scripts/mason_cfe_surface_check.py"
 
-[feature.local-recipes.tasks.cfe-rebuild-guard-check]
+[feature.guild-tasks.tasks.cfe-rebuild-guard-check]
 description = "Detector (Epic 6/Story 6.2, clause (d) added by Story 12.4): guards the CFE-rebuild campaign against silent divergence and a stalled endgame. Reads campaign-state.yaml + bounded git history for four clauses: (a) stale-equivalence — any slice with status parallel/audited/cut-over must have equivalence: green; (b) unmirrored-retro — for every slice with a brief_path set, a landed CFE Rule-2 retro (a commit since the Story-6.1 landing merge touching both the CFE surface and CHANGELOG.md, no commit-subject pattern involved) must be mirrored into brief_mirrored_through; (c) legacy-caller-at-endgame — once campaign.endgame_declared is true, no campaign.callers entry may still resolves_to: legacy; (d) gate-bypassed — a brief_path set on any slice of order >= 2 while campaign.re_scope_gate.pre_conditions does not record all four named pre-conditions closed or waived. scope=repo — reads tracked commit history only. Exits non-zero on any finding. Pass -- --json for machine output, -- --since <sha> to override the clause-(b) lower bound. Contract: _bmad-output/projects/pyforge-mason/planning-artifacts (Story 6.2)."
 cmd = "python scripts/cfe_rebuild_guard_check.py"
 
-[feature.local-recipes.tasks.detectors]
+[feature.guild-tasks.tasks.detectors]
 description = "Run EVERY detector, discovered from the filesystem rather than a hand-written list — the registry fails on its own gaps (a detector with no pixi task, or a check script declaring no scope). Exit 0 pass, 1 findings, 2 could-not-run: a detector that cannot run reports unknown, NEVER green. Flags: -- --scope repo|runtime|all, -- --list, -- --json."
 cmd = "python scripts/detectors.py"
 
-[feature.local-recipes.tasks.detectors-ci]
+[feature.guild-tasks.tasks.detectors-ci]
 description = "The CI-safe detector subset: scope=repo only, i.e. those reading tracked files alone. retired-console-check (dashboard-drift reintroduction gate) is repo-scope. Remaining scope=runtime detectors (e.g. loop-stall-check) observe gitignored Tier-3 feeds, tmux and ~/.bmad-loops, which do not exist on a runner — that exclusion is the missing observation plane showing up as a deployment constraint, not a convenience."
 cmd = "python scripts/detectors.py --scope repo"
 
-[feature.local-recipes.tasks.pyforge-station-tests]
+[feature.guild-tasks.tasks.pyforge-station-tests]
 description = "Run every PyForge station's own pytest suite locally, mirroring .github/workflows/pyforge-station-tests.yml's per-station jobs — the exact set that ALL fire together whenever pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit changes (that workflow's shared-surface rule), which is easy to miss since most day-to-day PRs only touch one station and never see this combination locally. Added 2026-09-14 after a 5-day GitHub Actions billing outage let ~260 PRs merge with this workflow never actually running; a pixi.toml dep bump was the first push afterward to touch shared surface, and it surfaced 5 days of accumulated drift (doctor/marshal/mason) all at once. Fails fast (first red station stops the run) and covers only each station's own `pyforge-<station>-test` task — NOT atlas's Chromium/DuckDB/WASM setup, herald's browser check, scribe's Postgres+pgvector service (see `scribe-pg-up`), or the separate guild-container job; run those stations' own CI-mirroring steps first if you touched them. Run this before pushing any pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit change."
 # Declarative cross-environment depends-on, NOT a shell loop. The original
 # 2026-09-14 landing used `set -euo pipefail` + a bash `for`, which pixi's task
@@ -1219,7 +1284,7 @@ depends-on = [
   { task = "pyforge-warden-test", environment = "pyforge-warden" },
 ]
 
-[feature.local-recipes.tasks.pyforge-station-coverage-gates]
+[feature.guild-tasks.tasks.pyforge-station-coverage-gates]
 description = "Run every station's CI-mirroring coverage gate (scripts/coverage_gates_ci.py, touched modules, 80% unit floor) in its own pixi env — the local twin of .github/workflows/coverage-gates.yml's `named-module-gates` matrix. Declarative depends-on, never a shell loop (pixi's task shell cannot parse one; see pyforge-station-tests)."
 depends-on = [
   { task = "pyforge-atlas-coverage-gate", environment = "pyforge-atlas" },
@@ -1232,15 +1297,17 @@ depends-on = [
   { task = "pyforge-warden-coverage-gate", environment = "pyforge-warden" },
 ]
 
-[feature.local-recipes.tasks.pr-preflight]
+[feature.guild-tasks.tasks.pr-preflight]
 description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 
 Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
 
 Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivalent: `cfe-regression-net` failed on a stale spec-surface baseline (a scoped `--write-baseline` had been taken, then a governed file was edited again, silently invalidating it), and `named-module-gates (doctor)` failed on a coverage floor that only measures modules a branch touches — so it had been latent for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`.
 
-NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error)."""
-depends-on = ["detectors-ci", "test-ci", "pyforge-station-tests", "pyforge-station-coverage-gates"]
+NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
+
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close."""
+depends-on = ["detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, "pyforge-station-tests", "pyforge-station-coverage-gates"]
 
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
@@ -1266,11 +1333,11 @@ cmd = "python evals/review-catches-planted-defect/driver.py twin-run"
 description = "Story 45.2: re-scores a previously sealed run record from an eval-quality-review-twin-run invocation (same --out-dir) without re-invoking `claude -p`. Usage: pixi run -e local-recipes eval-quality-review-replay -- <path-to-a-*-record.json>. Missing record file exits non-zero with a clear message. Not a gate: never joins detectors/detectors-ci."
 cmd = "python evals/review-catches-planted-defect/driver.py replay"
 
-[feature.local-recipes.tasks.sprint-ledger-sync]
+[feature.guild-tasks.tasks.sprint-ledger-sync]
 description = "Promote each project's Tier-3 story-status map to its TRACKED twin at planning-artifacts/sprint-status-ledger.yaml. implementation-artifacts/ is gitignored wholesale, so sprint-status.yaml is invisible to CI. Written in the feed's own shape so fleet_scan.parse_sprint_status reads both. Idempotent; run it when a story lands, then commit."
 cmd = "python scripts/promote_sprint_status.py"
 
-[feature.local-recipes.tasks.retired-console-check]
+[feature.guild-tasks.tasks.retired-console-check]
 description = "FR-7 / Story 30.2: fail if the retired Guildhall generator, data.js, or the four dashboard-gen/watch/check/drift pixi tasks are reintroduced. Kedro-Viz is out of scope."
 cmd = "python -m pyforge.doctor.sources dashboard-drift"
 
@@ -1386,7 +1453,7 @@ cmd = "python .claude/scripts/conda-forge-expert/cwe_seed_gap.py"
 description = "Derive .claude/skills/conda-forge-expert/config/failure-catalog.yaml from SKILL.md's 'Recipe Authoring Gotchas' corpus (G1-G110) — Story 7.1. Deterministic: one row per gotcha with greppable symptom_signature tokens and an enforced_by pointer into recipe_optimizer.py's live check-code registry (or explicit null when no check enforces it yet — the null rows ARE the backlog). Pass --check to diff the committed catalog against a fresh regeneration without writing (exit non-zero on drift)."
 cmd = "python .claude/scripts/conda-forge-expert/failure_catalog_generator.py"
 
-[feature.local-recipes.tasks.failure-catalog-check]
+[feature.guild-tasks.tasks.failure-catalog-check]
 description = "Detector (Story 7.2): independently re-resolves every committed failure-catalog.yaml enforced_by pointer against the live check registry — recipe_optimizer.py can drift (a check code renamed or removed) without SKILL.md or the catalog changing at all, which the generator's own --check alone would not distinguish from a genuine drift-free state. Delegates catalog<->SKILL.md drift detection to failure_catalog_generator.py --check (Story 7.1) and reports the null-rows backlog count as an informational stat — never a finding, never gates the exit code. scope=repo. Exit 0 clean, 1 findings (unresolved-pointer, catalog-drift), 2 could-not-run (the generator itself failed on an unrecoverable error). Pass -- --json for machine output."
 cmd = "python scripts/failure_catalog_check.py"
 

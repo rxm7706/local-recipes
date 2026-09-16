@@ -102,7 +102,7 @@ contract; the Dream is the "why" behind it.
   backlog; both sit under Dreams reading `specified`, which is correct and still
   tells you nothing about how much is left.)* Neither status is wrong under
   the definitions above; both are useless for "what is left". For that, read
-  `sprint-status-ledger.yaml` or run `pixi run -e local-recipes fleet-picture`.
+  `sprint-status-ledger.yaml` or run `pixi run -e pyforge-guild fleet-picture`.
 
   **There is deliberately no `building` state.** Status declares what *exists*;
   the console *derives* what is happening from live build lines. Hand-maintained
@@ -186,8 +186,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | Dream | Status | What it is |
 |---|---|---|
 | [`packaging-factory.md`](packaging-factory.md) | realized · perpetual | The origin dream: the AI-assisted conda-forge factory (Mason) — CFE skill, 769 feedstocks, campaigns; frontier: multi-ecosystem autotick, smart test extractor. |
-| [`pyforge-atlas.md`](pyforge-atlas.md) | realized | The intelligence layer reborn as Kedro/Dagster/DuckDB dataflow an agent workforce maintains. *(Per-station progress figures are deliberately not carried here — the original migration's "waves 0–H, PRs #58–#105" long since stopped describing the station, which has grown through Epics 10–16 and beyond. Read `pixi run -e local-recipes fleet-picture`.)* |
-| [`pyforge-warden.md`](pyforge-warden.md) | realized | The compliance gate that never false-greens — six axes of dependency trust. *(Story counts are deliberately not carried here — "25/31 built" was stale long before it was noticed. Read `pixi run -e local-recipes fleet-picture`.)* |
+| [`pyforge-atlas.md`](pyforge-atlas.md) | realized | The intelligence layer reborn as Kedro/Dagster/DuckDB dataflow an agent workforce maintains. *(Per-station progress figures are deliberately not carried here — the original migration's "waves 0–H, PRs #58–#105" long since stopped describing the station, which has grown through Epics 10–16 and beyond. Read `pixi run -e pyforge-guild fleet-picture`.)* |
+| [`pyforge-warden.md`](pyforge-warden.md) | realized | The compliance gate that never false-greens — six axes of dependency trust. *(Story counts are deliberately not carried here — "25/31 built" was stale long before it was noticed. Read `pixi run -e pyforge-guild fleet-picture`.)* |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
 | [`pyforge-mason.md`](pyforge-mason.md) | realized | **Mason** — the Artisan Builder's station: the `mason` CLI (recipe / package / environment), seam-by-capability over the CFE craft; distinct from [`packaging-factory.md`](packaging-factory.md), the practice he tends. |
 | [`pyforge-doctor.md`](pyforge-doctor.md) | realized | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |

@@ -326,7 +326,15 @@ def test_pytest_collect_summary_accepts_a_deselected_fraction(root, monkeypatch)
 
 def test_groundtruth_runs_the_declared_pixi_task_command(root, monkeypatch):
     cfg = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
-    cmd = shlex.split(cfg["feature"]["local-recipes"]["tasks"]["bmad-groundtruth"]["cmd"])
+    # A task name lives in exactly one feature (steward 63.1: the Guild tasks moved from
+    # feature.local-recipes to feature.guild-tasks); resolve it, never pin the feature.
+    declared = [
+        f["tasks"]["bmad-groundtruth"]
+        for f in cfg["feature"].values()
+        if "bmad-groundtruth" in f.get("tasks", {})
+    ]
+    assert len(declared) == 1, f"bmad-groundtruth declared in {len(declared)} features"
+    cmd = shlex.split(declared[0]["cmd"])
     assert cmd[0] == "python"
     calls: list[list[str]] = []
 
