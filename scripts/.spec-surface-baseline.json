@@ -4372,6 +4372,10 @@
   },
   "memlog": "c8a3c446529d65381b376cd57783f4115b3782b7"
  },
+ "pyforge-marshal/spec-token-economy-claude-session-path": {
+  "files": {},
+  "memlog": "40a477d5e35d8865b770178ab00ee46342a6c7da"
+ },
  "pyforge-mason/spec-conda-forge-expert-rebuild": {
   "files": {
    ".claude/scripts/conda-forge-expert/README.md": "a7372e54da10dfd0c897434b14c00061c11fa23d",
