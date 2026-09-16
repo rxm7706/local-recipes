@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 42  # 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 273  # 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-14"   # Epic 43 / Story 43.1 appended (DW-AD-CITATION-2026-09-14-2, a fix on the shipped CAP-6 detector — its own epic; a done epic stays done); earlier same day: retroactive Epics 37-41; prior stamp 2026-09-09
+updated: "2026-09-15"   # Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -5853,4 +5853,78 @@ alongside `chrome_home`) and `urls.py` (new route).
 **Given** Story 44.1 has landed
 **When** an operator selects a project/run in the portal
 **Then** the new view renders Story 44.1's report for that selection, with no terminal required
+**Status:** backlog
+
+## Epic 45: BMAD from inside Cursor's own chat (spec-bmad-cursor-interactive-routing CAP-2..4)
+
+Minted 2026-09-15 from `docs/dreams/bmad-cursor-interactive-routing.md` after CAP-1 ran
+in Cursor Agent interactive chat and **passed**. The running model invoked the Task tool
+and got a context-free in-turn review (`HUNT7K2Q`; leak recheck `PARENT_USER_QUERY=UNKNOWN`).
+That is not headless `cursor-agent -p`, not a tool-less Ask panel, and not BMAD
+`workflow.md` Blind Hunter by name — it is the capability the workflow needs.
+
+**CAP-1** is closed in the Spec memlog (no story). **CAP-2** is committed: mechanical
+`.mdc` generation plus a pixi task and a drift detector for the `bmad-build` /
+`bmad-build-auto` pilot pair. **CAP-3b** remains the residual HALT on a surface with no
+Task tool. **CAP-3a** is a later empty follow-on (no story). **CAP-4** is verified
+(`Read` / `@file`; no `@path` inline import). Do not claim Ask-panel or all-skills
+parity. Do not ship CAP-3a without its own equivalence evidence.
+
+### Story 45.1: A pixi task generates `.mdc` from `SKILL.md`
+
+As an operator working in Cursor chat,
+I want `.cursor/rules` files for the BMAD pilot pair generated from each skill's
+`SKILL.md`,
+So that typing an equivalent request runs the same `render_skill.py → workflow.md` path
+Claude Code runs, without a hand-maintained fork.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-cursor-interactive-routing CAP-2
+**Surface:** a maintained pixi task (and its generator script under the three-place rule),
+emitting `.mdc` for `bmad-build` and `bmad-build-auto` from `.claude/skills/bmad-*/SKILL.md`
+frontmatter (`name`, `description`) plus the two-step trigger body.
+**Given** either pilot `SKILL.md` exists
+**When** the pixi task runs
+**Then** the generated `.mdc` carries that skill's description and the same
+`render_skill.py → workflow.md` trigger Claude Code uses
+**And** generation is mechanical — no hand-edited body that can drift from `SKILL.md`
+**And** day-one scope is the two-skill pilot, not the full BMAD skill set
+**Status:** backlog
+
+### Story 45.2: A drift detector fails a stale generated `.mdc`
+
+As an operator,
+I want CI to fail when a generated Cursor rule no longer matches its `SKILL.md`,
+So that a skill change cannot silently rot the Cursor-chat path.
+
+**Type:** feature • **Effort:** S • **Deps:** S-45.1 • **FR/AD:** spec-bmad-cursor-interactive-routing CAP-2 (OQ-3)
+**Surface:** a doctor-sourced or script detector plus pixi task, on the three-place rule,
+wired into `detectors-ci`.
+**Given** a pilot `SKILL.md` changes and the generated `.mdc` is not regenerated
+**When** the detector runs
+**Then** it fails (findings), never a silent green
+**And** a matching pair is clean
+**And** a one-time untracked generate is not the lasting shape — the task + detector stay
+**Status:** backlog
+
+### Story 45.3: The pilot pair uses Task when available and HALTs when it is not
+
+As an operator invoking `bmad-build-auto` from Cursor chat,
+I want reviewer subagents to run through the Task tool when that tool is present, and
+the workflow to HALT `blocked`/`no subagents` when it is not,
+So that review never silently degrades. Team memory is reached by `alwaysApply` plus
+`@file` / Read, never a claimed `@path` inline import.
+
+**Type:** feature • **Effort:** M • **Deps:** S-45.1 • **FR/AD:** spec-bmad-cursor-interactive-routing CAP-2, CAP-3 (residual), CAP-4
+**Surface:** the generated pilot `.mdc` files and any Cursor-facing note they carry;
+no change to headless `cursor-agent -p` dispatch (Story 22.8).
+**Given** Cursor Agent chat exposes the Task tool
+**When** `bmad-build-auto` reaches a mandatory reviewer step
+**Then** the step launches a context-free Task subagent and consumes the in-turn result
+**Given** the running surface has no model-invoked Task tool (Ask, no-tools)
+**When** that same step is reached
+**Then** the workflow HALTs `blocked`/`no subagents` — it does not skip review and it
+does not shell out to `cursor-agent -p` as a substitute reviewer (CAP-3a is out of
+scope)
+**And** team-memory content is reachable via `Read` or `@file` of
+`.claude/memory/MEMORY.md`; no rule claims Claude Code's `@path` inline import
 **Status:** backlog
