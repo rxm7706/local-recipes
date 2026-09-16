@@ -143,11 +143,12 @@ DEFERRED_SPECS: dict[str, str] = {
         "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
         "no story can pick up; CAP-3 mechanism shipped as doctor 21.4; CAP-7/AUT-3 "
         "wait on the Guildhall referent — do not mint a Charter epic",
-    "spec-token-economy-claude-session-path":
-        "a draft seed whose three open questions were answered 2026-09-16 in its "
-        "memlog (entries 4-10) after the deep analysis; decomposition mints with "
-        "the bmad-spec re-derive that flips it ready — do not hand-mint an epic "
-        "from the draft",
+    # `spec-token-economy-claude-session-path` was registered here 2026-09-16
+    # (morning) as a `draft` seed whose three open questions were answered in its
+    # memlog. De-registered the same day: the operator ruled no satellite Specs,
+    # so the Spec folded into `spec-marshal-token-economy` as CAP-19..CAP-24
+    # (status `superseded` — terminal, not owed) and marshal Epic 46 (46.1–46.10)
+    # is the dispatch home. The folder stays as the decision record.
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "

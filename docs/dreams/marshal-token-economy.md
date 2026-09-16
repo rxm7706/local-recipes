@@ -457,11 +457,15 @@ the Spec's ten-entry memlog. The load-bearing conclusions:
   discounts than it saves. Claude wire savings stay *unverified* until
   per-layer benchmark legs with cache-hit rates exist.
 
-Status at fold: `dreamt`; Spec `draft`, re-derive repoints its
-owner-dream here and mints the front-door CAP, the silent-saves CAP
-(tri-state, journal taxonomy, per-currency rollup, persistence advisory),
-the copilot `[wrapper]` story, the substrate CAP (bootstrap, write-back
-ritual, canonical bundle, freshness SLA), and per-layer benchmark legs.
+Status at fold: `dreamt`; Spec seeded `draft`, then the operator ruled
+**no satellite Specs** — so the contract folded too:
+`spec-token-economy-claude-session-path` is `superseded` (same day it was
+seeded), its capabilities re-minted as `spec-marshal-token-economy`
+**CAP-19..CAP-24** (substrate, silent saves, front door, session path,
+per-layer benchmark legs, matrix truth), dispatch home **marshal Epic 46**
+(46.1–46.10). The superseded folder keeps the eleven-entry decision
+memlog; `owner-dream` stays on this archived file so the chain link
+resolves (the satellite-fold precedent).
 
 ### Folded — adaptive model tiering (from `adaptive-model-tiering`, `realized`)
 

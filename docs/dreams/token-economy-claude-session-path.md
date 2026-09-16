@@ -12,9 +12,11 @@ status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (opera
 
 > **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
 > (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
+> place. Its Spec folded too (operator ruling: no satellite Specs) —
+> `spec-token-economy-claude-session-path` is `superseded`, its capabilities
+> re-minted as `spec-marshal-token-economy` **CAP-19..CAP-24**, dispatch home
+> marshal Epic 46; the superseded folder keeps the eleven-entry decision
+> memlog. Kept, not deleted, so the reasoning stays readable.
 
 ## The Dream
 
@@ -195,8 +197,10 @@ for symbols) · [[pyforge-marshal]] (the station).
   rates.
 - **2026-09-16 (fold)** — Folded into [[marshal-token-economy]] (operator-ruled
   token-savings consolidation) and archived in place, the same day it was
-  seeded. Prior status: `dreamt`. The Spec (`spec-token-economy-claude-session-path`,
-  `draft`) stays live and remains the contract — its re-derive repoints
-  `owner-dream` at the parent; the ten-entry memlog carries the full decision
-  record (OQ answers, multi-harness matrix, adversarial review, substrate-
-  primary reordering).
+  seeded. Prior status: `dreamt`.
+- **2026-09-16 (Spec fold)** — The operator ruled no satellite Specs, so the
+  contract folded too: `spec-token-economy-claude-session-path` is
+  `superseded`, its capabilities re-minted as `spec-marshal-token-economy`
+  CAP-19..CAP-24, dispatch home marshal Epic 46 (46.1–46.10). The superseded
+  folder keeps the eleven-entry decision memlog (OQ answers, multi-harness
+  matrix, adversarial review, substrate-primary reordering).
