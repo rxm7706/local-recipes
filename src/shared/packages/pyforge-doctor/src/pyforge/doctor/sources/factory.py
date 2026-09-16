@@ -1111,6 +1111,14 @@ def classify(path: Path, target: Path) -> str:
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
         return "tracked:deferred"
+    if re.fullmatch(r"planning-artifacts/rekey-\d{4}-\d{2}-\d{2}\.md", rel):
+        # A fold PR's re-key map (doctor Story 25.3, spec-one-chain-per-station CAP-3(g)):
+        # `old-key -> new-key` lines that sprint-ledger-sync --rekey and the ledger-regression /
+        # story-status verdicts read so a renumbered `done` row moves as `done`. Dated in its
+        # filename (AGENTS.md § Dates), hand-authored once per fold, never pin-gated. Found
+        # 2026-09-16 on the marshal pilot (PR #1389): the first re-key map ever written reddened
+        # bmad-drift `uncovered` because 25.3 shipped the readers but no classification rule.
+        return "tracked:plan"
     if rel == "planning-artifacts/deferred-work-ledger.md":
         # The DURABLE twin of the Tier-3 ledger above, promoted 2026-07-29 because
         # bmad-loop's follow-up-review damping refiles into the gitignored one (see
