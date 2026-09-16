@@ -2,8 +2,11 @@
 title: Agent tool surface — every craft reachable through one governed API
 type: practice
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `agent-tool-surface`).
 
 # Agent tool surface — the factory, callable
 

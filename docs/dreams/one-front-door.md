@@ -6,6 +6,8 @@ status: archived
 archived-reason: absorbed
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 > **Superseded 2026-08-02 (dream consolidation).** Fully decomposed into `spec-pyforge-marshal`
 > and the real PRD as FR-65 (`marshal check` — the detector registry through a single command,
 > context resolved once per invocation) — see

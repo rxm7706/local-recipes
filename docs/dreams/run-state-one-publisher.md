@@ -2,12 +2,15 @@
 title: Run state is a service — the loop's truth leaves the laptop
 type: dream
 owner: marshal
-status: specified   # 2026-09-12 — spec-run-state-one-publisher is `ready` (CAP-1..5; the four
+status: archived
                     # questions that gated it answered the same day by operator-accepted research).
                     # Seeded that morning from the one CAP-17 realization-gap row still OPEN after
                     # Epic 49 (steward 49.8 + marshal 33.4, blocked on each other by design); the
                     # criterion stays on the Unifying Spec, the publisher comes home to marshal
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `run-state-one-publisher`).
 
 # Run state is a service — the loop's truth leaves the laptop
 

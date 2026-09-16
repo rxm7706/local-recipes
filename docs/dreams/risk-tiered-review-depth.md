@@ -2,8 +2,11 @@
 title: A one-line doc fix and a cross-module rewrite get the identical review
 type: dream
 owner: marshal
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `risk-tiered-review-depth`).
 
 # A one-line doc fix and a cross-module rewrite get the identical review
 

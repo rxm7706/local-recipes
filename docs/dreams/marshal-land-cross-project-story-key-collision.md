@@ -2,8 +2,11 @@
 title: A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-land-cross-project-story-key-collision`).
 
 # A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another
 

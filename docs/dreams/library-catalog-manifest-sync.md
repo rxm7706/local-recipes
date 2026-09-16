@@ -2,12 +2,15 @@
 title: The library catalog can't see a station's own build manifest
 type: dream
 owner: marshal
-status: realized   # 2026-09-12 -- spec-library-catalog-manifest-sync CAP-1/CAP-2 both
+status: archived
                     # shipped same day: Epic 36 (Stories 36.1, 36.2) done in pyforge-marshal's
                     # tracked ledger; llms-full-check clean against the real repo (352/320,
                     # zero findings); a synthetic-fixture regression suite proves the new
                     # station-manifest scan path (tests/scripts/test_llms_full_check.py)
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `library-catalog-manifest-sync`).
 
 # The library catalog can't see a station's own build manifest
 

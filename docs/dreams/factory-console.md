@@ -2,9 +2,11 @@
 title: Factory console — the whole pipeline on one page
 type: dream
 owner: marshal
-status: realized
+status: archived
 archived-reason: absorbed
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `factory-console`).
 
 > **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
 > in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "Kept separate on purpose."

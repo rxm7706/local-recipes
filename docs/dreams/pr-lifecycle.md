@@ -2,9 +2,11 @@
 title: PR lifecycle — a story lands itself
 type: dream
 owner: marshal
-status: realized
+status: archived
 archived-reason: absorbed
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `pr-lifecycle`).
 
 > **Superseded 2026-08-02 (dream consolidation).** Fully decomposed into `spec-pyforge-marshal`
 > and the real PRD as FR-59 (landing rules are declared policy) and FR-60 (`marshal land` —

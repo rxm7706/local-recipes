@@ -6,6 +6,8 @@ status: archived
 archived-reason: absorbed
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 > **Superseded 2026-08-02 (dream consolidation).** The Marshal-owned slice is fully
 > decomposed into `spec-pyforge-marshal` and the real PRD as FR-64 (a gate evaluation binds
 > to the tracked spec's Success signal) — see

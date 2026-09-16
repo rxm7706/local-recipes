@@ -2,8 +2,11 @@
 title: The Agentic SDLC — four views of autonomy, one governed factory
 type: practice
 owner: marshal
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `agentic-sdlc-autonomy`).
 
 # The Agentic SDLC — redefining autonomy in software engineering
 
