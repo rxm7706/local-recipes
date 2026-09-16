@@ -139,6 +139,7 @@ from . import seed as seed_cli
 from . import spin as spin_cli
 from . import status as status_cli
 from . import upstream as upstream_cli
+from . import watch as watch_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -263,6 +264,7 @@ def _build_parser() -> argparse.ArgumentParser:
     retire_cli.add_retire_subparser(subparsers)
     status_cli.add_status_subparser(subparsers)
     check_cli.add_check_subparser(subparsers)
+    watch_cli.add_watch_subparser(subparsers)
     adapters_cli.add_adapters_subparser(subparsers)
     upstream_cli.add_upstream_subparser(subparsers)
     seed_cli.add_seed_subparser(subparsers)
