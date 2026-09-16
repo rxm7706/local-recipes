@@ -1112,6 +1112,14 @@ cmd = "python -m pyforge.doctor.sources dream-chain"
 description = "Detector: Dream-tier hygiene (Story 17-2 / FR-147) — per-Dream frontmatter validity (status vocab, owner in station/guild, title present), README table sync, realization-log presence for pitched+. Distinct from dream-chain-check INV-0..3. CLI spelling: dream-chain --dreams (chosen over folding into --inv). Warn-only."
 cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
 
+[feature.local-recipes.tasks.chain-sprawl-check]
+description = "Detector: Dream-APPEND-first is enforced, not asserted (doctor Story 25.1, spec-one-chain-per-station CAP-2). Every docs/dreams/*.md and every specs/spec-*/ folder not present at the ruling SHA (docs/governance/chain-sprawl-baseline.json, a dated snapshot that only ever shrinks) must carry `fold-exemption:` from guild-roster.json `fold_exemptions` -- else FAIL chain-sprawl-unexempted. Station Dreams, station Specs and story-spec files are the chain, not sprawl. Exempt remainders are an OK finding so the exemption is visible. Standard: docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md."
+cmd = "python -m pyforge.doctor.sources chain-sprawl"
+
+[feature.local-recipes.tasks.fr-without-cap-check]
+description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
+cmd = "python -m pyforge.doctor.sources fr-without-cap"
+
 [feature.local-recipes.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"

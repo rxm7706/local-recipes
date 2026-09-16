@@ -56,11 +56,18 @@ from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..rekey import RekeyMap, parse_rekey
 
 __all__ = ("gather", "gather_direction")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
+#: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
+#: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
+#: -- i.e. shipped by the range under judgement. Once merged it is in both
+#: revisions and becomes inert provenance, so a dangling old key (which by
+#: then no longer exists anywhere) can never fire forever.
+_REKEY_RE = re.compile(r"^_bmad-output/projects/([^/]+)/planning-artifacts/rekey-[^/]+\.md$")
 TERMINAL = frozenset({"done"})
 
 # A story key is `<id>-<kebab-title>`, where `<id>` is either the canonical
@@ -135,6 +142,46 @@ def _parse_statuses(text: str) -> dict[str, str]:
     return out
 
 
+def _rekey_paths(target: Path, rev: str) -> list[str]:
+    listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
+    return sorted(p for p in listing.splitlines() if _REKEY_RE.match(p))
+
+
+def _new_rekey_maps(
+    target: Path, base: str, head: str
+) -> tuple[dict[str, dict[str, str]], list[dict]]:
+    """``{project: forward_mapping}`` from maps shipped in ``base..head``,
+    plus a finding dict for every map that is not clean (malformed line,
+    duplicate old key, two old keys colliding on one new key)."""
+    base_maps = set(_rekey_paths(target, base))
+    maps: dict[str, dict[str, str]] = {}
+    problems: list[dict] = []
+    for path in _rekey_paths(target, head):
+        if path in base_maps:
+            continue
+        m = _REKEY_RE.match(path)
+        project = m.group(1) if m else path.split("/")[2]
+        text = _git(target, "show", f"{head}:{path}")
+        if text is None:
+            problems.append({
+                "kind": "rekey-map-unreadable", "warn": True, "project": project,
+                "path": path, "detail": f"re-key map {path} is tracked at {head} but unreadable",
+            })
+            continue
+        parsed: RekeyMap = parse_rekey(text)
+        if not parsed.clean:
+            bad = [f"line {no}: {txt.strip()!r}" for no, txt in parsed.malformed]
+            bad += [f"line {no}: duplicate old key {old!r}" for no, old in parsed.duplicates]
+            bad += [f"collision on new key {k!r}" for k in parsed.collisions]
+            problems.append({
+                "kind": "rekey-map-malformed", "project": project, "path": path,
+                "count": len(bad), "keys": bad,
+                "detail": f"re-key map has {len(bad)} unusable line(s): {'; '.join(bad[:5])}",
+            })
+        maps.setdefault(project, {}).update(parsed.mapping)
+    return maps, problems
+
+
 def _ledger_paths(target: Path, rev: str) -> list[str]:
     """Tracked ledger paths at ``rev`` — listed from git, not the working
     tree, so a ledger deleted in the working tree is still compared."""
@@ -173,6 +220,8 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     findings: list[dict] = []
     base_paths = set(_ledger_paths(target, base))
     head_paths = set(_ledger_paths(target, head))
+    rekey_maps, rekey_problems = _new_rekey_maps(target, base, head)
+    findings.extend(rekey_problems)
     compared = 0
     for path in sorted(base_paths | head_paths):
         project = path.split("/")[2]
@@ -232,6 +281,30 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
         compared += 1
 
         after = _parse_statuses(after_text)
+
+        # Story 25.3: a fold PR renumbers every key and ships the map. Apply it
+        # to the BASE side before comparing, so a `done` row whose key moved
+        # per the map is judged under its new name. The map moves keys and
+        # only keys -- a status flip through it is still caught below. A map
+        # line pointing at a key that exists on neither side is dangling: it
+        # claims a move that did not happen, and is a FAIL in its own right.
+        mapping = rekey_maps.get(project)
+        if mapping:
+            dangling = []
+            for old, new in sorted(mapping.items()):
+                if old not in before:
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {base}"})
+                elif new not in after:
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{new} not in {head}"})
+            if dangling:
+                findings.append({
+                    "kind": "rekey-map-dangling", "project": project, "path": path,
+                    "count": len(dangling), "keys": [d["line"] for d in dangling],
+                    "transitions": dangling,
+                    "detail": f"{len(dangling)} re-key line(s) name a key that exists on neither side",
+                })
+            before = {mapping.get(k, k): v for k, v in before.items()}
+
         surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
         lost = []
         for key, old in sorted(before.items()):

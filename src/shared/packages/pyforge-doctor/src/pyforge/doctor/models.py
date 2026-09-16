@@ -314,6 +314,12 @@ class Source(StrEnum):
     # HARD on unclassified live CAP-N and A-only without expiry; post-PIN
     # unclassified paths are --append. Extract-only inventory.
     CAPABILITY_LEDGER = "capability-ledger"
+    # Doctor Epic 25 (spec-one-chain-per-station, guild outcome / doctor
+    # mechanism): Story 25.1 -- a Dream file or Spec folder minted after the
+    # ruling SHA without a declared `fold-exemption:` is a FAIL; Story 25.2 --
+    # a PRD FR minted after the rule date must cite a resolving `CAP-m`.
+    CHAIN_SPRAWL = "chain-sprawl"
+    FR_WITHOUT_CAP = "fr-without-cap"
 
 
 class Partition(StrEnum):

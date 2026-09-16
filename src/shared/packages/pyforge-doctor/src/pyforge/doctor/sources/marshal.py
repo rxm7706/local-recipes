@@ -62,6 +62,7 @@ from pyforge.core.landing_evidence import (
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..rekey import load_rekey_maps, reverse_map
 
 __all__ = ("gather", "gather_story_status")
 
@@ -563,6 +564,13 @@ def gather_story_status(
             loop_root = None  # no resolvable home -- no harness records to read
 
     feeds = sorted(target.glob(SPRINT_STATUS_GLOB))
+    # Story 25.3 (spec-one-chain-per-station CAP-3(g)): a station fold
+    # renumbers every story key and ships planning-artifacts/rekey-<date>.md.
+    # Landing evidence (harness record, merge subject, main commit) was
+    # written under the OLD spelling, so a renumbered `done` story is
+    # confirmed by evidence under any earlier spelling the maps record.
+    # Tracked maps are durable provenance: read every one, always.
+    rekey_maps = load_rekey_maps(target)
 
     # Two of the three landing-evidence routes are git queries. With git absent
     # or `target` not a repository, both fail closed -- and a story would fall
@@ -613,6 +621,7 @@ def gather_story_status(
         tasks = _harness_tasks(
             loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files
         )
+        earlier_spellings = reverse_map(rekey_maps.get(f"pyforge-{slug}", []))
         try:
             text = feed.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
@@ -627,7 +636,8 @@ def gather_story_status(
 
         for key in DONE_RE.findall(text):
             audited += 1
-            task = tasks.get(key)
+            aliases = (key, *earlier_spellings.get(key, ()))
+            task = next((tasks[a] for a in aliases if a in tasks), None)
             if task is None:
                 # Two different absences, and the caveat must not merge them: a
                 # story whose record was DROPPED as malformed was not "never
@@ -641,6 +651,7 @@ def gather_story_status(
                 continue  # harness recorded a commit
 
             key_ref = _feed_key_to_ref(key)
+            key_refs = tuple(r for r in (_feed_key_to_ref(a) for a in aliases) if r is not None)
             project_slug = f"pyforge-{slug}"
 
             # Route 2: commit subjects on any ref, via shared landing-evidence
@@ -656,15 +667,12 @@ def gather_story_status(
             if all_ref_subjects_unavailable:
                 inconclusive += 1
                 continue
-            if (
-                key_ref is not None
-                and all_ref_subjects is not None
-                and key_ref
-                in _keys_from_merge_subjects(
+            if key_refs and all_ref_subjects is not None:
+                merged_keys = _keys_from_merge_subjects(
                     all_ref_subjects, project_slug=project_slug
                 )
-            ):
-                continue  # merge evidence found
+                if any(r in merged_keys for r in key_refs):
+                    continue  # merge evidence found (under any spelling)
 
             # Route 3: commits reachable from ``main``, via the same grammar
             # (replaces the private ``<slug>`` + ``story <e>.<s>`` subject
@@ -687,23 +695,26 @@ def gather_story_status(
                 if main_commits_unavailable:
                     inconclusive += 1
                     continue
-                if main_commits is not None and key_ref in _keys_from_main_commits(
-                    main_commits, project_slug=project_slug
-                ):
-                    continue  # hand-landed or recovery; grammar recognized
+                if main_commits is not None:
+                    main_keys = _keys_from_main_commits(
+                        main_commits, project_slug=project_slug
+                    )
+                    if any(r in main_keys for r in key_refs):
+                        continue  # hand-landed or recovery; grammar recognized
 
                 # Route 4: loose station+key co-occurrence, last resort (see
                 # `_loose_subject_key_match`'s own docstring for why the
                 # strict grammar above still misses real hand-authored
                 # landings). Checked against both subject pools already
                 # fetched above -- no new git call.
-                if (
+                if any(
                     (all_ref_subjects is not None and _loose_subject_key_match(
-                        all_ref_subjects, station=slug, key_ref=key_ref,
+                        all_ref_subjects, station=slug, key_ref=r,
                     ))
                     or (main_commits is not None and _loose_subject_key_match(
-                        main_commits, station=slug, key_ref=key_ref,
+                        main_commits, station=slug, key_ref=r,
                     ))
+                    for r in key_refs
                 ):
                     continue  # station+key co-occurrence found
 

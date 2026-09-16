@@ -135,6 +135,8 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.PIXI_CURRENCY_LEDGER: "pixi_currency.py",  # Story 21.7
     Source.GENERAL_DOCS_CONSISTENCY: "general_docs_consistency.py",  # Story 22.3
     Source.CAPABILITY_LEDGER: "capability_ledger.py",  # Story 55.2
+    Source.CHAIN_SPRAWL: "one_chain.py",  # Story 25.1 (spec-one-chain-per-station CAP-2)
+    Source.FR_WITHOUT_CAP: "one_chain.py",  # Story 25.2 (spec-one-chain-per-station CAP-5)
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``

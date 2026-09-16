@@ -2158,8 +2158,13 @@ translated key collides or any `done` row would be dropped), `pixi.toml` (`sprin
 passes the flag through), `story-status-check`'s heading↔key comparison (reads the same map for the
 PR's diff), doctor tests with a fixture ledger + map.
 **Given** `ledger-regression` compares the PR head's `sprint-status-ledger.yaml` to `main`'s by key
-and a fold renumbers every key, so today a rebase reads as 1,161 `done` rows dropped and 1,161 new
-`backlog`-or-`done` rows added — a red the standard says must not exist **When** the fold PR ships
+with one built-in continuity rule — a `done` story whose numeric prefix changed but whose kebab
+tail survived is the same story (`_tail`) — so a *pure* renumber already passes, but a fold also
+fixes the 53 slug divergences (the tail changes) and renumbers every `epic-N` row (no tail at
+all), and `story-status` confirms a `done` story by merge subjects that name its *old* id; each
+of those reads as a regression or a false green today *(corrected at implementation 2026-09-16:
+the first draft of this story said every row would drop; only the slug-changed and epic rows do)*
+**When** the fold PR ships
 `planning-artifacts/rekey-<date>.md` and the detector, finding that file changed in the PR's diff,
 applies the map to `main`'s ledger before comparing **Then** a `done` row whose key moves per the
 map and stays `done` is not a finding; a `done` row whose key is absent from both the map and the

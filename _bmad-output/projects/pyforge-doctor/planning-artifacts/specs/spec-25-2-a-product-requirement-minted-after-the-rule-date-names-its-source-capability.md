@@ -36,7 +36,7 @@ declared_low_risk: false
 |----------|--------------|---------------------------|----------------|
 | new FR, no citation | FR-88 with no ← CAP | fr-without-cap FAIL | fail |
 | new FR, valid citation | FR-88 ← CAP-12 (exists) | no finding | none |
-| new FR, dangling citation | FR-88 ← CAP-99 (absent) | fr-cap-unresolved FAIL | fail |
+| new FR, dangling citation | FR-88 ← pyforge-marshal:CAP-99 (declared by no open Spec) | fr-cap-unresolved FAIL | fail |
 | pre-rule FR | in fr-baseline.json | no finding | none |
 | pre-fold station | CAP in a non-station open Spec folder | resolves | none |
 

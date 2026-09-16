@@ -14,7 +14,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** A fold renumbers every ledger key; ledger-regression compares by key, so a rebase reads as 1,161 done rows dropped — a red the standard says must not exist.
+**Problem:** A fold renumbers every ledger key and fixes slug divergences. ledger-regression's `_tail` continuity survives a numeric-prefix change but not a slug change or an `epic-N` row; story-status confirms a done story by merge subjects naming its OLD id. Each reads as a regression or false green on a rebase — a red the standard says must not exist. (Corrected 2026-09-16: not every row, the slug-changed and epic rows.)
 
 **Approach:** The fold PR ships planning-artifacts/rekey-<date>.md (one `old -> new` per line, # comments). When that file is in the PR diff, ledger-regression applies the map to main's ledger before comparing; promote_sprint_status.py --rekey regenerates the tracked twin through the same map, refusing collisions or dropped done rows; story-status-check reads the same map.
 

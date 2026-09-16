@@ -34,6 +34,7 @@ from pyforge.doctor.sources import (
     factory,
     frozen_path,
     capability_ledger,
+    one_chain,
     general_docs_consistency,
     ledger,
     marshal,
@@ -68,6 +69,9 @@ _EXPECTED_DISPATCH = {
     "pixi-currency-ledger": pixi_currency.gather,
     "general-docs-consistency": general_docs_consistency.gather,
     "capability-ledger": capability_ledger.gather,
+    # Doctor Epic 25 -- both in detectors-ci from day one.
+    "chain-sprawl": one_chain.gather_chain_sprawl,
+    "fr-without-cap": one_chain.gather_fr_without_cap,
 }
 
 
