@@ -685,7 +685,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain.py": "ec92ae02a1e2d78452f83f98497e4a74e6431f2a",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "b25f5a2b88f34dd97018f2c02c975e80e58b12e1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py": "6b2faff2b49ea3f0d9ba3c952d3240faf4ce2b16",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": "8cc63f03028ceb7069c5f2fbe538fd31605c5e4c",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": "79ef81bc50930b2a5fd5251ef64a8adb827efedd",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": "17a431de45daa2394c5bb81151d1df76f39afc46",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": "fd673e52ff3a221c56303b182f35b5af4de63d58",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "ee373acf2066b427d565526f47c2a72b4c228284",
@@ -710,7 +710,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "84eeb2331ffde98230ecca789b4a20088fb08188"
+  "memlog": "07115a7cd321e61a7e13f915be29882cee23d9ef"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3250,7 +3250,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py": "cc672a8e739e3fc8586b748f49f6d54b5c7b3688",
    "src/shared/packages/pyforge-marshal/tests/unit/test_watch.py": "79017d004c19b04098794897169245ad1aeebd46"
   },
-  "memlog": "a399e7ddb6071ae263d01150939e55b3b2a5d8e9"
+  "memlog": "afc3378a007bc60eafab028c08ffdea8a5f0f0c5"
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
@@ -5624,7 +5624,7 @@
  "pyforge-steward/spec-mcp-host-real-station-tools": {
   "files": {
    "docs/dreams/mcp-host-real-station-tools.md": "5344e839a9c036038bdd7c47b255d72695c0d31d",
-   "pixi.toml": "3c798cc9f21e966c4cba7d19549dfb8fa52e0f7e",
+   "pixi.toml": "678024101f1329d9d520ca0645872f8dffde7529",
    "src/platform/compose/mcp-host/Containerfile": "24c5f6bb937ed56f0e15f17cc7624d8ba9b60363",
    "src/platform/deploy/charts/platform/templates/_helpers.tpl": "0547ecab3fbacded09721400483025b93e977dcc",
    "src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml": "e3797b0b804f39d53375acb95290d151d41e58f2",
@@ -5632,10 +5632,10 @@
    "src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml": "f50510d95acc0298de4e85e102b9be20d756803e",
    "src/platform/mcp_host/app.py": "b077ff59c7871a83a803d3ef92b8513dec4a78c1",
    "src/platform/mcp_host/settings.py": "a912bce6abcf2fffb8cd5266afdc7e2184a1fd63",
-   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "e5f93cae902d00d026c3b73b36de8c7cadb46dae",
+   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "647de4a95bc15e2d90be8519b15b56ab66dc9ead",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py": "3c4f6b8b8b80af987b15c18ce6d2189445d7117c"
   },
-  "memlog": "9c6f241d0ceca19339e4ac3754da0b21ab376325"
+  "memlog": "ac5f1f04b81d0bc113a8b570e73dac4cb5771aa4"
  },
  "pyforge-steward/spec-multi-repo-workspaces": {
   "files": {},
@@ -5859,7 +5859,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "2ff33759670cfb763b1bc6e72e96f931b1cfcdc3",
-   "pixi.toml": "3c798cc9f21e966c4cba7d19549dfb8fa52e0f7e",
+   "pixi.toml": "678024101f1329d9d520ca0645872f8dffde7529",
    "recipes/liquibase/liquibase.bat": "ac190f5bc21c8d478c2d90d5ca4c82ced814caee",
    "recipes/liquibase/liquibase.sh": "9e5c72090c4afdb3dcf82bba291f3bb41c855066",
    "recipes/liquibase/recipe.yaml": "d5c96e89942e9582266681615d31c889b958d03f",
@@ -6193,7 +6193,7 @@
    "src/platform/tests/test_isolation_and_statelessness.py": "83da9f9f686f806f43417bf670c358f6205a783b",
    "src/platform/tests/test_langflow_mount.py": "8d206983e665704817429cb2ff08a6f7b098a6d9",
    "src/platform/tests/test_liquibase_update.py": "16aafe403b2c8a278d9a3b6ef188461725c9c341",
-   "src/platform/tests/test_marshal_loop_homes_portal.py": "141c1a7207b974239918dee45ef8239df1be6a4f",
+   "src/platform/tests/test_marshal_loop_homes_portal.py": "70eccdccfd329311a1ef9d01a16fb6b43c93b9af",
    "src/platform/tests/test_marshal_station_mint.py": "9cbf68e55fbe1635aad0c4b567d666e7922998b9",
    "src/platform/tests/test_mason_portal_last_diagnose.py": "226bf0c8452e0335925415e3c8d63cff02af7aad",
    "src/platform/tests/test_mcp_disconnect_start_get.py": "de253353d2c3d6dacb7abec9fe4b37a490d7c26e",
@@ -6267,7 +6267,7 @@
    "src/shared/packages/django-marshal/pyproject.toml": "ed243df755958057f3637139d77d586b1c891681",
    "src/shared/packages/django-marshal/src/django_marshal_portal/__init__.py": "c2563090dbb10844b181fea7b079a374e0114ccc",
    "src/shared/packages/django-marshal/src/django_marshal_portal/apps.py": "de803a2170fea8bd43b6fbbf4ae59de0df6b0b63",
-   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "e5f93cae902d00d026c3b73b36de8c7cadb46dae",
+   "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "647de4a95bc15e2d90be8519b15b56ab66dc9ead",
    "src/shared/packages/django-marshal/src/django_marshal_portal/templates/marshal_portal/home.html": "89644f02b2f22839acfef13522806a54eea3cfa5",
    "src/shared/packages/django-marshal/src/django_marshal_portal/templates/marshal_portal/watch.html": "2381e3712ac98b47a42427e6a808fb3ca7933a87",
    "src/shared/packages/django-marshal/src/django_marshal_portal/urls.py": "a32e26a2d5a68c47ddbc1127cd8d14f4552c0aaa",
@@ -6823,7 +6823,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "877756167a773899a63b5d81f5dce6ad2e9b3bf4"
+  "memlog": "60e1443fa07ee9328fcbfe87cb8a4285abb49c09"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
