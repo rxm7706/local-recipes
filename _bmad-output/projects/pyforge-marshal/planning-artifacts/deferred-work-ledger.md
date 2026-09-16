@@ -6285,3 +6285,80 @@ status: open
   raised: 2026-09-14 — Owner: marshal (fleet-consistency-standard owns the detector). Remedy: print every NEW row (they are the actionable set; the baselined set is already summarised by count), or cap with an explicit "… and N more (run with --all)" trailer — never a silent slice. Story to be minted under the owning Spec's next currency pass.
 
   resolved: 2026-09-14 (same day, operator: "do it") — **Story 43.1, the citation detector shows everything it knows** — its own Epic 43. First minted as 32.9 with Epic 32 reopened `done → in-progress`; `ledger-regression`, the Doctor verdict made blocking this morning, red the PR on exactly that key (locally it had been run before the ledger commit, so it saw nothing — run it *after* committing). The fleet has no precedent for a done roll-up carrying a non-done story, so the story moved to a new single-story epic and `epic-32` stays `done`. The sync also exposed a stale local feed that would have dropped Epic 42's four `backlog` rows, restored through the feed before the write. Fix: both slices removed so every NEW row prints under the headline that already carried the count; `_today()` replaces the two literals, and both baselines re-stamped once so `recorded:` is 2026-09-14 (known sets unchanged: 7 / 75). `tests/scripts/test_ad_citation_check.py` proves 13 + 17 synthetic NEW rows all print, stamps carry the stamping date, and a hand-truncated baseline still prints every remaining row; mutation-verified (restoring the slices fails 2 of 3). The "… and N more" alternative was not taken: the NEW set is the action list, and there is no reader for whom fewer rows is the better default.
+
+### DW-FU-28-15-4: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
+  summary: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
+  evidence: Title: 'Scope-violation enforcement mode, policy-declared, default unchanged (Story 28.15, Epic 28)'; Approach text: "Default is `warn`, not `hard`." A future grep for "default unchanged" lands on a spec that changed the default.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (title, frontmatter)
+  origin: spec-deferred 45b90f34673c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-15-5: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
+  summary: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
+  evidence: `grep -rn "scope_violation_mode" --include="*.toml" .` matches nothing outside this story's own diff/spec. Functionally moot now that this story's default (`warn`) matches the intended steady state, but the warning text is inaccurate about what was actually done.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (frontmatter `warnings:`)
+  origin: spec-deferred 419b8bc6384a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-15-6: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
+  summary: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
+  evidence: Two tracked planning documents disagree about which mechanism was actually used for the same named 2026-08-31 operator stopgap.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md (Story 28.15 operational note) vs. this spec's `warnings:` block
+  origin: spec-deferred 97033ed2d534 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-24-2: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
+
+- source_spec: `planning-artifacts/specs/spec-28-24-supervisor-finalizes-when-the-harness-cannot-run-shell.md`
+  summary: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
+  evidence: `_redispatch_blocked_pending_supervisor_finalize` is tested in isolation; no test exercises the full dispatch launch path that emits MRS-DISP-039.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_finalize.py
+  origin: spec-deferred 7670c285b6cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-1-4: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
+
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
+  summary: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
+  evidence: Confirmed by direct inspection of `_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md` (207/208 "none observed" rows) and `_bmad/scripts/bmad_tea_playwright.py`'s `_stories_linked_to_test` (matches only `test_1_2_*`/`test_story_19_1_*`-shaped filenames). Pre-existing generator limitation, not a regression from this story.
+  location: _bmad/scripts/bmad_tea_playwright.py::_stories_linked_to_test
+  origin: spec-deferred 52d65d117b85 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-1-5: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
+
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
+  summary: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
+  evidence: Both TEA subagent runs independently read `epics.md` for their station and reported the differing counts; root cause not investigated (could be either side's parsing). Doctor's run additionally noted 108 of its 113 stories are already `done`/shipped, out of its own declared scope for this pass.
+  location: _bmad/scripts/bmad_tea_playwright.py (story-parsing regexes) vs epics.md for pyforge-herald and pyforge-doctor
+  origin: spec-deferred c121ec97eb21 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-1-6: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
+
+- source_spec: `planning-artifacts/specs/spec-31-1-teas-workflows-produce-every-stations-test-architecture.md`
+  summary: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
+  evidence: 11 Blind Hunter + 4 Edge Case Hunter findings were verified and patched directly (see Review Triage Log); a full line-by-line audit of all 8 stations' ~250KB of TEA-generated prose for further such nits was not attempted -- out of proportion for advisory documents whose core claim (equivalence coverage) does not depend on internal cross-reference polish.
+  location: all 8 stations' test-design-architecture.md / test-design-qa.md
+  origin: spec-deferred b36444e68b97 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-16 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
