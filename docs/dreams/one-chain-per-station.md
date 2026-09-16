@@ -101,7 +101,11 @@ treadmill.** This Dream is the rule first, the fold second.
   cutover. CAPs renumber freely into the station namespace; absorbed folders
   shrink to a pointer plus their memlog; the PRD is re-derived *to* the
   standard, not reconciled to old FR numbers; where an artifact encodes the
-  old shape, the standard wins and the artifact moves.
+  old shape, the standard wins and the artifact moves. **A fold is a rebase,
+  not an append** (operator, same day): CAPs, epics *and stories* renumber
+  sequentially from 1 across all four BMAD phases — analysis, planning,
+  solutioning, implementation — with a re-key map in the PR so a `done`
+  row moves as `done`. Done work keeps its status, not its number.
 - **Eventual consistency.** One station PR at a time; folded and unfolded
   stations both pass every detector throughout; the sprawl check baselines
   from a dated snapshot. No flag day.
@@ -120,8 +124,9 @@ treadmill.** This Dream is the rule first, the fold second.
 - Pilot is **marshal** (operator, 2026-09-16): 58 Specs → 1 (+2 seams),
   55 Dreams → 1 (eight already folded into `pyforge-marshal.md` on
   2026-08-08). Biggest payoff and it forces the memlog sharding on day one.
-  **Then steward** (operator, same day), then scribe · herald · doctor ·
-  atlas · warden; mason is already one Spec.
+  **Then steward** (operator, same day; the eventual-consistency proof),
+  **then herald**, then scribe · doctor · atlas · warden **in parallel** —
+  four worktrees, one agent each. Mason is already one Spec.
 
 ## Kinships
 
@@ -173,6 +178,9 @@ treadmill.** This Dream is the rule first, the fold second.
   Realization log in the same PR, enforcement gap named. Then the operator's
   governing constraint: **evergreen standard > historical accuracy >
   implementation**, eventual consistency station by station, portable to
-  pyforge-foundry; **marshal first, then steward.** Next act: doctor stories
-  for `chain-sprawl-check` and `fr-without-cap`; the marshal fold as its own
-  effort.
+  pyforge-foundry; **marshal first, then steward.** Then, the same hour:
+  **a fold is a rebase** — renumber CAPs, epics and stories to one sequential
+  current state across all four BMAD phases, re-key map in the PR — and the
+  final order: marshal → steward → herald → scribe · doctor · atlas · warden
+  in parallel. Next act: doctor stories for `chain-sprawl-check` and
+  `fr-without-cap`; the marshal fold as its own effort.

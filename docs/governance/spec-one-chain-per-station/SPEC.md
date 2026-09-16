@@ -33,11 +33,13 @@ open_questions: []
   #     and is fully applied by the Charter memlog + Dream log entries in the same PR.
 ---
 
-> **Canonical contract.** Derived from `.memlog.md` (34 entries, the
+> **Canonical contract.** Derived from `.memlog.md` (38 entries, the
 > decision-of-record) and the Dream in `sources:`. Every question is ruled;
-> the precedence order (standard > history > implementation) and the
-> sequence (marshal, then steward) are operator constraints. Downstream may
-> bind. Do not hand-edit — append the memlog and re-derive.
+> the precedence order (standard > history > implementation), the rebase
+> rule (renumber everything, sequentially, all four BMAD phases) and the
+> sequence (marshal → steward → herald → the rest in parallel) are operator
+> constraints. Downstream may bind. Do not hand-edit — append the memlog and
+> re-derive.
 
 # SPEC — One Dream, one Spec, one PRD, one architecture, one epic chain — per station
 
@@ -74,15 +76,22 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     `detectors-ci` as a real FAIL, not advisory.
   - **success:** An unexempted new folder reds CI; this Spec's own Dream
     (exemption `governance`) passes.
-- **CAP-3 — The station fold procedure, one PR per station.**
-  - **intent:** (a) `covers-dreams:` on `spec-pyforge-<s>` for every folded
-    Dream; (b) CAP re-mint with provenance for every open *and* shipped Spec
+- **CAP-3 — The station fold procedure: a rebase, one PR per station.**
+  - **intent:** The whole chain is rebased to one current state across all
+    four BMAD phases — analysis, planning, solutioning, implementation —
+    numbered sequentially from 1, no gaps, no legacy ranges. (a)
+    `covers-dreams:` on `spec-pyforge-<s>` for every folded Dream; (b) CAPs
+    re-minted sequentially with provenance for every open *and* shipped Spec
     (`CAP-n ← spec-old CAP-m, shipped <date>`); (c) old Spec folders become
     `absorbed` pointers keeping their memlogs; (d) Dreams archived in place
     with `Consolidated into` banners pointing at `pyforge-<s>.md`; (e) surface
     manifests merged with scoped baseline stamps; (f) PRD re-derived with
-    FR ← CAP; (g) epics and ledger untouched except one new fold Epic. The
-    record survives; derived bodies are disposable (Constraints, precedence).
+    FR ← CAP; (g) `epics.md` re-derived with epics and stories renumbered
+    sequentially, story-spec files renamed with their stories, and the ledger
+    regenerated from the Tier-3 feed through a **re-key map** (old key → new
+    key, shipped in the PR) so a `done` row moves as `done`, never as
+    drop+add. Done work keeps its status, not its number. The record
+    survives; derived bodies are disposable (Constraints, precedence).
   - **success:** Exactly one Spec folder with an open status per station
     **plus its declared seams** — a folder that survives the fold carries
     `fold-exemption: cross-station-seam` (marshal: `spec-pyforge-core`,
@@ -134,8 +143,9 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
 ## Constraints
 
 - **Precedence (operator, 2026-09-16): the evergreen standard > historical
-  accuracy > current implementation.** CAP re-mint renumbers freely into the
-  station namespace — provenance is a memlog line, not preserved numbering.
+  accuracy > current implementation.** CAPs, epics **and stories** renumber
+  freely into one sequential station namespace — provenance is a memlog
+  line and the fold PR's re-key map, not preserved numbering.
   An absorbed folder is reduced to a pointer header plus its memlog; derived
   bodies are disposable, git is the historical record. The PRD is re-derived
   *to* the standard, never reconciled to past FR numbering. Where a detector,
@@ -149,9 +159,15 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
   local-recipes now, pyforge-foundry on cutover. B inherits Dream-append-
   first, the exemption vocabulary, the seam rule, and FR ← CAP as its
   starting discipline (CAP-7 records the standard, not just the eight Specs).
-- **Sequence.** Marshal (CAP-8), then steward, then scribe · herald · doctor
-  · atlas · warden; mason is already one Spec. CAP-1/2 land before marshal's
-  fold so it does not refill while underway.
+- **Sequence (operator, 2026-09-16).** Marshal (CAP-8, the pilot) → steward
+  (second; the eventual-consistency proof) → herald (third) → scribe · doctor
+  · atlas · warden **in parallel** (four worktrees, one agent each, physical
+  paths, no `bmad-switch`). Mason is already one Spec and takes only the
+  living-tier flip (CAP-6). CAP-1/2 land before marshal's fold so it does not
+  refill while underway.
+- **Re-key, never regress.** `ledger-regression-check` and `story-status-check`
+  must stay green through a renumbering; the re-key map is what makes that
+  true. Merged-story proof stays `git merge-base`, never the key.
 - No new machinery beyond CAP-2 and CAP-5's check; every fold mechanism
   already exists with precedent (archive-in-place ×14, `covers-dreams:`,
   `absorbed` ×5, `superseded` ×2, `bmad-spec` ID preservation, INV-A ranges,
