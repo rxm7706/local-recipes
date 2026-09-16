@@ -30,7 +30,8 @@ inputs:
   - docs/specs/bmad-loop-adoption.md
   - docs/specs/copilot-bridge-vscode-extension.md
   - docs/specs/bmad-copilot-adapter-upstream.md
-fr-derivation-from: "2026-09-16"---
+fr-derivation-from: "2026-09-16"
+---
 
 # PRD: Marshal
 
