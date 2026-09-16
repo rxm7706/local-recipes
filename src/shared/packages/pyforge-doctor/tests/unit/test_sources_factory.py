@@ -626,6 +626,27 @@ def test_spike_report_is_classified_and_not_flagged_uncovered(tmp_path: Path) ->
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_rekey_map_is_classified_and_not_flagged_uncovered(tmp_path: Path) -> None:
+    """The fold PR's re-key map (Story 25.3, spec-one-chain-per-station CAP-3(g)),
+    ``planning-artifacts/rekey-YYYY-MM-DD.md``. Found live 2026-09-16 on the marshal
+    pilot (PR #1389): the first map ever written fell through to ``uncovered``
+    because 25.3 shipped the readers but no classification rule."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "rekey-2026-09-16.md").write_text(
+        "# Re-key map\n\n12-2-old-slug -> 12-2-new-slug\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+    assert factory.classify(Path("planning-artifacts/rekey-2026-09-16.md"), repo) == "tracked:plan"
+    # Undated or mis-dated names are NOT the shape (AGENTS.md § Dates: YYYY-MM-DD only).
+    assert factory.classify(Path("planning-artifacts/rekey.md"), repo) != "tracked:plan"
+
+
 def test_a_second_spike_index_is_also_classified(tmp_path: Path) -> None:
     """Proves the rule generalizes over the spike index and slug -- not
     hard-coded to ``spike-0`` -- so a future ``spike-1``/``spike-2`` report
