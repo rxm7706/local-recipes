@@ -123,7 +123,7 @@ it goes stale on the very commit that lands the poster).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296808981454` · 132,410 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Atlas Infographic standalone.html` | 132,410 B · 23 `<section` (22 numbered + creed) · 6 acts · 4 SVG · 8 tables · facts 77/77 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789296808981454` · 132,410 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` | rendered 2026-09-13, page 20835 px (1240 px wide, headless Chromium, no clipped/blank region, 0 overflowing elements); head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
 
 Against the floors: acts 6/6 · sections 22 ≥ 18 · inline SVG 4 ≥ 3 · bytes 132,410 ≥ 90,000 ·
 tables 8 ≥ 3 · cast: eight full station cards (role, motto, paragraph, CLI verbs, ledger chips) ·
@@ -151,3 +151,31 @@ serve URL with the injected harness stripped — **byte-identical to disk**.
 Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
 still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
 (Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-atlas --head` at tree `a407cd03f6` mechanically
+re-derived the head from the standalone (x-dc/helmet wrap, verbatim `<style>`/`<link>`
+relocation, a measured `$preview` height): `PyForge Atlas - Infographic.dc.html` now 132,538 B.
+A second `--head` run changed nothing on disk (verified). `--deck` refuses per **DW-4** (open,
+`_bmad-output/implementation-artifacts/deferred-work.md:522`): `act band 1 has an empty or
+missing .lbl label` — this poster's act labels live only in `<span class="n">`/`<span class="t">`,
+not the `.lbl` shape `--deck` requires; the pre-existing `- Infographic Deck.dc.html` on disk is
+untouched (not re-derived, not regressed). Widening the selector or re-authoring the poster is out
+of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-atlas --refresh` then `--check` at the same tree
+brought poster and head current: **18** stale `data-fact` literals rewritten
+(`fleet_epics_done_total`, `fleet_stories_done_total`, `herald_epics_done_total`,
+`herald_stories_done_total`, `tree_commit_date` — drift since the 2026-09-14 sweep); re-check
+reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 154/154`.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. "Standalone ahead" narrows to: the head is now re-derived and facts-current on
+disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
+credential.

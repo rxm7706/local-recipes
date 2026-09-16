@@ -134,7 +134,7 @@ the `dream_log_*` and `tree_commit_date` rows).
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300517654592` · 295,079 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `Warden Infographic standalone.html` | 295,079 B · 33 sections (32 numbered + creed) · 6 acts · 26 SVG · 11 tables · facts 91/91 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) · Design etag `1789300517654592` · 295,079 B on both sides · read back 2026-09-13 via `render_preview` → curl → harness strip: **byte-identical** to git; refreshed and re-pushed the same day by the first currency sweep (`deck-facts <slug> --refresh`)` (operator pushes via DesignSync after review) | rendered 2026-09-13, page 34715 px; head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
 
 Floors (standard): acts exactly six ✓ · sections ≥ 18 ✓ · inline SVG ≥ 3 ✓ · bytes ≥ 90,000 ✓ ·
 tables ≥ 3 ✓ · cast cards full for all eight stations with ledger chips ✓ · facts all resolved ✓ ·
@@ -181,3 +181,26 @@ serve URL with the injected harness stripped — **byte-identical to disk**.
 Not touched by this sweep (by design): the `- Infographic.dc.html` head and `- Infographic Deck.dc.html`
 still carry the 2026-09-13 literals — deriving them from the standalone is herald Epic 21
 (Stories 21.1–21.4), not a refresh.
+
+## Ledger — 2026-09-15 infographic trio re-derived (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-warden --head --deck` at tree `a407cd03f6`
+mechanically re-derived both files from the standalone (x-dc/helmet wrap, verbatim
+`<style>`/`<link>` relocation, a measured `$preview` height for the head; masthead/act-band/
+numbered-section/closing-band slides for the deck): `Warden - Infographic.dc.html` now
+295,218 B, `Warden - Infographic Deck.dc.html` now 305,123 B. A second `--head --deck` run
+changed nothing on disk (verified).
+
+`pixi run -e local-recipes deck-facts pyforge-warden --refresh` then `--check` at the same tree
+brought poster, head and Infographic Deck current: **33** stale `data-fact` literals rewritten
+(`fleet_epics_done_total`, `fleet_stories_done_total`, `herald_epics_done_total`,
+`herald_stories_done_total`, `tree_commit_date` — drift since the 2026-09-14 sweep); re-check
+reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 273/273`.
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` (this deck itself) →
+`AuthError: ... has no 'designOauth' block -- run /design-login in Claude Code to refresh it`.
+No push attempted, no etag fabricated. "Standalone ahead" narrows to: head + Infographic Deck
+are now re-derived and facts-current on disk, not yet mirrored to Design.

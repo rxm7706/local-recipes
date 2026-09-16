@@ -50,25 +50,51 @@ not guessed.
 `pixi run -e local-recipes deck-facts <slug>` re-derives `presentations/<slug>/facts.yaml`
 (canonical implementation `scripts/deck_facts.py`, the `deck_export.py` precedent: one script,
 one pixi task, no CFE three-place rule since it is not a conda-forge-expert script).
-`--check` reads the poster's visible text, sweeps `n/n`, `x.y.z` (optional leading `v`) and
-`YYYY-MM-DD` tokens, checks every `data-fact="<id>"` mark, and reports: `unmarked` (a swept token
-with no row), `mismatch` (a mark whose text is not the row's value or a `shown_as` literal),
-`drifted` (a row whose live re-derivation differs), `unsourced` (a row the current run could not
-derive), and `unshown` (a row neither marked nor shown). Bare integers and status words are not
-swept — mark them. Output is one line per finding plus a summary; exit code is always 0
-(advisory — SPEC.md constraint). The README
-ledger's "facts n/n" cell is the check's resolved-over-shown count on the day of the rebuild.
 
-`--refresh` (CAP-6, Story 20.14) re-derives the ledger, then rewrites every plain `data-fact`
-mark whose text is neither the fresh row's `value` nor one of its `shown_as` literals. The
-replacement keeps the OLD literal's shape: the previous ledger's `value` maps to the fresh
-`value`, its `shown_as[k]` to the fresh `shown_as[k]`; when the old text is in neither (the
-ledger was already re-derived, or the row is new) the first fresh literal with the same digit
-pattern is used (`848 of 878` → `852 of 878`), else the fresh `value` — the result is always one
-of the fresh row's own literals, never an invented one. A leading `v` is restored. Marks whose
-span holds another tag, sit inside comments / `<script>` / `<style>` / `<title>`, carry HTML
-entities, or have no row are reported as `skipped <id> <reason>` and left alone. Lines:
-`refreshed <id> "<old>" -> "<new>"`, `skipped <id> <reason>`, `summary <slug>: N refreshed, M
-skipped`; exit 0 always. `--refresh --check` runs the check afterwards. The standing currency
-sweep is: land a ledger-moving change → `deck-facts <slug> --refresh --check` per rebuilt deck →
-re-push the rewritten posters → commit.
+**Surface walk (`spec-deck-family-lockstep` CAP-2, Story 21.3 — not this spec's own CAP-2).**
+`--check` and `--refresh` no longer read the poster alone —
+both walk every **marked surface** of the deck: the poster (always, whether marked or not, exactly
+as before), plus `project/<Persona> - Infographic.dc.html` (the head), `project/<Persona> -
+Infographic Deck.dc.html`, `project/<Persona> - Executive Summary.dc.html`, and the three
+Standard-export-set marp sources (`src/marp/<slug>-{deck,executive-summary,infographic}-<date>.md`
+— the newest dated file per kind, never a `-narration-` sibling). A surface enters the walk only
+when it exists **and** already carries at least one `data-fact` occurrence (`discover_surfaces` in
+`scripts/deck_facts.py`); a surface with no marks is invisible to both verbs. Concretely: a deck
+where nothing but the poster is marked — the whole fleet as of this story — walks exactly what it
+always has, byte-for-byte.
+
+`--check` sweeps `n/n`, `x.y.z` (optional leading `v`) and `YYYY-MM-DD` tokens on each walked
+surface's visible text, checks every `data-fact="<id>"` mark on it, and reports per surface,
+headed by which file it is (a fully clean surface prints no block at all): `unmarked` (a swept
+token with no row), `mismatch` (a mark whose text is not the row's value or a `shown_as` literal).
+`drifted` (a row whose live re-derivation differs) and `unsourced` (a row the current run could
+not derive) are ledger-wide, not surface-scoped, and print once. `unshown` (a row neither marked
+nor shown anywhere) is deck-wide: it asks whether the value appears on ANY walked surface, not the
+poster alone. Bare integers and status words are not swept — mark them. Exit code is always 0
+(advisory — SPEC.md constraint). The final `summary <slug>: N unmarked, M mismatch, D drifted, U
+unsourced, S unshown; facts R/T` line sums every count across every walked surface, so it is
+byte-identical to the pre-21.3 poster-only line whenever nothing but the poster is marked. The
+README ledger's "facts n/n" cell is that line's resolved-over-shown count on the day of the
+rebuild.
+
+`--refresh` (CAP-6, Story 20.14; walked per surface since Story 21.3) re-derives the ledger, then
+rewrites every plain `data-fact` mark — on every walked surface — whose text is neither the fresh
+row's `value` nor one of its `shown_as` literals. The replacement keeps the OLD literal's shape:
+the previous ledger's `value` maps to the fresh `value`, its `shown_as[k]` to the fresh
+`shown_as[k]`; when the old text is in neither (the ledger was already re-derived, or the row is
+new) the first fresh literal with the same digit pattern is used (`848 of 878` → `852 of 878`),
+else the fresh `value` — the result is always one of the fresh row's own literals, never an
+invented one, and the report line always names the literal it replaced (`refreshed <id> "<old>" ->
+"<new>"` — absorbed 2026-09-14 from the folded Story 23.4, `spec-design-sync-loop` CAP-4). A
+leading `v` is restored. Marks whose span holds another tag, sit inside comments / `<script>` /
+`<style>` / `<title>`, carry HTML entities, or have no row are reported as `skipped <id> <reason>`
+and left alone, and the `unvisited <id>` cross-check (a `--check` mark this pass never reached)
+applies per surface, so no surface can silently hide a stale mark. Every walked surface's raw
+bytes are read before the ledger advances, so a surface that cannot be read never leaves the
+ledger written past it with nothing left to compare it against. Lines per surface: `<surface>:
+presentations/<slug>/<file>` (printed even when clean), `refreshed <id> "<old>" -> "<new>"`,
+`skipped <id> <reason>`, `unvisited <id> ...`; one aggregate `summary <slug>: N refreshed, M
+skipped` at the end, summed across every walked surface. Exit 0 always. `--refresh --check` runs
+the (surface-walking) check afterwards. The standing currency sweep is: land a ledger-moving
+change → `deck-facts <slug> --refresh --check` per rebuilt deck → re-push the rewritten surfaces →
+commit.

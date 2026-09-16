@@ -1230,6 +1230,10 @@ cmd = "python scripts/deck_export.py"
 description = "Derive a presentation deck's fact ledger presentations/<slug>/facts.yaml from TRACKED live sources only (every guild-roster station's tracked sprint-status-ledger.yaml via fleet_scan.parse_sprint_status, spec-<slug>/SPEC.md + docs/dreams/<slug>.md status, pyproject.toml, _bmad/_config/manifest.yaml, pixi.lock, the CFE SKILL.md frontmatter, bmad-groundtruth, recipes/) — deterministic: sorted by id, tree = HEAD sha, byte-identical on an unchanged tree; unsourceable facts are omitted and named on stderr, never guessed. -- --check reads the deck's `<Persona> Infographic standalone.html` and reports unmarked / mismatch / drifted / unshown facts, one line each plus a summary — ADVISORY: exit 0 always, not a detector, never in detectors/detectors-ci. -- --refresh (CAP-6) re-derives, then rewrites every stale data-fact literal in the poster from the fresh ledger, keeping its shape (advisory, exit 0). -- --with-tests adds a tests_collected row (runs the station's own pytest --collect-only). Usage: pixi run -e local-recipes deck-facts <slug> [--check] [--refresh] [--with-tests]. Contract: spec-deck-family-currency CAP-2/CAP-5 (facts-ledger.md)."
 cmd = "python scripts/deck_facts.py"
 
+[feature.local-recipes.tasks.deck-trio]
+description = "Derive a deck's Infographic HEAD and/or Infographic Deck from its standalone poster. pixi run -e local-recipes deck-trio <slug> --head [--deck]"
+cmd = "python scripts/deck_trio.py"
+
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
 cmd = "python evals/review-catches-planted-defect/driver.py smoke"

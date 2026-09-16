@@ -66,7 +66,7 @@ version, status and date it prints is now a `data-fact` mark resolving to a row 
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `PyForge Unifying Strategy Infographic standalone.html` | 132,338 B · 21 sections · 6 acts · 9 SVG · 4 grid-rendered tables (0 `<table>`) · facts 36/36 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) into the deck's own Design project `1e4020bc-7f7f-43b2-9219-0904d4863df6` (created and seeded the same day) · Design etag `1789307803346747` · 132,337 B on both sides · read back via `render_preview` → curl → harness strip: **byte-identical** to git` | rendered 2026-09-13, page 13,790 px; head + Infographic Deck: standalone ahead (lockstep slice pending) |
+| `PyForge Unifying Strategy Infographic standalone.html` | 132,338 B · 21 sections · 6 acts · 9 SVG · 4 grid-rendered tables (0 `<table>`) · facts 36/36 | `pushed 2026-09-13 via DesignSync `finalize_plan` → `write_files` (localPath) into the deck's own Design project `1e4020bc-7f7f-43b2-9219-0904d4863df6` (created and seeded the same day) · Design etag `1789307803346747` · 132,337 B on both sides · read back via `render_preview` → curl → harness strip: **byte-identical** to git` | rendered 2026-09-13, page 13,790 px; head + Infographic Deck derived 2026-09-15 via `deck-trio --head --deck` (Story 21.4 local sweep; Design push/read-back still pending) |
 
 Floors (standard): act bands exactly six ✓ · numbered sections ≥ 18 (21) ✓ · inline SVG ≥ 3 (9) ✓ ·
 bytes ≥ 90,000 ✓ · tables ≥ 3 — four **grid-rendered** equivalents (the 19-capability grid §05, the
@@ -187,3 +187,33 @@ operator's redesign dropped the fleet-count strip, so the 32 `unshown` ledger ro
 decision, not staleness, and the 3 `unmarked` narrative dates were left per this deck's house
 style. Re-marking those surfaces is the Design-side pass carried on `DW-VOCAB-2026-09-14-3` and
 Epic 21, not a refresh.
+
+## Ledger — 2026-09-15 infographic head re-derived; deck blocked (Story 21.4)
+
+`pixi run -e local-recipes deck-trio pyforge-unifying-strategy --head` at tree `a407cd03f6`
+mechanically re-derived the head from the standalone (x-dc/helmet wrap, verbatim
+`<style>`/`<link>` relocation, a measured `$preview` height): `PyForge Unifying Strategy -
+Infographic.dc.html` now 236,873 B. A second `--head` run changed nothing on disk (verified).
+`--deck` refuses per **DW-4** (open, `_bmad-output/implementation-artifacts/deferred-work.md:522`):
+`no <section class="sec"> elements found` — this poster's 7 acts use `.act-num`/`.act-title`, not
+`.lbl`, and its sections are inline-styled, not `section.sec`; the pre-existing `- Infographic
+Deck.dc.html` on disk is untouched (not re-derived, not regressed). Widening the selector or
+re-authoring the poster is out of this story's Code Map.
+
+`pixi run -e local-recipes deck-facts pyforge-unifying-strategy --refresh` then `--check` at the
+same tree rewrote **nothing** (poster carries no drifted marked literal this cycle; the freshly-
+derived head carries the same zero `data-fact` marks as the poster, so it too has nothing to
+rewrite). Re-check reads exactly the 2026-09-14 sweep's numbers, unchanged: `3 unmarked, 0
+mismatch, 0 drifted, 0 unsourced, 32 unshown; facts 4/7` — the pre-existing, already-tracked
+`DW-VOCAB-2026-09-14-3` state, re-verified live today, not a new gap this story introduces or
+could close (fixing it means marking the poster by hand, which this story's boundaries forbid).
+
+**Design push/read-back: not performed this session — no working credential.**
+`~/.claude/.credentials.json` has no `designOauth` block, and the `claude-design` MCP connector
+independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
+`pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
+'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
+file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
+etag fabricated. "Standalone ahead" narrows to: the head is now re-derived on disk (facts already
+current, no rewrite needed), not yet mirrored to Design; the Infographic Deck remains blocked on
+DW-4, unrelated to the credential.

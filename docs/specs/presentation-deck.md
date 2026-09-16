@@ -76,7 +76,7 @@ a deck about the deck engine.
    SVGs, ≥ 90 KB, every fact a `facts.yaml` row) and render it headless to a full-page PNG you
    actually look at — the standard and its README ledger entry live in
    `spec-deck-family-currency/infographic-standard.md` (see § *Artifact dependency tree*).
-   Derive the ledger and check the poster against it with `pixi run -e local-recipes deck-facts <slug> [--check]` (advisory, exit 0; shape in `spec-deck-family-currency/facts-ledger.md`); after a tracked source moves, `deck-facts <slug> --refresh` rewrites every stale `data-fact` literal in the poster from the fresh ledger, keeping its shape (`N/M` vs `N of M`, a leading `v`) and skipping nested or row-less marks.
+   Derive the ledger and check every marked surface against it with `pixi run -e local-recipes deck-facts <slug> [--check]` (the poster, plus the head/Infographic Deck/exec summary/marp sources once marked — herald Story 21.3; advisory, exit 0; shape in `spec-deck-family-currency/facts-ledger.md`); after a tracked source moves, `deck-facts <slug> --refresh` rewrites every stale `data-fact` literal on every walked surface from the fresh ledger, keeping its shape (`N/M` vs `N of M`, a leading `v`) and skipping nested or row-less marks.
 6. **Verify** against [Acceptance criteria](#acceptance-criteria).
 7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
@@ -239,6 +239,31 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
                               styles inlined in <head>)       as 1920×1080 slides)
 ```
 
+**Catching up existing drift:** the head above is still the edit surface for
+ongoing work (Path A/B below still describe how a Design-side head edit
+propagates forward) — but where a head has already fallen behind its
+standalone by hand, `pixi run -e local-recipes deck-trio <slug> --head`
+derives it mechanically FROM the standalone (x-dc/helmet wrap, verbatim
+`<style>`+`<link>` relocation, `support.js` + a measured `$preview` height)
+and refuses rather than guesses on a missing/ambiguous poster or an
+unlocatable `<style>` block. This is a one-time catch-up tool, not a change to
+which artifact is authoritative going forward. `--deck` (Story 21.2) does the
+same for the Infographic Deck: it parses the standalone's masthead (content
+before the first act/section, when present), act bands (`<div class="act">`),
+numbered sections (`<section class="sec">`), and closing band (content after
+the last act/section, when present) in document order, emits one `<section
+data-label>` slide per masthead / act band / numbered section / closing band
+(splitting a section mechanically across multiple slides only when its
+content overflows the slide height — the masthead and closing-band slides
+never split; a non-numbered banner sitting BETWEEN act/section elements, e.g.
+a mid-deck "doctrine" band, produces no slide), and writes `project/<Persona>
+- Infographic Deck.dc.html` — the same refuse-rather-than-guess and
+compare-before-write conventions as `--head`, refusing when there are zero
+act bands or zero numbered sections, an empty act/section label, a section
+with zero direct children, or a measured-vs-parsed section-count mismatch,
+and independently combinable with `--head` (`deck-trio <slug> --head --deck`
+derives both in one invocation, validating both before writing either).
+
 **Where to edit WHAT:**
 
 | You want to change… | Edit surface | Propagates to |
@@ -247,7 +272,7 @@ src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infogra
 | Infographic content | ★ `PyForge <Name> - Infographic.dc.html` in Design (the trio's head) | standalone + Infographic Deck (Path A/B below); optionally the marp `.md` → infographic pptx |
 | Executive summary | `PyForge <Name> - Executive Summary.dc.html` in Design; keep its marp `.md` in step | exec pages both sides |
 | Exports only (pptx / marp standalone) | `src/marp/pyforge-<slug>-*.md` in git, then `pixi run -e local-recipes deck-export <slug>` | pptx + marp-rendered standalone |
-| A number / version / status / date the poster shows | an **already-marked** literal: `pixi run -e local-recipes deck-facts <slug> --refresh` re-derives `facts.yaml` and rewrites the literal in the poster from it, keeping its shape — no hand edit. A **new** literal: edit the poster and mark it by hand with `data-fact`, then `deck-facts <slug>` to add its row | the standalone (head + Infographic Deck in the lockstep slice) |
+| A number / version / status / date a surface shows | an **already-marked** literal: `pixi run -e local-recipes deck-facts <slug> --refresh` re-derives `facts.yaml` and rewrites the literal on every marked surface from it (poster, head, Infographic Deck, exec summary, marp sources — herald Story 21.3), keeping its shape — no hand edit. A **new** literal: edit the surface and mark it by hand with `data-fact`, then `deck-facts <slug>` to add its row | whichever surfaces already carry that mark (`--refresh` walks them all in one run) |
 | Visual design / palette / tokens | the **Modernist design system** project (`fbc1d6c8`), NOT per-artifact; per-artifact layout tweaks in that artifact's dc.html | every Modernist-bound deck |
 
 **Propagating an infographic edit** (the trio must stay in lockstep):
