@@ -66,7 +66,7 @@ Drift — orphaned between stations.
   in fact, as it already is in practice. Scribe recall stays `-e pyforge-scribe`
   (cocoindex + graphify are heavy and already per-env). Kinships:
   [[marshal-token-economy]] (a cold 10 GB install is the largest fixed cost a
-  cloud session pays before its first token), [[python-foundry-cutover]],
+  cloud session pays before its first token), [[foundry-regenerate-not-fold]],
   [[pyforge-unifying-strategy]].
 
 - **2026-09-16 — Frame draft re-grounding at `d7213c1` / `4596579`
