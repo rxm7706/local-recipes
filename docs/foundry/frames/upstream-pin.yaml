@@ -1,0 +1,18 @@
+# Upstream pin -- the frame-spec heads this estate conforms to (steward Story 64.1,
+# spec-pyforge-steward CAP-6 (b)). ONE declared source: `frame-upstream-check`
+# reads this file and nothing else. Re-pin only with a memlog line on
+# spec-pyforge-steward naming the new SHAs and what moved. We operate as if these
+# heads become v0.3; nothing here is ever pushed or commented upstream.
+repository: https://github.com/openteams-ai/frame-spec
+draft:
+  pr: 28
+  branch: spec/v0.3-working-draft
+  sha: d7213c185e0249470755d1190630fd05fef79bc7
+  specification: draft-mcandrew-frame-spec-00
+  note: 2026-09-14 -- the draft carries no version number until a release assigns one; documents omit the token
+validator:
+  pr: 29
+  branch: spec/v0.3-validator
+  sha: 4596579f714aca5cc6492d36d9dbd48d0dba2441
+  entrypoint: tools/validate_frame.py
+pinned: 2026-09-16

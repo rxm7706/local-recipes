@@ -12,21 +12,34 @@ off the wrong element, and off one the estate's own branding law wants to read
 ``pyforge/<station>``.
 
 ``type`` must start with the word ``frame`` (v0.3 §6.2.1; ``frame [0.2]`` and
-``frame [0.3]`` both pass). Station Frames must ``inherits`` the Company Frame.
+a bare ``frame`` both pass). **The nine tracked Frames are bare ``type: frame``
+(Story 64.1):** the draft's 09-14 revision says it "carries no version number
+until a release assigns one", so ``frame [0.3]`` stamped a version that does
+not exist. Station Frames must ``inherits`` the Company Frame.
 ``name``/``inherits`` are the spellings v0.3 *requires* of a Markdown writer
 (§6.2.1 aliases: ``name`` denotes ``title``, ``inherits`` denotes
 ``composition``) — do not "modernize" them to the model-layer names, which
 belong to the YAML/JSON encodings only.
 
-Does **not** invoke upstream ``tools/validate_frames.py`` until
-openteams-ai/frame-spec#28 / #29 merge. Not a detector and not a second
-PR verdict — Warden stays the sole gate.
+``--upstream-check`` (Story 64.1, spec-pyforge-steward CAP-6 (c)) fetches
+openteams-ai/frame-spec at the SHA pinned in ``docs/foundry/frames/upstream-pin.yaml``
+into a temporary directory and runs *its* ``tools/validate_frame.py`` over our
+Frames and ``--check-profile`` over ``conformance-profile.yaml``. The upstream
+tool is never vendored and nothing is ever written upstream; the pin is the one
+declared source. Exit ``0`` all OK, ``1`` upstream reported a FAIL, ``2`` the
+check could not run (no git, no network, bad pin) — never a silent green. Opt-in
+(``pixi run -e pyforge-steward frame-upstream-check``); joins no aggregate.
+
+Not a detector and not a second PR verdict — Warden stays the sole gate.
 """
 
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
 import sys
+import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,6 +48,9 @@ from typing import Any
 import yaml
 
 FRAMES_RELATIVE = Path("docs/foundry/frames")
+UPSTREAM_PIN_RELATIVE = FRAMES_RELATIVE / "upstream-pin.yaml"
+CONFORMANCE_PROFILE_RELATIVE = FRAMES_RELATIVE / "conformance-profile.yaml"
+EXIT_OK, EXIT_FAIL, EXIT_COULD_NOT_RUN = 0, 1, 2
 COMPANY_IDENTIFIER = "pyforge/company"
 PUBLISHER = "pyforge"
 STATION_TOKENS: tuple[str, ...] = (
@@ -307,6 +323,125 @@ def format_report(report: FramePreflightReport) -> str:
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# Story 64.1 -- upstream check at the pinned SHA
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class UpstreamPin:
+    repository: str
+    sha: str
+    entrypoint: str
+    pr: int | None = None
+
+
+def load_upstream_pin(repo_root: Path) -> UpstreamPin:
+    """Read the one declared pin. Raises ``ValueError`` on a malformed file so
+    a bad pin is a could-not-run, never a pass."""
+    path = repo_root / UPSTREAM_PIN_RELATIVE
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: pin is not a mapping")
+    validator = data.get("validator")
+    repository = data.get("repository")
+    if not isinstance(validator, dict) or not isinstance(repository, str):
+        raise ValueError(f"{path}: needs `repository:` and a `validator:` mapping")
+    sha = validator.get("sha")
+    entrypoint = validator.get("entrypoint", "tools/validate_frame.py")
+    if not isinstance(sha, str) or len(sha) != 40 or any(c not in "0123456789abcdef" for c in sha):
+        raise ValueError(f"{path}: validator.sha must be a full 40-hex commit SHA")
+    if not isinstance(entrypoint, str) or not entrypoint:
+        raise ValueError(f"{path}: validator.entrypoint must be a relative path")
+    pr = validator.get("pr")
+    return UpstreamPin(
+        repository=repository,
+        sha=sha,
+        entrypoint=entrypoint,
+        pr=pr if isinstance(pr, int) else None,
+    )
+
+
+def fetch_pinned_checkout(pin: UpstreamPin, dest: Path, *, run=subprocess.run) -> None:
+    """A read-only, depth-1 fetch of exactly the pinned commit into ``dest``.
+    No branch is tracked and nothing is ever pushed."""
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("git is not on PATH")
+    dest.mkdir(parents=True, exist_ok=True)
+    for argv in (
+        [git, "init", "-q", str(dest)],
+        [git, "-C", str(dest), "remote", "add", "origin", pin.repository],
+        [git, "-C", str(dest), "fetch", "-q", "--depth", "1", "origin", pin.sha],
+        [git, "-C", str(dest), "checkout", "-q", "--detach", "FETCH_HEAD"],
+    ):
+        proc = run(argv, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError(f"{' '.join(argv[1:4])} failed: {proc.stderr.strip() or proc.stdout.strip()}")
+
+
+def upstream_check(
+    repo_root: Path,
+    *,
+    frames_root: Path | None = None,
+    run=subprocess.run,
+    fetch=fetch_pinned_checkout,
+) -> tuple[int, str]:
+    """Run upstream's validator, at the pin, over our Frames and our profile.
+
+    Returns ``(exit_code, report_text)`` with the frozen domain
+    ``{EXIT_OK, EXIT_FAIL, EXIT_COULD_NOT_RUN}``.
+    """
+    root = frames_root or default_frames_root(repo_root)
+    try:
+        pin = load_upstream_pin(repo_root)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        return EXIT_COULD_NOT_RUN, f"frame-upstream-check: could not run — {exc}"
+    lines = [
+        f"frame-upstream-check: {pin.repository}"
+        + (f"#{pin.pr}" if pin.pr else "")
+        + f" @ {pin.sha[:10]} ({pin.entrypoint})"
+    ]
+    with tempfile.TemporaryDirectory(prefix="frame-spec-") as tmp:
+        checkout = Path(tmp) / "frame-spec"
+        try:
+            fetch(pin, checkout)
+        except (RuntimeError, OSError) as exc:
+            return EXIT_COULD_NOT_RUN, "\n".join([*lines, f"could not run — fetch failed: {exc}"])
+        tool = checkout / pin.entrypoint
+        if not tool.is_file():
+            return EXIT_COULD_NOT_RUN, "\n".join(
+                [*lines, f"could not run — {pin.entrypoint} is not in the pinned tree"]
+            )
+        targets = [str(p) for p in discover_frame_paths(root)]
+        legs: list[tuple[str, list[str]]] = [("frames", targets)]
+        profile = repo_root / CONFORMANCE_PROFILE_RELATIVE
+        if profile.is_file():
+            legs.append(("profile", ["--check-profile", str(profile)]))
+        else:
+            lines.append(f"profile: {CONFORMANCE_PROFILE_RELATIVE} absent — leg skipped")
+        worst = EXIT_OK
+        for name, args in legs:
+            proc = run(
+                [sys.executable, str(tool), *args],
+                capture_output=True,
+                text=True,
+                cwd=str(checkout),
+            )
+            out = (proc.stdout or "").rstrip()
+            err = (proc.stderr or "").rstrip()
+            lines.append(f"--- {name} (exit {proc.returncode})")
+            if out:
+                lines.append(out)
+            if err:
+                lines.append(err)
+            if proc.returncode not in (0, 1):
+                worst = max(worst, EXIT_COULD_NOT_RUN)
+            elif proc.returncode == 1:
+                worst = max(worst, EXIT_FAIL)
+    return worst, "\n".join(lines)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="frame-preflight",
@@ -321,14 +456,29 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="repository root (default: cwd)",
     )
+    parser.add_argument(
+        "--upstream-check",
+        action="store_true",
+        help=(
+            "instead of the in-repo preflight, fetch openteams-ai/frame-spec at the SHA "
+            "pinned in docs/foundry/frames/upstream-pin.yaml into a temp dir and run ITS "
+            "validate_frame.py over our Frames and --check-profile over our profile "
+            "(exit 0 ok / 1 upstream FAIL / 2 could not run). Read-only; never vendored."
+        ),
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     ns = build_parser().parse_args(argv)
-    report = preflight_frames(Path(ns.repo).resolve())
+    repo_root = Path(ns.repo).resolve()
+    if ns.upstream_check:
+        code, text = upstream_check(repo_root)
+        print(text)
+        return code
+    report = preflight_frames(repo_root)
     print(format_report(report))
-    return 0 if report.ok else 1
+    return EXIT_OK if report.ok else EXIT_FAIL
 
 
 if __name__ == "__main__":

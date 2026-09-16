@@ -40,23 +40,58 @@ Repeatable elements (`maintainer`, `inherits`) are emitted as **sequences**:
 and the preflight reports one rather than rejecting it.
 
 `inherits` resolves by identifier, or by a `path-ref` relative to the child
-(`../pyforge.frame.md`), which §5.3 classifies first. Working draft:
-https://github.com/openteams-ai/frame-spec/pull/28 (Apache-2.0, still open).
-`type: frame [0.3]`; `license` is the Apache-2.0 IRI.
+(`../pyforge.frame.md`), which §5.3 classifies first. `license` is the
+Apache-2.0 IRI.
 
-## Preflight
+## `type: frame` — bare, no version token (Story 64.1)
+
+The draft's 2026-09-14 revision (§6.2.1) says the working draft *carries no
+version number until a release assigns one*; a document written to it omits
+the token, and upstream's own examples now read bare `type: frame`. Our
+`frame [0.3]` stamped a version no release has assigned, so the nine Frames
+are bare. **Which draft we conform to is recorded by the pin below, not by
+the token.** `frame [0.2]` remains valid and denotes the released spec.
+
+## Upstream pin (the one declared source)
+
+[`upstream-pin.yaml`](upstream-pin.yaml) names the frame-spec heads this
+estate conforms to — the working draft
+([#28](https://github.com/openteams-ai/frame-spec/pull/28),
+`spec/v0.3-working-draft`) and the reference validator
+([#29](https://github.com/openteams-ai/frame-spec/pull/29),
+`spec/v0.3-validator`, based on #28). We operate as if these heads become
+v0.3. Re-pin only with a memlog line on `spec-pyforge-steward` naming the new
+SHAs and what moved. **Nothing is ever committed or commented upstream.**
+
+## Conformance profile (Story 64.2)
+
+§7 makes a conformance profile a MUST for every implementation.
+[`conformance-profile.yaml`](conformance-profile.yaml) is PyForge's, for the
+in-repo reader: reads Markdown, writes nothing, resolves no composition,
+`visibility` is declared intent, and — §9 — it says plainly that no trust
+configuration exists yet because the only source it reads is this repository.
+The first PyForge component that loads a Frame into a model's context revises
+this file *before* it lands (`spec-pyforge-steward` Constraint CAP-6).
+
+## Preflight and upstream check
 
 In-repo check: `type` begins with `frame`, plus `identifier` / `name` /
 `description` / `visibility` / `maintainer`, the company/station identifier
-set, inheritance, and sequence-shaped repeatables. Does **not** call upstream
-`validate_frame.py` until frame-spec#28 / #29 merge.
+set, inheritance, and sequence-shaped repeatables.
 
 ```bash
-pixi run -e pyforge-steward frame-preflight
+pixi run -e pyforge-steward frame-preflight        # in-repo, offline
+pixi run -e pyforge-steward frame-upstream-check   # opt-in, network: upstream's validator at the pin
 ```
 
-Not a detector. Not in `detectors` / `detectors-ci`. Warden stays the sole PR
-verdict.
+`frame-upstream-check` fetches frame-spec at the pinned validator SHA into a
+temp dir and runs *its* `tools/validate_frame.py` over the nine Frames and
+`--check-profile` over our profile (exit `0` ok / `1` upstream FAIL / `2`
+could not run). The tool is never vendored. Verified 2026-09-16 at
+`4596579f`: 9/9 OK, profile complete.
+
+Neither is a detector. Neither joins `detectors` / `detectors-ci`. Warden
+stays the sole PR verdict.
 
 Scribe owns the Frame-store half as a pointer only — these files are the
 store; scribe does not ingest them into the knowledge graph in this story.

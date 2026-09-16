@@ -1133,3 +1133,11 @@ Strategy to this Dream would take.
   Corrected directly — Dream status `dreamt` → `realized`, Spec status `ready` → `shipped` — no
   new work, no re-derive; both flips are bookkeeping only, mirroring the Epic 53 completion
   already on record above.
+
+- **2026-09-16** — Frame draft re-grounding recorded on the station Dream
+  ([[pyforge-steward]] § 2026-09-16, `spec-pyforge-steward` CAP-6) per
+  Dream-append-first: #28 dropped the version token, #29 added the reference
+  validator and made a conformance profile a MUST (§7). Our nine Frames pass
+  upstream's validator at `4596579`; we go bare `type: frame` and publish
+  PyForge's profile. This Dream stays the Frames' home until the steward fold.
+

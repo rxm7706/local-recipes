@@ -1,5 +1,5 @@
 ---
-type: frame [0.3]
+type: frame
 identifier: pyforge/doctor
 license: https://www.apache.org/licenses/LICENSE-2.0
 name: PyForge Doctor
