@@ -2,7 +2,7 @@
 title: Every pixi.toml dependency — in or out, floor or latest — carries a live reason, not a silent guess
 type: dream
 owner: doctor
-status: dreamt
+status: realized
 ---
 
 # Every pixi.toml dependency — in or out, floor or latest — carries a live reason, not a silent guess
@@ -693,3 +693,8 @@ is narrower and repo-local rather than factory-wide)
   (unverified; several plausibly already fine on conda-forge with no debt at all). Framed
   explicitly as a visibility gap, not a packaging verdict — this Dream doesn't decide
   per-package whether external tracking is warranted.
+- **2026-09-16** — `dreamt` → `realized` (fleet-inbox-disposition). Doctor Story
+  `21-7-the-pixi-candidate-ledgers-get-their-staleness-check` is `done`. The
+  ledgers exist; remaining per-package currency is maintenance, not a second
+  decompose. Record:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-inbox-disposition-2026-09-16.md`.

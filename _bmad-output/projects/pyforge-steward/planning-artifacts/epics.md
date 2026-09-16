@@ -3929,6 +3929,8 @@ Herald executes the pull; steward wrote the ruling.
 project-context-as-constitution)
 **And** retired BMAD skill names and Paige are gone from the pulled deck
 **And** a detector flags a silent size/etag drift
+**And** the pulled deck does not label story modes L1–L5 or an autonomy
+percentage (operator 2026-09-16: teaching-only until the Guildhall exists)
 **Status:** backlog
 
 ### Story 59.5: One mint-time slugify and two DW families

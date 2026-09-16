@@ -28,6 +28,9 @@ declared_low_risk: false
 **Never:**
 - Do not treat the whole deck as operational contract.
 - Do not flip any Epic 44 blocked key.
+- Do not label story modes L1–L5 or any autonomy percentage / maturity score.
+  That is `spec-agentic-sdlc-autonomy` AUT-3 waiting on Charter §7; operator
+  2026-09-16: teaching-only until the Guildhall exists.
 
 ## I/O & Edge-Case Matrix
 
