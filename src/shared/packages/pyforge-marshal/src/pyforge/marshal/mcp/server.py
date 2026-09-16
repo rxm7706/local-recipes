@@ -51,6 +51,15 @@ def build_server(name: str = "pyforge-marshal"):
         """Refresh loop homes from main (structured JSON)."""
         return tools.marshal_refresh(project=project, base=base)
 
+    @mcp.tool()
+    def marshal_watch(
+        project: str | None = None,
+        run: str | None = None,
+        fleet: bool = False,
+    ) -> dict:
+        """Watch a pinned run, a station, or the fleet (structured JSON)."""
+        return tools.marshal_watch(project=project, run=run, fleet=fleet)
+
     return mcp
 
 

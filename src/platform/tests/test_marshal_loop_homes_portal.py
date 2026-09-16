@@ -93,6 +93,74 @@ def test_marshal_role_required() -> None:
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
+def test_watch_report_renders_injected_envelope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "command": "watch",
+        "verdict": "clean",
+        "data": {
+            "quiet": False,
+            "sections": {
+                "session_completions": ["21.5 -- done"],
+                "delta": ["first observation -- no prior cache"],
+                "currently_running": {"story": "21.6", "phase": "dev-running"},
+                "up_next": ["21.7"],
+                "user_action_required": "None",
+            },
+            "delay_seconds": 120,
+            "delay_reason": "actively progressing",
+        },
+        "findings": [],
+    }
+
+    def fake_call(self, station, job, body, **kwargs):
+        assert station == "marshal"
+        assert job == "marshal_watch"
+        assert body["project"] == "pyforge-herald"
+        assert body["run"] == "20260914-201759-bd47"
+        return payload
+
+    monkeypatch.setattr(PortalClient, "call", fake_call)
+    request = RequestFactory().get(
+        "/stations/marshal/watch/",
+        {"project": "pyforge-herald", "run": "20260914-201759-bd47"},
+    )
+    request.idp_roles = ["pyforge:station:marshal"]
+    response = marshal_views.watch_report(request)
+    assert response.status_code == HTTPStatus.OK
+    body = response.content.decode()
+    assert 'id="marshal-watch-report"' in body
+    assert "21.5 -- done" in body
+    assert "21.6" in body
+    assert "first observation" in body
+
+
+def test_watch_report_requires_marshal_role() -> None:
+    denied = RequestFactory().get("/stations/marshal/watch/")
+    denied.idp_roles = ["pyforge:station:steward"]
+    response = marshal_views.watch_report(denied)
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_mcp_asgi_registers_marshal_watch_tool() -> None:
+    from django_marshal_portal import mcp_asgi as marshal_mcp
+
+    class _FakeServer:
+        def __init__(self) -> None:
+            self.tools: dict[str, object] = {}
+
+        def tool(self, name):
+            def deco(fn):
+                self.tools[name] = fn
+                return fn
+
+            return deco
+
+    server = marshal_mcp._attach_held_loop_tools(_FakeServer())
+    assert marshal_mcp.WATCH_TOOL in server.tools
+
+
 def test_view_uses_portal_client_only() -> None:
     source = (PORTAL / "views.py").read_text(encoding="utf-8")
     tree = ast.parse(source)

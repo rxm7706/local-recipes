@@ -1,0 +1,67 @@
+{% extends "django_pyforge/base.html" %}
+{% block title %}
+  marshal watch
+{% endblock title %}
+{% block content %}
+  <p id="marshal-watch-body">marshal watch</p>
+  <p>
+    <a href="{% url 'marshal-home' %}">Back to loop homes</a>
+  </p>
+  <section id="marshal-watch-report" data-watch-project="{{ project|default:'' }}" data-watch-run="{{ run|default:'' }}" data-watch-fleet="{{ fleet|yesno:'1,0' }}">
+    {% if report.command %}
+      <p>command={{ report.command }} verdict={{ report.verdict }}</p>
+    {% endif %}
+    {% if report.data.quiet %}
+      <p id="marshal-watch-quiet">nothing changed</p>
+    {% endif %}
+    {% if report.data.sections %}
+      <h2>Session Completions</h2>
+      <ul id="marshal-watch-completions">
+        {% for item in report.data.sections.session_completions %}
+          <li>{{ item }}</li>
+        {% empty %}
+          <li>(none)</li>
+        {% endfor %}
+      </ul>
+      <h2>Delta Since Last Update</h2>
+      <ul id="marshal-watch-delta">
+        {% for item in report.data.sections.delta %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <h2>Currently Running</h2>
+      <p id="marshal-watch-running">
+        story={{ report.data.sections.currently_running.story }}
+        phase={{ report.data.sections.currently_running.phase }}
+      </p>
+      <h2>Up Next &amp; Full Queue</h2>
+      <ul id="marshal-watch-queue">
+        {% for item in report.data.sections.up_next %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <h2>User Action Required</h2>
+      <p id="marshal-watch-action">{{ report.data.sections.user_action_required }}</p>
+    {% elif report.data.projects %}
+      <h2>Fleet snapshot</h2>
+      <ul id="marshal-watch-fleet">
+        {% for row in report.data.projects %}
+          <li>{{ row.slug }} — {{ row.pattern }} — {{ row.run_id|default:'idle' }} — {{ row.status }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if report.data.delay_seconds != None %}
+      <p id="marshal-watch-delay">next-check delay: {{ report.data.delay_seconds }}s — {{ report.data.delay_reason }}</p>
+    {% elif report.data.delay_reason %}
+      <p id="marshal-watch-delay">{{ report.data.delay_reason }}</p>
+    {% endif %}
+    {% if report.findings %}
+      <h2>Findings</h2>
+      <ul id="marshal-watch-findings">
+        {% for finding in report.findings %}
+          <li>{{ finding.code }} {{ finding.message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+{% endblock content %}

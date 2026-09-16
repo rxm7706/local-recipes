@@ -225,6 +225,17 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert "pyforge marshal" in customize
     assert MCP_PATH in customize
     assert "bmad-build" not in customize
+    assert 'code = "WATCH"' in customize
+    assert "pyforge marshal watch" in customize
+
+
+def test_watch_menu_transcript_is_grammar_only():
+    root = _repo_root()
+    path = _persona_dir(root) / "transcripts" / "marshal-watch-e2e.json"
+    events = json.loads(path.read_text(encoding="utf-8"))
+    validate_transcript(events)
+    grammar = [event for event in events if event["kind"] == "grammar"]
+    assert grammar[0]["argv"][:3] == ["pyforge", "marshal", "watch"]
 
 
 def test_consults_cap15_content_skill_on_disk():

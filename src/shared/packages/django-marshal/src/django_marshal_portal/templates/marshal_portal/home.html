@@ -14,4 +14,20 @@
       {% endfor %}
     </ul>
   </section>
+  <section data-console-home="watch">
+    <h2>Watch a run</h2>
+    <form id="marshal-watch-form" method="get" action="{% url 'marshal-watch' %}">
+      <label>Project <input name="project" type="text"></label>
+      <label>Run <input name="run" type="text"></label>
+      <label><input name="fleet" type="checkbox" value="1"> Fleet</label>
+      <button type="submit">Watch</button>
+    </form>
+    {% for home in loop_homes %}
+      <p>
+        <a data-watch-slug="{{ home.slug }}" href="{% url 'marshal-watch' %}?project={{ home.slug }}">
+          Watch {{ home.slug }}
+        </a>
+      </p>
+    {% endfor %}
+  </section>
 {% endblock content %}
