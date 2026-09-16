@@ -73,7 +73,8 @@ treadmill.** This Dream is the rule first, the fold second.
   honored: history stays on A.
 - **The station Spec is a living contract.** `shipped` belongs to CAPs and
   stories, not to a station's standing contract; the eight `spec-pyforge-<s>`
-  flip from `shipped` to `in-progress` and stay there. Station Dreams then
+  read `ready` — "the contract binds" — and stay there (`in-progress` is a
+  state, not an act; it retires from the Spec enum at the rebase). Station Dreams then
   read `specified` by the README's existing rule ("a Spec at `ready` or
   beyond") and never flip again — no fifth status; the roster's act-based
   ladder rejected `building` for the same reason it rejects `living`.
@@ -182,5 +183,13 @@ treadmill.** This Dream is the rule first, the fold second.
   **a fold is a rebase** — renumber CAPs, epics and stories to one sequential
   current state across all four BMAD phases, re-key map in the PR — and the
   final order: marshal → steward → herald → scribe · doctor · atlas · warden
-  in parallel. Next act: doctor stories for `chain-sprawl-check` and
-  `fr-without-cap`; the marshal fold as its own effort.
+  in parallel. And the operator's widening — *"this is our chance to bring
+  consistency across the fleet, for everything, including vocabulary, naming
+  conventions — don't make the operator think"* — became **CAP-9, the chain
+  standard**: one companion page (`CHAIN-STANDARD.md`) composing every
+  existing ruling on hierarchy, relations, sequence, statuses, names and ids
+  with its grandfathering removed; the rebase is when the carve-outs end
+  (one mint function for all 1,445 stories, one `DW-<STATION>-<n>` family,
+  one rule-id family per station, `in-progress` retired). Next act: doctor
+  stories for `chain-sprawl-check` and `fr-without-cap`; the marshal fold as
+  its own effort, CHAIN-STANDARD §7 as its checklist.

@@ -16,7 +16,8 @@ surface: []     # Deliberately empty until the mechanism stories land: chain-spr
                 # fr-without-cap will be doctor sources (declared here when they exist, the way
                 # coverage-gate-independence declares its evaluator); the per-station fold PRs
                 # touch surfaces already governed by each station's own Spec and stay there.
-companions: []
+companions:
+  - CHAIN-STANDARD.md   # CAP-9 — the one page every fold conforms to (hierarchy, relations, sequence, statuses, names, ids, checklist)
 sources:
   - ../../../docs/dreams/one-chain-per-station.md
 open_questions: []
@@ -24,7 +25,7 @@ open_questions: []
   #   fifth-dream-status-or-perpetually-specified -> neither is a new rule; the roster's
   #     act-based ladder rejects 'living' (same failure as the rejected 'building'), and
   #     README's "specified requires a Spec at ready or beyond" yields `specified` for
-  #     every station Dream once CAP-6 flips its Spec to in-progress. Zero vocabulary change.
+  #     every station Dream once CAP-6 holds its Spec at `ready`. Zero vocabulary change.
   #   pyforge-core-placement -> first cross-station-seam exemption; marshal stays accountable;
   #     Guild ruled out by the Charter's structural test (serves every Smith, judges none);
   #     a marshal CAP range ruled out because seven stations append against the kernel's
@@ -33,7 +34,7 @@ open_questions: []
   #     and is fully applied by the Charter memlog + Dream log entries in the same PR.
 ---
 
-> **Canonical contract.** Derived from `.memlog.md` (38 entries, the
+> **Canonical contract.** Derived from `.memlog.md` (43 entries, the
 > decision-of-record) and the Dream in `sources:`. Every question is ruled;
 > the precedence order (standard > history > implementation), the rebase
 > rule (renumber everything, sequentially, all four BMAD phases) and the
@@ -112,8 +113,11 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     flags a post-date FR with no CAP.
   - **success:** Zero post-date FRs without a CAP fleet-wide.
 - **CAP-6 — Living station tiers, with zero new vocabulary.**
-  - **intent:** The eight `spec-pyforge-<s>` flip `shipped` → `in-progress`
-    and stay; `shipped` belongs to CAPs and stories. Station Dreams then read
+  - **intent:** The eight `spec-pyforge-<s>` read **`ready`** — "the contract
+    binds" — and stay there; `shipped` belongs to CAPs (`(Met <date>)`) and
+    stories. *(Corrected 2026-09-16 from `in-progress`: that is a state, not
+    an act, and vocabulary CAP-1/2 already wanted it gone — it retires from
+    the Spec enum at the rebase, 17 → 0.)* Station Dreams then read
     `specified` by the README's existing rule ("a Spec at `ready` or beyond")
     and never flip again — no fifth status (the roster's act-based ladder
     rejected `building` for the same reason it would reject `living`). One
@@ -123,7 +127,8 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     by the same act.
   - **success:** No station Spec is terminal; every station Dream reads
     `specified`; `status-body-consistency` reports zero findings on the eight
-    station Dreams; `dream_statuses` in the roster is unchanged.
+    station Dreams; `dream_statuses` in the roster is unchanged; no Spec in
+    the fleet reads `in-progress`.
 - **CAP-7 — The foundry on-ramp is recorded, standard included.**
   - **intent:** `spec-foundry-regenerate-not-fold`'s memlog names the eight
     folded station Specs as B's starting five-fields (its CAP-5, "one
@@ -138,7 +143,28 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     CAP-5 PRD re-derive done.
   - **success:** Marshal renders one Dream, one Spec, one PRD, one spine, one
     `epics.md`; planning detectors green; `fleet-picture` story counts
-    unchanged.
+    unchanged; CHAIN-STANDARD §7 checklist green.
+- **CAP-9 — The chain standard is one page, and every fold conforms to it.**
+  - **intent:** `CHAIN-STANDARD.md` (companion) holds the hierarchy (one of
+    each per station, plus declared seams and the Guild chain), the relations
+    (every arrow points up: Dream section → CAP → FR → AD → Story → ledger key
+    → story spec → code), the sequence (four BMAD phases, seven acts, none
+    skipped), one closed status enum per tier, one name-form per concept, one
+    id family per job, and the fold-PR checklist. Composed from the existing
+    rulings — `vocabulary-one-name-one-job` CAP-1..8, the steward spine's
+    station token, the README ladder, AGENTS.md § Dates, the Charter Lexicon
+    — **with their grandfathering removed**, never new vocabulary. The rebase
+    is when grandfathering ends: every story minted through one function (the
+    53 spelling divergences go), `DW-<STATION>-<n>` as the one deferred-work
+    family (1,338 ids re-key through the fold map), `<STATION>-<n>` as the one
+    rule-id family per station (the 14-prefix long tail retires), memlog
+    types closed at the 13 live ones. Code-cited ids migrate when their module
+    is next touched — a planning artifact never waits on code.
+  - **success:** The page exists as a companion; each fold PR's §7 checklist
+    is green; detectors read the declared vocabulary source (vocabulary
+    CAP-2), never the page; every rule on the page cites the ruling it comes
+    from; after the last fold, zero topic-word `DW-` families and zero
+    station-local rule-id prefixes remain in planning artifacts.
 
 ## Constraints
 
