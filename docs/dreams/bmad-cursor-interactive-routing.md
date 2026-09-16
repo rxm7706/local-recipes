@@ -138,3 +138,15 @@ solved and live, and that the interactive-chat shape is a distinct, unverified s
   `OPEN_SPEC_STATUSES`, so the exemption is live) until the probe runs and decomposition begins.
   Batch:
   `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+
+- **2026-09-15 (CAP-1 probe)** — Ran from Cursor Agent interactive chat (not
+  `cursor-agent -p`, not a tool-less Ask panel). The running model invoked the Task
+  tool twice: (1) Blind-Hunter-shaped review of `add`/`return a-b`, token `HUNT7K2Q`
+  back in-turn; (2) clean leak check, `PARENT_USER_QUERY=UNKNOWN`. **PASS.** The
+  2026-09-09 "same-prompt fan-out only" prediction did not hold for Agent+Task.
+  CAP-2 is committed (mechanical `.mdc` + pixi task + drift detector for
+  `bmad-build` / `bmad-build-auto`). CAP-3b remains the residual HALT on a no-Task
+  surface; CAP-3a stays a later empty follow-on. CAP-4 verified: `Read` of
+  `.claude/memory/MEMORY.md` works; no `@path` inline import. Leaves
+  `DEFERRED_SPECS`. Dispatch home: marshal Epic 45. Dream stays `specified` until
+  that epic ships.

@@ -73,6 +73,7 @@ def test_deferred_specs_story_21_1_reconciliation() -> None:
     assert "spec-intelligence-hub" not in board.DEFERRED_SPECS
     assert "spec-artifact-chain-reconciliation" not in board.DEFERRED_SPECS
     assert "spec-chain-currency-sweep" not in board.DEFERRED_SPECS
+    assert "spec-bmad-cursor-interactive-routing" not in board.DEFERRED_SPECS
     assert "spec-pyforge-charter" in board.DEFERRED_SPECS
     assert board.DEFERRED_SPECS["spec-pyforge-charter"] == (
         "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "

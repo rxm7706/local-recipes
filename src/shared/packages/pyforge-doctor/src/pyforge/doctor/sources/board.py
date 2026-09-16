@@ -134,13 +134,12 @@ DEFERRED_SPECS: dict[str, str] = {
         "coverage floor, warn-promotability, unscoped-union default) answered 2026-09-09; "
         "warden Epic 12 now carries CAP-1..5. "
         "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
-    "spec-bmad-cursor-interactive-routing":
-        "a `ready` Spec seeded 2026-09-07 so the Dream's chain link is durable (dream-chain "
-        "INV-1); CAP-1 (a live probe of whether Cursor's interactive IDE chat can invoke a "
-        "context-free subagent) gates every other CAP and has not run yet, so decomposing this "
-        "into marshal epics now would manufacture stories ahead of an unanswered empirical "
-        "question. De-register once CAP-1's probe result is recorded and the operator's CAP-2/ "
-        "CAP-3 shape choice is settled",
+    # `spec-bmad-cursor-interactive-routing` was registered here 2026-09-07 while
+    # CAP-1 (live Cursor-chat subagent probe) had not run. De-registered
+    # 2026-09-15: probe PASS on Cursor Agent + Task; CAP-2 committed; CAP-3
+    # residual for no-Task surfaces; CAP-4 verified; marshal Epic 45 (45.1–45.3)
+    # is the dispatch home. Do not treat this as full Ask-panel / all-skills
+    # parity, and do not ship CAP-3a without its own evidence.
     "spec-pyforge-charter":
         "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
         "no story can pick up",
