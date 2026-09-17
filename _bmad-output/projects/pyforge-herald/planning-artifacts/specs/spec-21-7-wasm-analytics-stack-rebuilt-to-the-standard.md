@@ -2,13 +2,12 @@
 title: 'wasm-analytics-stack rebuilt to the standard'
 type: 'feature'
 created: '2026-09-15'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-deferred:
-  - 'Design push and byte-identical read-back still require Claude Design (Story 21.4 / this story AC). Local poster + facts.yaml only.'
+deferred: []
 declared_low_risk: false
 verdict_mode: advisory
 ---
@@ -36,3 +35,40 @@ verdict_mode: advisory
 **Local acceptance:** `deck-facts wasm-analytics-stack --check` reports 0 unmarked / 0 mismatch; floors met; README ledger carries `PENDING-PUSH`.
 
 **Not accepted here:** push and read-back.
+
+## Completion (2026-09-17)
+
+The 2026-09-15 hand-authored pass (commit `e483288d54f`) was itself corrupted: everything
+from character offset 6341 onward (~95% of the file) was a single boilerplate sentence
+repeated dozens of times, character-space-separated, with no real content — `deck-facts
+--check` never caught it because it only validates `data-fact` span presence, not prose
+sanity. The corrupted content had already been pushed to the live Design project before
+the corruption was discovered (Story 21.4/21.7 push work), so the corruption was live,
+not merely at risk.
+
+This pass replaced the entire corrupted span with real, subject-specific content —
+21 numbered sections across the canonical six acts, 3 inline SVG diagrams (pipeline
+topology, upload-journey flow, isolation-gate ladder), 13 tables (capabilities, layer
+map, pinned stack, success metrics, five named risks, ten architecture invariants,
+capability→invariant map, NFRs, per-leader value, five open questions, three integration
+seams) — sourced from the Dream, the folded Atlas Spec (CAP-27..31), and the archived
+pre-fold Brief/PRD/Architecture (user journeys, glossary, kill criteria, risk table,
+stack pins, deferred items). Every count/version/status/date is a `data-fact` mark
+against `presentations/wasm-analytics-stack/facts.yaml` (untouched, used as-is); the
+one number with no facts.yaml row — the capability/FR/AD count — is named in prose
+instead of guessed. Final file: 91,427 bytes, `deck-facts --check` reports 0 unmarked /
+0 mismatch, facts 30/30.
+
+Verified: read the full rebuilt file back and confirmed by eye it is real, varied,
+structured content (no repeated sentence anywhere); rendered headless at 1240px width
+(19,612px full-page height) and visually inspected the whole render — no broken or
+empty sections. Found and fixed one bug from the rebuild itself (a stray duplicate
+`</p></section>` at the section-21/Creed seam) before pushing.
+
+Pushed to Design (`45c841c6-e807-4fee-a92a-f8e89cb890b4`) via `finalize_plan` +
+`write_files`, etag `1789639734959225` → `1789646107497288`. Read the pushed file back
+fresh via `read_file`, decoded its HTML-entity-escaped body, and confirmed SHA-256
+byte-exact match against the local file (`fc5ac86ad0264d8e082cbdc1646fc2a02b6cec6fa78e3c9e480b95742429f776`)
+— the corrupted boilerplate pattern is confirmed absent from the re-read content. The
+corrective push fully supersedes the corrupted etag; the live Design project now carries
+the real content.
