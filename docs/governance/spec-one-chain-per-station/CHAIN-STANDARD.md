@@ -165,8 +165,11 @@ A planning artifact never waits on code to conform.
 
 ## 8. Order of stations
 
-marshal (pilot) → steward → herald → scribe · doctor · atlas · warden in
-parallel. Mason is already one Spec: checklist items 2, 5–8 only.
+marshal (pilot) → steward → herald → scribe · doctor · atlas · warden ·
+mason in parallel. Mason was **not** already one Spec (lesson 30, 2026-09-17):
+it took the full §7 checklist (twelve folders → `spec-pyforge-mason`
+CAP-1..27). Do not steal CAPs from a folder already `absorbed-into` the
+Guild chain.
 
 ## 9. Lock, mop, exemption — when a fold PR runs (CAP-10)
 
@@ -186,3 +189,29 @@ memlogs, `fr-baseline.json`, and `capability-ledger.yaml`; merge `--merge`
 one at a time. Environment: `pixi run -e pyforge-guild`. Never
 `scripts/bmad-switch` from a parallel agent. This page is the checklist —
 not a harness-specific workflow.
+
+## 10. Parallel-fold lessons (2026-09-17, leftover shared memlog)
+
+Station folds do **not** write this Spec's memlog, `spec-foundry-regenerate-not-fold`,
+or `chain_sprawl_baseline.py --prune` (lesson 31). CAP-7 for the six
+parallel stations is one leftover PR. Extra checklist teeth from that wave:
+
+- STEP 0: seed a missing Tier-3 feed from the twin; `--rekey` only while
+  old keys still exist in the feed (lesson 29).
+- Surface YAML: `_parse_surface` wants two-space `- ` lists, never
+  column-0 dumps; do not quote `src/**` (lessons 24, 32).
+- DW `source_spec` matches on-disk `specs/spec-*.md` slugs, longest-old-key
+  first; never `--fix` (lessons 16, 27, 33).
+- `mint_slug` strips apostrophes as well as italic `*(…)*` (lesson 34).
+- Copy inline `Intent:`/`Success:` from `HEAD` before pointer rewrite
+  (lessons 19, 35). Reminted CAPs live under `## Capabilities` as
+  `### CAP-N —` headings (lesson 37).
+- Do not stamp a `[recipes/**]` pointer that has empty `files: {}`; keep
+  `surface-drift` / `exempt` (lesson 38). No `recipes/` and no
+  `.claude/skills/pyforge-mason/` on a fold PR.
+- Capability-ledger rows for every reminted CAP in the same pass as
+  `ready` (lesson 39). Cascade spine `updated:`; never two `updated:`
+  keys (lesson 40). Archive specified satellites; keep already-archived
+  banners (lesson 44).
+- Shared `pixi.lock` / `pixi.toml` stay on their owning Specs, not the
+  station Spec (lessons 25, 28, 43–44).
