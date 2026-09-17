@@ -41,19 +41,71 @@ covers-dreams:
   - docs/dreams/vocabulary-one-name-one-job.md
   - docs/dreams/work-passports-dated-extracts.md
 surface:
-  - "src/shared/packages/pyforge-steward/**"
+  - src/shared/packages/pyforge-steward/**
   - scripts/llms_full_check.py
   - docs/reference/library-llms-full.md
   - .steward/budget.yaml
   - .steward/keys-inventory.yaml
-  - ".steward/*.age"
+  - .steward/*.age
   - .steward/sync-config.example.yaml
   - .steward/repo-sets.example.yaml
+  - recipes/bmad-eval-quality/**
+  - evals/review-catches-planted-defect/**
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
+  - .github/workflows/pyforge-pip-install.yml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md
+  - recipes/bmad-suite/recipe.yaml
+  - recipes/bmad-suite/suite-members.yaml
+  - .claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py
+  - .claude/scripts/conda-forge-expert/bmad_suite_metapackage.py
+  - .claude/skills/conda-forge-expert/scripts/_http.py
+  - docs/reference/pixi-config-jfrog.example.toml
+  - docs/dreams/mcp-era-isolation.md
+  - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
+  - src/platform/config/asgi.py
+  - src/platform/deploy/charts/platform/
+  - "[feature.mcp-host]"
+  - scripts/mcp_factory_stdio_translator.py
+  - docs/dreams/mcp-host-real-station-tools.md
+  - src/platform/mcp_host/app.py
+  - src/platform/mcp_host/settings.py
+  - src/platform/compose/mcp-host/Containerfile
+  - src/platform/deploy/charts/platform/templates/_helpers.tpl
+  - src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml
+  - src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml
+  - src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml
+  - src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
+  - src/platform/config/settings/local.py
+  - src/platform/tests/policy/test_platform_dev_local_leaf.py
+  - scripts/platform_ci_test_requirements_check.py
+  - src/platform/Containerfile
+  - scripts/platform_image_pip_layer.py
+  - "[feature.python-agent-platform]"
+  - "[feature.python-agent-platform.dependencies] (host extras; retired pypi table)"
+  - scripts/platform_object_storage.py
+  - scripts/build-pixi-mirror.py
+  - scripts/platform-golden-path-promotion.sh
+  - scripts/platform-deploy-verify-promotion.py
+  - scripts/platform-ci-local.sh
+  - scripts/pixi_env_matrix.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  - recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py
+  - src/shared/packages/django-pyforge
+  - Containerfile
+  - .dockerignore
+  - scripts/container-gates
+  - scripts/guild_image_ci.sh
 surface-drift-exclude:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/routing.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py
+  - src/platform/config/asgi.py
 companions:
   - ../../architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
