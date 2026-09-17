@@ -7,8 +7,8 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). AD-3 and AD-5 both re-verified against live code; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
-currency_review: "Reviewed 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after folding the Spec's 2026-09-09 answering pass and recording two as-built divergences). Appended § Currency reconciliation — 2026-09-14: AD-3's byte-compatible type taxonomy is now load-bearing on a PRODUCT decision (no ADR numbering, --type closed at three), and AD-5's port is confirmed holding THREE concrete drivers, which is what closed the engine-choice question without a spike. Prior: Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
+updated: "2026-09-17"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). AD-3 and AD-5 both re-verified against live code; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
+currency_review: "Reviewed 2026-09-17 — one-chain scribe fold remint; no AD added or changed."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/prds/prd-pyforge-scribe-2026-07-25/prd.md (+ addendum.md) — the binding contract'

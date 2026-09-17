@@ -2,8 +2,11 @@
 title: Dispatch cites the same numbers the poster already shows
 type: dream
 owner: scribe
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # Dispatch cites the same numbers the poster already shows
 

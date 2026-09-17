@@ -2,13 +2,10 @@
 title: The public Pages root is one dossier, not two copies
 type: dream
 owner: herald
-status: specified   # 2026-09-13 — seeded from the incoming pyforge-pages.bundle
-                    # (based on 50504e52e) and specified the same day:
-                    # spec-pyforge-pages is `ready` (pgs:CAP-1..5). Herald Epic 22
-                    # / Story 22.1 lands the render. Foundry cargo: B re-derives
-                    # this surface after 54.5 — do not rsync docsite/ as comments.
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `pyforge-pages`).
 # The public Pages root is one dossier, not two copies
 
 ## The Dream

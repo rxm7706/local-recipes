@@ -40,5 +40,5 @@ declared_low_risk: false
 
 Parent Spec capability: `spec-design-sync-loop CAP-5; spec-deck-family-lockstep CAP-3`.
 Surface: deck README registry section; derive stage pptx-spec/pptx-fill vs deck-export; derived-file stamps..
-Ledger key: `23-5-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped`.
-Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-5-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped.md`.
+Ledger key: `23-3-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped`.
+Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-3-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped.md`.

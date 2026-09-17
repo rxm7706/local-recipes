@@ -448,6 +448,8 @@
   "rebaselined": {
     "pyforge-marshal": "9e51ae7851a2714105849d4af9d373471a0c01bd",
     "pyforge-steward": "0c1c77279b6f2117e943db800b6b52dc942c361b",
-    "pyforge-doctor": "4d05b6b6742338b164b921175625d6a482455581"
+    "pyforge-doctor": "4d05b6b6742338b164b921175625d6a482455581",
+    "pyforge-scribe": "4d05b6b6742338b164b921175625d6a482455581",
+    "pyforge-herald": "4d05b6b6742338b164b921175625d6a482455581"
   }
 }

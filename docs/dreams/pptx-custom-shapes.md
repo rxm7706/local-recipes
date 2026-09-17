@@ -1,10 +1,12 @@
 ---
-title: Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists
+title: Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline
+  ever exists
 type: dream
 owner: herald
-status: specified   # 2026-08-22 — UNPARKED same day (Marp inadequacy proven + operator named the 21-station stakeholder audience); decomposed as herald Epic 15
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `pptx-custom-shapes`).
 # Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists
 
 ## The Dream

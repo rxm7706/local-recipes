@@ -2,7 +2,7 @@
 title: Herald — capture the dream, illustrate the telemetry, proclaim the release
 type: dream
 owner: herald
-status: realized
+status: specified
 ---
 
 # Herald — the outward voice and design surface
@@ -169,3 +169,7 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   and the Spec's "the Guildhall is Marshal's ([[factory-console]])" cites a `superseded` Spec
   and a retired console — the referent is a Charter amendment (batch row C12), raised on
   `docs/governance/spec-pyforge-charter/.memlog.md` this date.
+
+## One-chain fold (2026-09-17)
+
+Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-herald]]` banners. Station Spec `spec-pyforge-herald` is `ready`; this Dream is `specified`.

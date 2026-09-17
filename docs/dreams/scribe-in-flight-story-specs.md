@@ -2,8 +2,11 @@
 title: The story you are on is in the graph; the ones you finished are not
 type: dream
 owner: scribe
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # The story you are on is in the graph; the ones you finished are not
 
