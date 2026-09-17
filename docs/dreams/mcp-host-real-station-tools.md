@@ -1,12 +1,15 @@
----
-title: The sidecar that only says its own name
+---title: The sidecar that only says its own name
 type: dream
 owner: steward
-status: realized   # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools
+status: archived   # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools
                     # shipped CAP-1..3 and all three were proven live on a real deployed
                     # CRC cluster before this session ended (see the Spec's own Design
                     # Notes + this file's Realization log)
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `mcp-host-real-station-tools`).
+
 
 # The sidecar that only says its own name
 

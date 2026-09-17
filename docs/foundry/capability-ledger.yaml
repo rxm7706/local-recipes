@@ -2825,3 +2825,874 @@ capabilities:
     heading: "from spec-surface-overlap-tolerance"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-09-17 steward one-chain fold remints
+  - id: pyforge-steward:CAP-1
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-pyforge-steward"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-2
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-pyforge-steward"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-3
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-pyforge-steward"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-4
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-pyforge-steward"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-5
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-eval-quality"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-6
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-method-core-upgrade"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-7
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-module-provisioning"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-8
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-suite-channel-product"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-9
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-suite-install-class-wiring"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-10
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-suite-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-11
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-bmad-suite-metapackage"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-12
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "published measure catalog."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-13
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "add, switch, and archive sources."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-14
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "consumers cite `on` rows only."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-15
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-developer-machine-bootstrap"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-16
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-enterprise-airgap"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-17
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Vocabulary alignment only."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-18
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "A declared validation strategy per run."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-19
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Guards as a library."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-20
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "bidirectional propagation of status, assignee, and identity link."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-21
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "zero-loop guarantee."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-22
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "idempotent update processing."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-23
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "fail loud, fail alone on broken links."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-24
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "explicit status-vocabulary translation."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-25
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-local-ocp-hybrid-environment"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-26
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "dual-era atlas face on the host path"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-27
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "isolated mcp-host env"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-28
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "host proxies; sidecar down is loud"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-29
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "cluster overlay cannot omit mcp-host"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-30
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "stdio wrap of a FastMCP 3 child"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-31
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "explicit non-CRC claim"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-32
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-mcp-host-real-station-tools"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-33
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-mcp-host-real-station-tools"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-34
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-mcp-host-real-station-tools"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-35
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-multi-repo-workspaces"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-36
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-ocp-as-a-portability-profile"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-37
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-datastores-consumed-not-self-hosted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-38
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Local leaf on platform-dev."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-39
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-fifteen-factors"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-40
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "one frozen env"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-41
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Containerfile drops the pip installer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-42
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "pixitainer-docker re-eval"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-43
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-object-storage-kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-44
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "The host renders from the accelerator shape."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-45
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Langflow joins as a pluggable Django application."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-46
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "DB-GPT joins the platform through its configured integration pattern."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-47
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Async work never blocks Django."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-48
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "One environment, factory-sourced, 3.14-bound."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-49
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Air-gap parity is a test, not a hope."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-50
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-51
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-52
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-53
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-54
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-55
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "identity and role arrive from the request; the pattern authenticates no one."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-56
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "row-level isolation is declared, not implemented, by the adopter."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-57
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "an unauthorized page is absent, not hidden."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-58
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the audit trail records what was seen, not merely that something happened."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-59
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "export is gated server-side, and may be encrypted."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-60
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the deployment perimeter ships with the pattern."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-61
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the security boundaries are proven by tests that cannot pass vacuously."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-62
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the same dashboard definition ships hosted or static, without a fork."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-63
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "estate catalog and config."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-64
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "publish path plus steward trust review."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-65
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "ship backends."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-66
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "thin browse list."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-67
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "estate Frame index."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-68
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-69
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-70
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-71
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-unified-container"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-72
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Spec ladder is declared."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-73
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the BMAD↔Lexicon cross-walk."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-74
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Design tier stops drifting."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-75
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "mint-time story identity and new `DW-` ids."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-76
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "remaining declared shapes."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-77
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "`check=` is a finding code."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-78
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "extract corridor and transports."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-79
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "work passport and frozen core schema."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-80
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "as-of glass (standup and shipped)."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-81
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "outbound slice gate."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-82
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "quarantine (no auto-link)."
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-83
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-datastores-consumed-not-self-hosted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-84
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-datastores-consumed-not-self-hosted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-85
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Local leaf on platform-dev"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-86
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "OIDC-delegated identity"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-87
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "telemetry"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-88
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "startup refusals"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-89
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "policy-as-tests"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-90
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "pixi-sourced deps"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-91
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "one frozen env"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-92
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Containerfile drops the pip installer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-93
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "pixitainer-docker re-eval"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-94
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-object-storage-kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-95
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-object-storage-kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-96
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-object-storage-kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-97
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-platform-object-storage-kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-98
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "The host renders from the accelerator shape"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-99
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Langflow joins as a pluggable Django application"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-100
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "DB-GPT joins the platform through its configured integration pattern"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-101
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Async work never blocks Django"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-102
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "One environment, factory-sourced, 3.14-bound"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-103
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Air-gap parity is a test, not a hope"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-104
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-105
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-106
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-107
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-108
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-scratch-worktree-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-109
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "identity and role arrive from the request; the pattern authenticates no one"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-110
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "row-level isolation is declared, not implemented, by the adopter"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-111
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "an unauthorized page is absent, not hidden"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-112
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the audit trail records what was seen, not merely that something happened"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-113
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "export is gated server-side, and may be encrypted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-114
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the deployment perimeter ships with the pattern"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-115
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the security boundaries are proven by tests that cannot pass vacuously"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-116
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the same dashboard definition ships hosted or static, without a fork"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-117
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "estate catalog and config"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-118
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "publish path plus steward trust review"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-119
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "ship backends"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-120
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "thin browse list"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-121
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Claude-skill source slot (SKU B)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-122
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "Hub Layer 3 (SKU C)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-123
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "estate Frame index"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-124
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-125
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-126
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "from spec-suite-scaffold-and-mybmad-sidecar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-127
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "one build, whole Guild"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-128
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the image ships the repo at a fixed short path"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-129
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "credentials never enter image layers"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-130
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "state outlives the container"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-131
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the image proves itself at build time"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-132
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Spec ladder is declared"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-133
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the BMAD↔Lexicon cross-walk"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-134
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the unnamed collisions get rulings"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-135
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Design tier stops drifting"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-136
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "mint-time story identity and new `DW-` ids"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-137
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "remaining declared shapes"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-138
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "`check=` is a finding code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-139
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "extract corridor and transports"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-140
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "work passport and frozen core schema"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-141
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "as-of glass (standup and shipped)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-142
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "outbound slice gate"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-143
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "quarantine (no auto-link)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-144
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "live collectors for boards we already own"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-145
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "BMAD projection onto Internal GH"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md

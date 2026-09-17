@@ -1,9 +1,12 @@
----
-title: A new contributor or agent is productive on this repo without tribal knowledge
+---title: A new contributor or agent is productive on this repo without tribal knowledge
 type: practice
 owner: steward
-status: specified   # 2026-08-22 — spec-developer-machine-bootstrap, decomposed into the station backlog same day
+status: archived   # 2026-08-22 — spec-developer-machine-bootstrap, decomposed into the station backlog same day
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `developer-machine-bootstrap`).
+
 
 # A new contributor or agent is productive on this repo without tribal knowledge
 

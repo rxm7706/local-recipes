@@ -1,4 +1,5 @@
 ---
+fold-exemption: governance
 spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy

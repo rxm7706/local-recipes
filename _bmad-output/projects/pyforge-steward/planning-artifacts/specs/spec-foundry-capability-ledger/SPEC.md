@@ -1,4 +1,5 @@
 ---
+fold-exemption: different-lifecycle
 spec: foundry-capability-ledger
 status: ready
 created: "2026-09-13"

@@ -1,9 +1,12 @@
----
-title: They mail a dated list; we mail a dated list
+---title: They mail a dated list; we mail a dated list
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `work-passports-dated-extracts`).
+
 
 # They mail a dated list; we mail a dated list
 

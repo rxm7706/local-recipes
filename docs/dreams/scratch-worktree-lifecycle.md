@@ -1,9 +1,12 @@
----
-title: A scratch worktree for one story's work is one command, not five
+---title: A scratch worktree for one story's work is one command, not five
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `scratch-worktree-lifecycle`).
+
 
 # A scratch worktree for one story's work is one command, not five
 

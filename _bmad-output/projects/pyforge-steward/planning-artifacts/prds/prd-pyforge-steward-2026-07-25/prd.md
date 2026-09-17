@@ -1,4 +1,5 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
 updated: "2026-09-14"

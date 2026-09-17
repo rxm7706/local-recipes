@@ -1,9 +1,12 @@
----
-title: Module-template stays an authoring tool; mybmad joins as a sidecar, never the console
+---title: Module-template stays an authoring tool; mybmad joins as a sidecar, never the console
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `suite-scaffold-and-mybmad-sidecar`).
+
 
 # Module-template stays an authoring tool; mybmad joins as a sidecar, never the console
 

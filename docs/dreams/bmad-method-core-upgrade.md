@@ -1,9 +1,12 @@
----
-title: BMAD-METHOD's own core stays current, not stuck at whatever version got installed
+---title: BMAD-METHOD's own core stays current, not stuck at whatever version got installed
 type: dream
 owner: steward
-status: specified   # 2026-08-21 — spec-bmad-method-core-upgrade under pyforge-steward, grounded in the live 6.10.0→6.11.0 upgrade session
+status: archived   # 2026-08-21 — spec-bmad-method-core-upgrade under pyforge-steward, grounded in the live 6.10.0→6.11.0 upgrade session
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `bmad-method-core-upgrade`).
+
 
 # BMAD-METHOD's own core stays current, not stuck at whatever version got installed
 

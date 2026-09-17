@@ -1,9 +1,12 @@
----
-title: One name, one job — reconciling three vocabularies
+---title: One name, one job — reconciling three vocabularies
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `vocabulary-one-name-one-job`).
+
 
 # One name, one job — reconciling three vocabularies
 

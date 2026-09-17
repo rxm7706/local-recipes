@@ -1,9 +1,12 @@
----
-title: One container, eight stations
+---title: One container, eight stations
 type: dream
 owner: steward
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `unified-container`).
+
 
 # One container, eight stations
 
