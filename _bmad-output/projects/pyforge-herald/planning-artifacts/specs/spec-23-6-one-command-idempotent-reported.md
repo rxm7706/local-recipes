@@ -40,5 +40,5 @@ declared_low_risk: false
 
 Parent Spec capability: `spec-design-sync-loop CAP-8 CAP-3`.
 Surface: herald/cli.py deck sync-all --slug --dry-run; pixi deck-sync-all; run report; presentation-deck.md runbook..
-Ledger key: `23-8-one-command-idempotent-reported`.
-Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-8-one-command-idempotent-reported.md`.
+Ledger key: `23-6-one-command-idempotent-reported`.
+Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-6-one-command-idempotent-reported.md`.

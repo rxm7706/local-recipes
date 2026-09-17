@@ -5,7 +5,7 @@ owner: herald
 status: archived
 archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `herald-pitch`).
 > **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
 > in [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) under "What is real." Originally,
 > **its downstream chain stayed fully live and untouched**: `spec-herald-pitch` (7

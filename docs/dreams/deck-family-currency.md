@@ -1,14 +1,12 @@
 ---
-title: The deck family stays current — infographics re-derived from the ledgers, not remembered
+title: The deck family stays current — infographics re-derived from the ledgers, not
+  remembered
 type: dream
 owner: herald
-status: realized    # 2026-09-13 — Epic 20 closed 14/14 the day the Dream was seeded. The standard
-                    # exists, all ten PyForge posters meet it, 833 marked facts resolve to tracked
-                    # rows, the Design mirror reads back byte-identical 10/10, `herald deck status`
-                    # reports the family linked, and CAP-6 repaired the first real decay on its
-                    # first use. Realized on effect, not on ledger rows — see the Realization log.
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `deck-family-currency`).
 # The deck family stays current — infographics re-derived from the ledgers, not remembered
 
 ## The Dream

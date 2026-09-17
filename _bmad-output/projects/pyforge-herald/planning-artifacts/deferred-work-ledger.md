@@ -952,7 +952,7 @@ deployment.
 
 ### DW-FU-18-1: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
 
-- source_spec: `planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-herald-s-studio.md`
+- source_spec: `planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md`
   summary: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
   evidence: pyforge.doctor.sources.ledger::gather_direction exists and is unit-tested for exactly this shape (a tracked ledger done key with no matching merge subject and no Tier-3 feed), but scripts/detectors.py's _DOCTOR_SOURCE_TASKS omits it and no pixi task exposes it, so neither detectors nor detectors-ci ever runs it. Pre-existing gap, not introduced by this story; wiring it in is a repo-wide fix beyond this story's scope.
   location: scripts/detectors.py (_DOCTOR_SOURCE_TASKS)

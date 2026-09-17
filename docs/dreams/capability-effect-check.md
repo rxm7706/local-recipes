@@ -2,9 +2,11 @@
 title: A capability is not done until something exercises it
 type: dream
 owner: doctor
-status: realized   # 2026-09-13 — doctor Stories 21.9/21.10/21.11 shipped the Source;
-                    # see Realization log
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # A capability is not done until something exercises it
 

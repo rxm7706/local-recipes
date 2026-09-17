@@ -2,8 +2,11 @@
 title: The code map covers the host and factory scripts, not the recipe warehouse
 type: dream
 owner: scribe
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # The code map covers the host and factory scripts, not the recipe warehouse
 

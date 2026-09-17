@@ -2,8 +2,11 @@
 title: One home for leftover docs — fold into Diátaxis, same page for agents and humans
 type: dream
 owner: doctor
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # One home for leftover docs — fold into Diátaxis, same page for agents and humans
 

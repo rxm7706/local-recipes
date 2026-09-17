@@ -6,6 +6,8 @@ status: archived
 archived-reason: absorbed
 ---
 
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
+
 # Sentinel — the graph is the product
 
 ## The Dream

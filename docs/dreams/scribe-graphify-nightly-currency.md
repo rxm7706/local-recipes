@@ -2,8 +2,11 @@
 title: The nightly graph still knows the code
 type: dream
 owner: scribe
-status: specified   # 2026-09-13 — spec-scribe-graphify-nightly-currency is `ready`
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # The nightly graph still knows the code
 
