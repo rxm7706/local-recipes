@@ -2,13 +2,12 @@
 title: 'deckcraft rebuilt to the standard'
 type: 'feature'
 created: '2026-09-15'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-deferred:
-  - 'Design push and byte-identical read-back still require Claude Design (Story 21.4 / this story AC). Local poster + facts.yaml only.'
+deferred: []
 declared_low_risk: false
 verdict_mode: advisory
 ---
@@ -63,3 +62,55 @@ No further push attempted. No content fix attempted here (out of this spec's Cod
 content-authoring fix belongs to whoever restores the poster's real prose, then a fresh
 push+read-back cycle). Story 21.8 is `blocked` pending that fix; the corrupted Design copy is
 left as-is pending an operator/coordinator decision on remediation (fix-and-repush vs. revert).
+
+## Done — 2026-09-17 (content rebuilt for real, pushed, read back byte-identical)
+
+The content-authoring fix this entry deferred above is now complete. Everything from byte
+offset 6235 onward (the corrupted ~96% of the file) was replaced with genuine prose, tables and
+inline SVG diagrams, sourced from the archived `spec-deckcraft` planning chain
+(`archive/_bmad-output/projects/pyforge-herald/planning-artifacts/{specs/spec-deckcraft/SPEC.md,
+epics-deckcraft.md, architecture/architecture-deckcraft-2026-05-10/architecture.md,
+briefs/product-brief-deckcraft{,-distillate}.md, prds/prd-deckcraft-2026-05-10/*,
+research/*-2026-07-25.md}`) plus the still-live `docs/dreams/pptx-deck-generation.md`,
+`presentations/deckcraft/{facts.yaml,README.md}` and the still-correct `project/Deckcraft.dc.html`
+/ Executive Summary. The opening intro paragraphs (byte 0–6235) were left untouched — they were
+never corrupted.
+
+**Structure:** 41 numbered sections (floor 18), 6 act bands exactly, 4 inline SVG diagrams (floor
+3: a three-layer pipeline topology, a document-journey flow, a hardware-tier ladder, a
+now/next/later roadmap ladder), 25 tables (floor 3), 93,813 bytes (floor 90,000).
+
+**Facts:** every count/version/status/date in new prose is either a `data-fact` span over an
+existing `facts.yaml` row (`tree_commit_date`, `herald_*`, `fleet_*`, `cfe_skill_version`,
+`recipes_count`) or a static planning-chain number with no `facts.yaml` row — 28 stories / 6
+epics / 52 FRs / 23 NFRs / 15 ADs / 10 patterns / 9 CAPs (from the archived epics/PRD/architecture,
+not the live ledger) — deliberately left unmarked per the deck's own established convention (the
+untouched intro already treats the pymupdf item the same way): a number with no ledger row is
+never dressed as a tracked count. `pixi run -e local-recipes deck-facts deckcraft --check`: **0
+unmarked, 0 mismatch** (12 `drifted` — the ledger's 2026-09-15 snapshot vs. live 2026-09-17 fleet
+counts, expected and out of this story's scope per the task's own instruction to use `facts.yaml`
+as-is; 19 `unshown` — facts.yaml rows this poster's content doesn't happen to reference).
+
+**Honesty check (the thing that failed last time):** the file was read back in full (two `Read`
+passes covering all 266 lines) and confirmed to be real, varied, six-act content — not a repeated
+sentence. Rendered headless via Playwright at 1240px width (`page scrollHeight: 20453`); every
+`section.sec`, `div.act`, `table` and `svg` element has a non-zero bounding box (0 of 76 checked
+elements clipped/blank); PNG crops of the top, an SVG diagram, a mid-document table run, and the
+closing Creed band were visually inspected and all render cleanly.
+
+**Push + read-back:** `.herald/bridge-state.json` bootstrapped (the four chain decks' READMEs
+still fail `registry.read`'s two-line-body parser per Story 21.10's own scope — `deckcraft` was
+registered by hand with the project id already on record in the README). Pushed via
+`pyforge.herald.transport.mcp_transport.McpTransport` directly (`herald deck push`'s CLI verb only
+covers the CAP-5 marp export, not this file): read the live file first (etag `1789639747822045`,
+145,025 B, SHA-256 `5cb3f51d…` — confirmed byte-identical to the corrupted local content this
+entry already recorded, i.e. Design really did still hold the corruption), `finalize_plan` +
+`write_files` with `if_match` on that etag, new etag `1789645287157037`. Read back in full (93,813
+B, under the 256 KiB cap, `truncated: False`) and SHA-256-compared: **byte-identical to the local
+file** (`97e9b485…`). Explicitly re-checked for the corruption pattern in the read-back body:
+`"factory already runs a tracked fleet"` occurs **0** times (was 72). The corrupted Design copy is
+gone.
+
+Story 21.8 is `done`. `sprint-status-ledger.yaml` updated to match; the gitignored Tier-3
+`implementation-artifacts/sprint-status.yaml` symlink does not exist in this worktree (same gap
+Story 21.4 hit) so only the tracked ledger twin was updated.
