@@ -1,10 +1,17 @@
 ---
 title: Deferred-work audit completeness
-status: specified
+status: archived
 owner: doctor
 date: 2026-08-15
-specified-by: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md (CAP-4..7, extending the pre-existing deferred-work-visibility Spec rather than a new one, per operator direction to keep one big process instead of several small ones)
+specified-by: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md
+  (CAP-4..7, extending the pre-existing deferred-work-visibility Spec rather than
+  a new one, per operator direction to keep one big process instead of several small
+  ones)
+archived-reason: folded-into-station-dream
+type: dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # Deferred-work audit completeness
 

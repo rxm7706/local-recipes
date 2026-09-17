@@ -15,10 +15,10 @@
 # stories: 158
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
-  1-2-wrap-wardens-engine-availability-self-check: done
-  1-3-tri-state-individually-addressable-checks: done
-  1-4-credential-environment-hygiene-check: done
-  1-5-doctor-check-cli-wiring-json-and-the-speed-budget: done
+  1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
+  1-3-tri-state-individually-addressable-checks-fr-2: done
+  1-4-credential-environment-hygiene-check-fr-3: done
+  1-5-doctor-check-cli-wiring-json-and-the-speed-budget-fr-9-nfr-4: done
   10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported: done
   10-2-the-installed-core-is-compared-against-the-latest-upstream-release: done
   10-3-the-drift-surfaces-ambiently-never-gates: done
@@ -40,12 +40,12 @@ development_status:
   15-2-channel-and-recipe-staleness-are-ambient-findings: done
   16-1-the-shared-title-diff-is-an-ambient-finding: done
   17-1-extract-gather-prescribe-source-plugins: done
-  18-1-skf-skill-and-persona-for-doctor: done
-  18-2-first-portal-slice-fleet-pulse: done
+  18-1-skf-domain-skill-and-bmad-persona-for-doctor: done
+  18-2-first-portal-slice-last-fleet-pulse: done
   19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done
-  2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
-  2-2-cve-and-abandonment-watch-axes: done
-  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
+  2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback-fr-5-ad-6: done
+  2-2-cve-and-abandonment-watch-axes-fr-4: done
+  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json-fr-9: done
   20-1-suite-drift-maps-every-active-member-derived-from-the-roster: done
   20-2-the-render-halt-class-has-a-detector: done
   20-3-frozen-path-changed-exists: done
@@ -80,20 +80,20 @@ development_status:
   23-5-archive-citations-for-the-five-already-moved-_bmad-output-files: backlog
   23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree: backlog
   23-7-a-new-doctor-source-flags-leftover-shelf-occupancy: backlog
-  24-1-the-evaluator-and-the-thresholds-move-out-of-marshals-package-together: backlog
+  24-1-the-evaluator-and-the-thresholds-move-out-of-marshal-s-package-together: backlog
   24-2-an-import-linter-contract-catches-the-class-structurally: backlog
   24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all: backlog
   25-1-a-new-dream-or-spec-folder-without-a-declared-exemption-is-a-finding: done
   25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done
   25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done
-  3-1-partition-findings-by-actionability: done
-  3-2-rank-the-actionable-partition: done
-  3-3-root-cause-naming: done
-  3-4-doctor-diagnose-target-prescribe-cli-wiring-json: done
-  4-1-health-scoring: done
-  4-2-persistent-fleet-health-surface: done
-  4-3-adoption-tracking-watch-axis: done
-  4-4-safe-upgrade-path-recommendation: done
+  3-1-partition-findings-by-actionability-fr-6-ad-4: done
+  3-2-rank-the-actionable-partition-fr-7-ad-4: done
+  3-3-root-cause-naming-fr-8: done
+  3-4-doctor-diagnose-target-prescribe-cli-wiring-json-fr-9: done
+  4-1-health-scoring-fr-10: done
+  4-2-persistent-fleet-health-surface-fr-11: done
+  4-3-adoption-tracking-watch-axis-fr-12: done
+  4-4-safe-upgrade-path-recommendation-fr-13: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
@@ -104,8 +104,8 @@ development_status:
   6-4-the-ledger-verdicts-come-home: done
   6-5-the-board-verdicts-come-home: done
   6-6-the-chain-verdicts-come-home: done
-  6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided: done
-  6-8-bmad-drift-comes-home-without-breaking-the-board: done
+  6-7-forward_dependency-comes-home-and-the-harness-coupling-is-decided: done
+  6-8-bmad_drift-comes-home-without-breaking-the-board: done
   6-9-the-scripts-shims-retire: done
   7-1-the-emitter-mints-identity-at-defer-time: done
   7-2-grandfather-the-470-at-a-dated-cut-off: done

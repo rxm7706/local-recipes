@@ -1,9 +1,13 @@
 ---
-title: Every pixi.toml dependency — in or out, floor or latest — carries a live reason, not a silent guess
+title: Every pixi.toml dependency — in or out, floor or latest — carries a live reason,
+  not a silent guess
 type: dream
 owner: doctor
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # Every pixi.toml dependency — in or out, floor or latest — carries a live reason, not a silent guess
 
