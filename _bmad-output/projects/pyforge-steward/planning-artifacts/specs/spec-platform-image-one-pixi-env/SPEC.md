@@ -5,6 +5,8 @@ status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
 owner-dream: docs/dreams/platform-image-one-pixi-env.md
+surface:
+  - pixi.lock
 ---
 
 # Absorbed into spec-pyforge-steward
