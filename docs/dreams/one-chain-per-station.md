@@ -193,3 +193,66 @@ treadmill.** This Dream is the rule first, the fold second.
   one rule-id family per station, `in-progress` retired). Next act: doctor
   stories for `chain-sprawl-check` and `fr-without-cap`; the marshal fold as
   its own effort, CHAIN-STANDARD §7 as its checklist.
+- **2026-09-17 — Portable lock / mop / exemption.** 1:1 is the minting
+  rule (Dream-append-first + `chain-sprawl-check`), not a periodic fleet
+  fold. A fold PR is mop-only cleanup when unexempted satellites already
+  reached `main`. Day-to-day after the eight station folds is
+  `CHAIN-STANDARD.md` §3. Spec CAP-10. Status stays `specified`; nothing
+  is reset or un-archived.
+
+## 2026-09-17 — Lock, mop, and exemption — the portable rerun
+
+This is the ritual any agent (Claude, Cursor, or any other harness) runs
+so the fleet stays one chain per station. It lives here and in Spec
+**CAP-10**. The checklist for a fold PR is
+[`CHAIN-STANDARD.md` §7](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md)
+— not a vendor-specific workflow and not a store file.
+
+**1:1 is the lock, not a fold campaign.** One living Dream and one living
+Spec per station is kept by Dream-append-first plus `chain-sprawl-check`.
+Do not schedule another fleet-wide fold. Do not mint a new
+`docs/dreams/*.md` for this rule (that would break 1:1); append this
+Guild Dream, then memlog + `bmad-spec` on
+`docs/governance/spec-one-chain-per-station/`.
+
+**A new satellite on a PR is a rewrite, not a second chain.** If a PR
+adds an unexempted `docs/dreams/<slug>.md` or `specs/spec-*/` folder,
+rewrite that work as a dated section on the owning station Dream plus a
+`CAP-n` on that station's Spec, then drop the extra file. Keep a new
+folder only when its frontmatter `fold-exemption:` is a value from the
+closed list in `docs/governance/guild-roster.json` (`fold_exemptions`:
+`different-owner` · `different-lifecycle` · `cross-station-seam` ·
+`governance`).
+
+Three verbs, one job each:
+
+| Verb | When | What the agent does |
+|---|---|---|
+| **lock** | Every new effort | Dated section on the station Dream → memlog → `bmad-spec` CAP → FR ← CAP → Story (`CHAIN-STANDARD` §3). `chain-sprawl-check` fails an unexempted new folder. |
+| **exemption** | The work cannot live on the station chain | `fold-exemption:` from that closed roster list only. Adding a fifth reason is a governance act on the roster, not an ad-hoc string. |
+| **mop** | Unexempted satellites already reached `main` | One station, one PR, branch `fold/<s>`, `CHAIN-STANDARD` §7 checklist. Cleanup of what leaked past the lock — not a reset of the chain. |
+
+**After all eight stations are folded, day-to-day is §3.** Analysis
+through implementation stays append → memlog → spec → FR ← CAP → story.
+A fold PR is not the weekly rhythm.
+
+**Do not reset or un-archive.** Archived Dreams stay archived. Absorbed
+Spec folders stay pointers plus memlog plus companions. Station Dreams
+stay `specified`; station Specs stay `ready`. Done ledger rows stay
+`done`. Never flip an operator `blocked` key.
+
+**Parallel work, shared files serialized.** One worktree per station
+(prefer `pyforge steward workspace start <slug>` from `origin/main`;
+hand-cut the tree if the default dest is unwritable). Never
+`scripts/bmad-switch` from a parallel agent — `BMAD_ACTIVE_PROJECT=<slug>`
+and physical `_bmad-output/projects/<slug>/` paths. Serialize writes to
+shared memlogs, `docs/governance/fr-baseline.json`, and
+`docs/foundry/capability-ledger.yaml`. Land with `gh pr merge --merge`,
+one PR at a time.
+
+**Environment.** `pixi run -e pyforge-guild …` for detectors, ledger
+sync, surface stamps, and this Spec's derive path. Do not load
+`local-recipes` unless the change actually needs Mason's recipe factory.
+`PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` when rendering BMAD
+skills. `uv run _bmad/scripts/memlog.py` then `bmad-spec` — never
+hand-edit a `SPEC.md`.
