@@ -33,7 +33,7 @@ warnings: []
 
 ## Boundaries & Constraints
 
-**Always:** Write artifacts under `_bmad-output/projects/pyforge-herald/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-herald` only — never `scripts/bmad-switch`. Ledger key `17-1-skf-skill-and-persona-for-herald`.
+**Always:** Write artifacts under `_bmad-output/projects/pyforge-herald/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-herald` only — never `scripts/bmad-switch`. Ledger key `17-1-skf-domain-skill-and-bmad-persona-for-herald`.
 
 **Block If:** A change would replace `conda-forge-expert`, add `pyforge.*` under `src/platform/`, or start the paired Wave story this spec does not own.
 
