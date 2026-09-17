@@ -2,7 +2,7 @@
 title: Doctor — one bedside manner for the whole fleet
 type: dream
 owner: doctor
-status: realized
+status: specified
 ---
 
 # Doctor — check the vitals, keep the ecosystem alive
@@ -107,3 +107,9 @@ forward. That dream is archived; this one is the real record.
   dream retired, its real remainder (four frontier items above) captured here
   and decomposed into a genuine Epic 4 (CAP-5..CAP-8, FR-10..FR-13) rather
   than left as an unlinked aspiration.
+
+## Fold — one chain (2026-09-17)
+
+Doctor rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-doctor]]` banners. Absorbed Spec folders keep pointer + memlog + companions.
+
+Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]], [[capability-effect-check]], [[chain-currency-sweep]], [[deferred-work-audit-completeness]], [[deferred-work-resolution-sweep]], [[deferred-work-visibility]], [[docs-shelf-alignment]], [[fleet-hygiene-verification-exemplar-program]], [[general-docs-consistency]], [[pixi-candidate-currency]], [[pyforge-doctor-dependency-health]], [[sibling-dreams-drift]], [[status-body-consistency]].

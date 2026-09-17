@@ -1,14 +1,12 @@
 ---
-title: The Design sync loop — every Design project has a local twin, and one command keeps the whole family true
+title: The Design sync loop — every Design project has a local twin, and one command
+  keeps the whole family true
 type: dream
 owner: herald
-status: specified   # 2026-09-14 — seeded, answered and specified the same afternoon: the operator's
-                    # four requirements (verbatim under § The Dream), the four open questions ruled
-                    # the same hour, and spec-design-sync-loop derived `ready` by bmad-spec (CAP-1..8,
-                    # open_questions []). Herald Epic 23 carries six stories (re-scoped). Every fact under
-                    # § What is real was measured on main at 168bbedb13.
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `design-sync-loop`).
 # The Design sync loop — every Design project has a local twin, and one command keeps the whole family true
 
 ## The Dream

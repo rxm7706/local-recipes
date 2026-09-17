@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-14"   # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). As-built check against Epic 19's effect-gap closure and Story 20.2's per-deck fact ledgers; § Currency reconciliation — 2026-09-14 appended. No AD added, changed or removed.
+updated: "2026-09-17"   # chain-currency cascade after herald one-chain fold; no AD added or changed
 altitude: feature
 ---
 
@@ -652,3 +652,7 @@ Manticore) is still unexercised downstream, unchanged by this window.
 
 **No content change required beyond this note.** `updated:` bumped to record that the
 cascade ran.
+
+## Currency reconciliation — 2026-09-17
+
+Reviewed after the one-chain herald fold remint. No AD added, changed, or removed. Steps 3–4 of CHAIN-STANDARD §3 recorded as no-op in the station Spec memlog.

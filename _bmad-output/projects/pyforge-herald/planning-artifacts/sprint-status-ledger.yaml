@@ -20,17 +20,17 @@ development_status:
   1-4-bridge-core-skeleton-state-errors-determinism-boundary: done
   1-5-registry-module-readme-design-project: done
   1-6-herald-deck-seed-slug: done
-  10-1-notice-data-model-and-archive-storage: done
+  10-1-notice-data-model-archive-storage: done
   10-2-notice-authoring-workflow-cli: done
-  10-3-notice-archive-and-redirects: done
+  10-3-notice-archive-redirects: done
   10-4-notice-cli: done
   10-5-operations-web-tab: done
   10-6-notice-lifecycle: done
-  11-1-integration-testing-cli-web-and-automation: done
+  11-1-integration-testing-cli-web-automation: done
   11-2-automation-reliability: done
   11-3-evidence-linking-cross-moment: done
   11-4-performance-testing: done
-  12-1-cli-runbooks-and-troubleshooting: done
+  12-1-cli-runbooks-troubleshooting: done
   12-2-web-surface-ux-guide: done
   12-3-operator-runbook: done
   12-4-automation-troubleshooting-guide: done
@@ -46,9 +46,9 @@ development_status:
   15-1-template-parse-then-fill-produces-a-genuinely-editable-deck: done
   15-2-dense-content-renders-as-shapes-that-fit: done
   16-1-extract-deck-export-format-plugins: done
-  17-1-skf-skill-and-persona-for-herald: done
-  17-2-first-portal-slice-deck-status: done
-  18-1-the-first-station-video-renders-from-herald-s-studio: done
+  17-1-skf-domain-skill-and-bmad-persona-for-herald: done
+  17-2-first-portal-slice-deck-status-for-one-slug: done
+  18-1-the-first-station-video-renders-from-heralds-studio: done
   18-2-release-comms-go-through-bmad-os-changelog-and-social: done
   18-3-slides-generator-is-herald-wielded: done
   19-1-the-webhook-routes-move-onto-the-station-api-seam: done
@@ -79,7 +79,7 @@ development_status:
   21-12-the-transport-speaks-the-mcp-sdk-it-actually-has-pinned: done
   21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: done
   21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster: done
-  21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: in-review
+  21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: done
   21-5-the-exec-summaries-and-the-export-set-follow-the-same-ledger: done
   21-6-unity-data-stack-rebuilt-to-the-standard: blocked
   21-7-wasm-analytics-stack-rebuilt-to-the-standard: blocked
@@ -88,10 +88,10 @@ development_status:
   22-1-the-dossier-is-the-source-and-pages-is-a-render: backlog
   23-1-the-account-is-enumerated-and-reconciled-against-the-registry: backlog
   23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries: backlog
-  23-5-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: done
-  23-6-powerpoints-push-back-and-every-push-proves-itself: backlog
-  23-7-the-family-is-browsable-and-downloadable-on-pages: backlog
-  23-8-one-command-idempotent-reported: backlog
+  23-3-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: done
+  23-4-powerpoints-push-back-and-every-push-proves-itself: backlog
+  23-5-the-family-is-browsable-and-downloadable-on-pages: backlog
+  23-6-one-command-idempotent-reported: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -101,20 +101,20 @@ development_status:
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
   6-2-implement-shared-argument-conventions: done
-  6-3-implement-cli-authentication-and-authorization: done
+  6-3-implement-cli-authentication-authorization: done
   6-4-implement-evidence-link-validation-protocol-shared-infrastructure: done
-  6-5-cli-help-and-first-day-usability: done
-  7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive: done
-  7-2-implement-web-tooltips-and-inline-help: done
-  8-1-implement-progress-data-model-and-database-schema: done
-  8-2-implement-on-ship-webhook-and-weekly-cron-automation: done
-  8-3-implement-progress-cli: done
+  6-5-cli-help-first-day-usability-inline: done
+  7-1-design-implement-web-layout-header-tabs-sidebar-responsive: done
+  7-2-implement-web-tooltips-inline-help: done
+  8-1-implement-progress-data-model-database-schema: done
+  8-2-implement-on-ship-webhook-weekly-cron-automation: done
+  8-3-implement-progress-cli-herald-progress-subcommand: done
   8-4-implement-progress-web-tab: done
-  9-1-implement-claim-data-model-and-database-schema: done
-  9-2-implement-auto-extract-and-operator-review-gate: done
+  9-1-implement-claim-data-model-database-schema: done
+  9-2-implement-auto-extract-operator-review-gate: done
   9-3-implement-success-cli: done
   9-4-implement-success-web-archive: done
-  9-5-implement-evidence-validation-sync-and-async: done
+  9-5-implement-evidence-validation-sync-async: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
