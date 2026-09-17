@@ -106,5 +106,25 @@ independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-pr
 `pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
 'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
 file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
-etag fabricated. "Standalone ahead" narrows to: head + Infographic Deck are now re-derived and
+etag fabricated. The pre-push gap narrowed to: head + Infographic Deck are now re-derived and
 facts-current on disk, not yet mirrored to Design.
+
+## Ledger — 2026-09-17 push + read-back (Story 21.4)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so the
+credential blocker above is resolved: `resolve_design_credential()` succeeds this session. Pushed
+via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`46dbbdea-6f8d-45c6-9309-15d1f297beeb`, then read back and SHA-256-compared against disk:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Doctor - Infographic.dc.html` | 135,741 | `1789635943489853` | identical ✓ |
+| `PyForge Doctor - Infographic Deck.dc.html` | 142,010 | `1789635945178614` | identical ✓ |
+
+Both files are under the 256 KiB `read_file` cap, so a single call plus entity-decoded SHA-256
+comparison is the read-back proof (no windowing needed). `deck-facts pyforge-doctor --check`
+still reads 0 mismatch. Head and Infographic Deck now match Design as well as disk — no surface
+here is standalone-ahead any more.
