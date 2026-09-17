@@ -1,6 +1,6 @@
 # Keep one chain on a PyForge station
 
-Use the one-chain workflow to keep a PyForge station at one Dream, one Spec, one PRD, one spine, one epic chain. Operators and coding agents (Claude, Cursor, Copilot, or any other harness) run the same sequence. The policy page is [`CHAIN-STANDARD.md`](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md); this guide is the operator path through it. Why the lock is minting, not a fold campaign, is in [`one-chain-lock-and-mop.md`](../explanation/one-chain-lock-and-mop.md).
+Use the one-chain workflow to keep a PyForge station at one Dream, one Spec, one PRD, one spine, one epic chain. Operators and coding agents (Claude, Cursor, Copilot, or any other tool) run the same sequence. The policy page is [`CHAIN-STANDARD.md`](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md); this guide is the operator path through it. Why the lock is minting, not a fold campaign, is in [`one-chain-lock-and-mop.md`](../explanation/one-chain-lock-and-mop.md).
 
 ## When to Use This
 

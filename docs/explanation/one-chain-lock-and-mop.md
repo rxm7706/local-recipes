@@ -47,4 +47,4 @@ Another fleet-wide fold campaign is the 2026-08-08 treadmill again. The lock its
 
 ## Where the steps live
 
-Run lock, rewrite, mop, parallel serialization, and the `pyforge-guild` environment from [`docs/how-to/one-chain-station-ops.md`](../how-to/one-chain-station-ops.md). CAP-10's success signal is harness-neutral: a new effort adds a section, a CAP, and a Story; an unexempted satellite file does not land; a mop PR's §7 checklist is green. The ritual can be run from the Guild Dream, this Spec, and CHAIN-STANDARD without a vendor store or a vendor dispatch path.
+Run lock, rewrite, mop, parallel serialization, and the `pyforge-guild` environment from [`docs/how-to/one-chain-station-ops.md`](../how-to/one-chain-station-ops.md). CAP-10's success signal does not depend on one product: a new effort adds a section, a CAP, and a Story; an unexempted satellite file does not land; a mop PR's §7 checklist is green. The ritual can be run from the Guild Dream, this Spec, and CHAIN-STANDARD without a vendor store or a vendor dispatch path.
