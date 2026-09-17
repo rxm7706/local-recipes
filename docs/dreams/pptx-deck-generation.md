@@ -1,10 +1,12 @@
 ---
-title: A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output
+title: A second, PowerPoint-native deck pipeline, if this repo ever needs editable
+  .pptx output
 type: dream
 owner: herald
-status: specified   # 2026-08-22 — UNPARKED same day (Marp inadequacy proven + operator named the 21-station stakeholder audience); decomposed as herald Epic 15
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `pptx-deck-generation`).
 # A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output
 
 ## The Dream

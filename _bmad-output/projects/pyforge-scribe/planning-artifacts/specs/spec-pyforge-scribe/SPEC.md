@@ -1,28 +1,50 @@
 ---
-surface:
-  - src/shared/packages/pyforge-scribe/**   # the CLI this Spec builds
-  - scripts/scribe_pg.py                    # the local PostgreSQL+pgvector this Spec's durable GraphStore tests require
-  - scripts/scribe_nightly_trigger.py       # Story 8.1: the nightly-compile trigger body (PostgreSQL preflight, then `scribe graph compile --nightly`)
-  - scripts/scribe_install_nightly_trigger.py  # Story 8.1: installs the checked-in systemd-user timer, replacing the hand-typed crontab line
-  - scripts/scribe_graph_freshness_check.py # Story 8.1: advisory graph.json age check, reachable from the repo's detector set
 id: SPEC-scribe
-status: shipped
+spec: pyforge-scribe
+status: ready
+updated: "2026-09-17"
 owner-dream: docs/dreams/pyforge-scribe.md
+covers-dreams:
+  - docs/dreams/pyforge-scribe.md
+  - docs/dreams/pyforge-scribe-team-memory.md
+  - docs/dreams/scribe-code-navigation-owner.md
+  - docs/dreams/scribe-graphify-nightly-currency.md
+  - docs/dreams/scribe-graphify-target-list.md
+  - docs/dreams/scribe-in-flight-story-specs.md
+  - docs/dreams/scribe-knowledge-layers.md
+  - docs/dreams/scribe-marshal-fact-visibility.md
+  - docs/dreams/scribe-mines-raw-session-transcripts.md
+  - docs/dreams/scribe-named-docs.md
+  - docs/dreams/scribe-planning-pointers.md
+  - docs/dreams/scribe-portal-recall-defaults.md
+  - docs/dreams/scribe-recall-mode-wiring.md
+  - docs/dreams/scribe-recall-modes.md
+  - docs/dreams/scribe-recall-stale-between-nightlies.md
+  - docs/dreams/sentinel.md
+  - docs/dreams/team-memory.md
+surface:
+  - src/shared/packages/pyforge-scribe/**
+  - scripts/scribe_pg.py
+  - scripts/scribe_nightly_trigger.py
+  - scripts/scribe_install_nightly_trigger.py
+  - scripts/scribe_graph_freshness_check.py
+  - AGENTS.md
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py
+  - src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py
+  - .cursor/rules/scribe-recall.mdc
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
+  - src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py
+  - src/platform/tests/test_scribe_recall_argv.py
+  - src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py
 companions:
   - ../../architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md
+  - ../../prds/prd-pyforge-scribe-2026-07-25/prd.md
+  - ../../epics.md
 open_questions: []
-  # HOISTED FROM THE BODY AND CLOSED 2026-09-09 (all three; the key was absent entirely,
-  # so the readiness inventory read `oq: 0` for a shipped Spec carrying three live questions):
-  # Q1 flat-file/index provisional or settled? -> DISSOLVED. AD-5 was honoured literally:
-  #    `GraphStore` is a typing.Protocol (graph_store.py:59-83) with three concrete drivers
-  #    behind it — FlatFileGraphStore (same file), PostgresGraphStore (graph_store_pg.py,
-  #    owner steward) and PlaneGraphStore (graph_store_plane.py, owner atlas) — selected at
-  #    runtime by open_graph_store(owner=…) (graph_store_plugins.py:28-84). Flat-file is the
-  #    default, not the choice; the engine spike never ran and no longer needs to.
-  # Q2 the v1 input glob list -> ANSWERED. Six named surfaces at compile.py:6-27, plus a
-  #    seventh optional graphify surface gated on SCRIBE_GRAPHIFY_EXTRA (compile.py:70-78,
-  #    extras/graphify.py:1-31). See CAP-2.
-  # Q3 ADR naming/interop -> closed as a Non-goal, see below.
 sources:
   - ../../../../../../docs/dreams/pyforge-scribe.md
   - ../../briefs/brief-pyforge-scribe-2026-07-25/brief.md
@@ -31,9 +53,9 @@ sources:
   - ../../epics.md
 ---
 
-> **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+> **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (one-chain-per-station CAP-3). Do not hand-edit — append the memlog and re-derive.
 
-# Scribe (pyforge-scribe) — the team's inward voice
+# Scribe (pyforge-scribe) — one chain
 
 ## Why
 
@@ -41,22 +63,84 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 
 ## Capabilities
 
-- **CAP-1**
+- **CAP-1 — A developer or agent can capture a decision** ← spec-pyforge-scribe CAP-1 (shipped 2026-09-17)
   - **intent:** A developer or agent can capture a decision the moment it happens into checked-in team memory (`scribe capture`), and deliberately promote a team-relevant user-local memory entry into team memory with review (`scribe capture --promote`).
   - **success:** `.claude/memory/<type>/*.md` frontmatter (`name`/`description`/`type` ∈ `{feedback, project, reference}`) is schema-identical to user-local auto-memory; promotion halts after producing a structured proposal and writes nothing until explicit confirmation; a promoted entry is rewritten in team voice (never a verbatim copy), and its user-local source becomes a `promoted: true` pointer stub, never deleted; re-invoking promotion skips already-promoted entries; nothing is written outside `.claude/memory/`, Scribe's own package/graph-store paths, and the one pointer-stub exception.
-  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: live `scribe capture --help` confirms `--type {feedback,project,reference}`, `--text`, `--promote` (proposal-then-confirm, Story 1.3) all present; `pixi run -e pyforge-scribe pyforge-scribe-test` 328/328 passing (7 skipped, unrelated to this CAP).
-- **CAP-2**
+- **CAP-2 — scribe graph compile --nightly reads named tool surfaces** ← spec-pyforge-scribe CAP-2 (shipped 2026-09-17)
   - **intent:** `scribe graph compile --nightly` reads named tool surfaces the team already uses (`.claude/memory/`, `.memlog.md` files across BMAD projects, git history, retros, CHANGELOGs, `docs/dreams/` — enumerated at `compile.py:6-27`, plus an optional seventh graphify surface gated on `SCRIBE_GRAPHIFY_EXTRA`) and rebuilds the knowledge graph unattended, with a superseding capture invalidating — never deleting — the prior record.
   - **success:** Every node is traceable to its source file/commit; re-running compile with no new source activity yields an unchanged graph (no duplicate nodes, no spurious edges); a capture naming a prior record as superseded leaves that record queryable with ended validity, distinguishable from the current one; compile runs without prompting and without a human present.
-  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `compile.py:6-27` enumerates the six named surfaces plus the seventh `SCRIBE_GRAPHIFY_EXTRA`-gated one; `pyforge-scribe`'s test suite includes idempotency and supersession coverage in the 328/328 green run; no `input()`/prompt call found in `compile.py` (grep clean), consistent with unattended operation.
-- **CAP-3**
+- **CAP-3 — A developer or agent can run scribe recall** ← spec-pyforge-scribe CAP-3 (shipped 2026-09-17)
   - **intent:** A developer or agent can run `scribe recall <query>` to get an answer grounded in the compiled graph, identically regardless of which operator or concurrent agent worktree asks.
   - **success:** Every response carries at least one citation resolvable to a real file/record, or an explicit "no grounded answer found" result — never a fabricated or generic answer; two different callers querying the same repo state get the identical answer, since the graph is the single shared source, not per-session state.
-  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: live `scribe recall` against real gibberish (`"qzxjklw vbnmzx flooble wobblesnort"`) returns exactly `"no grounded answer found"`; live `scribe recall` against a real topic returns a resolvable `[source: .../spec-fleet-consistency-standard/.memlog.md]` citation, not a generic answer; `tests/unit/test_recall.py::test_no_coverage_returns_explicit_no_grounded_answer` + `test_blank_query_returns_no_grounded_answer` passing.
-- **CAP-4**
+- **CAP-4 — Scribe ships as an installable, pixi-workspace-member package (dist** ← spec-pyforge-scribe CAP-4 (shipped 2026-09-17)
   - **intent:** Scribe ships as an installable, pixi-workspace-member package (dist `pyforge-scribe`, module `pyforge.scribe`, CLI `scribe`) with `capture`/`graph compile`/`recall` as its three independently invocable top-level commands and sole public contract.
   - **success:** Each command is independently testable; other pyforge stations (Herald, Marshal, Doctor) integrate only via the CLI or a documented, versioned API, never by importing `pyforge.scribe` internals directly; the three-command CLI skeleton exists from Wave 1's start so the public contract's shape does not change between waves.
-  - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD a0aba94b0a: `scribe --help` lists exactly `capture`/`graph`/`recall` as top-level commands; the only two hits fleet-wide for `import pyforge.scribe`/`from pyforge.scribe` outside the package itself (`pyforge-marshal/core/derived_context.py`, `pyforge-marshal/adapters/scribe_cli.py`) are both docstring PROSE explicitly forbidding the import ("never `import pyforge.scribe`... do not import pyforge.scribe internals"), not actual imports — AD-7 holds; `tests/unit/test_cli.py` passing.
+- **CAP-5 — Session instructions and the graphify extra state that** ← spec-scribe-code-navigation-owner CAP-1 (ready 2026-09-13)
+  - **intent:** Session instructions and the graphify extra state that Marshal codegraph owns symbol navigation; Scribe `--mode code` is an AST/report surface, not nav.
+  - **success:** `AGENTS.md` outside `bmad:context` names codegraph as the nav owner and forbids using `scribe recall --mode code` for symbols. The graphify module docstring says it is not the nav API. A unit test fails if those AGENTS sentences are removed. ## Constraints - Do not delete graphify. - Default recall still omits `code:`. - Do not run `codegraph install --target claude`. - Do not nightly-graphify `recipes/` or the repo root. ## Non-goals - Unifying Strategy canopy:CAP-14 (pgvector / semantic recall) — steward 49.7. - Flipping Epic 44 `blocked` rows. ## Success signal An agent following `AGENTS.md` uses codegraph for symbols and Scribe recall for decisions. ## Assumptions - Loop-home index is `codegraph.db`; the recipe is `recipes/codegraph/`.
+- **CAP-6 — An operator can ingest src/shared/packages/ through scribe index** ← spec-scribe-graphify-nightly-currency CAP-1 (ready 2026-09-17)
+  - **intent:** An operator can ingest `src/shared/packages/` through `scribe index build` or a compile with the graphify extra on, against the graphifyy this estate installs.
+  - **success:** `ingest_repo` returns `code:` `GraphNode`s when the target has extractable files; `graphify.extract` being a module after `collect_files` does not raise `TypeError`.
+- **CAP-7 — The estate-owned nightly trigger compiles with the graphify** ← spec-scribe-graphify-nightly-currency CAP-2 (ready 2026-09-17)
+  - **intent:** The estate-owned nightly trigger compiles with the graphify extra enabled for that process so the rebuilt store still contains the code surface.
+  - **success:** With `SCRIBE_GRAPHIFY_EXTRA` unset, the trigger exports `1` before `scribe graph compile --nightly`; an explicit `0` is left alone. After that compile, `graph.json` has `kind=code` nodes whenever graphifyy ingested the default target.
+- **CAP-8 — The nightly compile includes each Herald deck fact** ← spec-scribe-graphify-nightly-currency CAP-3 (ready 2026-09-17)
+  - **intent:** The nightly compile includes each Herald deck fact ledger so agents can recall the numbers the posters are supposed to show, without ingesting the derived presentation tree.
+  - **success:** `compile_graph` writes one `kind=doc` node per `presentations/<slug>/facts.yaml`; a missing `presentations/` directory yields zero nodes and no error. No `project/*.dc.html`, slide fragment, dated Marp file, or deck-engine copy is a compile source. ## Constraints - Unset `SCRIBE_GRAPHIFY_EXTRA` on an interactive compile still skips the extra (AD-6). - `graphifyy` is a declared dependency of the `pyforge-scribe` pixi feature so the trigger's environment can `import graphify`. The third-party import stays lazy and inside `extras/graphify.py`. - Compile degrades to a warning when ingest fails; it never fails the scheduled run red. `scribe index build` still exits 2 if graphifyy is absent. - One persist path: compile-with-extra-on, not a second store and not a required post-compile `index build` hop. ## Non-goals - A GitHub Actions workflow as the trigger. - Changing GraphStore engines or creating `graphify-out/` at the foundry root. - Turning every interactive `scribe graph compile` into a graphify ingest. - Ingesting `presentations/` wholesale (fragments, `.dc.html`, dated Marp, copied deck engine). ## Success signal `pixi run -e pyforge-scribe scribe index build` exits 0 and writes `code:` nodes. A following `SCRIBE_GRAPHIFY_EXTRA=1 scribe graph compile --nightly` (or the trigger with the extra unset) leaves `code:` nodes in `graph.json`. ## Assumptions - The installed crontab already invokes `pyforge-scribe-nightly-compile`; changing the trigger body is enough — no reinstall required for CAP-2.
+- **CAP-9 — When ingestrepo() is called with no target, walk** ← spec-scribe-graphify-target-list CAP-1 (ready 2026-09-17)
+  - **intent:** When `ingest_repo()` is called with no `target`, walk this list and ingest each directory that exists: `src/shared/packages`, `src/platform`, `scripts`.
+  - **success:** Extra-on compile (and `scribe index build` with no `--target`) writes `code:` nodes from those trees. A present `recipes/` directory is not ingested. Missing optional list entries produce no warning. Zero list entries (or a missing explicit `--target`) warn once and return no nodes. Extra-off compile is unchanged. ## Constraints - The default list is the contract — do not derive it from a glob of `src/` or the repo root. - `DEFAULT_GRAPHIFY_TARGET` remains `src/shared/packages` for single-path APIs (`index report`, explicit `--target` default help). - Import graphifyy only after at least one target exists. - Still off by default (`SCRIBE_GRAPHIFY_EXTRA`). ## Non-goals - `recipes/`, repo-root ingest, cocoindex-in-compile. - later-caps:CAP-14 (one navigation owner). - Turning the extra on for interactive compile. ## Success signal A fixture with packages, platform, scripts, and recipes present, extra on, writes `code:` citations under the first three paths and none under `recipes/`. ## Assumptions - `src/platform/` is the Django host; `scripts/` is the factory CLI tree. Both may be absent in a tmp fixture.
+- **CAP-10 — Compile each in-flight story spec as one kind=doc** ← spec-scribe-in-flight-story-specs CAP-1 (ready 2026-09-17)
+  - **intent:** Compile each in-flight story spec as one `kind=doc` node. In-flight means that project's `sprint-status-ledger.yaml` marks the matching story `ready-for-dev`, `in-progress`, or `review`.
+  - **success:** `spec-<n>-<m>-<rest>.md` compiles iff the ledger key `<n>-<m>-<rest>` is one of those three statuses. A `done` or `backlog` row, a missing ledger, or a missing file yields no node and no warning. Stale `status: ready-for-dev` frontmatter on a `done` story does not compile it. ## Constraints - The ledger is the only in-flight oracle. Do not read story-spec frontmatter to decide inclusion. - Filename stem after `spec-` is the ledger key. - Folder `SPEC.md` stays on the existing CAP-3 surface. - Same persist port and `_node_from_text_file` path as other `doc` nodes. ## Non-goals - Historical corpus, `backlog` rows, `prd.md` / `epics.md` bodies. - Repairing stale story-spec frontmatter. ## Success signal A compile against a fixture with one in-progress story spec and one done story spec (both frontmatter `ready-for-dev`) writes exactly the in-progress citation. ## Assumptions - `planning-artifacts/sprint-status-ledger.yaml` is the tracked twin `sprint-ledger-sync` writes.
+- **CAP-11 — After a full rebuild, a node is stale** ← spec-scribe-knowledge-layers CAP-1 (ready 2026-09-17)
+  - **intent:** After a full rebuild, a node is stale only when its source file's latest git commit is authored after this compile started.
+  - **success:** A committed file whose working-tree mtime is older than that commit is not flagged stale on the compile that just read it. `stale_count` is 0 unless a commit timestamp is after `compiled_at`.
+- **CAP-12 — Compile walks exclude archive trees, implementation-artifacts/, and tests/** ← spec-scribe-knowledge-layers CAP-2 (ready 2026-09-17)
+  - **intent:** Compile walks exclude archive trees, `implementation-artifacts/`, and `tests/` directories. Retros are only `planning-artifacts/retros/*.md`.
+  - **success:** No `doc` or `memlog` node cites `archive/`, `implementation-artifacts/`, a path segment `tests`, a `*retro*` story spec, a skill template, or a team-memory filename that merely contains `retro`.
+- **CAP-13 — Named contract surfaces join the compile as kind=doc** ← spec-scribe-knowledge-layers CAP-3 (ready 2026-09-17)
+  - **intent:** Named contract surfaces join the compile as `kind=doc`: active Dreams (`docs/dreams/*.md` with status `dreamt`|`pitched`|`specified`), active folder SPECs (`_bmad-output/projects/*/planning-artifacts/specs/*/SPEC.md` with status `ready`|`in-progress`), and Herald `presentations/*/facts.yaml`.
+  - **success:** Those paths produce one node each; `realized`/`archived` Dreams and `shipped`/`draft` SPECs are omitted; missing trees are zero nodes and no warning.
+- **CAP-14 — Default scribe recall (and answer()) excludes kind=code. --kind** ← spec-scribe-knowledge-layers CAP-4 (ready 2026-09-17)
+  - **intent:** Default `scribe recall` (and `answer()`) excludes `kind=code`. `--kind` selects kinds explicitly. Marshal `--scope` is unchanged.
+  - **success:** An unscoped query whose only overlap is a `code:` node returns `no grounded answer found` unless `--kind code` (or `kinds={"code"}`) is passed.
+- **CAP-15 — Session agents have a durable instruction to use** ← spec-scribe-knowledge-layers CAP-5 (ready 2026-09-17)
+  - **intent:** Session agents have a durable instruction to use `scribe recall` for decisions and not treat graphify AST or `codegraph` as the same product.
+  - **success:** `AGENTS.md` outside the `bmad:context` replace-block states when to recall, that default recall omits `code:`, and that Marshal `codegraph` owns navigation. ## Constraints - Code ingest still writes through `open_graph_store` when the graphify extra is on. - `valid_from` stays source-mtime so two compiles of unchanged sources stay byte-identical except for an actual stale flip. - Cocoindex stays off `compile_graph`. - Do not ingest `docs/` wholesale, `recipes/`, or the presentations export tree. ## Non-goals - Replacing `codegraph.db`. - Semantic/pgvector as the PyForge default. - Portal UI redesign beyond inheriting CLI/`answer()` kind defaults. ## Success signal `scribe recall` without `--kind` never returns a `code:` citation. A compile after CAP-1/2/3 writes Dreams, ready SPECs, and fact ledgers as `doc` and does not flag those just-read files stale because of mtime-vs-git. ## Assumptions - Dream status vocabulary is `dreamt|pitched|specified|realized|archived`. - Folder `SPEC.md` status vocabulary includes `ready|in-progress|shipped|draft`.
+- **CAP-16 — A scoped recall for project slug S can** ← spec-scribe-marshal-fact-visibility CAP-1 (ready 2026-09-17)
+  - **intent:** A scoped recall for project slug `S` can retrieve the Herald fact ledger whose path is exactly `presentations/S/facts.yaml`, in addition to that project's planning tree.
+  - **success:** `answer(..., scope="pyforge-scribe")` may return a current, non-stale node whose citation is `presentations/pyforge-scribe/facts.yaml`. The same call never returns `presentations/pyforge-warden/facts.yaml` or any other `presentations/` path. Unscoped recall is unchanged. ## Constraints - Identity only: the presentation directory name must equal `--scope`. - `--scope` still excludes commits, transcripts, code paths, and other projects' planning trees. - No new CLI flag. Marshal keeps passing `--scope` only. - Compile and Herald ownership stay as Story 8.3 left them. ## Non-goals - An alias table that maps `pyforge-unifying-strategy` or `pyforge-genesis` into every station scope. - Widening `--scope` to `presentations/` or the deck export tree. - Changing `compile_graph` or adding `--facts`. ## Success signal `scribe recall "…" --scope pyforge-scribe` can cite that station's fact ledger. The same command cannot cite another station's ledger. ## Assumptions - Station decks live at `presentations/<project-slug>/facts.yaml`. - Cross-cutting decks remain visible only to unscoped recall until a later mapping CAP.
+- **CAP-17 — the scanner** ← spec-scribe-mines-raw-session-transcripts CAP-1 (shipped 2026-09-17)
+  - **intent:** Absorbed from spec-scribe-mines-raw-session-transcripts CAP-1.
+  - **success:** See absorbed memlog.
+- **CAP-18 — a compile source** ← spec-scribe-mines-raw-session-transcripts CAP-2 (shipped 2026-09-17)
+  - **intent:** Absorbed from spec-scribe-mines-raw-session-transcripts CAP-2.
+  - **success:** See absorbed memlog.
+- **CAP-19 — Compile each docs/how-to/.md except README.md as one ordinary** ← spec-scribe-named-docs CAP-1 (ready 2026-09-17)
+  - **intent:** Compile each `docs/how-to/*.md` except `README.md` as one ordinary `kind=doc` node, and compile `docs/reference/library-llms-full.md` as one `kind=doc` **heading extract** (`##` section titles only — never the wholesale catalog body).
+  - **success:** A fixture how-to citation is present and contains a unique body token. `docs/how-to/README.md`, `docs/explanation/*.md`, and `docs/tutorials/*.md` are absent. The library-catalog citation is present, its text lists a `##` heading from the fixture, and a unique catalog-body marker is absent. A missing `docs/how-to/` or missing catalog file adds no node and no warning. ## Constraints - Never glob `docs/**`. - How-tos use the existing `_node_from_text_file` path (files are under the general doc bound). - The catalog must not use `_node_from_text_file` (that path would keep the 20k header and drop the useful sections). - Dreams stay on the existing dream surface. ## Non-goals - Wholesale `docs/`, `recipes/`, presentations export trees. - cocoindex inside `compile_graph`. - later-caps:CAP-8 graphify targets; later-caps:CAP-11 recall modes. ## Success signal A compile against a fixture with one how-to, a how-to README, an explanation file, and a large catalog (heading + unique body marker) writes the how-to and the catalog extract only. ## Assumptions - Diátaxis how-tos live at `docs/how-to/<guide>.md`. - The library catalog path is `docs/reference/library-llms-full.md`.
+- **CAP-20 — Compile each named planning artifact as one kind=doc** ← spec-scribe-planning-pointers CAP-1 (ready 2026-09-17)
+  - **intent:** Compile each named planning artifact as one `kind=doc` **pointer** node. Named means, under `_bmad-output/projects/<slug>/planning-artifacts/` only: `epics.md`; `prd.md` / `PRD.md`; `prds/*/prd.md`; `briefs/*/brief.md`; `architecture.md`; `architecture/*/ARCHITECTURE-SPINE.md`.
+  - **success:** Node `text` is title + path + frontmatter `status` (if any) plus an order-preserving unique `FR-*` / `AD-*` list and/or `Epic` / `Story` heading lines. A unique sentence that exists only in the source body must not appear in `text`. `epics-*.md`, architecture novels, addenda, research, and `specs/` are not this surface. A missing tree is zero nodes and no warning. ## Constraints - Do not call `_node_from_text_file` for this surface (that path stores the body, truncated). - Pointer `text` is capped well below the general doc body bound. - Citation is the repo-relative path so scoped recall already admits the planning tree. - Same persist port as other `doc` nodes. ## Non-goals - Wholesale `docs/`, `recipes/`, presentations export trees. - cocoindex inside `compile_graph`. - later-caps:CAP-8 graphify targets; later-caps:CAP-13 extra docs; later-caps:CAP-11 recall modes. ## Success signal A compile against a fixture with a large `prd.md` (unique body marker + `FR-1`) writes one `doc` citation for that path whose text contains `FR-1` and does not contain the body marker. ## Assumptions - Estate layout is `briefs/*/brief.md`, `prds/*/prd.md`, and `ARCHITECTURE-SPINE.md` (plus occasional root `PRD.md` / `architecture.md` / `epics.md`).
+- **CAP-21 — Every wired recall door uses the CLI default** ← spec-scribe-portal-recall-defaults CAP-1 (ready 2026-09-17)
+  - **intent:** Every wired recall door uses the CLI default bag (no `--kind`). Cursor has a durable pointer to the AGENTS session path.
+  - **success:** Portal `_grammar_recall` argv is only the binary, `scribe`/`recall`, and the query. `render_scribe_recall_argv` may append `--scope` only. `.cursor/rules/scribe-recall.mdc` exists outside `bmad:context` and names `scribe recall`. ## Constraints - Do not redesign django-scribe. Do not import `pyforge.scribe` there. - Do not add recall modes (later-caps:CAP-11). ## Non-goals - Portal UI. Semantic default. Codegraph replacement. ## Success signal A test fails if either argv builder grows `--kind`. ## Assumptions - Both doors already call the CLI without `--kind`; this story locks that.
+- **CAP-22 — Marshal planning-graph retrieve always names the planning surface** ← spec-scribe-recall-mode-wiring CAP-1 (ready 2026-09-17)
+  - **intent:** Marshal planning-graph retrieve always names the planning surface.
+  - **success:** `render_scribe_recall_argv` appends `--mode planning` by default, may still append `--scope`, never appends `--kind`, and does not default to `--mode code`.
+- **CAP-23 — The portal recall job may name a mode** ← spec-scribe-recall-mode-wiring CAP-2 (ready 2026-09-17)
+  - **intent:** The portal recall job may name a mode from its payload; it does not invent `--kind`.
+  - **success:** `recall_cli_argv` with no `mode` has neither `--mode` nor `--kind`. `mode=planning|memory|code` appends that `--mode`.
+- **CAP-24 — Session agents use --mode planning for decisions** ← spec-scribe-recall-mode-wiring CAP-3 (ready 2026-09-17)
+  - **intent:** Session agents use `--mode planning` for decisions.
+  - **success:** `AGENTS.md` session path and `.cursor/rules/scribe-recall.mdc` show `--mode planning` on the decision command. ## Constraints - Do not overload `answer(..., mode=)` (lexical / semantic). - Do not force portal to planning. - Story 12.1 no-`--kind` lock stays. ## Non-goals - Semantic as default. - Portal UI. ## Success signal A scoped Marshal retrieve argv is `scribe recall <q> --mode planning --scope <slug>`.
+- **CAP-25 — scribe recall accepts --mode planning|memory|code. planning → {doc** ← spec-scribe-recall-modes CAP-1 (ready 2026-09-17)
+  - **intent:** `scribe recall` accepts `--mode planning|memory|code`. `planning` → `{doc, memlog}`; `memory` → `{memory}`; `code` → `{code}`.
+  - **success:** Those bags are exclusive with `--kind` (exit 2). Unknown `--mode` exits 2. Neither flag keeps the CAP-4 default bag (omits `code`). `--semantic` still selects ranking, not this bag. ## Constraints - Do not overload `answer(..., mode=)` — that stays `lexical` / `semantic`. Resolve the surface bag to `kinds` before scoring. - Portal argv is unchanged this story. - Default recall still omits `code` unless `--mode code` or `--kind code`. ## Non-goals - later-caps:CAP-14 nav owner. Semantic as default. Portal redesign. ## Success signal A store with a matching `doc` and a matching `memory` node: default recall may hit either; `--mode planning` returns the `doc`; `--mode memory` returns the `memory`. `--mode planning --kind doc` exits 2. ## Assumptions - Planning novels are already `doc` pointers or SPECs; memlogs are the other planning-adjacent kind.
+- **CAP-26 — The compiled store remembers when it was built** ← spec-scribe-recall-stale-between-nightlies CAP-1 (ready 2026-09-17)
+  - **intent:** The compiled store remembers when it was built. Recall withholds a current node whose git-trackable source has a commit authored after that stamp.
+  - **success:** After compile, a new commit touching a cited file makes `answer()` skip that node. Reloading `graph.json` still knows `compiled_at`. Commit and transcript nodes stay eligible. ## Constraints - Persist `compiled_at` on the flat-file artifact. Do not add a GraphStore Protocol method this story. - Missing `compiled_at` degrades to the stored `stale` bit only. - Check at candidate selection, not a pre-pass over every node. - Compile-time CAP-1 rule is unchanged. ## Non-goals - PostgreSQL / plane `compiled_at` columns. - Recompiling the graph on recall. ## Success signal A fixture compiled, then committed again, returns `no grounded answer` for that node's unique tokens until the next compile. ## Assumptions - Nightly default store is `FlatFileGraphStore`.
 
 ## Constraints
 
@@ -95,3 +179,4 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - `scribe recall`'s output format (plain text vs. structured JSON vs. both) is left unspecified at the product level — an architecture/API-contract decision, not a product one.
 - The two existing BMAD↔CFE feedback rules are Wave 1's seed-promotion proof; no new seed content was invented.
 - If Anthropic ships native team-shared memory (`anthropics/claude-code#38536`) during Scribe's build, `.claude/memory/`'s file layer may be absorbed into that native surface, leaving Scribe's differentiated value in graph-compile + recall — a watch-item, not currently a blocker or a scope change.
+

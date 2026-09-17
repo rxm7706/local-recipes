@@ -1,12 +1,14 @@
 ---
-title: "Dream — PyForge Doctor: Dependency Health Diagnostics"
+title: 'Dream — PyForge Doctor: Dependency Health Diagnostics'
 type: dream
 date: 2026-08-02
 status: archived
-archived-reason: absorbed
+archived-reason: folded-into-station-dream
 owner: doctor
-scope: "Dependency health, version tracking, obsolescence detection, remediation"
+scope: Dependency health, version tracking, obsolescence detection, remediation
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 > **Superseded 2026-08-02.** Created in a bulk commit later found to contain fabricated
 > content elsewhere (a false migration note, boilerplate test-architecture docs invented

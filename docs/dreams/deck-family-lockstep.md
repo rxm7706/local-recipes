@@ -2,12 +2,10 @@
 title: The whole deck family moves together — every surface, every deck, one ledger
 type: dream
 owner: herald
-status: specified   # 2026-09-13 — seeded at Epic 20's closeout from the three slices that epic
-                    # deliberately deferred, and specified the same day: spec-deck-family-lockstep
-                    # is `ready` (CAP-1..5, open_questions []), Epic 21 carries its eleven stories.
-                    # Every fact below was measured on main that day.
+status: archived
+archived-reason: absorbed
 ---
-
+> **Consolidated into [[pyforge-herald]]** on 2026-09-17 (one-chain-per-station herald fold; folded from `deck-family-lockstep`).
 # The whole deck family moves together — every surface, every deck, one ledger
 
 ## The Dream

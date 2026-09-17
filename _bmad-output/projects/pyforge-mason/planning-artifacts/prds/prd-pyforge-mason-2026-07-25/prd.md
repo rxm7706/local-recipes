@@ -1,8 +1,9 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-09-14"
+updated: "2026-09-17"
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: docs/dreams/packaging-factory.md
@@ -163,7 +164,7 @@ wrappers, ~105 pixi tasks, and 46 MCP tools all invoke canonical scripts as
 
 **Functional Requirements:**
 
-#### FR-1: Single delegation point
+#### FR-1: Single delegation point ← CAP-1
 
 Mason invokes CFE only through `pyforge.mason.cfe`. Realizes UJ-2, UJ-3.
 
@@ -171,7 +172,7 @@ Mason invokes CFE only through `pyforge.mason.cfe`. Realizes UJ-2, UJ-3.
 - A static check over `pyforge/mason/` finds no CFE script path or filename outside the adapter.
 - Every `mason recipe` subcommand's call graph reaches CFE through exactly one adapter function.
 
-#### FR-2: CFE root resolution chain
+#### FR-2: CFE root resolution chain ← CAP-1
 
 Mason resolves the CFE root through an ordered chain, first match wins.
 
@@ -184,7 +185,7 @@ Mason resolves the CFE root through an ordered chain, first match wins.
 - Each step is independently unit-testable with a synthetic filesystem.
 - The resolved root and the step that produced it are reported by `mason doctor` (FR-34).
 
-#### FR-3: Interpreter selection
+#### FR-3: Interpreter selection ← CAP-1
 
 Mason selects the interpreter used to run CFE scripts.
 
@@ -197,7 +198,7 @@ Mason selects the interpreter used to run CFE scripts.
 **Rationale:** `sys.executable` is correct inside a fat pixi environment and wrong inside a lean
 `no-default-feature` one. See D-7.
 
-#### FR-4: Typed invocation result
+#### FR-4: Typed invocation result ← CAP-1
 
 Every CFE invocation returns a structured result.
 
@@ -215,7 +216,7 @@ Every CFE invocation returns a structured result.
 exactly this, needed today by `submit_pr` and `prepare_submission_branch`. Mason inherits the
 problem and must port the behaviour — not import the shim (it lives in a governed surface).
 
-#### FR-5: Degradation
+#### FR-5: Degradation ← CAP-1
 
 Mason behaves predictably when the CFE root is unresolvable.
 
@@ -226,7 +227,7 @@ Mason behaves predictably when the CFE root is unresolvable.
   with the CFE root guaranteed absent.
 - No command emits a Python traceback for this condition.
 
-#### FR-6: Credential isolation
+#### FR-6: Credential isolation ← CAP-1
 
 Mason does not read, hold, or forward CFE's credential environment.
 
@@ -250,7 +251,7 @@ no gotcha, no constraint, no pin rule, no policy constant. Realizes UJ-2, UJ-3.
 
 **Functional Requirements:**
 
-#### FR-7: `mason recipe new`
+#### FR-7: `mason recipe new` ← CAP-2
 
 A user generates a recipe from an upstream source.
 
@@ -260,7 +261,7 @@ A user generates a recipe from an upstream source.
 - Output is a v1 `recipe.yaml` at a user-specified path.
 - Generation semantics come entirely from CFE; Mason asserts no field defaults of its own.
 
-#### FR-8: `mason recipe validate`
+#### FR-8: `mason recipe validate` ← CAP-2
 
 A user validates a recipe against conda-forge policy.
 
@@ -268,7 +269,7 @@ A user validates a recipe against conda-forge policy.
 - Non-zero exit when CFE reports any validation failure.
 - Findings are rendered with CFE's identifiers preserved verbatim — never renumbered or reworded.
 
-#### FR-9: `mason recipe build`
+#### FR-9: `mason recipe build` ← CAP-2
 
 A user builds a recipe on the host platform. Realizes UJ-2.
 
@@ -282,7 +283,7 @@ A user builds a recipe on the host platform. Realizes UJ-2.
 - Child build output streams to stderr as it is produced (FR-49); the user is not left with a silent
   terminal for the duration of a multi-minute build.
 
-#### FR-10: `mason recipe diagnose`
+#### FR-10: `mason recipe diagnose` ← CAP-2
 
 A user gets a cause and a proposed fix for a failed build. Realizes UJ-2.
 
@@ -290,21 +291,21 @@ A user gets a cause and a proposed fix for a failed build. Realizes UJ-2.
 - Delegates to CFE's failure analyzer.
 - When CFE returns no diagnosis, Mason says so plainly rather than inventing one.
 
-#### FR-11: `mason recipe optimize`
+#### FR-11: `mason recipe optimize` ← CAP-2
 
 A user gets recipe-quality findings.
 
 **Consequences (testable):**
 - CFE check codes are preserved verbatim in output.
 
-#### FR-12: `mason recipe scan`
+#### FR-12: `mason recipe scan` ← CAP-2
 
 A user gets a vulnerability scan of a recipe's dependency set.
 
 **Consequences (testable):**
 - Delegates to CFE. Mason applies no severity policy of its own.
 
-#### FR-13: `mason recipe submit`
+#### FR-13: `mason recipe submit` ← CAP-2
 
 A user opens a staged-recipes pull request. Realizes UJ-1.
 
@@ -313,7 +314,7 @@ A user opens a staged-recipes pull request. Realizes UJ-1.
 - Returns a **ship receipt** (Glossary) with the PR reference on success.
 - The two-phase CFE flow (prepare branch, then open PR) is preserved and separately addressable.
 
-#### FR-14: `mason recipe update`
+#### FR-14: `mason recipe update` ← CAP-2
 
 A user updates an existing recipe to a newer upstream version.
 
@@ -361,7 +362,7 @@ owns the reporting contract for a fundamentally asymmetric operation. Realizes U
 
 **Functional Requirements:**
 
-#### FR-15: `mason package build`
+#### FR-15: `mason package build` ← CAP-3
 
 A user builds distributable artifacts from a project.
 
@@ -370,7 +371,7 @@ A user builds distributable artifacts from a project.
 - Artifact paths are reported; nothing is uploaded.
 - Runs with the CFE root absent (FR-5).
 
-#### FR-16: `mason package ship` and the target vocabulary
+#### FR-16: `mason package ship` and the target vocabulary ← CAP-3
 
 A user ships built artifacts to one or more targets. **This is the verb that ships** — FR-15's
 `build` explicitly uploads nothing, so shipping needs its own verb under FR-30's noun-verb rule.
@@ -391,7 +392,7 @@ Realizes UJ-1, SM-1.
 - `ship` builds first if artifacts are absent, reusing FR-15's implementation rather than duplicating
   it.
 
-#### FR-17: Asymmetric ship reporting
+#### FR-17: Asymmetric ship reporting ← CAP-3
 
 A ship operation reports each target's true terminal state. Realizes UJ-1.
 
@@ -405,7 +406,7 @@ A ship operation reports each target's true terminal state. Realizes UJ-1.
 **Rationale:** PyPI completes in seconds; conda-forge completes in days behind a human review queue.
 Reporting "success" for a queued PR is a correctness bug. See D-3.
 
-#### FR-18: Partial-failure semantics
+#### FR-18: Partial-failure semantics ← CAP-3
 
 A multi-target ship handles per-target failure without corrupting the others.
 
@@ -422,7 +423,7 @@ A multi-target ship handles per-target failure without corrupting the others.
 - A target that cannot be interrogated yields `pending` with the reason stated — never an assumption
   in either direction.
 
-#### FR-19: Dry-run by default for shipping
+#### FR-19: Dry-run by default for shipping ← CAP-3
 
 Shipping requires explicit intent.
 
@@ -430,7 +431,7 @@ Shipping requires explicit intent.
 - `--ship` without a confirming flag plans and prints, and uploads nothing.
 - The dry-run plan names every target, artifact, and destination.
 
-#### FR-20: Credential handling
+#### FR-20: Credential handling ← CAP-3
 
 Mason obtains upload credentials from the environment.
 
@@ -439,7 +440,7 @@ Mason obtains upload credentials from the environment.
 - No credential is ever written to disk, logged, or included in a ship receipt.
 - A missing credential is detected **before** any artifact is built or uploaded.
 
-#### FR-21: `--target` project shapes
+#### FR-21: `--target` project shapes ← CAP-3
 
 `--target` declares what kind of thing is being packaged.
 
@@ -449,7 +450,7 @@ Mason obtains upload credentials from the environment.
 
 **Out of Scope:** application and binary targets (v2).
 
-#### FR-22: Version consistency check
+#### FR-22: Version consistency check ← CAP-3
 
 Mason refuses to ship artifacts whose versions disagree.
 
@@ -457,7 +458,7 @@ Mason refuses to ship artifacts whose versions disagree.
 - The wheel version and the conda package version are compared before any upload; a mismatch aborts
   with both values shown.
 
-#### FR-23: Recipe sourcing for `conda-forge` shipping
+#### FR-23: Recipe sourcing for `conda-forge` shipping ← CAP-3
 
 Shipping to `conda-forge` requires a recipe **and** a CFE-co-located repository. Realizes UJ-1's
 conda half, within the D-10 boundary.
@@ -477,7 +478,7 @@ conda half, within the D-10 boundary.
 **Out of Scope:** shipping to conda-forge from a project with no CFE root and no `recipes/<name>/`
 source directory. See D-10 — this is the honest v1 boundary, not a hidden failure.
 
-#### FR-24: Self-hosting
+#### FR-24: Self-hosting ← CAP-3
 
 Mason can ship Mason.
 
@@ -502,7 +503,7 @@ applies policy. Mason does not solve. Scope inflation into re-solving is a state
 
 **Functional Requirements:**
 
-#### FR-25: `mason environment lock`
+#### FR-25: `mason environment lock` ← CAP-4
 
 A user produces a lockfile from a project's dependency manifests.
 
@@ -511,7 +512,7 @@ A user produces a lockfile from a project's dependency manifests.
 - `--output <path>` controls the destination.
 - Runs with the CFE root absent (FR-5).
 
-#### FR-26: Manifest discovery
+#### FR-26: Manifest discovery ← CAP-4
 
 Mason locates the manifests to feed the engine.
 
@@ -519,14 +520,14 @@ Mason locates the manifests to feed the engine.
 - Discovers `pyproject.toml`, `environment.yml`, `requirements*.txt`, `pixi.toml`.
 - Discovered manifests are listed before solving; explicit paths override discovery.
 
-#### FR-27: Platform targeting
+#### FR-27: Platform targeting ← CAP-4
 
 A user controls which platforms the lock covers.
 
 **Consequences (testable):**
 - `--platform` is repeatable; absent, the engine's default applies and is reported.
 
-#### FR-28: Lock verification
+#### FR-28: Lock verification ← CAP-4
 
 A user checks whether an existing lockfile is current.
 
@@ -534,7 +535,7 @@ A user checks whether an existing lockfile is current.
 - `mason environment check` exits non-zero when the lockfile is stale relative to its manifests.
 - Suitable for CI use; emits JSON under `--format json`.
 
-#### FR-29: Engine reporting
+#### FR-29: Engine reporting ← CAP-4
 
 Mason names the engine that produced a lock.
 
@@ -551,7 +552,7 @@ the workspace's lean-dependency doctrine for ergonomics alone.
 
 **Functional Requirements:**
 
-#### FR-30: Noun-verb command structure
+#### FR-30: Noun-verb command structure ← CAP-5
 
 **Consequences (testable):**
 - Three nouns in v1: `recipe`, `package`, `environment`, plus top-level `doctor` and `--version`.
@@ -560,7 +561,7 @@ the workspace's lean-dependency doctrine for ergonomics alone.
   without a verb and dispatches to `mason package ship`. It is the only bare-noun form that runs, and
   a test asserts no other exists.
 
-#### FR-31: Dual output format
+#### FR-31: Dual output format ← CAP-5
 
 Realizes UJ-4.
 
@@ -571,14 +572,14 @@ Realizes UJ-4.
 
 **Rationale:** the stream-discipline rule proven in `pyforge.warden.cli`.
 
-#### FR-32: Exit-code contract
+#### FR-32: Exit-code contract ← CAP-5
 
 **Consequences (testable):**
 - `0` success; `1` operation failed; `2` usage error; `3` CFE unavailable for a CFE-dependent
   command; `130` interrupted.
 - Exit codes originate from one module; no command computes its own.
 
-#### FR-33: Structured errors
+#### FR-33: Structured errors ← CAP-5
 
 **Consequences (testable):**
 - Every anticipated failure produces a typed error with a stable identifier and an actionable
@@ -586,7 +587,7 @@ Realizes UJ-4.
 - No anticipated failure surfaces as a raw traceback; unanticipated ones exit `1` with the traceback
   on stderr.
 
-#### FR-34: `mason doctor`
+#### FR-34: `mason doctor` ← CAP-5
 
 A user diagnoses their own installation. Realizes UJ-3.
 
@@ -596,7 +597,7 @@ A user diagnoses their own installation. Realizes UJ-3.
 - Exits `0` when Mason is usable for the non-CFE verbs, even if CFE is missing — reporting the gap
   rather than failing.
 
-#### FR-35: Global flags
+#### FR-35: Global flags ← CAP-5
 
 **Consequences (testable):**
 - `--cfe-root`, `--cfe-python`, `--format`, `--verbose`, `--quiet` accepted on every command.
@@ -611,14 +612,14 @@ instances and are adopted wholesale rather than reconsidered.
 
 **Functional Requirements:**
 
-#### FR-36: Workspace member layout
+#### FR-36: Workspace member layout ← CAP-6
 
 **Consequences (testable):**
 - Lives at `src/shared/packages/pyforge-mason/`.
 - Member `pixi.toml` has a `[package]` table and **no** `[workspace]` table.
 - `src/pyforge/mason/` is a PEP-420 namespace package; no `src/pyforge/__init__.py` exists.
 
-#### FR-37: Dual-artifact build
+#### FR-37: Dual-artifact build ← CAP-6
 
 **Consequences (testable):**
 - One `pyproject.toml` (hatchling) drives both artifacts.
@@ -626,19 +627,19 @@ instances and are adopted wholesale rather than reconsidered.
 - `pyforge-mason-build-dist` produces wheel + sdist via `python -m build --no-isolation`.
 - `pyforge-mason-build` depends on both.
 
-#### FR-38: Console entry point
+#### FR-38: Console entry point ← CAP-6
 
 **Consequences (testable):**
 - `[project.scripts] mason = "pyforge.mason.cli:main"`.
 - `mason --version` reports the installed distribution version.
 
-#### FR-39: Root workspace wiring
+#### FR-39: Root workspace wiring ← CAP-6
 
 **Consequences (testable):**
 - `[feature.pyforge-mason.dependencies]` carries a path dependency to the member.
 - A `pyforge-mason` environment exists with `no-default-feature = true`.
 
-#### FR-40: Engine provisioning
+#### FR-40: Engine provisioning ← CAP-6
 
 **Consequences (testable):**
 - Engines are conda run-dependencies in the member `pixi.toml`; nothing is fetched at runtime.
@@ -647,7 +648,7 @@ instances and are adopted wholesale rather than reconsidered.
 
 **Rationale:** ported from `pyforge-warden`'s `tests/meta/test_engine_version_range_sync.py`.
 
-#### FR-41: Lean dependency set
+#### FR-41: Lean dependency set ← CAP-6
 
 **Consequences (testable):**
 - Wheel `dependencies` contain only what `pyforge.mason` imports.
@@ -665,7 +666,7 @@ requirements are the mechanism that does.
 
 **Functional Requirements:**
 
-#### FR-42: No recipe knowledge in Mason
+#### FR-42: No recipe knowledge in Mason ← CAP-7
 
 **Consequences (testable):**
 - A meta-test asserts `pyforge/mason/` contains no CFE gotcha identifier, no conda-forge policy
@@ -683,12 +684,12 @@ requirements are the mechanism that does.
 - Weakening or removing a deny-list entry requires an accompanying rationale comment; a
   companion test asserts every entry carries one.
 
-#### FR-43: Adapter is the sole CFE caller
+#### FR-43: Adapter is the sole CFE caller ← CAP-7
 
 **Consequences (testable):**
 - A meta-test asserts no module outside `pyforge/mason/cfe.py` references a CFE path or script name.
 
-#### FR-44: Non-CFE verbs are independent
+#### FR-44: Non-CFE verbs are independent ← CAP-7
 
 **Consequences (testable):**
 - A meta-test runs every `mason package` and `mason environment` verb with the CFE root guaranteed
@@ -700,7 +701,7 @@ requirements are the mechanism that does.
 - The test asserts positively that the excepted target fails **for the right reason** (the FR-5
   error), not merely that it fails.
 
-#### FR-45: No CFE surface modification by implementation work
+#### FR-45: No CFE surface modification by implementation work ← CAP-7
 
 > **Scoped 2026-08-10 (correct-course, operator directive):** this FR binds **the mason-CLI
 > effort's commits** — those touching `src/shared/packages/pyforge-mason/**` and its planning
@@ -723,7 +724,7 @@ requirements are the mechanism that does.
 contradicted §9 and made the effort impossible to close. Rule 2 is not optional; Mason's constraint
 is that it may not edit CFE *while implementing*, and must edit CFE *when retrospecting*.
 
-#### FR-46: Delegation-fidelity test
+#### FR-46: Delegation-fidelity test ← CAP-7
 
 **Consequences (testable):**
 - For a representative recipe operation, Mason's result matches the corresponding direct CFE
@@ -732,7 +733,7 @@ is that it may not edit CFE *while implementing*, and must edit CFE *when retros
   carries the `slow` marker, is excluded from the default test task, and **skips cleanly** (never
   fails) when no CFE root resolves.
 
-#### FR-47: Closing Rule-2 retrospective
+#### FR-47: Closing Rule-2 retrospective ← CAP-7
 
 The effort closes with a retrospective that improves the skill it wraps.
 
@@ -747,7 +748,7 @@ The effort closes with a retrospective that improves the skill it wraps.
   this effort.
 - The effort is not done until this lands. Not optional, not deferrable.
 
-#### FR-48: Configuration surface
+#### FR-48: Configuration surface ← CAP-7
 
 Every runtime knob is reachable without a configuration file.
 
@@ -759,7 +760,7 @@ Every runtime knob is reachable without a configuration file.
 - A test asserts every knob has both forms and that no code path reads a Mason-specific key from a
   file.
 
-#### FR-49: Logging and child-output handling
+#### FR-49: Logging and child-output handling ← CAP-7
 
 A user can see what a long operation is doing without losing the machine-readable contract.
 
@@ -773,7 +774,7 @@ A user can see what a long operation is doing without losing the machine-readabl
   guarantee on stdout holds during a streaming operation. A test asserts this.
 - No log record at any level contains an environment-variable value (NFR-2).
 
-#### FR-50: Rehearsal before an irreversible publish
+#### FR-50: Rehearsal before an irreversible publish ← CAP-7
 
 A user can rehearse a PyPI publish before performing the one-way one.
 
@@ -1840,3 +1841,7 @@ regex): **70/70 stories `done` across 17/17 epics.**
 
 **Content changed:** FR-14 (as-built divergence note), NFR-9 (marked partial). No FR
 added, renumbered or removed.
+
+## Currency reconciliation — 2026-09-17
+
+One-chain mason fold. `fr-derivation-from: 2026-09-17`. Kernel FR-1..FR-50 cite CAP-1..CAP-7 (memlog 1:1). Absorbed Specs reminted as CAP-14+; no new FR minted (steward fold precedent). FR delta: citations only.

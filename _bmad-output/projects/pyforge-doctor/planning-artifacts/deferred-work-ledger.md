@@ -116,10 +116,10 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
 
 - source_spec: `spec-6-8-bmad-drift-comes-home-without-breaking-the-board.md`
-  summary: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+  summary: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the
     story finalized (status: done, verify green) while the review pass still recommended an
     independent follow-up. The work was committed by bmad-loop run 20260809-195207-7471; this

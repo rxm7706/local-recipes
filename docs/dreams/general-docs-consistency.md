@@ -2,8 +2,11 @@
 title: General documentation stops contradicting itself, and stays that way
 type: dream
 owner: doctor
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-doctor]]** on 2026-09-17 (one-chain-per-station doctor fold).
 
 # General documentation stops contradicting itself, and stays that way
 

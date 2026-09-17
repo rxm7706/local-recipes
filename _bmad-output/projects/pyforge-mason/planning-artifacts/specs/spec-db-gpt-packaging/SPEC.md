@@ -1,47 +1,16 @@
 ---
 id: SPEC-db-gpt-packaging
 spec: db-gpt-packaging
-status: archived
-archived-reason: terminal
+status: absorbed
+absorbed-into: spec-pyforge-mason
+updated: "2026-09-17"
 owner-dream: docs/dreams/db-gpt-packaging.md
 surface: []          # archived — no live surface; see § What carries forward
-sources:
-  - ../../../../../../docs/dreams/db-gpt-packaging.md
-open_questions: []
+companions: []
 ---
 
-> **Retirement record.** This Dream is `status: archived` (`terminal`). Charter §5 requires
-> every Dream to carry a Spec, archived included: a retirement record is how the next reader
-> learns from the decision instead of rediscovering the idea. It states what was contracted,
-> why it ended, and what survives — not a plan for work that will not happen.
+# Absorbed into spec-pyforge-mason
 
-# db-gpt-packaging — retirement record
+This Spec folder was folded on 2026-09-17 (one-chain-per-station CAP-3 / mason fold). The decision record is `.memlog.md` in this folder. Companion documents stay as record (CHAIN-STANDARD §7 item 3, marshal pilot lesson 15). Derived SPEC body disposed; git remains the historical record.
+ Companion/record files kept in this folder: .memlog.md.
 
-## Why it was contracted
-
-Get **DB-GPT** — an agentic data-application framework with a large native dependency
-closure — installable from conda-forge, along with the five prerequisites nobody had
-packaged.
-
-## Why it ended
-
-**Terminal (delivered) 2026-07-01.** All five prerequisites merged; db-gpt itself landed
-via external PR #33883 under the consume-not-submit convention. The local mirror at
-`recipes/db-gpt/` reflects that PR.
-
-## What carries forward
-
-Closed by delivery, not abandonment. The five prerequisite recipes are the durable
-outcome — each is now available to any downstream packaging effort.
-
-## Non-goals
-
-- **Reviving this Dream as written.** Its intent was absorbed, delivered or blocked; the
-  successor named above is where the work lives now.
-- **Treating this record as a backlog item.** Archived Dreams are excluded from the Backlog
-  board by design.
-
-## Success signal
-
-A reader arriving at this Dream learns in one page why it stopped and where its intent went,
-without re-deriving the decision or re-opening a closed question.

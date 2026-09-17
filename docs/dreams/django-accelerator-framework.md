@@ -3,9 +3,10 @@ title: A Django-service scaffolding engine, if this repo ever births new Django-
 type: dream
 owner: mason
 status: archived
-archived-reason: absorbed
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `django-accelerator-framework`).
 > **Absorbed 2026-09-09** into
 > [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) § *Lane 2* —
 > the accelerator contract (CAP-1) travels with the exemplar it must never drift

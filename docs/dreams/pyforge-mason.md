@@ -2,8 +2,9 @@
 title: Mason — forge the blocks, bind the environment, ship the structure
 type: dream
 owner: mason
-status: realized
+status: specified
 ---
+
 
 # Mason — the craft of shipping, made a command
 
@@ -174,3 +175,7 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   conda-forge") — both carry Mason Rule 1/2 ACs and read `blocked` in steward's ledger; they are
   now named in Kinships above so mason's decomposition is not silently incomplete against the
   greenfield spine.
+
+## One-chain fold — 2026-09-17
+
+Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

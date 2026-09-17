@@ -445,7 +445,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the precondition never arrived. The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) were not produced, so the full 28-page inventory stays blocked and the page set correctly was not expanded past the live-confirmed core.
 
-  resolution: **CLOSED 2026-08-28 by Story 20.4** (`spec-20-4-the-cis-two-spine-specs-exist.md`,
+  resolution: **CLOSED 2026-08-28 by Story 20.4** (`spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`,
     CAP-7). Ran `bmad-cis-install` (the `bmad-creative-intelligence-suite` v0.3.1 conda package,
     already resolved in the `local-recipes` env), which copies its full six-persona suite
     (Carson, Dr. Quinn, Maya, Victor, Caravaggio, Sophia) plus all four of its workflow skills
@@ -470,7 +470,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     blocked; Story 20.5 ports against these two spines. **Carried forward, not re-litigated
     here:** this story's own spec records a deferred item flagging the 19-vs-21 page mapping as
     a design judgment call Story 20.5's implementer should re-verify before treating "19" as
-    fixed — see `spec-20-4-the-cis-two-spine-specs-exist.md` frontmatter `deferred`, second item.
+    fixed — see `spec-19-4-the-cis-two-spine-specs-exist-cap-7.md` frontmatter `deferred`, second item.
 
   status: closed
 
@@ -482,7 +482,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   summary: Several core pages are BSL-WIRED SHELLS: the loader queries the correct D1 semantic model, but the composed Parquet store that model binds to (e.g. a `semantic_packages` primary output joining the per-metric columns) is not materialized as a single dataset yet, so the page renders empty against the live catalog until that store lands. The loaders are honest (empty BSL query, never fabricated rows). Materializing the composed store (a small kedro node emitting the semantic-input Parquet) wires the live data. Pages backed by an existing single dataset (feedstock-health → core_feedstock_health; my-feedstocks → vcs_package_maintainers) are already live.
   evidence: `dashboard/data.py` shell loaders are grouped under a "BSL-wired SHELL pages (composed store not yet materialized — DW-D2)" banner; each returns an empty typed frame via `_bsl_query_or_empty` when the store is absent.
 
-  resolution: **CLOSED 2026-08-27 by Story 20.3** (`spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`,
+  resolution: **CLOSED 2026-08-27 by Story 20.3** (`spec-19-3-named-pipeline-derivation-of-the-dashboard-stores-cap-6.md`,
     CAP-6 / the `query-plane-catalog` operator ruling, 2026-08-26). The named, downstream-only
     `semantic_packages` Kedro pipeline (`pipelines/semantic_packages/`, auto-discovered, zero
     registry edits) composes the `semantic_packages` primary store from the sealed `core` +
@@ -514,7 +514,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   evidence-update: 2026-08-26 — the two blockers are now removed and the FIRST visual pass ran. (1) Serve entrypoint exists: `pixi run -e local-recipes dashboard-serve` (`scripts/dashboard_serve.py`, same PYTHONPATH as the dryrun gate; foreground, 127.0.0.1:8050). (2) Operator-session visual verification via headless Chrome screenshots, human-reviewed: `factory-status` fully live (AD-17 build stamp rendered, real sprint-ledger rows in the grid, 9-page nav present, dark theme correct); root page = `feedstock-health` renders the page shell + AD-17 provenance line degrading HONESTLY ("unavailable — backing file not found: data/primary/core_feedstock_health/core_feedstock_health.parquet") with an empty grid — the grounded pages need the atlas Kedro pipeline outputs materialized at the data root before they show data in a fresh checkout. Residual before this entry can close: the §2.1 semantic-HTML/ARIA browser-agent navigation check, and a data-present visual pass after a pipeline run materializes the Parquet tree.
 
-  evidence-update: 2026-08-28 — Story 20.5 (`spec-20-5-port-the-remaining-nineteen-vizro-pages.md`,
+  evidence-update: 2026-08-28 — Story 20.5 (`spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`,
     CAP-7) genuinely resolves residual (1) and executes but does NOT resolve residual (2) — this
     entry stays OPEN; do not read the below as a closure. (1) The §2.1 semantic-HTML/ARIA
     browser-agent navigation check: `test_dashboard_28_pages_semantic_nav_and_aria` in
@@ -957,7 +957,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     `tests/factory/test_lasuite.py` proves the round-trip + idempotency (zero remote calls on an
     unchanged re-push) + mapping-resume against the mock opener. `resolve_lasuite_config` returns
     `None` unless BOTH env vars are set. Story 16.1
-    (`../implementation-artifacts/spec-16-1-instance-deploy-definition.md`) resolved the parent
+    (`../implementation-artifacts/spec-15-1-instance-deploy-definition-cap-1.md`) resolved the parent
     SPEC's deployment-substrate open question: django-lasuite 0.0.26 is confirmed live on the real
     conda-forge channel, Wagtail 7.4.1 has a working recipe in this repo but its upstream feedstock
     status is unconfirmed, no container. It also resolves the DW-H1 dependency question for the
@@ -971,7 +971,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No live La Suite/Wagtail server, credential or httpx opener was stood up; `factory/__init__.py:11` still lists the CMS sync as H3's future scope. Carried as PRD § 6.4 DC-4.
 
   annotation: 2026-08-15 (Story 16.2,
-    `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`)
+    `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md`)
     — a real httpx-backed `Opener` builder + CLI entrypoint
     (`src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py`) now exists, plus an offline
     rehearsal (`tests/factory/test_lasuite_live_rehearsal.py`) proving that SAME opener drives the
@@ -1830,7 +1830,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ## DW-FU-13-3 — 13.3 finalized on a spent follow-up-review budget (LOW) — DEFERRED
 
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   found_by: bmad-loop's own damping output, run `20260809-184330-203b`, 2026-08-10
   summary: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with
     the story finalized (status `done`, verify green) while the review pass still recommended
@@ -1855,7 +1855,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-14-2-1: get_widget() and get_view() both raise a bare, unwrapped KeyError with a confusing repr-quoted message on lookup failure
-- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md`
+- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-2-pluggable-widget-registry-cap-3.md`
   summary: `views/widgets.py::get_widget` raises a bare `KeyError(f"unknown widget type {name!r}; known widget types: ...")`, which `KeyError.__str__` re-wraps in an extra layer of quotes on display, and which propagates uncaught with no domain-specific exception type even though the same module tree already has one precedent for that (`cli_bridge.py`'s `CfAtlasDbUnavailableError`).
   evidence: Flagged independently by both the Blind Hunter (message-quoting confusion) and the Edge Case Hunter (missing domain wrapper) reviewing Story 14.2's diff (2026-08-14). Not patched in that story because `get_widget` deliberately mirrors `views/registry.py::get_view`'s identical, already-shipped Story 14.1 pattern (`raise KeyError(f"unknown static view {name!r}; known views: ...")`) — fixing only the newer function would make the two nearly-identical lookup helpers inconsistent with each other. If ever addressed, both should change together in the same pass.
   status: closed
@@ -1863,14 +1863,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-2-pluggable-widget-registry-cap-3.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
   verified: 2026-09-09 — **MOOT PENDING atlas Story 25.1.** Re-read against live code at `fe4025ea90`: the claim still holds exactly as written (`views/widgets.py::get_widget` and `views/registry.py::get_view` both raise a bare `KeyError`), but the operator decision batch § 2.3 **C1** RETIRES the whole `pyforge/atlas/views/` package and `tests/unit/views/` — the two functions this entry indicts are deleted by Story 25.1, so the entry closes with the module rather than being fixed. Do NOT spend a story on the paired-KeyError cleanup. Re-check after 25.1 lands and close citing it.
 
   verified: 2026-09-10 — **closed** (atlas Story 25.1): `views/` and `tests/unit/views/` deleted; entry closes with the module, not a fix.
 
 ### DW-14-3-1: tests/dashboard/test_dashboard_e2e.py's Playwright navigation races the Dash dev server's startup, reliably failing with net::ERR_CONNECTION_REFUSED
-- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
+- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-3-bokeh-websocket-interactivity-cap-2.md`
   summary: `test_dashboard_e2e_navigation_and_rendering`'s `page.goto(dashboard_server)` fires before the Dash dev server thread has finished binding its port, so the test reliably fails with `playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED` — pre-existing in `tests/dashboard/` (Story D2's Vizro/Dash module), surfaced incidentally while verifying this story's `kedro-test` acceptance criterion, and explicitly out of this story's scope to fix (Story 14.3's Boundaries & Constraints forbid touching `dashboard/`).
   evidence: Reproduced consistently across 5+ consecutive runs, including with every one of this story's changes fully `git stash`-ed out (i.e. against the exact commit Story 14.3's implementation subagent finished on, before any review-pass patch) — the failure is identical with or without this story's diff. The captured teardown output shows `"Dash is running on http://127.0.0.1:<port>/"` logged AFTER the navigation attempt already failed, confirming a startup-order race, not a port/config mismatch. Confirmed unrelated to this story's dependency changes: the `pixi.lock` diff this story produces touches only `pyforge-atlas`'s own `conda_source` metadata (host-package platform-variant list reordering caused by the new `tornado`/`starlette` run-deps) — zero version changes to `dash`/`flask`/`werkzeug`/`playwright` anywhere in the lock diff. Likely fix: the test needs to poll for server readiness (e.g. retry-connect or hit a health endpoint) before calling `page.goto`, rather than assuming the server thread is already accepting connections immediately after being started — a `dashboard/`-scoped fix, not a `views/` one.
   status: open
@@ -1878,10 +1878,10 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md, tests/dashboard/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-3-bokeh-websocket-interactivity-cap-2.md, tests/dashboard/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-14-3-2: Bokeh 3.9.2's `patch_curdoc()` context manager has no exception safety — a callback that raises corrupts `curdoc()` for the rest of the pytest process
-- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
+- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-3-bokeh-websocket-interactivity-cap-2.md`
   summary: `bokeh/io/doc.py::patch_curdoc` pushes a `weakref.ref(doc)` onto the module-global `_PATCHED_CURDOCS` list, `yield`s with no `try/finally`, then pops — so any callback invoked while curdoc is patched that raises leaves the stale weakref on the stack permanently; once that `Document` is later garbage-collected, every subsequent `curdoc()` call in the SAME process raises `RuntimeError: Patched curdoc has been previously destroyed`, corrupting unrelated later tests.
   evidence: Reproduced directly while attempting to close a review-pass-2 finding (the "propagates on any later re-query" docstring claim was untested): a test that set a live session's maintainer `TextInput.value` after deleting the backing `cf_atlas.db` (to assert `CfAtlasDbUnavailableError` propagates out of the `on_change` callback) reliably poisoned the process — `tests/views/test_widgets.py::test_get_widget_grid_static_renderer_produces_a_valid_static_fragment` (and, nondeterministically, several `tests/views/test_render.py` tests) started failing with `RuntimeError: Patched curdoc has been previously destroyed` from `bokeh/io/doc.py:59`, reproducibly across 5/5 runs with the offending test present and 0/5 without it (and 3/3 clean on the unpatched pre-review commit). Root-caused by reading `bokeh/io/doc.py`: `patch_curdoc()` is a bare `@contextmanager` — `_PATCHED_CURDOCS.append(weakref.ref(doc)); del doc; yield; _PATCHED_CURDOCS.pop()` — with no `try/finally`, so an exception during `yield` skips the `pop()` forever. The offending test was reverted rather than kept — this story's own `_grid_websocket_renderer`/`_on_maintainer_change` code has no try/except and does propagate the error correctly by direct code inspection; only the TEST's mechanism was unsafe, not the shipped code. This is a genuine upstream Bokeh hazard, not this story's problem to fix (Bokeh internals, not `pyforge` code), but load-bearing knowledge for whoever next tests a live-session error path in this package: raising inside a live `on_change` callback will poison the rest of the test process.
   status: closed
@@ -1889,7 +1889,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md, tests/views/test_render.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-13-3-bokeh-websocket-interactivity-cap-2.md, tests/views/test_render.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
   verified: 2026-09-09 — **MOOT PENDING atlas Story 25.1, with one piece worth keeping.** The Bokeh `patch_curdoc()` exception-unsafety is a genuine upstream hazard and the analysis is sound, but its stated audience — "whoever next tests a live-session error path in this package" — disappears when § 2.3 **C1** retires `pyforge/atlas/views/` and its tests (Story 25.1); there is no other live-Bokeh-session test surface in the estate. Closes with the module. The upstream fact itself (raising inside a live `on_change` callback poisons `curdoc()` for the rest of the process) is preserved here as the record, in case Bokeh ever returns to this estate.
 
@@ -2182,7 +2182,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-1-1: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-sco
-- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+- source_spec: `spec-11-1-kedro-skills-audit-then-adopt-fr-61.md`
   summary: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-scoped `.claude/skills/` tree anywhere in this repo — is actually discovered by a live Claude Code session working inside that subtree, versus this repo's established single-root `.claude/skills/` convention being the only path Claude Code reliably surfaces.
   evidence: `kedro skills install` has no `--target-dir` (confirmed by reading `kedro_skills/utils.py::find_project_root`, which always resolves the nearest Kedro project root) so this is the tool's only possible output location; the Skill tool's own description documents directory-scoped resolution (`apps/web:deploy`-style path prefixes) as a real capability, but this review session's own available-skills listing (generated from the repo root, same worktree) does not surface `catalog-config`, which is at minimum consistent with (though not proof of) the mechanism not statically preloading nested skill trees. Flagged by the Blind Hunter review pass on story 12-1's diff (2026-08-09, review pass 1); re-raised independently by the Blind Hunter pass on review pass 2 with the same evidence.
 
@@ -2195,7 +2195,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-1-2: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer director
-- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+- source_spec: `spec-11-1-kedro-skills-audit-then-adopt-fr-61.md`
   summary: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer directory table) have no tracked follow-up forcing a human to actually decide whether to file them against `kedro-org/kedro-skills` — they exist only as prose inside the report and could go unnoticed once nobody is actively reading it.
   evidence: The story's own Never clause correctly forbids filing them unattended (verified: `gh api repos/kedro-org/kedro-skills/issues` shows only the 3 pre-existing issues, none from this story), but nothing else tracks the pending human decision. Converged finding — raised independently by both Blind Hunter and Edge Case Hunter on review pass 1, and again by both on review pass 2, with no new counter-evidence either time.
 
@@ -2208,7 +2208,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-1-3: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
-- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+- source_spec: `spec-11-1-kedro-skills-audit-then-adopt-fr-61.md`
   summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories (lines ~381, ~394, ~471), even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
   evidence: `grep -n "depends_on:.*d[12]-" _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml` hits 3 lines still spelling `d1-define-the-boring-semantic-layer-bsl-models` / `d2-build-the-vizro-dashboard-port-the-28-clis-to-pages`, while `development_status` itself now keys the same two stories `5-1-...`/`5-2-...` (confirmed identical between this worktree and the canonical repo checkout). No shipped code currently reads `depends_on` from this file (`grep -rn depends_on src/shared/packages/pyforge-atlas/src/` is empty) so nothing is broken today — inert but drift-prone. Surfaced by the Blind Hunter review pass repairing story 12-1's `kedro-test` verification failure (2026-08-09); out of that repair's scope since `sprint-status.yaml` is a generated, gitignored artifact PR #322 didn't fully sweep.
 
@@ -2221,7 +2221,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-1: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, 
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, matching the upstream epic-level Spec's literal wording) won't catch a real DAG-shape change made via `pipeline_registry.py`, `settings.py`, or `conf/base/catalog.yml`/`parameters.yml` — none of which live under `pipelines/`, so a change to any of them lands on `main` without triggering a republish.
   evidence: Verified these files exist outside the triggering path glob (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipeline_registry.py`, `.../settings.py`, `.../conf/base/catalog.yml`, `.../conf/base/parameters.yml`) and each can independently change what `kedro viz build` renders (registry controls which pipelines exist; catalog controls dataset/layer metadata). Not fixed in this story: the path is a faithful, literal implementation of the upstream `SPEC-kedro-org-tooling-adoption` kernel's own named trigger path (`_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md`), so widening it unilaterally would be a scope decision belonging to that Spec, not this story. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
 
@@ -2234,7 +2234,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/3 present (absent: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-2: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is eve
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is ever added to `main` (none exists today), the workflow will start failing silently (a red run, no code change needed to explain it) with nothing in this diff anticipating that dependency.
   evidence: Verified via `gh api repos/rxm7706/local-recipes/branches/main/protection` → 404 (not protected) at spec time. The workflow's own design (mirrors `steward deploy dashboard`'s CLI, built for direct-push use) has no fallback path if that changes. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
 
@@ -2247,7 +2247,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-3: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quic
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quick succession, the second (queued, `cancel-in-progress: false`) run's `actions/checkout` pins the SHA from its own (now-stale) trigger, so its later `git push` could be rejected as non-fast-forward against a `main` the first run already advanced.
   evidence: `commit_and_push_dashboard` (`pyforge-steward/src/pyforge/steward/deploy.py`) does a plain `git push origin <branch>` with no rebase/retry; a rejected push surfaces as a `DutyResult(ok=False, ...)` (a failed CI run), not a silent loss, and the SAME run's *next* invocation would pick up the still-uncommitted local diff via `_push_pending_commit_if_ahead`'s stuck-push retry — but only if that run is re-triggered, which a failed push alone does not do. Low-probability (requires two pipeline-touching pushes within the same CI run's duration) and partially self-healing, not fixed in this story. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
 
@@ -2260,7 +2260,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-4: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underl
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underlying pixi tasks (`viz-build`, `viz-publish-stage`) and the Steward CLI's `--dry-run` path were verified locally/in this sandboxed environment, which cannot run a real `push` event through an actual GitHub Actions runner.
   evidence: This environment has no live GitHub Actions execution capability; the workflow YAML was validated for syntax (`yaml.safe_load`) and its constituent commands were verified to work when run manually in sequence, but the composed CI-specific behavior (real ubuntu-latest runner, real `actions/checkout` detached-HEAD state, real `GITHUB_TOKEN` push) is unverified until the first real run after merge. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
 
@@ -2273,7 +2273,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-5: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare 
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare `except UnicodeDecodeError: continue`) in BOTH the strip pass and the verifying re-scan — a future kedro-viz version that embeds the checkout-anchored path inside a non-UTF-8 file (e.g. a binary source-map or compiled asset) would be invisible to this script's "zero anchor occurrences remain" guarantee.
   evidence: Verified every file under `build/` in this repo's real DAG is UTF-8 JSON/text today (`file` reports "JSON text data" or similar on every `build/api/*` entry; `build/assets/*.js`/`*.css` are plain text) — currently inert, not a live leak, but the code doesn't enforce or check for this property going forward. Flagged by the Edge Case Hunter review pass on story 12-2's diff (2026-08-09, review pass 3).
 
@@ -2286,7 +2286,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-6: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a f
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a future sibling directory under `src/shared/packages/` whose name shares the `pyforge-atlas` prefix (e.g. a hypothetical `pyforge-atlas-legacy`) would have its own unrelated absolute paths partially mangled into `<PYFORGE_ATLAS_ROOT>-legacy/...` if it were ever built by the same mechanism.
   evidence: Verified no such sibling exists today (`ls src/shared/packages/ | grep pyforge-atlas` returns only `pyforge-atlas` itself) — currently inert. A boundary-safe fix would need a regex (e.g. `re.escape(anchor) + r'(?=[/"])'`), which reintroduces the exact path-escaping fragility `str.replace()` was deliberately chosen over `sed`/regex to avoid for arbitrary filesystem paths — not fixed here as a result. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 3).
 
@@ -2299,7 +2299,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-7: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
-- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+- source_spec: `spec-11-2-publish-the-real-dag-continuously-fr-62.md`
   summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories, even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
   evidence: Re-confirmed live in this worktree (`grep -n "depends_on:.*d[12]-" .../implementation-artifacts/sprint-status.yaml` still hits 3 lines); no shipped code currently reads `depends_on` (`grep -rn depends_on src/shared/packages/pyforge-atlas/src/` is empty), so nothing is broken today — inert but drift-prone. Same underlying issue already deferred on story 12-1's behalf (2026-08-09); re-flagged here because story 12-2 independently hit and repaired the same `kedro-test` failure this drift was surfaced during, and `sprint-status.yaml` is a generated, gitignored artifact outside both stories' Code Maps — PR #322's sweep is what missed it, not either repair pass. Flagged by the Blind Hunter review pass repairing story 12-2's `kedro-test` verification failure (2026-08-09, review pass 4).
 
@@ -2312,7 +2312,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-1: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at 
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at all — it's an effectively static top-N all-time-most-starred Python list, so exactly when the primary scrape degrades (the fallback's whole reason to exist), `trending_candidates` silently fills with near-constant "most starred" data under the same dataset name, giving CAP-1's discovery purpose little real signal for that batch.
   evidence: `conf/base/catalog.yml`'s `search_api_url` has no `created:`/`pushed:` window; GitHub's Search API has no "trending" concept, only point-in-time sort. Fixing this requires a product decision on what date-window semantics approximate "trending" for a fallback corroboration source — beyond a trivial patch, and CAP-1's own success criteria (a non-empty snapshot, graceful degradation) still hold regardless. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
 
@@ -2325,7 +2325,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-2: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot — no historical retention. If Story 13.2's tier classification ever wants a multi-day trend signal (streak length, day-over-day delta), that signal has already been discarded at the raw layer by CAP-1 as built.
   evidence: `_write` always atomic-writes to the same `trending_candidates.parquet` path; no date-partitioned or append-only variant exists. Deliberately out of CAP-1's stated scope (a "fresh snapshot" is the whole contract) — worth a look at Story 13.2 planning time, not a defect in this story. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
 
@@ -2338,7 +2338,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-3: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's s
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's subtree rather than a scoped selector — an unrelated heading/paragraph earlier in the card (e.g. a future sponsored-listing badge GitHub might add) would silently misattribute `repo_full_name`/`description` rather than failing loudly.
   evidence: No live GitHub markup was fetched to verify current card structure exhaustively (offline dev environment); the risk is real but low-probability given GitHub's trending page has used a stable `article.Box-row` > `h2` > `a` structure for years. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
 
@@ -2351,7 +2351,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-4: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any su
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any such column to `float64` the moment one `None` appears in a batch, so the persisted Parquet schema for these count columns can flip between `int64` and `float64` day to day depending on whether every row happened to parse cleanly that run — a downstream consumer (Story 13.2's classifier) reading this column across multiple days could hit an unexpected dtype.
   evidence: `TrendingSnapshotDataset._write` does not coerce dtypes before `frame.to_parquet(...)`; pandas' well-documented int-with-NaN-upcasts-to-float64 behavior applies directly to the `stars_total`/`stars_today`/`forks_total` columns as constructed. A fix (pandas nullable `Int64` extension dtype) is a real but non-trivial design call, not a one-line patch. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
 
@@ -2364,7 +2364,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-5: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a r
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a relative path (`/owner/repo`); an absolute href (`https://github.com/owner/repo`) would double-prefix into a broken `repo_url` (`https://github.com/https://github.com/owner/repo`) with no detection.
   evidence: `repo_full_name = (link.get("href") or "").strip("/").strip()` then `repo_url = f"https://github.com/{repo_full_name}"` unconditionally prepends the host with no absolute-URL guard. Low-probability (GitHub's trending page has used relative hrefs consistently) but undetected if it ever changes. Flagged by the Edge Case Hunter review pass on story 13.1's diff (2026-08-09, review pass 2).
 
@@ -2377,7 +2377,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-6: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerabi
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerability/nodes.py::_coerce_cadence`, both accept a config-authored `0` or negative cadence without validation — a `ttls.trending_candidates: 0` typo in `parameters.yml` would make every `save()` call treat a refresh as always-due, defeating the daily-cadence contract, silently.
   evidence: Both functions do `int(raw)` with only `(TypeError, ValueError)` guarded; no positivity check exists anywhere in this codebase's cadence-coercion helpers. Not fixed here: this story's own `_coerce_cadence` faithfully mirrors the established precedent (per the spec's explicit instruction to mirror `refresh_vdb_store`), and fixing only the new copy while leaving the precedent unguarded would be an inconsistent, story-local patch to a codebase-wide pattern. Flagged by the Edge Case Hunter review pass on story 13.1's diff (2026-08-09, review pass 2).
 
@@ -2390,7 +2390,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-7: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-delta element — if a repo's description text ever happens to contain a phrase matching "N stars this week/month/today", `stars_today` would be misattributed from the description rather than the actual stats row.
   evidence: `article_text = article.get_text(" ", strip=True)` then `_STARS_DELTA_RE.search(article_text)` has no element-scoping guard (unlike `stars_tag`/`forks_tag`, which use `article.select_one('a[href$="/stargazers"]')`-style scoped selectors). No fixture in the test suite exercises a description containing that exact phrase shape, so the risk is real but unverified either way. Distinct from the already-deferred first-`<h2>`/first-`<p>` mismatch (that one misattributes `repo_full_name`/`description`; this one misattributes `stars_today`). Flagged by the Edge Case Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
 
@@ -2403,7 +2403,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-8: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k s
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k stars" (if GitHub's markup ever renders one on the trending page, as it does elsewhere in its UI) would parse as `1` instead of `1200`, silently truncating rather than failing.
   evidence: No live GitHub HTML was fetched to confirm whether the trending page ever renders abbreviated counts (offline dev environment, no live fetcher wired in this story by design); GitHub's own UI does use abbreviated forms elsewhere (e.g. the repo header star badge), so the risk is plausible but unconfirmed for this specific page. Flagged by the Edge Case Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
 
@@ -2416,7 +2416,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-9: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they
-- source_spec: `spec-13-1-trending-ingest.md`
+- source_spec: `spec-12-1-trending-ingest-fr-64.md`
   summary: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they contain non-null values row by row — a future refactor that bypassed the parser's own `if not repo_full_name: continue` guards could persist rows with blank identifiers and this check would not catch it.
   evidence: `missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]` is a columns-only check. This exactly mirrors `VDBStoreDataset._write`'s identical column-presence-only pattern in the same module (`refresh.py`) — an established, deliberate precedent this story's `_write` was told to mirror, not a gap unique to this story. Fixing it here alone would leave the sibling class inconsistently guarded; fixing both is a `refresh.py`-wide design decision, not a one-file patch. Flagged by the Blind Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
 
@@ -2429,7 +2429,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-1: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inli
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inlines the same normalize-and-lookup logic against a pre-built index for performance; a future refactor that naively swapped the inline logic for a per-row call to `_resolve_pypi_name` would silently reintroduce an O(rows × universe) index rebuild on every call, since `_resolve_pypi_name` rebuilds the full `pypi_universe` index from scratch each invocation.
   evidence: `_resolve_pypi_name(repo_full_name, pypi_universe)` calls `_normalized_pypi_index(pypi_universe)` internally — correct for a single lookup, but `classify_trending_candidates`'s loop deliberately builds the index ONCE outside the loop instead of calling `_resolve_pypi_name` per row. No current call site exercises the O(n²) path, so this is a latent maintenance risk, not a live bug. Flagged by the Blind Hunter review pass on story 13.2's diff (2026-08-09, review pass 1).
 
@@ -2442,7 +2442,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-2: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_candidates` refreshes DAILY, so the classification trails the snapshot it describes by up to 6 days; CAP-3 (Story 13.3, the first consumer) must decide the cadence deliberately.
   evidence: `orchestration/definitions.py` SCHEDULED_JOBS entry `("upstream_discovery_trending", ["refresh_trending_candidates"], "0 5 * * *", "daily", ...)` selects the refresh op ALONE; the classifier reaches Dagster only via `bootstrap_ops = sorted(node_ops - set(PHASE_P_OPS))` at `BOOTSTRAP_CRON = "0 2 * * 0"`. Not patched here: the story's intent contract explicitly scoped scheduling ("it only needs a `NODE_TIMEOUTS` entry, not a `SCHEDULED_JOBS` row"), and adding the classifier to the daily job would couple a currently self-contained, uncredentialed daily job to three other pipelines' materialized outputs — a design call, not a one-line patch. The catalog comment that overclaimed "re-materialized whenever trending_candidates or its join signals change" WAS corrected in this pass. Flagged independently by both the Blind Hunter and Edge Case Hunter review passes on story 13.2's diff (2026-08-09, follow-up review pass).
 
@@ -2455,7 +2455,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-3: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — 
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — a NULL/unmapped `license_spdx`, and a valid OSI license expressed in a form the 24-entry exact-match allowlist cannot represent (PEP 639 expressions like `MIT OR Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, or OSI IDs outside the curated set such as `Python-2.0`, `Artistic-2.0`, `EUPL-1.2`). Genuinely OSI-licensed candidates are therefore dropped with a factually wrong reason and never escalated to a human.
   evidence: `_classify_row` does `if not isinstance(license_spdx, str) or license_spdx not in _OSI_APPROVED_SPDX_IDS: return "skip", "not-osi-license"`. `tier-taxonomy.md` defines `unclassified-needs-human` as exactly "the classifier's safety valve when a joined signal is unavailable", which fits both states better. NULL `license_spdx` is a known-common state in this codebase — `seed_gaps/nodes.py::report_license_map_gap` exists solely to report "rows the in-code `_LICENSE_TO_SPDX` map missed — i.e. `license_spdx` is NULL"; and `phase_r_fetch_one` carries `license_spdx` through verbatim from the upstream record, so PEP 639 expressions arrive unnormalized. Not patched here: the story's intent contract's I/O matrix explicitly specifies "`license_spdx` absent or not in the OSI allowlist -> `not-osi-license`", so changing it is a contract amendment, not a patch. Flagged independently by both the Blind Hunter and Edge Case Hunter review passes on story 13.2's diff (2026-08-09, follow-up review pass).
 
@@ -2468,7 +2468,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-4: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides with a popular PyPI package (e.g. any `someorg/requests`) resolves to that package and inherits ITS `license_spdx`/`packaging_shape`, so a confident tier-1/tier-2 recommendation can be issued for the wrong project entirely. The spec's Design Notes document only the false-NEGATIVE direction (a package published under a name different from its repo).
   evidence: `_resolve_pypi_name` matches the PEP-503-normalized repo segment against `pypi_universe` with nothing corroborating that the resolved package and the repo are the same project. No zero-new-fetch corroboration signal exists today: `pypi_intelligence_enriched`'s columns are `pypi_name, packaging_shape, license_spdx, license_raw, notes` — it carries no `project_urls`/repository field to cross-check the trending row's `repo_url` against, so this cannot be patched inside CAP-2's stated zero-new-fetch constraint. Flagged by the Edge Case Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
 
@@ -2481,7 +2481,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-5: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages 
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages — exactly CAP-2's input population — so in production the tier-1/tier-2 branches will rarely fire and most resolved rows will degrade to `unclassified-needs-human`. Nothing records the unmatched names as an enrichment backlog, so the gap never closes on its own.
   evidence: `conf/base/catalog.yml` describes `pypi_intelligence_enriched` as the "Phase R top-N enrichment slice" and `pypi_intelligence/nodes.py::enrich_pypi_intelligence` states "Enrich the top-N candidate slice (bounded at dataset level)"; `_classify_row` returns `"skip", "unclassified-needs-human"` whenever `intel is None`. Every tier-1/tier-2 test in `tests/pipelines/upstream_discovery/test_nodes.py` hand-builds an intel row for the exact package under test, so no gate measures the real-world yield. Not a defect of this story's code (it behaves per contract, and the taxonomy's safety valve is the correct degradation) — but the capability's practical yield is unverified and likely low until an enrichment-request path exists. Flagged by the Blind Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
 
@@ -2494,7 +2494,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/pipelines/upstream_discovery/test_nodes.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-6: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` p
-- source_spec: `spec-13-2-tier-classification.md`
+- source_spec: `spec-12-2-tier-classification-fr-65.md`
   summary: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` page), so it is classified and emitted up to 3x in `trending_candidates_classified` — inflating any "how many tier-1 candidates" count and making CAP-3/CAP-5 propose the same package repeatedly.
   evidence: `datasets/upstream_discovery.py::_do_refresh` loops the 3 period URLs doing `rows.extend(period_rows)` with no dedup, and `_write` validates columns only; `tests/datasets/test_upstream_discovery.py` asserts `set(out["period"]) == {"daily", "weekly", "monthly"}`, confirming the multi-period shape is intended. Originates in CAP-1's dataset (Story 13.1), not in this story's classifier, and cannot be fixed inside the classifier without violating its explicit "every input row produces exactly one output row" invariant — the dedup belongs either in the dataset or in CAP-3's read path. Flagged by the Edge Case Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
   resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — `trending_candidates/handoff.py::_select_candidate_row` dedupes a multi-window duplicate to exactly ONE handoff record at the point a candidate actually leaves the dataflow for a human/downstream consumer, via the same deterministic sort `query_trending_candidates` already uses (`stars_total` desc / `repo_full_name` asc / `period` asc, first row wins). This resolves the concrete harm named above (CAP-5 proposing the same package repeatedly) WITHOUT touching CAP-1's dataset or CAP-3's own read path — `query_trending_candidates`/`trending-candidates` still returns every window's row un-deduped by design (`--period all`'s documented purpose is to surface those duplicates), so this is a handoff-time resolution, not a dataset-level or CAP-3-display-level fix. See `tier-taxonomy.md`'s "Downstream handoff (CAP-5)" As-built note.
@@ -2508,7 +2508,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/datasets/test_upstream_discovery.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-1: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NO
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NOT guarded against a session-bootstrap-time failure (e.g. a missing/incomplete `conf/local/credentials.yml` — `KeyError` from `CatalogConfigResolver` eagerly resolving every catalog entry's credentials at bootstrap) — only the subsequent `load_with_provenance` call is guarded, against `DatasetError`. A bootstrap failure crashes uncaught: the CLI's broadened `except Exception` (added this same story, patch) turns it into a clean stderr message + exit 1 instead of a raw traceback, but the MCP tool still propagates it raw, and neither degrades to the documented `count: 0` "missing dataset" shape.
   evidence: Confirmed live during this story's own implementation — a fresh worktree with no `conf/local/credentials.yml` makes ANY real (non-mocked) `bootstrapped_session` call, for ANY dataset, fail with `KeyError: 'bigquery_adc'`. This is a PRE-EXISTING gap in the shared `_session` seam, not introduced by this story: `mcp/tools.py::read_dataset` has the identical unguarded `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` shape with no try/except around it either, and `query_trending_candidates` deliberately mirrors that exact seam usage (Design Notes: "the exact seam `mcp/tools.py::read_dataset` already uses"). Fixing it here alone would leave `read_dataset`/`list_datasets` inconsistently guarded — a `_session`-seam-wide design decision, not a one-file patch. Flagged by the Edge Case Hunter review pass on story 13.3's diff (2026-08-09, review pass 1).
 
@@ -2521,7 +2521,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-2: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schem
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schema", but no schema artifact for the `query_trending_candidates` envelope exists anywhere in the repo — and the envelope's own `schema_version` is borrowed from `_provenance.SCHEMA_VERSION` (the PROVENANCE envelope's version), so a breaking change to the candidate payload cannot be signalled to a consumer at all.
   evidence: A repo-wide search finds the sentence in SPEC.md and no corresponding JSON-Schema/pydantic artifact. The `candidates` array is whatever columns `trending_candidates_classified` happens to carry at read time, so its shape changes silently whenever CAP-2's classifier adds or renames a column — with `schema_version` pinned to an unrelated module's constant, nothing moves when it does. The follow-up review pass DID make the output strictly RFC-8259-valid (the `NaN` leak is fixed and pinned by a `parse_constant`-rejecting test), so "valid JSON" now holds; "validates against a documented schema" still does not. Authoring that schema is a new deliverable beyond this story's Code Map and touches CAP-5's consumer contract, so it belongs to whichever story owns the Mason handoff. Flagged independently by both the Blind Hunter and the Edge Case Hunter on story 13.3's diff (2026-08-09, follow-up review pass).
   resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — landed the repo's first documented candidate-envelope schema, `trending_candidates/handoff.py::HANDOFF_ENVELOPE_SCHEMA` (a plain dict, JSON-Schema-draft-2020-12 vocabulary; no new `jsonschema` pixi dependency), versioned independently via `HANDOFF_SCHEMA_VERSION` (an int, deliberately NOT `_provenance.SCHEMA_VERSION` — the exact borrowed-constant gap this entry names). PARTIAL, scoped honestly: this documents the CAP-5 HANDOFF envelope (`hand_off_candidate`'s single-record output), not CAP-3's own `query_trending_candidates` envelope (the `candidates` array's shape) — that surface's `schema_version` is still borrowed from `_provenance.SCHEMA_VERSION`, and its shape still changes silently whenever CAP-2's classifier adds/renames a column. The two envelopes overlap heavily (the handoff record IS a selected `query_trending_candidates` row plus the handoff-specific fields), and this story establishes the schema-artifact PRECEDENT + pattern (a plain dict, hand-rolled structural conformance test, no external validator) a future CAP-3 story can apply directly to close the remaining half.
@@ -2535,7 +2535,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-3: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it 
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it only on the `row-fetched-at` code path and `trending_candidates_classified` is a plain `ParquetDataset` (which resolves to `file-mtime`) — so the AD-17 staleness envelope this surface advertises is half-populated by construction, not by circumstance.
   evidence: Confirmed live — a real `ParquetDataset`-backed query returns `provenance_kind: "file-mtime"`, a correct `build_stamp`, and `build_stamp_newest: null`. This is pre-existing behaviour in the shared `pyforge.atlas.provenance` seam that `mcp/tools.py::read_dataset` has had since AD-17 landed, not something story 13.3 introduced; 13.3 only surfaces the field. The catalog.yml cadence comment and the CLI's new table header both name `build_stamp`/`build_stamp_newest` together, so either provenance should derive a newest-row stamp for file-backed datasets or the pairing should stop being advertised for dataset types that cannot produce it. A `provenance`-seam-wide decision, not a one-file patch in this story. Flagged by the Blind Hunter on story 13.3's diff (2026-08-09, follow-up review pass).
 
@@ -2548,7 +2548,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-4: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassi
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassified-needs-human` for the state "the conda-forge mapping was unusable, so on-cf could NOT be determined" — so a repo that IS on conda-forge can be returned as a not-yet-on-conda-forge candidate whenever `--tier all`/`--tier skip` is used.
   evidence: Confirmed live — running the real `classify_trending_candidates` with an empty `pypi_conda_mapping` (the fresh-atlas state) classified `psf/requests` as `reason="unclassified-needs-human"`, and `query_trending_candidates(tier="all")` then returned it with `filters.not_on_cf: true`. `nodes.py::_classify_row` returns that reason from `if not mapping_usable:` — i.e. BEFORE the `if on_cf:` branch is even reachable — so the reason genuinely means "unknown", not "not on cf". NOT patched here: the story's `<intent-contract>` states the rule explicitly ("`--not-on-cf` filters out `reason == \"already-on-conda-forge\"` ... ALWAYS derived from `reason`"), so widening the exclusion set is a contract amendment, not a patch. It is also unreachable under the DEFAULT `--tier 1,2` (every `unclassified-needs-human` row is tier `skip`), and both surfaces display the `reason` column, so today's operator sees the ambiguity rather than being misled silently. The exposure becomes real when CAP-5's Mason handoff (Story 13.5) consumes this surface programmatically on `not_on_cf` alone — that story should decide whether "unknown" belongs in a not-on-cf result set. Flagged independently by both the Blind Hunter and the Edge Case Hunter on story 13.3's diff (2026-08-09, second follow-up review pass).
   resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — answered the question this entry left open ("that story should decide whether 'unknown' belongs in a not-on-cf result set") by NOT consuming `query_trending_candidates`'s `not_on_cf` filter programmatically at all. `hand_off_candidate` gates eligibility on the candidate row's `tier` directly (`tier in {"1","2"}`), never on a `not_on_cf`/`--not-on-cf` boolean — `_classify_row` (nodes.py) only ever pairs tier `"1"`/`"2"` with a resolved OSI-license reason, so `"already-on-conda-forge"` AND `"unclassified-needs-human"` are BOTH always tier `"skip"` and BOTH excluded by construction. This closes the exposure this entry named at the exact seam it named it against (CAP-5's Mason handoff) without widening `--not-on-cf`'s own reason-based exclusion set inside `query_trending_candidates` — the contract-amendment concern the original finding also flagged as out of scope for a patch. `query_trending_candidates`'s own `--not-on-cf`/`--tier all` combination still has the documented ambiguity for any OTHER programmatic consumer; only CAP-5's handoff path is closed. See `tier-taxonomy.md`'s "Downstream handoff (CAP-5)" As-built note.
@@ -2562,7 +2562,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-5: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) in
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) inherits kedro's rich logging handler, which sits on the ROOT logger and writes to STDOUT — the same channel FastMCP's default stdio transport uses for JSON-RPC, so a stdio-launched server would interleave kedro log lines into the protocol stream.
   evidence: That the handler is on the root logger and writes to stdout was established live during this story (it is exactly why `__main__.py`'s `--json` path needs a process-global `logging.disable` floor at CRITICAL: an INFO-only floor let kedro's own "Credentials not found in your Kedro project config." WARNING print into the envelope and `json.loads(stdout)` fail). The CLI half is fixed and pinned by a test; the MCP half has no equivalent. Marked plausible rather than confirmed: `build_server()` is only a factory and no stdio launcher exists in-repo, so the exposure depends on a deployment that does not exist yet. Pre-existing and seam-wide — `read_dataset`/`list_datasets` have carried it since B3, and it is fixed once at the server-construction seam (redirect root handlers to stderr when serving over stdio), not per tool. Flagged by the Blind Hunter on story 13.3's diff (2026-08-09, second follow-up review pass).
 
@@ -2575,7 +2575,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-6: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="re
-- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+- source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   summary: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="records")` with NO NaN/±inf masking, so every MCP read of a Parquet-backed dataset carrying a null in a numeric column emits the bare, non-RFC-8259 `NaN`/`Infinity` tokens that two separate review passes classed as `high` defects when story 13.3's own path had them.
   evidence: Confirmed by construction and live — `pd.DataFrame({'a':[1.0,None]}).to_dict(orient='records')` yields `{'a': nan}` and `json.dumps` renders it `{"a": NaN}` (run in the pyforge-atlas env, pandas 3.0.5); `tools.py`'s coercion block duck-types DataFrame/Series/ndarray/set into JSON-native SHAPES but never touches cell VALUES. Nulls in numeric columns are the norm across the atlas catalog, not an edge case. NOT patched here: `read_dataset` is deliberately pandas-free to satisfy the AD-7 no-business-logic AST gate, so the fix belongs either in `provenance.py` (a shared json-safe coercion the whole read surface calls) or in an equivalent duck-typed masking step — a seam-wide decision touching every MCP read tool, not a one-file patch in this story. Pre-existing since B3; 13.3's own surface is already immune (its `query.py` masks both NaN and ±inf and pins it with a `parse_constant`-rejecting round-trip). Flagged during the third follow-up review pass on story 13.3's diff (2026-08-10).
 
@@ -2588,7 +2588,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-1: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (
-- source_spec: `spec-13-4-fixed-source-audit-track.md`
+- source_spec: `spec-12-4-fixed-source-audit-track-fr-67.md`
   summary: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (a pure Rust/Go CLI, or a C++ library with no Python bindings) can never reach the Tier-2 outcome `tier-taxonomy.md`'s own definition allows for ("Rust/Go CLI, native/compiled" is listed as Tier-2-eligible with no PyPI-published precondition, unlike Tier-1's explicit "PyPI-published AND" requirement) — it permanently classifies as `no-pypi-artifact`/`unclassified-needs-human` instead.
   evidence: `_classify_row`'s decision tree (Story 13.2) gates every branch on a resolved `pypi_name`; step 1 returns `skip`/`no-pypi-artifact` (or `unclassified-needs-human`) whenever `_resolve_pypi_name` returns `None`, with no path to tier `"2"` from an unresolved name regardless of shape. Two of this story's own nine seeded org-audit candidates (`microsoft/edit`, a Rust CLI; `microsoft/SEAL`, C++/CMake) are plausibly this exact shape. Pre-existing in the Story 13.2 classifier — CAP-4 reuses it unchanged (`<intent-contract>` Never: "No change to classify_trending_candidates's signature, decision tree, helpers") — but newly consequential because a fixed-source org audit is precisely the kind of batch where compiled/no-PyPI candidates are common, unlike the trending feed CAP-2 was originally tuned against. Flagged by the Blind Hunter on story 13.4's diff (2026-08-10, review pass 1).
 
@@ -2601,7 +2601,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-2: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted 
-- source_spec: `spec-13-4-fixed-source-audit-track.md`
+- source_spec: `spec-12-4-fixed-source-audit-track-fr-67.md`
   summary: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted v1 limitation) false-negatives whenever a repo's real PyPI package name differs from its own repo name — `org-audit-precedent.md`'s own data demonstrates this directly: `agent-framework-core` is listed as already shipped at audit time under the "Already shipped" bucket, while `microsoft/agent-framework` (the repo this story seeds) sits in "Material gaps" as a distinct, separately-tracked entry.
   evidence: `_resolve_pypi_name` normalizes only the bare repo segment (`agent-framework`) and exact-matches it against `pypi_universe.pypi_name` — it has no mechanism to associate a repo with a differently-named PyPI package such as `agent-framework-core`. If the real not-yet-packaged PyPI artifact for `microsoft/agent-framework` is named anything other than exactly `agent-framework`, this story's seeded candidate false-negatives to `no-pypi-artifact` regardless of actual packaging readiness. Pre-existing in the Story 13.2 classifier (its own Design Notes already accepted this v1 limitation and explicitly named "Story 13.4 (org-audit, reusing this classifier)" as a story that might need to revisit it); not introduced by this diff, but the first case where the precedent doc's own evidence demonstrates it concretely rather than hypothetically. Flagged by the Blind Hunter on story 13.4's diff (2026-08-10, review pass 1).
 
@@ -2614,7 +2614,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-5-1: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failu
-- source_spec: `spec-13-5-downstream-handoff-to-mason.md`
+- source_spec: `spec-12-5-downstream-handoff-to-mason-fr-68.md`
   summary: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failure classes — `__main__.py` (Story 13.3, untouched by this diff) maps EVERY failure (a bad filter, `BrokenPipeError`, any other exception) to exit 1 with no distinct "unexpected error" code and no explicit 130 for `KeyboardInterrupt`, while `handoff_main.py` (this story) introduces the NFR-6 0/1/2/130 scheme and specifically maps `BrokenPipeError` to 2 where `__main__.py` maps the identical condition to 1.
   evidence: Confirmed by direct comparison of the two files' `except` blocks. `handoff_main.py` is the MORE correct of the two against `project-context.md`'s own binding NFR-6 convention ("Exit code 1 = policy fail... 2 = error... 130 = interrupted... never use other exit codes"); `__main__.py` predates that convention's application here and was out of this story's scope to change (Never list: no touches to `query.py`/`__main__.py`'s own filter/exit semantics). A consumer (Mason, or any script) gating uniformly on `pyforge.atlas.trending_candidates`'s CLI exit codes across BOTH entrypoints would get different answers from the two for the same failure class today. Flagged by the Blind Hunter on story 13.5's diff (2026-08-10, review pass 1).
 
@@ -2627,7 +2627,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-5-2: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete 
-- source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
+- source_spec: `spec-12-5-downstream-handoff-to-mason-fr-68.md` (repair pass, 2026-08-10)
   summary: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete baseline — it hashes working-tree bytes rather than the committed git blob, never asserts every currently-governed file for the target spec is actually captured, never cross-checks that the spec's `.memlog.md` names the files being newly baselined, and (per a multi-owner surface) only refreshes the ONE named `--spec`'s entry even when a file is also governed by another spec's glob — and no test pins any of this. This exact failure class (code committed, baseline never re-stamped because the write happened before the new files were `git add`-ed) is what broke this story's deterministic verification and can recur on any future story.
   evidence: Reproduced directly on this story: the previous session's `.memlog.md` entry already documented the 3 new files, but `scripts/.spec-surface-baseline.json`'s `pyforge-atlas/spec-pyforge-atlas` entry never captured their hashes, producing 3 hard `[drift]` findings this repair pass had to fix with a bare re-run of `--write-baseline --spec pyforge-atlas/spec-pyforge-atlas`. Flagged independently by both the Blind Hunter and the Edge Case Hunter reviewing this repair pass's diff (2026-08-10) — Blind Hunter: "the root cause... has no structural preventer... nothing... stops the identical failure from recurring on the very next story"; Edge Case Hunter: sha1 should read `git show HEAD:<path>` not working-tree bytes, and the write path never checks the memlog names the files it is about to baseline. Both empirically checked and NOT live today (a full pre-fix run showed exactly the 3 expected findings and nothing else; a full post-fix run showed 0 findings across all 54 specs) — this defers the missing guardrail, not a live defect.
 
@@ -2640,7 +2640,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-5-3: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.j
-- source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
+- source_spec: `spec-12-5-downstream-handoff-to-mason-fr-68.md` (repair pass, 2026-08-10)
   summary: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.json` — two concurrent invocations for different `--spec` targets (plausible under this repo's own documented parallel-BMAD-agent pattern) can race, and the second writer's read (based on the pre-first-writer file) silently drops the first writer's just-stamped entry.
   evidence: `main()`'s `--write-baseline` path (`scripts/spec_surface_check.py` merge block) reads `BASELINE.read_text()` into `merged`, mutates only `args.spec`'s key(s), then does one `BASELINE.write_text(...)` with no file lock or compare-and-swap — a classic last-writer-wins race. Flagged by the Edge Case Hunter reviewing this repair pass's diff (2026-08-10). Not exercised by this repair (single sequential invocation) but plausible given `CLAUDE.md`'s own documented incidents of concurrent BMAD/loop agents mutating shared per-worktree state (e.g. the 2026-07-25 `bmad-switch` symlink race).
 
@@ -2652,7 +2652,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-10-5-9: Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance after the damping cap was spent
+### DW-10-5-9: Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance-ad-17 after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   severity: low
@@ -2678,9 +2678,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-13-3-7: Follow-up review still recommended for 13-3-trending-candidates-operator-surface after the damping cap was spent
+### DW-13-3-7: Follow-up review still recommended for 12-3-trending-candidates-operator-surface-fr-66 after the damping cap was spent
   origin: review-budget-followup
-  source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  source_spec: `spec-12-3-trending-candidates-operator-surface-fr-66.md`
   severity: low
   reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260809-184330-203b; this entry preserves the lingering recommendation for a deliberate later review.
   status: open
@@ -2693,7 +2693,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-1: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
 
-- source_spec: `planning-artifacts/specs/spec-17-1-the-from-scratch-run-is-a-chartered-capability.md`
+- source_spec: `planning-artifacts/specs/spec-16-1-the-from-scratch-run-is-a-chartered-capability.md`
   summary: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
   evidence: This diff touches zero lines in the quartet's four scripts; no cached external sources (/tmp/ext-src/*) or live OPENTEAMS_IDENTITY_GIST_ID credentials exist in this environment to run a from-scratch pass unattended. The claim is evidenced by the pre-existing identity-2026-08-20 dated tab (2 days old at story time), produced by this same toolchain before this story began — not by fresh execution in this diff. Flagged by the intent-alignment review pass: epics.md's Given/Then for 16.1 is compound (a behavioral regeneration clause plus a governance clause), and only the governance clause is built and verified here.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py
@@ -2708,7 +2708,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
   evidence: This repo has already hit GitHub secondary rate limits under lighter concurrent load (Phase K, 8 workers -> 15% 403s). create_missing_issues fires one issue-create + one project item-add per missing name in a tight loop with no backoff. Gated behind an opt-in flag that requires deliberate attended execution with real credentials -- defer to the first real attended --create-issues run.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:create_missing_issues
@@ -2723,7 +2723,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-2: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
   evidence: Pre-existing convention, not introduced by this story: priority.py's own --canvas argparse default already hardcodes the identical "/home/rxm7706/.cursor/projects/.../canvases" path for the Catalog canvas. This story's two new canvas writers follow that same established (if machine-specific) pattern rather than inventing a new one.
   location: scripts/openteams_identity_dashboards.py:CANVAS_DIR
@@ -2738,7 +2738,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-3: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
   evidence: Mirrors a pre-existing pattern already present in this same file's render() function (verified against the live file, not just the diff). Cosmetic, dashboard-only impact; neither this canvas nor its sibling has any live-rendering verification yet in this environment.
   location: scripts/openteams_identity_dashboards.py:write_ops_canvas
@@ -2753,7 +2753,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-4: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
   evidence: Same pre-existing-pattern, cosmetic-dashboard rationale as the write_ops_canvas sentinel/order-filtering item above.
   location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
@@ -2762,7 +2762,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: closed
   closed: 2026-09-01
-  closed_by: Story 23.9 (`spec-23-9-quartet-workbook-retirement.md`) — `write_workbook_canvas` rewritten to read `enterprise_jfrog_consumption.parquet` via `load_jfrog_by()`; the openpyxl/`load_workbook`/`jfrog_by.setdefault` collision path deleted (`scripts/openteams_identity_dashboards.py`).
+  closed_by: Story 23.9 (`spec-22-9-quartet-workbook-retirement-thin-actuators-no-openpyxl-in-scripts.md`) — `write_workbook_canvas` rewritten to read `enterprise_jfrog_consumption.parquet` via `load_jfrog_by()`; the openpyxl/`load_workbook`/`jfrog_by.setdefault` collision path deleted (`scripts/openteams_identity_dashboards.py`).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2770,7 +2770,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-5: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
   evidence: `if ident_row and not on_cf and not has_pr` requires a truthy ident_row, so a JFrog name with zero identity-tab match -- arguably the strongest "needs packaging" signal -- never appears in need_pr, while neither_rows counts exactly that case.
   location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
@@ -2787,7 +2787,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-6: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
   evidence: Minor resource leak in a short-lived CLI process; real but low real-world impact.
   location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
@@ -2804,7 +2804,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-17-2-7: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
 
-- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
   summary: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
   evidence: Drift risk between the two copies; mitigated but not eliminated by a new test (test_write_ops_canvas_empty_records_is_valid_and_schema_shaped) that asserts the two are byte-identical.
   location: scripts/openteams_identity_dashboards.py:_CANVAS_PREFIX
@@ -2866,7 +2866,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-19-2: Host chrome does not load an HTMX runtime, so hx-* poll attributes are markup-only.
 
-- source_spec: `planning-artifacts/specs/spec-19-2-first-portal-slice-inventory-row.md`
+- source_spec: `planning-artifacts/specs/spec-18-2-first-portal-slice-one-inventory-run-row.md`
   summary: Host chrome does not load an HTMX runtime, so hx-* poll attributes are markup-only.
   evidence: django_pyforge/base.html is read-only for this story and has no htmx script. First paint is server-rendered and satisfies the GET AC without JS.
   location: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
@@ -2879,7 +2879,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-1: Stack-up PlaneBoot.library is a lock token whose query methods raise raw duckdb closed-connection errors once the connection yields to the HTTP face; consider a typed yielded-state guard, and/or the server-on-:memory: + exec-API ATTACH-read-only design (with autoinstall/autoload_known_extensions=false) as a route to two concurrently usable faces.
 
-- source_spec: `planning-artifacts/specs/spec-20-1-one-boot-script-raises-both-plane-faces.md`
+- source_spec: `planning-artifacts/specs/spec-19-1-one-boot-script-raises-both-plane-faces-cap-5.md`
   summary: Stack-up PlaneBoot.library is a lock token whose query methods raise raw duckdb closed-connection errors once the connection yields to the HTTP face; consider a typed yielded-state guard, and/or the server-on-:memory: + exec-API ATTACH-read-only design (with autoinstall/autoload_known_extensions=false) as a route to two concurrently usable faces.
   evidence: duckdb 1.5.5 refuses any second cross-process open while a read-write connection is held (verified live 2026-08-27), so the boot yields the in-process connection before launching duckdb-server (recorded handling, Design Notes); a caller using boot.library after the yield gets an untyped closed-connection error, and connect_reader from other processes also fails while the HTTP face lives. Surfaced by the 2026-08-27 review pass (intent-alignment + edge-case reviewers); concurrent-usability proof is Story 20.2's face-parity scope per the intent's Never clause.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_boot.py
@@ -2892,7 +2892,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-2: epics.md still shows Story 20.2 (and 20.1) as "Status: backlog" even though the spec/ledger have progressed past that.
 
-- source_spec: `planning-artifacts/specs/spec-20-2-face-parity-is-part-of-done.md`
+- source_spec: `planning-artifacts/specs/spec-19-2-face-parity-is-part-of-done-cap-5.md`
   summary: epics.md still shows Story 20.2 (and 20.1) as "Status: backlog" even though the spec/ledger have progressed past that.
   evidence: Confirmed by grep: epics.md:1801 reads "Status: backlog" for Story 20.2, and 20.1's entry (epics.md:1791) shows the same staleness despite 20.1 being fully done (sprint-status-ledger.yaml + its spec file both say done). This story's own commits don't touch epics.md's Status field either -- that field is evidently synced on a separate, coarser cadence than per-story implementation work.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md:1791,1801
@@ -2905,7 +2905,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-2-2: The parity fixture only exercises INTEGER/VARCHAR/DOUBLE columns, not the data types most prone to silently diverging across the HTTP face's JSON wire format (NULL, DATE/TIMESTAMP, DECIMAL, BLOB).
 
-- source_spec: `planning-artifacts/specs/spec-20-2-face-parity-is-part-of-done.md`
+- source_spec: `planning-artifacts/specs/spec-19-2-face-parity-is-part-of-done-cap-5.md`
   summary: The parity fixture only exercises INTEGER/VARCHAR/DOUBLE columns, not the data types most prone to silently diverging across the HTTP face's JSON wire format (NULL, DATE/TIMESTAMP, DECIMAL, BLOB).
   evidence: FIXTURE_TABLE in tests/query_plane/test_face_parity.py is `(id INTEGER, label VARCHAR, amount DOUBLE)` with three non-null rows. The story's own Problem statement is specifically about the HTTP face silently diverging from the library face without anyone noticing -- NULL/date/decimal round-tripping through JSON is a classic source of exactly that kind of silent divergence, and the current fixture can't exercise it. The gate's core mechanism (seeded-divergence detection) is still proven correct via the DOUBLE column, so this is a thoroughness gap, not a correctness defect.
   location: src/shared/packages/pyforge-atlas/tests/query_plane/test_face_parity.py:49-67
@@ -2918,7 +2918,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-2-3: A TOCTOU race exists between `_port_is_free(DEFAULT_PORT)` and `boot_query_plane`'s actual bind of that same hard-coded port.
 
-- source_spec: `planning-artifacts/specs/spec-20-2-face-parity-is-part-of-done.md`
+- source_spec: `planning-artifacts/specs/spec-19-2-face-parity-is-part-of-done-cap-5.md`
   summary: A TOCTOU race exists between `_port_is_free(DEFAULT_PORT)` and `boot_query_plane`'s actual bind of that same hard-coded port.
   evidence: If something else grabs port 3000 in the window between the pre-check and the real duckdb-server launch, the failure surfaces as an opaque `pytest.fail("duckdb-server exited at startup...")` rather than a clear "port was stolen" diagnostic. This mirrors the same pre-existing pattern already accepted in tests/test_query_plane_boot.py (Story 20.1) -- not introduced uniquely by this diff, and low-probability given tests run against ephemeral tmp_path DBs.
   location: src/shared/packages/pyforge-atlas/tests/query_plane/test_face_parity.py:228-229
@@ -2931,7 +2931,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-3: dashboard/app.py's PAGE_INVENTORY notes, dashboard/__init__.py's module docstring, and a provenance comment at app.py:243 still describe the packages-backed pages as "renders empty until the composed store lands (DW-D2)", now stale relative to DW-D2-2's closure by this story.
 
-- source_spec: `planning-artifacts/specs/spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`
+- source_spec: `planning-artifacts/specs/spec-19-3-named-pipeline-derivation-of-the-dashboard-stores-cap-6.md`
   summary: dashboard/app.py's PAGE_INVENTORY notes, dashboard/__init__.py's module docstring, and a provenance comment at app.py:243 still describe the packages-backed pages as "renders empty until the composed store lands (DW-D2)", now stale relative to DW-D2-2's closure by this story.
   evidence: This story's spec explicitly forbids modifying dashboard/app.py's page set or PAGE_INVENTORY ("Never" clause) -- that is reserved for Story 20.5, which is explicitly gated on this story. dashboard/__init__.py's docstring carries the same "BSL-wired SHELL" framing but is not covered by an explicit Never clause; left unchanged here for consistency with the same page-inventory documentation set Story 20.5 will touch. Purely comment/docstring text, no functional impact.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:13-19,68-90,243; src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py:10-13
@@ -2944,7 +2944,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-3-2: README.md's "Status" line ("8 Kedro pipelines live") already omitted the pre-existing artifactory_downloads and query_plane_cache pipelines before this story; this story adds a 9th/10th pipeline (semantic_packages) without correcting that inventory.
 
-- source_spec: `planning-artifacts/specs/spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`
+- source_spec: `planning-artifacts/specs/spec-19-3-named-pipeline-derivation-of-the-dashboard-stores-cap-6.md`
   summary: README.md's "Status" line ("8 Kedro pipelines live") already omitted the pre-existing artifactory_downloads and query_plane_cache pipelines before this story; this story adds a 9th/10th pipeline (semantic_packages) without correcting that inventory.
   evidence: Pre-existing drift, not introduced by this story -- confirmed the README already undercounted by 2 before this diff. Worsened by one more omission. No functional impact; a documentation-completeness item best fixed as one pass across all undercounted pipelines rather than piecemeal per-story.
   location: src/shared/packages/pyforge-atlas/README.md:14-17
@@ -2957,7 +2957,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-3-3: test_nodes.py's duplicate-key test (test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_population) only exercises duplicate keys in core_packages_enumerated/core_latest_status, not in core_downloads, core_feedstock_attribution, or vcs_archived_feedstocks.
 
-- source_spec: `planning-artifacts/specs/spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`
+- source_spec: `planning-artifacts/specs/spec-19-3-named-pipeline-derivation-of-the-dashboard-stores-cap-6.md`
   summary: test_nodes.py's duplicate-key test (test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_population) only exercises duplicate keys in core_packages_enumerated/core_latest_status, not in core_downloads, core_feedstock_attribution, or vcs_archived_feedstocks.
   evidence: A thoroughness gap, not a correctness defect: nodes.py already calls .drop_duplicates("conda_name") on every one of those three inputs before merging, so the fan-out guard exists in code: the gap is only in explicit test coverage proving it for the other three inputs.
   location: src/shared/packages/pyforge-atlas/tests/pipelines/semantic_packages/test_nodes.py
@@ -2970,7 +2970,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4: epics.md still shows Story 20.4 (and 20.5) as "Status: backlog" even though the spec/ledger have progressed past that -- the same known epics.md-staleness pattern recorded by Stories 20.2/20.3's own specs.
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: epics.md still shows Story 20.4 (and 20.5) as "Status: backlog" even though the spec/ledger have progressed past that -- the same known epics.md-staleness pattern recorded by Stories 20.2/20.3's own specs.
   evidence: epics.md's own convention (per Stories 20.2/20.3) is that per-story "Status:" lines are regenerated by bmad-create-epics-and-stories, not hand-edited by a single-story dispatch; this story follows the same precedent rather than hand-patching epics.md.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md:1821,1830
@@ -2983,7 +2983,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-2: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow
   evidence: See DESIGN.md § 0 and § 6 (page-count reconciliation table) for the full derivation and citations (canonical script list, mcp-tools.md, atlas-phases-overview.md § 3.3).
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md#0-how-carson-and-maya-derived-19
@@ -2996,7 +2996,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-3: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic
   evidence: `.claude/skills/bmad-cis-design-thinking/template.md` line 1 (`{{project_name}}`) against `.claude/skills/bmad-cis-design-thinking/SKILL.md` Step 4 "Load Config", which never resolves that key; confirmed the skill files are byte-identical to `.pixi/envs/local-recipes/share/bmad-creative-intelligence-suite/skills/bmad-cis-design-thinking/`, i.e. the bug is upstream in the conda package, not introduced by this story's install step.
   location: .claude/skills/bmad-cis-design-thinking/template.md:1
@@ -3011,7 +3011,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-4: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c
   evidence: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py::gather` (lines 149-261) only flags a key that was `TERMINAL` at baseline and drops out of `TERMINAL` at head; a `backlog -> done` transition never enters that check. `scripts/fleet_scan.py`'s `scan_deferred` only requires a `resolution:`/`verified:` line to exist to count an entry `triaged`/`closed` -- it never greps the cited artifact paths for matching content.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py:149
@@ -3024,7 +3024,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor
   evidence: dashboard/app.py's docstring + Code Map § "the exact pattern every new page must follow"; every new PageDef's `note` cites its DESIGN.md section for the deferred richer layout (e.g. distribution-breakdown's dimension-selector, universe-sbom's pagination, scan-project/env-inspect's upload controls).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (all 19 new `_data_page` calls)
@@ -3037,7 +3037,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-2: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new
   evidence: dashboard/data.py::load_scan_project / load_env_inspect docstrings state this explicitly; PageDef notes for both pages in app.py carry the same "forward-looking work, not wired here" language, mirroring DESIGN.md's own precedent for add-handoff / library-futures' deferred multi-agent claim/lock coordination.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_scan_project, load_env_inspect); dashboard/app.py PAGE_INVENTORY notes for scan-project/env-inspect
@@ -3050,7 +3050,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-3: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen
   evidence: tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria docstring records exactly this; confirmed by hand against Playwright-captured DOM dumps of the rendered dashboard (`page.locator("nav").count()` == 1, matching only the empty top navbar; `role="navigation"`/`role="main"` counts == 0).
   location: src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py; deferred-work-ledger.md DW-D2-3 resolution
@@ -3063,7 +3063,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-4: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da
   evidence: deferred-work-ledger.md DW-D2-3's `status: open` (not closed) + its 2026-08-28 evidence-update spells out exactly this split; `ls data/` in this worktree shows no `data/` tree exists at all (nothing was or could have been materialized without a live, credentialed pipeline run).
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md (DW-D2-3)
@@ -3076,7 +3076,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-5: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM
   evidence: semantic/models.py::build_alternative_candidates_model docstring states this explicitly; semantic/metrics.py's 2 new provenance entries (release_trend_label, python_min_bump_status) cite their legacy_source verbatim.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py (build_alternative_candidates_model and the other "BSL model (NEW)" composite-score pages: mapping-gap match_confidence, universe
@@ -3089,7 +3089,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-6: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g
   evidence: `git stash` + re-running the single test reproduces the identical AssertionError on unmodified main HEAD; `ls _bmad-output/projects/pyforge-atlas/implementation-artifacts/` in this worktree shows only `epic-20-context.md`, no `sprint-status.yaml`, while the sibling main checkout has one (dated 2026-08-26, from prior session state never synced to this worktree, by design -- gitignored Tier-3).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py (_default_paths); tests/dashboard/test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status
@@ -3102,7 +3102,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-7: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would
   evidence: Reviewer (2026-08-28 pass) Blind Hunter finding, `[low]` `[defer]`; manually cross-checked `build_dashboard()`'s 18 new `_provenance.resolve_for_file(root / _data.X_PARQUET)` lines against their paired `_data_page(...)` loader calls -- all 18 pairings are correct as shipped.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (build_dashboard, the provenance-resolution block)
@@ -3115,7 +3115,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-15-1: Epic 15's spec-artifactory-download-intelligence SPEC.md declares a `surface:` glob that matches zero real tracked files, leaving the whole epic invisible to the repo's spec-surface drift/coverage gate.
 
-- source_spec: `spec-15-1-injectable-aql-adapter.md`
+- source_spec: `spec-14-1-injectable-aql-adapter-cap-1.md`
   summary: Epic 15's spec-artifactory-download-intelligence SPEC.md declares a `surface:` glob that matches zero real tracked files, leaving the whole epic invisible to the repo's spec-surface drift/coverage gate.
   evidence: SPEC.md's frontmatter declares `surface: - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/` — a bare directory path with a trailing slash and no `*`/`**`. `scripts/spec_surface_check.py::glob_to_re` (verified directly, lines 56-72) only expands wildcards on literal `*`/`**` characters; every other character is `re.escape`d and the whole pattern is anchored `^...$`. A pattern with no wildcard therefore compiles to a regex that can only match the exact literal string `".../pipelines/"` itself — never a real file path (`git ls-files` never lists a bare directory), so this spec's surface currently governs nothing, unlike every sibling spec checked for comparison (`spec-wagtail-corporate-brain`, `spec-pyforge-atlas`), which use either exact file paths or a trailing `/**`. Compounding this: even a corrected glob would need to account for this story's deliberate choice to place Story 15.1's code at `pyforge/atlas/artifactory/` (a new top-level sibling package, not under `pipelines/`) — a documented, load-bearing decision (see this story's own spec Boundaries & Constraints: placing it under `pipelines/<name>/` would have broken Kedro's `find_pipelines(raise_errors=True)`), so a future fix to this SPEC.md's surface should reflect the code's real location, not just widen the existing glob. Neither the glob-anchoring behavior in `spec_surface_check.py` nor SPEC.md's `surface:` field was touched by this story's diff — both pre-exist it. Flagged by the Blind Hunter reviewing this story's diff (2026-08-15); the `glob_to_re` behavior was independently confirmed by reading the script directly rather than trusting the reviewer's claim.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
@@ -3125,7 +3125,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-15-3: `tests/catalog/conftest.py::PREFIX_TO_PIPELINE` attributes the `derived_purl_exports` catalog entry to the `derived_artifacts` pipeline by naming-prefix convention, but this story's `format_artifactory_purl_export` is that entry's first-ever real producer node, and it lives in the unrelated `artifactory_downloads` pipeline — nothing enforces that the prefix-derived "owning pipeline" bucket matches the real Kedro DAG wiring, so this can silently diverge further with each future story that adds another partition producer to the same shared catalog entry.
 
-- source_spec: `spec-15-3-kedro-pipeline-surfacing.md`
+- source_spec: `spec-14-3-kedro-pipeline-surfacing-cap-4.md`
   summary: `tests/catalog/conftest.py::PREFIX_TO_PIPELINE` attributes the `derived_purl_exports` catalog entry to the `derived_artifacts` pipeline by naming-prefix convention, but this story's `format_artifactory_purl_export` is that entry's first-ever real producer node, and it lives in the unrelated `artifactory_downloads` pipeline — nothing enforces that the prefix-derived "owning pipeline" bucket matches the real Kedro DAG wiring, so this can silently diverge further with each future story that adds another partition producer to the same shared catalog entry.
   evidence: Confirmed directly: `derived_artifacts/pipeline.py` only ever produces `derived_universe_sbom` (its sole node, `build_universe_sbom`); `derived_purl_exports` has never had a real producer before this story (its own package docstring: "the catalog entry stays declared-but-unproduced"), yet `PREFIX_TO_PIPELINE`'s `"derived": "derived_artifacts"` rule already counted it toward `derived_artifacts`'s `EXPECTED_PIPELINE_COUNTS` bucket before this diff touched anything. This story does not fix that pre-existing mis-bucketing (out of scope — the mapping is a naming-prefix heuristic across the whole catalog, not something this story's own entries need to correct), but it is the first case where the divergence between "who the naming convention says owns this entry" and "who the DAG actually shows produces it" becomes concretely observable rather than latent. Flagged by the Blind Hunter reviewing this story's diff (2026-08-15); verified directly against `derived_artifacts/pipeline.py` and `derived_artifacts/__init__.py` rather than trusting the reviewer's claim.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
@@ -3133,11 +3133,11 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-16-1: `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` (frontmatter comment + prose) and the `deferred-work-ledger.md` DW-H3 entry both now cite `spec-16-1-instance-deploy-definition.md` by relative path, but that file exists only in this run's gitignored `implementation-artifacts/` (Tier-3 scratch) — until it is promoted into the tracked `planning-artifacts/specs/` subdir and committed per this repo's own "story specs are durable" convention, both citations resolve to a file that does not exist in any fresh clone or other worktree.
+### DW-FU-16-1: `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` (frontmatter comment + prose) and the `deferred-work-ledger.md` DW-H3 entry both now cite `spec-15-1-instance-deploy-definition-cap-1.md` by relative path, but that file exists only in this run's gitignored `implementation-artifacts/` (Tier-3 scratch) — until it is promoted into the tracked `planning-artifacts/specs/` subdir and committed per this repo's own "story specs are durable" convention, both citations resolve to a file that does not exist in any fresh clone or other worktree.
 
-- source_spec: `spec-16-1-instance-deploy-definition.md`
-  summary: `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` (frontmatter comment + prose) and the `deferred-work-ledger.md` DW-H3 entry both now cite `spec-16-1-instance-deploy-definition.md` by relative path, but that file exists only in this run's gitignored `implementation-artifacts/` (Tier-3 scratch) — until it is promoted into the tracked `planning-artifacts/specs/` subdir and committed per this repo's own "story specs are durable" convention, both citations resolve to a file that does not exist in any fresh clone or other worktree.
-  evidence: Flagged independently by both the Blind Hunter and the Edge Case Hunter reviewing this story's diff (2026-08-15); the Edge Case Hunter additionally cited `docs/dashboard/generate.py`'s own docstring precedent and CLAUDE.md's documented incident history (13/31 pyforge-warden specs and 30/32 pyforge-atlas specs lost this exact way before the "story specs are durable" convention existed) as evidence this is a real, recurring failure mode, not a one-off. Not fixable within this story: CLAUDE.md's own convention states promotion happens "after the story merges" — i.e. after this bmad-loop run's branch lands, which is outside this workflow's scope. Whoever lands Story 16.1 must promote `spec-16-1-instance-deploy-definition.md` into `planning-artifacts/specs/spec-16-1-instance-deploy-definition.md` and commit it in the same PR (or immediately after merge) so these two cross-references resolve.
+- source_spec: `spec-15-1-instance-deploy-definition-cap-1.md`
+  summary: `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` (frontmatter comment + prose) and the `deferred-work-ledger.md` DW-H3 entry both now cite `spec-15-1-instance-deploy-definition-cap-1.md` by relative path, but that file exists only in this run's gitignored `implementation-artifacts/` (Tier-3 scratch) — until it is promoted into the tracked `planning-artifacts/specs/` subdir and committed per this repo's own "story specs are durable" convention, both citations resolve to a file that does not exist in any fresh clone or other worktree.
+  evidence: Flagged independently by both the Blind Hunter and the Edge Case Hunter reviewing this story's diff (2026-08-15); the Edge Case Hunter additionally cited `docs/dashboard/generate.py`'s own docstring precedent and CLAUDE.md's documented incident history (13/31 pyforge-warden specs and 30/32 pyforge-atlas specs lost this exact way before the "story specs are durable" convention existed) as evidence this is a real, recurring failure mode, not a one-off. Not fixable within this story: CLAUDE.md's own convention states promotion happens "after the story merges" — i.e. after this bmad-loop run's branch lands, which is outside this workflow's scope. Whoever lands Story 16.1 must promote `spec-15-1-instance-deploy-definition-cap-1.md` into `planning-artifacts/specs/spec-15-1-instance-deploy-definition-cap-1.md` and commit it in the same PR (or immediately after merge) so these two cross-references resolve.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
@@ -3145,27 +3145,27 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-16-2: The injected opener seam cannot convey response headers, so header-dependent failures are undiagnosable by any caller.
 
-- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md`
+- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md`
   summary: The injected opener seam cannot convey response headers, so header-dependent failures are undiagnosable by any caller.
   evidence: `factory/lasuite.py:79-81` defines `Response` as exactly `status_code: int` + `body: Any` — no headers field. Every opener therefore discards the response headers before `LaSuiteClient` sees them, so a 3xx surfaces as `HTTP 301: ''` with `Location` already gone, a 429 loses `Retry-After`, a 401 loses `WWW-Authenticate`, and non-JSON bodies cannot be distinguished by `Content-Type`. Pre-existing since Story 9.3 (the seam's original shape), independent of any particular opener — Story 16.2 only made it visible by building the first real HTTP opener against it. Not fixable in 16.2: that story's intent contract freezes `factory/lasuite.py` at zero diff. Story 16.2 works around the redirect case with `follow_redirects=True`, which does not help the other three. Widening `Response` with an optional `headers` mapping is source-compatible (a defaulted field) but touches the frozen seam and its mock, so it needs its own story.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-16-2-2: Two independent mock Wagtails now encode the same four-route contract with no shared source, so they can drift apart silently.
 
-- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md`
+- source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md`
   summary: Two independent mock Wagtails now encode the same four-route contract with no shared source, so they can drift apart silently.
   evidence: `tests/factory/test_lasuite.py`'s in-memory `MockWagtail` and `tests/factory/test_lasuite_live_rehearsal.py`'s loopback stub both implement the same four routes (create/get/list/patch under Bearer auth), independently. They already match differently — `MockWagtail` routes on `request.url.split("/api/v1")[-1]`, the stub prefix-matches full paths — so a future route change in `factory/lasuite.py` can leave one green and the other red, or leave both green against subtly different contracts. This is real duplication rather than churn (the earlier review pass rejected only the narrower suggestion to restyle the stub's matching to look like the mock's, which changes no behavior). Story 16.2 could not consolidate them: its intent contract makes `tests/factory/test_lasuite.py` read-only at zero diff, so extracting a shared route table is structurally out of reach there and needs its own story.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md, tests/factory/test_lasuite.py, tests/factory/test_lasuite_live_rehearsal.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md, tests/factory/test_lasuite.py, tests/factory/test_lasuite_live_rehearsal.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-2: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
   evidence: Reproduces identically on baseline_revision f71b388ab783f9b584f9e90f2d6d6c67d96c2ba8 with none of this story's changes applied -- pre-existing, unrelated to the 3 target files (core_sources.py, request_datasets.py, vcs_sources.py).
   location: src/shared/packages/pyforge-atlas (seed_gaps pipeline / kedro-catalog-check path-containment assertion, likely a Story 21.1 gap)
@@ -3173,7 +3173,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
 
-  resolution: **CLOSED 2026-08-31 by Story 21.8** (`spec-21-8-end-to-end-verification-gate.md`).
+  resolution: **CLOSED 2026-08-31 by Story 21.8** (`spec-20-8-end-to-end-verification-gate.md`).
     Root cause was narrower than "REPO_ROOT vs. member-dir CWD": Kedro's own
     `_convert_paths_to_absolute_posix` absolutizes every relative `filepath:`/`path`
     catalog value against `project_path` (the Kedro member dir) regardless of process
@@ -3197,7 +3197,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-2: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
   evidence: Confirmed by the Intent Alignment auditor (pass 2): `enrich_maintainers(core_cf_graph_raw)` in the same pipelines/vcs_health/nodes.py already reads identifier-bearing data one node up, but none of the 3 new trigger nodes take it as input. Explicitly out of THIS story's scope per the verbatim intent ("Checklist in identity-contract.md not in scope") -- identifier resolution is Story 21.6's ("upstream_discovery identity join") territory.
   location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (refresh_vcs_github_store, refresh_vcs_host_stores, refresh_vcs_registry_stores); owning follow-up: Story 21.6
@@ -3210,7 +3210,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-3: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
   evidence: Not exercised today since every current trigger call uses an empty identifier batch (see the identifier-source-gap entry above); becomes live risk only once that gap is closed.
   location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (_ttl_cadence)
@@ -3223,7 +3223,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-4: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
   evidence: Not reachable today (every current caller passes an empty batch), but will matter as soon as Story 21.6 wires a real, possibly-partial identifier batch per refresh cycle.
   location: src/pyforge/atlas/datasets/vcs_sources.py (_ParquetRefreshStore._persist), src/pyforge/atlas/datasets/request_datasets.py (GitHubRequestDataset.fetch_repo_health persistence)
@@ -3236,7 +3236,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-5: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
   evidence: Confirmed by 2 independent reviewers on the pass-2 diff; non-blocking code-organization nit, not a correctness issue.
   location: src/pyforge/atlas/datasets/vcs_sources.py
@@ -3249,7 +3249,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-6: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
   evidence: Code-organization suggestion from the Blind Hunter review; not a correctness issue.
   location: src/pyforge/atlas/datasets/vcs_sources.py, src/pyforge/atlas/datasets/request_datasets.py
@@ -3262,7 +3262,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-7: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
   evidence: Reviewer itself notes this may be deliberate for a v1; flagging so it is a documented choice, not a silent gap.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vcs_gitlab_api_raw, vcs_codeberg_api_raw, vcs_registry_*_raw)
@@ -3275,7 +3275,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-8: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
   evidence: Real data-quality concern flagged by Blind Hunter; not required by this story's AC (no cf_atlas.db default, safe degrade) and adds meaningful stateful-rotation complexity beyond this story's scope.
   location: src/pyforge/atlas/datasets/request_datasets.py (PyPIJsonFanOutDataset.load)
@@ -3288,7 +3288,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
   evidence: Read src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py L96-136 (match_source_urls): recipe_source_url-tier rows are appended from pypi_json_raw without re-checking core_packages_enumerated membership. Doesn't change the pypi_name-column decision (independently justified by load_parselmouth_pypi_names' pre-existing semantics and the intent's own downstream-unchanged-shape requirement), but the code comment justifying that decision should not overclaim the subset property universally.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py:96-136
@@ -3301,7 +3301,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-2: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
   evidence: Pre-existing mechanism (scripts/conda-forge-packaging-inventory-operations_metrics.py, the `if pypi_index: ... elif args.verify_mode == "strict": pypi_exists(...)` block), not modified by this story, but --live-catalog is a new way to reach it. Confirmed independently by three review layers (blind hunter, edge case hunter, intent-alignment auditor).
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (pypi_verified loop)
@@ -3314,7 +3314,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-3: --strict-fetch has no effect on the three --live-catalog-acquired sets (they bypass try_source entirely); --live-catalog-only is the intentional analog for this path, but the interaction is undocumented.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: --strict-fetch has no effect on the three --live-catalog-acquired sets (they bypass try_source entirely); --live-catalog-only is the intentional analog for this path, but the interaction is undocumented.
   evidence: Confirmed --strict-fetch exists (argparse) and is checked inside try_source() and one other call site, but load_live_catalog()'s three acquisitions never call try_source and never check args.strict_fetch.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), live_catalog branch)
@@ -3327,7 +3327,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-4: load_live_catalog()'s except Exception blocks store only str(exc), no traceback -- a genuine bug (e.g. a future Kedro column rename) would look identical in the printed warning to an expected degrade (missing file / sub-floor count).
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: load_live_catalog()'s except Exception blocks store only str(exc), no traceback -- a genuine bug (e.g. a future Kedro column rename) would look identical in the printed warning to an expected degrade (missing file / sub-floor count).
   evidence: Direct read of the (reverted, to-be-re-derived) loader's exception handling shape; applies to whatever the re-derived equivalent looks like.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
@@ -3340,7 +3340,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-5: --help/replay wording says "missing, unreadable, or below its scale floor" applies uniformly to "the three required datasets," but pypi_conda_mapping has no floor -- could mislead debugging of a --live-catalog-only failure on that dataset.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: --help/replay wording says "missing, unreadable, or below its scale floor" applies uniformly to "the three required datasets," but pypi_conda_mapping has no floor -- could mislead debugging of a --live-catalog-only failure on that dataset.
   evidence: Boundaries & Constraints (this spec) explicitly documents no floor for pypi_conda_mapping; the planned --help/replay phrasing doesn't distinguish it from the two floored datasets.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
@@ -3353,7 +3353,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-6: --live-catalog's --help text names internal Python variables (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing concepts (conda-forge names / PyPI names / Parselmouth mapping) used elsewhere in the CLI's own output columns.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: --live-catalog's --help text names internal Python variables (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing concepts (conda-forge names / PyPI names / Parselmouth mapping) used elsewhere in the CLI's own output columns.
   evidence: Direct read of the planned --help description text vs. the CSV's PyPI_Verified/CondaForge_Verified column names. Note (review pass 2): the re-derived --help text already uses user-facing concepts, not internal variable names -- this item appears already resolved as a side effect of the re-derivation, left here as historical record rather than pruned (no un-defer mechanism in this workflow).
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
@@ -3366,7 +3366,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-7: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit […truncated at 500 chars by the pre-fix `_flatten_deferred_scalar`; full text is in the source spec's `deferred:` frontmatter]
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit
   evidence: Read scripts/conda-forge-packaging-inventory-operations_metrics.py's aoss_free_candidates construction (gated on `pkg not in cf_or_pm`) and write_aoss_free_queue's own "live and irreversible" framing. Confirmed independently by one review layer (blind hunter, pass 2); not corroborated by other layers, but the underlying mechanism (cf_or_pm membership) is directly verifiable in the diff.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (aoss_free_candidates / write_aoss_free_queue)
@@ -3379,7 +3379,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-8: load_live_catalog()'s scale-floor check counts distinct raw pre-normalization values (non_null.nunique()), while the set actually returned and consumed downstream is deduplicated post-norm_pkg() -- a column with many raw variants collapsing to the same normalized name could theoretically pass the floor with a materially smaller final set. Low real-world likelihood: conda-forge/PyPI catalog names are already close to normalized in the source Parquet.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: load_live_catalog()'s scale-floor check counts distinct raw pre-normalization values (non_null.nunique()), while the set actually returned and consumed downstream is deduplicated post-norm_pkg() -- a column with many raw variants collapsing to the same normalized name could theoretically pass the floor with a materially smaller final set. Low real-world likelihood: conda-forge/PyPI catalog names are already close to normalized in the source Parquet.
   evidence: Direct read of load_live_catalog(): `distinct = non_null.nunique()` computed before `values = {norm_pkg(str(v)) for v in non_null}`. Corroborated by two independent review layers (blind hunter and intent-alignment auditor, pass 2), both rating it low-severity/likely inert.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
@@ -3392,7 +3392,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-9: The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",") ...]` line was relocated (not behaviorally changed) by this story's diff and appears unused elsewhere in the file -- pre-existing dead/unused code unrelated to this story's purpose, surfaced incidentally by touching nearby lines.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",") ...]` line was relocated (not behaviorally changed) by this story's diff and appears unused elsewhere in the file -- pre-existing dead/unused code unrelated to this story's purpose, surfaced incidentally by touching nearby lines.
   evidence: Blind hunter (review pass 2) noted the line is directly touched (moved) by this diff but never referenced elsewhere in the file; not independently re-verified beyond that report.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), subdirs)
@@ -3405,7 +3405,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-10: Nothing validates or warns when --live-catalog is set without --cf-channeldata, even though replay.md documents --cf-channeldata as still required (it independently drives has_src/the 10k-tab-drop filter). A user following only --help, not the replay doc, gets no signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`, almost certainly absent) silently changes which 10k-tab rows are kept.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: Nothing validates or warns when --live-catalog is set without --cf-channeldata, even though replay.md documents --cf-channeldata as still required (it independently drives has_src/the 10k-tab-drop filter). A user following only --help, not the replay doc, gets no signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`, almost certainly absent) silently changes which 10k-tab rows are kept.
   evidence: Confirmed no code path checks args.cf_channeldata when args.live_catalog is set; args.cf_channeldata's default-path fallback behavior itself pre-dates this story and is unchanged by it. Found by review pass 3's blind hunter.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), has_src)
@@ -3418,7 +3418,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-11: load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike every HTTP-based acquisition path elsewhere in this file (which all take an explicit timeout argument) -- a read against a slow/unresponsive network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike every HTTP-based acquisition path elsewhere in this file (which all take an explicit timeout argument) -- a read against a slow/unresponsive network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
   evidence: Direct read of load_live_catalog(): the try/except wraps path.exists() and pd.read_parquet() but neither is time-bounded. Low real-world likelihood given the documented usage pattern (a local post-bootstrap data root). Found by review pass 3's edge case hunter.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
@@ -3431,7 +3431,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
   evidence: Reproduced 2026-08-30: `ANACONDA_CHANNEL_BASE_URL=http://127.0.0.1:9 kedro run --nodes enumerate_anaconda_main_packages` -> ConnectionRefusedError, exit 1. The story's second AC therefore holds only for the upstream_discovery half (3 `.staleness.json` markers, exit 0) and the zero-network seed load (1,474 rows); the `core` half was verified LIVE instead (5,401 rows).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:393
@@ -3444,7 +3444,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-2: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
   evidence: Verification-gap + blind reviewers both read `_STORE_TO_REFRESH_ASSET` and `_all_nodes()` in that module; `trending_candidates` (Story 13.1) was already missing before this story, so this is a pre-existing coverage gap the story extended rather than caused.
   location: src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_single_writer.py
@@ -3457,7 +3457,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-3: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
   evidence: Edge-case reviewer, from the loop at core_sources.py::_fetch_channel_repodata and the `except Exception -> None` in `_fetch_repodata_at_url`. Pre-existing loop shape; the hardening doubled the combo count. Offline runs fail fast (refused/DNS) so the practical impact is limited to black-holed networks.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:556
@@ -3470,7 +3470,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-4: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
   evidence: Checked 2026-08-30 via register_pipelines() vs D.NODE_TIMEOUTS: 59 nodes, 54 mapped, 5 missing (all pre-existing). The 4 Story 21.4 nodes ARE mapped. Adding the completeness test now would fail on the pre-existing five, so it is deferred rather than patched.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py:219
@@ -3483,7 +3483,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
   evidence: Confirmed empirically: writing invalid JSON to the file and loading the discovery_curated_groups_seed catalog entry through pyforge.atlas.mcp.session.bootstrapped_session() raised `DatasetError: discovery_curated_groups_seed: ... Failed while loading data from dataset ... JSONDataset`. This happens before load_org_audit_candidates's own never-raise/degrade logic ever runs, so that node-level contract can't help. However this exact exposure (bare `type: json.JSONDataset` for a git-tracked, hand-curated seed, with no degrade wrapper) already exists for the pre-existing `seed_cwe_categories` and `seed_spdx_schema` catalog entries — this story faithfully follows established precedent rather than introducing a new pattern, so it is fleet-wide pre-existing debt, not a regression unique to this story.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (discovery_curated_groups_seed entry)
@@ -3496,7 +3496,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-2: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc […truncated at 500 chars by the pre-fix `_flatten_deferred_scalar`; full text is in the source spec's `deferred:` frontmatter]
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc
   evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
@@ -3509,10 +3509,10 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-3: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
   evidence: Confirmed empirically: moving core_feedstock_attribution.parquet aside and re-running `kedro run --pipelines upstream_discovery,artifactory_downloads` raised `DatasetError: core_feedstock_attribution: ... No such file or directory`. However this is a pre-existing, fleet-wide pattern, not a regression this story introduces: classify_trending_candidates (Story 13.2, already shipped) has the identical characteristic — a plain pandas.ParquetDataset input produced by a different pipeline (pypi_conda_mapping), with no missing-file tolerance. This story's own unit tests DO correctly verify join_enterprise_conda_maintainers's behavior when given None/empty input directly (the function-level contract in the I/O matrix), which is a different, narrower claim than "the full kedro run survives a truly empty data root" — the latter has never actually been true for any cross-pipeline dependency in this codebase, this story included.
-  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-5-tier-2-sources.md (## Verification section)
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md (## Verification section)
   origin: spec-deferred 7db7e06d1eb3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -3522,7 +3522,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
   evidence: write_gist_markdown has always unconditionally re-stamped Verification_Timestamp_UTC to a fresh datetime.now(...) for the gist -- confirmed unchanged at baseline commit 07da273ba7, so this pre-dates Story 21.7 and is not caused by it. main()/write_xlsx_tab/write_csv persist whatever the Parquet (or, before this story, the single per-run construction-time timestamp) carried instead.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:672-674
@@ -3535,7 +3535,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-2: read_identity_export_records() has no try/except around pd.read_parquet, so a corrupt or unreadable Parquet crashes uncaught instead of producing a hard, named error.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: read_identity_export_records() has no try/except around pd.read_parquet, so a corrupt or unreadable Parquet crashes uncaught instead of producing a hard, named error.
   evidence: The I/O & Edge-Case Matrix only enumerates "Parquet present" and "Parquet missing"; a present-but-corrupt Parquet is an unstated edge case. The missing-file path already returns a clean, named stderr error + None -- a malformed-but-present file should plausibly follow the same pattern, but that's an inference, not something the matrix states.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:read_identity_export_records
@@ -3548,7 +3548,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-3: RANKING_MERGE_COLUMNS (this script) and the Atlas-side gist-export column list are two independently hand-maintained copies of the same GIST_SCHEMA contract, with no test enforcing they stay aligned.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: RANKING_MERGE_COLUMNS (this script) and the Atlas-side gist-export column list are two independently hand-maintained copies of the same GIST_SCHEMA contract, with no test enforcing they stay aligned.
   evidence: RANKING_MERGE_COLUMNS is derived from GIST_COLUMNS, so it self-updates on this side when GIST_SCHEMA changes -- but the pyforge-atlas upstream_discovery pipeline that produces identity_export_parquet lists its own export columns separately. Touching that file is out of this story's scope (Never: "Implement identity_export_parquet or the Atlas Phase D node").
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:132 vs. src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py
@@ -3561,7 +3561,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-4: No test exercises the real, Atlas-pipeline-produced identity_export_parquet -- every test builds its own hand-authored, already-conforming fixture.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: No test exercises the real, Atlas-pipeline-produced identity_export_parquet -- every test builds its own hand-authored, already-conforming fixture.
   evidence: A genuine schema-parity check between this script's COLUMNS/GIST_SCHEMA expectations and what the real Story 21.6 Phase D join actually emits doesn't exist on either side of the contract. This is a cross-cutting testing-strategy gap, not something one story should absorb -- a fixture captured from a real pipeline run (matching pyforge-atlas's own Wave B parity-diff pattern) would be the natural shape for it.
   location: tests/packaging/test_openteams_handoffs.py
@@ -3574,7 +3574,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-5: merge_ranking_columns merges ~12 secondary ranking/JFROG columns with a bare membership check and no warning if one is absent from the ranked tab.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: merge_ranking_columns merges ~12 secondary ranking/JFROG columns with a bare membership check and no warning if one is absent from the ranked tab.
   evidence: Only the primary P/Rank/Score/Work columns get an explicit missing-columns error in publish_gist_from_tab; the remaining RANKING_MERGE_COLUMNS entries (Platforms, Downloads, JFROG fields, etc.) are copied with `if col in ranking_row`, so an older or hand-edited ranked tab missing one silently produces a blank cell with no observability.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:merge_ranking_columns
@@ -3587,7 +3587,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-6: A Parquet column holding a list/array value crashes pd.isna() in read_identity_export_records with an ambiguous-truth-value ValueError.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: A Parquet column holding a list/array value crashes pd.isna() in read_identity_export_records with an ambiguous-truth-value ValueError.
   evidence: read_identity_export_records's per-cell stringify does `"" if pd.isna(v) else str(v).strip()` without first checking for a non-scalar value; pandas raises ValueError on pd.isna() for an array/list input rather than returning a scalar boolean.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:read_identity_export_records
@@ -3600,7 +3600,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-7: Two ranked-tab rows normalizing to the same pep503 name silently discard the earlier row in merge_ranking_columns, with no warning (unlike the miss case).
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: Two ranked-tab rows normalizing to the same pep503 name silently discard the earlier row in merge_ranking_columns, with no warning (unlike the miss case).
   evidence: ranking_by_name is built as a dict keyed by pep503_name(Core_Python_Package_Name); a later duplicate overwrites an earlier one with no diagnostic, asymmetric with the explicit stderr warning merge_ranking_columns emits on a no-match miss.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:merge_ranking_columns
@@ -3613,7 +3613,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-7-8: PYFORGE_ATLAS_DATA_ROOT="" (empty string) is falsy and silently resolves to the default path instead of being treated as an explicit-but-invalid override.
 
-- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
   summary: PYFORGE_ATLAS_DATA_ROOT="" (empty string) is falsy and silently resolves to the default path instead of being treated as an explicit-but-invalid override.
   evidence: identity_export_parquet_path() does `os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data")`, so an explicitly-set-but-empty env var (as opposed to unset) is indistinguishable from the unset default -- a narrow operator-error edge case, not currently triggered by any documented invocation.
   location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:identity_export_parquet_path
@@ -3626,7 +3626,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
   evidence: Confirmed by static read of `LocalRecipesOverlayDataset.load()` (`datasets/identity_sources.py`): degrades to an empty frame when `recipes_dir.is_dir()` is False rather than raising, so the bootstrap AC's exit-0 requirement is unaffected, but `Local_Recipes_URL`/`Local_Build_Status` stay empty on a real bootstrap unless `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` is set to an absolute (or correctly member-dir-escaped) path. Same root cause as DW-FU-21-2 (globals.yml's now-corrected repo-root-CWD premise), fixed there for `seed_root` only per this story's narrow authorization ("that one bug only"); not fixed here (Story 21.6 territory, done per the tracked sprint-status ledger, though its own spec frontmatter still reads `in-review`).
   location: src/shared/packages/pyforge-atlas/conf/base/globals.yml paths.local_recipes_dir; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py LocalRecipesOverlayDataset
@@ -3639,7 +3639,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-2: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
   evidence: `git blame` on `catalog.yml`'s `core_packages_enumerated` filepath line dates the hardcoded pattern to commit `9ce95912dc5` (2026-07-17, Wave A1/A2 scaffold), predating Epic 21 by six weeks -- pre-existing and unrelated. Reproduced live: a Story 21.8 end-to-end bootstrap run with `PYFORGE_ATLAS_DATA_ROOT=/tmp/atlas-e2e-verify-21.8` (a genuinely empty dir, `CF_ATLAS_DB` unset) exited 0, but `core_packages_enumerated.parquet` / `pypi_universe.parquet` / `pypi_conda_mapping.parquet` / `inventory_universe.parquet` / `identity_export_parquet` all landed under `src/shared/packages/pyforge-atlas/data/` instead of the override root -- confirmed by `grep -c '^\s*filepath:\s*\${globals:paths\.data_root}'` (27) vs. `grep -cE '^\s*filepath:\s*data/'` (53) over `catalog.yml`, and by direct `find` over both directories after the run. Does not block this story's bootstrap-exit-0 AC (both locations start empty on a genuinely fresh clone), but materially contradicts the README/globals.yml claim that "every store/output path resolves under" `PYFORGE_ATLAS_DATA_ROOT` for an operator who explicitly relies on the override to relocate ALL data (e.g. a CI job with a scratch data root, or two concurrent local runs). Not fixed here -- 53 catalog `filepath:` edits is far beyond a narrow surgical fix and CAP-1 is proven read-only by this story, not extended.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (53 filepath: entries, layer: intermediate|primary|derived)
@@ -3652,7 +3652,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-3: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
   evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDataset, AnacondaDist2026Dataset
@@ -3665,7 +3665,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-4: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
   evidence: Confirmed by static read of `LocalRecipesOverlayDataset.load()` (`datasets/identity_sources.py`): degrades to an empty frame when `recipes_dir.is_dir()` is False rather than raising, so the bootstrap AC's exit-0 requirement is unaffected, but `Local_Recipes_URL`/`Local_Build_Status` stay empty on a real bootstrap unless `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` is set to an absolute (or correctly member-dir-escaped) path. Same root cause as DW-FU-21-2 (globals.yml's now-corrected repo-root-CWD premise), fixed there for `seed_root` only per this story's narrow authorization ("that one bug only"); not fixed here (Story 21.6 territory, done per the tracked sprint-status ledger, though its own spec frontmatter still reads `in-review`).
   location: src/shared/packages/pyforge-atlas/conf/base/globals.yml paths.local_recipes_dir; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py LocalRecipesOverlayDataset
@@ -3678,7 +3678,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-5: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
   evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDa
@@ -3691,7 +3691,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-6: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
   evidence: Confirmed via review pass 1 (blind hunter): `DW-FU-21-8-2`/`DW-FU-21-8-3`'s ledger heading + `summary:` were both cut off at exactly 500 chars mid-word/mid-sentence, while the untruncated source text was intact in this spec's own frontmatter `deferred:` block -- confirmed by direct length/content comparison and by reading `_SUMMARY_LIMIT = 500` and the blind `[:limit]` slice in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650`. Hand-corrected this story's own two entries in both the spec frontmatter and the ledger (review pass 1 patch); did not touch the tool itself (out of this narrow story's authorized surface) or re-derive the other backlog entries' full text (would require locating each source spec's own frontmatter individually).
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650 (_flatten_deferred_scalar, _SUMMARY_LIMIT)
@@ -3706,7 +3706,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-7: `deferred-work-ledger.md`'s own "Why this file exists"/Provenance narrative prose (near the top, "All 52 real deferrals...") is now several generations stale after this story's ledger-wide catch-up run (`## DW-` heading count unchanged at 60, but `### DW-` sub-entry count jumped from 104 to 133 in one pass) -- the frontmatter `entries:` line was corrected (review pass 1 patch) but the prose describing a much smaller, "52 real deferrals" ledger was not reconciled to the current size.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `deferred-work-ledger.md`'s own "Why this file exists"/Provenance narrative prose (near the top, "All 52 real deferrals...") is now several generations stale after this story's ledger-wide catch-up run (`## DW-` heading count unchanged at 60, but `### DW-` sub-entry count jumped from 104 to 133 in one pass) -- the frontmatter `entries:` line was corrected (review pass 1 patch) but the prose describing a much smaller, "52 real deferrals" ledger was not reconciled to the current size.
   evidence: Confirmed via review pass 1 (blind hunter): the ledger's own Provenance section still narrates "All 52 real deferrals recorded during the Kedro migration... the ledger is complete" while `grep -c "^### DW-"` = 133 after this story's catch-up run (up from 104 at baseline). The file's own text elsewhere acknowledges this is a recurring pattern ("Stale counts in a file that declares its own counting rule are exactly what [periodic verification campaigns catch]"), so this is consistent with existing practice, not a new failure mode -- but reconciling the full narrative prose is a larger rewrite than this narrow verification-gate story's authorized surface.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md (Provenance section, near top)
@@ -3719,7 +3719,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-8: No GitHub Actions workflow runs `kedro-catalog-check` or `kedro-test` for `pyforge-atlas` on PRs, so this story's own `seed_root` regression fix (DW-FU-21-2) has no CI safety net -- a future PR that reintroduces the bug would show fully green CI, since nothing in `.github/workflows/` touches the affected code path.
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: No GitHub Actions workflow runs `kedro-catalog-check` or `kedro-test` for `pyforge-atlas` on PRs, so this story's own `seed_root` regression fix (DW-FU-21-2) has no CI safety net -- a future PR that reintroduces the bug would show fully green CI, since nothing in `.github/workflows/` touches the affected code path.
   evidence: Confirmed via review pass 1 (verification-gap reviewer): `grep -rl "pyforge-atlas" .github/workflows/` matches only `kedro-viz-publish.yml`, which triggers on `push` to `main` only (never `pull_request`), path-filters on `pipelines/**` only (would not fire on a `conf/base/globals.yml` or `catalog.yml` change), and runs `kedro viz build` (DAG introspection only, no dataset `.load()`, no pytest). No `.github/workflows/pyforge-atlas.yml` exists, unlike sibling stations (`pyforge-core.yml`, `pyforge-steward-five-tier.yml`, `pyforge-steward-fresh-clone.yml`). This is a pre-existing, project-wide CI gap (predates this story), not something a narrow verification-gate story should take on -- flagged here since this story's own fix is exactly the kind of regression it would have silently let back in.
   location: .github/workflows/ (missing pyforge-atlas.yml)
@@ -3732,7 +3732,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
   evidence: _id_universe_frame (nodes.py) hardcodes source_repository_url="" for every row because no catalog entry supplies it today; the git-purl transform logic (_id_git_purl, _id_from_inventory) is ported and unit-tested but structurally unreachable through the real build_identity_packages_primary entry point until a future story adds that column to some Atlas source.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py:_id_universe_frame
@@ -3745,7 +3745,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-2: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
   evidence: _do_refresh's files-fanout loop issues one GET per open PR (`.../pulls/{number}/files?per_page=100`) with no pagination loop, unlike the PR-listing fetch above it which does paginate. Most single-recipe PRs have far fewer than 100 files, so this is a narrow, currently-cold edge (bulk/mass staged-recipes PRs), not a general regression.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:StagedRecipesPRDataset._do_refresh
@@ -3758,7 +3758,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-3: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
   evidence: _LOCAL_RECIPES_TREE_URL_TEMPLATE is a module-level constant hardcoding the repo slug; only the scanned filesystem path is configurable. Narrow in practice — the override is documented for pointing at an alternate path within this same repo (e.g. test fixtures), not a different GitHub repo.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:_LOCAL_RECIPES_TREE_URL_TEMPLATE
@@ -3771,7 +3771,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-4: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
   evidence: Verified by reading tests/parity/test_parity_complete.py: _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability"). This is a pre-existing inaccuracy in the spec's own Code Map, not something this story's diff broke or needs to fix.
   location: src/shared/packages/pyforge-atlas/tests/parity/test_parity_complete.py
@@ -3784,7 +3784,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-23-5: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
 
-- source_spec: `planning-artifacts/specs/spec-23-5-identity-complete-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-22-5-identity_complete_export-parquet-canonical.md`
   summary: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
   evidence: Spec Verification lists `kedro run --pipelines derived_artifacts` as a manual gate; test_identity_complete_export.py covers the node in isolation only.
   location: src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py
@@ -3799,7 +3799,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-24-1: test_adoption_register.py's persona-mention check only verifies the skill name substring appears in a persona SKILL.md, never that the routing line's stated grammar constraint text is present.
 
-- source_spec: `planning-artifacts/specs/spec-24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
+- source_spec: `planning-artifacts/specs/spec-23-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
   summary: test_adoption_register.py's persona-mention check only verifies the skill name substring appears in a persona SKILL.md, never that the routing line's stated grammar constraint text is present.
   evidence: _persona_mentions (test_adoption_register.py:145-151) does `name in path.read_text(...)` -- a bare substring match. A future edit could delete the "pyforge atlas ... verbs only" constraint sentence while leaving a stray mention of `mcp-builder` elsewhere in bmad-agent-atlas/SKILL.md and this test would still pass. Pre-existing design from Story 46.1, unchanged by this diff -- not this story's surface to fix.
   location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py:145
@@ -3812,7 +3812,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-24-1-2: The eventual integration PR for this branch needs the `maintenance` label (none of this diff's three changed files are under recipes/).
 
-- source_spec: `planning-artifacts/specs/spec-24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
+- source_spec: `planning-artifacts/specs/spec-23-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
   summary: The eventual integration PR for this branch needs the `maintenance` label (none of this diff's three changed files are under recipes/).
   evidence: CLAUDE.md's always-on PR-gate rule: any change outside recipes/ requires `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance` at PR open/update time. This task run does not open a PR -- the orchestrating session merges this branch -- so the labeling step belongs to whichever later PR wraps it.
   location: .claude/skills/bmad-agent-atlas/SKILL.md, src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py, _bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml
@@ -3825,7 +3825,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-5: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow... [truncated, 796 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow... [truncated, 796 chars total]
   evidence: See DESIGN.md § 0 and § 6 (page-count reconciliation table) for the full derivation and citations (canonical script list, mcp-tools.md, atlas-phases-overview.md § 3.3).
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md#0-how-carson-and-maya-derived-19
@@ -3838,7 +3838,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-6: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic... [truncated, 909 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic... [truncated, 909 chars total]
   evidence: `.claude/skills/bmad-cis-design-thinking/template.md` line 1 (`{{project_name}}`) against `.claude/skills/bmad-cis-design-thinking/SKILL.md` Step 4 "Load Config", which never resolves that key; confirmed the skill files are byte-identical to `.pixi/envs/local-recipes/share/bmad-creative-intelligence-suite/skills/bmad-cis-design-thinking/`, i.e. the bug is upstream in the conda package, not introduced by this story's install step.
   location: .claude/skills/bmad-cis-design-thinking/template.md:1
@@ -3851,7 +3851,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-4-7: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c... [truncated, 804 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
   summary: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c... [truncated, 804 chars total]
   evidence: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py::gather` (lines 149-261) only flags a key that was `TERMINAL` at baseline and drops out of `TERMINAL` at head; a `backlog -> done` transition never enters that check. `scripts/fleet_scan.py`'s `scan_deferred` only requires a `resolution:`/`verified:` line to exist to count an entry `triaged`/`closed` -- it never greps the cited artifact paths for matching content.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py:149
@@ -3864,7 +3864,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-8: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor... [truncated, 1090 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor... [truncated, 1090 chars total]
   evidence: dashboard/app.py's docstring + Code Map § "the exact pattern every new page must follow"; every new PageDef's `note` cites its DESIGN.md section for the deferred richer layout (e.g. distribution-breakdown's dimension-selector, universe-sbom's pagination, scan-project/env-inspect's upload controls).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (all 19 new `_data_page` calls)
@@ -3877,7 +3877,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-9: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new... [truncated, 686 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new... [truncated, 686 chars total]
   evidence: dashboard/data.py::load_scan_project / load_env_inspect docstrings state this explicitly; PageDef notes for both pages in app.py carry the same "forward-looking work, not wired here" language, mirroring DESIGN.md's own precedent for add-handoff / library-futures' deferred multi-agent claim/lock coordination.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_scan_project, load_env_inspect); dashboard/app.py PAGE_INVENTORY notes for scan-project/env-inspect
@@ -3890,7 +3890,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-10: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen... [truncated, 626 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen... [truncated, 626 chars total]
   evidence: tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria docstring records exactly this; confirmed by hand against Playwright-captured DOM dumps of the rendered dashboard (`page.locator("nav").count()` == 1, matching only the empty top navbar; `role="navigation"`/`role="main"` counts == 0).
   location: src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py; deferred-work-ledger.md DW-D2-3 resolution
@@ -3903,7 +3903,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-11: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da... [truncated, 1381 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da... [truncated, 1381 chars total]
   evidence: deferred-work-ledger.md DW-D2-3's `status: open` (not closed) + its 2026-08-28 evidence-update spells out exactly this split; `ls data/` in this worktree shows no `data/` tree exists at all (nothing was or could have been materialized without a live, credentialed pipeline run).
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md (DW-D2-3)
@@ -3916,7 +3916,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-12: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM... [truncated, 1149 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM... [truncated, 1149 chars total]
   evidence: semantic/models.py::build_alternative_candidates_model docstring states this explicitly; semantic/metrics.py's 2 new provenance entries (release_trend_label, python_min_bump_status) cite their legacy_source verbatim.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py (build_alternative_candidates_model and the other "BSL model (NEW)" composite-score pages: mapping-gap match_confidence, universe... [truncated, 312 chars total]
@@ -3929,7 +3929,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-13: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g... [truncated, 579 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g... [truncated, 579 chars total]
   evidence: `git stash` + re-running the single test reproduces the identical AssertionError on unmodified main HEAD; `ls _bmad-output/projects/pyforge-atlas/implementation-artifacts/` in this worktree shows only `epic-20-context.md`, no `sprint-status.yaml`, while the sibling main checkout has one (dated 2026-08-26, from prior session state never synced to this worktree, by design -- gitignored Tier-3).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py (_default_paths); tests/dashboard/test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status
@@ -3942,7 +3942,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-20-5-14: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would... [truncated, 724 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
   summary: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would... [truncated, 724 chars total]
   evidence: Reviewer (2026-08-28 pass) Blind Hunter finding, `[low]` `[defer]`; manually cross-checked `build_dashboard()`'s 18 new `_provenance.resolve_for_file(root / _data.X_PARQUET)` lines against their paired `_data_page(...)` loader calls -- all 18 pairings are correct as shipped.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (build_dashboard, the provenance-resolution block)
@@ -3955,7 +3955,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-3-12: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit... [truncated, 678 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
   summary: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit... [truncated, 678 chars total]
   evidence: Read scripts/conda-forge-packaging-inventory-operations_metrics.py's aoss_free_candidates construction (gated on `pkg not in cf_or_pm`) and write_aoss_free_queue's own "live and irreversible" framing. Confirmed independently by one review layer (blind hunter, pass 2); not corroborated by other layers, but the underlying mechanism (cf_or_pm membership) is directly verifiable in the diff.
   location: scripts/conda-forge-packaging-inventory-operations_metrics.py (aoss_free_candidates / write_aoss_free_queue)
@@ -3968,7 +3968,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-4: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
   evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
@@ -3981,7 +3981,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-9: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; o... [truncated, 621 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; o... [truncated, 621 chars total]
   evidence: `git blame` on `catalog.yml`'s `core_packages_enumerated` filepath line dates the hardcoded pattern to commit `9ce95912dc5` (2026-07-17, Wave A1/A2 scaffold), predating Epic 21 by six weeks -- pre-existing and unrelated. Reproduced live: a Story 21.8 end-to-end bootstrap run with `PYFORGE_ATLAS_DATA_ROOT=/tmp/atlas-e2e-verify-21.8` (a genuinely empty dir, `CF_ATLAS_DB` unset) exited 0, but `core_packages_enumerated.parquet` / `pypi_universe.parquet` / `pypi_conda_mapping.parquet` / `inventory_universe.parquet` / `identity_export_parquet` all landed under `src/shared/packages/pyforge-atlas/data/` instead of the override root -- confirmed by `grep -c '^\s*filepath:\s*\${globals:paths\.data_root}'` (27) vs. `grep -cE '^\s*filepath:\s*data/'` (53) over `catalog.yml`, and by direct `find` over both directories after the run. Does not block this story's bootstrap-exit-0 AC (both locations start empty on a genuinely fresh clone), but materially contradicts the README/globals.yml claim that "every store/output path resolves under" `PYFORGE_ATLAS_DATA_ROOT` for an operator who explicitly relies on the override to relocate ALL data (e.g. a CI job with a scratch data root, or two concurrent local runs). Not fixed here -- 53 catalog `filepath:` edits is far beyond a narrow surgical fix and CAP-1 is proven read-only by this story, not extended.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (53 filepath: entries, layer: intermediate|primary|derived)
@@ -3994,7 +3994,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-10: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw... [truncated, 566 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw... [truncated, 566 chars total]
   evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDa... [truncated, 230 chars total]
@@ -4007,7 +4007,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-8-11: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f... [truncated, 548 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
   summary: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f... [truncated, 548 chars total]
   evidence: Confirmed via review pass 1 (blind hunter): `DW-FU-21-8-2`/`DW-FU-21-8-3`'s ledger heading + `summary:` were both cut off at exactly 500 chars mid-word/mid-sentence, while the untruncated source text was intact in this spec's own frontmatter `deferred:` block -- confirmed by direct length/content comparison and by reading `_SUMMARY_LIMIT = 500` and the blind `[:limit]` slice in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650`. Hand-corrected this story's own two entries in both the spec frontmatter and the ledger (review pass 1 patch); did not touch the tool itself (out of this narrow story's authorized surface) or re-derive the other backlog entries' full text (would require locating each source spec's own frontmatter individually).
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650 (_flatten_deferred_scalar, _SUMMARY_LIMIT)

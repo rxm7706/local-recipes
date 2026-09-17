@@ -8,6 +8,8 @@ owner: scribe
 scope: "Memory capture, team context, decision documentation, shared knowledge"
 ---
 
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
+
 > **Superseded.** This Dream proposes a team-memory system for Scribe — structured
 > frontmatter entries, `/remember` capture, promotion review, automatic context loading,
 > a compact `MEMORY.md` index. [`docs/dreams/pyforge-scribe.md`](pyforge-scribe.md)
