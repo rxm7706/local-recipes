@@ -202,5 +202,40 @@ reads `0 unmarked, 0 mismatch, 0 drifted, 0 unsourced, 1 unshown; facts 273/273`
 independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-probed live via
 `pixi run -e pyforge-herald herald deck push pyforge-warden` (this deck itself) →
 `AuthError: ... has no 'designOauth' block -- run /design-login in Claude Code to refresh it`.
-No push attempted, no etag fabricated. "Standalone ahead" narrows to: head + Infographic Deck
+No push attempted, no etag fabricated. The pre-push gap narrowed to: head + Infographic Deck
 are now re-derived and facts-current on disk, not yet mirrored to Design.
+
+## Ledger — 2026-09-17 push + read-back (Story 21.4)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so the
+credential blocker above is resolved: `resolve_design_credential()` succeeds this session. Pushed
+via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`100ca8cc-8daa-409a-8564-1f8d79c579d2`:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `Warden - Infographic.dc.html` | 295,218 | `1789635799882197` | identical ✓ |
+| `Warden - Infographic Deck.dc.html` | 305,123 | `1789635802707366` | identical ✓ |
+
+**Both files exceed the 256 KiB `read_file` cap**, so a single call can't return the whole body.
+A first attempt paged with `offset`/`limit` and reconstructed the file by concatenating page
+bodies — this broke: `read_file`'s truncation response embeds a self-documenting sentinel line at
+the cap boundary (`…[+N bytes truncated at read_file's 256 KiB cap — the body ends at a complete
+line; continue with offset=<n>]`), and a script that doesn't recognize and strip that sentinel
+bakes it into the reconstructed text as if it were real file content (caught only via a SHA-256
+mismatch — a byte-count-only check would have missed the ~119 B delta). **This was a bug in this
+session's own throwaway paging script, not a `read_file` defect** — re-verified live: a plain
+`read_file` call with no offset returns the sentinel as a clean, well-formed, standalone line
+("the body ends at a complete line"), not spliced into content. Rather than fix the paging
+script, used the documented `render_preview` → curl the `serve_url` → strip the
+`data-omelette-injected` `<style>`/`<script>` harness block after `<head>` procedure
+(`docs/specs/presentation-deck.md` § *The MCP bridge*, "Large-file uploads" / pull mechanics),
+which is exempt from the cap entirely: both files came back byte-identical to disk. Noted here
+so a future session paging `read_file` past the cap knows to recognize and strip that sentinel
+rather than treat it as content — or just use the curl-based route instead, as this session did.
+
+`deck-facts pyforge-warden --check` still reads 0 mismatch. Head and Infographic Deck now match
+Design as well as disk — no surface here is standalone-ahead any more.
