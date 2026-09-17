@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-16"
+updated: "2026-09-17"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -3852,3 +3852,287 @@ capabilities:
     heading: "BMAD projection onto Internal GH"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+
+  # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-herald:CAP-1
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "a Dream becomes a deck"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-2
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "releases are proclaimed from the ledger"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-3
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the visual identity is one system"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-4
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Design-Code-Bridge Framework"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-5
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Deckcraft Framework"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-6
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Video-Scripts Framework"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-7
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Modernist-Identity Framework"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-8
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Six-Act Deck Framework"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-9
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Multi-Format Export"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-10
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Station-Specific Customization"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-11
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Progress Visibility Surface (Moment 2)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-12
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Success Proclamation Surface (Moment 3)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-13
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Operations Proclamation Surface (Moment 4)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-14
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-15
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-16
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-17
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-18
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-19
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-currency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-20
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-21
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-22
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-23
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-24
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-25
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-family-lockstep"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-26
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-visual-qa"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-27
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-visual-qa"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-28
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-deck-visual-qa"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-29
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "The account is enumerated and reconciled"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-30
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Every presentation has a local twin"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-31
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "The sweep pulls every twin Design changed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-32
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "The ledger re-applies, and says what it overrode"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-33
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "The `.potx` path, and every derived file stamped"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-34
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "PowerPoints push back, and every push proves itself"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-35
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "The family is browsable and downloadable on Pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-36
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "One command, idempotent, reported"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-37
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "DB-backed storage layer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-38
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Webhook endpoint"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-39
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "Cron scheduler"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-40
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the shape API + autofit engine (→ 15.2)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-41
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "template-parse-then-fill (→ 15.1)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-42
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "custom shapes + real autofit (→ 15.2, downstream)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-43
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-44
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-45
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-46
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-47
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

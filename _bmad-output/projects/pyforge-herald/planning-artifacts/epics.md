@@ -1,12 +1,16 @@
 ---
 epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
+
+## Fold provenance (2026-09-17)
+
+Station Spec spec-pyforge-herald reminted absorbed capabilities as CAP-1..47. Historical stories keep sequential epic numbers 1..23; Epic 23 story gaps closed (23.5–23.8 → 23.3–23.6). This heading is the INV-A citation window for the folded set (`spec-pyforge-herald` CAP-1..47).
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-14"   # Epic 23 re-scoped 8 -> 6 (23.3/23.4 folded into 23.8/21.3; 23.5/23.6 narrowed to their deltas over shipped verbs); 21.3 gains the override-report AC; 21.10's agentic-sdlc line superseded. Earlier same day: Epic 23 appended; prior stamp 2026-09-13
+updated: "2026-09-17"   # one-chain herald fold; Fold provenance names CAP-1..47
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -47,27 +51,21 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 1: Foundation — package spine & transport
 
 ### Story 1.1: Package scaffold for pyforge herald
-
 **Status:** done  ·  **Ledger key:** `1-1-package-scaffold-for-pyforge-herald`
 
 ### Story 1.2: Transport port primary mcp client adapter the transport spike
-
 **Status:** done  ·  **Ledger key:** `1-2-transport-port-primary-mcp-client-adapter-the-transport-spike`
 
 ### Story 1.3: Fallback transport adapter
-
 **Status:** done  ·  **Ledger key:** `1-3-fallback-transport-adapter`
 
 ### Story 1.4: Bridge core skeleton state errors determinism boundary
-
 **Status:** done  ·  **Ledger key:** `1-4-bridge-core-skeleton-state-errors-determinism-boundary`
 
 ### Story 1.5: Registry module readme design project
-
 **Status:** done  ·  **Ledger key:** `1-5-registry-module-readme-design-project`
 
 ### Story 1.6: Herald deck seed slug
-
 **Status:** done  ·  **Ledger key:** `1-6-herald-deck-seed-slug`
 
 
@@ -76,19 +74,15 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 2: Deck pull — prototype, marp, bundle
 
 ### Story 2.1: Herald deck pull slug prototype pull with etag short circuit
-
 **Status:** done  ·  **Ledger key:** `2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit`
 
 ### Story 2.2: Commit opt in
-
 **Status:** done  ·  **Ledger key:** `2-2-commit-opt-in`
 
 ### Story 2.3: Marp source pull
-
 **Status:** done  ·  **Ledger key:** `2-3-marp-source-pull`
 
 ### Story 2.4: Standalone bundle pull
-
 **Status:** done  ·  **Ledger key:** `2-4-standalone-bundle-pull`
 
 
@@ -97,11 +91,9 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 3: Deck status & stale-mirror detection
 
 ### Story 3.1: Herald deck status slug
-
 **Status:** done  ·  **Ledger key:** `3-1-herald-deck-status-slug`
 
 ### Story 3.2: Stale hand mirror detection
-
 **Status:** done  ·  **Ledger key:** `3-2-stale-hand-mirror-detection`
 
 
@@ -110,15 +102,12 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 4: Watch — poll, backoff, halt
 
 ### Story 4.1: Poll loop with quiescence debounce
-
 **Status:** done  ·  **Ledger key:** `4-1-poll-loop-with-quiescence-debounce`
 
 ### Story 4.2: Idle backoff
-
 **Status:** done  ·  **Ledger key:** `4-2-idle-backoff`
 
 ### Story 4.3: Halt on auth error
-
 **Status:** done  ·  **Ledger key:** `4-3-halt-on-auth-error`
 
 
@@ -127,11 +116,9 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 5: Export push-back
 
 ### Story 5.1: Push regenerated exports with etag guard
-
 **Status:** done  ·  **Ledger key:** `5-1-push-regenerated-exports-with-etag-guard`
 
 ### Story 5.2: Conflict refusal on export push
-
 **Status:** done  ·  **Ledger key:** `5-2-conflict-refusal-on-export-push`
 
 
@@ -140,24 +127,19 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 6: Foundation — CLI architecture & shared infrastructure
 
 ### Story 6.1: Implement Herald CLI Dispatcher
-
 **Status:** done  ·  **Ledger key:** `6-1-implement-herald-cli-dispatcher`
 
 ### Story 6.2: Implement Shared Argument Conventions
-
 **Status:** done  ·  **Ledger key:** `6-2-implement-shared-argument-conventions`
 
 ### Story 6.3: Implement CLI Authentication & Authorization
-
-**Status:** done  ·  **Ledger key:** `6-3-implement-cli-authentication-and-authorization`
+**Status:** done  ·  **Ledger key:** `6-3-implement-cli-authentication-authorization`
 
 ### Story 6.4: Implement Evidence Link Validation Protocol (Shared Infrastructure)
-
 **Status:** done  ·  **Ledger key:** `6-4-implement-evidence-link-validation-protocol-shared-infrastructure`
 
 ### Story 6.5: CLI Help & First-Day Usability (Inline)
-
-**Status:** done  ·  **Ledger key:** `6-5-cli-help-and-first-day-usability`
+**Status:** done  ·  **Ledger key:** `6-5-cli-help-first-day-usability-inline`
 
 
 ---
@@ -165,12 +147,10 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 7: Foundation — web surface
 
 ### Story 7.1: Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)
-
-**Status:** done  ·  **Ledger key:** `7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive`
+**Status:** done  ·  **Ledger key:** `7-1-design-implement-web-layout-header-tabs-sidebar-responsive`
 
 ### Story 7.2: Implement Web Tooltips & Inline Help
-
-**Status:** done  ·  **Ledger key:** `7-2-implement-web-tooltips-and-inline-help`
+**Status:** done  ·  **Ledger key:** `7-2-implement-web-tooltips-inline-help`
 
 
 ---
@@ -178,19 +158,15 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 8: Moment 2 — progress visibility
 
 ### Story 8.1: Implement Progress Data Model & Database Schema
-
-**Status:** done  ·  **Ledger key:** `8-1-implement-progress-data-model-and-database-schema`
+**Status:** done  ·  **Ledger key:** `8-1-implement-progress-data-model-database-schema`
 
 ### Story 8.2: Implement On-Ship Webhook & Weekly Cron Automation
-
-**Status:** done  ·  **Ledger key:** `8-2-implement-on-ship-webhook-and-weekly-cron-automation`
+**Status:** done  ·  **Ledger key:** `8-2-implement-on-ship-webhook-weekly-cron-automation`
 
 ### Story 8.3: Implement Progress CLI (`herald progress` subcommand)
-
-**Status:** done  ·  **Ledger key:** `8-3-implement-progress-cli`
+**Status:** done  ·  **Ledger key:** `8-3-implement-progress-cli-herald-progress-subcommand`
 
 ### Story 8.4: Implement Progress Web Tab
-
 **Status:** done  ·  **Ledger key:** `8-4-implement-progress-web-tab`
 
 
@@ -199,24 +175,19 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 9: Moment 3 — success proclamation
 
 ### Story 9.1: Implement Claim Data Model & Database Schema
-
-**Status:** done  ·  **Ledger key:** `9-1-implement-claim-data-model-and-database-schema`
+**Status:** done  ·  **Ledger key:** `9-1-implement-claim-data-model-database-schema`
 
 ### Story 9.2: Implement Auto-Extract & Operator Review Gate
-
-**Status:** done  ·  **Ledger key:** `9-2-implement-auto-extract-and-operator-review-gate`
+**Status:** done  ·  **Ledger key:** `9-2-implement-auto-extract-operator-review-gate`
 
 ### Story 9.3: Implement Success CLI
-
 **Status:** done  ·  **Ledger key:** `9-3-implement-success-cli`
 
 ### Story 9.4: Implement Success Web Archive
-
 **Status:** done  ·  **Ledger key:** `9-4-implement-success-web-archive`
 
 ### Story 9.5: Implement Evidence Validation (Sync + Async)
-
-**Status:** done  ·  **Ledger key:** `9-5-implement-evidence-validation-sync-and-async`
+**Status:** done  ·  **Ledger key:** `9-5-implement-evidence-validation-sync-async`
 
 
 ---
@@ -224,27 +195,21 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 10: Moment 4 — operations notices
 
 ### Story 10.1: Notice Data Model & Archive Storage
-
-**Status:** done  ·  **Ledger key:** `10-1-notice-data-model-and-archive-storage`
+**Status:** done  ·  **Ledger key:** `10-1-notice-data-model-archive-storage`
 
 ### Story 10.2: Notice Authoring Workflow (CLI)
-
 **Status:** done  ·  **Ledger key:** `10-2-notice-authoring-workflow-cli`
 
 ### Story 10.3: Notice Archive & Redirects
-
-**Status:** done  ·  **Ledger key:** `10-3-notice-archive-and-redirects`
+**Status:** done  ·  **Ledger key:** `10-3-notice-archive-redirects`
 
 ### Story 10.4: Notice CLI
-
 **Status:** done  ·  **Ledger key:** `10-4-notice-cli`
 
 ### Story 10.5: Operations Web Tab
-
 **Status:** done  ·  **Ledger key:** `10-5-operations-web-tab`
 
 ### Story 10.6: Notice Lifecycle
-
 **Status:** done  ·  **Ledger key:** `10-6-notice-lifecycle`
 
 
@@ -253,19 +218,15 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 11: Integration testing & automation reliability
 
 ### Story 11.1: Integration Testing (CLI + Web + Automation)
-
-**Status:** done  ·  **Ledger key:** `11-1-integration-testing-cli-web-and-automation`
+**Status:** done  ·  **Ledger key:** `11-1-integration-testing-cli-web-automation`
 
 ### Story 11.2: Automation Reliability
-
 **Status:** done  ·  **Ledger key:** `11-2-automation-reliability`
 
 ### Story 11.3: Evidence Linking (Cross-Moment)
-
 **Status:** done  ·  **Ledger key:** `11-3-evidence-linking-cross-moment`
 
 ### Story 11.4: Performance Testing
-
 **Status:** done  ·  **Ledger key:** `11-4-performance-testing`
 
 
@@ -274,19 +235,15 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 ## Epic 12: Documentation & operator experience
 
 ### Story 12.1: CLI Runbooks & Troubleshooting
-
-**Status:** done  ·  **Ledger key:** `12-1-cli-runbooks-and-troubleshooting`
+**Status:** done  ·  **Ledger key:** `12-1-cli-runbooks-troubleshooting`
 
 ### Story 12.2: Web Surface UX Guide
-
 **Status:** done  ·  **Ledger key:** `12-2-web-surface-ux-guide`
 
 ### Story 12.3: Operator Runbook
-
 **Status:** done  ·  **Ledger key:** `12-3-operator-runbook`
 
 ### Story 12.4: Automation Troubleshooting Guide
-
 **Status:** done  ·  **Ledger key:** `12-4-automation-troubleshooting-guide`
 
 ## Epic 13: The live backend — a ship records itself
@@ -521,7 +478,6 @@ steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
 **FR-45.** Deps: steward S-32.1.
 
 ### Story 16.1: Extract deck/export format plugins
-
 As a herald operator,
 I want Marp, PPTX, and `.dc.html` as exporter plugins on the shared contract,
 So that adding an export format does not fork herald.
@@ -535,7 +491,6 @@ So that adding an export format does not fork herald.
 Does **not** copy Canopy 18–30. Lane 1 CMS remains steward.
 
 ### Story 17.1: SKF domain skill and BMAD persona for herald
-
 As an autonomous agent,
 I want a herald SKF skill from `pyforge-herald/` and a `bmad-agent-herald` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
@@ -545,7 +500,6 @@ So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 **And** the persona uses only `pyforge herald …` and `POST /stations/herald/mcp`
 
 ### Story 17.2: First portal slice — deck status for one slug
-
 As a herald operator,
 I want `/stations/herald/` to show `herald deck status` for one slug,
 So that stale-mirror state is visible in HTMX without leaving the host.
@@ -865,25 +819,25 @@ surface after a pull is Story 21.3 plus currency CAP-6; the one new requirement 
 literal with the value it replaced — is now an acceptance criterion on 21.3. CAP-4 in the Spec is
 narrowed to that delta.
 
-### Story 23.5: The `.potx` path — template-filled PowerPoints, and every derived file stamped
+### Story 23.3: The `.potx` path — template-filled PowerPoints, and every derived file stamped
 **Type:** feature • **Effort:** M • **Deps:** S-21.5 • **FR/AD:** `spec-design-sync-loop` CAP-5 • binds `spec-deck-family-lockstep` CAP-3 (the Marp path)
 **Surface:** each deck README's registry section (a declared `.potx`, the chosen path), the derive stage calling `pptx-spec`/`pptx-fill` (Story 15.1) for a `.potx` deck and `deck-export` otherwise, derived-file stamps (tree + etag) on every trio/export artifact, tests.
 **Given** Story 21.5 regenerates the export set from the refreshed Marp sources for every deck, and the operator ruled PowerPoints come **both ways per deck** — Marp-derived by default, template-filled where a deck declares a `.potx` — while no derived file today records which tree or Design etag it was derived at **When** a registry section may declare a `.potx`, the derive stage routes that deck through `pptx-spec`/`pptx-fill` and every other deck through `deck-export`, and every derived artifact carries a stamp naming the tree and etag it derived at **Then** a `.potx` deck yields a genuinely editable PPTX from its template, a Marp deck yields exactly what 21.5 yields, and the stamps make a stale derived file detectable without opening it
 **And** a host without Chrome reports `derive-skipped: no chrome` for the Marp-PPTX step and the run continues
 
-### Story 23.6: PowerPoints push back, and every push proves itself
+### Story 23.4: PowerPoints push back, and every push proves itself
 **Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-6 • closes Story 5.1's deferred binary-push follow-up
 **Surface:** `.../herald/deck_pipeline.py` (`push_exports` gains the PPTX pair once a binary `write_files` shape is proven live; a `--prove` read-back), `.../herald/state.py`, each deck README's ledger section (etag row), tests.
 **Given** `herald deck push` already pushes the standalone poster changed-only by content hash and etag-guarded per file, but skips both PPTX because no binary `write_files` wire shape has ever been proven (Story 5.1's recorded deferral), and the read-back proof the 2026-09-14 sweep used is a curl-and-strip recipe an agent runs by hand **When** a binary push is proven live on one PPTX and adopted for the pair, and the push verb reads every pushed file back through the serve URL with the harness stripped **Then** read-back is byte-identical for 100% of pushed files, the etag is recorded in the README ledger and bridge state, and a second push pushes nothing
 **And** a read-back mismatch is a refusal that names the file, never a warning
 
-### Story 23.7: The family is browsable and downloadable on Pages
+### Story 23.5: The family is browsable and downloadable on Pages
 **Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-7 • `spec-pyforge-pages` CAP-1/CAP-2 (bound, not re-minted)
 **Surface:** `docsite/build.py`, `docsite/templates/**` (family page + index), `docsite/content/**` (deck family config), `docs/dashboard/**` (render), tests / `site-check`.
 **Given** `docsite/build.py` publishes the standalone infographics into a gallery and nothing else — no PPTX, Marp, executive summary or per-deck page is published or downloadable **When** the site gains one family page per registered deck and an index **Then** each family page shows the poster, the Infographic Deck and the Executive Summary in view, offers the PPTX(s) and Marp sources as downloads, stamps each with its etag and tree, and `site-check` passes
 **And** `dashboard.yml` is still the only `deploy-pages` caller and Kedro-Viz is still at `/kedro-viz/`
 
-### Story 23.8: One command, idempotent, reported
+### Story 23.6: One command, idempotent, reported
 **Type:** feature • **Effort:** M • **Deps:** S-21.3, S-21.5, S-23.1, S-23.2, S-23.5, S-23.6, S-23.7 • **FR/AD:** `spec-design-sync-loop` CAP-8, CAP-3 (the sweep half)
 **Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/specs/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
 **Given** every stage exists as its own verb — `status` (23.1), the adopt path (23.2), `pull`/`watch` (kernel), `deck-facts --refresh` over every surface (21.3), `deck-trio` (21.1/21.2), `deck-export`/`pptx-fill` (21.5/23.5), `push` with proof (23.6), the family page (23.7) — and an agent runs them from memory **When** `herald deck sync-all` runs them in that order for every registered deck (or one `--slug`): enumerate → pull every twin whose etag moved → refresh → derive → push → prove → publish, and prints a per-deck report — pulled / **overwrote-local** (a repo-side edit Design had not seen, named) / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
