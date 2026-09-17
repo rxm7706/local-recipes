@@ -11,9 +11,9 @@ not hundreds), not a generic four-folder template.
 | Quadrant | Path | Role | Population status |
 |----------|------|------|---------------------|
 | **Tutorials / Getting Started** | [`docs/tutorials/`](tutorials/) | Learning-oriented: first working environment, minimal path to success | Populated — [`getting-started.md`](tutorials/getting-started.md) (Story 22.5) |
-| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Populated — recipe/pixi/CI/troubleshooting/air-gap + relocated antigravity/manticore (Story 22.5); BMAD station-operations series added 2026-09-17 |
+| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Populated — recipe/pixi/CI/troubleshooting/air-gap + relocated antigravity/manticore (Story 22.5); BMAD station-operations series added 2026-09-17, including one-chain lock/mop |
 | **Reference** | [`docs/reference/`](reference/) | Information-oriented: exact CLI/config/schema surfaces, inventories, examples | Populated — seed from pre-22.4 `docs/reference/` (true reference material retained here) |
-| **Explanation** | [`docs/explanation/`](explanation/) | Understanding-oriented: architecture rationale, "why does this work this way?" | Populated — architecture-rationale files relocated from `docs/reference/` in Story 22.4 |
+| **Explanation** | [`docs/explanation/`](explanation/) | Understanding-oriented: architecture rationale, "why does this work this way?" | Populated — architecture-rationale files relocated from `docs/reference/` in Story 22.4; one-chain lock/mop rationale added 2026-09-17 |
 
 ## Outside this map (untouched)
 
@@ -30,6 +30,17 @@ general documentation:
 | Intake inbox | `docs/intake/` | Pre-triage staging; routes elsewhere per [`docs/intake/README.md`](intake/README.md) |
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
+
+## One-chain operator layer (2026-09-17)
+
+Operators and coding agents keep a station at one Dream, one Spec, one PRD, one spine, and one epic chain with two Diátaxis pages. Those pages **point at** [`CHAIN-STANDARD.md`](governance/spec-one-chain-per-station/CHAIN-STANDARD.md) (and Spec CAP-10). They do not move Dreams or `docs/governance/` into this map; those layers stay in the exclusion table above.
+
+| Page | Quadrant | Role |
+|------|----------|------|
+| [`how-to/one-chain-station-ops.md`](how-to/one-chain-station-ops.md) | How-to | Lock, satellite rewrite, mop, parallel work, environment |
+| [`explanation/one-chain-lock-and-mop.md`](explanation/one-chain-lock-and-mop.md) | Explanation | Why 1:1 is minting plus `chain-sprawl-check`, not a periodic fold |
+
+Dispatch of already-minted stories stays in [`how-to/driving-a-pyforge-station-backlog.md`](how-to/driving-a-pyforge-station-backlog.md).
 
 ## Relocated in Story 22.5 (entry-point pointers remain until 22.6)
 
