@@ -2,8 +2,11 @@
 title: '"Where is the PRD?" is a pointer, not forty-six thousand tokens'
 type: dream
 owner: scribe
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # "Where is the PRD?" is a pointer, not forty-six thousand tokens
 

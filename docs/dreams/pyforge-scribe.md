@@ -2,8 +2,10 @@
 title: Scribe — the inward voice
 type: dream
 owner: scribe
-status: realized
+status: specified
 ---
+
+> **One chain** (2026-09-17). This is the station Dream. 16 satellite Dreams archived in place; CAPs live on `spec-pyforge-scribe`.
 
 # Scribe — capture the decision, keep the graph, answer from memory
 

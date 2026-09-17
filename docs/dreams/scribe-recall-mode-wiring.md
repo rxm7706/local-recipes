@@ -2,8 +2,11 @@
 title: Planning retrieve names --mode planning
 type: dream
 owner: scribe
-status: specified   # 2026-09-13 — Story 18.1 implements CAP-1..3 on this PR
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # Planning retrieve names --mode planning
 

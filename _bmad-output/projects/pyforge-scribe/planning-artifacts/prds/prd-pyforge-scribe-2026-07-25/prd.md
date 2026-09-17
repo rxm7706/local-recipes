@@ -1,9 +1,10 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-14"
+updated: "2026-09-17"
 status: final
-currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-scribe moved to 2026-09-12 (its § Open Questions section REMOVED and open_questions: [] set after the 2026-09-09 answering pass; the ambient-capture Non-goal amended; a new decided Non-goal on ADR numbering; a Not-CAP-14 ownership ruling; four new governed script surfaces) and its memlog to 2026-09-13T12:24 while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. TWO REAL DIVERGENCES RECORDED, both re-verified live: UJ-1 writes `scribe capture --type decision` but CaptureType is closed at feedback|project|reference (models.py:34) — the journey is unrunnable as written; and SM-4 still names the operator crontab entry as the nightly trigger, which Story 8.1 replaced with a checked-in systemd-user timer. Prior — Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation."
+currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
 
 # PRD: pyforge-scribe (Scribe)
@@ -63,36 +64,36 @@ Scribe ships in two waves that are each independently valuable: Wave 1 completes
 
 **Description:** The checked-in `.claude/memory/` directory, the promotion workflow that moves entries from user-local memory into it, and the wiring that makes team memory auto-load every session. This feature is the legacy `claude-team-memory` spec's full scope (its 10 stories, Waves A/B/C), migrated into Scribe as the foundation the graph compiles from. Realizes UJ-1, UJ-4. FR IDs below map 1:1 to the legacy spec's FR-1 through FR-9 (renumbered for this PRD's global sequence; intent unchanged unless noted).
 
-#### FR-1: Frontmatter schema parity
+#### FR-1: Frontmatter schema parity ← CAP-1
 Entries in `.claude/memory/` use the same frontmatter fields as user-local auto-memory (`name`, `description`, `type` ∈ `{feedback, project, reference}`), so migration in either direction is mechanical. *(= legacy FR-1)*
 
 **Consequences (testable):**
 - A `.claude/memory/<type>/*.md` file with a missing or malformed `type` field fails a schema check.
 - Promotion tooling reads and writes this exact schema without a translation step.
 
-#### FR-2: MEMORY.md index size discipline
+#### FR-2: MEMORY.md index size discipline ← CAP-1
 `.claude/memory/MEMORY.md` stays under 200 lines (Claude Code truncates beyond that); enforced by convention (entries are one-line `- [Title](file.md) — hook`), no tooling gate in Wave 1. *(= legacy FR-2)*
 
-#### FR-3: Proposal-then-confirm promotion
+#### FR-3: Proposal-then-confirm promotion ← CAP-1
 `scribe capture --promote` (or equivalent) stops after producing the proposed diff and waits for explicit confirmation before writing. No auto-commit, no unreviewed multi-file write. *(= legacy FR-3)*
 
 **Consequences (testable):**
 - Running the promotion path against a set of user-local entries produces a structured proposal (files + full content + updated `MEMORY.md`) and halts before any write.
 - Nothing under `.claude/memory/` changes on disk until confirmation is given.
 
-#### FR-4: Team-voice rewrite required
+#### FR-4: Team-voice rewrite required ← CAP-1
 Promoted entries are rewritten per the team-voice rules (strip first-person, drop "user prefers" framing, drop incident-specific anecdotes, preserve **Why:**/**How to apply:** structure, preserve paths/commands/identifiers verbatim) — never a verbatim copy. *(= legacy FR-4)*
 
-#### FR-5: Pointer stub after promotion
+#### FR-5: Pointer stub after promotion ← CAP-1
 After confirmation, the source user-local entry is replaced with the pointer-stub format (`promoted: true` + redirect body naming the promoted file's path and date) — not deleted, preserving traceability. *(= legacy FR-5)*
 
-#### FR-6: Detect already-promoted entries (idempotency)
+#### FR-6: Detect already-promoted entries (idempotency) ← CAP-1
 The promotion workflow detects `promoted: true` frontmatter and skips re-classification/re-promotion. Repeated invocation is a no-op against already-promoted entries. *(= legacy FR-6)*
 
-#### FR-7: Read-only outside `.claude/memory/` (and Scribe's own package/skill surface)
+#### FR-7: Read-only outside `.claude/memory/` (and Scribe's own package/skill surface) ← CAP-1
 Scribe's capture/promotion path never writes to `.claude/skills/` (other skills), `.claude/scripts/`, `.claude/agents/`, `.mcp.json`, `recipes/`, `_bmad/`, or `_bmad-output/` outside its own project. `CLAUDE.md` edits (wiring the `@import`) remain human-driven, not automated. *(= legacy FR-7, scope note updated: Scribe's own package files are now an explicit exception since Scribe itself is code under `.claude/skills/` or a `src/` package — see `addendum.md` for the exact write-boundary list.)*
 
-#### FR-8: Type taxonomy match
+#### FR-8: Type taxonomy match ← CAP-1
 `.claude/memory/` subdirectories are `feedback/`, `project/`, `reference/` — matching user-local memory's taxonomy; promotion defaults to the source entry's `type` unless a human reclassifies during review. *(= legacy FR-8)*
 
 **Feature-specific NFRs:**
@@ -104,20 +105,20 @@ Scribe's capture/promotion path never writes to `.claude/skills/` (other skills)
 
 **Description:** `scribe graph compile --nightly` reads the tools the team already uses and compiles them into a graph — artifacts as nodes, references as edges — on a cadence, without anyone hand-maintaining a separate app. This is Sentinel's core claim, finally given an owner. Realizes UJ-3.
 
-#### FR-9: Nightly compile reads named tool surfaces
+#### FR-9: Nightly compile reads named tool surfaces ← CAP-2
 `scribe graph compile --nightly` ingests, at minimum: `.claude/memory/` (team memory), `.memlog.md` files across BMAD projects, git commit/PR history, retro outputs, CHANGELOGs, and `docs/dreams/`. The exact v1 input list is confirmed at architecture/epics time (see Open Questions); this FR fixes the *shape* (multiple named, already-existing tool surfaces — not a new authored-content app) as binding.
 
 **Consequences (testable):**
 - Running the compile step against a repo state with entries in each named surface produces graph nodes traceable to their source file and line/commit.
 - Running the compile step with no new source activity since the last run is idempotent (no duplicate nodes, no spurious edges).
 
-#### FR-10: Fact supersession, not deletion
+#### FR-10: Fact supersession, not deletion ← CAP-2
 When the compile step detects a new record that supersedes an older one (e.g., a new decision superseding a prior one per the ADR "never edit in place, link instead" convention), the graph invalidates the old fact's validity rather than deleting the node — conceptually borrowed from Graphiti's bi-temporal model per the domain research, without adopting its storage engine.
 
 **Consequences (testable):**
 - A capture that explicitly supersedes a prior record (naming it) results in the old record remaining queryable (marked superseded) rather than vanishing from the graph.
 
-#### FR-11: Compile is unattended and idempotent
+#### FR-11: Compile is unattended and idempotent ← CAP-2
 The compile step runs without interactive input and produces the same graph state given the same source inputs, regardless of how many times it is re-run (subject to source-content changes).
 
 **Feature-specific NFRs:**
@@ -128,14 +129,14 @@ The compile step runs without interactive input and produces the same graph stat
 
 **Description:** `scribe recall <query>` answers from the compiled graph so a session starts already knowing what the team knows, with every answer traceable to the record it's grounded in. Realizes UJ-2.
 
-#### FR-12: Recall returns a grounded, cited answer
+#### FR-12: Recall returns a grounded, cited answer ← CAP-3
 `scribe recall "<natural-language query>"` returns an answer derived from the compiled graph, with an explicit citation (file path / capture ID / commit) to the specific record(s) the answer is grounded in.
 
 **Consequences (testable):**
 - Every `scribe recall` response includes at least one citation resolvable to a real file/record in the repo.
 - A query with no relevant graph coverage returns an explicit "no grounded answer found" rather than a fabricated one.
 
-#### FR-13: Recall is queryable by any session, any operator
+#### FR-13: Recall is queryable by any session, any operator ← CAP-3
 `scribe recall` works identically regardless of which human operator or which concurrent agent worktree invokes it — the compiled graph is the single shared source, not per-session state.
 
 **Out of Scope:**
@@ -148,10 +149,10 @@ The compile step runs without interactive input and produces the same graph stat
 
 **Description:** Scribe ships as `pyforge-scribe` (dist name), `pyforge.scribe` (module), `scribe` (CLI entry point) — a pixi-workspace member package, installable and importable like any other package in this monorepo's dual-ecosystem model.
 
-#### FR-14: CLI is the public contract
+#### FR-14: CLI is the public contract ← CAP-4
 `scribe capture`, `scribe graph compile --nightly`, and `scribe recall` are the three top-level commands; each is independently invocable and independently testable. Sub-flags (`--type`, `--text`, `--promote`, `--nightly`) extend without breaking the top-level contract.
 
-#### FR-15: Pixi workspace membership
+#### FR-15: Pixi workspace membership ← CAP-4
 Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem, multi-package pattern), with its own `pyproject.toml`/`recipe.yaml` posture consistent with sibling pyforge-* packages (Warden, Herald) once they exist as precedent.
 
 **Feature-specific NFRs:**

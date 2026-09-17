@@ -2,8 +2,11 @@
 title: Scribe reaches past curated memory into the raw session transcripts underneath it
 type: dream
 owner: scribe
-status: realized   # 2026-09-09 — Epic 3 (3.1 scanner, 3.2 compile source, 3.3 bounds+schedule) all `done` and the criterion is EXERCISED: .claude/data/pyforge-scribe/transcript-scan-cache.json is the artifact only a real scan produces. Was `specified` (2026-08-22 — spec + station decomposition landed same day).
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-scribe]]** on 2026-09-17 (one-chain-per-station scribe fold).
 
 # Scribe reaches past curated memory into the raw session transcripts underneath it
 

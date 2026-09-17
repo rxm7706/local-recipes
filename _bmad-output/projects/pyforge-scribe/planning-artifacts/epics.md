@@ -11,14 +11,21 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-13"  # Epic 17 + Story 17.1 minted in the reserved 16→18 hole
-currency_review: "Reviewed 2026-09-13 (Story 14.1: named docs extras — how-tos + library-catalog extract; contract spec-scribe-named-docs. Story 13.1: planning pointers — Brief/PRD/spine/epics.md extract only; contract spec-scribe-planning-pointers. Stories 8.4–8.6: layered knowledge — stale vs compiled_at, compile hygiene, named Dreams/SPECs/facts, default recall omits code, AGENTS session path; contract spec-scribe-knowledge-layers. Story 8.3: Herald fact ledgers. Story 8.2: nightly graphify extra). Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+updated: "2026-09-17"  # one-chain fold remint; Fold provenance names CAP-1..26  # Epic 17 + Story 17.1 minted in the reserved 16→18 hole
+currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
 # pyforge-scribe - Epic Breakdown
+
+## Fold provenance (2026-09-17)
+
+Station Spec spec-pyforge-scribe reminted absorbed capabilities as CAP-1..26. Historical stories keep their sequential epic numbers (already 1..N with no gaps). This heading is the INV-A citation window: `spec-pyforge-scribe` CAP-1..26.
+
+**2026-09-17 arch→epics validation.** Re-read ARCHITECTURE-SPINE.md after the 2026-09-17 prd→arch cascade. No AD added or changed. Story headings still map 1:1 to `sprint-status-ledger.yaml` keys. No blocked ledger keys flipped.
+
 
 ## Overview
 
