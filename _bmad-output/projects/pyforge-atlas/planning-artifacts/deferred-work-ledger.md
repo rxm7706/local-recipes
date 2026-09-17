@@ -3165,7 +3165,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
   evidence: Reproduces identically on baseline_revision f71b388ab783f9b584f9e90f2d6d6c67d96c2ba8 with none of this story's changes applied -- pre-existing, unrelated to the 3 target files (core_sources.py, request_datasets.py, vcs_sources.py).
   location: src/shared/packages/pyforge-atlas (seed_gaps pipeline / kedro-catalog-check path-containment assertion, likely a Story 21.1 gap)
@@ -3197,7 +3197,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-2: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
   evidence: Confirmed by the Intent Alignment auditor (pass 2): `enrich_maintainers(core_cf_graph_raw)` in the same pipelines/vcs_health/nodes.py already reads identifier-bearing data one node up, but none of the 3 new trigger nodes take it as input. Explicitly out of THIS story's scope per the verbatim intent ("Checklist in identity-contract.md not in scope") -- identifier resolution is Story 21.6's ("upstream_discovery identity join") territory.
   location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (refresh_vcs_github_store, refresh_vcs_host_stores, refresh_vcs_registry_stores); owning follow-up: Story 21.6
@@ -3210,7 +3210,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-3: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
   evidence: Not exercised today since every current trigger call uses an empty identifier batch (see the identifier-source-gap entry above); becomes live risk only once that gap is closed.
   location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (_ttl_cadence)
@@ -3223,7 +3223,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-4: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
   evidence: Not reachable today (every current caller passes an empty batch), but will matter as soon as Story 21.6 wires a real, possibly-partial identifier batch per refresh cycle.
   location: src/pyforge/atlas/datasets/vcs_sources.py (_ParquetRefreshStore._persist), src/pyforge/atlas/datasets/request_datasets.py (GitHubRequestDataset.fetch_repo_health persistence)
@@ -3236,7 +3236,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-5: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
   evidence: Confirmed by 2 independent reviewers on the pass-2 diff; non-blocking code-organization nit, not a correctness issue.
   location: src/pyforge/atlas/datasets/vcs_sources.py
@@ -3249,7 +3249,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-6: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
   evidence: Code-organization suggestion from the Blind Hunter review; not a correctness issue.
   location: src/pyforge/atlas/datasets/vcs_sources.py, src/pyforge/atlas/datasets/request_datasets.py
@@ -3262,7 +3262,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-7: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
   evidence: Reviewer itself notes this may be deliberate for a v1; flagging so it is a documented choice, not a silent gap.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vcs_gitlab_api_raw, vcs_codeberg_api_raw, vcs_registry_*_raw)
@@ -3275,7 +3275,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-2-8: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
 
-- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
   summary: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
   evidence: Real data-quality concern flagged by Blind Hunter; not required by this story's AC (no cf_atlas.db default, safe degrade) and adds meaningful stateful-rotation complexity beyond this story's scope.
   location: src/pyforge/atlas/datasets/request_datasets.py (PyPIJsonFanOutDataset.load)
@@ -3431,7 +3431,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
   evidence: Reproduced 2026-08-30: `ANACONDA_CHANNEL_BASE_URL=http://127.0.0.1:9 kedro run --nodes enumerate_anaconda_main_packages` -> ConnectionRefusedError, exit 1. The story's second AC therefore holds only for the upstream_discovery half (3 `.staleness.json` markers, exit 0) and the zero-network seed load (1,474 rows); the `core` half was verified LIVE instead (5,401 rows).
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:393
@@ -3444,7 +3444,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-2: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
   evidence: Verification-gap + blind reviewers both read `_STORE_TO_REFRESH_ASSET` and `_all_nodes()` in that module; `trending_candidates` (Story 13.1) was already missing before this story, so this is a pre-existing coverage gap the story extended rather than caused.
   location: src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_single_writer.py
@@ -3457,7 +3457,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-3: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
   evidence: Edge-case reviewer, from the loop at core_sources.py::_fetch_channel_repodata and the `except Exception -> None` in `_fetch_repodata_at_url`. Pre-existing loop shape; the hardening doubled the combo count. Offline runs fail fast (refused/DNS) so the practical impact is limited to black-holed networks.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:556
@@ -3470,7 +3470,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-4-4: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
 
-- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
   summary: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
   evidence: Checked 2026-08-30 via register_pipelines() vs D.NODE_TIMEOUTS: 59 nodes, 54 mapped, 5 missing (all pre-existing). The 4 Story 21.4 nodes ARE mapped. Adding the completeness test now would fail on the pre-existing five, so it is deferred rather than patched.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py:219
@@ -3483,7 +3483,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
   evidence: Confirmed empirically: writing invalid JSON to the file and loading the discovery_curated_groups_seed catalog entry through pyforge.atlas.mcp.session.bootstrapped_session() raised `DatasetError: discovery_curated_groups_seed: ... Failed while loading data from dataset ... JSONDataset`. This happens before load_org_audit_candidates's own never-raise/degrade logic ever runs, so that node-level contract can't help. However this exact exposure (bare `type: json.JSONDataset` for a git-tracked, hand-curated seed, with no degrade wrapper) already exists for the pre-existing `seed_cwe_categories` and `seed_spdx_schema` catalog entries — this story faithfully follows established precedent rather than introducing a new pattern, so it is fleet-wide pre-existing debt, not a regression unique to this story.
   location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (discovery_curated_groups_seed entry)
@@ -3496,7 +3496,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-2: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc […truncated at 500 chars by the pre-fix `_flatten_deferred_scalar`; full text is in the source spec's `deferred:` frontmatter]
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc
   evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
@@ -3509,10 +3509,10 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-3: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
   evidence: Confirmed empirically: moving core_feedstock_attribution.parquet aside and re-running `kedro run --pipelines upstream_discovery,artifactory_downloads` raised `DatasetError: core_feedstock_attribution: ... No such file or directory`. However this is a pre-existing, fleet-wide pattern, not a regression this story introduces: classify_trending_candidates (Story 13.2, already shipped) has the identical characteristic — a plain pandas.ParquetDataset input produced by a different pipeline (pypi_conda_mapping), with no missing-file tolerance. This story's own unit tests DO correctly verify join_enterprise_conda_maintainers's behavior when given None/empty input directly (the function-level contract in the I/O matrix), which is a different, narrower claim than "the full kedro run survives a truly empty data root" — the latter has never actually been true for any cross-pipeline dependency in this codebase, this story included.
-  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-5-tier-2-sources.md (## Verification section)
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md (## Verification section)
   origin: spec-deferred 7db7e06d1eb3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -3732,7 +3732,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
   evidence: _id_universe_frame (nodes.py) hardcodes source_repository_url="" for every row because no catalog entry supplies it today; the git-purl transform logic (_id_git_purl, _id_from_inventory) is ported and unit-tested but structurally unreachable through the real build_identity_packages_primary entry point until a future story adds that column to some Atlas source.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py:_id_universe_frame
@@ -3745,7 +3745,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-2: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
   evidence: _do_refresh's files-fanout loop issues one GET per open PR (`.../pulls/{number}/files?per_page=100`) with no pagination loop, unlike the PR-listing fetch above it which does paginate. Most single-recipe PRs have far fewer than 100 files, so this is a narrow, currently-cold edge (bulk/mass staged-recipes PRs), not a general regression.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:StagedRecipesPRDataset._do_refresh
@@ -3758,7 +3758,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-3: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
   evidence: _LOCAL_RECIPES_TREE_URL_TEMPLATE is a module-level constant hardcoding the repo slug; only the scanned filesystem path is configurable. Narrow in practice — the override is documented for pointing at an alternate path within this same repo (e.g. test fixtures), not a different GitHub repo.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:_LOCAL_RECIPES_TREE_URL_TEMPLATE
@@ -3771,7 +3771,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-6-4: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
 
-- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md`
   summary: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
   evidence: Verified by reading tests/parity/test_parity_complete.py: _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability"). This is a pre-existing inaccuracy in the spec's own Code Map, not something this story's diff broke or needs to fix.
   location: src/shared/packages/pyforge-atlas/tests/parity/test_parity_complete.py
@@ -3784,7 +3784,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-23-5: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
 
-- source_spec: `planning-artifacts/specs/spec-23-5-identity-complete-export-parquet.md`
+- source_spec: `planning-artifacts/specs/spec-22-5-identity_complete_export-parquet-canonical.md`
   summary: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
   evidence: Spec Verification lists `kedro run --pipelines derived_artifacts` as a manual gate; test_identity_complete_export.py covers the node in isolation only.
   location: src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py
@@ -3968,7 +3968,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
 ### DW-FU-21-5-4: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
 
-- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+- source_spec: `planning-artifacts/specs/spec-20-5-tier-2-sources-about-curated-orgs-artifactory-names.md`
   summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
   evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
   location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
