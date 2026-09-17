@@ -2,9 +2,8 @@
 title: Atlas — the map that maintains itself
 type: dream
 owner: atlas
-status: realized
+status: specified
 ---
-
 # Atlas — the intelligence layer an agent workforce can maintain
 
 ## The Dream
@@ -206,3 +205,13 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Cross-station residue for steward: `docs/dreams/README.md` still describes this Dream as
   "waves 0–H shipped, PRs #58–#105", accurate for the migration and roughly 99 stories and 14
   epics behind the station.
+
+## 2026-09-17 — One-chain fold (atlas, CAP-3)
+
+Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.
+Topic Dreams are archived in place with `Consolidated into [[pyforge-atlas]]`
+banners. Station Spec `spec-pyforge-atlas` is `ready`. Epic 12–25 rekey to
+11–24 to close the missing Epic 11 gap. Done rows keep status; `25-2` stays
+`blocked` as `24-2`.
+
+Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalog-expansion]], [[atlas-query-dashboards]], [[conda-forge-packaging-inventory-operations]], [[enterprise-data-models-and-apis]], [[kedro-org-tooling-adoption]], [[microsoft-org-sweep]], [[pyforge-atlas-intelligence-platform]], [[unity-data-stack]], [[upstream-discovery]], [[wagtail-corporate-brain]], [[wasm-analytics-stack]].

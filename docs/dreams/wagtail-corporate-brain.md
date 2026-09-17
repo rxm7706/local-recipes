@@ -2,8 +2,10 @@
 title: The "Corporate Brain" CMS atlas's own WikiSyncer has been waiting to push to
 type: dream
 owner: atlas
-status: specified
+status: archived
 ---
+
+> **Consolidated into** [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) on 2026-09-17 (one-chain-per-station CAP-3). This file is the record; new work appends to the station Dream.
 
 # The "Corporate Brain" CMS atlas's own WikiSyncer has been waiting to push to
 

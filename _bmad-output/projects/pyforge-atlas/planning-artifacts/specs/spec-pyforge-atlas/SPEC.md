@@ -1,43 +1,57 @@
 ---
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
-status: shipped
-shipped_scope_note: |
-  `shipped` = the 32 stories merged (PRs #69-#102, 2026-07-17/18). It does NOT mean every
-  attended boundary event is discharged: the credentialed parity run + legacy retirement
-  (DW-B4-2), the F1 cold/warm benchmark (DW-F1-1), and the live Dagster daemon (DW-C1-1,
-  DW-G3, DW-H4) are all still outstanding. See § Success signal. Added 2026-07-27 per
-  AUD-ATLAS-047 / AUD-ATLAS-049.
-
-  Currency, 2026-09-09: "the 32 stories" is a correct HISTORICAL statement about the
-  Kedro/Dagster/DuckDB MIGRATION only. Measured with the real parser
-  (`scripts/fleet_scan.py::parse_sprint_status`), the station's ledger now holds **93 story
-  keys across 24 epics** — 141 rows once the 24 epic rows and 24 retrospective rows are
-  counted — plus Epic 25, minted 2026-09-09. The "137" quoted by the 2026-09-09 readiness
-  pass and by the decision batch is the ROW count as it stood before Epic 25 (91 stories
-  then), not a story count; both artifacts read it as stories. `status: shipped` and the
-  owner Dream's `realized` both HOLD under the exercised realization gate — pipelines, the
-  MCP face, the BSL models and the Vizro board all run.
-updated: "2026-09-09"
+status: ready
+updated: "2026-09-17"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
-  - docs/dreams/unity-data-stack.md    # folded in 2026-08-02 as CAP-18..26 (see below); satisfies INV-1 for this Dream
-  - docs/dreams/wasm-analytics-stack.md # folded in 2026-08-02 as CAP-27..31 (see below); satisfies INV-1 for this Dream
-program: regenerable-factory
-# consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and
-# spec-wasm-analytics-stack (per explicit user override of the dream-level-only
-# consolidation convention; see docs/dreams/pyforge-atlas.md § The estate Atlas
-# hosts). Their capabilities/constraints/non-goals/success-signal/assumptions/
-# open-questions are folded in below under "Satellite:" subsections with
-# CAP-n renumbered to continue this Spec's sequence (CAP-18..26 Unity,
-# CAP-27..31 Wasm). `surface`, `program`, and `owner-dream` above describe the
-# PRIMARY Atlas Spec only — neither satellite has shipped code, so neither
-# contributes to `surface` (see each satellite's own surface note, preserved
-# in its folded-in section, and its `Satellite: Unity Data Stack` /
-# `Satellite: Wasm Analytics Stack` frontmatter block below).
+  - docs/dreams/pyforge-atlas.md
+  - docs/dreams/artifactory-download-intelligence.md
+  - docs/dreams/atlas-kedro-catalog-expansion.md
+  - docs/dreams/atlas-query-dashboards.md
+  - docs/dreams/conda-forge-packaging-inventory-operations.md
+  - docs/dreams/enterprise-data-models-and-apis.md
+  - docs/dreams/kedro-org-tooling-adoption.md
+  - docs/dreams/microsoft-org-sweep.md
+  - docs/dreams/pyforge-atlas-intelligence-platform.md
+  - docs/dreams/unity-data-stack.md
+  - docs/dreams/upstream-discovery.md
+  - docs/dreams/wagtail-corporate-brain.md
+  - docs/dreams/wasm-analytics-stack.md
 surface:
-  - src/shared/packages/pyforge-atlas/**               # the shipped package: conf/, src/pyforge/atlas/, tests/, wasm/
-  - src/prototype/packages/pyforge-atlas-kedro-viz/**  # the generated dependency-free DAG mirror (tools/regenerate_from_atlas.py) — moves only when the real DAG moves
+  - src/shared/packages/pyforge-atlas/**
+  - src/prototype/packages/pyforge-atlas-kedro-viz/**
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/
+  - src/shared/packages/pyforge-atlas/conf/base/catalog.yml
+  - src/shared/packages/pyforge-atlas/conf/base/globals.yml
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/**
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/**
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/**
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/**
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**
+  - .github/workflows/kedro-viz-publish.yml
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/
+  - scripts/dashboard_serve.py
+  - scripts/conda-forge-packaging-inventory-operations_metrics.py
+  - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py
+  - scripts/tests/fixtures/inventory_universe/generate_fixtures.py
+  - scripts/tests/fixtures/inventory_universe/mini-workbook.xlsx
+  - scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_universe/inventory_universe.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/intermediate/pypi_universe/pypi_universe.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/raw/openteams_project_1_board_raw/openteams_project_1_board.parquet
+  - scripts/tests/test_quartet_no_xlsx_surface.py
+  - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
+  - scripts/conda-forge-packaging-inventory-operations_priority.py
+  - scripts/openteams_identity_dashboards.py
+  - conf/conda-forge-packaging-inventory-operations.local.env.example
+  - conf/conda-forge-packaging-inventory-operations_curated_groups.json
+  - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py
+  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+  - src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py
+  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py
 surface-drift-exclude:
   # 2026-09-12: also governed by the spec(s) named below, which already
   # reconciles each of these files cleanly -- this kernel spec's own
@@ -63,43 +77,11 @@ companions:
   - signals.md               # the 23 ported phases -> nodes, the 3 additive riders, the Warden boundary on signals
   - catalog-contract.md      # 7 pipelines x 86 datasets, every declared TTL, the two freshness clocks, identity + join keys
   - degradation-contract.md  # the 3 markers, the fixed policy mapping, the frozen exit projection
-  - gate-contract.md         # the 7 gates, what each proves and what each refuses to do
+  - gate-contract.md         # the 7 gates, what each proves and what they refuse to do
   - constitution-provenance.md  # [Unity satellite, folded in 2026-08-02] the 14-Article Constitution map + the 8 required amendments
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
-  - ../../../../../../docs/dreams/pyforge-charter.md   # § 3 Atlas — the station's standing mandate
-  - ../../../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md   # LEGACY Tier-1 intake spec (v5.6, status: shipped) — the requirements contract this Spec distils; absorbed and superseded, not adopted
-  - ../../prds/prd-pyforge-atlas-2026-07-17/prd.md          # chain: FR-1..FR-22, SM-1..SM-12 + SM-C1..SM-C4, the § 5 non-goal boundary (also carries the Unity + Wasm satellite PRDs verbatim since 2026-08-02)
-  - ../../prds/prd-pyforge-atlas-2026-07-17/addendum.md     # chain: intake reconciliations
-  - ../../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md  # chain: AD-1..AD-23, the conventions table, stack, structural seed (also carries the Unity + Wasm satellite spines, renumbered AD-24..56, since 2026-08-02)
-  - ../../epics.md                                          # chain: 9 epics / 32 stories with their binding ACs and delivery records
-  - ../../../../pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md  # cross-project: owns the ComplianceReport contract this project's policy gate validates against by import
-  - ../../briefs/brief-pyforge-atlas-2026-07-25/brief.md    # also carries the Unity + Wasm satellite briefs verbatim since 2026-08-02
-  - ../../research/domain-dependency-intelligence-ecosystem-observability-research-2026-07-25.md
-  - ../../research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md
-  - ../../../../../../docs/dreams/unity-data-stack.md       # [Unity satellite] archived 2026-08-02, narrative absorbed into pyforge-atlas.md
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-unity-data-stack-2026-07-25/brief.md         # [Unity satellite, moved to archive/ 2026-08-02]
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-unity-data-stack-2026-07-25/addendum.md      # [Unity satellite, moved to archive/ 2026-08-02]
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md               # [Unity satellite, moved to archive/ 2026-08-02]
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/addendum.md          # [Unity satellite, moved to archive/ 2026-08-02]
-  - ../../../../../../docs/dreams/wasm-analytics-stack.md   # [Wasm satellite] archived 2026-08-02, narrative absorbed into pyforge-atlas.md
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-wasm-analytics-stack-2026-07-25/brief.md     # [Wasm satellite, moved to archive/ 2026-08-02]
-  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md           # [Wasm satellite, moved to archive/ 2026-08-02]
 open_questions: []
-  # All four of the PRIMARY Atlas Spec's ORIGINAL OQs resolved 2026-07-25 — see § Resolved
-  # questions. The two satellites carry their own unresolved open questions — see § Open
-  # Questions (satellites), not invented away by this consolidation; they have never been
-  # frontmatter entries.
-  #
-  # ANSWERED 2026-09-09 (chain-currency runbook § overtaken), raised and retired the same day:
-  # "The shipped Vizro page count disagrees with itself: `pixi.toml:1065` and `:1070` both
-  # describe a '31-page' dashboard-dryrun gate, `dashboard/app.py`'s `PAGE_INVENTORY` carries 34
-  # `PageDef` entries, and the module docstring still says 28."
-  # -> THE LIVE COUNT IS 34: `PAGE_INVENTORY` in `dashboard/app.py` holds 34 `PageDef` entries,
-  #    including Epic 22's three identity pages. The 31 at `pixi.toml:1065`/`:1070` and the 28 at
-  #    `app.py:13` are STALE LITERALS, not a disagreement to adjudicate. ANSWERED AND VESSELLED,
-  #    not open: Story 25.1 ("Retire the second Lane-3 runtime") carries the literal fix as an
-  #    And-clause. The count still wants deriving rather than stamping -- that is the story's job.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -163,246 +145,188 @@ tree. Their content appears below as `Satellite:` subsections under each of
 this document's five fields.
 
 ## Capabilities
-
-- **CAP-1 — the DAG is the orchestrator**
+One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> CAP-m (shipped <date>)`.
+- **CAP-1 — the DAG is the orchestrator** ← spec-pyforge-atlas CAP-1 (shipped 2026-09-09)
   - **intent:** Every unit of ingestion or compute is a pure function with declared inputs and
-    outputs, and execution order is resolved from the dependency graph rather than called
-    procedurally.
   - **success:** The 23 legacy phases run as DAG-resolved nodes across exactly seven typed
-    domain pipelines (`core`, `pypi_intelligence`, `vulnerability`, `vcs_health`,
-    `universal_sbom`, `seed_gaps`, `derived_artifacts`); each dataset has exactly one producing
-    pipeline and consumers reference it by catalog name; the former unregistered side-effect
-    (per-version download history) is an explicit node with declared outputs; and the legacy
-    per-phase engineering contracts survive the port with their fixtures carried over green.
-  - **verified:** confirmed by real test evidence: `test_core_pipeline_has_eight_nodes`, `test_vcs_health_pipeline_has_ten_nodes`, `test_no_dataset_is_written_by_two_pipelines`, `test_combined_dag_resolves_topologically_with_no_procedural_order` (`tests/unit/pipelines/test_dag_resolves.py`), part of the full `pyforge-atlas-test` run (1818 passed, 18 skipped, 2026-09-11).
-- **CAP-2 — all IO is catalog-declared, all credentials are host-scoped**
+- **CAP-2 — all IO is catalog-declared, all credentials are host-scoped** ← spec-pyforge-atlas CAP-2 (shipped 2026-09-09)
   - **intent:** No node function contains data-access logic, and a credential reaches only the
-    host it belongs to.
   - **success:** Every source and output is an entry in `conf/base/catalog.yml`; a static gate
-    proves no inline IO remains in node bodies; all 20 `resolve_*_urls`-style override points
-    survive as dataset-level endpoint config so an enterprise mirror substitutes without code
-    change; and a non-JFrog host provably never receives the JFrog API header — closing the
-    legacy global-injection defect rather than porting it.
-  - **verified:** `kedro-catalog-check` (67 tests) green, incl. `test_catalog_never_hardcodes_a_host` (`tests/unit/catalog/test_override_points.py`) and the whole-package no-inline-IO scan (`test_no_inline_io.py`).
-- **CAP-3 — incremental state is a dataset concern, not a node concern**
+- **CAP-3 — incremental state is a dataset concern, not a node concern** ← spec-pyforge-atlas CAP-3 (shipped 2026-09-09)
   - **intent:** Freshness, resumption, and re-fetch decisions belong to one reusable dataset
-    class, so no node ever re-implements them.
   - **success:** `IncrementalParquetDataset` round-trips `*_fetched_at` TTL state; stale rows
-    re-fetch and fresh rows skip, proven by unit test; TTLs are declared **per dataset** in the
-    catalog (7 d, 30 d, 1 d, 90 d, … — never a global constant); the bespoke `phase_state`
-    checkpoint table is deleted, with resumability supplied by the runner plus persisted
-    intermediate datasets.
-  - **verified:** `IncrementalParquetDataset`'s TTL round-trip live in `tests/unit/datasets/test_incremental_parquet.py` (`test_save_stamps_fetched_at_and_load_round_trips`, `test_stale_mask_gates_old_stale_recent_fresh`, `test_two_instances_with_different_ttls_gate_differently`); per-dataset TTL declaration confirmed by `kedro-catalog-check`'s catalog-convention tests above.
-- **CAP-4 — one execution plane, orchestrated and budgeted**
+- **CAP-4 — one execution plane, orchestrated and budgeted** ← spec-pyforge-atlas CAP-4 (shipped 2026-09-09)
   - **intent:** The operator watches scheduled, retried, per-node-budgeted runs instead of
-    tailing stdout, and every entry point rides identical machinery.
   - **success:** The DAG compiles to a single Dagster repository; schedules encode the
-    operations cadence table; the three bootstrap profiles (`maintainer` / `admin` /
-    `consumer`) exist as named job configurations with explicit run-config beating profile
-    defaults; timeouts and retry budgets are **per node**, so an overrunning node can no longer
-    abort its siblings — the coarse-cap silent-drop class is structurally retired; the
-    highest-cost phase stays admin-config-only behind an explicit enable flag and is never a
-    default schedule; and structural lineage renders in the browser via a dedicated task.
-  - **verified:** `dagster-dryrun` green, incl. `test_jobs_resolve`, `test_schedules_enumerate`, `test_cadence_table_is_encoded`, `test_every_op_has_its_own_timeout`, `test_timeouts_are_not_a_single_monolith`, `test_phase_r_overrun_cannot_abort_phase_f_k_n` (proves the coarse-cap silent-drop class is structurally retired), `test_phase_p_job_exists_but_is_unscheduled` (`tests/unit/orchestration/test_definitions_dryrun.py`).
-- **CAP-5 — event-driven ingestion on the same plane**
+- **CAP-5 — event-driven ingestion on the same plane** ← spec-pyforge-atlas CAP-5 (shipped 2026-09-09)
   - **intent:** Upstream release activity can pull the pipeline forward incrementally instead
-    of waiting for the next scheduled tick.
   - **success:** Sensors watch upstream release feeds and turn a detected event into exactly
-    one run request against the *existing* incremental job — no parallel execution path; no
-    event yields an explicit skip reason; the decision logic is orchestrator-free and
-    unit-testable from a simulated event; and sensors enumerate under the definitions dry-run
-    gate.
-  - **verified:** same `dagster-dryrun` run, incl. `test_sensors_enumerate_in_definitions`, `test_each_sensor_targets_a_real_existing_job`, `test_simulated_event_yields_run_request_for_the_right_job`, `test_no_event_yields_skip_reason` (`tests/unit/orchestration/test_definitions_dryrun.py`).
-- **CAP-6 — one engine for compute, graph, and vector**
+- **CAP-6 — one engine for compute, graph, and vector** ← spec-pyforge-atlas CAP-6 (shipped 2026-09-09)
   - **intent:** Analytical compute, graph traversal, and semantic retrieval all run in the same
-    store, over the same canonical files.
   - **success:** Partitioned Parquet is the canonical persistence format and DuckDB the only
-    engine — analytical queries, recursive-CTE graph traversal, and `vss` vector similarity
-    alike; a grep gate proves no SQLite read or write path survives anywhere in the migrated
-    surface; and a similarity query returns ranked results from the same store, with the
-    embedding strategy and offline extension provisioning resolved rather than assumed.
-  - **verified:** `duckdb-singularity` gate green: `test_only_the_boot_module_launches_duckdb_server`, `test_no_sqlite_in_the_migrated_surface`, `test_duckdb_is_present_as_the_engine` (`tests/unit/singularity/`); vector similarity live in `tests/unit/rag/test_vss_similarity_search.py` (`test_similarity_query_returns_ranked_results_from_duckdb`, `test_store_loads_vss_offline_with_autoinstall_disabled`).
-- **CAP-7 — retirement earned by recorded parity, not asserted**
+- **CAP-7 — retirement earned by recorded parity, not asserted** ← spec-pyforge-atlas CAP-7 (shipped 2026-09-09)
   - **intent:** The legacy orchestrator is retired only against evidence a human signed.
   - **success:** A fixture-based, loop-callable parity harness compares migrated Parquet
-    outputs against the legacy database tables and reports zero material drift on the
-    actionable-package view family (exact row count and value parity; timestamp- and
-    ordering-only differences documented benign); the evidence is recorded with human sign-off
-    at an attended boundary event; and only then are the legacy orchestrator and its
-    checkpoint table marked for retirement.
-  - **verified:** `parity-diff` (71 tests) green — the same fixture-mode parity gate cited on `spec-atlas-kedro-catalog-expansion` CAP-1's `verified:` line. The attended human-sign-off retirement event itself is out of a code-verification pass's reach by design (CAP-7's own intent: retirement earned by a recorded, signed event, not by tests alone).
-- **CAP-8 — the read surface is declared once and consumed everywhere**
+- **CAP-8 — the read surface is declared once and consumed everywhere** ← spec-pyforge-atlas CAP-8 (shipped 2026-09-09)
   - **intent:** Metric logic lives in exactly one place, and every read surface — page,
-    natural-language query, agent read — translates through it.
   - **success:** Staleness, adoption stage, feedstock health, and maintainer-role facts are
-    declared as semantic-layer dimensions and measures over the catalog (Ibis → DuckDB), with a
-    metric-parity gate proving they answer as the legacy CLIs did; **8 dashboard pages ship**
-    (the live-confirmed core) plus factory-status, each honest about its state — grounded,
-    BSL-wired shell, or no-BSL-model shell — while the **full 28-CLI page inventory is
-    CIS-two-spine deferred** (`DW-D2-1`) *(corrected 2026-07-27, `AUD-ATLAS-041`: this clause
-    previously claimed all 28 were answerable;* ***superseded 2026-09-09****: DW-D2-1 reads
-    `status: closed` and the inventory shipped — `spec-atlas-query-dashboards` CAP-7 carried it
-    to delivery. The exact live page count is itself in dispute and is this Spec's one open
-    question.)*; a natural-language query returns a chart
-    grounded in declared metrics; and its language backend routes through repo model-backend
-    configuration, never a hardcoded public endpoint.
-  - **verified:** `bsl-metric-check` (16 tests) + `dashboard-dryrun` (72 tests, incl. the real-server Playwright/ARIA check) + `vizro-ai-dryrun` (`tests/unit/nl`, offline-safe backend-config-driven NL query, no hardcoded public endpoint) all green (2026-09-11). Page count is 34 live (`dashboard/app.py::PAGE_INVENTORY`), not the 28 this CAP's own text already flags as stale/superseded — same finding already recorded on `spec-atlas-query-dashboards` CAP-7.
-- **CAP-9 — agents trigger and read the pipeline natively**
+- **CAP-9 — agents trigger and read the pipeline natively** ← spec-pyforge-atlas CAP-9 (shipped 2026-09-09)
   - **intent:** An authoring or execution agent can run a named pipeline and read the resulting
-    dataset without a load-bearing plugin between it and the data.
   - **success:** The atlas-relevant MCP tools are authored directly over session and catalog
-    APIs and work with the third-party MCP plugin absent; a tool call triggers a named pipeline
-    and another reads its output dataset; tool bodies carry dataset passthrough and triggers
-    only — no metric or business logic; and a triggered run inherits the same budgets, hooks,
-    profiles, and lineage as a scheduled one.
-  - **verified:** `test_audit_covers_exactly_the_23_atlas_tools`, `test_every_read_dataset_target_is_a_declared_catalog_dataset`, `test_pipeline_trigger_tools_match_the_registered_pipelines` (`tests/unit/mcp/test_audit_mapping.py`) + `test_kedro_mcp_import_is_actually_poisoned` / `test_surface_imports_and_triggers_with_kedro_mcp_absent` (`tests/unit/mcp/test_kedro_mcp_absent.py`, proves the tools work with the third-party plugin genuinely absent).
-- **CAP-10 — one structured channel between agents**
+- **CAP-10 — one structured channel between agents** ← spec-pyforge-atlas CAP-10 (shipped 2026-09-09)
   - **intent:** Insights, contract violations, and policy breaches move between the analytical
-    agent and the recipe-authoring agent as structured payloads, never as prose.
   - **success:** The analytical agent hands a typed payload to the authoring agent over a
-    single A2A surface whose schemas live in one module — the sole source for both alerts and
-    insights; validation failures and policy breaches raise on that same channel; and payloads
-    that feed authoring decisions carry their build timestamp.
-  - **verified:** `test_insight_round_trip_is_exact`, `test_alert_round_trip_is_exact`, `test_analytical_to_authoring_hand_off`, `test_ad17_stamp_required_and_injected` (`tests/unit/a2a_surface/test_a2a_payloads.py`) — the build-timestamp/AD-17 requirement and the single-schema-module claim both directly covered.
-- **CAP-11 — bad data halts before it persists**
+- **CAP-11 — bad data halts before it persists** ← spec-pyforge-atlas CAP-11 (shipped 2026-09-09)
   - **intent:** A malformed upstream payload stops the run rather than quietly landing in the
-    store.
   - **success:** Inline dataframe contracts run behind one validator-agnostic after-node hook;
-    a malformed-payload fixture raises a native exception that propagates to the orchestrator,
-    halts the pipeline, and raises an A2A alert; and swapping or adding a second validator
-    backend requires no node change, proven with a stub validator.
-  - **verified:** `test_malformed_payload_halts_via_native_raise_before_persist_and_alerts`, `test_alert_rides_the_real_a2a_channel_e1`, `test_validator_agnostic_stub_second_validator_no_node_change`, `test_backends_conform_to_the_validator_protocol` (`tests/unit/validation/test_validation_hook.py`).
-- **CAP-12 — every run is traceable to the API call**
+- **CAP-12 — every run is traceable to the API call** ← spec-pyforge-atlas CAP-12 (shipped 2026-09-09)
   - **intent:** A failure or a slow run is diagnosable from recorded lineage and traces rather
-    than reconstructed by reading source.
   - **success:** Every node emits lineage events carrying rows, latency, and cache hits, and
-    participates in an end-to-end trace that resolves down to named API calls; emitted-event
-    and span fixtures are the gate assets that prove it.
-  - **verified:** `test_openlineage_emits_start_and_complete_per_node`, `test_output_statistics_rowcount_facet`, `test_node_metrics_run_facet_rows_latency_cache`, `test_span_tree_is_nested_pipeline_node_dataset`, `test_all_spans_belong_to_one_trace` (`tests/unit/observability/test_observability_fixtures.py`).
-- **CAP-13 — any manifest becomes one comparable inventory, behind one exit code**
+- **CAP-13 — any manifest becomes one comparable inventory, behind one exit code** ← spec-pyforge-atlas CAP-13 (shipped 2026-09-09)
   - **intent:** CI consumes one schema-validated artifact and one exit code instead of scraping
-    CLI text.
   - **success:** Every supported manifest format normalizes to CycloneDX preserving the
-    `cfe:*` property namespace and the `?channel=conda-forge` qualifier; a bare requirements
-    file resolves to a full transitive set with resolution depth and fan-out recorded (offline:
-    marked unresolved); the full-universe BOM (~856k components) is a catalog dataset under the
-    freshness contract; a matching run reproduces the six-bucket classification on a fixture
-    inventory; and one terminal node — the single producer — assembles the four-axis compliance
-    report and exits on the frozen convention, halting the orchestrator and alerting on breach.
-  - **verified:** `test_pypi_dep_purl_has_no_channel_qualifier`, `test_matched_conda_row_carries_channel_qualifier_purl_and_version_comparison`, `test_classify_bucket_verbatim_decision_tree` (`tests/unit/pipelines/universal_sbom/`); the frozen-exit/four-axis/halt-and-alert contract live in `tests/unit/policy_gate/test_policy_gate.py` (`test_policy_breach_halts_with_frozen_exit_1_and_alerts`, `test_deptry_engine_error_yields_frozen_exit_2`, `test_report_is_four_axis_and_schema_valid`, `test_real_pipeline_breach_halts_before_report_persists`). The full-universe (~856k component) BOM's live materialization was not independently re-run in this pass — verified at the node/contract level via these fixtures.
-- **CAP-14 — new signals ride in additively, with their failure modes fixture-pinned**
+- **CAP-14 — new signals ride in additively, with their failure modes fixture-pinned** ← spec-pyforge-atlas CAP-14 (shipped 2026-09-09)
   - **intent:** A newly ingested signal reaches the read surface without renegotiating the
-    migration's parity scope, and without repeating a known measurement error.
   - **success:** Conda-native advisories are ingested by batched query with a bounded detail
-    fetch and matched **by package name**, so an advisory tagged with a foreign ecosystem still
-    matches its conda package; `fix_available` is tri-state and unknown never collapses to
-    false; no surface conflates version currency with security currency; packaging velocity
-    derives from the existing join with no new fetch, gated to upstream releases within 90 days
-    and computed against **first availability** of the matched version; and migration readiness
-    is a four-way split driven by upstream category lists, so a new upstream migration needs
-    zero code change and inferred membership is always labeled inferred.
-  - **verified:** `test_fix_available_never_fillna_false_across_hops` (tri-state never collapses to false) + `test_ingest_restricts_to_known_population_by_name` (name-based matching survives a foreign-ecosystem tag) (`tests/unit/pipelines/vulnerability/test_basilisk_nodes.py`).
-- **CAP-15 — the derived layer regenerates and refuses to go stale**
+- **CAP-15 — the derived layer regenerates and refuses to go stale** ← spec-pyforge-atlas CAP-15 (shipped 2026-09-09)
   - **intent:** Reports and exports are downstream nodes of the rebuild, and a consumer can
-    never silently read an old one.
   - **success:** Derived datasets (purl exports, universe BOM, freshness reports) re-run after
-    every rebuild and consumers enforce the 14-day dataset-level freshness contract, refusing
-    stale input exactly as the legacy gate did; the four seed-gap suggesters are strictly
-    read-only report nodes whose byte-identical-seed guarantee survives as a pipeline test; and
-    the three separately-built external stores refresh as scheduled assets with retries and
-    observability, never written from anywhere else.
-  - **verified:** `test_atlas_built_at_stamp_enables_the_freshness_gate` (`tests/unit/pipelines/derived_artifacts/test_universe_sbom.py`); `test_seed_files_are_byte_identical_before_and_after_a_full_run` + `test_no_seed_gaps_node_writes_a_seed_dataset` (`tests/unit/pipelines/seed_gaps/test_byte_identical_seed.py`, the read-only guarantee); `test_lts_exact_and_likely_and_registry_exclusion` + `test_cwe_strong_weak_and_seed_exclusion` (`tests/unit/pipelines/seed_gaps/test_nodes.py`).
-- **CAP-16 — the read surface runs with no backend at all**
+- **CAP-16 — the read surface runs with no backend at all** ← spec-pyforge-atlas CAP-16 (shipped 2026-09-09)
   - **intent:** The intelligence surface is portable to a browser against a static host.
   - **success:** The dashboard and semantic layer load and query client-side over Parquet
-    pulled by HTTP Range from a static host; a headless browser gate loads the built artifact,
-    asserts **zero non-loopback requests**, and fails on an in-page error rather than passing
-    silently; and the emitter is host-agnostic so an enterprise mirror substitutes for the
-    default host.
-  - **verified:** `publish-range` gate green (12 tests, 2026-09-11) — proves real 206-Partial-Content HTTP-Range consumption (not a whole-file 200), manifest-driven chunk discovery, and host-agnosticism (`tests/integration/publish/test_emit_range.py`). The Playwright headless-Chromium zero-non-loopback-requests half (`wasm-smoke`, `tests/integration/wasm/test_wasm_smoke.py::test_wasm_smoke_client_side_query`) SKIPPED in this environment — "no Chromium executable under PLAYWRIGHT_BROWSERS_PATH" — an environment-provisioning gap, not independently re-verified in this pass.
-- **CAP-17 — the knowledge factory maintains itself and never writes back**
+- **CAP-17 — the knowledge factory maintains itself and never writes back** ← spec-pyforge-atlas CAP-17 (shipped 2026-09-09)
   - **intent:** Agent crews compile, lint, publish, and answer over a wiki built from pipeline
-    outputs, without becoming a second writer into pipeline data.
   - **success:** The three-stage `raw/ → compiled/ → outputs/` tree exists with a layout
-    contract and a traversal guard; the five personas resolve through the customization layers
-    and the workforce stays frozen at five (an overlay may refine, never rename or add); the
-    compile, lint, and question-answer crews run end-to-end on a fixture wiki; source staleness
-    markers are carried forward into compiled output so republication never launders freshness;
-    the CMS sync is idempotent by content hash against a mock API; and the crews are triggered
-    by the same orchestration plane through assets, a weekly schedule, and a new-file sensor.
-
-### Satellite: Unity Data Stack capabilities
-
-> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`
-> (status at fold-in: `draft`), renumbered `CAP-1`..`CAP-9` → `CAP-18`..`CAP-26`.
-> Success clauses reference this satellite's own `FR-n` (local to
-> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md`) and cross-reference `AD-n`
-> renumbered to match the merged `ARCHITECTURE-SPINE.md`.
-  - **verified:** `test_compile_transforms_raw_to_compiled`, `test_compile_is_deterministic`, `test_compile_forwards_source_staleness`, `test_lint_clean_wiki_has_no_violations`, `test_qa_answers_grounded_in_compiled_content`, `test_qa_ungrounded_question_yields_no_grounding` (`tests/unit/factory/test_crews.py`); `test_exactly_the_five_spec_personas` (`tests/unit/factory/test_personas.py`, the frozen-five-workforce guarantee); `test_scaffold_is_idempotent_and_non_destructive` (`tests/unit/factory/test_wiki_scaffold.py`); CMS-sync idempotency + the weekly-schedule/new-file-sensor triggers live in `tests/unit/factory/test_lasuite_live_rehearsal.py` (`test_live_round_trip_push_update_idempotent_resume`, `test_main_exit_2_when_an_all_skipped_run_never_reaches_the_cms`).
-- **CAP-18**
+- **CAP-18 — A platform engineer declares one Workspace root —** ← spec-pyforge-atlas CAP-18 (shipped 2026-09-09)
   - **intent:** A platform engineer declares one Workspace root — platform matrix, channels, system-requirement floors, and the set of Packages — from which Environments compose from named Features with no inherited bloat, and every Package carries a declared owner.
   - **success:** FR-1–9 hold: adding a Package requires editing exactly one place; no dependency version string is duplicated; a minimal Environment's installed size is measured against a documented ceiling and a regression fails the gate; Stages are modelled separately from Environments so the number of distinct solves is bounded by genuine dependency variation, not Stage naming (AD-27).
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-19**
+- **CAP-19 — The Workspace produces one authoritative Workspace Lock covering** ← spec-pyforge-atlas CAP-19 (shipped 2026-09-09)
   - **intent:** The Workspace produces one authoritative Workspace Lock covering native and Python packages together, reproducing an Environment offline on every declared platform, with a derived standards-format export and an air-gapped Offline Bundle, and credentials that are host-scoped and never appear in a URL or argument.
   - **success:** FR-10–17 hold: multi-platform coverage is proven by materialization, never assumed (FR-11); the Exported Lock is generated from, and drift-checked against, one pinned Workspace Lock commit SHA, failing the gate on mismatch (FR-12, resolves PRD OQ-1 via AD-25).
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-20**
+- **CAP-20 — A developer runs one command that executes every** ← spec-pyforge-atlas CAP-20 (shipped 2026-09-09)
   - **intent:** A developer runs one command that executes every check CI executes — lint, format, type checking, coverage thresholds, security scanning, and a tagged behavioural-test tier — with pre-commit mirroring a fast subset.
   - **success:** FR-18–25 hold: a parity check asserts the local and CI check-sets are identical and fails on divergence (AD-32); coverage that decreases relative to the base branch fails the gate.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-21**
+- **CAP-21 — Every Constitution Mandate is classified, machine-readably, as a** ← spec-pyforge-atlas CAP-21 (shipped 2026-09-09)
   - **intent:** Every Constitution Mandate is classified, machine-readably, as a Platform Invariant (no override) or a Domain Default (Domain-overridable with a recorded decision); violations name the clause they violate; amendment is a governed, versioned process.
   - **success:** FR-26–32 hold: an unclassified Mandate, or an override with no linked decision record, fails the Quality Gate (AD-31); the Constitution carries semver, ratified/amended/next-review dates; a coverage report distinguishes automatically-enforced Mandates from human-review-only ones.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-22**
+- **CAP-22 — Every Package names a Trusted Committer accountable for** ← spec-pyforge-atlas CAP-22 (shipped 2026-09-09)
   - **intent:** Every Package names a Trusted Committer accountable for reviewing outside contributions, an outside contributor finds a documented path to contribute to code they don't own, and branch/commit/merge conventions are enforced automatically.
   - **success:** FR-33–38 hold: a Package with no Trusted Committer fails the gate; a scaffolded Package or Data Product passes the Quality Gate immediately with no manual fixes (FR-37); cross-team contribution rate and an internal-fork counter-signal are both measured (FR-38).
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-23**
+- **CAP-23 — Every built artifact carries a versioned SBOM with** ← spec-pyforge-atlas CAP-23 (shipped 2026-09-09)
   - **intent:** Every built artifact carries a versioned SBOM with a populated dependency graph (runtime-scoped and full variants) and a build-provenance attestation, continuously gated against exploitation-aware vulnerability data through one schema-validated Compliance Report, with baselining/grandfathering and opt-in remediation proposals.
   - **success:** FR-39–47 hold, delivered by **integrating** `pyforge-warden` (already a strict superset of the intake approach) rather than reimplementing it; SBOM generation runs against the built artifact and a test asserts a populated transitive dependency edge (AD-34); an artifact with no provenance attestation cannot be promoted to any Stage whose policy requires approval (AD-35).
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-24**
+- **CAP-24 — Each Domain owns Data Products layered Raw →** ← spec-pyforge-atlas CAP-24 (shipped 2026-09-09)
   - **intent:** Each Domain owns Data Products layered Raw → Curated → Consumption, with an enforced naming convention, a structured metadata contract, and versioned schema contracts; one reference Domain (`customer`) is implemented end to end as the pattern others follow.
   - **success:** FR-48–54 hold: a schema change that breaks a declared consumer is detected before merge, requiring a version increment and migration note (FR-52, AD-39); the reference Domain exercises all three Layers, publishes a contract, and passes every gate — its structure is exactly what the FR-37 scaffolding templates generate.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-25**
+- **CAP-25 — Every capability available with public network access is** ← spec-pyforge-atlas CAP-25 (shipped 2026-09-09)
   - **intent:** Every capability available with public network access is available in Air-Gap Mode (or declares why not); deployment is declarative and environment-promoted under Stage policy; secrets are never committed and are validated present at service startup; a Stage's Data Classification bounds which datastores and network posture it may be configured against.
   - **success:** FR-55–58 hold: a parity test enumerates capabilities and asserts each works air-gapped, targeting 100% with declared exceptions (SM-6); a secret-shaped string committed to the repository fails an automated check (FR-57).
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-26**
+- **CAP-26 — A developer starts, stops, and inspects the full** ← spec-pyforge-atlas CAP-26 (shipped 2026-09-09)
   - **intent:** A developer starts, stops, and inspects the full local service stack — aggregate and per-service — with single commands, and the Workspace names a small, stable public task API.
   - **success:** FR-59–60 hold: status reports actual service health, not process existence; removing or renaming a public task is a breaking change requiring a decision record.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Unity-Data-Stack-specific code (Workspace/Environment/Feature manifests, `dbt`/Constitution-gate tooling) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-### Satellite: Wasm Analytics Stack capabilities
-
-> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`
-> (status at fold-in: `final`), renumbered `CAP-1`..`CAP-5` → `CAP-27`..`CAP-31`.
-> Success clauses reference this satellite's own `FR-n` (local to
-> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md`) and cross-reference `AD-n`
-> renumbered to match the merged `ARCHITECTURE-SPINE.md`.
-
-- **CAP-27**
+- **CAP-27 — A business user uploads an `.xlsx` file via** ← spec-pyforge-atlas CAP-27 (shipped 2026-09-09)
   - **intent:** A business user uploads an `.xlsx` file via an OIDC-authenticated FastAPI endpoint, and its structure and data quality are checked inside a genuine WASI Preview 2 sandbox before any row reaches ingestion, with row-level failures reported precisely and valid rows queued independently of rejected ones.
   - **success:** FR-1–4 hold: an unauthenticated request receives HTTP 401 before the upload body is read; a structurally-invalid file is rejected in full (zero rows reach Bronze); each rejected row's error names the specific column/rule that failed without blocking rows that passed; no row reaches DuckDB Bronze via `dlt` without having passed validation.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-28**
+- **CAP-28 — `dbt-duckdb` transforms Bronze into schema-declared Silver and Gold** ← spec-pyforge-atlas CAP-28 (shipped 2026-09-09)
   - **intent:** `dbt-duckdb` transforms Bronze into schema-declared Silver and Gold models, emits column-level lineage for every model, and a failing `dbt test` blocks promotion of that model's output to the next layer.
   - **success:** FR-5–7 hold: every `dbt run` is traceable to the Bronze table state it consumed; a lineage query for any Gold column returns its full upstream column chain back to Bronze; a `dbt run` with a failing test does not update the corresponding table and the prior good state remains queryable.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-29**
+- **CAP-29 — One W3C trace ID, minted once at the** ← spec-pyforge-atlas CAP-29 (shipped 2026-09-09)
   - **intent:** One W3C trace ID, minted once at the browser/API boundary, correlates OTel spans and OpenLineage facets across every pipeline stage to Marquez via a per-pod Vector sidecar, so a single trace-ID lookup reconstructs the full upload-to-Gold journey with no gaps.
   - **success:** FR-8–11 hold: the trace ID returned to the client at upload time is the same one attached to that upload's eventual Gold-table lineage record; a trace query for any upload returns spans for every stage it passed through with no gap; Marquez returns the full Bronze→Silver→Gold lineage graph; no pipeline container other than the Vector sidecar holds an external telemetry egress path.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-30**
+- **CAP-30 — An automated, non-hollow gate mechanically proves the WASI** ← spec-pyforge-atlas CAP-30 (shipped 2026-09-09)
   - **intent:** An automated, non-hollow gate mechanically proves the WASI validation component cannot reach any capability beyond its WIT-declared surface, and a build-time check blocks denylisted imports from ever entering the component's dependency closure.
   - **success:** FR-12–13 hold: the gate fails on any host interaction beyond the component's declared WIT imports; deliberately widening the component's declared capabilities without a corresponding WIT change makes the gate fail, proving it checks something rather than always passing; adding a denylisted import (`numpy`, `pandas`, `pyarrow`, `pydantic`, or any other C-extension-backed or `componentize-py`-unproven package) fails `pixi run build`, not a later runtime error.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
-- **CAP-31**
+- **CAP-31 — One Pixi toolchain builds every artifact the pipeline** ← spec-pyforge-atlas CAP-31 (shipped 2026-09-09)
   - **intent:** One Pixi toolchain builds every artifact the pipeline needs, including the compiled WASI component, and the same security context runs identically under a Podman digital twin and OpenShift Restricted SCC, with DuckDB state persisted via a `ReadWriteOnce` PVC at a consistent mount path.
   - **success:** FR-14–17 hold: a clean checkout plus `pixi install && pixi run build` produces a runnable digital twin with no manual steps outside Pixi; every container starts as non-root UID 1001 with a read-only root filesystem in both the digital twin and OCP; the Helm chart's security context matches Restricted SCC exactly with no `anyuid` or other elevated binding requested; pipeline restarts do not lose previously-ingested Bronze/Silver/Gold data.
-  - **verified:** confirmed no implementation exists — `git grep`/`find` for Wasm-Analytics-Stack-specific code (WASI component, `dlt`/`dbt-duckdb` Bronze/Silver/Gold pipeline, OTel/Marquez lineage) under `src/` finds nothing; this satellite's own frontmatter states "neither satellite has shipped code" and that holds as of 2026-09-11. Nothing to verify against yet.
+- **CAP-32 — An AQL adapter queries an Artifactory instance's own** ← spec-artifactory-download-intelligence CAP-1 (shipped 2026-09-17)
+  - **intent:** An AQL adapter queries an Artifactory instance's own telemetry: it resolves
+  - **success:** Against a mock AQL transport serving canned topology + download responses, the
+- **CAP-33 — Adapter results join into the SAME identity space** ← spec-artifactory-download-intelligence CAP-2 (shipped 2026-09-17)
+  - **intent:** Adapter results join into the SAME identity space Phase C/C.5 already maintain —
+  - **success:** A mock-served package that exists publicly joins to the same identity row Phase
+- **CAP-34 — A package pulled from Artifactory with no public** ← spec-artifactory-download-intelligence CAP-3 (shipped 2026-09-17)
+  - **intent:** A package pulled from Artifactory with no public PyPI counterpart — absent from
+  - **success:** In a mock run containing both a public package and a mock-only package, exactly
+- **CAP-35 — The work ships as a new atlas Kedro** ← spec-artifactory-download-intelligence CAP-4 (shipped 2026-09-17)
+  - **intent:** The work ships as a new atlas Kedro pipeline following the established phase
+  - **success:** The pipeline registers alongside the existing atlas pipelines and its output is
+- **CAP-36 — Kedro self-containment (Phases A–B)** ← spec-atlas-kedro-catalog-expansion CAP-1 (shipped 2026-09-09)
+  - **intent:** A fresh clone runs the documented Kedro bootstrap on
+  - **success:** `pixi run pyforge-atlas-bootstrap` completes green; production
+- **CAP-37 — Public index catalog completeness (Phase C, Tier 0–2)** ← spec-atlas-kedro-catalog-expansion CAP-2 (shipped 2026-09-09)
+  - **intent:** Every live source the inventory verification matrix needs is
+  - **success:** `conda-forge-packaging-inventory-operations_metrics.py
+- **CAP-38 — Identity join in `upstream_discovery` (Phase D)** ← spec-atlas-kedro-catalog-expansion CAP-3 (shipped 2026-09-09)
+  - **intent:** PURL Associator ingest, OpenTeams project 1 board ingest,
+  - **success:** Export rows match today's `GIST_SCHEMA` identity columns and
+- **CAP-39 — Quartet consumes Atlas exports (thin orchestration)** ← spec-atlas-kedro-catalog-expansion CAP-4 (shipped 2026-09-09)
+  - **intent:** Inventory scripts stop owning public-index fetch and identity
+  - **success:** Metrics and identity scripts have no direct fetch to public
+- **CAP-40 — Bootstrap operator Vizro pages (optional follow-on, Story 21.9)** ← spec-atlas-kedro-catalog-expansion CAP-5 (shipped 2026-09-09)
+  - **intent:** After bootstrap, operators inspect index health, identity
+  - **success:** Three new pages (`bootstrap-index-health`,
+- **CAP-41 — Kedro-Viz publish stays in sync (optional follow-on, Story 21.10)** ← spec-atlas-kedro-catalog-expansion CAP-6 (shipped 2026-09-09)
+  - **intent:** Static Kedro-Viz export republishes when catalog or dataset
+  - **success:** `kedro-viz-publish.yml` triggers on `catalog.yml`, `globals.yml`,
+- **CAP-42 — Vizro parity with identity canvases (Epic 22 follow-on)** ← spec-atlas-kedro-catalog-expansion CAP-7 (shipped 2026-09-09)
+  - **intent:** Vizro becomes a **parallel replacement** for the three Cursor
+  - **success:** Three Vizro pages (`identity-catalog`, `identity-ops`,
+- **CAP-43 — Complete inventory export, zero deferred (Epic 23 closure)** ← spec-atlas-kedro-catalog-expansion CAP-8 (shipped 2026-09-09)
+  - **intent:** Close the dream with **no data slices left in `scripts/`** —
+  - **success:** Enterprise builds `enterprise_jfrog_consumption.parquet` per
+- **CAP-44 — The lowest-risk rendering mode ships first: a curated** ← spec-atlas-query-dashboards CAP-1 (shipped 2026-09-09)
+  - **intent:** The lowest-risk rendering mode ships first: a curated catalog of views mirroring
+  - **success:** Each catalog view emits a self-contained HTML fragment from the live
+- **CAP-45 — Genuinely interactive views (filter, drill, re-sort live) layer** ← spec-atlas-query-dashboards CAP-2 (shipped 2026-09-09)
+  - **intent:** Genuinely interactive views (filter, drill, re-sort live) layer on Bokeh's
+  - **success:** At least one catalog view runs filter/drill/re-sort against `cf_atlas.db` over a
+- **CAP-46 — Widget TYPES are pluggable behind a small registry** ← spec-atlas-query-dashboards CAP-3 (shipped 2026-09-09)
+  - **intent:** Widget TYPES are pluggable behind a small registry, not hard-coded to a
+  - **success:** Adding a new widget type is one registry entry plus one renderer, with zero
+- **CAP-47 — The CDN-URL-rewriting concern for air-gapped deployment is carried** ← spec-atlas-query-dashboards CAP-4 (shipped 2026-09-09)
+  - **intent:** The CDN-URL-rewriting concern for air-gapped deployment is carried from day one,
+  - **success:** A page rendered under the air-gapped profile contains zero references to
+- **CAP-48 — The query plane the views read serves BOTH** ← spec-atlas-query-dashboards CAP-5 (shipped 2026-09-09)
+  - **intent:** The query plane the views read serves BOTH faces behind ONE boot script: the
+  - **success:** One boot script raises both faces; with the platform stack down it degrades
+- **CAP-49 — The composed semantic stores the grounded dashboard pages** ← spec-atlas-query-dashboards CAP-6 (shipped 2026-09-09)
+  - **intent:** The composed semantic stores the grounded dashboard pages bind to (DW-D2-2's
+  - **success:** A single `kedro run --pipeline <named>` materializes the composed stores from
+- **CAP-50 — The deferred Vizro page inventory completes: the CIS** ← spec-atlas-query-dashboards CAP-7 (shipped 2026-09-09)
+  - **intent:** The deferred Vizro page inventory completes: the CIS two-spine specs
+  - **success:** Both spine files exist under `planning-artifacts/` covering every unshipped
+- **CAP-51 — the governed from-scratch run** ← spec-conda-forge-packaging-inventory-operations CAP-1 (shipped 2026-09-17)
+  - **intent:** Recorded capability from the absorbed Spec.
+  - **success:** The absorbed Spec's success clause is the record.
+- **CAP-52 — execution-ready handoffs** ← spec-conda-forge-packaging-inventory-operations CAP-2 (shipped 2026-09-17)
+  - **intent:** Recorded capability from the absorbed Spec.
+  - **success:** The absorbed Spec's success clause is the record.
+- **CAP-53 — trending ingest** ← spec-upstream-discovery CAP-1 (shipped 2026-09-17)
+  - **intent:** The dataflow ingests GitHub-trending Python repos
+  - **success:** A run produces a fresh trending snapshot dataset; a
+- **CAP-54 — tier classification** ← spec-upstream-discovery CAP-2 (shipped 2026-09-17)
+  - **intent:** A classifier node joins each ingested repo against existing
+  - **success:** Every ingested row in a batch carries a tier or an
+- **CAP-55 — operator surface** ← spec-upstream-discovery CAP-3 (shipped 2026-09-17)
+  - **intent:** An operator or agent can query the tiered candidate list
+  - **success:** The CLI and MCP tool return matching output for the same
+- **CAP-56 — fixed-source audit track** ← spec-upstream-discovery CAP-4 (shipped 2026-09-17)
+  - **intent:** The same discover→triage→tier→wave-package shape
+  - **success:** A fixed-source batch produces the same tiered/reasoned
+- **CAP-57 — downstream handoff** ← spec-upstream-discovery CAP-5 (shipped 2026-09-17)
+  - **intent:** Every surviving candidate (tier 1 or 2) passes a
+  - **success:** A candidate reaching packaging carries a recorded
+- **CAP-58 — a minimal live Wagtail/La Suite instance satisfies `LaSuiteClient`'s** ← spec-wagtail-corporate-brain CAP-1 (shipped 2026-09-17)
+  - **intent:** a minimal live Wagtail/La Suite instance satisfies `LaSuiteClient`'s
+  - **success:** with `LASUITE_BASE_URL` + `LASUITE_API_TOKEN` exported, `resolve_lasuite_config()`
+- **CAP-59 — a real httpx-backed `Opener` replaces the mock at** ← spec-wagtail-corporate-brain CAP-2 (shipped 2026-09-17)
+  - **intent:** a real httpx-backed `Opener` replaces the mock at the module's sole network seam —
+  - **success:** `WikiSyncer.sync_all()` runs live through that opener with ZERO edits to
+- **CAP-60 — the round-trip + idempotency semantics `test_lasuite.py` already proves** ← spec-wagtail-corporate-brain CAP-3 (shipped 2026-09-17)
+  - **intent:** the round-trip + idempotency semantics `test_lasuite.py` already proves against
+  - **success:** the attended session runs that four-step sequence against the real CMS and each
+
 ## Constraints
 
 - **Atlas measures; Warden judges.** An upstream-maintenance signal
