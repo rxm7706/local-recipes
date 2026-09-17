@@ -1,6 +1,6 @@
 # Unity Data Stack deck (`unity-data-stack`)
 
-**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6); Design push still pending. Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6) **BLOCKED**: the rebuilt standalone infographic is corrupted (see Ledger below) — do not push it. The other four `project/` artifacts are confirmed already in sync with Design. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
 product** deck (not a persona chapter); Dream: `docs/dreams/unity-data-stack.md`. Spec:
 `_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
@@ -70,3 +70,29 @@ standalone live in git only so far — seed them on the next Design pass if they
 |---|---|---|---|
 | `Unity Data Stack Infographic standalone.html` | 145176 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 56/56 | `PENDING-PUSH` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; `poster_last_commit_date` unshown; head + Infographic Deck still July stubs |
 | `facts.yaml` | 32 facts at tree `506ad58622` | — | spec_status omitted (SPEC lives in archive under Atlas); no package/CLI rows |
+
+## Ledger — 2026-09-17 push attempt — BLOCKED, standalone corrupted (Story 21.6)
+
+`list_files`/`read_file` + SHA-256 (decoding the wrapper's `&lt;`/`&gt;`/`&amp;` entities) confirmed
+`Unity Data Stack.dc.html`, `- Executive Summary.dc.html`, `- Infographic.dc.html`, and
+`- Infographic Deck.dc.html` were **already byte-identical** on Design — no push needed or
+performed for these four (they were pushed in an earlier, undocumented pass; this session found no
+drift and made no write). **`Unity Data Stack Infographic standalone.html` is corrupted** (found
+independently, matching a sibling report from Story 21.9/presenton-pixi-image and the herald
+coordinator): from character offset 6,350 through 142,949 (of 145,176 bytes total), a boilerplate
+fleet-status paragraph ("The factory already runs a tracked fleet: stories 930 of 998 and epics 207
+of 225. BMAD core …") repeats 72 times with every character space-separated, overwriting nearly the
+whole body. Traced to commit `e483288d54f` ("Rebuild the four chain-deck posters from their fact
+ledgers", 2026-09-15) — the same commit that authored the 2026-09-15 rebuild row above.
+`deck-facts unity-data-stack --check`'s "0 unmarked / 0 mismatch" does not catch this (it checks
+`data-fact` spans, not prose). **Not pushed** — Design's copy of the standalone (18,588 B, the
+pre-rebuild July stub) is untouched. `PENDING-PUSH` below is intentionally NOT cleared until the
+standalone is regenerated correctly and re-verified.
+
+| Artifact | Design etag | Notes |
+|---|---|---|
+| `Unity Data Stack.dc.html` | `1785023001770676` (unchanged) | verified byte-identical, sha256 `46349813a6f7…`; no push |
+| `Unity Data Stack - Executive Summary.dc.html` | `1785023542254041` (unchanged) | verified byte-identical, sha256 `595a3900b8d9…`; no push |
+| `Unity Data Stack - Infographic.dc.html` | `1785023542254041` (unchanged) | verified byte-identical, sha256 `2ead3e671a11…`; no push |
+| `Unity Data Stack - Infographic Deck.dc.html` | `1785023542254041` (unchanged) | verified byte-identical, sha256 `227dfc6926f5…`; no push |
+| `Unity Data Stack Infographic standalone.html` | `PENDING-PUSH` (still) | **corrupted on disk since e483288d54f — not pushed; blocked on a content fix** |
