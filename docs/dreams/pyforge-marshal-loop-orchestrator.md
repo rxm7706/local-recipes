@@ -8,6 +8,8 @@ owner: marshal
 scope: "Loop provisioning, deterministic execution, supervised runs, durable landing"
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 > **Superseded.** This Dream restates scope already fully governed by
 > [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) (status: realized) and its
 > `spec-pyforge-marshal` → PRD (FR-1..FR-58) → Architecture (39 ADs) → Epics (6 epics /

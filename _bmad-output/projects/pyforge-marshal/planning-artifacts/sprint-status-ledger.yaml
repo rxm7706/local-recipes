@@ -39,9 +39,9 @@ development_status:
   11-3-migration-registry-and-runner: done
   11-4-marshal-seed-update-two-phase: done
   11-5-referenced-dependency-verification-and-doctor-delegation: done
-  11-6-marshal-seed-explain-and-version: done
+  11-6-marshal-seed-explain-and-marshal-seed-version: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
-  12-2-the-local-recipes-empty-plan-oracle: done
+  12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
   12-4-pattern-meta-tests-and-the-never-write-proof: done
   12-5-cli-contract-idempotence-harness-and-performance-gates: done
@@ -98,7 +98,7 @@ development_status:
   22-1-the-dispatch-verb-launches-one-governed-isolated-story-session: done
   22-10-branch-merged-requires-real-divergence-not-just-ancestry: done
   22-11-station-scoped-drain-and-an-explicit-story-sequence: done
-  22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-station-s-bound-gate: done
+  22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-stations-bound-gate: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
@@ -121,27 +121,27 @@ development_status:
   25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: done
   25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner: done
   26-1-extract-the-loop-runner-hook: done
-  27-1-skf-skill-and-persona-for-marshal: done
-  27-2-first-portal-slice-loop-homes: done
+  27-1-skf-domain-skill-and-bmad-persona-for-marshal: done
+  27-2-first-portal-slice-list-loop-homes: done
   28-1-the-context-policy-block-rendered-once-for-both-engines: done
   28-10-the-model-cost-catalog-makes-spend-legible-in-dollars: done
   28-11-difficulty-tiers-route-across-providers-and-pools: done
   28-12-dependency-derived-dispatch-ordering: done
   28-13-sanctioned-retry-after-an-operator-initiated-stop: done
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
-  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
-  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done
+  28-15-scope-violation-enforcement-mode-policy-declared-default-warn: done
+  28-16-parallel-dispatch-fan-out-when-deps-and-surfaces-are-disjoint: done
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-18-re-preflight-when-the-refuse-predicate-can-change: done
   28-19-missing-spec-escalates-never-idle-with-backlog: done
   28-2-wire-compression-at-the-harness-seam: done
   28-20-cap-4-land-heals-mechanical-and-dirty-prs: done
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: done
-  28-22-verify-blast-radius-pre-existing-gate: done
+  28-22-verify-blast-radius-is-pre-existing-gate-not-story-refuse: done
   28-23-stranded-work-signal-after-terminal-verify-fail: done
-  28-24-supervisor-finalizes-when-harness-cannot-run-shell: done
+  28-24-supervisor-finalizes-when-the-harness-cannot-run-shell: done
   28-25-finalize-escalations-self-clear-past-a-later-success: done
-  28-26-cap-4-s-own-feed-sync-guards-missing-keys-too-not-just-regressions: done
+  28-26-cap-4s-own-feed-sync-guards-missing-keys-too-not-just-regressions: done
   28-27-planning-graph-is-proven-live-for-dispatch-extend-the-win-fleet-wide: done
   28-28-scribe-exposes-caller-declared-derived-context-refresh-closing-the-cap-5-cap-6-gap: done
   28-29-wire-is-dead-for-cursor-specifically-copilot-is-a-real-but-uncertain-alternative-documented-either-way: done
@@ -156,7 +156,7 @@ development_status:
   28-7-index-freshness-is-an-advisory-finding: done
   28-8-derived-context-recomputes-only-on-source-change: done
   28-9-planning-graph-retrieval-behind-the-scribe-seam: done
-  29-1-done-spec-halts-unless-followup-is-true: done
+  29-1-a-done-spec-halts-unless-follow-up-is-true: done
   29-2-harness-done-is-cap-4-only-never-another-session: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
@@ -174,9 +174,9 @@ development_status:
   30-1-the-retired-id-guard-follows-the-6-12-shim-roster: done
   30-2-the-project-context-surface-follows-6-12-d1: done
   30-3-documentation-pointers-follow-6-12: done
-  30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test: done
-  30-5-the-harness-and-every-live-caller-follow-the-shim-retirement: done
-  31-1-tea-s-workflows-produce-every-station-s-test-architecture: done
+  30-4-bmad-loops-repo-skills-match-the-installed-package-by-test: done
+  30-5-every-live-caller-follows-the-shim-retirement: done
+  31-1-teas-workflows-produce-every-stations-test-architecture: done
   31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check: done
   31-3-tea-test-review-is-a-marshal-review-lens: done
   31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: done
@@ -203,22 +203,22 @@ development_status:
   33-5-risk-tiered-review-depth-gets-a-producer-and-a-caller: done
   33-6-adaptive-tiering-is-fed-on-all-eight-stations-and-the-floor-raise-reaches-dispatch: done
   33-7-the-two-epic-20-watchdogs-observe-the-plane-the-estate-actually-runs: done
-  33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max_parallel-key: done
-  33-9-verify_scope-guards-marshal-factory-dispatch: done
+  33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max-parallel-key: done
+  33-9-verify-scope-guards-marshal-factory-dispatch: done
   34-1-factory-spin-refuses-a-second-launch-against-a-live-loop-home: done
-  34-2-a-dispatch-spin-session-s-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: done
+  34-2-a-dispatch-spin-sessions-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: done
   34-3-factory-drain-tells-a-crashed-session-apart-from-a-genuinely-failed-one: done
-  34-4-the-attention-block-s-own-refused-verdict-check-gets-the-same-test-coverage-its-station_state-sibling-has: done
-  35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-project-s-own-tracked-ledger-not-trusted-from-text-alone: done
-  36-1-root-pixi-toml-and-the-catalog-document-every-station-s-already-shipped-undocumented-run-dep: done
-  36-2-llms-full-check-reads-every-station-s-own-nested-manifest-not-just-root-pixi-toml: done
+  34-4-the-attention-blocks-own-refused-verdict-check-gets-the-same-test-coverage-its-station-state-sibling-has: done
+  35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-projects-own-tracked-ledger-not-trusted-from-text-alone: done
+  36-1-root-pixi-toml-and-the-catalog-document-every-stations-already-shipped-undocumented-run-dep: done
+  36-2-llms-full-check-reads-every-stations-own-nested-manifest-not-just-root-pixi-toml: done
   37-1-phase-0-mechanical-debt-to-zero-before-any-semantic-audit: done
   37-2-phase-1-every-remaining-story-gets-a-cited-verdict: done
   37-3-phase-2-the-five-completed-stations-audited-at-equal-rigor: done
   37-4-phase-2b-all-61-dreams-dispositioned: done
   37-5-phase-3-decomposition-only-behind-a-landed-gate-report: done
   37-6-phase-4-the-operator-resumes-on-measured-artifacts: done
-  38-1-every-station-s-epics-doc-is-swept-for-forward-epic-dependencies: done
+  38-1-every-stations-epics-doc-is-swept-for-forward-epic-dependencies: done
   38-2-a-forward-dependent-story-is-structurally-non-actionable: done
   38-3-a-permanent-detector-prevents-recurrence: done
   38-4-an-unparseable-epics-format-is-reported-honestly-never-silently-clean: done
@@ -255,7 +255,7 @@ development_status:
   44-2-marshal-watch-is-reachable-over-mcp: done
   44-3-the-marshal-persona-can-offer-watch-a-run-as-a-menu-action: done
   44-4-marshal-watchs-report-is-viewable-in-the-portal: done
-  45-1-a-pixi-task-generates-mdc-from-skillmd: done
+  45-1-a-pixi-task-generates-mdc-from-skill-md: done
   45-2-a-drift-detector-fails-a-stale-generated-mdc: done
   45-3-the-pilot-pair-uses-task-when-available-and-halts-when-it-is-not: done
   46-1-a-bare-clone-bootstraps-the-substrate: backlog
@@ -292,8 +292,8 @@ development_status:
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
   7-4-manifest-schema-loader-and-model-version-ranges: done
-  7-5-the-v1-extraction-manifest: done
-  7-6-spike-0-copier-api-fit: done
+  7-5-the-v1-extraction-manifest-the-model-as-data: done
+  7-6-spike-0-copier-api-fit-critical-gate: done
   8-1-marker-grammar-and-the-per-format-registry: done
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done

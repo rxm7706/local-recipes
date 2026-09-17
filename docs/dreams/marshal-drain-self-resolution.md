@@ -5,6 +5,8 @@ owner: marshal
 status: archived
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 # Fleet drain heals itself
 
 > **Consolidated 2026-09-01** into

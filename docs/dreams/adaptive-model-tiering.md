@@ -6,6 +6,8 @@ status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (opera
                    # token-savings consolidation: one starting point). Was `realized`.
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 # FR-51's model tiering is fully wired and never turned on
 
 > **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold

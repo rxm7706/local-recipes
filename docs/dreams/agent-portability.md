@@ -6,6 +6,8 @@ status: archived
 archived-reason: absorbed
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 > **Superseded 2026-08-02 (dream consolidation).** This practice's concrete, buildable
 > decomposition already lives in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) as
 > CAP-6 / Epic 6 ("Portability proven, not claimed": skill-tree projection, adapter probe,

@@ -37,6 +37,12 @@ Two conventions carried from the sibling builds:
 
 ---
 
+## Fold provenance (2026-09-16)
+
+Station Spec spec-pyforge-marshal reminted absorbed capabilities as CAP-1..243. Historical stories keep their original epic numbers; this heading is the INV-A citation window for the folded set.
+
+---
+
 ## Requirements Inventory
 
 ### Functional Requirements

@@ -1365,3 +1365,1463 @@ capabilities:
     heading: ""
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/SPEC.md
+
+  # marshal one-chain fold 2026-09-16: station Spec is ready; classify reminted CAPs
+  - id: pyforge-marshal:CAP-1
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "loop homes and isolation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-2
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "supervised unattended runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-3
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "gates you can run"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-4
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "landing with a durable paper trail"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-5
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "fleet visibility"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-6
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "portability proven, not claimed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-7
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "policy composition"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-8
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "one install yields the whole stack"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-9
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the last mile lands itself"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-10
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-11
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-12
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-13
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-14
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-15
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-16
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-17
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-18
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pyforge-marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-19
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-adaptive-model-tiering"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-20
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-adaptive-model-tiering"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-21
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "one governed surface"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-22
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the surface survives a clone"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-23
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "CLI \u21c4 tool parity is gated, not reviewed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-24
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "coverage is measured, not assumed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-25
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-26
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-27
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-28
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-29
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-30
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-31
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-32
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-artifact-chain-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-33
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Retired-ID purge + regression guard"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-34
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "bmad-loop skill refresh"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-35
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Memlog-format migration"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-36
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Policy-surface parity"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-37
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "0.11 status vocabulary"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-38
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Deferred-work intake reads both sources"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-39
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Living factory docs re-grounded, with a named owner"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-40
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "6.12 retired-ID roster"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-41
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Project-context surface follows 6.12"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-42
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Documentation pointers follow 6.12"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-43
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "bmad-loop 0.11.1 parity, durable"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-44
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Every live caller follows the shim retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-45
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "TEA adoption is marshal Epic 31 (relay)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-46
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "The live subagent probe"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-47
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`.mdc` routing layer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-48
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "The honest fallback"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-49
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Team-memory reachability"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-50
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-baseline-drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-51
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-baseline-drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-52
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-baseline-drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-53
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "every station's structured epics doc is swept for forward-epic `"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-54
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a found forward-dependent story is set to a non-actionable status"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-55
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a permanent detector prevents recurrence"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-56
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "an unparseable epics format is reported honestly, never silently passed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-57
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "gated story loops"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-58
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "concurrent loop homes"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-59
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "model tiering as policy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-60
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "every run visible"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-61
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-intent-gap-work-preservation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-62
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-intent-gap-work-preservation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-63
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-loop-intent-gap-work-preservation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-64
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Marshal gains the missing liveness primitive"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-65
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "The operator answer is one command"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-66
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "An UNSUPERVISED row has a cheap double-check"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-67
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "dead test-scaffolding archival"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-68
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "hollow `sprint-status.yaml` archival"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-69
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Genesis `test-architecture.md` fix"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-70
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "README placeholder fill"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-71
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "orphaned single-file archival"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-72
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`project-context.md` drift fix"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-73
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`PROJECTS.md` Dream-pointer fix"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-74
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "marshal-brief layout fix"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-75
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-switch-scope-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-76
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-switch-scope-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-77
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-bmad-switch-scope-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-78
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-cursor-native-tier-map"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-79
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-cursor-native-tier-map"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-80
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "one resolver, one override table"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-81
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`PROJECT_SOURCES` is derived, not declared"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-82
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "resolution ships in `data.js`; the JS never re-derives"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-83
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "an unresolvable slug fails loud"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-84
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "wall-clock fallback derivation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-85
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "fidelity is visible, never blended"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-86
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the coverage caption partitions by true reason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-87
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-dispatch-tier-routing-fails-safe"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-88
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-dispatch-tier-routing-fails-safe"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-89
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-durable-runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-90
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-durable-runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-91
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-durable-runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-92
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-durable-runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-93
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "local status sync"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-94
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "hands-off CI refresh"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-95
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Dreamscape scan"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-96
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "stable data contract"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-97
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fidelity-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-98
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fidelity-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-99
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fidelity-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-100
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fidelity-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-101
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fidelity-enforcement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-102
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "orchestrated chain regeneration"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-103
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "code-status preservation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-104
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "chain-completeness audit mode"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-105
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "orphan detection with review-gated cleanup"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-106
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "configurable per-project invocation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-107
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "The operating-model standard is 6.12-accurate, and derives what it can"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-108
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "One test-suite vocabulary across the fleet"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-109
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "No artifact survives that the toolchain no longer produces"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-110
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Artifact naming is machine-classifiable"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-111
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "The declared Python floor equals the tested floor"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-112
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Governance docs cannot go stale silently"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-113
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fleet-status-supervisor-fallback"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-114
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-fleet-status-supervisor-fallback"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-115
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-116
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-117
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-118
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-119
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-120
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-121
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-122
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-genesis-installer-name-retirement"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-123
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-horizontal-run-concurrency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-124
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-horizontal-run-concurrency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-125
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-horizontal-run-concurrency"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-126
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-landing-evidence-grammar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-127
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-landing-evidence-grammar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-128
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-landing-evidence-grammar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-129
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-landing-evidence-grammar"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-130
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-library-catalog-manifest-sync"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-131
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-library-catalog-manifest-sync"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-132
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "fleet-wide staleness detection"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-133
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "automated fast-forward and push, with a clean-worktree safety check"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-134
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "policy re-render as a checked step of the same refresh"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-135
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Re-preflight when the refuse predicate can change"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-136
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Missing-spec escalates; never idle-with-backlog"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-137
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Mechanical land-conflict union + local-clean when DIRTY"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-138
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Push the dispatch branch before verify can strand it"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-139
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Verify blast radius (`pre-existing-gate`)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-140
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Terminal overlay + stranded-work signal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-141
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Supervisor finalizes when the harness cannot run shell"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-142
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the GitHub PR-merge pattern is scoped to `project_slug`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-143
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-land-merge-subject"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-144
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-145
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "A"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-146
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-147
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "T"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-148
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-149
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-150
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-151
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-152
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-153
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-parallel-dispatch-fanout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-154
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-run-watch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-155
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-run-watch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-156
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-run-watch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-157
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-run-watch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-158
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-run-watch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-159
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-160
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-161
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-162
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-163
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-164
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-165
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-166
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-167
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-168
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-169
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-170
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-single-story-dispatch"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-171
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "harness_run_id recovers via filesystem discovery"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-172
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`MRS-STATUS-002` keeps firing correctly for genuinely unrecoverable cases"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-173
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-templated-merge-subject-cross-project-collision"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-174
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-175
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-176
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-177
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-178
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-179
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-180
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-181
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-182
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-183
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-184
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-185
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-186
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-187
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-188
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-189
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-190
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-191
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-192
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-193
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-194
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-195
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-196
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-197
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-marshal-token-economy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-198
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Verify-refusal terminalization (supervisor)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-199
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Transient auto-redispatch (fleet drain, compose with hotfix)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-200
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "Observability"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-201
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "worktree-aware `bmad-switch`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-202
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`bmad-loop-worktree` provisioner"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-203
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "isolation verification"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-204
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-one-front-door"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-205
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-one-front-door"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-206
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-one-front-door"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-207
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-one-front-door"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-208
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pr-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-209
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pr-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-210
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pr-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-211
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-pr-lifecycle"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-212
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-quick-dev-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-213
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-quick-dev-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-214
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-quick-dev-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-215
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-quick-dev-reconciliation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-216
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "surface-manifest convention"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-217
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "backfill waves"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-218
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "repo-wide surface checker"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-219
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "regeneration drill"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-220
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-risk-tiered-review-depth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-221
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-risk-tiered-review-depth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-222
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-risk-tiered-review-depth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-223
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-risk-tiered-review-depth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-224
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-run-state-one-publisher"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-225
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-run-state-one-publisher"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-226
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-run-state-one-publisher"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-227
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-run-state-one-publisher"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-228
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-run-state-one-publisher"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-229
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "promotion runs on landing, not on memory"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-230
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "staleness is detectable on its own"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-231
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the check is real, never approximated"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-232
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "never races the orchestrator"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-233
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "promotion never writes the operator checkout"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-234
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-sprint-status-promotion-regression-guard"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-235
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "b"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-236
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-237
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "t"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-238
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "t"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-239
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "t"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-240
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "t"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-241
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-242
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-surface-overlap-tolerance"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-243
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "from spec-surface-overlap-tolerance"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md

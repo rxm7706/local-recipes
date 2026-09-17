@@ -2,10 +2,13 @@
 title: The operator stops re-pasting the status prompt — marshal watches its own runs
 type: dream
 owner: marshal
-status: specified   # 2026-09-15 — spec-marshal-run-watch is `ready` (CAP-1..5; CAP-1+CAP-2 is
+status: archived
                     # the implementable round, CAP-3/4/5 named follow-ons). No open questions —
                     # the Dream left none.
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-run-watch`).
 
 # The operator stops re-pasting the status prompt — marshal watches its own runs
 

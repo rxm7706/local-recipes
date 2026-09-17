@@ -6,6 +6,8 @@ status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (opera
                    # token-savings consolidation: one starting point). Was `specified`.
 ---
 
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot).
+
 # BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
 
 > **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold

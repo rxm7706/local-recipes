@@ -2,8 +2,11 @@
 title: A backlog authored before the code existed is a plan for a different codebase
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `artifact-chain-reconciliation`).
 
 # A backlog authored before the code existed is a plan for a different codebase
 

@@ -41,6 +41,7 @@ open_questions:
   - "Q1 — does the station roster belong in pyforge-core at all? It is the one census entry whose canonical home already exists (bmad_drift_check.STATIONS, imported rather than mirrored by generate.py). Moving it into a package that ships to conda would give a stdlib-only detector a package dependency it does not have today. Decide before CAP-4, not during."
   - "Q2 — is pyforge-testing-kit (the testing charter's unbuilt CAP-3) a second leaf package or a module of this one? Both are stdlib-only shared floors with the same leaf constraint; shipping two may be splitting one thing, shipping one may couple test-only fixtures into a runtime dependency."
   - "Q3 — the subprocess guard (CAP-6) is a design reconciliation, not an extraction: doctor's cli_bridge.run_cli_json and marshal's ProcessPort/process_posix are two genuinely different designs, and steward deliberately propagates raw CalledProcessError. Which design wins, and does steward's deliberate divergence become a sanctioned opt-out or get folded in?"
+fold-exemption: cross-station-seam
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for

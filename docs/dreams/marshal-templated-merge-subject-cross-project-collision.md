@@ -2,8 +2,11 @@
 title: The templated merge-subject shape never masquerades as a same-numbered story from another project
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `marshal-templated-merge-subject-cross-project-collision`).
 
 # The templated merge-subject shape never masquerades as a same-numbered story from another project
 

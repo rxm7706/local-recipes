@@ -1,86 +1,228 @@
 ---
 id: SPEC-pyforge-marshal
-status: shipped   # ADDED 2026-09-09 -- this station-canonical Spec had carried NO `status:` line at all (one of eight fleet-wide status-less Specs, three of them marshal's). 195 stories across 32 epics decompose from it and the CLI it contracts is the estate's live engine, so `shipped` is the honest value.
-updated: "2026-09-09"
+spec: pyforge-marshal
+status: ready
+updated: "2026-09-16"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
-  - docs/dreams/genesis-installer.md   # folded in 2026-08-02 as CAP-10..CAP-18 (see below); satisfies INV-1 for this Dream
+  - docs/dreams/pyforge-marshal.md
+  - docs/dreams/adaptive-model-tiering.md
+  - docs/dreams/agent-portability.md
+  - docs/dreams/agent-tool-surface.md
+  - docs/dreams/agentic-sdlc-autonomy.md
+  - docs/dreams/artifact-chain-reconciliation.md
+  - docs/dreams/artifact-console.md
+  - docs/dreams/bmad-611-era-alignment.md
+  - docs/dreams/bmad-cursor-interactive-routing.md
+  - docs/dreams/bmad-loop-baseline-drift.md
+  - docs/dreams/bmad-loop-forward-dependency-blindness.md
+  - docs/dreams/bmad-loop-intent-gap-work-preservation.md
+  - docs/dreams/bmad-loop-liveness-footgun.md
+  - docs/dreams/bmad-output-hygiene.md
+  - docs/dreams/bmad-switch-scope-enforcement.md
+  - docs/dreams/cursor-native-tier-map.md
+  - docs/dreams/dashboard-project-path-derivation.md
+  - docs/dreams/dashboard-velocity-captures-hand-driven-work.md
+  - docs/dreams/dispatch-tier-routing-fails-safe.md
+  - docs/dreams/dream-to-code-model-self-verification.md
+  - docs/dreams/durable-runs.md
+  - docs/dreams/factory-console.md
+  - docs/dreams/fidelity-enforcement.md
+  - docs/dreams/fleet-chain-completeness.md
+  - docs/dreams/fleet-status-supervisor-fallback.md
+  - docs/dreams/genesis-installer-name-retirement.md
+  - docs/dreams/genesis-installer.md
+  - docs/dreams/horizontal-run-concurrency.md
+  - docs/dreams/landing-evidence-grammar.md
+  - docs/dreams/library-catalog-manifest-sync.md
+  - docs/dreams/loop-home-fleet-refresh.md
+  - docs/dreams/marshal-dependency-aware-dispatch.md
+  - docs/dreams/marshal-drain-self-resolution.md
+  - docs/dreams/marshal-land-cross-project-story-key-collision.md
+  - docs/dreams/marshal-land-merge-subject.md
+  - docs/dreams/marshal-launch-environment-integrity.md
+  - docs/dreams/marshal-parallel-dispatch-fanout.md
+  - docs/dreams/marshal-run-watch.md
+  - docs/dreams/marshal-single-story-dispatch.md
+  - docs/dreams/marshal-status-harness-run-id-poisoning.md
+  - docs/dreams/marshal-templated-merge-subject-cross-project-collision.md
+  - docs/dreams/marshal-token-economy.md
+  - docs/dreams/one-front-door.md
+  - docs/dreams/pr-lifecycle.md
+  - docs/dreams/pyforge-core.md
+  - docs/dreams/pyforge-marshal-loop-orchestrator.md
+  - docs/dreams/pyforge-testing-charter.md
+  - docs/dreams/quick-dev-reconciliation.md
+  - docs/dreams/regenerable-factory.md
+  - docs/dreams/risk-tiered-review-depth.md
+  - docs/dreams/run-state-one-publisher.md
+  - docs/dreams/spec-surface-overlap-tolerance.md
+  - docs/dreams/sprint-status-auto-promote.md
+  - docs/dreams/surface-drift-reconciliation.md
+  - docs/dreams/token-economy-claude-session-path.md
 surface:
-  - src/shared/packages/pyforge-marshal/**    # the CLI this Spec builds (not yet created)
+  - src/shared/packages/pyforge-marshal/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_difficulty.py
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  - .claude/tools/conda_forge_server.py
+  - .claude/tools/gemini_server.py
+  - .cursor/rules/bmad-build.mdc
+  - .cursor/rules/bmad-build-auto.mdc
+  - scripts/bmad_cursor_mdc_check.py
+  - tests/scripts/test_bmad_cursor_mdc_check.py
+  - pixi.toml
+  - scripts/bmad_loop_baseline_drift_check.py
+  - docs/dreams/bmad-loop-baseline-drift.md
+  - .bmad-loop/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/
+  - scripts/missing_preserve_check.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py
+  - docs/dreams/bmad-loop-liveness-footgun.md
+  - scripts/bmad-switch
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+  - pyforge.doctor.sources.fleet_scan
+  - docs/dashboard/index.html
+  - docs/dashboard/data.js
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_findings.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py
+  - .claude/skills/conda-forge-expert/tests/meta/
+  - docs/dashboard/README.md
+  - docs/dashboard/kedro-viz/**
+  - scripts/fleet_scan.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/planning.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py
+  - scripts/governance_currency_check.py
+  - scripts/ad_citation_check.py
+  - scripts/.ad-citation-baseline.json
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py
+  - src/shared/packages/pyforge-core/
+  - environment.yaml
+  - docs/reference/library-llms-full.md
+  - scripts/llms_full_check.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py
+  - _bmad-output/projects/*/planning-artifacts/marshal-policy.toml
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
+  - src/shared/packages/pyforge-marshal/tests/**/*watch*
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/
+  - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
+  - .claude/skills/bmad-build-auto/step-04-review.md
+  - .claude/skills/bmad-build-auto/spec-template.md
+  - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
+  - .claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py
+  - .claude/skills/bmad-sprint-planning/references/generate-tracking.md
+  - .claude/skills/bmad-sprint-planning/sprint-status-template.yaml
+  - .claude/skills/bmad-retrospective/scripts/sprint_status.py
+  - .claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py
+  - scripts/index_freshness_check.py
+  - .claude/skills/bmad-build-auto/compile-epic-context.md
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py
+  - scripts/bmad-loop-worktree
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py
+  - scripts/promote_sprint_status.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/**
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py
+  - scripts/.spec-surface-baseline.json
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
+  - src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py
 surface-drift-exclude:
-  # 2026-09-12: also governed by the spec(s) named below, which already
-  # reconciles each of these files cleanly -- this kernel spec's own
-  # memlog does not move for routine story work anymore, so double-
-  # claiming them only produced permanent drift-presumed noise here.
-  # Coverage is unchanged (still listed under `surface:` above); only
-  # this spec's own drift tracking for these specific files is off.
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/checkpoint.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/layer_savings_sources.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/structure_graph_dispatch_benchmark.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/worktree_checkpoint.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/cursor.toml   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/scope.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/files/model-ignores.gitignore.j2   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/checkpoint.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/layer_savings_sources.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/structure_graph_dispatch_benchmark.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/worktree_checkpoint.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/cursor.toml
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/scope.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/files/model-ignores.gitignore.j2
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_findings.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py
+  - docs/dashboard/kedro-viz/**
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
+  - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
+  - scripts/.spec-surface-baseline.json
 companions:
-  - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
-  - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against
-  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-65 / NFR-1..NFR-14 with testable consequences, incl. the folded-in seed-installer PRD content (FR1..FR62, own numbering; retitled "Part II — The seed installer (`marshal seed`)" 2026-08-08)
-  - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in seed-installer architecture content (AD-51..AD-65; section retitled 2026-08-08)
-  - ../../epics.md                                           # adopted (chain): the single, combined epics document (Epics 1-12 and beyond) — the former separate epics-genesis-installer.md was merged in and archived 2026-08-08 (genesis-installer-name-retirement CAP-1)
-  - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
+  - glossary.md
+  - extraction-manifest.md
+  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
+  - ../../epics.md
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
-  - ../../briefs/brief-pyforge-marshal-2026-07-25/brief.md    # incl. the folded-in seed-installer brief content (section retitled "The seed installer (marshal seed)" 2026-09-12)
-  - ../../../../../../docs/dreams/genesis-installer.md       # the genesis-installer Dream (unchanged; its downstream chain is what this consolidation folds in)
-  - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/research/product-brief-pyforge-genesis.md  # archived original of the folded-in satellite brief
-  # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
-  # is a narrow governance-surface Spec binding the SHIPPED machinery (`.bmad-loop/**`) into the
-  # governance map. THIS Spec is the `marshal` CLI product that productizes that capability.
-  # Both are live; neither supersedes the other. Do not merge or move them.
 open_questions: []
-  # ANSWERED 2026-09-09 -- all six items hoisted into this key earlier today (fleet-readiness
-  # batch row mars-B-B13) were answered by the operator the same day, so the key returns to
-  # empty. The dated answers live in the body's § Open Questions, and the load-bearing ones are
-  # amended into Constraints and Non-goals. The chain-currency `overtaken` finding this chain
-  # carried while they stood is thereby cleared.
-  #   - F-4  (undeclared trust model)              ANSWERED: B is the contract, A is the v1 state; vessel Story 33.11.
-  #   - F-5  (no unattended mid-run freeze writer) ANSWERED: none by design; a mid-run freeze needs per-story approval.
-  #   - Q-11 (fleet-level resource budget)         ANSWERED: out of scope for v1.
-  #   - Q-12 (OpenTelemetry `gen_ai.*`)            ANSWERED: deferred until the conventions reach stable.
-  #   - Q-13 (ACP migration trigger)               ANSWERED: trigger one fired, but alone does not start the migration.
-  #   - Q-14 (25-minute idle threshold)            ANSWERED: stays until one wave is READ from the dispatch journals.
-  # Earlier-retired items (F-1, F-2, F-3, F-6, Q-15, Q-16) keep their dated resolutions in the body.
 ---
 
-> **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+> **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-16 (one-chain-per-station CAP-8). Do not hand-edit — append the memlog and re-derive.
 
-> **Consolidated 2026-08-02 (explicit user override).** genesis-installer's own Spec (`spec-genesis-installer/SPEC.md`) is folded into this Spec below: its capabilities continue this Spec's own `CAP-n` sequence (CAP-10..CAP-18), its constraints/non-goals/success-signal/assumptions/open-questions are appended into the matching sections here, and its AD-01..AD-09 references are renumbered AD-51..AD-59 to match the merged architecture doc. See `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer/` for the original standalone documents. `epics-genesis-installer.md` is unchanged and out of scope for this consolidation.
-
-# marshal CLI — graduated autonomy, productized
+# marshal CLI — one chain
 
 ## Why
 
@@ -88,89 +230,735 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 
 ## Capabilities
 
-- **CAP-1 — loop homes and isolation**
+- **CAP-1 — loop homes and isolation** ← spec-pyforge-marshal CAP-1 (shipped 2026-09-09)
   - **intent:** An operator can create an isolated, policy-composed, preflight-verified place for a loop to run, and prove that several of them are genuinely isolated.
   - **success:** One idempotent command yields a loop home whose active-project marker and planning symlinks agree, whose Tier-3 store resolves to the same canonical realpath as the main checkout, and which never replaces a real non-empty local directory; an isolation assertion over N ≥ 2 homes exits 0 only when markers and symlinks are independent, Tier-3 realpaths identical and the main checkout untouched; preflight exits non-zero naming every blocking finding (harness version, multiplexer backend, adapter binary, resolvable story feed, resolvable verify commands, `main` not checked out twice, unacknowledged adapter first-run requirement) rather than discovering them at minute 90; teardown removes worktree and branch, refuses on uncommitted or unmerged work absent an explicit flag, and never touches the canonical store.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/init.py::run_init/run_homes/run_preflight/run_teardown` implement the claimed behavior. 19 tests pass: `test_status.py`'s 6 isolation tests (`test_two_clean_homes_are_not_desynced`, `test_home_marker_symlink_desync_reports_mrs_homes_001`, `test_tier3_realpath_mismatch_reports_mrs_homes_002`, `test_main_checkout_untouched_is_self_consistent`, plus 2 more) and `test_init.py`'s 6 idempotent/teardown-refusal tests plus 7 preflight-blocking-finding tests, one per named category (harness version, multiplexer, adapter binary, story feed, verify commands, main-checked-out-twice, unacknowledged adapter). Cross-corroborated by `spec-multi-loop-isolation`'s same-day verified lines. Not independently re-checked: teardown's "never touches canonical store" positive property, and the `--force` teardown path.
-
-- **CAP-2 — supervised unattended runs**
+- **CAP-2 — supervised unattended runs** ← spec-pyforge-marshal CAP-2 (shipped 2026-09-09)
   - **intent:** An operator can launch or resume a gated run against an approved spec and have it watched from outside by something the session cannot disable — so a run either completes, escalates, or stops with a named reason.
   - **success:** Launch and resume return a run identifier promptly and survive the caller exiting; a session that stops producing output is detected from externally observable evidence and acted on through a journaled nudge → stop-and-retry → defer ladder well before any token or time cap; per-story and per-run ceilings stop the unit with a named reason and a prior warning, never a silent defer; an escalation pauses the run so no story proceeds past it, is journaled with story key, reason and the artifact needing a decision, and fires at least a durable file marker; a resume against an unresolved escalation is refused with a named finding; and the run journal is written incrementally, so a killed run still has a journal up to the kill.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `core/supervise.py::evaluate_idle/evaluate_ceiling/evaluate_escalation` and `cli/spin.py::run_spin/run_resume` implement the claimed behavior. 68 tests pass: `test_supervise.py`'s full 63-test module (idle-rung thresholds incl. `test_exactly_two_thresholds_returns_stop_and_retry`/`test_exactly_three_thresholds_returns_defer`; ceiling prior-warning-never-silent) plus 5 `test_spin.py` tests incl. resume-refused-on-unresolved-escalation and intent-journaled-before-harness-spin. Cross-corroborated by `spec-marshal-parallel-dispatch-fanout` and `spec-marshal-drain-self-resolution`'s same-day verified lines. Not independently checked: the process-level run-survives-caller-exit detach mechanism, and the durable-file-marker escalation-fire mechanism itself (only its resume-refusal consumer side was run).
-
-- **CAP-3 — gates you can run**
+- **CAP-3 — gates you can run** ← spec-pyforge-marshal CAP-3 (shipped 2026-09-09)
   - **intent:** An operator or CI can evaluate the gate standalone — with no run in flight — and get a verdict that never false-greens.
   - **success:** Evaluation runs the project's configured verify commands, reports pass/fail per command with captured output, never mutates the working tree, and projects to a stable exit contract (0 pass, non-zero fail, a distinct code for could-not-evaluate); the scope check names each offending path and, for a frozen-file violation, the story that froze it; a story whose declared deliverable is a document or decision record is classified before verification and does not fail on "no changes in worktree"; the gate mode carries its autonomy label at launch and in the journal, and a mid-run change is recorded as a timestamped decision; every evaluation leaves a durable record of commands, exit codes, scope verdict, tree revision and timestamp; and a sound-but-unconverged story can be landed deliberately only after the full gate re-runs.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/gate.py::evaluate_gate`, `core/gate.py::check_scope/check_scope_with_mode/classify_doc_only_declaration`, and `core/egress.py::build_gate_record` implement the claimed behavior. 49 tests pass: `test_cli.py`'s 6 tests (clean-exit, gate-failed, unevaluable, no-worktree-mutation, scope-check `MRS-GATE-007`/`MRS-GATE-008`), `test_gate.py`'s doc-only-declaration test, and `test_egress.py`'s 42 tests pinning the durable gate-record contract (rejects malformed tree_revision/timestamp/verdict/story key). Not independently checked: the land-side "deliberate re-run after unconverged" enforcement, and the gate-mode-in-journal sub-clause.
-
-- **CAP-4 — landing with a durable paper trail**
+- **CAP-4 — landing with a durable paper trail** ← spec-pyforge-marshal CAP-4 (shipped 2026-09-09)
   - **intent:** An operator can land a wave and have every merged story's spec survive teardown, without anyone remembering to copy a file.
   - **success:** Every merged story's spec is promoted from run scratch into the tracked archive **before** any code path may remove that story's worktree, and is only counted promoted when its bytes are reachable from a ref that survives the loop home; a zero-byte or truncated source is reported as a paper-trail gap and never promoted over a good copy; a merged story with no promotable spec is reported, never passed over; missing specs yield ordered recovery search paths with any regenerated contract-only spec labelled as such; one batch pull request is opened or updated (never duplicated) against the configured base with per-story gate verdicts in the body; merge subjects render from the configured template that the same module parses to verify conformance; sprint and console surfaces refresh with ledger-versus-git discrepancies reported rather than silently resolved; re-running after a partial failure completes only the remaining steps, reporting each as done/skipped/failed; and nothing Marshal emits carries an AI-attribution trailer or courtesy preamble.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/init.py::run_teardown`'s unreachable-promotion block, `core/promotion.py::is_valid_spec_text`, and `cli/deploy.py::run_batch_pr` implement the claimed behavior. 5 tests pass: `test_teardown_ad29_unreachable_promotion_blocks_without_force`, zero-byte/truncated-source-named-as-gap, mixed-batch independent promote/gap, PR-updates-existing-not-duplicate, and PR-opens-new-when-none-exists (the latter directly asserts the PR body contains no `"Generated with"`/`"Co-Authored-By"`/`"🤖"` trailer). Cross-corroborated by `spec-marshal-land-merge-subject` and `spec-marshal-land-cross-project-story-key-collision`'s same-day verified lines. Not independently checked: a full kill-mid-land/resume scenario, and ledger-vs-git discrepancy reporting (covered under CAP-5 instead).
-
-- **CAP-5 — fleet visibility**
+- **CAP-5 — fleet visibility** ← spec-pyforge-marshal CAP-5 (shipped 2026-09-09)
   - **intent:** An operator can see every loop home at once, derived from ledgers rather than a hand-maintained file, with anything needing a human surfaced first.
   - **success:** One row per home carrying project, branch, state (idle / running / paused-on-escalation / stopped), current story, elapsed time and budget consumed, with paused-on-escalation rows visually distinguished and sorted to the top carrying their reason and the artifact needing a decision; drilling into a run shows the story sequence with per-story gate verdicts, escalations, deferrals and consumption; a story marked done with no corresponding merge — and the converse — is reported as a named discrepancy; and every human view has a machine-readable counterpart under a versioned schema a console or dashboard consumes without scraping.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/status.py::run_status/_run_detail/_reconcile_ledger` implement the claimed behavior. 5 tests pass: escalated-rows-sort-first, full run detail reporting story sequence + gate verdicts + budget + open intent, JSON payload matches the status schema, done-with-no-merge named `MRS-STATUS-001`, and escalation-paused names reason+artifact. Not independently checked: budget-consumed accuracy against a real supervisor run, and the converse discrepancy direction (merge-with-no-done-status — only the done-without-merge direction was run).
-
-- **CAP-6 — portability proven, not claimed**
+- **CAP-6 — portability proven, not claimed** ← spec-pyforge-marshal CAP-6 (shipped 2026-09-09)
   - **intent:** An operator can run the method on an agent other than the one it was built on, and hold a dated artifact proving it rather than a support table asserting it.
   - **success:** After projection, every configured adapter's declared skill tree contains the project's skills, the mechanism used is reported, the canonical source tree stays authoritative and re-projection converges with stale entries removed; drift detection reports added/removed/modified per tree and runs in preflight for non-default adapters, with a check that is mechanism-specific and can actually fail; a probe records binary presence, version, declared capabilities and probe output with sensitive values redacted, reporting an absent adapter as unavailable rather than failing; a canonical smoke story exercising spec → change → verify → commit runs in a throwaway home and leaves no residue; results accumulate into a dated matrix distinguishing not-attempted from unavailable from fail, where **only `pass` counts**; the cross-tool instruction-file family is checked for mutual drift and **reported, never edited**; and each adapter's first-run requirement plus sustained-automation caveat is acknowledged once, with unacknowledged adapters a blocking preflight finding.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/adapters.py::run_adapters_sync/gather_conformance_findings/run_adapters_probe/run_adapters_matrix/run_adapters_entry_files/run_adapters_smoke` implement the claimed behavior. 8 tests pass: stale-symlink-removed-on-reprojection, conform-reports-drift, probe-writes-redacted-record, probe/smoke report an unavailable adapter as unavailable (exit 0, not fail), matrix reports pass/fail/unavailable/not-attempted, entry-files drift detection, and a smoke story that leaves no residue after teardown. Not independently checked: the dated-matrix accumulation-over-time property (only a single run's shape was checked), and the "only `pass` counts" downstream aggregation rule specifically.
-
-- **CAP-7 — policy composition**
+- **CAP-7 — policy composition** ← spec-pyforge-marshal CAP-7 (shipped 2026-09-09)
   - **intent:** An operator's memorized operating rules become layered configuration a machine enforces, with every effective value traceable to the layer that set it.
   - **success:** Composition is pure — the same inputs produce the same output — and materializes once into the loop home; the effective policy prints each key with its winning layer and secrets redacted; project-specific values come from the project layer so switching projects requires editing no shared file and the worktree-seed path list is generated rather than literal; a story's declared difficulty selects per-stage models with no between-batch config edit, and the resolved model is journaled per story; an invalid composed policy is rejected at preflight naming the layer that introduced each bad key; and an architectural test fails the build if any module other than the single seam touches the harness.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `core/policy.py::compose/redact`, `cli/config.py::materialize`, and `core/tier_routing.py::resolve_tier_launch` implement the claimed behavior. 13 tests pass: the full 8-test `test_ad3_ad4_import_linter.py` architectural gate (AD-3: only `adapters/harness_bmadloop.py` may import `bmad_loop`; AD-4: core has no I/O — the single-seam test), 4 `test_policy.py` tests (determinism, secret redaction ×2, this repo's own 2 real landing rules), and 1 `test_tier_routing.py` test (per-story model resolved and journaled). Not independently checked: the preflight per-bad-key layer-attribution finding path beyond the one unacknowledged-adapter case already covered under CAP-1.
-
-- **CAP-8 — one install yields the whole stack**
+- **CAP-8 — one install yields the whole stack** ← spec-pyforge-marshal CAP-8 (shipped 2026-09-09)
   - **intent:** Marshal ships the way the rest of the Guild ships, and installing it brings the engine with it — the operative half of the wrap decision.
   - **success:** The distribution is `pyforge-marshal`, module `pyforge.marshal`, console script `marshal`, living in the repo's shared packages workspace, importable from a clean environment install; a conda package declaring the harness as a run dependency pinned to the supported range, plus a wheel and sdist from the same source tree, yield a working `marshal --help` and `marshal --version` reporting both Marshal's and the resolved harness's versions into every run's journal, with an out-of-range harness a prominent warning and a blocking preflight finding on a major mismatch; and a tracked register lists each upstream-shaped gap with its Marshal workaround and upstream status, seeded with idle-strand detection, per-story model tiering, `planning_artifacts` composition, ACP evaluation and non-POSIX multiplexer support, each naming the capability that compensates while the gap is open.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses, incl. live runtime evidence: `pixi run -e pyforge-marshal python -c "import pyforge.marshal"` → ok; `marshal --version` → `marshal 0.1.0` / `bmad-loop 0.11.1`; `marshal upstream` prints all 10 register entries including the 5 CAP-8-named gaps. Code: `pyproject.toml` declares the distribution/console-script identity and the harness pin (mirrored in `pixi.toml`). 27 tests pass: 3 version-reporting tests (incl. major-mismatch warning) plus the full 24-test `test_upstream.py`/`test_upstream_cli.py` register suite. Not independently checked: a from-scratch conda-package build/install (only the pixi-env install was verified) and the wheel/sdist build.
-
-- **CAP-9 — the last mile lands itself** *(added 2026-07-31 — operator decision via `docs/dreams/pr-lifecycle.md`; resolves Open Question 10)*
+- **CAP-9 — the last mile lands itself** ← spec-pyforge-marshal CAP-9 (shipped 2026-09-09)
   - **intent:** An operator's finished wave lands on `main` without a human driving the last mile — the landing rules declared once as policy, executed and refused deterministically, with the same supervisor/journal/verdict triad every other stage already has.
   - **success:** Landing rules — required checks, merge strategy, label rules (including repo-specific ones like this fork's `maintenance` label and its ungated env-sync trigger), branch retirement, and resync — compose from the policy layers with per-key provenance; `marshal land` opens or updates the PR, applies labels, waits on required checks, merges, retires the branch and resyncs — idempotently and re-entrantly, so a half-landed story (PR open, checks green, merge never issued) converges on re-run; refusal semantics mirror teardown: no merge on a red required check, no merge past an unacknowledged advisory finding, no silent force; every landing leaves a journal verdict recording which checks were required, which passed, what merged, and under whose authority; and wrap-never-absorb is carried unchanged — the engine keeps dev/verify/review/commit and deliberately leaves this gap open; Marshal fills it around the engine.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), scoped to representative clauses: `cli/land.py::run_land`, its journal write (`kind="land-observation"`, payload keys `checks_required`/`checks_passed`/`merge_strategy`/`branch_retired`/`authority`), and `core/policy.py`'s landing-rule validators implement the claimed behavior. 4 tests pass: required-check-failure-blocks-merge, re-entrant-run-with-existing-PR-converges-to-full-landing, required-check-pending-and-acknowledged-proceeds, and this repo's own 2 real landing rules (`maintenance-label` exclude-mode, `environment-yaml-sync` include-mode ungated) parsing byte-for-byte as this CAP states. The `land-observation` journal payload's field set is code-cited, not separately test-pinned (no dedicated test asserting on it by field name was found). Not independently checked: the unacknowledged-advisory-finding refusal and no-silent-force paths.
-
-- **CONSOLIDATION NOTE (2026-08-02, explicit user override):** CAP-10..CAP-18 below are genesis-installer's own CAP-1..CAP-9, folded into this Spec verbatim except for renumbering (continuing this Spec's own sequence past its highest existing id, CAP-9) and AD-01..AD-09 -> AD-51..AD-59 (to match the merged architecture doc's Satellite section). See `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer/SPEC.md` for the original standalone document, and its `.memlog.md` entries (replayed verbatim, original CAP-1..9/AD-01..09 labels, after this Spec's own memlog history) for the distillation record.
-
-- **CAP-10**
+- **CAP-10 — operating model as data** ← spec-pyforge-marshal CAP-10 (shipped 2026-09-09)
   - **intent:** A maintainer can declare the operating model as data — every artifact in exactly one class — so adding a model artifact never requires touching engine code.
   - **success:** A coverage check HARD-fails when any known artifact carries no class (deferral is an explicit enumerated state, not a gap); `marshal seed explain <artifact>` prints that artifact's class, rationale, and update behavior; adding an artifact to the model is provably a manifest-only diff.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `seed/model/manifest.py::load_manifest` (l.80-90, l.517), `seed/detect/inventory.py::coverage_findings`/`_uncovered_reason` (l.694, l.724), and `seed/verbs/explain.py::resolve_entry`/`run_explain` (l.46, l.105) implement the claimed behavior. 8 tests pass, incl. `test_coverage_findings_flags_an_entry_forced_to_an_invalid_artifact_class`, `test_packaged_manifest_passes_coverage_findings_with_zero_findings`, and `test_explain_by_id_includes_class_rationale_and_update_behavior`. Not independently checked: "adding an artifact is provably a manifest-only diff" — inferred from the absence of per-artifact-id branching in `detect/inventory.py`/`plan/build.py`/`engine/copier.py` (grepped, none found), not from a dedicated test.
-- **CAP-11**
+- **CAP-11 — managed-region upgrades** ← spec-pyforge-marshal CAP-11 (shipped 2026-09-09)
   - **intent:** An operator can carry the model's rule text inside files their team writes freely, and have only that text upgrade.
   - **success:** An update replaces only the marked span, byte for byte, leaving the rest of the file identical; a hand-edit inside the span is detected by body hash and reported; deleting the markers is recorded as a permanent opt-out that later runs respect; nested or overlapping regions are rejected with a specific error; no run can produce a conflict marker.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `seed/regions/apply.py::substitute_region`/`RegionShaMismatchError` (l.119, l.105), `seed/regions/parse.py::RegionParseError` (l.231, nested/overlap rejection), and `seed/detect/optout.py::classify_regions`/`opt_outs_to_record` (l.443, l.591) implement the claimed behavior. 8 tests pass: `test_prefix_and_suffix_are_byte_for_byte_preserved`, `test_sha_mismatch_raises_before_any_write_and_leaves_the_file_untouched`, `test_nested_regions_raise_naming_both`, `test_overlapping_regions_raise_naming_both`, `test_markers_deleted_from_a_previously_installed_region_classify_opted_out`, plus 3 more. "No run can produce a conflict marker" is structurally true by construction (a single atomic `fs.replace_span`, no merge/diff3 algorithm exists in the module) rather than pinned by a system-wide test.
-- **CAP-12**
+- **CAP-12 — adopt onto a living repo** ← spec-pyforge-marshal CAP-12 (shipped 2026-09-09)
   - **intent:** A team can layer the model onto a repository that already builds and ships, reviewing exactly what will change before anything is written.
   - **success:** `marshal seed adopt` runs detect → plan → confirm → apply, dry-run by default and completing in under 10 seconds on a `local-recipes`-sized repo, emitting a machine-readable plan naming each artifact's path, class, detected state, proposed action, and rationale; against `local-recipes` at the shipped model version the plan is **empty**; a second run on an unchanged repo is likewise empty and writes nothing; it refuses on a hand-edited managed artifact and on a dirty git worktree; a `present-legacy` artifact is recorded and preserved, never modified or deleted; and paths passed to `--skip` are recorded and honored on every later run.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: unit-level mechanics hold — 6 tests pass (`seed/verbs/adopt.py::run_adopt`, l.979) covering dry-run-writes-only-plan.json, second-unchanged-run-empty, dirty-worktree refusal, hand-edited-managed-content refusal without `--force`, `present-legacy` preserved untouched, and `--skip` honored on later runs; the `<10s`/`<5s` performance budgets pass against a synthetic 1200-file local-recipes-sized fixture (`test_adopt_dry_run_under_nfr_p2_budget` etc.). **The literal "against local-recipes at the shipped model version the plan is empty" clause does NOT hold**: the repo's own oracle test, `tests/integration/test_local_recipes_empty_plan.py::test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred`, currently raises `PreconditionFailure: symlink-target` against local-recipes' own `_bmad-output/implementation-artifacts` — the BMAD multi-project symlink this repo's own CLAUDE.md mandates is unconditionally refused by the precondition guard (`seed/verbs/preconditions.py:660-668`), which has no exemption for the `generated-derived` symlink entries whose entire point is to be a symlink. Real, current gap in the precondition guard — not fixed here (see CAP-13's own live run for the deeper cause: local-recipes has never had `adopt --apply` run against it for real).
-- **CAP-13**
+- **CAP-13 — seed check in CI** ← spec-pyforge-marshal CAP-13 (shipped 2026-09-09)
   - **intent:** An installed repo can prove in CI that it still conforms to the model.
   - **success:** `marshal seed check` is read-only with writes structurally unreachable, exits non-zero on any HARD finding, emits typed stable findings each carrying a documented remedy, supports `--json` for CI annotation, reports the repo's model version against the bundled one, and completes offline in under 5 seconds on a `local-recipes`-sized repo.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: the verb's own contract is FULL — 8 tests pass (`seed/verbs/check.py::run_check`, l.325) incl. `test_check_module_never_references_a_write_capable_primitive` (AST-level no-write guard), `test_run_check_never_writes`, `test_json_report_has_a_stable_field_order`, `test_repo_behind_model_version_names_both_versions`, and `test_run_check_completes_within_the_nfr_p1_budget`. **Live run against local-recipes itself**: `marshal seed check --repo-root . --json` exits **1** (7 HARD + 10 DRIFT findings), confirmed zero writes (`git status --porcelain` unchanged by the run). This is evidence FOR the "never false-green" property (check correctly reports the real unconformant state), not a check-verb regression: 5 of 7 HARD findings trace to a documented, self-disclosed gap in `run_check` (never substitutes `{{ slug }}` in templated entries, so it reports every such entry `ARTIFACT_MISSING` on every repo — `seed/verbs/init.py:140-165`'s own docstring), and all findings trace to the deeper fact (see CAP-12) that local-recipes has never had `adopt --apply` run against it — no `.marshal/seed-state.yml` exists yet.
-- **CAP-14**
+- **CAP-14 — seed init a Dream-first repo** ← spec-pyforge-marshal CAP-14 (shipped 2026-09-09)
   - **intent:** A maintainer can create a new repository already born Dream-first, rather than assembling the model by hand.
   - **success:** `marshal seed init <path>` yields a tree with the tier layout, one seeded Dream conforming to the Tier-0 frontmatter contract, the BMAD multi-project subtree and its `PROJECTS.md` row, the `.gitignore` model region, the selected agent adapters, and the detector wired into CI — after which `marshal seed check` is green, offline, with zero network calls, in under five minutes wall-clock; `init` refuses a non-empty directory without `--force`, directing the operator to `adopt`.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `seed/verbs/init.py::run_init` (l.443) implements the claimed behavior. 5 tests pass, incl. `test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all` (the PRD's own J1 scenario end-to-end: bootstraps repo, writes a Tier-0-conformant Dream, writes PROJECTS.md's first row), `test_init_into_a_non_empty_directory_without_force_is_refused`, and `test_check_on_the_freshly_inited_repo_is_green`. Not independently checked: the literal "<5 minutes wall-clock" claim was verified only via a `dry_run=True` synthetic performance fixture (seconds, well under the 300s budget), not a real `--apply` run with real network-free Copier materialization end to end.
-- **CAP-15**
+- **CAP-15 — seed update without touching team work** ← spec-pyforge-marshal CAP-15 (shipped 2026-09-09)
   - **intent:** An already-installed repository can take a later version of the model without hand edits, and without the upgrade being able to reach the team's own work.
   - **success:** `marshal seed update` writes a plan and changes nothing until `--run`; a simulated breaking model change (v1 → v2) is absorbed by a version-ordered, applied-once migration with no manual edits; `copied-seeded` artifacts are *offered*, never imposed; and an attempted write to any never-write path is a hard error asserted by test.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `seed/verbs/update.py::run_update` (l.962) and `seed/migrate/registry.py` implement the claimed behavior. 6 tests pass: `test_sc07_a_simulated_v1_to_v2_breaking_change_is_absorbed_via_the_real_pipeline`, `test_run_without_yes_declined_confirmation_applies_nothing`, `test_migration_offered_copied_seeded_is_skipped_by_default`, `test_never_write_target_from_wholesale_regenerate_refused_at_plan_time`, `test_compose_raises_never_write_violation_before_returning_for_a_protected_target`, `test_dry_run_with_no_managed_content_and_no_drift_produces_empty_plan`. Not independently checked: whether this same migration mechanism would actually clear the real, currently-observed local-recipes drift (CAP-12/13) — the test uses a synthetic simulated migration, not the real manifest's real history.
-- **CAP-16**
+- **CAP-16 — adapters from one contract** ← spec-pyforge-marshal CAP-16 (shipped 2026-09-09)
   - **intent:** Every per-tool agent entry point in an installed repo derives from one contract, so they cannot drift apart.
   - **success:** The four V1 adapters (`CLAUDE.md`, `.cursor/rules/specs.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`) render from a single neutral-contract source; adding a fifth is a manifest entry plus a wrapper template with no engine change; an adapter file that already exists with repo-specific content receives the model as a managed region rather than an overwrite.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: single-source rendering and extensibility are FULL — `seed/derive/adapters.py::render_adapter` (l.242) implements the claimed behavior; 7 tests pass, incl. `test_mutating_the_shared_tiers_fragment_changes_all_three_whole_file_adapters_and_the_real_region_body`, `test_a_fifth_adapter_added_via_a_caller_supplied_composition_table_renders_correctly`, and `test_render_adapter_against_the_real_packaged_templates_is_deterministic`. **The "managed region not overwrite" clause holds only for one of the four V1 adapters**: per `seed/templates/manifest.yaml:248-326`, only `CLAUDE.md` is classed `hybrid-managed-region` (repo content preserved, model inserted as a region); `.cursor/rules/specs.mdc`, `.github/copilot-instructions.md`, and `GEMINI.md` are all `generated-derived` (regenerated wholesale every run) — a repo with pre-existing hand content in those three would have it overwritten, not region-merged. Real, current scope gap in the spec's own wording vs. the shipped classification — not fixed here.
-- **CAP-17**
+- **CAP-17 — genesis-owned state file** ← spec-pyforge-marshal CAP-17 (shipped 2026-09-09)
   - **intent:** A repo carries a legible record of what Genesis owns in it and what it has already done.
   - **success:** One git-tracked, schema-validated, do-not-hand-edit state file records `model_version`, `genesis_version`, mode, adopted/updated timestamps, `agents[]`, `managed[]` (path + class + content hash), `skips[]`, `legacy[]`, and `migrations_applied[]`; an invalid file surfaces as a `state-invalid` finding rather than a crash; state is written last, after every file write succeeds, in one atomic replace.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep): `seed/state/store.py` and `seed/state/schema.json` implement the claimed behavior — the schema requires exactly the 11 declared top-level keys (confirmed by direct `json.load`). 30 tests pass (several parametrized), incl. `test_schema_requires_exactly_the_eleven_top_level_keys`, `test_state_path_is_the_git_tracked_marshal_file`, `test_schema_violations_raise_state_invalid_naming_the_field`, `test_state_is_not_written_when_apply_fails_mid_run` (write-last), and `test_written_file_opens_with_a_do_not_hand_edit_header`. Not independently checked: atomic-replace-at-the-syscall-level (that a killed process mid-write leaves the old file intact) — only that state is not written on an application-level failure before completion, a narrower guarantee.
-- **CAP-18**
+- **CAP-18 — air-gap by construction** ← spec-pyforge-marshal CAP-18 (shipped 2026-09-09)
   - **intent:** An air-gapped or firewalled team can install and operate the model with no egress.
   - **success:** An egress-counter test asserts zero network calls across `init`, `adopt --dry-run`, `adopt --apply`, and `check`; the only reachable network path is an explicit `--template <url>`; every runtime dependency resolves from conda-forge or an internal mirror.
-  - **verified:** 2026-09-11 — mechanical re-verification (operator-directed capability-effect sweep), PARTIAL: the zero-egress claim is FULL and live-verified — `tests/integration/test_seed_egress_counter.py::test_seed_verbs_make_zero_network_syscalls_under_strace` passes against the real installed `marshal` console script under real `strace -f -e trace=network`, driving the full `init`/`adopt --dry-run`/`adopt --apply --yes`/`check`/`update --run --yes` sequence with zero `connect`/`send*` syscalls observed. **The "only reachable network path is `--template <url>`" clause is NOT-FOUND**: no `--template` flag exists anywhere in the shipped `marshal seed` CLI (checked `--help` output and grepped the full `seed/` source tree, zero hits) — the system is in practice *more* air-gapped than the spec text describes (no escape hatch at all), but the literal clause as written does not hold. Real, current spec-vs-code mismatch — not fixed here. "Every runtime dependency resolves from conda-forge or an internal mirror" is a packaging/build-time claim, not independently re-verified beyond noting it's consistent with this repo's conda-forge/pixi convention.
+- **CAP-19 — from spec-adaptive-model-tiering** ← spec-adaptive-model-tiering CAP-1 (shipped 2026-09-16)
+  - **intent:** A project's `model_tier_map`, once populated with real `{difficulty:
+  - **success:** Given a project with a populated `model_tier_map` and an in-scope story
+- **CAP-20 — from spec-adaptive-model-tiering** ← spec-adaptive-model-tiering CAP-2 (shipped 2026-09-16)
+  - **intent:** A story showing it is genuinely struggling (repeated dev attempts, repeated
+  - **success:** Given a story that exhausts an attempt/cycle threshold, its next attempt runs
+- **CAP-21 — one governed surface** ← spec-agent-tool-surface CAP-1
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-22 — the surface survives a clone** ← spec-agent-tool-surface CAP-2
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-23 — CLI ⇄ tool parity is gated, not reviewed** ← spec-agent-tool-surface CAP-3
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-24 — coverage is measured, not assumed** ← spec-agent-tool-surface CAP-4
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-25 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** Operator can start the judgment audit on a mechanically clean
+  - **success:** Six detectors + meta-suite green; zero `[drift-presumed]`
+- **CAP-26 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-2 (shipped 2026-09-09)
+  - **intent:** Every one of the 68 remaining stories (steward 4 → mason 28 →
+  - **success:** 68/68 verdict rows, each with `file:line` or command-output
+- **CAP-27 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-3 (shipped 2026-09-09)
+  - **intent:** All five completed stations (atlas, doctor, herald, scribe,
+  - **success:** Per-station gate report; every chain column verified or
+- **CAP-28 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-4 (shipped 2026-09-09)
+  - **intent:** The TEA column is refreshed by measurement: per-epic
+  - **success:** Coverage table present per epic in the gate reports.
+- **CAP-29 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-5 (shipped 2026-09-09)
+  - **intent:** Audit verdicts become repairs in both directions: artifact
+  - **success:** Every fix traceable to a verdict row and an owning-skill or
+- **CAP-30 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-6 (shipped 2026-09-09)
+  - **intent:** Each of the four queued decomposition chains (atlas → herald →
+  - **success:** Every decomposition PR cites the landed gate report it builds
+- **CAP-31 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-7 (shipped 2026-09-09)
+  - **intent:** Operator can make the resume decision on measured artifacts:
+  - **success:** Baseline stamped; board matches ledger; the 68-story
+- **CAP-32 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-8 (shipped 2026-09-09)
+  - **intent:** The non-station estate is audited too: every Dream in
+  - **success:** 61/61 Dreams dispositioned in an inventory gate report.
+- **CAP-33 — Retired-ID purge + regression guard** ← spec-bmad-611-era-alignment CAP-1
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-34 — bmad-loop skill refresh** ← spec-bmad-611-era-alignment CAP-2
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-35 — Memlog-format migration** ← spec-bmad-611-era-alignment CAP-3
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-36 — Policy-surface parity** ← spec-bmad-611-era-alignment CAP-4
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-37 — 0.11 status vocabulary** ← spec-bmad-611-era-alignment CAP-5
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-38 — Deferred-work intake reads both sources** ← spec-bmad-611-era-alignment CAP-6
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-39 — Living factory docs re-grounded, with a named owner** ← spec-bmad-611-era-alignment CAP-7
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-40 — 6.12 retired-ID roster** ← spec-bmad-611-era-alignment CAP-8
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-41 — Project-context surface follows 6.12** ← spec-bmad-611-era-alignment CAP-9
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-42 — Documentation pointers follow 6.12** ← spec-bmad-611-era-alignment CAP-10
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-43 — bmad-loop 0.11.1 parity, durable** ← spec-bmad-611-era-alignment CAP-11
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-44 — Every live caller follows the shim retirement** ← spec-bmad-611-era-alignment CAP-12
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-45 — TEA adoption is marshal Epic 31 (relay)** ← spec-bmad-611-era-alignment CAP-13
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-46 — The live subagent probe** ← spec-bmad-cursor-interactive-routing CAP-1
+  - **intent:** settle, empirically, whether Cursor's interactive IDE chat surface (not the
+  - **success:** a dated, reproducible probe result recorded in this Spec's memlog — pass or fail,
+- **CAP-47 — `.mdc` routing layer** ← spec-bmad-cursor-interactive-routing CAP-2
+  - **intent:** a `.cursor/rules/*.mdc` file per BMAD skill (or one generated router), mechanically
+  - **success:** a request typed into Cursor's interactive chat surfaces and runs the identical
+- **CAP-48 — The honest fallback** ← spec-bmad-cursor-interactive-routing CAP-3
+  - **intent:** `bmad-build-auto`'s workflow HALTs `blocked`/`no subagents` exactly as designed
+  - **success:** no skill silently degrades its review discipline inside Cursor chat.
+- **CAP-49 — Team-memory reachability** ← spec-bmad-cursor-interactive-routing CAP-4
+  - **intent:** `.claude/memory/` content reachable from Cursor chat via whatever reference
+  - **success:** `Read` of `.claude/memory/MEMORY.md` works. There is no Claude Code `@path`
+- **CAP-50 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-1 (shipped 2026-09-09)
+  - **intent:** A Marshal-side detector at the adapter seam — reading only feeds `bmad_loop`
+  - **success:** Replaying run `20260813-094919-bfcb`'s journal (story 9-6) fires the detector
+- **CAP-51 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-2 (shipped 2026-09-09)
+  - **intent:** This defer reason can no longer pass silently — loud-defer containment. The
+  - **success:** A future occurrence is surfaced by the containment within its watch window with
+- **CAP-52 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-3 (shipped 2026-09-09)
+  - **intent:** The drafted upstream issue already in the Dream (lines ~125–201: journal timeline,
+  - **success:** Both gates recorded as checked; then either the issue is filed (URL appended to
+- **CAP-53 — every station's structured epics doc is swept for forward-epic `** ← spec-bmad-loop-forward-dependency-blindness CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-54 — a found forward-dependent story is set to a non-actionable status** ← spec-bmad-loop-forward-dependency-blindness CAP-2 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-55 — a permanent detector prevents recurrence** ← spec-bmad-loop-forward-dependency-blindness CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-56 — an unparseable epics format is reported honestly, never silently passed** ← spec-bmad-loop-forward-dependency-blindness CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-57 — gated story loops** ← spec-bmad-loop-governance CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-58 — concurrent loop homes** ← spec-bmad-loop-governance CAP-2 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-59 — model tiering as policy** ← spec-bmad-loop-governance CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-60 — every run visible** ← spec-bmad-loop-governance CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-61 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-1 (shipped 2026-09-09)
+  - **intent:** Preservation symmetry -- before/around an intent-gap revert discards tracked
+  - **success:** After an intent-gap halt on a story with tracked changes, a preserve artifact
+- **CAP-62 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-2 (shipped 2026-09-09)
+  - **intent:** The escalation surface names the artifact -- the "Auto Run Result" / escalation
+  - **success:** Given only the escalation text of a post-fix intent-gap halt, `bmad-loop
+- **CAP-63 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-3 (shipped 2026-09-09)
+  - **intent:** A post-hoc detector makes any residual gap loud -- an intent-gap halt whose
+  - **success:** Simulating an intent-gap halt with no preserve artifact trips the detector;
+- **CAP-64 — Marshal gains the missing liveness primitive** ← spec-bmad-loop-liveness-footgun CAP-1
+  - **intent:** A Marshal-side primitive answers "is run X's engine alive?" by consuming
+  - **success:** Given a live run, a stopped run, and an absent/unreadable run directory,
+- **CAP-65 — The operator answer is one command** ← spec-bmad-loop-liveness-footgun CAP-2
+  - **intent:** The operating instructions this repo hands out (the fleet landing-pass
+  - **success:** No tracked operator instruction prescribes `cat engine.pid` /
+- **CAP-66 — An UNSUPERVISED row has a cheap double-check** ← spec-bmad-loop-liveness-footgun CAP-3
+  - **intent:** For a run Marshal did not spawn (a raw `bmad-loop run`/`resume` with no
+  - **success:** Reproducing the Dream's 2026-08-15 scenario (raw `bmad-loop run`, no
+- **CAP-67 — dead test-scaffolding archival** ← spec-bmad-output-hygiene CAP-1 (shipped 2026-09-16)
+  - **intent:** `git mv` `tests/`, `pytest.ini`, and `playwright.config.ts` out
+  - **success:** None of the 7 station roots contain these paths; each exists
+- **CAP-68 — hollow `sprint-status.yaml` archival** ← spec-bmad-output-hygiene CAP-2 (shipped 2026-09-16)
+  - **intent:** `git mv` the dead, identical-shape `planning-artifacts/sprint-status.yaml`
+  - **success:** File absent from its original path in all 9 projects, present
+- **CAP-69 — Genesis `test-architecture.md` fix** ← spec-bmad-output-hygiene CAP-3 (shipped 2026-09-16)
+  - **intent:** Regenerate Genesis's `test-architecture.md` — the one station the
+  - **success:** The file makes no claim contradicted by Genesis's own current
+- **CAP-70 — README placeholder fill** ← spec-bmad-output-hygiene CAP-4 (shipped 2026-09-16)
+  - **intent:** The literal `[role]`/`[responsibilities]` placeholders actually
+  - **success:** No station README contains a literal `[role]` or
+- **CAP-71 — orphaned single-file archival** ← spec-bmad-output-hygiene CAP-5 (shipped 2026-09-16)
+  - **intent:** `git mv` Atlas's `RESUME-EPIC-10.md` and Herald's
+  - **success:** Both files exist under their mirrored `archive/` path, are
+- **CAP-72 — `project-context.md` drift fix** ← spec-bmad-output-hygiene CAP-6 (shipped 2026-09-16)
+  - **intent:** Regenerate Mason's and Herald's `project-context.md` in place
+  - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`;
+- **CAP-73 — `PROJECTS.md` Dream-pointer fix** ← spec-bmad-output-hygiene CAP-7 (shipped 2026-09-16)
+  - **intent:** In `_bmad-output/PROJECTS.md`'s Projects table, repoint mason's
+  - **success:** Both pointers resolve to an existing `type: dream` file that is
+- **CAP-74 — marshal-brief layout fix** ← spec-bmad-output-hygiene CAP-9 (shipped 2026-09-16)
+  - **intent:** `product-brief-pyforge-marshal.md` is marshal's genuine, sole
+  - **success:** File lives at the sharded path; no remaining reference to the
+- **CAP-75 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-1
+  - **intent:** One shared verification primitive — `verify_scope(root, expected_slug) -> None |
+  - **success:** With marker and both symlinks all pointing at slug B, `verify_scope(root, "A")`
+- **CAP-76 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-2
+  - **intent:** BOTH existing guards are replaced by consumption of the primitive —
+  - **success:** Exactly one implementation of the triangle check exists in the repo; both callers
+- **CAP-77 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-3
+  - **intent:** Drift is a hard failure everywhere. `bmad-switch --current` exits non-zero on
+  - **success:** On a deliberately desynced tree, `scripts/bmad-switch --current` exits non-zero
+- **CAP-78 — from spec-cursor-native-tier-map** ← spec-cursor-native-tier-map CAP-1
+  - **intent:** All eight stations' `model_tier_map` easy/medium/heavy
+  - **success:** `parse_stage_entry` on each stage yields
+- **CAP-79 — from spec-cursor-native-tier-map** ← spec-cursor-native-tier-map CAP-2
+  - **intent:** The fail-safe stays: a Cursor-catalogued model is never
+  - **success:** Existing provider-mismatch tests remain green.
+- **CAP-80 — one resolver, one override table** ← spec-dashboard-project-path-derivation CAP-1
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-81 — `PROJECT_SOURCES` is derived, not declared** ← spec-dashboard-project-path-derivation CAP-2
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-82 — resolution ships in `data.js`; the JS never re-derives** ← spec-dashboard-project-path-derivation CAP-3
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-83 — an unresolvable slug fails loud** ← spec-dashboard-project-path-derivation CAP-4
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-84 — wall-clock fallback derivation** ← spec-dashboard-velocity-captures-hand-driven-work CAP-1 (shipped 2026-09-09)
+  - **intent:** The dashboard generator derives a wall-clock duration for every `done` story
+  - **success:** After a local generate, doctor's 8.1–8.4 carry timing marks derived from
+- **CAP-85 — fidelity is visible, never blended** ← spec-dashboard-velocity-captures-hand-driven-work CAP-2 (shipped 2026-09-09)
+  - **intent:** A wall-clock-derived mark is visually and textually distinguished from
+  - **success:** On a line mixing both classes, a reader can tell each story's metric class
+- **CAP-86 — the coverage caption partitions by true reason** ← spec-dashboard-velocity-captures-hand-driven-work CAP-3 (shipped 2026-09-09)
+  - **intent:** The coverage statement stops lumping every unmeasured story under "predates
+  - **success:** For a line containing hand-driven stories, the rendered caption names each
+- **CAP-87 — from spec-dispatch-tier-routing-fails-safe** ← spec-dispatch-tier-routing-fails-safe CAP-1 (shipped 2026-09-12)
+  - **intent:** The tier-routing resolver never writes a dev/review stage model override
+  - **success:** A synthetic fixture whose `model_tier_map` stage candidate names a model
+- **CAP-88 — from spec-dispatch-tier-routing-fails-safe** ← spec-dispatch-tier-routing-fails-safe CAP-2 (shipped 2026-09-12)
+  - **intent:** Fleet-wide, `model_tier_map`'s heavy/medium/easy `dev`/`review` entries
+  - **success:** Re-running the same direct `resolve_tier_launch` / `render_policy_toml`
+- **CAP-89 — from spec-durable-runs** ← spec-durable-runs CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-90 — from spec-durable-runs** ← spec-durable-runs CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-91 — from spec-durable-runs** ← spec-durable-runs CAP-5 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-92 — from spec-durable-runs** ← spec-durable-runs CAP-6 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-93 — local status sync** ← spec-factory-console CAP-1 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-94 — hands-off CI refresh** ← spec-factory-console CAP-2 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-95 — Dreamscape scan** ← spec-factory-console CAP-3 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-96 — stable data contract** ← spec-factory-console CAP-4 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-97 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-98 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-99 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-100 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-6 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-101 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-9 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-102 — orchestrated chain regeneration** ← spec-fleet-chain-completeness CAP-1
+  - **intent:** From a consolidated Dream, run the full planning chain in sequence via
+  - **success:** a single invocation against a consolidated Dream produces a coherent
+- **CAP-103 — code-status preservation** ← spec-fleet-chain-completeness CAP-2
+  - **intent:** Regenerating the planning chain does not clobber existing Code implementation
+  - **success:** re-running the workflow against an already-partially-implemented project
+- **CAP-104 — chain-completeness audit mode** ← spec-fleet-chain-completeness CAP-3
+  - **intent:** A verify-only pass, independent of regeneration, answers whether a project's
+  - **success:** run in audit mode against any of the 8 PyForge stations and get a pass/fail
+- **CAP-105 — orphan detection with review-gated cleanup** ← spec-fleet-chain-completeness CAP-4
+  - **intent:** Identify artifacts the regenerated chain no longer references — old spec
+  - **success:** after a consolidation run, the operator sees a named orphan manifest
+- **CAP-106 — configurable per-project invocation** ← spec-fleet-chain-completeness CAP-5
+  - **intent:** `project_slug`, `dream_path`, `chain_mode` (`full` default | `minimal`),
+  - **success:** the same workflow definition runs unmodified against any of the 8 stations by
+- **CAP-107 — The operating-model standard is 6.12-accurate, and derives what it can** ← spec-fleet-consistency-standard CAP-1 (shipped 2026-09-09)
+  - **intent:** A reader of the standard can trust every skill name, script path and file reference in it, and the parts that restate machine-readable facts are gone rather than maintained by hand.
+  - **success:** `EXEMPLAR-STANDARD.md` names no skill, script or path that does not resolve on disk; its 16-stage skill-mapping table and its dated conformance-status snapshots are removed (the first restates BMAD's own skill set, the second is a hand-derived measurement a detector produces); INV-0..INV-5, the eleven-row conformance table, the kernel/companion rule and the provenance rules survive intact; the file keeps its path, because `pixi.toml`'s `dream-chain` detector names it as its `Contract:`.
+- **CAP-108 — One test-suite vocabulary across the fleet** ← spec-fleet-consistency-standard CAP-2 (shipped 2026-09-09)
+  - **intent:** A test file's directory tells any reader and any tool which suite it belongs to, using the same three names at every station.
+  - **success:** Every station's tests resolve to `unit/`, `integration/` or `meta/` (plus a non-collected `fixtures/`, and `conftest.py` at the tests root); `conformance/`, `contract/`, `oracle/` and the loose root-level test files are gone; `marshal/support/` is renamed `_support/` so it stops matching suite globs; `run_station_coverage_gate.py`'s suite map needs no per-station special case; and each station's own suite passes after its move.
+- **CAP-109 — No artifact survives that the toolchain no longer produces** ← spec-fleet-consistency-standard CAP-3 (shipped 2026-09-09)
+  - **intent:** The planning tree contains only artifacts something still generates or a human still maintains, so a reader never has to guess whether a stale file is authoritative.
+  - **success:** All eight `epics-with-stories.md` are retired, their normative content rehomed first (steward's suite-shape mandate at `epics-with-stories.md:61` is known; the other seven are audited before deletion); the four code references are removed (`hygiene_definitions.py` allowlist entry, `deps.py` and `dispatch_fleet.py` exclusions, `bmad_tea_playwright.py` fallback); no station README still points at one.
+- **CAP-110 — Artifact naming is machine-classifiable** ← spec-fleet-consistency-standard CAP-4 (shipped 2026-09-09)
+  - **intent:** Every planning artifact matches the classifier that governs it, so pointing a detector at a new station reports real findings rather than false `uncovered` noise.
+  - **success:** Every `implementation-readiness-report-*` uses the hyphenated ISO form `bmad_drift_check.py` matches; `bmad-drift` reports zero `uncovered` files when run against any station, not only pyforge-marshal.
+- **CAP-111 — The declared Python floor equals the tested floor** ← spec-fleet-consistency-standard CAP-5 (shipped 2026-09-09)
+  - **intent:** A package's `requires-python` states what is actually exercised, not an aspiration nothing runs.
+  - **success:** All ten packages declare `>=3.14`, matching `pixi.toml`'s `python = ">=3.14.7,3.14.*"` and every env-scoped `3.14.*` pin; no package claims support for an interpreter no environment in this repo installs.
+- **CAP-112 — Governance docs cannot go stale silently** ← spec-fleet-consistency-standard CAP-6 (shipped 2026-09-09)
+  - **intent:** When a skill is renamed, a script retired or a path moved, the governance documents that reference it fail a check instead of quietly misleading readers for months.
+  - **success:** A detector resolves every `bmad-*` skill name, script path and file reference in `EXEMPLAR-STANDARD.md`, `AGENTS.md`, `CLAUDE.md` and `docs/reference/test-charter.md`, and exits non-zero naming each reference that no longer resolves; it is discovered by `scripts/detectors.py` and has its own pixi task; run against the pre-CAP-1 standard it reports all seven of this session's staleness findings.
+- **CAP-113 — from spec-fleet-status-supervisor-fallback** ← spec-fleet-status-supervisor-fallback CAP-1 (shipped 2026-09-16)
+  - **intent:** When `supervisor_alive is False`, `derive_home_state`'s caller consults a
+  - **success:** Reproducing the 2026-08-11 scenario (a run resumed with no supervisor
+- **CAP-114 — from spec-fleet-status-supervisor-fallback** ← spec-fleet-status-supervisor-fallback CAP-2 (shipped 2026-09-16)
+  - **intent:** The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead)
+  - **success:** An operator or an automated `fleet-picture` consumer can tell the two cases
+- **CAP-115 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-1 (shipped 2026-09-16)
+  - **intent:** Merge `epics-genesis-installer.md`'s content into one combined
+  - **success:** Single `epics.md` file; `epics-genesis-installer.md` archived
+- **CAP-116 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-2 (shipped 2026-09-16)
+  - **intent:** Produce one contiguous functional-requirement numbering space via
+  - **success:** Every FR in the regenerated PRD uses the dashed `FR-N` form,
+- **CAP-117 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-3 (shipped 2026-09-16)
+  - **intent:** Decide what happens to each installer-only namespace —
+  - **success:** `grep` for the old bare forms across live planning-artifacts
+- **CAP-118 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-4 (shipped 2026-09-16)
+  - **intent:** Decide the CLI-framework contradiction instead of carrying it
+  - **success:** The regenerated architecture states which framework the unified
+- **CAP-119 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-5 (shipped 2026-09-16)
+  - **intent:** Resolve the `init`/`check` verb collisions between Marshal's
+  - **success:** The regenerated PRD names one verb surface — either one verb
+- **CAP-120 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-6 (shipped 2026-09-16)
+  - **intent:** Remove every "Satellite: Genesis Installer PRD/Architecture"
+  - **success:** `grep -i "genesis.installer"` across the regenerated
+- **CAP-121 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-7 (shipped 2026-09-16)
+  - **intent:** Update the dashboard so the build-campaign section shows exactly
+  - **success:** `pyforge.doctor.sources.fleet_scan`'s `IMPL_CAMPAIGN` has one marshal
+- **CAP-122 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-8 (shipped 2026-09-16)
+  - **intent:** Preserve already-landed story identity through the rewrite —
+  - **success:** Every story key with `status=done` before the rewrite has the
+- **CAP-123 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-1 (shipped 2026-09-16)
+  - **intent:** An operator who requests `scm.max_parallel > 1` is told the request is inert,
+  - **success:** Setting `max_parallel > 1` in a project's policy produces a registered
+- **CAP-124 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-2 (shipped 2026-09-16)
+  - **intent:** The `bmad_loop` parallel-fan-out gap is tracked in the same upstream-contribution
+  - **success:** `upstream-register.json` carries an entry for this gap (id, gap description,
+- **CAP-125 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-3 (shipped 2026-09-16)
+  - **intent:** Marshal's own readiness for N-stories-in-flight — worktree isolation, the shared
+  - **success:** A written readiness assessment exists, naming what already holds (e.g.
+- **CAP-126 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-1 (shipped 2026-09-09)
+  - **intent:** ONE shared grammar of landing-evidence shapes — merge-subject templates,
+  - **success:** The grammar recognizes, as written (or via the one-time reviewed allowlist of the
+- **CAP-127 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-2 (shipped 2026-09-09)
+  - **intent:** Doctor-side adoption — `story-status`'s evidence routes (`sources/marshal.py:
+  - **success:** On the live repo, the three standing `story-status` false positives (marshal 8-2,
+- **CAP-128 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-3 (shipped 2026-09-09)
+  - **intent:** Marshal-side adoption — the promotion classifiers (`core/promotion.py:93-107`),
+  - **success:** MRS-STATUS-010's UNCONFIRMED pile shrinks from 26 to only genuinely-unlanded
+- **CAP-129 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-4 (shipped 2026-09-09)
+  - **intent:** Story 20.9's own doctor-side adoption of the grammar was incomplete in two ways,
+  - **success:** All 25 standing false positives (doctor 6 stories, marshal 10, mason 7, steward 2
+- **CAP-130 — from spec-library-catalog-manifest-sync** ← spec-library-catalog-manifest-sync CAP-1 (shipped 2026-09-12)
+  - **intent:** Root `pixi.toml` and `docs/reference/library-llms-full.md` document the seven
+  - **success:** `pixi run -e local-recipes llms-full-check` exits 0; each of the seven appears
+- **CAP-131 — from spec-library-catalog-manifest-sync** ← spec-library-catalog-manifest-sync CAP-2 (shipped 2026-09-12)
+  - **intent:** `scripts/llms_full_check.py`'s dependency walk also covers every
+  - **success:** A synthetic station-manifest entry that is not mirrored in root `pixi.toml` or
+- **CAP-132 — fleet-wide staleness detection** ← spec-loop-home-fleet-refresh CAP-1
+  - **intent:** For every discovered loop-home (derived from the filesystem/`marshal homes`
+  - **success:** run against today's fleet state (all homes pinned 227 commits back) and every
+- **CAP-133 — automated fast-forward and push, with a clean-worktree safety check** ← spec-loop-home-fleet-refresh CAP-2
+  - **intent:** For each stale home whose root checkout passes the safety checks (working tree
+  - **success:** run against 9 clean-but-stale homes and all 9 end fast-forwarded and pushed,
+- **CAP-134 — policy re-render as a checked step of the same refresh** ← spec-loop-home-fleet-refresh CAP-3
+  - **intent:** After a home's fast-forward (or when CAP-1 flags its policy file
+  - **success:** delete a home's `policy.toml` and run the refresh: the file is back and
+- **CAP-135 — Re-preflight when the refuse predicate can change** ← spec-marshal-drain-self-resolution CAP-1 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-136 — Missing-spec escalates; never idle-with-backlog** ← spec-marshal-drain-self-resolution CAP-2 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-137 — Mechanical land-conflict union + local-clean when DIRTY** ← spec-marshal-drain-self-resolution CAP-3 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-138 — Push the dispatch branch before verify can strand it** ← spec-marshal-drain-self-resolution CAP-4 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-139 — Verify blast radius (`pre-existing-gate`)** ← spec-marshal-drain-self-resolution CAP-5 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-140 — Terminal overlay + stranded-work signal** ← spec-marshal-drain-self-resolution CAP-6 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-141 — Supervisor finalizes when the harness cannot run shell** ← spec-marshal-drain-self-resolution CAP-7 (shipped 2026-09-09)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-142 — the GitHub PR-merge pattern is scoped to `project_slug`** ← spec-marshal-land-cross-project-story-key-collision CAP-1 (shipped 2026-09-09)
+  - **intent:** `extract_story_key_from_github_merge_subject`'s branch-segment
+  - **success:** `merged_story_keys(subjects_from_main, template, 'mason')`
+- **CAP-143 — from spec-marshal-land-merge-subject** ← spec-marshal-land-merge-subject CAP-1 (shipped 2026-09-16)
+  - **intent:** `marshal land` renders the same templated merge subject `deploy land-story` already does (`identity.render_merge_subject(story_key, template)`, AD-24) and applies it to the GitHub merge, instead of leaving GitHub to auto-generate one.
+  - **success:** `marshal_native_merged_keys(subjects, template, project_slug)`, given a real subject string from a `marshal land`-driven merge, classifies it as native — the same outcome it already produces for a `deploy land-story` merge.
+- **CAP-144 — `** ← spec-marshal-launch-environment-integrity CAP-1 (shipped 2026-09-11)
+  - **intent:** Reuse `cli/dispatch.py`'s `station_in_flight_conflict` check (a narrowed call,
+  - **success:** A fixture reproduces the exact 2026-09-10 race (two spin calls six seconds
+- **CAP-145 — A** ← spec-marshal-launch-environment-integrity CAP-2 (shipped 2026-09-11)
+  - **intent:** The supervisor's own poll loop commits a local-only `wip: <story>
+  - **success:** A fixture simulating a mid-session crash after the checkpoint fires asserts the
+- **CAP-146 — `** ← spec-marshal-launch-environment-integrity CAP-3 (shipped 2026-09-11)
+  - **intent:** A blocked story whose last recorded verdict shows zero git progress and zero
+  - **success:** A fixture reproduces one of each (a crashed-before-any-progress run, a real
+- **CAP-147 — T** ← spec-marshal-launch-environment-integrity CAP-4 (shipped 2026-09-11)
+  - **intent:** A dedicated fixture pins `fleet_picture.py`'s `main()` ATTENTION-block branch
+  - **success:** A station with `dispatch_phase` set and a `refused` verdict produces the
+- **CAP-148 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-1 (shipped 2026-09-09)
+  - **intent:** A **wave scheduler** on `factory drain` / fleet-supervisor ticks:
+  - **success:** With `max_parallel=2` and two ready stories whose surfaces are
+- **CAP-149 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-2 (shipped 2026-09-09)
+  - **intent:** **Narrow `station_in_flight_conflict()`** (22.5 refinement): refuse
+  - **success:** Story A with git-fact LIVE blocks story B only when B depends on
+- **CAP-150 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-3 (shipped 2026-09-09)
+  - **intent:** **`dispatch-wave` journal observability**: each wave records wave
+  - **success:** A two-member wave produces one journal intent with both keys;
+- **CAP-151 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-4 (shipped 2026-09-09)
+  - **intent:** **Explicit cap, default serial:** `dispatch.max_parallel` in
+  - **success:** Absent policy key and flag → serial. Policy `max_parallel=3`
+- **CAP-152 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-5 (shipped 2026-09-09)
+  - **intent:** **Compose with 28.12, do not duplicate:** ready-set and
+  - **success:** Ready-set computation is imported/shared with 28.12 tests; no
+- **CAP-153 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-6 (shipped 2026-09-09)
+  - **intent:** Factory fan-out gets its **own `dispatch.max_parallel` policy key**, resolved
+  - **success:** A station declaring `dispatch.max_parallel = N` forms waves of up to N with no
+- **CAP-154 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-1
+  - **intent:** An operator (or any caller of marshal's CLI) can run `marshal watch` against one
+  - **success:** `marshal watch --project <slug> --run <run_id>` (bmad-loop pattern) and `marshal
+- **CAP-155 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-2
+  - **intent:** `marshal watch` never conflates a live `bmad-loop` run's per-story ground truth
+  - **success:** A test fixture where `marshal status --project <slug>`'s `dispatch_*` fields
+- **CAP-156 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-3
+  - **intent:** `marshal watch`'s report is reachable over `POST /stations/marshal/mcp` as a
+  - **success:** A new `@server.tool(...)`-registered tool in `django_marshal_portal/mcp_asgi.py`
+- **CAP-157 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-4
+  - **intent:** The `bmad-agent-marshal` persona can offer "watch a run" as a named menu action
+  - **success:** A menu entry exists in the persona's resolved `agent.menu` that, when selected,
+- **CAP-158 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-5
+  - **intent:** The report CAP-1 produces is viewable in the `django-marshal` browser portal,
+  - **success:** A new view + URL route in `django_marshal_portal` renders CAP-1's report for a
+- **CAP-159 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-1
+  - **intent:** An operator (or a fleet driver acting for one) can launch exactly one story
+  - **success:** Dispatching a backlog story provisions a fresh isolated worktree, launches
+- **CAP-160 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-2
+  - **intent:** The driver judges a dispatched session's completion or failure from git facts
+  - **success:** Two motivating traps are regression-pinned: (a) the driver awaiting a
+- **CAP-161 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-3
+  - **intent:** Verification is the product: before any landing, the driver itself runs the
+  - **success:** A story whose session self-reports shipped but whose gates fail or whose
+- **CAP-162 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-4
+  - **intent:** A verified story lands through the existing Epic 4 machinery — `marshal
+  - **success:** A dispatch-landed story is classified marshal-native by
+- **CAP-163 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-5
+  - **intent:** One story in flight per station, enforced: the driver refuses a second
+  - **success:** A second dispatch to a busy station is refused naming the in-flight story;
+- **CAP-164 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-6
+  - **intent:** The dispatched run survives its operator: detached-by-default (AD-22
+  - **success:** Killing the terminal that issued the dispatch leaves the session running; a
+- **CAP-165 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-8
+  - **intent:** The session-harness layer is adapter-plural and profile-driven: an ordered
+  - **success:** With cursor unauthenticated and claude authenticated, a dispatch launches
+- **CAP-166 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-7
+  - **intent:** Fleet-wide drain across all eight pyforge stations is a marshal-orchestrated
+  - **success:** An operator runs one documented command (provisional: `marshal factory
+- **CAP-167 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-9
+  - **intent:** CAP-2's `branch_merged` git fact is never true on ancestry alone.
+  - **success:** A dispatch's `branch_merged` fact reads `false` for as long as
+- **CAP-168 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-10
+  - **intent:** Station-scoped and sequence-scoped dispatch, both handed as an override to
+  - **success:** `--station` scopes one drain cycle to that station's next backlog story
+- **CAP-169 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-11
+  - **intent:** A story whose spec is `status: done` must not enter another
+  - **success:** Replaying the 41.2 / 13.2 fixtures (spec already `done`,
+- **CAP-170 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-12
+  - **intent:** CAP-3's bound verify command is a floor, not a ceiling: it
+  - **success:** A story whose diff touches only its own station's package
+- **CAP-171 — harness_run_id recovers via filesystem discovery** ← spec-marshal-status-harness-run-id-poisoning CAP-1 (shipped 2026-09-09)
+  - **intent:** A status read for a run whose journal-poll timed out (`harness_run_id: null`)
+  - **success:** Given a run whose journal entry has `harness_run_id: null` but whose
+- **CAP-172 — `MRS-STATUS-002` keeps firing correctly for genuinely unrecoverable cases** ← spec-marshal-status-harness-run-id-poisoning CAP-2 (shipped 2026-09-09)
+  - **intent:** A run whose directory truly cannot be found or read still reports `unknown`
+  - **success:** Given a run with no discoverable `.bmad-loop/runs/` directory at all (or an
+- **CAP-173 — from spec-marshal-templated-merge-subject-cross-project-collision** ← spec-marshal-templated-merge-subject-cross-project-collision CAP-1 (shipped 2026-09-11)
+  - **intent:** A templated-form merge subject is trusted as `project_slug`'s own merged key
+  - **success:** `merged_story_keys(subjects, template, 'pyforge-doctor', known_keys=...)` against
+- **CAP-174 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-1
+  - **intent:** A declared context pipeline: a `[context]` block in `EffectivePolicy`,
+  - **success:** Rendered output carries the block from one composition site; a run on
+- **CAP-175 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-2
+  - **intent:** Wire compression at the harness seam: when policy enables it, sessions
+  - **success:** The launched command is demonstrably wrapped; a compressed artifact is
+- **CAP-176 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-3
+  - **intent:** Output-compression seeding: Genesis deploys the caveman skill per loop home
+  - **success:** `marshal seed check` verifies deployment; a landed story's verdict and
+- **CAP-177 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-4
+  - **intent:** Structure from the graph: loop-home provisioning builds/syncs the codegraph
+  - **success:** Seed check proves the index present and fresh at admission; a session
+- **CAP-178 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-5
+  - **intent:** Incremental derived context: epic-context / continuity distills become
+  - **success:** Unchanged sources yield zero recompute across two consecutive iterations; a
+- **CAP-179 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-6
+  - **intent:** Planning-graph retrieval: story routing retrieves the scoped planning
+  - **success:** An epic-path iteration completes within the epic-context token target with
+- **CAP-180 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-7
+  - **intent:** Savings telemetry: the supervisor journals per-story spend AND per-layer
+  - **success:** Journal entries carry savings fields; status shows them while a run is
+- **CAP-181 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-8
+  - **intent:** A graduated compression ladder: as a story approaches its token ceiling the
+  - **success:** A test proves ladder ordering — compression escalation strictly precedes
+- **CAP-182 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-9
+  - **intent:** A measured baseline: a pinned, re-runnable benchmark (same story, layers on
+  - **success:** The benchmark artifact reproducibly emits the comparison; ceiling
+- **CAP-183 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-10
+  - **intent:** Index freshness is an admission signal: `marshal check` gains advisory
+  - **success:** A stale index yields a named finding; the exit-code domain
+- **CAP-184 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-11
+  - **intent:** A declared model-cost catalog: policy carries a price table (per
+  - **success:** Journals, `marshal status`, and the benchmark artifact show dollar
+- **CAP-185 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-12
+  - **intent:** Difficulty tiers route across providers and pools: the `model_tier_map`
+  - **success:** A declared difficulty demonstrably launches different provider/model pairs
+- **CAP-186 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-13
+  - **intent:** Graph-node staleness flag: `compile_graph` (Scribe's own compile-step,
+  - **success:** A node whose source changed since compile with no declared supersession is
+- **CAP-187 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-14
+  - **intent:** `factory drain` (no caller-supplied `--stories`) derives dispatch order
+  - **success:** A station whose backlog has a cross-epic dependency (verified:
+- **CAP-188 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-15
+  - **intent:** A dispatch ended by an external stop (SIGTERM outside marshal's own
+  - **success:** An externally-stopped story is not journaled `MRS-DRAIN-005 failed`; it
+- **CAP-189 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-16
+  - **intent:** `policy_surface` resolution (feeding AD-27's existing narrow-only
+  - **success:** A story touching only files under its own station's package tree and the
+- **CAP-190 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-17
+  - **intent:** A policy-declared, per-station scope-violation enforcement mode with three
+  - **success:** A station with no mode declared runs `warn` (visible, non-blocking) — the
+- **CAP-191 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-18
+  - **intent:** One publisher: marshal publishes bmad-loop/dispatch run state *and* CAP-7's
+  - **success:** marshal imports `django_pyforge` in exactly one publisher module (today it
+- **CAP-192 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-19
+  - **intent:** One substrate, many harnesses (the session-path fold, primary — the
+  - **success:** A bare clone plus one bootstrap command reaches the same substrate
+- **CAP-193 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-20
+  - **intent:** Silent saves — a repo default that no-ops honestly.
+  - **success:** A fresh loop home with zero station config journals the
+- **CAP-194 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-21
+  - **intent:** Marshal is the execution front door. The docs rule (AGENTS.md /
+  - **success:** The front-door rule is written where an agent actually reads it;
+- **CAP-195 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-22
+  - **intent:** The session path — dispatch measured, interactive documented.
+  - **success:** The interactive path is one documented invocation, not a
+- **CAP-196 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-23
+  - **intent:** Per-layer benchmark legs with cache-hit rates.
+  - **success:** A named story runs one leg per layer; each artifact reports
+- **CAP-197 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-24
+  - **intent:** The multi-harness matrix tells the truth, per currency. Correct
+  - **success:** The matrix records each harness × layer × binding currency;
+- **CAP-198 — Verify-refusal terminalization (supervisor)** ← spec-marshal-verify-fail-terminalization CAP-1 (shipped 2026-09-09)
+  - **intent:** When `session_alive == false`, independent verify outcome is
+  - **success:** Fixture: dead session + journaled verify refuse + WIP commit →
+- **CAP-199 — Transient auto-redispatch (fleet drain, compose with hotfix)** ← spec-marshal-verify-fail-terminalization CAP-2 (shipped 2026-09-09)
+  - **intent:** After CAP-1, `classify_dispatch_block` (existing hotfix) treats
+  - **success:** Integration test or documented cycle: failed+preserve run →
+- **CAP-200 — Observability** ← spec-marshal-verify-fail-terminalization CAP-3 (shipped 2026-09-09)
+  - **intent:** `marshal status` / completion payload names
+  - **success:** Journal observation entry or completion payload includes failed
+- **CAP-201 — worktree-aware `bmad-switch`** ← spec-multi-loop-isolation CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-202 — `bmad-loop-worktree` provisioner** ← spec-multi-loop-isolation CAP-2 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-203 — isolation verification** ← spec-multi-loop-isolation CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-204 — from spec-one-front-door** ← spec-one-front-door CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-205 — from spec-one-front-door** ← spec-one-front-door CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-206 — from spec-one-front-door** ← spec-one-front-door CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-207 — from spec-one-front-door** ← spec-one-front-door CAP-5 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-208 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-209 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-2 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-210 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-211 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-212 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** Something observes git (repository fact) plus existing spec/story-identity
+  - **success:** Given a story merged to the integration branch with no corresponding
+- **CAP-213 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-2 (shipped 2026-09-09)
+  - **intent:** A detected non-loop completion is folded into the tracked ledger -- the
+  - **success:** `marshal status` / the fleet dashboard shows a quick-dev'd story as `done`
+- **CAP-214 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-3 (shipped 2026-09-09)
+  - **intent:** A quick-dev'd story's spec receives the same durability guarantee Story 4.1
+  - **success:** A quick-dev'd story's spec, once its story is detected as done, is
+- **CAP-215 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-4 (shipped 2026-09-09)
+  - **intent:** An operator can hand-pick any backlog story for `bmad-quick-dev` while that
+  - **success:** Reconciling a quick-dev completion around a live, unrelated loop run neither
+- **CAP-216 — surface-manifest convention** ← spec-regenerable-factory CAP-1 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-217 — backfill waves** ← spec-regenerable-factory CAP-2 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-218 — repo-wide surface checker** ← spec-regenerable-factory CAP-3 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-219 — regeneration drill** ← spec-regenerable-factory CAP-4 (shipped 2026-09-16)
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-220 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-1
+  - **intent:** A story is classified into a review weight before review runs, mechanically,
+  - **success:** Given a story's declaration and its observed diff, the classification
+- **CAP-221 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-2
+  - **intent:** Review depth/cost varies by weight without ever skipping the independent
+  - **success:** A test proves the reviewer runs on every story regardless of weight, and that
+- **CAP-222 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-3
+  - **intent:** `deferred-work-check`'s full-capture guarantee holds at every tier -- a
+  - **success:** A regression test reproduces the `DW-AD23-3` shape (a follow-up recommended
+- **CAP-223 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-4
+  - **intent:** The tier a story's review ran at, and why, is visible in the same
+  - **success:** The envelope for any evaluated story carries its review-weight tier and the
+- **CAP-224 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-1
+  - **intent:** The host holds a run it does not own — the supervisor store accepts, keeps
+  - **success:** An externally published run stays `running` across its heartbeats and is
+- **CAP-225 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-2
+  - **intent:** A published external run is attributable to a verified subject — the
+  - **success:** A publish without a verifiable assertion is refused and leaves no row; a
+- **CAP-226 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-3
+  - **intent:** The deployed proof is exercised and recorded — CAP-17's success criterion runs
+  - **success:** The mechanism tier gates in `platform-ci-local --test` (publish, exit, re-query
+- **CAP-227 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-4
+  - **intent:** No run-state read from a home directory remains in the fleet — every read of
+  - **success:** A kind-aware guard over non-test code matches the `.bmad-loops` literal and the
+- **CAP-228 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-5
+  - **intent:** The operator's bearer reaches the publisher by reference, and marshal is a
+  - **success:** `pyforge login` writes the bearer file with owner-only permissions and nothing
+- **CAP-229 — promotion runs on landing, not on memory** ← spec-sprint-status-auto-promote CAP-1
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-230 — staleness is detectable on its own** ← spec-sprint-status-auto-promote CAP-2
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-231 — the check is real, never approximated** ← spec-sprint-status-auto-promote CAP-3
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-232 — never races the orchestrator** ← spec-sprint-status-auto-promote CAP-4
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-233 — promotion never writes the operator checkout** ← spec-sprint-status-auto-promote CAP-5
+  - **intent:** (see absorbed Spec memlog)
+  - **success:** (see absorbed Spec memlog)
+- **CAP-234 — from spec-sprint-status-promotion-regression-guard** ← spec-sprint-status-promotion-regression-guard CAP-1 (shipped 2026-09-16)
+  - **intent:** An operator promoting Tier-3 status into the tracked ledger can trust that any
+  - **success:** Given a tracked-ledger key whose status is `done` and whose Tier-3 twin holds
+- **CAP-235 — b** ← spec-surface-drift-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** An operator settles one spec's baseline without accepting any other spec's pending drift.
+  - **success:** `--write-baseline --spec NAME` merges only that spec's entry into the committed baseline and leaves every other entry byte-identical; an unknown spec name exits 2 with the known names listed; unscoped `--write-baseline` still works and states in its own help text that it accepts every other spec's pending drift.
+- **CAP-236 — a** ← spec-surface-drift-reconciliation CAP-2 (shipped 2026-09-09)
+  - **intent:** A memlog entry stops speaking for governed files it never mentions, so unrelated activity cannot launder pending drift.
+  - **success:** With a spec's memlog moved, a drifted file **named** in that memlog clears while an **unnamed** one reports `[drift-presumed]`; appending an unrelated memlog entry no longer changes the verdict for an untouched governed file (the live 63 → 61 laundering no longer reproduces).
+- **CAP-237 — t** ← spec-surface-drift-reconciliation CAP-3 (shipped 2026-09-09)
+  - **intent:** An operator can act on the verdict because every finding is dispositioned rather than carried.
+  - **success:** Each of the 24 `[no-baseline]` scoped-stamped; each of the 34 `[drift]` either genuinely reconciled through its spec or scoped-stamped with the reasoning recorded in that spec's memlog; both `[ungoverned]` files given a surface or allowlist entry; the one `[stale-allowlist]` pattern removed. Anything that cannot be honestly cleared is filed as deferred work with its reason, never suppressed.
+- **CAP-238 — t** ← spec-surface-drift-reconciliation CAP-4 (shipped 2026-09-09)
+  - **intent:** Neither fix can silently regress into the blanket behavior it replaces.
+  - **success:** Both are mutation-tested **both ways** — removing `--spec` scoping re-reds the isolation test, and restoring the per-spec short-circuit re-reds the laundering test — and `spec-surface-check` exits 0 on `main`.
+- **CAP-239 — t** ← spec-surface-drift-reconciliation CAP-7 (shipped 2026-09-09)
+  - **intent:** bmad-loop names the governed paths it changed in the owning Spec's memlog as part of the story, so the spec-surface gate stops being a tax paid by whoever lands the work.
+  - **success:** A loop-produced story that changes governed files leaves that Spec's `.memlog.md` naming each changed path before the story is marked complete; `spec-surface-check` is green on the loop's own station branch without a human editing a memlog; a story that changes NO governed file writes nothing (silence is not a finding); and the reconciliation is per-file naming under S-13.2's rule, never a blanket stamp — the loop must not be handed `--write-baseline`.
+- **CAP-240 — t** ← spec-surface-drift-reconciliation CAP-6 (shipped 2026-09-09)
+  - **intent:** The 994 `[drift-presumed]` entries CAP-2 made visible are dispositioned, so the informational channel stays small enough to read and a new entry means something.
+  - **success:** Every presumed entry is traced to the commit that last moved it and partitioned — `added` (baseline lag) vs `changed` (the per-file question) — with each cluster judged against its Spec's own capabilities and the judgment recorded in that Spec's memlog before any stamp; anything moved by a story that is **not** `done`, or landing outside a contracted capability, is reported rather than stamped; the four Specs are then scoped-stamped individually and `spec-surface-check` reports **0 findings and 0 `[drift-presumed]`**, with a before/after diff proving no gating `[drift]` was absorbed.
+- **CAP-241 — a** ← spec-surface-drift-reconciliation CAP-5 (shipped 2026-09-09)
+  - **intent:** A Spec that declares a `surface:` but has no `.memlog.md` stops being silently drift-blind — its contract hash is `""`, so the contract can never move and the "reconcile the spec" remedy the detector prints is unreachable.
+  - **success:** A spec that governs ≥1 tracked file under the default `surface-drift: memlog` mode with no `.memlog.md` reports a **gating** `[drift-blind]` finding naming the spec, its governed count, and the path the memlog belongs at; a spec governing zero files, an `exempt` spec, and a `sentinel:` spec each report nothing (their contracts cannot go blind); the 7 live instances (396 governed files) are dispositioned by creating each memlog **and** scoped-stamping its baseline in the same change, verified by a before/after diff showing no `[drift]` moved to `[drift-presumed]`; mutation-tested both ways — removing the check re-greens a fixture whose memlog was deleted, restoring it re-reds.
+- **CAP-242 — from spec-surface-overlap-tolerance** ← spec-surface-overlap-tolerance CAP-1
+  - **intent:** A file governed by multiple specs is `drift-presumed`/`drift` only when
+  - **success:** A synthetic fixture with two specs governing the same file, where one
+- **CAP-243 — from spec-surface-overlap-tolerance** ← spec-surface-overlap-tolerance CAP-2
+  - **intent:** A genuinely unreconciled change is still caught exactly as today — this
+  - **success:** The existing `spec-surface-check` test suite's single-owner drift/
 
 ## Constraints
 

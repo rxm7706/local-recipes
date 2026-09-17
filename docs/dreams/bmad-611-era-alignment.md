@@ -2,8 +2,11 @@
 title: PyForge's artifacts, patterns, and station code stay aligned to the installed BMAD era — 6.12 today, v7-ready tomorrow
 type: dream
 owner: marshal
-status: realized   # 2026-08-24 — the 6.11 round shipped (marshal Epic 25, 7/7 done). Perpetual: every BMAD-era shift reopens a round under the same Spec — 6.12.0 (released 2026-09-04) minted CAP-8..11 on 2026-09-05, awaiting decomposition
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-marshal]]** on 2026-09-16 (one-chain-per-station CAP-8 pilot; folded from `bmad-611-era-alignment`).
 
 # PyForge's artifacts, patterns, and station code stay aligned to the installed BMAD era
 

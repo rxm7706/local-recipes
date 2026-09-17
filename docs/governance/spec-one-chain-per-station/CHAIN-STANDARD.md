@@ -139,15 +139,27 @@ A planning artifact never waits on code to conform.
    old → new key (stories, CAPs, DW ids, rule ids).
 2. `spec-pyforge-<s>/SPEC.md` at `ready`; `covers-dreams:` lists every folded
    Dream; CAPs sequential from 1 with `← spec-old CAP-m` provenance lines.
-3. Every absorbed Spec folder: pointer header + its memlog, nothing else.
+3. Every absorbed Spec folder: pointer header + its memlog + **every
+   companion document it had**. Companions (inventories, whitepapers,
+   audit methods, verification records, playbooks) are *record*, not
+   derived bodies; one moves only with a memlog line naming its new path
+   and is never deleted. (Marshal pilot, lesson 15: this line read
+   "nothing else" and 24 companions were lost to it before review.)
 4. Every folded Dream: `status: archived`, `Consolidated into` banner.
 5. `epics.md`: `## Epic E` sequential from 1; `### Story E.S` sequential;
    ledger regenerated through the map — zero `done → not-done` transitions.
 6. Story spec files renamed to `spec-<key>.md`; zero spelling divergences.
+   `deferred-work-ledger.md` rows citing a renamed file are **re-pointed
+   through the map** (`source_spec:`, `location:`) — never re-ingested with
+   `deferred_work_intake.py --fix`, which appends a duplicate row per
+   fingerprint (pilot lesson 16).
 7. PRD re-derived; every FR cites a CAP (`fr-without-cap` green).
 8. `dream-chain`, `dreams-hygiene`, `chain-completeness`, `spec-surface`,
    `story-status`, `ledger-regression`, `status-body-consistency`,
-   `chain-sprawl` — all green on the PR head.
+   `chain-sprawl`, `deferred-work`, `bmad-drift` — all green on the PR head,
+   **proved by a local `detectors-ci` run**: the CI `detectors` check is
+   advisory (findings print as warnings, the step exits 0), so its green is
+   not evidence (pilot lesson 17).
 9. `spec-foundry-regenerate-not-fold` memlog entry naming the folded Spec
    (CAP-7), before the *next* station begins.
 
