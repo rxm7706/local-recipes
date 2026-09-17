@@ -233,9 +233,11 @@ marp-regenerated export, doesn't reach these `project/` trio files) to project
 | `PyForge Unifying Strategy - Infographic.dc.html` | 236,873 | `1789635964472308` | identical ✓ |
 
 Under the 256 KiB `read_file` cap, so a single call plus entity-decoded SHA-256 comparison is the
-read-back proof. `deck-facts pyforge-unifying-strategy --check` still reads 0 mismatch (the
-pre-existing `3 unmarked … facts 4/7` state is `DW-VOCAB-2026-09-14-3`, unaffected by this push —
-see the 2026-09-15 entry above). DW-4 remains open (`no <section class="sec"> elements found` —
+read-back proof. `deck-facts pyforge-unifying-strategy --check` still reads 0 mismatch today
+(re-run live: `33 unmarked, 0 mismatch, 11 drifted, 0 unsourced, 26 unshown; facts 25/58` --
+`facts.yaml`'s own coverage has grown since the 2026-09-15 entry's `4/7` snapshot above, which is
+now stale and left as a historical record rather than corrected; the `unmarked`/`DW-VOCAB-2026-09-14-3`
+condition it describes is unaffected by this push either way). DW-4 remains open (`no <section class="sec"> elements found` —
 pre-existing, out of this story's Code Map): the pre-existing `- Infographic Deck.dc.html` on
 disk was never re-derived and stays untouched, so there is nothing new to push for it. The head
 is fully synced (disk = Design, byte-identical); the deck's gap is DW-4, not a push gap.
