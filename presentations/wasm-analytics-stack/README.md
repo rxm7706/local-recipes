@@ -1,8 +1,8 @@
 # Wasm Analytics Stack deck (`wasm-analytics-stack`)
 
-**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.7). **Story 21.7 BLOCKED 2026-09-17: the standalone poster is
-corrupted at the source (see Ledger below) and the corruption has already been pushed to the live
-Design project — do not treat the push as a success.** Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.7). **Story 21.7 FIXED 2026-09-17: the 2026-09-15 rebuild was
+corrupted at the source (see Ledger below); the standalone poster has been rewritten with real
+content and re-pushed to Design, byte-exact, overwriting the corrupted copy.** Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
 product** deck (not a persona chapter); Dream: `docs/dreams/wasm-analytics-stack.md`. Spec:
 `_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
@@ -71,25 +71,40 @@ Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 The three non-prototype `.dc.html` artifacts (exec summary, infographic, infographic deck) and the
 standalone live in git only so far — seed them on the next Design pass if they need visual editing.
 
-## Ledger — 2026-09-15 Wave C local rebuild (Story 21.7)
+## Ledger — 2026-09-15 Wave C local rebuild, fixed 2026-09-17 (Story 21.7)
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `Wasm Analytics Stack Infographic standalone.html` | 145188 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 58/58 | `1789639734959225` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; `poster_last_commit_date` unshown. **CORRUPTED — see 2026-09-17 note below; the etag above is the corrupted content, do not treat this row as a clean push.** |
-| `facts.yaml` | 33 facts at tree `506ad58622` | — | spec_status omitted (SPEC archived under Atlas); no package/CLI rows |
+| `Wasm Analytics Stack Infographic standalone.html` | 91427 B · 21 sections · 6 acts · 3 SVG · 13 tables · facts 30/30 | `1789646107497288` | rendered 2026-09-17, page 19612 px at 1240 px; 0 unmarked / 0 mismatch; re-pushed, read back and SHA-256-verified byte-exact (`fc5ac86a...6b63641`). |
+| `facts.yaml` | 33 facts at tree `506ad58622` | — | spec_status omitted (SPEC archived under Atlas); no package/CLI rows; untouched by the 21.7 fix |
 | `Wasm Analytics Stack.dc.html` | 40573 B (unchanged prototype) | `1785023174376282` | already byte-identical on Design (seeded 2026-07-25); verified clean, re-confirmed via SHA-256 2026-09-17 |
 | `Wasm Analytics Stack - Executive Summary.dc.html` | 7919 B | `1785023556712367` | already byte-identical on Design; verified clean via SHA-256 2026-09-17 |
 | `Wasm Analytics Stack - Infographic.dc.html` | 18867 B | `1785023556712367` | already byte-identical on Design; verified clean via SHA-256 2026-09-17 |
 | `Wasm Analytics Stack - Infographic Deck.dc.html` | 22867 B | `1785023556712367` | already byte-identical on Design; verified clean via SHA-256 2026-09-17 |
 
-**2026-09-17 — Story 21.7 BLOCKED, do not resume as a normal push story.** The standalone poster
-above is corrupted at the source (committed `e483288d5`, 2026-09-15, predates this push work): from
-character offset 6344 through ~142980 of 145174, a boilerplate paragraph repeats 72 times with
-every character space-separated ("T h e   f a c t o r y..."), replacing real section content.
-`deck-facts --check` does not catch it (data-fact spans only, no prose-sanity check). This story's
-push ran before the corruption was discovered, so **the corrupted content is now live on the Design
-project** at the etag above, not merely at risk of it — re-verified by reading it back from Design
-directly. The other 4 `project/` files are clean and were already in sync, no push needed for them.
-Full writeup: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/.memlog.md`
-and deferred-work-ledger `DW-21-7-1`/`DW-21-7-2`. Sibling Story 21.9 (`presenton-pixi-image`, PR
-#1405) found the identical pattern from the same root commit and withheld its own push.
+**2026-09-17 — Story 21.7 FIXED.** The 2026-09-15 rebuild (committed `e483288d5`) was corrupted at
+the source: from character offset 6344 through ~142980 of 145174, a boilerplate paragraph repeated
+72 times, every character space-separated ("T h e   f a c t o r y..."), replacing real section
+content — `deck-facts --check` did not catch it (data-fact spans only, no prose-sanity check). That
+corrupted content had already been pushed to Design (etag `1789639734959225`) before the corruption
+was discovered.
+
+This pass replaced the entire corrupted span with real, subject-specific content sourced from the
+Dream, the folded Atlas Spec (CAP-27..31), and the archived pre-fold Brief/PRD/Architecture (two
+user journeys, the full glossary, kill criteria, the five-risk table, pinned stack versions, the
+Deferred list) — 21 sections, 6 acts, 3 inline SVGs, 13 tables, 91427 bytes, `deck-facts --check`
+0 unmarked / 0 mismatch (facts 30/30). Read back the full rebuilt file by eye and confirmed real,
+varied, structured content (no repeated sentence anywhere); rendered headless at 1240 px (19612 px
+full-page height) and visually inspected every section — no broken or empty regions. One bug from
+the rebuild itself (a stray duplicate `</p></section>` at the section-21/Creed seam) was found and
+fixed before pushing.
+
+Re-pushed to Design via `finalize_plan` + `write_files` (etag `1789639734959225` → `1789646107497288`),
+read back fresh via `read_file`, decoded the HTML-entity-escaped body, and confirmed SHA-256
+byte-exact match against the local file
+(`fc5ac86ad0264d8e082cbdc1646fc2a02b6cec6fa78e3c9e480b95742429f776`) — **the corrupted boilerplate
+pattern is confirmed absent from the re-read Design content.** The other 4 `project/` files were
+already clean and in sync, no push needed for them. Full writeup:
+`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-7-wasm-analytics-stack-rebuilt-to-the-standard.md`
+§ Completion. Sibling decks with the same root-commit corruption (Story 21.6 `unity-data-stack`,
+21.8 `deckcraft`, 21.9 `presenton-pixi-image`) are tracked separately and not touched by this pass.
