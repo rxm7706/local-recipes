@@ -2,8 +2,12 @@
 title: A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it
 type: dream
 owner: warden
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-warden]]** on 2026-09-17 (one-chain-per-station warden fold; folded from `compliance-factory-web-face`).
+
 
 # A web face for the compliance factory
 

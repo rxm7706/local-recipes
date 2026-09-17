@@ -3853,6 +3853,149 @@ capabilities:
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
+  # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-warden:CAP-1
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "one command, one exit"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-2
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "source-manifest extraction"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-3
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "assessed versus present"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-4
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "per-axis verdict"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-5
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "tunable policy"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-6
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "waivers and baselines"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-7
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "report and SBOM as data"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-8
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "typed failure routing"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-9
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "adoption on-ramp"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-10
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "determinism and no residue"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-11
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "air-gapped operation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-12
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "fix-PR actuator"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-13
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "SourceContract + identity API"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-14
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "eligibility-union + provenance"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-15
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "CycloneDX out + the corpus in"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-16
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the service skeleton"
+    mode: retire
+    note: compliance_face / services stay off B
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-17
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "results + derived progress"
+    mode: retire
+    note: compliance_face / services stay off B
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-18
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "environment-scoped lockfile extraction"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-19
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the promotion scans the shipped closure"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-20
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the offline OSV database is provisioned in CI"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-21
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "the verdict is honest and specific"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - id: pyforge-warden:CAP-22
+    spec: pyforge-warden
+    station: pyforge-warden
+    heading: "deploy gates on the verdict (already true on main — preserve)"
+    mode: A-only
+    expiry: 2026-12-31
+    path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-atlas:CAP-1
     spec: pyforge-atlas

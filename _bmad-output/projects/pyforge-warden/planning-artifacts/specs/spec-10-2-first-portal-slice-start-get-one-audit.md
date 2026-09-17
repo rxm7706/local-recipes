@@ -31,7 +31,7 @@ deferred: []
 
 ## Boundaries & Constraints
 
-**Always:** Write artifacts under `_bmad-output/projects/pyforge-warden/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-warden` only — never `scripts/bmad-switch`. Ledger key `10-2-first-portal-slice-audit-start-get`.
+**Always:** Write artifacts under `_bmad-output/projects/pyforge-warden/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-warden` only — never `scripts/bmad-switch`. Ledger key `10-2-first-portal-slice-start-get-one-audit`.
 
 **Block If:** A change would replace `conda-forge-expert`, add `pyforge.*` under `src/platform/`, or start the paired Wave story this spec does not own.
 
