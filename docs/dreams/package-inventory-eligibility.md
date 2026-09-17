@@ -2,8 +2,12 @@
 title: Every package has one provenance trail and one eligibility answer, from any source
 type: dream
 owner: warden
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-warden]]** on 2026-09-17 (one-chain-per-station warden fold; folded from `package-inventory-eligibility`).
+
 
 # Every package has one provenance trail and one eligibility answer, from any source
 

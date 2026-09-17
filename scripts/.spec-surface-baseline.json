@@ -7017,15 +7017,15 @@
  },
  "pyforge-warden/spec-compliance-factory-web-face": {
   "files": {},
-  "memlog": "da060f4a0063cd4f6e49a7259b365c86d9bb1a13"
+  "memlog": "7e11b6aa98d65e2b564e92d6608db185f2ee2b53"
  },
  "pyforge-warden/spec-golden-path-conda-blind-spot": {
   "files": {},
-  "memlog": "5ba69ae4c3129b593654527262b9abd046f56d49"
+  "memlog": "7f7dc08dae20aa9c62420bdd7d0d30dfc495e879"
  },
  "pyforge-warden/spec-package-inventory-eligibility": {
   "files": {},
-  "memlog": "84ddf6505bd80acb872a54e33915ac3298096722"
+  "memlog": "63fe5a654420919a0c101efb0e7601c9e1e463f6"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
@@ -9257,10 +9257,10 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "e4e17ee14876306c9ca603ce84ddc1a38eae8722",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "453f54e0821d23843825505b3894e4481461a8d5"
   },
-  "memlog": "2cd915ba89208d5c8621329f4f41ebbed061cd56"
+  "memlog": "071416bdab180bf590fb778f1948008d56d8f125"
  },
  "pyforge-warden/spec-pyforge-warden-compliance-gates": {
   "files": {},
-  "memlog": ""
+  "memlog": "112801b9b00b8dae8b82e91cc2f0e2fe3228d061"
  }
 }

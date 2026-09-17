@@ -2,7 +2,7 @@
 title: Warden — the gate that never lies
 type: dream
 owner: warden
-status: realized
+status: specified
 ---
 
 # Warden — the compliance gate that never false-greens
@@ -39,7 +39,8 @@ the host or the source.
   `scripts/platform-deploy-verify-promotion.py:31` refuses any digest whose recorded
   verdict is not `clean`.
 - Spec: `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/`
-  (Tier 2, `shipped`); `docs/specs/pyforge-warden.md` is the absorbed legacy Tier-1
+  (Tier 2, `ready` — living station contract after the 2026-09-17 one-chain fold);
+  `docs/specs/pyforge-warden.md` is the absorbed legacy Tier-1
   intake. Package at `src/shared/packages/pyforge-warden/`.
 
 ## Realization log
@@ -57,3 +58,13 @@ the host or the source.
   gate: warden is the sole PR verdict and `platform-deploy` reads it. Two ledger-vs-in-effect
   gaps found on OTHER warden Dreams — the web face's engine import and the eligibility CLI
   — recorded on their own Dreams and Specs, not here.
+
+## Folded Dreams (2026-09-17)
+
+One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyforge-warden]]` banners. The station Spec `spec-pyforge-warden` is `ready` and covers every owner:`warden` Dream.
+
+- **package-inventory-eligibility** — one provenance trail and one eligibility answer (Epic 7 / reminted CAP-13..15).
+- **compliance-factory-web-face** — upload a manifest, watch the engines analyze it (Epic 8 / reminted CAP-16..17). Residuals (image import, SBOM stub) stay on the absorbed memlog.
+- **golden-path-conda-blind-spot** — promotion must scan the shipped closure (Epic 12 / reminted CAP-18..22).
+- **pyforge-warden-compliance-gates** — already archived as a duplicate (2026-08-02); remains a retirement record.
+

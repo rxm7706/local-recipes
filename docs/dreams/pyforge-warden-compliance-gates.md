@@ -8,6 +8,9 @@ owner: warden
 scope: "Compliance gates, dependency scanning, policy enforcement, findings aggregation"
 ---
 
+> **Consolidated into [[pyforge-warden]]** on 2026-09-17 (one-chain-per-station warden fold; folded from `pyforge-warden-compliance-gates`). Prior retirement as `archived` / `duplicate` stands.
+
+
 > **Superseded.** This Dream's six-item "Realization" list maps 1:1 onto capabilities
 > [`docs/dreams/pyforge-warden.md`](pyforge-warden.md) (status: realized) already fully
 > governs via `spec-pyforge-warden` (`status: shipped`, 31/31 stories merged via PR #110) —
