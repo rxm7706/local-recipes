@@ -6,7 +6,7 @@ absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
 owner-dream: docs/dreams/chain-currency-sweep.md
 companions:
-- ../../../CHAIN-CURRENCY-RUNBOOK.md
+  - ../../../CHAIN-CURRENCY-RUNBOOK.md
 ---
 
 # Absorbed into spec-pyforge-doctor

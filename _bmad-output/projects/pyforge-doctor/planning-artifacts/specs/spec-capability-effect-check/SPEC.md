@@ -6,7 +6,7 @@ absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
 owner-dream: docs/dreams/capability-effect-check.md
 companions:
-- ../../../../pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - ../../../../pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
 ---
 
 # Absorbed into spec-pyforge-doctor

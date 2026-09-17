@@ -6,10 +6,10 @@ absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
 owner-dream: docs/dreams/pixi-candidate-currency.md
 surface:
-- pixi.toml
-- pixi.lock
+  - pixi.toml
+  - pixi.lock
 companions:
-- ../../../../../../docs/dreams/pixi-candidate-currency.md
+  - ../../../../../../docs/dreams/pixi-candidate-currency.md
 ---
 
 # Absorbed into spec-pyforge-doctor

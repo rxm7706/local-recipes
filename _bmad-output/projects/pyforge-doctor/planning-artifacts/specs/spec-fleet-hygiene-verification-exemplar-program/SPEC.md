@@ -6,7 +6,7 @@ absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
 owner-dream: docs/dreams/fleet-hygiene-verification-exemplar-program.md
 companions:
-- hygiene-gap-catalog.md
+  - hygiene-gap-catalog.md
 ---
 
 # Absorbed into spec-pyforge-doctor

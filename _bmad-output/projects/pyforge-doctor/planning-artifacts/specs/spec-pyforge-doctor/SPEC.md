@@ -1,54 +1,54 @@
 ---
 surface:
-- src/shared/packages/pyforge-doctor/**
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py
-- scripts/chain_currency_sweep_check.py
-- scripts/deferred_work_check.py
-- scripts/deferred_work_intake.py
-- docs/MAP.md
-- docs/how-to/**
-- docs/tutorials/**
-- docs/explanation/**
-- .claude/data/conda-forge-expert/
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/**
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
-- src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
+  - src/shared/packages/pyforge-doctor/**
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py
+  - scripts/chain_currency_sweep_check.py
+  - scripts/deferred_work_check.py
+  - scripts/deferred_work_intake.py
+  - docs/MAP.md
+  - docs/how-to/**
+  - docs/tutorials/**
+  - docs/explanation/**
+  - .claude/data/conda-forge-expert/
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/**
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
+  - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
 surface-drift-exclude:
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/__init__.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/general_docs_consistency.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py
-- src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/__init__.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/flag_kill_switch.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/capability_effect.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/general_docs_consistency.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py
 id: SPEC-pyforge-doctor
 status: ready
 owner-dream: docs/dreams/pyforge-doctor.md
 companions:
-- ../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
+  - ../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
-- ../../../../../../docs/dreams/pyforge-doctor.md
-- ../../briefs/brief-pyforge-doctor-2026-07-25/brief.md
-- ../../prds/prd-pyforge-doctor-2026-07-25/prd.md
-- ../../epics.md
+  - ../../../../../../docs/dreams/pyforge-doctor.md
+  - ../../briefs/brief-pyforge-doctor-2026-07-25/brief.md
+  - ../../prds/prd-pyforge-doctor-2026-07-25/prd.md
+  - ../../epics.md
 spec: pyforge-doctor
 updated: '2026-09-17'
 covers-dreams:
-- docs/dreams/bmad-drift-new-artifact-shape.md
-- docs/dreams/bmad-method-version-drift.md
-- docs/dreams/capability-effect-check.md
-- docs/dreams/chain-currency-sweep.md
-- docs/dreams/deferred-work-audit-completeness.md
-- docs/dreams/deferred-work-resolution-sweep.md
-- docs/dreams/deferred-work-visibility.md
-- docs/dreams/docs-shelf-alignment.md
-- docs/dreams/fleet-hygiene-verification-exemplar-program.md
-- docs/dreams/general-docs-consistency.md
-- docs/dreams/pixi-candidate-currency.md
-- docs/dreams/pyforge-doctor-dependency-health.md
-- docs/dreams/pyforge-doctor.md
-- docs/dreams/sibling-dreams-drift.md
-- docs/dreams/status-body-consistency.md
+  - docs/dreams/bmad-drift-new-artifact-shape.md
+  - docs/dreams/bmad-method-version-drift.md
+  - docs/dreams/capability-effect-check.md
+  - docs/dreams/chain-currency-sweep.md
+  - docs/dreams/deferred-work-audit-completeness.md
+  - docs/dreams/deferred-work-resolution-sweep.md
+  - docs/dreams/deferred-work-visibility.md
+  - docs/dreams/docs-shelf-alignment.md
+  - docs/dreams/fleet-hygiene-verification-exemplar-program.md
+  - docs/dreams/general-docs-consistency.md
+  - docs/dreams/pixi-candidate-currency.md
+  - docs/dreams/pyforge-doctor-dependency-health.md
+  - docs/dreams/pyforge-doctor.md
+  - docs/dreams/sibling-dreams-drift.md
+  - docs/dreams/status-body-consistency.md
 ---
 
 > **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (one-chain-per-station CAP-3 / doctor fold). Companions of absorbed folders stay as record (CHAIN-STANDARD §7 item 3). Do not hand-edit — append the memlog and re-derive.
