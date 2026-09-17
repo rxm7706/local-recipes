@@ -2,9 +2,11 @@
 title: The CFE failure catalog is generated from the skill spec, every row lint-verified against its enforcing check
 type: dream
 owner: mason
-status: realized    # 2026-09-09 — catalog + generator + freshness test + detector all live and green
+status: archived
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `machine-checked-recipe-knowledge`).
 # Machine-checked recipe knowledge
 
 ## The Dream

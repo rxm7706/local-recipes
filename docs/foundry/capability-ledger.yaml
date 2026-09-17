@@ -3696,3 +3696,166 @@ capabilities:
     heading: "BMAD projection onto Internal GH"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  # 2026-09-17 mason one-chain fold remints
+  - id: pyforge-mason:CAP-1
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-2
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-3
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-4
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-5
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-6
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-7
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-8
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-9
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-10
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-11
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-12
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-13
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-14
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-15
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-16
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-17
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-18
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-19
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-20
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-21
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-22
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-23
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-24
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-25
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-26
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
+  - id: pyforge-mason:CAP-27
+    spec: pyforge-mason
+    station: pyforge-mason
+    heading: "from spec-pyforge-mason"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md

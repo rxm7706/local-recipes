@@ -1,13 +1,12 @@
 ---
-title: "Dream — PyForge Mason: Recipe Validator"
+title: Dream — PyForge Mason: Recipe Validator
 type: dream
-date: 2026-08-02
-status: archived
-archived-reason: conflicts-with-decided-architecture
 owner: mason
-scope: "Recipe validation, conda-forge linting, schema enforcement, conformance"
+status: archived
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `pyforge-mason-recipe-validator`).
 > **Superseded.** This Dream proposes a native, ~50-rule linting/validation engine
 > inside Mason. [`docs/dreams/pyforge-mason.md`](pyforge-mason.md) (status: specified)
 > already decided this exact question — decision D-1, "Option C": `mason recipe`

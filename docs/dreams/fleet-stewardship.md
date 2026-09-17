@@ -2,9 +2,11 @@
 title: Fleet stewardship — tend every feedstock we can touch
 type: practice
 owner: mason
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
 
+> **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `fleet-stewardship`).
 # Fleet stewardship — 769 feedstocks, none left behind
 
 ## The Dream

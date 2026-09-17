@@ -738,3 +738,7 @@ and in the PRD's 2026-09-14 reconciliation; recorded here because the dependency
 is an architectural fact, even though the decision was not this spine's to make.
 
 **No AD added, changed or removed.** `updated:` bumped to record that the cascade ran.
+
+## Currency reconciliation — 2026-09-17
+
+one-chain mason fold 2026-09-17: Spec reminted CAP-1..29; ADs unchanged. No new architecture decision.
