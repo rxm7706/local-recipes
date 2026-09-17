@@ -220,23 +220,22 @@ marp-regenerated export, doesn't reach these `project/` trio files) to project
 | `Warden - Infographic.dc.html` | 295,218 | `1789635799882197` | identical ✓ |
 | `Warden - Infographic Deck.dc.html` | 305,123 | `1789635802707366` | identical ✓ |
 
-**Both files exceed the 256 KiB `read_file` cap — a new finding on the read-back mechanism
-itself.** Paging with `read_file`'s `offset`/`limit` across the cap was tried first and found
-unsafe for verification: when a single very-long line (a minified inline `<style>`/SVG/script
-line, common in these `.dc.html` files) straddles the cap inside one page, the server does not
-raise or return a clean truncation signal — it returns a shorter body with an inline marker
-(observed: `…[+33103 bytes trun…]`) spliced into that line in place of the missing bytes, and a
-naive multi-page reconstruction silently bakes that marker in as if it were real content (caught
-here only because the resulting SHA-256 didn't match; a byte-count-only check would have missed
-it — the corrupted read-back was still close in size to the original). Fell back to the
-documented `render_preview` → curl the `serve_url` → strip the `data-omelette-injected`
-`<style>`/`<script>` harness block after `<head>` procedure (`docs/specs/presentation-deck.md`
-§ *The MCP bridge*, "Large-file uploads" / pull mechanics), which is exempt from the cap: both
-files came back byte-identical to disk. This is the same underlying 256 KiB `read_file` cap the
-existing pull-target limitation note already documents for `herald deck pull`, just hit from the
-verification side rather than the pull side — recorded here rather than filed as a new DW entry
-since it doesn't block this story (the workaround is the same one the tooling already documents)
-and no code changed to work around it.
+**Both files exceed the 256 KiB `read_file` cap**, so a single call can't return the whole body.
+A first attempt paged with `offset`/`limit` and reconstructed the file by concatenating page
+bodies — this broke: `read_file`'s truncation response embeds a self-documenting sentinel line at
+the cap boundary (`…[+N bytes truncated at read_file's 256 KiB cap — the body ends at a complete
+line; continue with offset=<n>]`), and a script that doesn't recognize and strip that sentinel
+bakes it into the reconstructed text as if it were real file content (caught only via a SHA-256
+mismatch — a byte-count-only check would have missed the ~119 B delta). **This was a bug in this
+session's own throwaway paging script, not a `read_file` defect** — re-verified live: a plain
+`read_file` call with no offset returns the sentinel as a clean, well-formed, standalone line
+("the body ends at a complete line"), not spliced into content. Rather than fix the paging
+script, used the documented `render_preview` → curl the `serve_url` → strip the
+`data-omelette-injected` `<style>`/`<script>` harness block after `<head>` procedure
+(`docs/specs/presentation-deck.md` § *The MCP bridge*, "Large-file uploads" / pull mechanics),
+which is exempt from the cap entirely: both files came back byte-identical to disk. Noted here
+so a future session paging `read_file` past the cap knows to recognize and strip that sentinel
+rather than treat it as content — or just use the curl-based route instead, as this session did.
 
 `deck-facts pyforge-warden --check` still reads 0 mismatch. Head and Infographic Deck now match
 Design as well as disk — no surface here is standalone-ahead any more.
