@@ -36,7 +36,10 @@ authors = [{ name = "rxm7706" }]
 # dependency of this package, not just of the pixi env it builds in. Floor
 # matches `pixi.toml`'s own `python-pptx` pin.
 dependencies = [
-    "mcp>=1.28.1",
+    # Story 21.12: floor matches pixi.toml's own environment-level mcp pin
+    # (>=2.2.0). Below 2.2.0 `mcp.client.streamable_http` still exports the
+    # pre-rename `streamablehttp_client` this package no longer imports.
+    "mcp>=2.2.0",
     "httpx2>=2.5.0",
     "pyforge-core",
     "playwright>=1.62.1",

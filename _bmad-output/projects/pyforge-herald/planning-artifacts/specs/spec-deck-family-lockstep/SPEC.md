@@ -11,6 +11,9 @@ surface:
   - presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/**
   - scripts/deck_facts.py
   - scripts/deck_trio.py
+  - src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py
+  - src/shared/packages/pyforge-herald/pyproject.toml
+  - pixi.toml
 sources:
   - ../../../../../../docs/dreams/deck-family-lockstep.md
 open_questions: []
@@ -68,6 +71,14 @@ definition, so the divergence is removable by transform rather than by disciplin
   - **success:** A dated Design-side edit is pulled to git, the read-back is byte-identical after the
     harness strip, the deck README records the etag, and the pull discipline is demonstrated end to
     end.
+- **CAP-6** *(added 2026-09-16, found live dispatching Story 21.4)*
+  - **intent:** The transport speaks the `mcp` SDK it actually has pinned — `pyforge.herald.
+    transport.mcp_transport` imports whichever streamable-HTTP client symbol the pinned `mcp` SDK
+    actually exports, and `pyforge-herald`'s own `pyproject.toml` floor is reconciled with `pixi.toml`'s
+    environment pin so the two agree.
+  - **success:** A real `herald deck push` against a live Design project round-trips (push, then
+    read back byte-identical) through the fixed transport, and `deck-facts <slug> --check` reports 0
+    `mismatch` afterward.
 
 ## Constraints
 
@@ -83,6 +94,11 @@ definition, so the divergence is removable by transform rather than by disciplin
 - **Machinery is untouched:** no new deck engine, no change to `deck_export.py`'s semantics, no
   change to the `.pptx` pipeline.
 - **Design polish ends with a pull.** No visual act is complete until git holds the bytes.
+- **CAP-6 is confined to `pyforge-herald`'s own transport module.** Atlas's parallel `mcp` 2.x usage
+  does not touch the same symbol (verified) — this Spec does not touch atlas, and does not re-mint
+  steward's `mcp-era-isolation` Dream (cross-environment protocol coexistence, a different problem).
+  No credential-storage change — `resolve_design_credential()` already works. The fallback transport
+  (FR-22/Story 1.3) stays out of scope unless the fix's own shape requires touching it.
 
 ## Non-goals
 
@@ -90,6 +106,9 @@ definition, so the divergence is removable by transform rather than by disciplin
 - Design-side polish beyond the one proving pass CAP-5 names.
 - A new deck engine, a second PR gate, or a change to `deck_export.py`'s semantics.
 - The React decks' slide extraction and `dist/` builds.
+- Fixing steward's `mcp-era-isolation` cross-environment protocol coexistence problem (CAP-6 is
+  narrower: one already-shipped module's API-surface drift against its own pinned dependency).
+- Redesigning the transport's one-`asyncio.run()`-per-call session model (CAP-6).
 
 ## Success signal
 
