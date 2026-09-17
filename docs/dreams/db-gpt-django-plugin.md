@@ -1,9 +1,12 @@
----
-title: DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane
+---title: DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane
 type: dream
 owner: steward
-status: realized   # was `absorbed` (off-vocabulary, normalised 2026-09-05); 2026-08-22 pointer spec authored (spec-db-gpt-django-plugin); realized through python-agent-platform per the 2026-08-14 Realization log
+status: archived   # was `absorbed` (off-vocabulary, normalised 2026-09-05); 2026-08-22 pointer spec authored (spec-db-gpt-django-plugin); realized through python-agent-platform per the 2026-08-14 Realization log
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `db-gpt-django-plugin`).
+
 
 # DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane
 

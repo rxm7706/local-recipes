@@ -1,4 +1,5 @@
 ---
+fold-exemption: different-lifecycle
 spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy

@@ -1,9 +1,12 @@
----
-title: Non-module bmad-suite pieces are provisioned by install class — not forced through --module
+---title: Non-module bmad-suite pieces are provisioned by install class — not forced through --module
 type: dream
 owner: steward
-status: realized   # 2026-09-06 — spec-bmad-suite-install-class-wiring shipped: steward Epic 31 (3/3 done 2026-08-24); recorded late. --module skf refusal stands; remaining module wiring now driven by spec-bmad-suite-lifecycle.
+status: archived   # 2026-09-06 — spec-bmad-suite-install-class-wiring shipped: steward Epic 31 (3/3 done 2026-08-24); recorded late. --module skf refusal stands; remaining module wiring now driven by spec-bmad-suite-lifecycle.
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `bmad-suite-install-class-wiring`).
+
 
 # Non-module bmad-suite pieces are provisioned by install class
 

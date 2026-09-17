@@ -1,9 +1,12 @@
----
-title: Isolate MCP eras without one lockfile
+---title: Isolate MCP eras without one lockfile
 type: dream
 owner: steward
-status: specified   # was `in-progress` (off-vocabulary, normalised 2026-09-05); the Spec spec-mcp-era-isolation is the in-progress artifact
+status: archived   # was `in-progress` (off-vocabulary, normalised 2026-09-05); the Spec spec-mcp-era-isolation is the in-progress artifact
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `mcp-era-isolation`).
+
 
 # Isolate MCP eras without one lockfile
 

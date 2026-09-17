@@ -1,4 +1,5 @@
 ---
+fold-exemption: different-lifecycle
 spec: foundry-regenerate-not-fold
 status: ready
 created: "2026-09-13"

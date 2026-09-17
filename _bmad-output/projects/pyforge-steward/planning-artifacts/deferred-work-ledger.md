@@ -888,7 +888,7 @@ status: open
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-11-2-2: DB-GPT's own metadata store cannot be wired to real PostgreSQL — verified upstream limitation, AD-9-blocked
-- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-as-a-pluggable-app.md`
+- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md`
   summary: a second attempt at Story 11-2 (this one pap:AD-17/Pattern-B-correct, not the reverted
   Pattern-A attempt DW-11-2-1 describes) built and live-verified the whole registry-driven
   integration — `dbgpt_schema` migration, `config/engine_patterns.py` pap:AD-17 registry, a
@@ -928,7 +928,7 @@ status: open
 
   verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
 
-  verified: 2026-09-02 — resolved — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-as-a-pluggable-app.md); ledger status mapped to resolved; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-09-02 — resolved — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md); ledger status mapped to resolved; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-11-4
 
@@ -1637,7 +1637,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
 ### DW-FU-33-2: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
 
-- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-list.md`
+- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md`
   summary: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
   evidence: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html has theme.css and the switcher, not an HTMX script. Pre-existing; this story server-renders inventory on GET /stations/steward/.
   location: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
@@ -2899,7 +2899,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
   evidence: `config/settings/base.py:610-611` defaults both assertion keys to `""`; only `config/settings/test.py:66-67` assigns them, and `grep -rn ASSERTION src/platform/deploy/` returns nothing — `platform.djangoEnv` carries no such env and no secretKeyRef. `resolve_public_pem()` therefore yields `""` and the gate takes its fail-closed 503 branch. The underlying gap is pre-existing — `supervisor.start_run`/`get`, `assertion/client.py`, `AssertionMiddleware` and the mason/doctor portals already call `crypto.verify_assertion`, whose `_setting_pem` raises on an empty key — but this story widens the blast radius from "the supervisor tools and portals" to "every JSON-RPC method on every station". Wiring the keypair Secret is canopy:AD-19 / Story 40.1 territory; the matching chart invariant and a `REQUIRED_SETTINGS` entry belong with it.
   location: src/platform/deploy/charts/platform/templates/_helpers.tpl (platform.djangoEnv)
@@ -2912,7 +2912,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-2: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
   evidence: `mcp-host-deployment.yaml:40-55` uses httpGet startup/liveness/readiness probes on `:8090`; the policy has no ipBlock or node allowance. The chart's only prior NetworkPolicy guards Redis, whose probes are `exec`, so there is no in-repo precedent for an HTTP-probed pod behind a podSelector-only ingress rule. On a CNI that subjects node→pod probe traffic to NetworkPolicy the pod never passes its startupProbe. Not fixable inside this story: AC 4 requires ingress "only from web pods", and the invariant enforces exactly one ingress rule, so a probe exception would fail the story's own test. Needs a deploy-profile decision alongside the mTLS/mesh item above.
   location: src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
@@ -2925,7 +2925,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-3: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
   evidence: `_stream_upstream_body` relays until upstream ends; with `Queue(maxsize=1)` backpressure an abandoned request pins both the pump task and the upstream sidecar connection for the full read budget. Harmless at the old 5s cap, a real resource-holding window at the Celery hard limit. Out of scope on intent authority — the intent asks only that the budget be raised.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
@@ -2938,7 +2938,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-4: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
   evidence: `CLAUDE.md`, `AGENTS.md`, the eight `.claude/skills/pyforge-*/SKILL.md` blocks and the `bmad-agent-*` persona skills all describe the route with no `Authorization: Bearer <assertion>` requirement and no pointer to how a caller obtains one. No in-repo caller breaks (portals call in-process by design, per `assertion/client.py`), so the whole behavioural change lands on out-of-repo callers whose contract lives in files this story does not touch.
   origin: spec-deferred 025d5b60e556 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -2951,7 +2951,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-5: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
   evidence: `requires_helm` is a `skipif`, not a failure. The Platform CI `test` job runs the `platform-ci-test` pixi env, whose deps declare no helm; `kubernetes-helm` is only in `feature.platform-dev`. The story's three (now eight) guard-removed companions are not helm-gated but feed hand-built dicts to the helper, so they prove the helper, not the chart — the template could be deleted with a green CI run. Pre-existing for every chart test in this suite, not introduced here.
   location: src/platform/tests/test_chart_invariants.py
@@ -2964,7 +2964,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-6: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
   evidence: `TransportRefusal.body()` emits `{"error": "..."}` on an endpoint that otherwise speaks JSON-RPC 2.0, and no challenge header points a client at the mint view or at protected-resource metadata, so an MCP client has no discoverable path from the refusal to a working call. The intent specifies the status codes only.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_auth.py
@@ -3031,14 +3031,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 - source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
   summary: Nothing outside the pytest settings supplies `PYFORGE_ASSERTION_PUBLIC_KEY` (inherited from Story 42.1), so the limiter is unreachable in a deployed run.
-  evidence: The rate limiter sits behind the transport gate, which answers 503 when no public key resolves. Until the canopy:AD-19 keypair Secret lands (Story 40.1 territory), no deployed MCP call gets far enough to be counted. Recorded here only because it now also gates this story's AC 1; the underlying gap and its remedy are already tracked on `spec-42-1-mcp-transport-authorization.md`.
+  evidence: The rate limiter sits behind the transport gate, which answers 503 when no public key resolves. Until the canopy:AD-19 keypair Secret lands (Story 40.1 territory), no deployed MCP call gets far enough to be counted. Recorded here only because it now also gates this story's AC 1; the underlying gap and its remedy are already tracked on `spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`.
   location: src/platform/deploy/charts/platform/templates/_helpers.tpl
   origin: spec-deferred 1886c187bae3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-  verified: 2026-09-08 — still-open — CONFIRMED, and it is a CAP-6 duplicate rather than an independent finding. `PYFORGE_ASSERTION_PUBLIC_KEY` returns **zero matches** in `deploy/charts/platform/templates/_helpers.tpl`, so nothing outside the pytest settings supplies it and the transport gate still answers 503 before the limiter is ever reached. This is the SAME defect as `DW-FU-42-1` (and the entry says so itself: 'inherited from Story 42.1 ... already tracked on spec-42-1-mcp-transport-authorization.md'). One defect class, two ledger rows; closing the keypair Secret closes both.
+  verified: 2026-09-08 — still-open — CONFIRMED, and it is a CAP-6 duplicate rather than an independent finding. `PYFORGE_ASSERTION_PUBLIC_KEY` returns **zero matches** in `deploy/charts/platform/templates/_helpers.tpl`, so nothing outside the pytest settings supplies it and the transport gate still answers 503 before the limiter is ever reached. This is the SAME defect as `DW-FU-42-1` (and the entry says so itself: 'inherited from Story 42.1 ... already tracked on spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md'). One defect class, two ledger rows; closing the keypair Secret closes both.
 
 ### DW-FU-42-2-6: `test_mcp_start_audit_returns_handle` leaks a committed live `RunState` row per run, which `MAX_RUNNING_PER_SUB` now counts.
 
@@ -3688,7 +3688,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-7: Every station app is built `json_response=True`, so the keep-alive frame never fires against the real sidecar and the raised budget stays capped by the ~30s ingress idle timeout.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: Every station app is built `json_response=True`, so the keep-alive frame never fires against the real sidecar and the raised budget stays capped by the ~30s ingress idle timeout.
   evidence: `mcp_dual_era.py:55-56` builds every station MCP app with `json_response=True, stateless_http=True`, so the sidecar's body is always `application/json` and never `text/event-stream`. `_keepalive_frame()` returns `None` for anything but an event stream — correctly, since a comment frame injected into JSON corrupts it — which means the keep-alive path is unreachable in production and a JSON tool call still emits no bytes until it completes. T-5 is therefore only partially closed: the 5s cap and the full-response buffering are gone, but a long JSON call still dies at whatever idle timeout sits in front of the pod. Not fixable inside this story: the intent prescribes comment frames, and there is no legal way to keep a JSON body alive. Closing it needs either SSE-shaped sidecar responses or an ingress idle-timeout decision.
   location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
@@ -3701,7 +3701,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-8: The chart wires `MCP_HOST_SIDECAR_BASE_URL` into worker and migrate-job pods that the new NetworkPolicy then denies.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: The chart wires `MCP_HOST_SIDECAR_BASE_URL` into worker and migrate-job pods that the new NetworkPolicy then denies.
   evidence: `_helpers.tpl` (`platform.djangoEnv`) injects the sidecar URL into `worker-deployment.yaml` and `migrate-job.yaml`, and `test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service` (`test_chart_invariants.py:1349`) asserts web AND worker carry it — while the new policy admits only `component: web` and the X-5 guard pins the rule to exactly one peer. Nothing breaks today: the only reader is `sidecar_base_url()`, reached solely from `config/asgi.py`'s dispatch, which runs in web. But the two invariants now encode opposite intents, and the first worker-side MCP call will fail at the network layer rather than at the config layer.
   location: src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
@@ -3714,7 +3714,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-9: No test drives the real ASGI entrypoint; every test builds its own app around `dispatch_station_mcp`.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: No test drives the real ASGI entrypoint; every test builds its own app around `dispatch_station_mcp`.
   evidence: The single production caller is `_dispatch_http` in `src/platform/config/asgi.py`. `test_mcp_transport_auth.py` calls `dispatch_station_mcp` directly with hand-built scope dicts, and the five updated files each wrap it in their own `application`. So the ACs' "Given `POST /stations/atlas/mcp`" is proved against an assembled callable, not the app gunicorn serves — a reordering inside `_dispatch_http` that let a station path bypass the gate would not fail any test. Pre-existing convention across this suite, not introduced here.
   location: src/platform/config/asgi.py
@@ -3727,7 +3727,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-42-1-10: `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
 
-- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization-and-a-streaming-proxy.md`
   summary: `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
   evidence: The new env var appears in no `values.yaml`, no chart template, and not in `src/platform/deploy/overlays/ocp/cluster-bringup.md`, which already carries an mcp-host readiness checklist. An operator raising the sidecar budget has to read `mcp_http.py` to learn the name exists.
   location: src/platform/deploy/overlays/ocp/cluster-bringup.md
@@ -3740,7 +3740,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2: PyForgeStationClient default urllib transport has no executing test.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: PyForgeStationClient default urllib transport has no executing test.
   evidence: Unit tests inject a mock transport; _urllib path untested in CI.
   location: src/shared/packages/pyforge-core/src/pyforge/core/client.py
@@ -3753,7 +3753,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-2: Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
   evidence: test_langflow_mount.py requires langflow package; langflow-free suite covers bare /api/v1 only.
   location: src/platform/tests/test_langflow_mount.py
@@ -3766,7 +3766,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-3: Server-side X-PyForge-API-Version header enforcement not implemented.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: Server-side X-PyForge-API-Version header enforcement not implemented.
   evidence: Client sets header; station_api.py never validates it against URL version.
   location: src/platform/config/station_api.py
@@ -3779,7 +3779,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-4: django-warden portal has not adopted StationHttpClient for host calls.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: django-warden portal has not adopted StationHttpClient for host calls.
   evidence: Contract test proves header parity via mock transport only; no portal wiring in diff.
   origin: spec-deferred 700930453bc1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -3791,7 +3791,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-43-2-5: OpenAPI documents are not schema-validated beyond path-key presence.
 
-- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
+- source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract-and-the-api-v1-collision.md`
   summary: OpenAPI documents are not schema-validated beyond path-key presence.
   evidence: Tests assert paths keys exist; no OpenAPI validator or golden document.
   origin: spec-deferred 5da93f3e807e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -4271,7 +4271,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-6: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
 
-- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+- source_spec: `planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md`
   summary: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
   evidence: Edge Case Hunter finding; recorded in adoption-register.md row 9's Hazards cell as an open reproducibility risk, not resolved here (AD-7 prove-and-relay boundary)
   location: docs/reference/manticore-studio.md; adoption-register.md row 9
@@ -4284,7 +4284,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-6-2: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
 
-- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+- source_spec: `planning-artifacts/specs/spec-46-6-heralds-manticore-studio-has-a-root-and-a-proven-native-path.md`
   summary: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
   evidence: Edge Case Hunter finding; not retroactively fixable for an already-completed run, noted for future re-runs of the same command
   location: docs/reference/manticore-studio.md (isolation guarantee section)
@@ -4297,7 +4297,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-9: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
 
-- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truths-installed-stage-reads-the-applied-core-and-wired-is-a-declared-per-class-predicate.md`
   summary: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
   evidence: Edge Case Hunter finding #3; negligible cost, no behavioral effect
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::_module_census_hit
@@ -4310,7 +4310,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-46-9-2: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
 
-- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truths-installed-stage-reads-the-applied-core-and-wired-is-a-declared-per-class-predicate.md`
   summary: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
   evidence: Spec's own Boundaries & Constraints, re-confirmed sound by Intent Alignment review; this story's own manticore tests correctly assert unwired against the real, empty studio root
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::probe_wired (INSTALL_CLASS_STUDIO_MODULE branch)
@@ -4375,7 +4375,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 
 ### DW-FU-47-5: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
 
-- source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines.md`
+- source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13s-scope-names-the-spines.md`
   summary: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
   evidence: Named explicitly in G3's own resolution note; independently confirmed by three reviewers this staleness is real and correctly left untouched here
   location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md rows P11/P12

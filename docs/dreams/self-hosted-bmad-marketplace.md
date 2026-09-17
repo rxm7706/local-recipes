@@ -1,9 +1,12 @@
----
-title: The estate hosts its own BMAD catalog, not Claude's public marketplace
+---title: The estate hosts its own BMAD catalog, not Claude's public marketplace
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `self-hosted-bmad-marketplace`).
+
 
 # The estate hosts its own BMAD catalog, not Claude's public marketplace
 

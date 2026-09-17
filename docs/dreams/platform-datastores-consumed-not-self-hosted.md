@@ -1,9 +1,12 @@
----
-title: Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
+---title: Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
 type: dream
 owner: steward
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `platform-datastores-consumed-not-self-hosted`).
+
 
 # Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
 

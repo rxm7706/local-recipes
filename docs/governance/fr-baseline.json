@@ -446,6 +446,7 @@
     "pyforge-warden": []
   },
   "rebaselined": {
-    "pyforge-marshal": "9e51ae7851a2714105849d4af9d373471a0c01bd"
+    "pyforge-marshal": "9e51ae7851a2714105849d4af9d373471a0c01bd",
+    "pyforge-steward": "0c1c77279b6f2117e943db800b6b52dc942c361b"
   }
 }

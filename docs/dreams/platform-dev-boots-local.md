@@ -1,9 +1,12 @@
----
-title: platform-dev boots the local canopy without a second env
+---title: platform-dev boots the local canopy without a second env
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `platform-dev-boots-local`).
+
 
 # platform-dev boots the local canopy without a second env
 

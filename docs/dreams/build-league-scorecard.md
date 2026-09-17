@@ -1,9 +1,12 @@
----
-title: Build League and Balanced Product Scorecard
+---title: Build League and Balanced Product Scorecard
 type: dream
 owner: steward
-status: specified
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `build-league-scorecard`).
+
 
 # Build League and Balanced Product Scorecard
 

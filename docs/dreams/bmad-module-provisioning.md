@@ -1,9 +1,12 @@
----
-title: BMAD Method modules are provisioned, not hand-installed
+---title: BMAD Method modules are provisioned, not hand-installed
 type: dream
 owner: steward
-status: realized
+status: archived
+archived-reason: folded-into-station-dream
 ---
+
+> **Consolidated into [[pyforge-steward]]** on 2026-09-17 (one-chain-per-station steward fold; folded from `bmad-module-provisioning`).
+
 
 # BMAD Method modules are provisioned, not hand-installed
 

@@ -1,56 +1,118 @@
 ---
-status: ready     # 2026-09-16 -- shipped -> ready: a station Spec is perpetually `ready`
-                   # (spec-one-chain-per-station CAP-6, CHAIN-STANDARD § 4). CAP-1..4 stay
-                   # verified (Epics 1-4, 18 stories done); CAP-5 (pyforge-guild environment,
-                   # Epic 63) and CAP-6 (Frame draft re-grounding, Epic 64) opened this date
-                   # Dream-append-first from docs/dreams/pyforge-steward.md § 2026-09-16.
-                   # History: `shipped` was added 2026-08-15 (fleet-wide decomposition audit)
-                   # when the frontmatter carried no status field at all.
+id: SPEC-steward
+spec: pyforge-steward
+status: ready
+updated: "2026-09-17"
+owner-dream: docs/dreams/pyforge-steward.md
+covers-dreams:
+  - docs/dreams/pyforge-steward.md
+  - docs/dreams/asgi-multiplexer-monolith.md
+  - docs/dreams/bmad-eval-quality.md
+  - docs/dreams/bmad-method-core-upgrade.md
+  - docs/dreams/bmad-module-provisioning.md
+  - docs/dreams/bmad-suite-channel-product.md
+  - docs/dreams/bmad-suite-install-class-wiring.md
+  - docs/dreams/bmad-suite-lifecycle.md
+  - docs/dreams/bmad-suite-metapackage.md
+  - docs/dreams/build-league-scorecard.md
+  - docs/dreams/db-gpt-django-plugin.md
+  - docs/dreams/developer-machine-bootstrap.md
+  - docs/dreams/enterprise-airgap.md
+  - docs/dreams/enterprise-multi-agent-orchestration.md
+  - docs/dreams/intelligence-hub.md
+  - docs/dreams/jira-github-projects-sync.md
+  - docs/dreams/langflow-django-plugin.md
+  - docs/dreams/local-ocp-hybrid-environment.md
+  - docs/dreams/mcp-era-isolation.md
+  - docs/dreams/mcp-host-real-station-tools.md
+  - docs/dreams/multi-repo-workspaces.md
+  - docs/dreams/ocp-as-a-portability-profile.md
+  - docs/dreams/platform-datastores-consumed-not-self-hosted.md
+  - docs/dreams/platform-dev-boots-local.md
+  - docs/dreams/platform-fifteen-factors.md
+  - docs/dreams/platform-image-one-pixi-env.md
+  - docs/dreams/platform-object-storage-kind.md
+  - docs/dreams/python-agent-platform.md
+  - docs/dreams/scratch-worktree-lifecycle.md
+  - docs/dreams/secure-live-dashboards.md
+  - docs/dreams/self-hosted-bmad-marketplace.md
+  - docs/dreams/suite-scaffold-and-mybmad-sidecar.md
+  - docs/dreams/unified-container.md
+  - docs/dreams/vocabulary-one-name-one-job.md
+  - docs/dreams/work-passports-dated-extracts.md
 surface:
-  - src/shared/packages/pyforge-steward/**  # the CLI this Spec builds (not yet created)
-  # Governed here 2026-07-28: the library catalog describes what is IN the pixi envs, and
-  # Steward provisions envs ("runners and environments for Marshal's line ... pixi envs").
-  # The subject is environment CONTENTS, not the Dream->Code chain — which is why it does
-  # not sit with the chain detectors under regenerable-factory.
+  - src/shared/packages/pyforge-steward/**
   - scripts/llms_full_check.py
   - docs/reference/library-llms-full.md
-  # Story 8.1 (2026-08-09): .steward/sync-config.example.yaml is the first tracked file to
-  # land under the repo-root .steward/ dotdir the Constraints section's "Config file
-  # location" rule already claims. Per-kind, not a directory-level catch-all — this repo
-  # already learned that lesson once (see the scripts/** split recorded in
-  # scripts/spec_surface_allowlist.txt): a blanket .steward/** would silently absorb any
-  # stray file dropped into the one directory this Spec designates for credential material.
   - .steward/budget.yaml
   - .steward/keys-inventory.yaml
   - .steward/*.age
   - .steward/sync-config.example.yaml
-  # Epic 13 / Story 13.3: the repo-set registry example, same per-kind convention as
-  # sync-config.example.yaml above — not a blanket .steward/** (see the rationale note
-  # immediately above this list).
   - .steward/repo-sets.example.yaml
+  - recipes/bmad-eval-quality/**
+  - evals/review-catches-planted-defect/**
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
+  - .github/workflows/pyforge-pip-install.yml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md
+  - recipes/bmad-suite/recipe.yaml
+  - recipes/bmad-suite/suite-members.yaml
+  - .claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py
+  - .claude/scripts/conda-forge-expert/bmad_suite_metapackage.py
+  - .claude/skills/conda-forge-expert/scripts/_http.py
+  - docs/reference/pixi-config-jfrog.example.toml
+  - docs/dreams/mcp-era-isolation.md
+  - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
+  - src/platform/config/asgi.py
+  - src/platform/deploy/charts/platform/
+  - "[feature.mcp-host]"
+  - scripts/mcp_factory_stdio_translator.py
+  - docs/dreams/mcp-host-real-station-tools.md
+  - src/platform/mcp_host/app.py
+  - src/platform/mcp_host/settings.py
+  - src/platform/compose/mcp-host/Containerfile
+  - src/platform/deploy/charts/platform/templates/_helpers.tpl
+  - src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml
+  - src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml
+  - src/platform/deploy/charts/platform/templates/networkpolicy-postgres-ingress.yaml
+  - src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
+  - src/platform/config/settings/local.py
+  - src/platform/tests/policy/test_platform_dev_local_leaf.py
+  - scripts/platform_ci_test_requirements_check.py
+  - src/platform/Containerfile
+  - scripts/platform_image_pip_layer.py
+  - "[feature.python-agent-platform]"
+  - "[feature.python-agent-platform.dependencies] (host extras; retired pypi table)"
+  - scripts/platform_object_storage.py
+  - scripts/build-pixi-mirror.py
+  - scripts/platform-golden-path-promotion.sh
+  - scripts/platform-deploy-verify-promotion.py
+  - scripts/platform-ci-local.sh
+  - scripts/pixi_env_matrix.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  - recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py
+  - src/shared/packages/django-pyforge
+  - Containerfile
+  - .dockerignore
+  - scripts/container-gates
+  - scripts/guild_image_ci.sh
 surface-drift-exclude:
-  # 2026-09-12: also governed by the spec(s) named below, which already
-  # reconciles each of these files cleanly -- this kernel spec's own
-  # memlog does not move for routine story work anymore, so double-
-  # claiming them only produced permanent drift-presumed noise here.
-  # Coverage is unchanged (still listed under `surface:` above); only
-  # this spec's own drift tracking for these specific files is off.
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/routing.py   # also governed by pyforge-marshal/spec-pyforge-core
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py   # also governed by pyforge-marshal/spec-pyforge-core
-id: SPEC-steward
-owner-dream: docs/dreams/pyforge-steward.md
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/routing.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py
+  - src/platform/config/asgi.py
 companions:
   - ../../architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-steward.md
-  - ../../briefs/brief-pyforge-steward-2026-07-25/brief.md
-  - ../../prds/prd-pyforge-steward-2026-07-25/prd.md
-  - ../../epics.md
 ---
 
-> **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+> **Canonical contract.** Derived from `.memlog.md` (steward one-chain fold 2026-09-17) and the Dream in `sources:`. Do not hand-edit — append the memlog and re-derive.
 
 # Steward (pyforge-steward) — the estate the factory stands on
 
@@ -59,43 +121,441 @@ sources:
 A mandate this repo has already paid for meeting late, twice: `_http.py` attached the `JFROG_API_KEY` auth header to every outbound request regardless of destination host until a human caught it, and on 2026-07-24 a committed `sk-ant` key needed git history rewritten and the key rotated. Both are the same underlying gap — privilege that outlived its intended scope, caught after the fact rather than prevented — and nothing in the pyforge Guild owned "no privilege outlives its deployment" as a first-class responsibility until the 2026-07-23 ownership audit found Deployment & Operations orphaned. Steward (module `pyforge.steward`, CLI `steward`) is that station: it provisions the engines the factory runs on, deploys the services it ships, holds the keys that guard it, and enforces the budget ceilings that bound it. It is not a new platform — domain and technical research both converge on the same verdict: a thin CLI formalizing what this repo's maintainer already does by hand, cloning the already-shipped `pyforge-warden` packaging pattern rather than reimplementing Vault, Backstage, ArgoCD, or Kubecost at a scale this one-person factory doesn't have.
 
 ## Capabilities
-
-- **CAP-1**
+- **CAP-1 — from spec-pyforge-steward** ← spec-pyforge-steward CAP-1 (shipped 2026-09-16)
   - **intent:** An operator can issue, scope, rotate, audit, inventory, and record revocation of credentials through one CLI (`steward keys`), with the historical `JFROG_API_KEY` cross-host leak pattern closed as a named automated regression test.
   - **success:** A credential declared with an explicit host allowlist is never attached to a request outside it; `encrypt`/`decrypt` round-trips a fixture exactly via `age`; `rotate` re-encrypts every secret under a newly generated identity and the old identity fails to decrypt afterward, with no calendar/cron auto-rotation path; `audit --drift` reports the historical unconditional-injection pattern against a fixture and reports clean against today's fixed `_http.py`; `list` enumerates identities with scope/last-rotated metadata and never prints a raw secret value under any flag; `revoke` marks an identity retired and prints manual remediation guidance with zero third-party API calls; a dedicated conformance test fails loudly if the host-gating logic is ever removed or bypassed.
-  - **verified:** 2026-09-11 — `test_keys_{audit_cli,audit_drift,host_scoping,plaintext_secret_scan,
-    rotate,revoke,encrypt_decrypt,list}.py` (78/78) cover every sub-claim; live `age --version`
-    confirms the real binary; live `steward keys list --json` returns real inventory entries
-    with a `provenance` field and `secrets: []` (no raw value printed).
-- **CAP-2**
+- **CAP-2 — from spec-pyforge-steward** ← spec-pyforge-steward CAP-2 (shipped 2026-09-16)
   - **intent:** An operator can build and publish the Pages dashboard through one reconciled command (`steward deploy dashboard`) instead of hand-running `dashboard-gen` + `git push`.
   - **success:** Running twice with no source change between runs results in zero commits on the second run; a real change to the generated output results in exactly one new commit containing exactly the changed files, pushed to the existing Pages-serving branch; `--dry-run` performs the build+diff and prints it without committing or pushing; `status` reports the last successful deploy's commit SHA and timestamp read from Git history alone, with no separate state store.
-  - **verified:** 2026-09-11 — `test_deploy_{build,reconcile,perimeter,static,profile_plugins,
-    dry_run,status,ledger_refusal}.py` (175/175); live `steward deploy status` returns
-    `last deploy e0783458... at 2026-08-25T06:15:44-05:00` — a real commit SHA + timestamp,
-    no separate state store.
-- **CAP-3**
+- **CAP-3 — from spec-pyforge-steward** ← spec-pyforge-steward CAP-3 (shipped 2026-09-16)
   - **intent:** An operator or an unattended bmad-loop session can materialize any named pixi environment or a bmad-loop runner+environment together, list what exists, and verify the `environment.yaml` sync gate, without recalling raw pixi/`bmad-loop-worktree` syntax.
   - **success:** A valid environment name materializes via `pixi install -e`; an invalid name reports a clear error listing valid names rather than surfacing pixi's raw error; `--runner bmad-loop --env <name>` wraps `scripts/bmad-loop-worktree` to materialize a worktree plus its named environment in one call, surfacing underlying failures clearly rather than leaving orphaned state unreported; `--list` enumerates every `pixi.toml` `[environments]` entry with its composing features (plus `--json`); `--verify` wraps the existing sync-gate check and reports drift with a non-zero exit when out of sync.
-  - **verified:** 2026-09-11 — live: `steward provision --list --json` enumerates real
-    `pixi.toml` environments; `steward provision --verify` reports `environment.yaml is in
-    sync with pixi.toml`; `steward provision --env not-a-real-env` prints a clear "not a
-    valid pixi environment" error listing every real environment name, not pixi's raw error.
-    `--runner bmad-loop` materialization not re-exercised live (creates a real worktree,
-    disproportionate to a doc-hygiene sweep) — covered by `test_provision_runner.py`.
-- **CAP-4**
+- **CAP-4 — from spec-pyforge-steward** ← spec-pyforge-steward CAP-4 (shipped 2026-09-16)
   - **intent:** An operator can declare and query a machine-readable resource ceiling and get an honest signal about spend rather than a fabricated number.
   - **success:** `budget set --cap <amount><currency>/<period>` records a stable, documented schema and rejects a malformed cap value without writing a corrupt entry; `budget show` prints the declared ceiling(s) in human and `--json` form, and reports clearly (not a crash or misleading zero) when none is declared; `budget check` returns one of three distinct exit codes — not-configured / under-budget / over-budget — never collapsing "no data" into a pass, with no cloud-cost-SDK or Kubecost/OpenCost/Infracost client import anywhere in the codebase.
-  - **verified:** 2026-09-11 — `test_budget_{show,check,set}.py` (37/37); live `steward budget
-    show --json` returns `[]` cleanly (no crash, no misleading zero) with none declared; a
-    repo-wide grep for `kubecost`/`opencost`/`infracost`/`boto3`/`google-cloud-billing` under
-    `pyforge-steward/src` returns zero hits.
-- **CAP-5 — `pyforge-guild`: one minimal environment is the default for every agent and harness.** *(opened 2026-09-16, Dream § 2026-09-16 — The Guild environment)*
+- **CAP-5 — `pyforge-guild`: one minimal environment is the default for every agent and harness** ← spec-pyforge-steward CAP-5 (shipped 2026-09-16)
   - **intent:** A pixi feature + environment `pyforge-guild` carries the current state of PyForge — `pyforge-core`, `pyforge-doctor` (with its warden / testing-kit seam), `pyforge-marshal`, `pyforge-steward`, plus `pyyaml`, `ruamel.yaml`, `jsonschema`, `tomli`, `pytest` — **and the token-economy kit Marshal detects at runtime**: the `python` feature (`nodejs` for `npx skills add caveman`, `gh`, `bmad-method`) and `headroom-ai` declared explicitly (corrected 2026-09-16: the lean `pyforge-marshal` env has `bmad-loop` and `tmux` but no `headroom`, and Marshal degrades silently on its absence, `MRS-DISP-033`) — and nothing of the recipe factory. The 51 Guild/planning tasks (every `*-check` detector, `detectors` / `detectors-ci`, `sprint-ledger-sync`, `fleet-picture`, `governance-currency`, and the `pr-preflight` / `pyforge-station-tests` / `pyforge-station-coverage-gates` aggregates) **move** from `[feature.local-recipes.tasks]` to `[feature.guild-tasks.tasks]` — a tasks-only feature, because station packages range-pin engines the factory floats (found at the first solve: warden `osv-scanner <2.5` vs `>=2.5.1`, marshal `tomlkit <0.13.3` vs `>=0.15.1`), so a deps-carrying feature can never be included by `local-recipes`; the `local-recipes` environment *includes* `guild-tasks`, so every existing `pixi run -e local-recipes <task>` keeps working. `pyforge-warden` is not in the env: doctor does not require it at runtime and degrades that seam to cannot-evaluate, as `detectors-ci` always has in `local-recipes` while `local-recipes` becomes what it already is in practice — Mason's factory environment. Foundry mode `rebuild`: B re-derives the same split.
   - **success:** `pixi install -e pyforge-guild` from cold lands under 1 GB on disk (`local-recipes`: 10 GB; **measured 2026-09-16: 859 MB, `detectors-ci` 32/32 — Story 63.1**) and `pixi run -e pyforge-guild detectors-ci` is green on `main`; `pixi run -e pyforge-guild marshal seed check` reports the headroom kit item present and a dispatch dry-run raises no `MRS-DISP-033`; `marshal-token-economy` Epic 46 names `pyforge-guild` as the environment its stories are verified in; `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc`, the eight station `SKILL.md` files and the cloud-environment install command name `pyforge-guild` as the session default; scribe recall stays `-e pyforge-scribe`; `environment.yaml` regenerated in the same PR; `pyforge-station-tests` green (shared surface).
-- **CAP-6 — Frame draft re-grounding: the estate claims conformance the way the draft now asks.** *(opened 2026-09-16, Dream § 2026-09-16 — Frame draft re-grounding; Frames stay `spec-intelligence-hub` CAP-2's subject)*
+- **CAP-6 — Frame draft re-grounding: the estate claims conformance the way the draft now asks** ← spec-pyforge-steward CAP-6 (shipped 2026-09-16)
   - **intent:** (a) the nine Frames drop the invented version token — bare `type: frame` (draft §6.2.1, 09-14: a document written to the draft omits the token until a release assigns one); (b) `docs/foundry/frames/README.md` carries an **Upstream pin** block naming the openteams-ai/frame-spec#28 and #29 head SHAs we conform to, re-pinned only with a memlog line; (c) an opt-in steward task `frame-upstream-check` fetches frame-spec at the pinned #29 SHA into a temp dir and runs its `validate_frame.py` over `docs/foundry/frames/` and `--check-profile` over our profile — never vendored, never a gate, never a write upstream; (d) PyForge **publishes its conformance profile** `docs/foundry/frames/conformance-profile.yaml` (§7 MUST; #29 YAML shape; `specification: draft-mcandrew-frame-spec-00`): reads Markdown, writes none, resolves no composition, `visibility` is declared intent, and — §9 — declares that no trust configuration exists yet so every reachable source is trusted, which is exactly the state the future loader must change.
   - **success:** upstream `validate_frame.py` at the pinned SHA reports 9/9 OK and `--check-profile` accepts the profile; in-repo `frame-preflight` stays green; the deferred-work accepted-risk entry on #28 carries today's date and the two SHAs.
+- **CAP-7 — Suite membership** ← spec-bmad-eval-quality CAP-1 (shipped 2026-09-09)
+  - **intent:** `eval-quality` installs the suite's way as a `bmad-suite` member (recipe, manifest line, pixi pin, channel) so every fleet consumer gets the tagged binary that has `score`.
+  - **success:** `recipe-build` green; `eval-quality --version` prints the **pinned TAG version** (`1.4.1` today — `recipes/bmad-eval-quality/recipe.yaml:5,:35`), `--help` lists `score`, `compile` on a shipped corpus contract exits 0; enrolment is ONE line in `recipes/bmad-suite/suite-members.yaml` (auto-flows to metapackage run deps, doctor's drift watch, steward's pipeline-truth); pixi pin `bmad-eval-quality >=1.4.1` (`pixi.toml:1611`) with `environment.yaml` regenerated; baseline pin set, install-matrix, install-class and `library-llms-full.md` rows present; the PR carries `maintenance`. - **verified:** 2026-09-11 — live in the `local-recipes` env: `eval-quality --version` -> `1.4.1`; `--help` lists `score`; `compile --in .../corpus/dev/contracts/satisfied-declarations.json` exits 0; `recipes/bmad-suite/suite-members.yaml:47` carries the `bmad-eval-quality` entry; `pixi.toml:1679` pin reads `>=1.4.1` (the recipe itself moved to 3.0.0 this session, PR #1205 — the pixi floor is deliberately held at 1.4.1 pending a `__win` build, see the pin's own comment; CAP-1's "1.4.1 today" text is therefore still literally accurate for what's installed, not stale).
+- **CAP-8 — Pilot contract `review-catches-planted-defect`** ← spec-bmad-eval-quality CAP-2 (shipped 2026-09-09)
+  - **intent:** one Behavioral Evaluation Contract, run twin-arm (clean vs one planted `file:line` defect) against the `edge-case-hunter` review layer bmad-loop relies on, yields a catch rate the fleet can read.
+  - **success:** the contract compiles; a one-trial twin-run preflights both arms, the mutated arm's review cites `pkg/discount.py:17` and the clean arm does not; three trials per arm yield a policy-comparable strength vector with a catch rate; pixi tasks `eval-quality-smoke`, `eval-quality-review-twin-run -- --trials N`, `eval-quality-review-replay` exist and are never wired into `detectors`. *Known limitation (empirical, live `--trials 3` runs):* the clean arm is a reproducible false-positive source — `edge-case-hunter`'s exhaustive-enumeration methodology finds a different real boundary concern at the same line every time; see `.memlog.md` for detail. - **verified:** 2026-09-11 — `eval-quality-smoke` (`evals/review-catches-planted-defect/driver.py`) and `test_driver.py` (8/8) both pass; found and fixed a real regression while checking: the pilot contract had drifted to a stale `schemaVersion: 3` against the installed CLI's `4` (`compile` exit 5, `schema-version-mismatch`) — a one-line bump to `4` (no other field changed) restored a clean `compile` exit 0 for both the shipped dev corpus and this contract. The three pixi tasks (`eval-quality-smoke`, `-review-twin-run`, `-review-replay`) exist and stay out of `detectors`/`detectors-ci`, confirmed by their own task descriptions. A live `--trials N` `claude -p` twin-run (the catch-rate / `pkg/discount.py:17` citation claim) is NOT re-exercised in this pass — real API cost and wall-clock, disproportionate to a doc-hygiene sweep; that behavior is unverified, not disproven.
+- **CAP-9 — Pre-flight diff (report-only)** ← spec-bmad-method-core-upgrade CAP-1 (shipped 2026-09-09)
+  - **intent:** given the installed manifest and a target release, report skill adds/removes/renames (shim disposition + `removals.txt` deletions), upstream-touched files the repo has locally modified, `_bmad/custom/**` overrides that stop applying (the legacy-name unattended-halt trap), and new hard prerequisites (e.g. `uv`).
+  - **success:** run against the 6.10.0→6.11.0 pair, it retrodicts the 2026-08-21 findings (companion, § Traps).
+- **CAP-10 — Deliberate, reviewable apply** ← spec-bmad-method-core-upgrade CAP-2 (shipped 2026-09-09)
+  - **intent:** wrap `bmad-method install --action update -y` non-interactively: branch/snapshot first, never a silent overwrite of `_bmad/custom/**`, installer diff landed for review — never applied blind in place.
+  - **success:** a clean run lands the installer diff on a review branch with the custom-surface checklist executed.
+- **CAP-11 — Custom-surface reconciliation** ← spec-bmad-method-core-upgrade CAP-3 (shipped 2026-09-09)
+  - **intent:** after apply, detect clobbered repo-custom surfaces — `resolve_config.py`'s multi-project layers 5/6 is the named recurring case, clobbered in BOTH manual upgrades — and re-apply or flag them.
+  - **success:** post-apply, `bmad-switch --current` and a `BMAD_ACTIVE_PROJECT` override both resolve the six layers; the installer's `.bak` is accounted for.
+- **CAP-12 — Downstream pin fan-out report (report-only)** ← spec-bmad-method-core-upgrade CAP-4 (shipped 2026-09-09)
+  - **intent:** enumerate every pin site the release moves — root `pixi.toml` floors, marshal's pyproject + package `pixi.toml` + `HARNESS_VERSION_RANGE_TEXT` + seed manifest/drift-test map, loop-home hook relays — and report moved vs. not.
+  - **success:** names exactly the sites the 2026-08-21 session had to touch, none discovered later by red tests.
+- **CAP-13 — Post-apply verification gate** ← spec-bmad-method-core-upgrade CAP-5 (shipped 2026-09-09)
+  - **intent:** run the repo's own gates (bmad-drift-check integrity, CFE skill meta-tests, `bmad-loop validate` per loop home including the `init` relay refresh) and report one verdict.
+  - **success:** reproduces the 2026-08-21 checklist (8/8 loop homes validate clean) in one command.
+- **CAP-14 — Non-interactive installer drive** ← spec-bmad-method-core-upgrade CAP-6 (shipped 2026-09-09)
+  - **intent:** the apply drives the installer on purpose, not by luck — `--directory <repo>`, `--modules <every module the installed manifest lists>` (core, bmm, each `source: custom` module), stdin closed, node and `bmad-method` resolved from the repo's pixi env when absent from PATH — and an exit-0 run that changed nothing is a refusal, never a green.
+  - **success:** a re-run of the 2026-09-06 apply from a clean tree lands the 6.12 installer diff with no wrapper script.
+- **CAP-15 — Custom-module awareness** ← spec-bmad-method-core-upgrade CAP-7 (shipped 2026-09-09)
+  - **intent:** every `source: custom` module in `_bmad/_config/manifest.yaml` (today skf) is selected for the core apply; its config files (named in the release catalog) are snapshotted before and restored after; its own installer runs after the core apply so its module tree, undeclared skills and shared resources land coherently; an optional catalog pin stops the channel-`next` cache drift.
+  - **success:** after apply the module's skill dirs equal its packaged source and its config equals the pre-apply bytes plus the installer's own appended keys; the report names each restored file.
+- **CAP-16 — Local-customization scan and re-apply** ← spec-bmad-method-core-upgrade CAP-8 (shipped 2026-09-09)
+  - **intent:** before apply, every installer-owned file is compared against the cached package of the installed version and the customized ones are listed in the CAP-1 report (the Dream's own first when-real bullet, which CAP-1 had narrowed to marker-carrying scripts); after apply each is re-applied by three-way merge onto the new upstream copy, clean merges written, conflicts flagged with the hunk kept beside the report. `resolve_config.py` takes the same path — the old→new upstream delta is replayed on the restored copy, not discarded.
+  - **success:** the 2026-09-06 seven-file case re-applies with six clean merges and one flagged conflict (step-01 `done` routing).
+- **CAP-17 — Deliberate shim retirement (`--no-shims`)** ← spec-bmad-method-core-upgrade CAP-9 (shipped 2026-09-09)
+  - **intent:** the apply can retire every deprecation shim on purpose — `--no-shims` on the installer argv after `--modules`, the pre-flight names each shim to retire (21 at 6.12.0), a same-version run is accepted as a retirement run, and the flag is refused while a legacy-name custom file exists (trap 2).
+  - **success:** the manifest reads `installShims: false`, the shim rows leave `skill-manifest.csv`, CAP-7 and CAP-8 run on the same apply, `prove-landed` validates 8/8 (Story 14.9). **Correction (2026-09-06, found during Story 30.5):** the original Intent also refused `--no-shims` "while the marshal harness / any rendered loop-home policy still emits `bmad-dev-auto`" — this premise is FALSE, verified directly against the installed `bmad_loop` 0.11.1 package source (`bmad_loop/policy.py`). `DevPolicy.skill` is a PERMANENT internal adapter discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`, hard-validated by `PolicyError` on any other value) — it is not a "which skill name is current" field, and the skill actually invoked is resolved separately at runtime from what is on disk (`Engine._dev_skill()` / `install.dev_primitive_or_default`), independent of this field. Every real loop-home's `policy.toml` (and the vendored `harness_bmadloop.py` template that renders it) will ALWAYS emit this literal, forever, by design — a refusal keyed on finding it provides no real signal about `--no-shims` readiness and would refuse every retirement attempt permanently. This clause is REMOVED: the harness-template / loop-home-policy check (`_shim_retirement_blockers` / `refuse_shim_retirement_not_ready`) is deleted from `upgrade.py`. The sole pre-apply refusal for `--no-shims` remains the pre-existing, unconditional legacy-custom-name check (trap 2, `refuse_legacy_custom`), which is unaffected by this correction.
+- **CAP-18 — one-command module provisioning** ← spec-bmad-module-provisioning CAP-1 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-19 — module discovery** ← spec-bmad-module-provisioning CAP-2 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-20 — partial state is named, never silent** ← spec-bmad-module-provisioning CAP-3 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-21 — Pipeline-truth report** ← spec-bmad-suite-channel-product CAP-1 (shipped 2026-09-09)
+  - **intent:** one command reports, for each of the 13 packages: upstream latest (npm AND GitHub, per its class), recipe version, channel version, installed version, wired-or-not — drift named per stage.
+  - **success:** run against the 2026-08-22 state it reproduces the research matrix (including the 6.3.0 relic until refreshed); offline it degrades fail-open per stage. *(Shipped: steward 15.1; class-correct `wired` since 31.2. Known hole, relayed: for the installer-tree class the `installed` stage reads the pixi env's conda-meta, not the applied `_bmad/_config/manifest.yaml`.)* - **verified:** 2026-09-11 — `steward suite pipeline-truth --json` live: 13/13 packages reported, all 5 stages present per package, drift correctly named (`bmad-builder`/ `bmad-creative-intelligence-suite`: `upstream_npm_github_divergence`; `bmad-eval-quality`: `installed` — the live, deliberate G115 pin cap from this session's own PR #1205). Offline fail-open degrade not re-exercised (would require simulating a network outage).
+- **CAP-22 — End-to-end advance** ← spec-bmad-suite-channel-product CAP-2 (shipped 2026-09-09)
+  - **intent:** one command takes a stale package through autotick (tag-mode, or a new HEAD-advance mode for the six commit-pinned dev recipes) → build → test → publish → listing verified, landing as a reviewable PR — never auto-merged.
+  - **success:** replays the 2026-08-21 seven-stage hand ritual for one package with zero improvised steps. *(Shipped: steward 15.2; `anaconda upload` stays the operator's step by design.)* - **verified:** 2026-09-11 — `steward suite advance --help` confirms the chain (autotick tag|head → build → test → publish → listing → reviewable PR, never auto-merged); `tests/unit/test_suite_advance.py` (9/9 pass) directly covers the never-auto-merged contract (`test_advance_dry_run_chain_tag_mode_never_merges`, `test_advance_refuses_open_pr_hook_that_claims_merge`), HEAD-advance mode for commit-pinned recipes, and the 13-package roster. A live end-to-end `advance` run against a real stale package (real network/publish/PR) not re-exercised — disproportionate to a doc-hygiene sweep.
+- **CAP-23 — Module wiring through the verb** ← spec-bmad-suite-channel-product CAP-3 (shipped 2026-09-09)
+  - **intent:** `steward provision --module` grows `_SUPPORTED_MODULES` from `{bmb}` to `{bmb, tea, cis, utility-skills, manticore}` — each addition manifest-recorded, skill-name-collision-checked, retired-ID guard + integrity meta tests green, reproducible on a fresh clone. WDS is an explicit skip (deprecated in 6.12.0's module registry, folded into `bmad-ux`; retired from the roster 2026-09-05).
+  - **success:** all five wire-decided modules provision through the verb and `.claude/skills` gains the expected skill sets. *(Shipped: steward 15.3.)* - **verified:** 2026-09-11 — `steward provision --module` live at `provision.py`, confirmed supporting exactly `{bmb, cis, manticore, tea, utility-skills}` (5, matches WDS-excluded roster); same live check + 104-test coverage as `spec-bmad-module-provisioning` CAP-1 (that spec's own `verified:` line, this same sweep).
+- **CAP-24 — Dual-path contract** ← spec-bmad-suite-channel-product CAP-4 (shipped 2026-09-09)
+  - **intent:** the per-package install matrix (pixi command + native command with upstream citation + hazard flags, recounted 2026-09-05: npm-invisible ×6, npm-stale-GitHub-canonical ×3, name-collisions ×3, G109 renumber ×2; eight native classes) is a tracked artifact (`install-matrix.md`), and the upgrade verification gate spot-checks one native path per class instead of trusting docs.
+  - **success:** the matrix exists cited; a gate run exercises ≥1 command per class. *(Shipped: steward 15.4 + Epic 31; matrix re-verified 2026-09-05 against `pipeline-truth`.)* - **verified:** 2026-09-11 — `install-matrix.md` (71 lines) exists, cites upstream READMEs per package, cross-checked against a live `pipeline-truth` run per its own header; the per-class gate spot-check is real code at `upgrade.py:3452` (`# CAP-4 dual-path native-class advisory spot-checks`). Matrix content itself is a dated 2026-09-05/09 snapshot (a currency question, not this CAP's contract, which only requires the matrix to exist and be cited).
+- **CAP-25 — Ambient drift, relayed to doctor** ← spec-bmad-suite-channel-product CAP-5 (shipped 2026-09-09)
+  - **intent:** channel-vs-recipe and recipe-vs-upstream join doctor's suite-drift surfaces (fail-open, warn-only), and the GitHub-releases fallback (doctor DW-14-1-1) unblinds the 7 npm-invisible packages.
+  - **success:** a fixture of the 6.3.0 relic fires channel-drift; the fallback names bmad-loop's version from GitHub. *(Shipped: doctor 15.1/15.2 + 19.1. Known hole, relayed: suite drift maps 7 of 13 members — commit-pinned members unmapped.)* - **verified:** 2026-09-11 — `test_sources_bmad_method.py` 157/157 pass, including `test_the_6_3_0_relic_fixture_fires_channel_drift_warn` (exact success-clause match) and 9 `fetch_latest_github_release_*` tests covering the fallback (404-falls-back-to-tags, malformed/missing data folds to `None`, never raises).
+- **CAP-26 — Suite metapackage (2026-09-01)** ← spec-bmad-suite-channel-product CAP-6 (shipped 2026-09-09)
+  - **intent:** one conda metapackage (`bmad-suite`) plus canonical manifest install all 13 channel products at upstream-aligned pins; the generator refreshes from the registry class per member.
+  - **success:** decomposed in `spec-bmad-suite-metapackage` and shipped as steward Epic 39 (39.1–39.4): `recipes/bmad-suite/{recipe.yaml, suite-members.yaml}`, `generate-bmad-suite` / `build-bmad-suite`, opt-in `feature.bmad-suite-full`; `bmad-suite 2026.9.5` on the channel; doctor Epic 19 consumes the same manifest for its watched set. - **verified:** 2026-09-11 — this session's own PR #1205 exercised the full chain live: `generate-bmad-suite --dry-run` resolved live upstream pins per registry class, a real `recipe-build recipes/bmad-suite` produced a green metapackage (`bmad-suite-2026.9.11`, all anchor-CLI tests passed), and `feature.bmad-suite-full` is present at `pixi.toml:1989`. Metapackage version is now `2026.9.11`, not `2026.9.5` — a currency fact, not a contract break; the mechanism this CAP describes is what was just used to produce it.
+- **CAP-27 — Class-keyed playbook** ← spec-bmad-suite-install-class-wiring CAP-1 (shipped 2026-09-17)
+  - **intent:** one tracked companion tells the operator, for each of the six non-module pieces, the pixi path, the native wire (cited from the upstream README / `install-matrix.md`), and the steward verb or task — discoverable from `steward provision --help` (or an equivalent CLI pointer), not tribal knowledge.
+  - **success:** the playbook exists, cites the matrix, and `provision --help` names it. - **verified:** 2026-09-11 — `install-class-playbook.md` exists (84 lines), cites `install-matrix.md` and `steward provision --prove-class-path`; live `steward provision --help` names the playbook path verbatim under "Non-module suite pieces".
+- **CAP-28 — Class-correct wired-or-not** ← spec-bmad-suite-install-class-wiring CAP-2 (shipped 2026-09-17)
+  - **intent:** the pipeline-truth report's `wired-or-not` column uses per-class predicates (installer tree / runner home / plugin enabled / VS Code extension / scaffold N/A), not a boolean only `--module` targets can satisfy.
+  - **success:** run against a fresh clone it names each of the six by class without claiming "wired" for template-into-this-repo. - **verified:** 2026-09-11 — live `pipeline-truth --json`: all six non-module classes report distinct per-class predicates (`bmad-method`: "installer tree present"; `bmad-loop`: "runner home provisionable"; skill-forge: "own installer present"; `bmad-labs-skills`: "wired"; both dashboards: "VS Code extension / web runnable"; `bmad-module-template`: "n/a — not a wireable module") — none collapsed to a bare boolean.
+- **CAP-29 — Fresh-clone class-path** ← spec-bmad-suite-install-class-wiring CAP-3 (shipped 2026-09-17)
+  - **intent:** a fresh clone can reach "method core installed, loop runner provisionable via `--runner`, skf skills present via its own installer, labs plugin path documented, dashboard install task runnable, template N/A unless scaffolding" without hand-driving npm `Installer` classes from a chat transcript.
+  - **success:** a recorded fresh-clone run (or CI equivalent) reaches that state with zero improvised steps. - **verified:** 2026-09-11 — live `steward provision --prove-class-path --json`: all six classes report `expected == actual` (`ok: true`) with no improvised step; `.github/ workflows/pyforge-pip-install.yml` runs this same class-path resolution with no pixi workspace present; `test_fresh_clone_class_path.py` 10/10 pass.
+- **CAP-30 — Adoption register governs wiring** ← spec-bmad-suite-lifecycle CAP-1 (shipped 2026-09-13)
+  - **intent:** every suite member has a recorded verdict (wield | skip), wielding station, provisioning path, hazards and status in `adoption-register.md`; a member's wiring changes only by changing its row.
+  - **success:** pipeline-truth's `wired` column agrees with the register for 13/13; the channel-product "never wire-everything" constraint and the one-front-door row-6 triage are recorded as superseded/closed by memlog.
+- **CAP-31 — Module wave lands by install class** ← spec-bmad-suite-lifecycle CAP-2 (shipped 2026-09-13)
+  - **intent:** `steward provision --module utility-skills | tea | bmb` (and a CIS re-provision) place each module's skills in `.claude/skills/` with manifest sections — never a hand copy.
+  - **success:** `--list-modules` reports the four installed; the retired-ID guard and integrity meta-tests stay green; the ten CIS `SKILL.md` carry `--project-root`; a test proves bmb's `cleanup-legacy.py` is never invoked.
+- **CAP-32 — Station routing** ← spec-bmad-suite-lifecycle CAP-3 (shipped 2026-09-13)
+  - **intent:** each adopted skill has exactly one wielding station, recorded in that station's persona skill (the one durable home); AGENTS.md carries one pointer line to the register, never per-skill lines.
+  - **success:** the routing table in `adoption-register.md` maps every adopted skill to one station, each persona skill cites it, a meta-test proves one persona per skill dir, and CLAUDE.md carries none of it.
+- **CAP-33 — TEA full adoption** ← spec-bmad-suite-lifecycle CAP-4 (shipped 2026-09-13)
+  - **intent:** TEA's `bmad-testarch-*` workflows produce every station's `planning-artifacts/test-architecture.md`; `tea-test-review` runs as a Marshal review lens and a Warden advisory finding; the repo generator, its two meta-tests and two pixi tasks retire.
+  - **success:** 8/8 documents regenerated by TEA with an equivalence check recorded against the generator's last output; `tea-test-review --base origin/main --min-score N` exits with a real code on a fixture PR; generator and tests deleted in the same story; Warden's verdict unchanged.
+- **CAP-34 — Manticore studio for Herald** ← spec-bmad-suite-lifecycle CAP-5 (shipped 2026-09-13)
+  - **intent:** Herald renders a station video from a deck's speaker notes through manticore installed in a dedicated studio root outside this repo's `_bmad/`.
+  - **success:** the studio provisions via `--custom-source` with `[modules.manticore]` in its own `_bmad/custom/config.toml`; one station `.mp4` renders and is gitignored; this repo's `_bmad/` is byte-identical before and after.
+- **CAP-35 — labs-skills by consent** ← spec-bmad-suite-lifecycle CAP-6 (shipped 2026-09-13)
+  - **intent:** exactly the consented skills — `mcp-builder` (Atlas), `slides-generator` (Herald), `multi-repo-git-ops` (Marshal), `release-please` (Steward) — are installed by name.
+  - **success:** each has a register row and lands via the one steward-wrapped, pinned writer (`steward provision --plugin labs --skill <name>`); no other labs skill is present.
+- **CAP-36 — eval-quality pilot runs** ← spec-bmad-suite-lifecycle CAP-7 (shipped 2026-09-13)
+  - **intent:** the designed twin-run contract measures the `edge-case-hunter` reviewer against a planted `file:line` defect under a per-trial budget ceiling.
+  - **success:** `eval-quality-smoke`, `eval-quality-review-twin-run`, `eval-quality-review-replay` exist as pixi tasks; one trial cites `pkg/discount.py:17` on the mutated arm and not on the clean arm; none joins `detectors` (Story 45.2, spec-bmad-eval-quality CAP-2).
+- **CAP-37 — Release cadence is one runbook** ← spec-bmad-suite-lifecycle CAP-8 (shipped 2026-09-13)
+  - **intent:** every BMAD-METHOD release goes detect → apply → align → refresh → flip through `release-cadence.md` with named owners; the `@next` prerelease is its optional rehearsal.
+  - **success:** the next release is processed with zero improvised steps against the runbook; the rehearsal recipe (throwaway worktree, `--installer npx bmad-method@next`, planted conflict, PATH without node) has run once, report-only.
+- **CAP-38 — BMAD-estate cutover readiness** ← spec-bmad-suite-lifecycle CAP-9 (shipped 2026-09-13)
+  - **intent:** every prerequisite the cutover assumes about `_bmad/`, `.claude/skills/`, `_bmad-output/` and the loop homes is listed with an owner in `cutover-readiness.md`; untracked gaps are relayed to the cutover chain by memlog; the gate is every line green before Story 44.3 opens the foundry.
+  - **success:** P1–P18 read green; G1–G11 each name a story; `steward upgrade bmad-core` pre-flight reports zero ungoverned local customizations.
+- **CAP-39 — Shim retirement (relay)** ← spec-bmad-suite-lifecycle CAP-10 (shipped 2026-09-13)
+  - **intent:** the 21 deprecated shims are gone and every live caller is glossed to the live skill id before the foundry opens.
+  - **success:** callers are glossed (era-alignment CAP-12 / marshal 30.5), and one `--no-shims` apply lands `installShims: false` with 21 fewer skill dirs (core-upgrade CAP-9 / steward 14.9). **Correction (2026-09-06):** the original Success bar also named "the harness policy names `bmad-build-auto`, the 8 loop homes re-render and validate clean... the guard is widened to the harness file" — this is FALSE. `bmad_loop`'s `DevPolicy.skill` is a permanent internal adapter discriminator that must stay `"bmad-dev-auto"` forever (verified against the installed package); it is never renamed, the harness template is never touched, no loop-home re-render happens, and the retired-ID guard is never widened to that file. See era-alignment CAP-12's own correction and core-upgrade CAP-9's own correction for the full evidence.
+- **CAP-40 — Canonical suite manifest** ← spec-bmad-suite-metapackage CAP-1 (shipped 2026-09-09)
+  - **intent:** tracked `recipes/bmad-suite/suite-members.yaml` lists every channel product by conda name (13 active + deprecated local-only recipes), with `deprecated: true` for packages removed from SelfExplainML (`bmad-autopilot`, `bmad-dashboard-extension`, `bmalph`). Deprecated rows stay in the manifest for doctor/catalog completeness but are **never** written into the metapackage `requirements.run`.
+  - **success:** doctor Story 19.1 reads it; steward pipeline-truth cross-checks active population against install-matrix. - **verified:** 2026-09-11 — `bmad_method.py:372` (`_SUITE_MANIFEST_REL`) and `:411` (`_manifest_suite_members`) read `recipes/bmad-suite/suite-members.yaml` directly; live `pipeline-truth --json` returned exactly 13 active members this session, matching the manifest.
+- **CAP-41 — Metapackage recipe** ← spec-bmad-suite-metapackage CAP-2 (shipped 2026-09-09)
+  - **intent:** `recipes/bmad-suite/recipe.yaml` is a `noarch: generic` metapackage whose `requirements.run` pins each manifest member at `>=` the resolved upstream version (exact `==` optional for lock-step refresh PRs). Own `context.version` is a CalVer refresh stamp bumped whenever any member version in the generated block changes.
+  - **success:** `pixi run -e local-recipes recipe-build recipes/bmad-suite` succeeds; tests assert every manifest member appears in `requirements.run`. - **verified:** 2026-09-11 — this session's own PR #1205: `recipe-build recipes/bmad-suite` built `bmad-suite-2026.9.11` green with all anchor-CLI tests passing (`bmad-loop --version`, `bmad-module-skill-forge --help`, etc.); `requirements.run` carries all 13 active members (verified by direct read).
+- **CAP-42 — Generator / refresh command** ← spec-bmad-suite-metapackage CAP-3 (shipped 2026-09-09)
+  - **intent:** one command (steward duty or CFE script) resolves upstream latest per member using registry class from each member's `recipes/<name>/recipe.yaml`, rewrites the metapackage pin block + version stamp, and prints a diff summary (member, old pin, new upstream, registry used).
+  - **success:** dry-run against live upstream reproduces the 2026-09-01 channel table within one patch version; github-primary packages never consult stale npm. - **verified:** 2026-09-11 — this session's own `generate-bmad-suite --dry-run` resolved live upstream per member (`[npm+floor]`/`[github+floor]`/`[recipe-floor]` tags shown per member in the diff summary), correctly flagged only `bmad-method-test-architecture-enterprise` and `bmad-eval-quality` as changed and everything else unchanged.
+- **CAP-43 — Channel publish + pixi feature (optional follow-on)** ← spec-bmad-suite-metapackage CAP-4 (shipped 2026-09-09)
+  - **intent:** publish `bmad-suite` to SelfExplainML; add optional `feature.bmad-suite-full` in `pixi.toml` that depends on `bmad-suite` instead of enumerating members.
+  - **success:** `pixi install -e local-recipes` with feature enabled resolves the bundle; documented in install-matrix. - **verified:** 2026-09-11 — the served `conda.anaconda.org/selfexplainml/noarch/repodata.json` lists real published `bmad-suite` builds (2026.9.1, 2026.9.5, 2026.9.9 — 2026.9.11 from this session not yet uploaded, an operator step by design); `feature.bmad-suite-full` at `pixi.toml:1989`; `tests/packaging/test_bmad_suite_full_feature.py` 9/9 pass.
+- **CAP-44 — published measure catalog** ← spec-build-league-scorecard CAP-1 (shipped 2026-09-15)
+  - **intent:** an operator-authored set covering human, agent, and team,
+  - **success:** the eight first-cut ids are in `measure-catalog.md` and
+- **CAP-45 — add, switch, and archive sources** ← spec-build-league-scorecard CAP-2 (shipped 2026-09-15)
+  - **intent:** a new already-counted source is a new row; a dead source is
+  - **success:** a new row starts `off`; flipping `on` / `off` / `archived`
+- **CAP-46 — consumers cite `on` rows only** ← spec-build-league-scorecard CAP-3 (shipped 2026-09-15)
+  - **intent:** Herald, Atlas, Marshal, and Doctor (and Hub Outcome Guards
+  - **success:** citing `off` or `archived` — or an id not in the catalog —
+- **CAP-47 — scorecard board / league table** ← spec-build-league-scorecard CAP-4 (shipped 2026-09-15)
+  - **intent:** a board is not a Canopy CAP and is not this first epic.
+  - **success:** the slot exists; v1 does not implement a UI.
+- **CAP-48 — bootstrap verbs** ← spec-developer-machine-bootstrap CAP-1 (shipped 2026-09-09)
+  - **intent:** `steward init` (prereq detection with floors from the pixi version registry), `shell-init`, `setup` (clone + pixi install + hooks), `initrepo` — fresh machine to validate-fast green.
+  - **success:** the flow reproduces in a clean container; every prereq failure names its remedy.
+- **CAP-49 — runtime-driven routing** ← spec-enterprise-airgap CAP-1 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-50 — offline-safe read side** ← spec-enterprise-airgap CAP-2 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-51 — mirror-friendly data paths** ← spec-enterprise-airgap CAP-3 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-52 — Vocabulary alignment only** ← spec-intelligence-hub CAP-1 (shipped 2026-09-13)
+  - **intent:** the Charter's Lexicon and the station roster map once to the paper's six shared
+  - **success:** every row of `vocabulary-map.md` names its Charter term and its gap, and the
+- **CAP-53 — Frames as first-class** ← spec-intelligence-hub CAP-2 (shipped 2026-09-13)
+  - **intent:** the repo's own context — the `AGENTS.md` verified block, the station personas —
+  - **success:** each artifact passes an **IN-REPO four-field preflight** implementing Frame Spec
+- **CAP-54 — A declared validation strategy per run** ← spec-intelligence-hub CAP-3 (shipped 2026-09-13)
+  - **intent:** a bmad-loop run or `marshal factory spin` declares its Guards by stage, its
+  - **success:** one run yields one structured Track record with enumerated fields and a stated
+- **CAP-55 — Guards as a library** ← spec-intelligence-hub CAP-4 (shipped 2026-09-13)
+  - **intent:** detectors, Warden axes and review lenses exposed as reusable Guards, each with a
+  - **success:** a Spec can name which Guard categories it lacks; Warden stays the sole PR
+- **CAP-56 — Package the Nebari / Nebi lineage where missing** ← spec-intelligence-hub CAP-5 (shipped 2026-09-13)
+  - **intent:** a Mason / `conda-forge-expert` lane builds local recipes for what is actually
+  - **success:** a green local build ends the task; nothing is re-packaged that conda-forge
+- **CAP-57 — bidirectional propagation of status, assignee, and identity link** ← spec-jira-github-projects-sync CAP-1 (shipped 2026-09-17)
+  - **intent:** Moving a GitHub Projects V2 item's status reaches the linked Jira issue, and
+  - **success:** a status change made on either board appears on the other without manual
+- **CAP-58 — zero-loop guarantee** ← spec-jira-github-projects-sync CAP-2 (shipped 2026-09-17)
+  - **intent:** An update one side makes *because of a sync* never triggers a sync back the
+  - **success:** a demonstrated (not merely claimed) test in which a synced update provably
+- **CAP-59 — idempotent update processing** ← spec-jira-github-projects-sync CAP-3 (shipped 2026-09-17)
+  - **intent:** Re-processing the same update payload twice produces the same end state both
+  - **success:** delivering an identical payload twice leaves both systems byte-identical to
+- **CAP-60 — fail loud, fail alone on broken links** ← spec-jira-github-projects-sync CAP-4 (shipped 2026-09-17)
+  - **intent:** An item missing its cross-system link fails loudly in a log — never silently
+  - **success:** a batch containing one unlinked item completes for all other items and emits
+- **CAP-61 — explicit status-vocabulary translation** ← spec-jira-github-projects-sync CAP-5 (shipped 2026-09-17)
+  - **intent:** Status vocabulary differences between the two systems ("Done" vs "Closed") are
+  - **success:** every status value crossing the boundary passes through the translation
+- **CAP-62 — Cluster bring-up + registry posture (→ Story 12.4)** ← spec-local-ocp-hybrid-environment CAP-1 (shipped 2026-09-17)
+  - **intent:** a documented, reproducible bring-up: Podman Desktop OpenShift Local extension (CRC 2.63.0 / OpenShift 4.22.7; 4 cores / 10.5 GB / 35 GB; Linux needs the `crc` binary on PATH) to Running; `oc` authenticated; the **internal-registry push** pattern (`podman login/tag/push` to `default-route-openshift-image-registry.apps-crc.testing` → ImageStream) minted as steward's anticipated OpenShift/registry-posture AD; pull secret, kubeadmin credentials, and the GitHub PAT recorded per the keys discipline (first inventory entries hand-authored).
+  - **success:** fresh workstation reproduces it; the platform image pulls in-cluster from the ImageStream.
+- **CAP-63 — DB-GPT sidecar joins the chart (→ Story 12.5)** ← spec-local-ocp-hybrid-environment CAP-2 (shipped 2026-09-17)
+  - **intent:** the known-owed chart addition — sidecar Deployment (the platform's own image, never `eosphorosai/*` raw), dedicated SQLite PVC at the resolved metadata path, singleton semantics (replicas 1, Recreate), internal-only Service via `DBGPT_SIDECAR_BASE_URL`; 12.1's inventory-test sidecar REJECTION flips to expectation.
+  - **success:** renders under restricted-v2; invariant tests updated and green.
+- **CAP-64 — Redis hardened, ephemeral kept (→ Story 12.6)** ← spec-local-ocp-hybrid-environment CAP-3 (shipped 2026-09-17)
+  - **intent:** emptyDir stays (Celery re-queues); AUTH via `existingSecret` key + NetworkPolicy restricting Redis to platform pods — closing 12.1's named unauthenticated-Redis follow-up.
+  - **success:** rendered NetworkPolicy + AUTH-wired `REDIS_URL`; invariant tests cover both. *Superseded for the **broker** role 2026-09-02 by steward Story 40.2 (`spec-pyforge-unifying-strategy` CAP-11): the "Celery re-queues" premise does not cover Streams / PEL / DLQ / applied keys. The cache role stays as 12.6 shipped it.*
+- **CAP-65 — Tier-3 attended verification (→ Story 12.7)** ← spec-local-ocp-hybrid-environment CAP-4 (shipped 2026-09-17)
+  - **intent:** `helm install` core + overlay on the live cluster proves the four unverified items — Route admission, SCC enforcement, PVC binding, official postgres/redis images under an SCC-assigned arbitrary UID (fallback: RH/bitnami images or the `postgres.dataMountPath` seam) — plus the fresh-install migration-window observation.
+  - **success:** a dated verification record in the 12.1 spec's orbit; failures become findings.
+- **CAP-66 — dlt Projects V2 bridge (→ Story 12.8)** ← spec-local-ocp-hybrid-environment CAP-5 (shipped 2026-09-17)
+  - **intent:** a small custom dlt **GraphQL** source (no verified source covers Projects V2; reuse `steward/sync.py`'s queries) loads the `github_metrics` dataset into cluster Postgres via port-forward; classic PAT with `read:project` (fine-grained PATs cannot reach user-owned projects); 5,000 points/hr + 100-item pages budgeted; the board is created and repo-linked via `gh project link`.
+  - **success:** board items queryable in `github_metrics`; kin-declared to `spec-jira-github-projects-sync` Mode B — never a second sync engine.
+- **CAP-67 — dual-era atlas face on the host path** ← spec-mcp-era-isolation CAP-1 (shipped 2026-08-27)
+  - **intent:** An agent can POST to `/stations/atlas/mcp` on the live host
+  - **success:** CRC `/ht/` is 200. POST initialize `protocolVersion`
+- **CAP-68 — isolated mcp-host env** ← spec-mcp-era-isolation CAP-2 (shipped 2026-08-27)
+  - **intent:** A pixi environment exists that materializes mcp 2.x and the
+  - **success:** `pixi install --frozen -e mcp-host` solves. That env's
+- **CAP-69 — host proxies; sidecar down is loud** ← spec-mcp-era-isolation CAP-3 (shipped 2026-08-27)
+  - **intent:** The host ASGI process keeps the `/stations/<name>/mcp`
+  - **success:** With the URL set, dispatch does not import `MCPServer` in
+- **CAP-70 — cluster overlay cannot omit mcp-host** ← spec-mcp-era-isolation CAP-4 (shipped 2026-08-27)
+  - **intent:** A Helm install / `helm template` of the platform chart (vanilla
+  - **success:** `helm template` fails if `mcpHost.image.repository` is empty.
+- **CAP-71 — stdio wrap of a FastMCP 3 child** ← spec-mcp-factory-stdio-translator CAP-1 (shipped 2026-08-26)
+  - **intent:** A modern client can start a factory tool over stdio and
+  - **success:** Child sees `initialize` handshake when the client is
+- **CAP-72 — explicit non-CRC claim** ← spec-mcp-factory-stdio-translator CAP-2 (shipped 2026-08-26)
+  - **intent:** Operators never treat this process as the host-face pin fix.
+  - **success:** Docs and CLI help state it does not change gunicorn
+- **CAP-73 — from spec-mcp-host-real-station-tools** ← spec-mcp-host-real-station-tools CAP-1 (shipped 2026-09-12)
+  - **intent:** An agent that calls a station's real MCP tool (e.g. marshal's
+  - **success:** `POST /stations/marshal/mcp` with `publish_loop_run` on a real deployed
+- **CAP-74 — from spec-mcp-host-real-station-tools** ← spec-mcp-host-real-station-tools CAP-2 (shipped 2026-09-12)
+  - **intent:** A station with no real in-process MCP app keeps working exactly as
+  - **success:** `spec-mcp-era-isolation`'s own CAP-1..3 acceptance criteria (dual-era
+- **CAP-75 — from spec-mcp-host-real-station-tools** ← spec-mcp-host-real-station-tools CAP-3 (shipped 2026-09-12)
+  - **intent:** CAP-3's own attended-CRC exercise can complete its one unproven item.
+  - **success:** `spec-run-state-one-publisher`'s verification record is re-run and its
+- **CAP-76 — repo sets + coordinated start** ← spec-multi-repo-workspaces CAP-1 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** one command opens the set; members missing locally are named, not guessed.
+- **CAP-77 — set-level status + safe teardown** ← spec-multi-repo-workspaces CAP-2 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** the refusal names the dirty member; --merged-only honors 13.1's archive-not-delete discipline per member.
+- **CAP-78 — Optional OCP smoke job** ← spec-ocp-as-a-portability-profile CAP-1 (shipped 2026-09-09)
+  - **intent:** Platform CI gains `ocp-portability-smoke`, default **off** (repo variable `PLATFORM_CI_OCP_PORTABILITY_SMOKE=true` or `workflow_dispatch`), reusing `build-platform-image`'s artifact (P1 fan-in), helm/kubectl from `platform-dev` (pap:AD-16), CRC / OpenShift Local as a named system-level exception — never `kind`.
+  - **success:** the job exists and is skippable; a dispatch with the variable set reaches cluster-up or fails naming why the cluster never started.
+- **CAP-79 — Route and SCC proof** ← spec-ocp-as-a-portability-profile CAP-2 (shipped 2026-09-09)
+  - **intent:** the smoke asserts Route admission, edge-terminated HTTPS to `/ht/` and `/admin/login/`, migrate-hook completion, and that postgres/redis pods run without fixed `runAsUser` under SCC-assigned UIDs — never a `port-forward` or a direct Service curl.
+  - **success:** a green run records those assertions; a dated note in the 12.1 orbit names any postgres/redis image contingency (official vs RH/bitnami).
+- **CAP-80 — Runner honesty** ← spec-ocp-as-a-portability-profile CAP-3 (shipped 2026-09-09)
+  - **intent:** the first implementation proves the chosen runner class (GitHub-hosted Ubuntu via `crc-org/crc-github-action`, or a labeled self-hosted RHEL/Fedora runner) before claiming OCP verification.
+  - **success:** the job never reports green on a cluster that never started; an unsupported OS is a named skip or a documented self-hosted runner, not a silent pass.
+- **CAP-81 — from spec-platform-datastores-consumed-not-self-hosted** ← spec-platform-datastores-consumed-not-self-hosted CAP-1 (shipped 2026-09-11)
+  - **intent:** PostgreSQL and Redis are permitted as consumed, never mandatorily self-hosted,
+  - **success:** `spec-pyforge-unifying-strategy/SPEC.md` carries the dated 2026-09-11 exception
+- **CAP-82 — from spec-platform-datastores-consumed-not-self-hosted** ← spec-platform-datastores-consumed-not-self-hosted CAP-2 (shipped 2026-09-11)
+  - **intent:** Mirrors the existing OCP overlay's own additive shape
+  - **success:** with the overlay applied, `postgres-statefulset.yaml`/`postgres-service.yaml`/
+- **CAP-83 — from spec-platform-datastores-consumed-not-self-hosted** ← spec-platform-datastores-consumed-not-self-hosted CAP-3 (shipped 2026-09-11)
+  - **intent:** Same pattern as CAP-2 applied to Redis — a `.Values.redis.external.enabled`
+  - **success:** with the overlay applied, `redis-deployment.yaml`/`redis-service.yaml`/
+- **CAP-84 — from spec-platform-datastores-consumed-not-self-hosted** ← spec-platform-datastores-consumed-not-self-hosted CAP-4 (shipped 2026-09-11)
+  - **intent:** `postgres-backup-cronjob.yaml` must not run a shadow backup of an instance
+  - **success:** when CAP-2's overlay is active, the backup CronJob is not deployed, and
+- **CAP-85 — Local leaf on platform-dev** ← spec-platform-dev-boots-local CAP-1 (shipped 2026-09-13)
+  - **intent:** The operator can load `config.settings.local` and run
+  - **success:** `django-debug-toolbar` is declared on
+- **CAP-86 — OIDC-delegated identity** ← spec-platform-fifteen-factors CAP-1 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** login flows through the IdP end-to-end locally; createsuperuser retired from the docs path. *Production profile decided 2026-09-09:* **Keycloak in-cluster, deployed by the Foundry chart**, is the default; the `COMPONENT_OIDC_*` seam is the BYO-IdP escape hatch. Landed as **Story 48.9**, co-decided with Story 49.6 (which populates `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO`, both `None` today at `base.py:214-215`).
+- **CAP-87 — telemetry** ← spec-platform-fifteen-factors CAP-2 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** one request traces web→Celery with correlated ids.
+- **CAP-88 — startup refusals** ← spec-platform-fifteen-factors CAP-3 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** each required setting's absence names itself at boot.
+- **CAP-89 — policy-as-tests** ← spec-platform-fifteen-factors CAP-4 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** the suite reds on policy drift.
+- **CAP-90 — pixi-sourced deps** ← spec-platform-fifteen-factors CAP-5 (shipped 2026-09-09)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** CI + images build from pixi alone.
+- **CAP-91 — one frozen env** ← spec-platform-image-one-pixi-env CAP-1 (shipped 2026-08-25)
+  - **intent:** The platform image is produced from a single `pixi install --frozen -e
+  - **success:** After `pixi lock`, a planted overlap (e.g. pip `mcp` vs conda `mcp`) is a
+- **CAP-92 — Containerfile drops the pip installer** ← spec-platform-image-one-pixi-env CAP-2 (shipped 2026-08-25)
+  - **intent:** The runtime image no longer runs `python3 -m pip install --no-deps` for
+  - **success:** `rg 'pip install --no-deps' src/platform/Containerfile` is empty; the
+- **CAP-93 — pixitainer-docker re-eval** ← spec-platform-image-one-pixi-env CAP-3 (shipped 2026-08-25)
+  - **intent:** Re-test the **Docker/Podman** pixitainer backend against the Story 10.3
+  - **success:** A dated Design Note lists each table row pass/fail with the CLI/package
+- **CAP-94 — from spec-platform-object-storage-kind** ← spec-platform-object-storage-kind CAP-1 (shipped 2026-09-10)
+  - **intent:** Object storage is permitted as a backing service when consumed via an S3 client
+  - **success:** `spec-pyforge-unifying-strategy/SPEC.md` carries the dated 2026-09-10 exception
+- **CAP-95 — from spec-platform-object-storage-kind** ← spec-platform-object-storage-kind CAP-2 (shipped 2026-09-10)
+  - **intent:** `pgsty/silo` (a maintained MinIO-codebase fork with real Linux/macOS/Windows
+  - **success:** `recipes/silo/recipe.yaml` passes `validate_recipe` + `optimize_recipe` +
+- **CAP-96 — from spec-platform-object-storage-kind** ← spec-platform-object-storage-kind CAP-3 (shipped 2026-09-10)
+  - **intent:** A real local S3-compatible server (never a mock, matching the `scripts/scribe_pg.py`
+  - **success:** A new, separate `platform-object-storage` pixi feature (not folded into
+- **CAP-97 — from spec-platform-object-storage-kind** ← spec-platform-object-storage-kind CAP-4 (shipped 2026-09-10)
+  - **intent:** A minimal `src/platform/` module resolves an S3 endpoint + credentials from
+  - **success:** The round-trip test passes against the local backend; no existing feature (Lane
+- **CAP-98 — The host renders from the accelerator shape** ← spec-python-agent-platform CAP-1 (shipped 2026-09-12)
+  - **intent:** A cookiecutter-django service with FastAPI integration is the platform's one
+  - **success:** The rendered host boots against PostgreSQL + Redis with no other
+- **CAP-99 — Langflow joins as a pluggable Django application** ← spec-python-agent-platform CAP-2 (shipped 2026-09-12)
+  - **intent:** Pattern A of langflow-django-plugin: ASGI mount forwarding `/api/v1/`,
+  - **success:** Langflow flows execute through the mounted app with its tables confined to
+- **CAP-100 — DB-GPT joins the platform through its configured integration pattern** ← spec-python-agent-platform CAP-3 (shipped 2026-09-12)
+  - **intent:** DB-GPT integrates via whichever pattern pap:AD-17's per-engine config switch
+  - **success:** Text-to-SQL / data-chat round-trips succeed end-to-end through whichever
+- **CAP-101 — Async work never blocks Django** ← spec-python-agent-platform CAP-4 (shipped 2026-09-12)
+  - **intent:** Celery over Redis carries LLM/AWEL work (the plugin dreams' Pattern B/D
+  - **success:** A long-running agent task completes via the worker path while the host stays
+- **CAP-102 — One environment, factory-sourced, 3.14-bound** ← spec-python-agent-platform CAP-5 (shipped 2026-09-12)
+  - **intent:** The platform's environment is a single conda-space solve from mirrored
+  - **success:** The lockfile solves reproducibly from a mirror-only channel config; the 3.14
+- **CAP-103 — Air-gap parity is a test, not a hope** ← spec-python-agent-platform CAP-6 (shipped 2026-09-12)
+  - **intent:** Every deployment artifact resolves inside the boundary: internal-registry
+  - **success:** A build + deploy executed with external egress blocked succeeds end-to-end;
+- **CAP-104 — from spec-scratch-worktree-lifecycle** ← spec-scratch-worktree-lifecycle CAP-1 (shipped 2026-09-09)
+  - **intent:** `steward workspace start <slug> [--from <branch>]` creates a worktree at a
+  - **success:** One command yields a ready worktree; its path is printed (and in `--json`,
+- **CAP-105 — from spec-scratch-worktree-lifecycle** ← spec-scratch-worktree-lifecycle CAP-2 (shipped 2026-09-09)
+  - **intent:** `steward workspace ls` enumerates every currently-open scratch worktree this tool
+  - **success:** `ls` returns instantly regardless of worktree count and reports only
+- **CAP-106 — from spec-scratch-worktree-lifecycle** ← spec-scratch-worktree-lifecycle CAP-3 (shipped 2026-09-09)
+  - **intent:** `steward workspace status [<slug>]` reports, per worktree, what `ls` deliberately
+  - **success:** For each (or the named) tool-created worktree, `status` reports the three health
+- **CAP-107 — from spec-scratch-worktree-lifecycle** ← spec-scratch-worktree-lifecycle CAP-4 (shipped 2026-09-09)
+  - **intent:** `steward workspace clean [--merged-only]` removes scratch worktrees whose branch
+  - **success:** After `clean --merged-only`, no merged tool-created worktree remains open;
+- **CAP-108 — from spec-scratch-worktree-lifecycle** ← spec-scratch-worktree-lifecycle CAP-5 (shipped 2026-09-09)
+  - **intent:** The tool keeps a bookkeeping record of which worktrees *it* created, and
+  - **success:** With loop-home worktrees present on disk, `ls` and `clean` enumerate zero of
+- **CAP-109 — identity and role arrive from the request; the pattern authenticates no one** ← spec-secure-live-dashboards CAP-1 (shipped 2026-09-09)
+  - **intent:** An adopting dashboard obtains the caller's identity and group membership from
+  - **success:** the same dashboard runs unmodified behind two proxies that use different
+- **CAP-110 — row-level isolation is declared, not implemented, by the adopter** ← spec-secure-live-dashboards CAP-2 (shipped 2026-09-09)
+  - **intent:** A dashboard states which column carries access and which roles exist; the
+  - **success:** two concurrent users of different roles produce **one** upstream fetch and
+- **CAP-111 — an unauthorized page is absent, not hidden** ← spec-secure-live-dashboards CAP-3 (shipped 2026-09-09)
+  - **intent:** The navigation tree is constructed from the caller's role, so a page a user
+  - **success:** the served DOM for a low-privilege caller contains no reference to a
+- **CAP-112 — the audit trail records what was seen, not merely that something happened** ← spec-secure-live-dashboards CAP-4 (shipped 2026-09-09)
+  - **intent:** Every data load, filter, navigation and export lands in a durable trail
+  - **success:** for any completed session the trail can answer "who saw how many rows of
+- **CAP-113 — export is gated server-side, and may be encrypted** ← spec-secure-live-dashboards CAP-5 (shipped 2026-09-09)
+  - **intent:** Only authorized roles obtain a data export. Authorization is enforced where
+  - **success:** a direct request to the export endpoint by an unauthorized caller — with no
+- **CAP-114 — the deployment perimeter ships with the pattern** ← spec-secure-live-dashboards CAP-6 (shipped 2026-09-09)
+  - **intent:** An adopter receives a production-shaped runtime rather than assembling one:
+  - **success:** the same artifact runs on a laptop against a file-backed database and in
+- **CAP-115 — the security boundaries are proven by tests that cannot pass vacuously** ← spec-secure-live-dashboards CAP-7 (shipped 2026-09-09)
+  - **intent:** Isolation is asserted by a suite that impersonates different identities and
+  - **success:** each isolation test fails when its guard is removed, demonstrated rather
+- **CAP-116 — the same dashboard definition ships hosted or static, without a fork** ← spec-secure-live-dashboards CAP-8 (shipped 2026-09-09)
+  - **intent:** A board that needs no isolation can be published as a free static site on
+  - **success:** the same board is published both ways without anyone hand-re-deriving its
+- **CAP-117 — estate catalog and config** ← spec-self-hosted-bmad-marketplace CAP-1 (shipped 2026-09-15)
+  - **intent:** listings are edited in git we control; backends and sources
+  - **success:** `bmad-method install` / `--custom-content` and Claude/Codex
+- **CAP-118 — publish path plus steward trust review** ← spec-self-hosted-bmad-marketplace CAP-2 (shipped 2026-09-15)
+  - **intent:** a module enters the catalog through Builder / module-template
+  - **success:** a listing cannot appear without a recorded review, unless it
+- **CAP-119 — ship backends** ← spec-self-hosted-bmad-marketplace CAP-3 (shipped 2026-09-15)
+  - **intent:** an air-gapped or estate-local machine gets a snapshot without
+  - **success:** default ship path is a noarch pixi/conda index package on
+- **CAP-120 — thin browse list** ← spec-self-hosted-bmad-marketplace CAP-4 (shipped 2026-09-15)
+  - **intent:** an operator can read the catalog without opening YAML by
+  - **success:** a generated index and/or a page in existing chrome lists
+- **CAP-121 — Claude-skill source slot (SKU B)** ← spec-self-hosted-bmad-marketplace CAP-5 (shipped 2026-09-15)
+  - **intent:** a future `skillsctl` feed can plug in without reminting the
+  - **success:** the slot exists in config; v1 does not operate skillsctl or
+- **CAP-122 — Hub Layer 3 (SKU C)** ← spec-self-hosted-bmad-marketplace CAP-6 (shipped 2026-09-15)
+  - **intent:** buying/selling Frames, Cogs, Ops, Guards across Hubs, and
+  - **success:** this Spec does not implement them.
+- **CAP-123 — estate Frame index** ← spec-self-hosted-bmad-marketplace CAP-7 (shipped 2026-09-15)
+  - **intent:** list, share, and add-as-a-reviewed-listing the Frames that
+  - **success:** `docs/foundry/frames/` is a source; a new Frame listing is a
+- **CAP-124 — from spec-suite-scaffold-and-mybmad-sidecar** ← spec-suite-scaffold-and-mybmad-sidecar CAP-1 (shipped 2026-09-13)
+  - **intent:** `bmad-module-template` is an authoring tool beside
+  - **success:** Register row 11 is `wield (authoring tool only)`.
+- **CAP-125 — from spec-suite-scaffold-and-mybmad-sidecar** ← spec-suite-scaffold-and-mybmad-sidecar CAP-2 (shipped 2026-09-13)
+  - **intent:** mybmad uses the estate PostgreSQL and estate Keycloak/OIDC.
+  - **success:** Prisma applies only in schema `mybmad`. Login is
+- **CAP-126 — from spec-suite-scaffold-and-mybmad-sidecar** ← spec-suite-scaffold-and-mybmad-sidecar CAP-3 (shipped 2026-09-13)
+  - **intent:** The host can show mybmad after the same OIDC session.
+  - **success:** django-pyforge chrome lists or embeds mybmad as a
+- **CAP-127 — one build, whole Guild** ← spec-unified-container CAP-1 (shipped 2026-09-11)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-128 — the image ships the repo at a fixed short path** ← spec-unified-container CAP-2 (shipped 2026-09-11)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-129 — credentials never enter image layers** ← spec-unified-container CAP-3 (shipped 2026-09-11)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-130 — state outlives the container** ← spec-unified-container CAP-4 (shipped 2026-09-11)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-131 — the image proves itself at build time** ← spec-unified-container CAP-5 (shipped 2026-09-11)
+  - **intent:** See absorbed Spec memlog and git history.
+  - **success:** See absorbed Spec memlog and git history.
+- **CAP-132 — the Spec ladder is declared** ← spec-vocabulary-one-name-one-job CAP-1 (shipped 2026-09-15)
+  - **intent:** the eight live Spec statuses get a stated naming rule, a
+  - **success:** `draft`, `ready`, `in-progress` (grandfathered only), `shipped`,
+- **CAP-133 — the BMAD↔Lexicon cross-walk** ← spec-vocabulary-one-name-one-job CAP-3 (shipped 2026-09-15)
+  - **intent:** BMAD's daily nouns (Epic, Story, Sprint, PRD, Retrospective) map
+  - **success:** the Charter carries the walk (map, never join) and records
+- **CAP-134 — the unnamed collisions get rulings** ← spec-vocabulary-one-name-one-job CAP-4 (shipped 2026-09-15)
+  - **intent:** `Track` and `Gate`/`Guard` are named and scoped.
+  - **success:** artifacts write **evidence Track** vs **planning track**; Gate
+- **CAP-135 — the Design tier stops drifting** ← spec-vocabulary-one-name-one-job CAP-5 (shipped 2026-09-15)
+  - **intent:** practice vocabulary is teaching-only (except method-vs-machinery
+  - **success:** the deck says it is teaching-only; Herald owns the pull;
+- **CAP-136 — mint-time story identity and new `DW-` ids** ← spec-vocabulary-one-name-one-job CAP-6 (shipped 2026-09-15)
+  - **intent:** one function, at mint time, makes the three story spellings
+  - **success:** heading `### Story N.N:` is human-canonical; the ledger key is
+- **CAP-137 — remaining declared shapes** ← spec-vocabulary-one-name-one-job CAP-7 (shipped 2026-09-15)
+  - **intent:** long vs short station form, frontmatter casing, `S-N.N`, commit
+  - **success:** one roster of eight stations (LONG for paths/packages/envs,
+- **CAP-138 — `check=` is a finding code** ← spec-vocabulary-one-name-one-job CAP-8 (shipped 2026-09-15)
+  - **intent:** the field that carries `spec-surface` does not also carry a
+  - **success:** the six `atlas.py` call sites put runtime data in `evidence`;
+- **CAP-139 — extract corridor and transports** ← spec-work-passports-dated-extracts CAP-1 (shipped 2026-09-15)
+  - **intent:** inbound vendor extract and outbound filtered extract load
+  - **success:** re-dropping last week's file does not clone passports; an
+- **CAP-140 — work passport and frozen core schema** ← spec-work-passports-dated-extracts CAP-2 (shipped 2026-09-15)
+  - **intent:** UUID is identity; Jira keys and GitHub numbers are nicknames;
+  - **success:** two extracts cannot merge by title; high-value first links
+- **CAP-141 — as-of glass (standup and shipped)** ← spec-work-passports-dated-extracts CAP-3 (shipped 2026-09-15)
+  - **intent:** vendor data on the existing Postgres app is dated; empty
+  - **success:** testers see shipped-from-last-inbound; standup cites a
+- **CAP-142 — outbound slice gate** ← spec-work-passports-dated-extracts CAP-4 (shipped 2026-09-15)
+  - **intent:** default deny, named slice, named outbound-signer role
+  - **success:** an unsigned or over-cap file does not leave; they load what
+- **CAP-143 — quarantine (no auto-link)** ← spec-work-passports-dated-extracts CAP-5 (shipped 2026-09-15)
+  - **intent:** unlinked inbound rows wait for a human. First 14 days
+  - **success:** no title-match endpoint exists. After the window, a row
+- **CAP-144 — live collectors for boards we already own** ← spec-work-passports-dated-extracts CAP-6 (shipped 2026-09-15)
+  - **intent:** Jira and Internal GH we can log into feed stamps; never the
+  - **success:** the slot exists; v1 does not run collectors. Epic 8 /
+- **CAP-145 — BMAD projection onto Internal GH** ← spec-work-passports-dated-extracts CAP-7 (shipped 2026-09-15)
+  - **intent:** ledger remains source; GH cards say projected.
+  - **success:** the slot exists; factory stories do not ride outbound
 
 ## Constraints
 
