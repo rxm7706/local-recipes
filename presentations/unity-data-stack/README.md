@@ -1,9 +1,13 @@
 # Unity Data Stack deck (`unity-data-stack`)
 
-**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6) **BLOCKED**: the rebuilt standalone infographic is corrupted (see Ledger below) — do not push it. The other four `project/` artifacts are confirmed already in sync with Design. Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6) had left the standalone infographic corrupted (see the 2026-09-17 blocked Ledger entry below); **fixed and DONE 2026-09-17** — content rebuilt to the infographic standard, verified, pushed and read back byte-exact (see the 2026-09-17 rebuild+push Ledger entry). All five `project/` artifacts are confirmed in sync with Design. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
-product** deck (not a persona chapter); Dream: `docs/dreams/unity-data-stack.md`. Spec:
-`_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
+product** deck (not a persona chapter); Dream: `docs/dreams/unity-data-stack.md`. The chain's Spec
+was consolidated into `spec-pyforge-atlas` 2026-08-02 (see the Dream's own superseded-notice); the
+original standalone Spec + its `constitution-provenance.md` companion now live archived at
+`archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`
+(the path formerly written here, `_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`,
+does not exist).
 
 The enterprise **innersource** platform — an opinionated, conda-native, air-gap-first,
 spec-governed monorepo where teams co-contribute templates, libraries, services and Data Products
@@ -42,12 +46,16 @@ Regenerate the derived three with `pixi run -e local-recipes deck-export unity-d
 (never hand-edit them).
 
 ## Design project (the bridge's far end)
-
-Prototype lives in Claude Design project **"Unity Data Stack deck"**
-(`0494e2b0-7132-43b7-8ff2-4b4b42fa8384`), bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`):
+Prototype lives in Claude Design project **"Unity Data Stack deck"** (`0494e2b0-7132-43b7-8ff2-4b4b42fa8384`):
 https://claude.ai/design/p/0494e2b0-7132-43b7-8ff2-4b4b42fa8384?file=Unity+Data+Stack.dc.html
-Pull it with the MCP bridge ("pull unity-data-stack") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+### Provenance
+
+Bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with the MCP bridge
+("pull unity-data-stack") — see `docs/specs/presentation-deck.md` § *The MCP bridge*. (This
+`### Provenance` sub-heading was added 2026-09-17 to bring the section above into
+`pyforge.herald.registry.read()`'s canonical two-body-line shape — the prose that used to sit
+directly under the heading broke `registry.read()` with "expected exactly two body lines, found
+21"; see the 2026-09-17 Ledger entry below for the incident that surfaced it.)
 
 Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 
@@ -96,3 +104,19 @@ standalone is regenerated correctly and re-verified.
 | `Unity Data Stack - Infographic.dc.html` | `1785023542254041` (unchanged) | verified byte-identical, sha256 `2ead3e671a11…`; no push |
 | `Unity Data Stack - Infographic Deck.dc.html` | `1785023542254041` (unchanged) | verified byte-identical, sha256 `227dfc6926f5…`; no push |
 | `Unity Data Stack Infographic standalone.html` | `PENDING-PUSH` (still) | **corrupted on disk since e483288d54f — not pushed; blocked on a content fix** |
+
+## Ledger — 2026-09-17 rebuild + push — DONE (Story 21.6)
+
+The standalone's content from character offset 6,347 onward (everything after the confirmed-real
+header/stat-strip/Act I opening) was authored fresh — not a revert, not a re-run of the same broken
+generation path — grounded in the Dream, the archived canonical Spec + its `constitution-provenance.md`
+companion, and the archived PRD's FR-by-FR provenance/delta findings, Jobs To Be Done, four Key User
+Journeys, Glossary, NFRs, risk register, and full Success Metrics catalog. `facts.yaml` untouched.
+
+| Artifact | Measured | Design etag | Notes |
+|---|---|---|---|
+| `Unity Data Stack Infographic standalone.html` | 95360 B · 32 sections · 6 acts · 3 SVG · 15 tables | `1789645202687610` | `deck-facts --check`: 0 unmarked / 0 mismatch (12 drifted / 7 unshown — expected, `facts.yaml` not regenerated); Chromium render at 1240 px clean, 0 overflow, 0 empty sections; pushed and read back SHA-256-identical (`a2a1665c…`) |
+| `facts.yaml` | unchanged, 32 facts at tree `506ad58622` | — | not touched by this story, per its own boundary |
+
+`PENDING-PUSH` above (2026-09-17 blocked entry) is now cleared by this entry's etag. The other four
+`project/` files remain byte-identical to Design, unchanged since the 2026-09-17 verification pass.
