@@ -13,5 +13,7 @@ Task-oriented documentation: "how do I do X?" operational instructions.
 | [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) | Offline mirror and Artifactory setup (procedural) |
 | [`antigravity-developer-startup.md`](antigravity-developer-startup.md) | Antigravity 2.0 developer startup |
 | [`manticore-studio.md`](manticore-studio.md) | Herald manticore studio install and render |
+| [`driving-a-pyforge-station-backlog.md`](driving-a-pyforge-station-backlog.md) | Dispatching, verifying, and landing BMAD station work |
+| [`detect-concurrent-agent-activity.md`](detect-concurrent-agent-activity.md) | Checking for other agents/sessions before you dispatch |
 
 See [`docs/MAP.md`](../MAP.md) for the full Diátaxis-adapted information architecture.
