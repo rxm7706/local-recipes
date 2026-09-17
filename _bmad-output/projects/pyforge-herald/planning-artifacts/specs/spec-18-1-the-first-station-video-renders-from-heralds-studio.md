@@ -288,7 +288,7 @@ note in Herald's persona skill, the adoption-register row, and a dated doc adden
 - `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml` — `18-1-...`
   flipped `blocked` -> `done`, via the sanctioned `sprint-ledger-sync` regeneration (after an
   initial hand-edit was caught in review and reverted).
-- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-herald-s-studio.md`
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-heralds-studio.md`
   (new, tracked) — this spec, promoted per the "story specs are durable" convention.
 
 **Review findings breakdown** (15 total across 4 layers; see `## Review Triage Log` above for the

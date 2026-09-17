@@ -1,9 +1,10 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-14"   # chain-currency sweep: spec-pyforge-herald moved to 2026-09-13 (SPEC.md re-grounded 2026-09-12 on Epic 19's effect-gap closure; memlog through Story 20.2's per-deck fact ledgers) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14; no requirement added, changed or removed.
+updated: "2026-09-17"   # one-chain herald fold; FR←CAP annotations; CAP-1..47
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -570,20 +571,20 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 1: Herald CLI Architecture
 
-**FR-1.1: Unified Command Dispatcher**
+**FR-1.1: Unified Command Dispatcher** ← CAP-1
 - Single entry point: `herald <subcommand> [--help | --json | --date-range <start>..<end>]`
 - Subcommands: `progress`, `success`, `notice`
 - Help text comprehensive and discoverable (`herald --help`, `herald <subcommand> --help`)
 - Argument parsing handles: JSON output mode, date filtering, station/project filtering
 - Extensible for future Moments (not hardcoded to 3)
 
-**FR-1.2: Shared Argument Conventions**
+**FR-1.2: Shared Argument Conventions** ← CAP-1
 - All subcommands support `--json` (machine-readable output)
 - All subcommands support `--date-range YYYY-MM-DD..YYYY-MM-DD` or `--week recent|last-N` patterns
 - All subcommands support station/project filtering where applicable
 - Error messages consistent and actionable
 
-**FR-1.3: CLI Authentication & Authorization**
+**FR-1.3: CLI Authentication & Authorization** ← CAP-1
 - [ASSUMPTION: Herald CLI reads from Herald web service with implicit auth (same session)] Confirm with ops team
 - Write operations (publish, author) require operator role confirmation
 - Read operations (progress, list, archive) are public
@@ -592,17 +593,17 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 2: Herald Web Surface
 
-**FR-2.1: Unified Navigation & Layout**
+**FR-2.1: Unified Navigation & Layout** ← CAP-3
 - Header nav with 4 tabs: **Pitch** (link to Moment 1 deck family), **Progress**, **Success**, **Operations**
 - Unified color scheme and typography (Modernist design system from Moment 1)
 - Sidebar: station filter (Warden, Atlas, Marshal, etc.), date range selector, search box
 - Responsive (desktop, tablet, mobile)
 
-**FR-2.2: Header & Footer**
+**FR-2.2: Header & Footer** ← CAP-3
 - Header: Herald branding, Moment tab nav, user profile (if applicable)
 - Footer: snapshot timestamp, last-updated indicators per section
 
-**FR-2.3: Surface Integration**
+**FR-2.3: Surface Integration** ← CAP-3
 - All three Moments visible in unified web surface (no separate apps or domains)
 - Consistent pagination, sorting, and filtering across all tabs
 - Cross-moment linking: Moment 3 success claim can link to Moment 4 notice (bidirectional)
@@ -611,12 +612,12 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 3: Moment 2 — Progress Visibility
 
-**FR-3.1: Progress Data Model**
+**FR-3.1: Progress Data Model** ← CAP-11
 - **Record structure**: station name, date, shipped capabilities (list), cost (compute hours, token spend, wall-clock), unblock narrative (text)
 - **Cost metrics**: derived from sprint-status ledger + bmad-loop journal timestamps
 - **Unblock narrative**: operator-authored (auto-suggested from downstream PRs if available)
 
-**FR-3.2: Progress Automation**
+**FR-3.2: Progress Automation** ← CAP-11
 - **Trigger 1**: On-ship event (webhook from CI when PR merges to main)
   - Auto-creates progress record with cost + shipped capabilities extracted from journal
   - Operator authors unblock narrative (prompted)
@@ -624,12 +625,12 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - Collects all shipping events from past week, aggregates into one record
   - Falls back to this when no on-ship events in the week
 
-**FR-3.3: Progress CLI**
+**FR-3.3: Progress CLI** ← CAP-11
 - `herald progress <station>` — show latest progress record for station (JSON or formatted)
 - `herald progress <station> --update` — manually trigger progress update (operator only)
 - `herald progress --list [--station <name> --week recent|<N>]` — list progress records by filter
 
-**FR-3.4: Progress Web Tab**
+**FR-3.4: Progress Web Tab** ← CAP-11
 - Latest progress per station (card view or table)
 - Sidebar filters: station, date range
 - Expandable detail: full cost breakdown, unblock narrative, shipped capabilities list
@@ -639,7 +640,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 4: Moment 3 — Success Proclamation
 
-**FR-4.1: Success Claim Data Model**
+**FR-4.1: Success Claim Data Model** ← CAP-12
 - **Record structure**: project name, shipped date, thesis (one-liner, what we proved), evidence list (URL + type pairs: test_results | metrics | adoption | other)
 - **Evidence types**: 
   - `test_results`: CI job URL (links to passing tests)
@@ -647,7 +648,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - `adoption`: downstream PR URL (proves dependent projects use it)
   - `other`: freeform URL (any supporting proof)
 
-**FR-4.2: Success Auto-Extract**
+**FR-4.2: Success Auto-Extract** ← CAP-12
 - **Trigger**: On PR close to main + passing gate-suite
   - Herald webhook receives: PR URL, commit SHA, test job URL, merged-at timestamp
   - Herald auto-extracts: project name (from PR title/labels), test results (CI job)
@@ -658,20 +659,20 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - Web: review form with editable thesis + evidence list
   - Operator clicks publish → claim becomes public + indexed
 
-**FR-4.3: Success CLI**
+**FR-4.3: Success CLI** ← CAP-12
 - `herald success review <claim-id>` — show claim under review (JSON or formatted)
 - `herald success publish <claim-id> --thesis "<one-liner>"` — publish with operator-authored thesis
 - `herald success list [--status draft|published --date-range <start>..<end>]` — list claims by filter
 - `herald success get <claim-id>` — retrieve published claim
 
-**FR-4.4: Success Web Archive**
+**FR-4.4: Success Web Archive** ← CAP-12
 - Published claims listed chronologically (newest first)
 - Claim card: project, thesis, shipped date, evidence badges (green=linked, yellow=pending)
 - Click to expand: full evidence list with live links
 - Sidebar filters: date range, evidence status
 - Search box: project name, thesis keyword
 
-**FR-4.5: Evidence Integrity**
+**FR-4.5: Evidence Integrity** ← CAP-12
 - All evidence links validated at publish time (404 detection, redirect resolution)
 - Dead links surface error before publish (operator fixes or removes)
 - Evidence links re-validated weekly (stale links flagged in operator dashboard)
@@ -680,18 +681,18 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 5: Moment 4 — Operations Notices
 
-**FR-5.1: Notice Data Model**
+**FR-5.1: Notice Data Model** ← CAP-13
 - **Record structure**: notice type (deprecation | fix | eol), component/feature name, what changed, why, migration path (if applicable), deadline (if applicable), reason link (URL to decision / ticket), notice URL (permanent archive path)
 - **Versions**: notices support edit history (who, what, when); old versions remain in archive for audit
 
-**FR-5.2: Notice Authoring**
+**FR-5.2: Notice Authoring** ← CAP-13
 - **CLI**: `herald notice author --type <deprecation|fix|eol> --component <name> --reason "<why>" --deadline <YYYY-MM-DD> [--migrate-to <new-component>]`
   - Interactive prompt for missing fields (what changed, why, migration path)
   - Outputs: draft notice (markdown format) + preview URL
   - Operator confirms + publishes (or exits to edit)
 - **Web form** (optional, if UI bandwidth): author form with fields matching CLI interface
 
-**FR-5.3: Notice Archive**
+**FR-5.3: Notice Archive** ← CAP-13
 - **Storage**: notices organized by YYYY-MM folders + category tags (directory tree)
 - **Indexing**: 
   - `/operations/notices/` lists categories (deprecation, fix, eol)
@@ -701,18 +702,18 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - URL never changes; if component name changes, redirect rule created
 - **Search**: Cmd+F in browser (manual search)
 
-**FR-5.4: Notice Lifecycle**
+**FR-5.4: Notice Lifecycle** ← CAP-13
 - **Draft** → **Published** → **Closed** (after deadline or superseded)
 - Draft: visible to authors only; editable
 - Published: visible to all; read-only (new version can be created if needed)
 - Closed: visible to all; archived; no further edits
 
-**FR-5.5: Redirect Rules**
+**FR-5.5: Redirect Rules** ← CAP-13
 - When component name or URL structure changes, redirect rule auto-generated
 - Operator confirms redirect → persisted
 - Old URLs → new archive location (no 404s for historical notices)
 
-**FR-5.6: Notice CLI**
+**FR-5.6: Notice CLI** ← CAP-13
 - `herald notice author [...]` — create and publish notice
 - `herald notice list [--type deprecation|fix|eol --month YYYY-MM]` — list by filter
 - `herald notice archive` — show archive structure + counts
@@ -722,17 +723,17 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 6: Evidence-Linking Framework
 
-**FR-6.1: Shared Evidence Link Protocol**
+**FR-6.1: Shared Evidence Link Protocol** ← CAP-11
 - All evidence links follow schema: `{ type: "test_results|metrics|adoption|other", url: "https://...", label: "CI job #123" }`
 - Protocol supports: HTTP/HTTPS, link validation (404 detection), redirect resolution
 - Links can be bidirectional: success claim links to notice, notice links back to success claim
 
-**FR-6.2: Evidence Validation**
+**FR-6.2: Evidence Validation** ← CAP-11
 - Sync validation: test at publish time (404 → error)
 - Async validation: weekly check of all links (stale links → operator alert)
 - Redirect handling: follow redirects up to 3 hops; warn on redirect chains
 
-**FR-6.3: Evidence Retrieval**
+**FR-6.3: Evidence Retrieval** ← CAP-11
 - Evidence links always retrievable by claim ID + link ID
 - Evidence can be unlinked (operator removes broken link)
 - Evidence link audit trail: who added, when, any edits
@@ -741,23 +742,23 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 7: Automation Orchestration
 
-**FR-7.1: Webhook Integration**
+**FR-7.1: Webhook Integration** ← CAP-37
 - **Moment 2**: on-ship webhook (CI notifies Herald when PR merges to main)
   - Payload: PR URL, commit SHA, test job URL, merged-at timestamp, station tag (if available)
 - **Moment 3**: on-PR-close webhook (CI notifies Herald when PR closes + gates pass)
   - Payload: PR URL, commit SHA, test job URL, close-at timestamp
 
-**FR-7.2: Scheduler (Cron)**
+**FR-7.2: Scheduler (Cron)** ← CAP-38
 - **Moment 2**: Thursday 2300 UTC weekly (fallback if no on-ship events)
   - Collects all shipping events from past week, generates aggregated record
 - **Extensible**: Automation rules stored in Herald config (can be modified per Moment without code changes)
 
-**FR-7.3: Gate-Based Triggers**
+**FR-7.3: Gate-Based Triggers** ← CAP-39
 - **Moment 3**: auto-extract only if PR-close event INCLUDES "all gates passed" signal
   - No orphaned claims from incomplete shipping
 - **Moment 4**: manual author only (no auto-trigger)
 
-**FR-7.4: Operator Confirmation Gates**
+**FR-7.4: Operator Confirmation Gates** ← CAP-37
 - Moment 2 progress: operator authors unblock narrative (prompted after auto-extract)
 - Moment 3 success: operator approves + authors thesis (required before publish)
 - Moment 4 notice: operator authors full notice (required; no auto-generation)
@@ -1041,3 +1042,7 @@ regex): 94 story keys — 82 `done`, 11 `backlog`, 1 `blocked` — across 22 epi
 
 **No requirement added, changed or removed.** `updated:` bumped to record that the
 check ran.
+
+## Currency reconciliation — 2026-09-17
+
+One-chain fold reminted spec-pyforge-herald CAP-1..47. Kernel FR ids unchanged; each opening FR line cites a reminted CAP. FR delta: none.
