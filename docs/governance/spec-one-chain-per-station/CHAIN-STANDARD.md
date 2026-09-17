@@ -4,7 +4,7 @@ type: companion
 spec: one-chain-per-station
 status: ready
 created: "2026-09-16"
-updated: "2026-09-16"
+updated: "2026-09-17"
 ---
 
 # The chain standard
@@ -167,3 +167,22 @@ A planning artifact never waits on code to conform.
 
 marshal (pilot) → steward → herald → scribe · doctor · atlas · warden in
 parallel. Mason is already one Spec: checklist items 2, 5–8 only.
+
+## 9. Lock, mop, exemption — when a fold PR runs (CAP-10)
+
+**Read this before opening another fold PR.** After the eight station
+chains exist, 1:1 is the **lock**, not a periodic fleet fold.
+
+| Verb | Meaning |
+|---|---|
+| **lock** | Dream-append-first + `chain-sprawl-check`. Day-to-day is §3. |
+| **exemption** | New Dream/Spec folder only with `fold-exemption:` from `guild-roster.json` `fold_exemptions`. |
+| **mop** | §7 fold PR only when unexempted satellites already reached `main`. One station, one PR, `fold/<s>`. |
+
+An unexempted satellite on a PR is rewritten to a dated station-Dream
+section plus a station Spec CAP; drop the extra file. Do not reset or
+un-archive. Parallel agents: one worktree per station; serialize shared
+memlogs, `fr-baseline.json`, and `capability-ledger.yaml`; merge `--merge`
+one at a time. Environment: `pixi run -e pyforge-guild`. Never
+`scripts/bmad-switch` from a parallel agent. This page is the checklist —
+not a harness-specific workflow.

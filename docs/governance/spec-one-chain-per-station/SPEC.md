@@ -10,14 +10,14 @@ status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fo
                 # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
                 # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
-updated: "2026-09-16"
+updated: "2026-09-17"
 owner-dream: docs/dreams/one-chain-per-station.md
 surface: []     # Deliberately empty until the mechanism stories land: chain-sprawl-check and
                 # fr-without-cap will be doctor sources (declared here when they exist, the way
                 # coverage-gate-independence declares its evaluator); the per-station fold PRs
                 # touch surfaces already governed by each station's own Spec and stay there.
 companions:
-  - CHAIN-STANDARD.md   # CAP-9 — the one page every fold conforms to (hierarchy, relations, sequence, statuses, names, ids, checklist)
+  - CHAIN-STANDARD.md   # CAP-9 — the one page every fold conforms to; CAP-10 §9 is lock / mop / exemption
 sources:
   - ../../../docs/dreams/one-chain-per-station.md
 open_questions: []
@@ -34,12 +34,13 @@ open_questions: []
   #     and is fully applied by the Charter memlog + Dream log entries in the same PR.
 ---
 
-> **Canonical contract.** Derived from `.memlog.md` (43 entries, the
+> **Canonical contract.** Derived from `.memlog.md` (59 entries, the
 > decision-of-record) and the Dream in `sources:`. Every question is ruled;
 > the precedence order (standard > history > implementation), the rebase
 > rule (renumber everything, sequentially, all four BMAD phases) and the
 > sequence (marshal → steward → herald → the rest in parallel) are operator
-> constraints. Downstream may bind. Do not hand-edit — append the memlog and
+> constraints. CAP-10 is the portable lock / mop / exemption rerun.
+> Downstream may bind. Do not hand-edit — append the memlog and
 > re-derive.
 
 # SPEC — One Dream, one Spec, one PRD, one architecture, one epic chain — per station
@@ -165,6 +166,23 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     CAP-2), never the page; every rule on the page cites the ruling it comes
     from; after the last fold, zero topic-word `DW-` families and zero
     station-local rule-id prefixes remain in planning artifacts.
+- **CAP-10 — Portable lock, mop, and exemption (the rerun).**
+  - **intent:** Any agent keeps one chain per station by three verbs:
+    **lock** (Dream-append-first plus `chain-sprawl-check`; day-to-day after
+    the eight station folds is CHAIN-STANDARD §3 — append → memlog → spec →
+    FR ← CAP → story), **exemption** (a new Dream or Spec folder only when
+    `fold-exemption:` is a value from `guild-roster.json` `fold_exemptions`),
+    and **mop** (a fold PR only as cleanup when unexempted satellites already
+    reached `main` — one station, one PR, `fold/<s>`, CHAIN-STANDARD §7).
+    An unexempted satellite on a PR is rewritten to a dated station-Dream
+    section plus a station Spec CAP and the extra file is dropped. The
+    ritual is harness-neutral: the page is the checklist, not a vendor
+    workflow.
+  - **success:** A new effort adds a dated Dream section, a CAP, and a
+    Story — not a folder; an unexempted satellite file does not land; a
+    mop PR's §7 checklist is green; archived Dreams and absorbed Specs stay
+    archived/absorbed; the ritual can be run from this Dream + this Spec +
+    CHAIN-STANDARD with no harness-specific store or dispatch path.
 
 ## Constraints
 
@@ -205,6 +223,15 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
 - Eight station chains plus the Guild's; never one fleet chain.
 - Known costs accepted and named: surface drift degrades from "which Spec"
   to "which station"; a station fold is multi-day real-story work.
+- **Portable rerun (operator, 2026-09-17).** Do not mint a new
+  `docs/dreams/*.md` for this ritual (that breaks 1:1). Do not reset or
+  un-archive. Do not treat another fleet-wide fold as the standing
+  practice — 1:1 is the lock. CHAIN-STANDARD §7 is the mop checklist; §3
+  is the lock sequence. `pixi run -e pyforge-guild`; `local-recipes` only
+  when the change needs the recipe factory. Never `scripts/bmad-switch`
+  from a parallel agent. Parallel folds: one worktree per station;
+  serialize shared memlogs, `fr-baseline.json`, and
+  `capability-ledger.yaml`; `gh pr merge --merge` one at a time.
 
 ## Non-goals
 
@@ -213,6 +240,9 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
 - Any change on B (`python-foundry`) — this Spec prepares A's contract; B
   re-derives (`spec-foundry-regenerate-not-fold`).
 - Consolidating across stations (a marshal CAP never moves to steward).
+- Reopening CAP-3 rebase rules, un-archiving folded Dreams, inventing a
+  fifth `fold-exemption`, or binding the rerun to one agent harness
+  (CAP-10).
 
 ## Success signal
 
@@ -221,4 +251,6 @@ An operator opens `docs/dreams/pyforge-<s>.md`, follows one link to
 has the whole station — for all eight, and for the Guild. A new effort adds a
 section, a CAP, and a Story, not a folder; the one detector that guards this
 has been red at least once in CI and was fixed by an exemption or a fold,
-never by silence.
+never by silence. After the eight station folds, day-to-day work follows
+CHAIN-STANDARD §3; a §7 fold PR appears only as mop for unexempted
+satellites that already reached `main`.
