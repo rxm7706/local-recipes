@@ -1,4 +1,5 @@
----title: The Distributed AI Economy — Intelligence Hubs, Frames, Cogs, Ops, and the Accountability Plane
+---
+title: The Distributed AI Economy — Intelligence Hubs, Frames, Cogs, Ops, and the Accountability Plane
 type: dream
 owner: steward
 status: archived   # 2026-09-14 -- steward Epic 53 (spec-intelligence-hub hub:CAP-1..4) is 6/6

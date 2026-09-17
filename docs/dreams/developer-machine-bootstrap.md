@@ -1,4 +1,5 @@
----title: A new contributor or agent is productive on this repo without tribal knowledge
+---
+title: A new contributor or agent is productive on this repo without tribal knowledge
 type: practice
 owner: steward
 status: archived   # 2026-08-22 — spec-developer-machine-bootstrap, decomposed into the station backlog same day

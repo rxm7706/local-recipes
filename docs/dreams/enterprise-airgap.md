@@ -1,4 +1,5 @@
----title: Firewalled Factory
+---
+title: Firewalled Factory
 type: practice
 owner: steward
 status: archived

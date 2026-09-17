@@ -1,4 +1,5 @@
----title: The estate hosts its own BMAD catalog, not Claude's public marketplace
+---
+title: The estate hosts its own BMAD catalog, not Claude's public marketplace
 type: dream
 owner: steward
 status: archived

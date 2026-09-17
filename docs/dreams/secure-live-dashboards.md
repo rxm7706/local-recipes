@@ -1,4 +1,5 @@
----title: A dashboard can be handed to the company without being rebuilt
+---
+title: A dashboard can be handed to the company without being rebuilt
 type: dream
 owner: steward
 status: archived
