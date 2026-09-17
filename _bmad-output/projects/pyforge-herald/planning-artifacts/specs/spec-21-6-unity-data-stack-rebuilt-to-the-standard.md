@@ -2,7 +2,7 @@
 title: 'unity-data-stack rebuilt to the standard'
 type: 'feature'
 created: '2026-09-15'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -13,9 +13,12 @@ context:
   - 'src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py'
   - 'src/shared/packages/pyforge-herald/src/pyforge/herald/registry.py'
   - 'src/shared/packages/pyforge-herald/src/pyforge/herald/state.py'
+  - 'archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md'
+  - 'archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/constitution-provenance.md'
+  - 'archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md'
+  - 'docs/dreams/unity-data-stack.md'
 warnings: []
-deferred:
-  - '2026-09-17: `Unity Data Stack Infographic standalone.html` is corrupted (72x space-separated boilerplate repeat, char offset 6350-142949, from commit e483288d54f) and was NOT pushed to Design. Blocked on a content fix + re-verification before push+read-back can complete. The other four `project/` files were verified already byte-identical to Design; no push was needed for them.'
+deferred: []
 declared_low_risk: false
 verdict_mode: advisory
 baseline_revision: '548919f73eb453d08198391bea8682b8a1bd575b'
@@ -119,3 +122,82 @@ before push+read-back can be attempted again. The same generation defect likely 
 sibling `wasm-analytics-stack` and `deckcraft` standalone posters from the same commit (per the
 coordinator's report); this spec does not attempt a fix — that is remediation work for a follow-up
 story/PR, mirroring Story 21.9's approach (document, no push).
+
+## Spec Change Log — 2026-09-17 (cont'd) — content rebuilt, verified, pushed, DONE
+
+**Root cause note.** The prior corruption was traced to a generation defect in commit
+`e483288d54f`, not to anything about this poster's design or its `facts.yaml`. `facts.yaml` itself
+(32 facts, tree `506ad58622`) was untouched and used as-is, per the boundary this spec's own Never
+clause already set.
+
+**Content.** Kept bytes `[0, 6347)` of the on-disk file byte-for-byte — the confirmed-real header,
+stat strip, Act I band, and the opening of Section 01 up through the `dream_log_2026-07-23` fact —
+and authored everything from that point forward fresh. Source material: the Dream
+(`docs/dreams/unity-data-stack.md`), the archived canonical Spec and its
+`constitution-provenance.md` companion (both under
+`archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/` — the
+path this story's own frontmatter named, `_bmad-output/projects/unity-data-stack/...`, does not
+exist; the chain was consolidated into Atlas on 2026-08-02, see `docs/dreams/unity-data-stack.md`'s
+own superseded-notice), and the archived PRD
+(`archive/.../prds/prd-unity-data-stack-2026-07-25/prd.md`) for its FR-by-FR provenance/delta
+findings, Jobs To Be Done, four Key User Journeys, full Glossary, Cross-Cutting NFRs, Risk register,
+and complete thirteen-metric Success Metrics catalog — all read for narrative color per this
+Spec's own "consult sources for prose color the contract intentionally omits" allowance, none of
+it contradicting the canonical archived SPEC.md.
+
+**Shape delivered:** 32 sections (floor: 18), six Act bands (I–VI, matching the existing Act I),
+3 inline SVG diagrams (the three-gists-converge diagram, the Raw→Curated→Consumption layer
+diagram, the AD-17 station map), 15 tables (floor: 3), 95,360 bytes total (floor: 90,000). No
+package/CLI rows, matching the "chain has no station package" design boundary. Every count/version/
+status/date shown is a `data-fact` span over a `facts.yaml` row — four values with no ledger row
+(the Constitution's `1.2.0` version stamp, the intake root's broken `0.59.0` pixi pin, and the
+Dagster `1.12.0`/`1.13.15` floor-vs-current pair) were reworded to convey the same finding without
+stating the bare version number as visible text, rather than inventing a data-fact row for them.
+
+**Verification actually performed (not just `deck-facts --check`):**
+1. `pixi run -e local-recipes deck-facts unity-data-stack --check` — 0 unmarked, 0 mismatch (12
+   drifted / 7 unshown, both expected and outside this AC: `facts.yaml` was deliberately not
+   touched, so fleet-progress rows drift the moment any other station's ledger moves).
+2. Read the rebuilt file back in full and confirmed by eye: 32 distinct section titles, six
+   distinct Act themes, no repeated sentence, no boilerplate — the specific failure mode of the
+   prior corruption. Confirmed zero occurrences of the corruption's own signature strings
+   (`"The factory already runs a tracked fleet"`, the space-separated `"T h e   f a c t o r y"`
+   pattern) anywhere in the rebuilt file.
+3. `html.parser`-based tag-balance check: 0 errors, 0 unclosed tags at EOF.
+4. Headless Chromium render (Playwright) at 1240px width: `scrollWidth` exactly 1240 (no
+   horizontal overflow), 0 overflowing elements, 0 near-empty sections, DOM counts confirm 32
+   sections / 3 SVGs / 15 tables / 6 act bands. Five region screenshots (top/header, first SVG,
+   first table, station-map SVG, closing band) visually reviewed — clean typography, correct
+   zebra striping, both diagrams and the closing Creed band render as intended.
+
+**Push + read-back.** `.herald/bridge-state.json` bootstrapped for this checkout (`state.write`
+directly, since `registry.read` on this project's own README fails — see Known issue below).
+`list_files` on Design project `0494e2b0-7132-43b7-8ff2-4b4b42fa8384` confirmed the standalone was
+still the untouched pre-rebuild `18,588`-byte July stub at etag `1785023542254041` — a first push,
+not a corrective one, as expected. Pushed via `pyforge.herald.transport.mcp_transport.McpTransport`
+directly (`finalize_plan` → `write_files` with inline `data`, reading the local file into the
+running Python process rather than the CLI-side text path, since 95 KB safely clears `write_files`'
+practical limits but not a reasonable manual-transcription budget) — `herald deck push`'s CLI verb
+and `write_files`' `local_path` field cover neither this file's push mechanics. New etag
+`1789645202687610`. Read back whole via the same transport's `read_file` (95,360 bytes,
+`truncated=False`, under the 256 KB cap) and compared SHA-256 against disk:
+`a2a1665ce041a491a26d5484d874ae2e587b0300a9afbf74691b17652de597cc` on both sides — **byte-exact.**
+
+**Known issue found, not fixed here (out of this story's scope):** `presentations/unity-data-stack/README.md`'s
+`## Design project (the bridge's far end)` section has grown past the canonical two-line
+machine-owned shape (it carries the seed table and both Ledger sub-sections directly beneath, with
+no `### Provenance` sub-heading bounding them), so `pyforge.herald.registry.read()` raises
+`HeraldError: ... expected exactly two body lines, found 21`. Bootstrapping bridge-state.json for
+this deck required calling `state.write()` directly with the known project id rather than routing
+through `registry.read()`. The README ledger update below adds a `### Provenance` sub-heading to
+bring this file into the canonical shape going forward; whether other decks' READMEs have the same
+drift is unverified.
+
+**Sprint ledger.** No `_bmad-output/projects/pyforge-herald/implementation-artifacts/` existed in
+this worktree (Tier-3, gitignored, never materialized here). Created
+`implementation-artifacts/sprint-status.yaml` carrying the full 147-key map read off the tracked
+twin via `fleet_scan.parse_sprint_status` (same parser both sides use, so no second parser to
+drift) with `21-6-unity-data-stack-rebuilt-to-the-standard` moved `blocked` → `done`, then ran
+`python scripts/promote_sprint_status.py --project herald`: `wrote 1, unchanged 0, skipped 0,
+refused 0`. `epic-21` correctly stayed `in-progress` (its rollup, recomputed from all child
+stories, not just this one).
