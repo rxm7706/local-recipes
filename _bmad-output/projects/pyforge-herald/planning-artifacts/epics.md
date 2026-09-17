@@ -703,7 +703,7 @@ density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20
 
 ## Epic 21: The whole deck family moves together (spec-deck-family-lockstep)
 
-**Spec binding.** `spec-deck-family-lockstep` CAP-1..5 (herald; Dream `docs/dreams/deck-family-lockstep.md`).
+**Spec binding.** `spec-deck-family-lockstep` CAP-1..6 (herald; Dream `docs/dreams/deck-family-lockstep.md`). CAP-6 added 2026-09-16, found live dispatching Story 21.4 (Story 21.12).
 Epic 20 made one surface of ten decks true; this epic finishes the rest. Measured on main at Epic 20's
 closeout (2026-09-13): every deck README says its head and Infographic Deck are **"standalone ahead"**;
 the heads are 14–48 KB against posters of 112–295 KB; every marp source and both PPTX per deck are
@@ -781,6 +781,12 @@ four agents); 21.10–21.11 close the registry and the Design proof.
 **Surface:** one deck's `project/` artifacts, its `README.md` ledger, `docs/specs/presentation-deck.md` (§ *The MCP bridge* — the worked pull)
 **Given** every push this far has been repo→Design, so the bridge's editing half is unexercised on current content and no rebuilt deck carries a Design-side improvement — **When** one deck is opened in Claude Design, visually improved there by a human, and pulled back byte-exact (`render_preview` → curl → strip the `data-omelette-injected` harness and the blank line the serve layer inserts after `<head>`) — **Then** git holds the improved bytes, the read-back is byte-identical, the README records the etag and the date, and `deck-facts <slug> --check` still reports 0 `mismatch` (the visual pass must not break a mark)
 **And** the pull is the closing act: no Design-side edit is complete until git holds it
+
+### Story 21.12: The transport speaks the `mcp` SDK it actually has pinned
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** CAP-6
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/pyproject.toml`, `pixi.toml`
+**Given** `pyforge-herald`'s pixi environment resolves `mcp==2.2.0`, which renamed `mcp.client.streamable_http.streamablehttp_client` to `streamable_http_client`, while `mcp_transport.py:641` (Story 1.2, 2026-08-07) still imports the retired name and `pyproject.toml`'s own floor (`mcp>=1.28.1`) never anticipated the rename — so `herald deck push`/`pull`/`watch` die on `ImportError` before any credential or network check, blocking Story 21.4's and 21.6–21.9's push+read-back leg and all of `spec-design-sync-loop`'s Epic 23 — **When** the transport imports whichever streamable-HTTP client symbol the pinned `mcp` SDK actually exports, and `pyproject.toml`'s floor is bumped to agree with `pixi.toml`'s environment pin — **Then** the reproducer import no longer fails, a real `herald deck push` against a live Design project round-trips (push, then read back byte-identical), and `deck-facts <slug> --check` reports 0 `mismatch` afterward
+**And** confined to this module — atlas's parallel `mcp` 2.x usage is untouched (verified no shared symbol use), no change to `resolve_design_credential` or the fallback transport (FR-22/Story 1.3) unless the fix's own shape requires it
 
 ## Platform floor addendum — 2026-09-07
 

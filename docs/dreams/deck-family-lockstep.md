@@ -90,3 +90,28 @@ finishes the surfaces it deferred) · [[pyforge-herald]] (the station; the bridg
   sprint ledger. Nothing else is owed before dispatch: the standard, the fact ledger, the refresh
   verb and the registry all shipped with Epic 20. Next act: drain Epic 21, starting with 21.1 —
   21.2 through 21.5 depend on it.
+- **2026-09-16** — Dream-append: dispatching Story 21.4 (`bmad-build-auto`) surfaced a real,
+  independently-reproduced blocker on the push+read-back leg — `herald deck push` raises
+  `ImportError: cannot import name 'streamablehttp_client' from 'mcp.client.streamable_http'` on
+  `main`, before any credential or network check. `mcp` 2.2.0 (what `pyforge-herald`'s pixi
+  environment actually resolves) renamed the symbol to `streamable_http_client`;
+  `pyforge.herald.transport.mcp_transport` (Story 1.2, 2026-08-07) never updated. Confined to
+  herald's own transport — atlas's parallel `mcp` 2.x usage doesn't touch this symbol. A second
+  claim from the same dispatch (missing Design credential) was re-checked directly and found stale
+  — `resolve_design_credential()` succeeds live once `/design-login` had completed; not a standing
+  gap. Minted `spec-deck-family-lockstep` CAP-6 for this (binds here rather than a new Dream/Spec
+  file — governance ruling `spec-one-chain-per-station`, `chain-sprawl-check` enforces it live).
+  Blocks 21.4, 21.6–21.9's push leg, and all of `spec-design-sync-loop`'s Epic 23. Next act: mint
+  Story 21.12 in `epics.md` citing CAP-6, then implement via `bmad-build` (quick-dev — a single,
+  low-external-blast-radius fix).
+- **2026-09-16 (same day)** — Story 21.12 landed. The fix was two distinct `mcp` 2.2.0 symbol
+  renames, not one — the second (`CallToolResult.isError` → `is_error`) only surfaced on a
+  completed live call, after the first was fixed, which is exactly why the story's own AC
+  insisted on a live push+read-back proof rather than an import-level check. Live-proved: `herald
+  deck push pyforge-warden` succeeded for real against Design; `deck-facts pyforge-warden --check`
+  reported 0 `mismatch` afterward. Found along the way, NOT fixed (orthogonal, deferred on the
+  story spec): `herald deck pull` hits two separate pre-existing bugs on large/oddly-named decks
+  (a 256 KiB `read_file` cap, and a `prototype_filename`-guessing mismatch) — both reach the fixed
+  transport successfully before failing on unrelated causes. `pyforge-herald-test`: 1262 passed, 4
+  skipped. Next act: Story 21.4 (the ten-deck sweep) and 21.6–21.9's push legs are now unblocked
+  for real dispatch.

@@ -2,7 +2,8 @@
 
 This module is the FR-21 prove-or-kill spike made permanent. It talks to
 ``https://api.anthropic.com/v1/design/mcp`` with the ``mcp`` SDK's
-``streamablehttp_client``, authenticating with the OAuth access token the
+``streamable_http_client`` (renamed from ``streamablehttp_client`` in mcp
+2.x -- Story 21.12), authenticating with the OAuth access token the
 Claude Code CLI already stored for ``/design-login``. Proven live on
 2026-07-25 from a plain, non-interactive Python process: ``initialize``
 answered, ``list_tools`` listed all 8 port tools, and
@@ -26,7 +27,7 @@ keeps no session-scoped state Herald depends on. ``plan_token`` and the
 ``if_match`` / ``if_none_match`` etags are explicit parameters on every
 later call. A persistent session would need a background event loop plus a
 single owning task (anyio cancel scopes forbid entering and exiting
-``streamablehttp_client`` from different tasks) -- real concurrency
+``streamable_http_client`` from different tasks) -- real concurrency
 machinery and a new dependency -- to save one initialize round-trip on
 commands that make a handful of calls. Recorded in ``deferred-work.md`` as
 an available optimization if ``herald deck watch`` ever needs it.
@@ -613,7 +614,7 @@ class McpTransport:
             # send the operator to look at the network.
             raise TransportError(
                 f"the mcp SDK is not importable ({exc}); pyforge-herald "
-                f"declares mcp>=1.28.1 as a runtime dependency -- reinstall "
+                f"declares mcp>=2.2.0 as a runtime dependency -- reinstall "
                 f"the environment"
             ) from None
         except Exception as exc:  # noqa: BLE001 - every SDK failure maps here
@@ -636,20 +637,30 @@ async def _call_tool_async(
 
     The ``mcp`` import is lazy so importing this module costs nothing and a
     fake-caller test never needs the SDK installed. The SDK supplies
-    ``Accept`` and ``Mcp-Session-Id``; these three headers are ours."""
+    ``Accept`` and ``Mcp-Session-Id``; these three headers are ours.
+
+    Story 21.12: mcp 2.x dropped ``streamablehttp_client(url, headers=...)``
+    (a 3-tuple yield) for ``streamable_http_client(url, http_client=...)`` (a
+    2-tuple yield) -- headers now travel on a pre-configured ``httpx2``
+    client rather than as a kwarg, and passing one means we own its
+    lifecycle, hence the extra ``async with``."""
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
     headers = {
         "Authorization": f"Bearer {credential.access_token}",
         "anthropic-version": ANTHROPIC_VERSION,
         "X-Anthropic-Client": DESIGN_CLIENT_HEADER,
     }
-    async with streamablehttp_client(url, headers=headers) as (read_end, write_end, _):
-        async with ClientSession(read_end, write_end) as session:
-            await session.initialize()
-            result = await session.call_tool(tool, arguments)
+    async with create_mcp_http_client(headers=headers) as http_client:
+        async with streamable_http_client(url, http_client=http_client) as (
+            read_end,
+            write_end,
+        ):
+            async with ClientSession(read_end, write_end) as session:
+                await session.initialize()
+                result = await session.call_tool(tool, arguments)
     text = "".join(
         block.text for block in result.content if getattr(block, "type", "") == "text"
     )
-    return ToolResult(text=text, is_error=bool(result.isError))
+    return ToolResult(text=text, is_error=bool(result.is_error))

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 146
+# stories: 147
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -76,6 +76,7 @@ development_status:
   21-1-deck-trio-derives-the-infographic-head-from-the-standalone: done
   21-10-the-registry-sees-all-fourteen-decks: backlog
   21-11-one-deck-proves-the-design-loop-end-to-end: done
+  21-12-the-transport-speaks-the-mcp-sdk-it-actually-has-pinned: done
   21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: done
   21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster: done
   21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: backlog
@@ -87,7 +88,7 @@ development_status:
   22-1-the-dossier-is-the-source-and-pages-is-a-render: backlog
   23-1-the-account-is-enumerated-and-reconciled-against-the-registry: backlog
   23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries: backlog
-  23-5-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: backlog
+  23-5-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: done
   23-6-powerpoints-push-back-and-every-push-proves-itself: backlog
   23-7-the-family-is-browsable-and-downloadable-on-pages: backlog
   23-8-one-command-idempotent-reported: backlog
@@ -144,7 +145,7 @@ development_status:
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional
-  epic-23: backlog
+  epic-23: in-progress
   epic-23-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
