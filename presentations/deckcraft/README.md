@@ -1,6 +1,6 @@
 # Deckcraft deck (`deckcraft`)
 
-**Status: authored 2026-07-25 — 10 slides, extract + build green.** Local Wave C poster rebuild 2026-09-15 (Story 21.8); Design push still pending. Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, extract + build green.** Wave C poster rebuild 2026-09-15 (Story 21.8); pushed to Design and read back byte-identical 2026-09-17. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). Dream:
 `docs/dreams/deckcraft.md`; the Spec and its planning chain live in
 `_bmad-output/projects/deckcraft/planning-artifacts/`.
@@ -62,14 +62,37 @@ Seeded 2026-07-25 (every upload byte-verified against the local file):
 | `src/marp/deckcraft-executive-summary-2026-07-25.md` | same path locally | 3540 |
 | `src/marp/deckcraft-infographic-2026-07-25.md` | same path locally | 3309 |
 
-**seeded 2026-07-25 via DesignSync (byte-exact localPath upload).dc.html`, `Infographic standalone.html`,
-`- Infographic Deck.dc.html`). The `DesignSync` tool was not exposed in the authoring session
-and MCP `write_files` accepts inline `data` only, so these three await a DesignSync pass
-(`finalize_plan` with `localDir`, then `write_files` with `localPath`).
+**Resolved 2026-09-17 (Story 21.8):** `Deckcraft - Infographic.dc.html` and
+`Deckcraft - Infographic Deck.dc.html` were confirmed already byte-identical on Design (no
+push needed — read back and SHA-256-compared, matched on the first read); only
+`Deckcraft Infographic standalone.html` was still the July stub server-side and needed the
+push below.
 
 ## Ledger — 2026-09-15 Wave C local rebuild (Story 21.8)
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `Deckcraft Infographic standalone.html` | 145025 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 53/53 | `PENDING-PUSH` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; no dream_status row |
+| `Deckcraft Infographic standalone.html` | 145025 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 53/53 | `1789639747822045` | rendered 2026-09-15, page 18763 px at 1240 px; 0 unmarked / 0 mismatch; no dream_status row |
 | `facts.yaml` | 30 facts at tree `506ad58622` | — | Dream file missing; spec_status omitted; no package/CLI rows |
+
+## Ledger — 2026-09-17 push + read-back (Story 21.8)
+
+`pyforge-herald`'s `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so
+`resolve_design_credential()` succeeds this session. Compared every `project/` trio file
+against Design via `pyforge.herald.transport.mcp_transport.McpTransport.read_file` (SHA-256,
+whole-file reads, none truncated) before pushing anything, per the "check, don't assume"
+rule:
+
+| Artifact | Local SHA-256 (first 12) | Design state | Action |
+|---|---|---|---|
+| `Deckcraft.dc.html` | `2bddbdde2095` | matched | none — already synced |
+| `Deckcraft - Executive Summary.dc.html` | `62948f2893d9` | matched | none — already synced |
+| `Deckcraft - Infographic.dc.html` | `194bd5a03a08` | matched | none — already synced |
+| `Deckcraft - Infographic Deck.dc.html` | `325ba760dd5e` | matched | none — already synced |
+| `Deckcraft Infographic standalone.html` | `5cb3f51dbf33` | mismatch (15,774 B July stub) | pushed via `finalize_plan` → `write_files` (inline `data`), new etag `1789639747822045` |
+
+Push target was under the 256 KiB `read_file` cap (145,025 B), so a single read-back call plus
+SHA-256 comparison is the proof — no windowing needed. Read-back SHA-256
+(`5cb3f51dbf33e8e499a0658626654130211ecf5f7cc3569a987b0dabcbcb62f0`) is identical to the
+local file. `deck-facts deckcraft --check` still reads 0 unmarked / 0 mismatch afterward.
+Design now matches disk for every `project/` trio file.
