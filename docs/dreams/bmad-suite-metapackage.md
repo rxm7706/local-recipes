@@ -1,5 +1,4 @@
----
-title: One conda metapackage installs the whole SelfExplainML bmad-suite at latest
+---title: One conda metapackage installs the whole SelfExplainML bmad-suite at latest
 type: dream
 owner: steward
 status: archived   # 2026-09-06 — spec-bmad-suite-metapackage shipped: steward Epic 39 (4/4 done 2026-09-01); bmad-suite 2026.9.5 on the channel; recorded late

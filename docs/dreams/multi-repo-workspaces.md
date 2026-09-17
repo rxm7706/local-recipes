@@ -1,5 +1,4 @@
----
-title: One workspace opens every repo a story touches
+---title: One workspace opens every repo a story touches
 type: dream
 owner: steward
 status: archived   # 2026-08-22 — spec-multi-repo-workspaces, decomposed into the station backlog same day

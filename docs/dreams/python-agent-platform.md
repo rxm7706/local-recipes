@@ -1,5 +1,4 @@
----
-title: One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped
+---title: One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped
 type: dream
 owner: steward
 status: archived

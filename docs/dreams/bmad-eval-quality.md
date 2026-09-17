@@ -1,5 +1,4 @@
----
-title: bmad-eval-quality — prove the reviewer catches the planted bug
+---title: bmad-eval-quality — prove the reviewer catches the planted bug
 type: dream
 owner: steward
 status: archived   # 2026-09-09 (fleet readiness, Class B) — Epic 45 2/2 done; CAP-1 on the channel + pixi pin, CAP-2's twin-run exercised live (3 trials/arm)

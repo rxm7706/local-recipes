@@ -1,5 +1,4 @@
----
-title: BMAD Method modules are provisioned, not hand-installed
+---title: BMAD Method modules are provisioned, not hand-installed
 type: dream
 owner: steward
 status: archived

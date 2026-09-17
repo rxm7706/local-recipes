@@ -1,5 +1,4 @@
----
-title: They mail a dated list; we mail a dated list
+---title: They mail a dated list; we mail a dated list
 type: dream
 owner: steward
 status: archived

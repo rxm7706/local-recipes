@@ -1,5 +1,4 @@
----
-title: platform-dev boots the local canopy without a second env
+---title: platform-dev boots the local canopy without a second env
 type: dream
 owner: steward
 status: archived

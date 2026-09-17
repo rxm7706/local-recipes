@@ -1,5 +1,4 @@
----
-title: A scratch worktree for one story's work is one command, not five
+---title: A scratch worktree for one story's work is one command, not five
 type: dream
 owner: steward
 status: archived

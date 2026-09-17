@@ -1,5 +1,4 @@
----
-title: Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
+---title: Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern
 type: dream
 owner: steward
 status: archived

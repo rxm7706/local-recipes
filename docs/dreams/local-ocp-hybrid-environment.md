@@ -1,5 +1,4 @@
----
-title: A local OpenShift hybrid environment runs the agentic SDLC end to end — visual lifecycle, wired BMAD suite, multiplexed apps, synced tracker
+---title: A local OpenShift hybrid environment runs the agentic SDLC end to end — visual lifecycle, wired BMAD suite, multiplexed apps, synced tracker
 type: dream
 owner: steward
 status: archived   # 2026-08-22 — spec-local-ocp-hybrid-environment (5 CAPs, 2 companions), decomposed as steward Epic 12 extension S-12.4..12.8 (operator-locked)

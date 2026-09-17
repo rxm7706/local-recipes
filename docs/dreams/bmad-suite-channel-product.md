@@ -1,5 +1,4 @@
----
-title: The PrivateChannel bmad-suite is a governed product — always latest, dual-path installable, modules provisioned
+---title: The PrivateChannel bmad-suite is a governed product — always latest, dual-path installable, modules provisioned
 type: dream
 owner: steward
 status: archived   # 2026-09-05 — CAP-1..5 shipped as steward Epic 15 + doctor Epics 15/19 (from 2026-08-22), CAP-6 as steward Epic 39 (metapackage, 2026-09-01); the first governed suite refresh ran 2026-09-05 (PRs #1059/#1060, metapackage 2026.9.5)

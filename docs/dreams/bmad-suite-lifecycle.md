@@ -1,5 +1,4 @@
----
-title: The whole bmad-suite is wielded, kept current, and carried into the foundry
+---title: The whole bmad-suite is wielded, kept current, and carried into the foundry
 type: dream
 owner: steward
 status: archived

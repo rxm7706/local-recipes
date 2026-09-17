@@ -1,5 +1,4 @@
----
-title: Isolate MCP eras without one lockfile
+---title: Isolate MCP eras without one lockfile
 type: dream
 owner: steward
 status: archived   # was `in-progress` (off-vocabulary, normalised 2026-09-05); the Spec spec-mcp-era-isolation is the in-progress artifact
