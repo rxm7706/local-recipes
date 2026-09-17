@@ -11,7 +11,7 @@ not hundreds), not a generic four-folder template.
 | Quadrant | Path | Role | Population status |
 |----------|------|------|---------------------|
 | **Tutorials / Getting Started** | [`docs/tutorials/`](tutorials/) | Learning-oriented: first working environment, minimal path to success | Populated — [`getting-started.md`](tutorials/getting-started.md) (Story 22.5) |
-| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Populated — recipe/pixi/CI/troubleshooting/air-gap + relocated antigravity/manticore (Story 22.5) |
+| **How-to Guides** | [`docs/how-to/`](how-to/) | Task-oriented: "how do I do X?" operational instructions | Populated — recipe/pixi/CI/troubleshooting/air-gap + relocated antigravity/manticore (Story 22.5); BMAD station-operations series added 2026-09-17 |
 | **Reference** | [`docs/reference/`](reference/) | Information-oriented: exact CLI/config/schema surfaces, inventories, examples | Populated — seed from pre-22.4 `docs/reference/` (true reference material retained here) |
 | **Explanation** | [`docs/explanation/`](explanation/) | Understanding-oriented: architecture rationale, "why does this work this way?" | Populated — architecture-rationale files relocated from `docs/reference/` in Story 22.4 |
 
