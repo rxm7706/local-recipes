@@ -1,6 +1,9 @@
 # Deckcraft deck (`deckcraft`)
 
-**Status: authored 2026-07-25 — 10 slides, extract + build green.** Wave C poster rebuild 2026-09-15 (Story 21.8); pushed to Design and read back byte-identical 2026-09-17. Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, extract + build green.** Wave C poster rebuild
+2026-09-15 (Story 21.8) is **CORRUPTED** (§ Ledger — 2026-09-17 below) — 96% of the standalone
+poster's body was mistakenly pushed to Design and read back byte-identical 2026-09-17 before
+the corruption was discovered; Story 21.8 is `blocked` pending a content fix. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). Dream:
 `docs/dreams/deckcraft.md`; the Spec and its planning chain live in
 `_bmad-output/projects/deckcraft/planning-artifacts/`.
@@ -95,4 +98,31 @@ Push target was under the 256 KiB `read_file` cap (145,025 B), so a single read-
 SHA-256 comparison is the proof — no windowing needed. Read-back SHA-256
 (`5cb3f51dbf33e8e499a0658626654130211ecf5f7cc3569a987b0dabcbcb62f0`) is identical to the
 local file. `deck-facts deckcraft --check` still reads 0 unmarked / 0 mismatch afterward.
-Design now matches disk for every `project/` trio file.
+Design now matches disk for every `project/` trio file — **but see the correction below: disk
+itself was corrupted, so this byte-faithful push mirrored the corruption to Design.**
+
+## BLOCKED — 2026-09-17: the pushed content is corrupted (do not push further)
+
+The push above was byte-faithful (SHA-256 confirms Design matches disk exactly) — the problem
+is that disk was already wrong. `deck-facts --check`'s 0 unmarked / 0 mismatch result is **not**
+a content-sanity check — it only validates `data-fact` span presence, and does not catch this.
+
+Live inspection found `Deckcraft Infographic standalone.html` corrupted from byte offset 6235
+to near EOF: a boilerplate paragraph ("The factory already runs a tracked fleet: stories 930 of
+998 and epics 207 of 225. BMAD core 6.12.0, ...") repeats **72 times**, with **every character
+space-separated** ("T h e   f a c t o r y ..."), replacing real section content across ~96% of
+the file's span. Confirmed via direct byte-offset/regex inspection of both the local file and
+the live Design copy (etag `1789639747822045`, the one pushed above) — the corruption is
+present in both, byte-for-byte identical, which is expected since the push was byte-faithful.
+
+`git blame` traces the corruption to commit `e483288d54f` ("Rebuild the four chain-deck posters
+from their fact ledgers", 2026-09-15) — already on `main`, predating this session. The same
+corruption independently affects the sibling `unity-data-stack`, `wasm-analytics-stack`, and
+`presenton-pixi-image` posters from the same commit (Stories 21.6/21.7/21.9).
+
+**No content fix attempted here** — restoring the poster's real prose is a content-authoring
+task outside this ledger entry's own scope; a fresh push + read-back cycle is needed once a
+fix lands. **No further push attempted.** The corrupted Design copy is left as-is pending an
+operator decision on remediation (fix-and-repush, or revert Design to the prior July-stub
+copy as an interim measure). Story 21.8 is `blocked`, not `done` — see
+`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-8-deckcraft-rebuilt-to-the-standard.md`.
