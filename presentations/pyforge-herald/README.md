@@ -118,6 +118,29 @@ independently reports `FIRST_PARTY_AUTH_REJECTED` (HTTP 403) this session; re-pr
 `pixi run -e pyforge-herald herald deck push pyforge-warden` → `AuthError: ... has no
 'designOauth' block -- run /design-login in Claude Code to refresh it` (one shared credential
 file, so this applies identically to every deck — not re-probed per deck). No push attempted, no
-etag fabricated. "Standalone ahead" narrows to: the head is now re-derived and facts-current on
+etag fabricated. The pre-push gap narrowed to: the head is now re-derived and facts-current on
 disk, not yet mirrored to Design; the Infographic Deck remains blocked on DW-4, unrelated to the
 credential.
+
+## Ledger — 2026-09-17 head pushed + read back; deck still blocked on DW-4 (Story 21.4)
+
+`pyforge-herald`'s own `mcp` 2.2.0 transport symbol drift (Story 21.12) is fixed and merged, so
+the credential blocker above is resolved: `resolve_design_credential()` succeeds this session.
+Pushed via `pyforge.herald.transport.mcp_transport.McpTransport` directly (`finalize_plan` →
+`write_files`, inline `data` — `write_files`'s `local_path` field is not implemented
+server-side today, so `herald deck push`'s own CLI verb, which covers only the CAP-5
+marp-regenerated export, doesn't reach these `project/` trio files) to project
+`ff879a32-9741-4cf5-948f-d67040481d24`, then read back and SHA-256-compared against disk:
+
+| Artifact | Bytes | Design etag | Read-back |
+|---|---|---|---|
+| `PyForge Herald - Infographic.dc.html` | 137,686 | `1789635950550292` | identical ✓ |
+
+Under the 256 KiB `read_file` cap, so a single call plus entity-decoded SHA-256 comparison is the
+read-back proof. `deck-facts pyforge-herald --check` still reads 0 mismatch. DW-4 remains open
+(`no <div class="act"> bands found` on this poster — pre-existing, out of this story's Code Map):
+the pre-existing `- Infographic Deck.dc.html` on disk (17,709 B, a stale pre-Epic-21 stub, far
+smaller than the current 137,686 B head/standalone) was never re-derived and stays untouched —
+correcting this README's own 2026-09-15 entry above, which said no such file existed; it does,
+just not current, and pushing a stale stub would prove nothing. The head is fully synced (disk =
+Design, byte-identical); the deck's gap is DW-4, not a push gap.
