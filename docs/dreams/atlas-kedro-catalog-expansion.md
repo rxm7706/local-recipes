@@ -2,8 +2,10 @@
 title: Expand the Atlas Kedro catalog so live indexes match the packaging inventory
 type: dream
 owner: atlas
-status: specified
+status: archived
 ---
+
+> **Consolidated into** [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) on 2026-09-17 (one-chain-per-station CAP-3). This file is the record; new work appends to the station Dream.
 
 # Expand the Atlas Kedro catalog — self-contained, inventory-aligned
 

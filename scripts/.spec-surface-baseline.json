@@ -1,58 +1,42 @@
 {
  "pyforge-atlas/spec-artifactory-download-intelligence": {
   "files": {},
-  "memlog": ""
+  "memlog": "a76cb853d98929a1afd567a092379af80aad0bab"
  },
  "pyforge-atlas/spec-atlas-kedro-catalog-expansion": {
-  "files": {
-   ".github/workflows/kedro-viz-publish.yml": "35c6ed88cfd0af33e552c6840fda0cc063ec4e11",
-   "pixi.toml": "3c798cc9f21e966c4cba7d19549dfb8fa52e0f7e",
-   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "cc950947eea01299f83eb05b084fcabe2a0a3ad9",
-   "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "dee386e59e06bdd7a3dd520e9a549ff29460612c",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "665e5b4a9501570618788f76d9170d654f5bcddc",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "5975c7a9e0b764a7f396440871f2affb8f1e12d5",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "a9de9cb48b8ca5a89cc8dd4f606b71ba6fd40dfb",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "a24602f7cf6ba57f4cb6187d28a59846d4f73faf",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/__init__.py": "b37165967bbf7e9b1913d6bee8b86318c7e06cbd",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py": "e78e25d2e996b842a905417f0f39ec50fb7fdd3d",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py": "0f6232ba070e49322b4a403880f0909899d6e5eb",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py": "2494a4462cd424d8dfcb90c4f11c074045ca888d",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/incremental_parquet.py": "68dc80ac474a472566984a5af0a3eaec5a367ba9",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/migration_status.py": "e0d47e2bd2f01a2fe8bcd7447e075680884446ae",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "4c6d10212c8a2e34b9f6ab7a1dc1b25ca8a6810f",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "50928939a11328d0d8849c58054a1c1a48e8ec1c",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "b5724959123df916e40e23b3599d61c06394c195",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py": "14d530ee799fe31c021109555c49279508427bcf",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py": "42e9aca70216bc23ec95639dcca4a234344ba435",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py": "316311e5d1bbe1f4e6e02bdb18285031bed3437a",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py": "bde5af3b711c2fc732bcaf67081c987a3362d115",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_boundary.py": "035704655aeea8b2ccd8f33bb5ad73a7b89821de",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py": "d36eba30034c2303d16c0110634e0fd8d0e288f8",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/__init__.py": "54351345c5385b1cc918cd5031f2ee378a96ba9a",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py": "7e2c58823dd895d55accf0bca10caeaee37bb1c7",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/pipeline.py": "7f4ac9aadffa2ffbd75e9170791b5d149a98a221",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/__init__.py": "bc4f3d40c9f730d22f66023040b029b74616904f",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py": "b434e90403cbddd5fbc256f053da71bf1cc95089",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/pipeline.py": "6ede7e665e405186aff417ee7cc24d7c81259920",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/__init__.py": "bf014294716d9243de1422b809a4703892707b92",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "596645babd85621f6f3b8ffaf608f55cd632badd",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/pipeline.py": "5c7ba545b974dc20597846d2c9c86ee5d770f9b1"
-  },
-  "memlog": "3fc2d199cf7da18861c2c2eff3761e261d9dbac1"
+  "files": {},
+  "memlog": "6ee4064e80b510fa76860f089d3be7b86de89f3d"
  },
  "pyforge-atlas/spec-atlas-query-dashboards": {
-  "files": {
-   "scripts/dashboard_serve.py": "c5d74b23d7f0912c93bda61c9cfb552e07b305e2"
-  },
-  "memlog": "35e9264b4f820278cdd3a627ecdf143d2974e7cc"
+  "files": {},
+  "memlog": "7bec5880668482e9e7a5e03fff9be1a0fa915fe4"
  },
  "pyforge-atlas/spec-conda-forge-packaging-inventory-operations": {
+  "files": {},
+  "memlog": "ca4700d5a32aff7467f381000b840e4cfb131e72"
+ },
+ "pyforge-atlas/spec-enterprise-data-models-and-apis": {
+  "files": {},
+  "memlog": "ccf5b98ffb9c98619fdaefd275c1619b8e1fbe02"
+ },
+ "pyforge-atlas/spec-kedro-org-tooling-adoption": {
+  "files": {},
+  "memlog": "b2e31c1343f42191e1fdda96c0b69e035d947253"
+ },
+ "pyforge-atlas/spec-microsoft-org-sweep": {
+  "files": {},
+  "memlog": "58fa4b1c25b9d123e2b450d135f7c7167cda024d"
+ },
+ "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
+   ".github/workflows/kedro-viz-publish.yml": "35c6ed88cfd0af33e552c6840fda0cc063ec4e11",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "e2a9712e925793a6b7741f8bda5f0127b4cd679b",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "9bf9c6f408018b30e4db49ce1ea2603e2c9a85e9",
    "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "413dfd35fa675b41af67d5ad215dccaad6aa76e7",
    "scripts/conda-forge-packaging-inventory-operations_priority.py": "7798ccd0f0f19ec130fca14a04f19c91b1d7d9f4",
+   "scripts/dashboard_serve.py": "c5d74b23d7f0912c93bda61c9cfb552e07b305e2",
    "scripts/openteams_identity_dashboards.py": "79c4a2b00224337881a8541abdd50283fd4de097",
    "scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_universe/inventory_universe.parquet": "2db4e0823a5cc08b040a8b22debaf98af77aebfd",
    "scripts/tests/fixtures/inventory_universe/catalog/intermediate/core_packages_enumerated/core_packages_enumerated.parquet": "7f93922ba372419eae99251b07a4aa20a87c2d6d",
@@ -62,24 +46,7 @@
    "scripts/tests/fixtures/inventory_universe/generate_fixtures.py": "cfed8c2d0e63247d8deb64f2364436594a0b2cf3",
    "scripts/tests/fixtures/inventory_universe/mini-workbook.xlsx": "86685b86ea2efd6367b604a8f9d77ff853bc50ad",
    "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": "c9cc4b66b28102ca2381a39282adf660ce8a0bfd",
-   "scripts/tests/test_quartet_no_xlsx_surface.py": "c4d2bb6bb84ab26e6ad82598f24a2545208b9f48"
-  },
-  "memlog": "592483d29fd0a6016272406c10577fa965c50ccd"
- },
- "pyforge-atlas/spec-enterprise-data-models-and-apis": {
-  "files": {},
-  "memlog": "3d9008859e95249d2ae6ef4fc4d1f108d464eb9c"
- },
- "pyforge-atlas/spec-kedro-org-tooling-adoption": {
-  "files": {},
-  "memlog": ""
- },
- "pyforge-atlas/spec-microsoft-org-sweep": {
-  "files": {},
-  "memlog": "34c1e88673aaf9bdbb0dea0b68be25578bec0bb1"
- },
- "pyforge-atlas/spec-pyforge-atlas": {
-  "files": {
+   "scripts/tests/test_quartet_no_xlsx_surface.py": "c4d2bb6bb84ab26e6ad82598f24a2545208b9f48",
    "src/prototype/packages/pyforge-atlas-kedro-viz/.gitignore": "4d1c2dc7191a7e6fee9c98c0716add1b6e4fbc41",
    "src/prototype/packages/pyforge-atlas-kedro-viz/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
    "src/prototype/packages/pyforge-atlas-kedro-viz/README.md": "936112b5d4371a8fb2252654e1bf7ad0f6448858",
@@ -454,11 +421,11 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "81fcdae173b8567eeb8dc5778fd2ff8184bcb3e7"
+  "memlog": "2ee5cf7c60c2e49a81b0be0a31d7bd9fc7a27fd9"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
-  "memlog": ""
+  "memlog": "d32906764c263b422a7d93599cdb861b53e0ac78"
  },
  "pyforge-atlas/spec-unity-data-stack": {
   "files": {},
@@ -466,15 +433,11 @@
  },
  "pyforge-atlas/spec-upstream-discovery": {
   "files": {},
-  "memlog": "002b6afa49b95edc016c3b5d9f7703aec266942d"
+  "memlog": "73e289912f9ac45eca5b8095aecb5e47f7eb06c5"
  },
  "pyforge-atlas/spec-wagtail-corporate-brain": {
-  "files": {
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "02c30c79f2e21b8436344ba0e77fd2e6f3530f21",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py": "020e93975a82306e91f16a767cb4543ca23aa2b7",
-   "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "6ec4e32e04a5774c48afb6a985d086f87e2c1dff"
-  },
-  "memlog": "368cd3d65621b6eea2980602ddd1b21cd245b389"
+  "files": {},
+  "memlog": "e34d452d7ad841b5df364be5a6a3b7f08e316bd3"
  },
  "pyforge-atlas/spec-wasm-analytics-stack": {
   "files": {},

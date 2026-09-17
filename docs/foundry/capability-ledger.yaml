@@ -3852,6 +3852,368 @@ capabilities:
     heading: "BMAD projection onto Internal GH"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+
+  # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-atlas:CAP-1
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the DAG is the orchestrator"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-2
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "all IO is catalog-declared, all credentials are host-scoped"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-3
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "incremental state is a dataset concern, not a node concern"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-4
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "one execution plane, orchestrated and budgeted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-5
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "event-driven ingestion on the same plane"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-6
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "one engine for compute, graph, and vector"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-7
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "retirement earned by recorded parity, not asserted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-8
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the read surface is declared once and consumed everywhere"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-9
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "agents trigger and read the pipeline natively"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-10
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "one structured channel between agents"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-11
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "bad data halts before it persists"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-12
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "every run is traceable to the API call"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-13
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "any manifest becomes one comparable inventory, behind one exit code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-14
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "new signals ride in additively, with their failure modes fixture-pinned"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-15
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the derived layer regenerates and refuses to go stale"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-16
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the read surface runs with no backend at all"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-17
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the knowledge factory maintains itself and never writes back"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-18
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "A platform engineer declares one Workspace root —"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-19
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The Workspace produces one authoritative Workspace Lock covering"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-20
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "A developer runs one command that executes every"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-21
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Every Constitution Mandate is classified, machine-readably, as a"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-22
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Every Package names a Trusted Committer accountable for"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-23
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Every built artifact carries a versioned SBOM with"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-24
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Each Domain owns Data Products layered Raw →"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-25
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Every capability available with public network access is"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-26
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "A developer starts, stops, and inspects the full"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-27
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "A business user uploads an `.xlsx` file via"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-28
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "`dbt-duckdb` transforms Bronze into schema-declared Silver and Gold"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-29
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "One W3C trace ID, minted once at the"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-30
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "An automated, non-hollow gate mechanically proves the WASI"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-31
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "One Pixi toolchain builds every artifact the pipeline"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-32
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "An AQL adapter queries an Artifactory instance's own"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-33
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Adapter results join into the SAME identity space"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-34
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "A package pulled from Artifactory with no public"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-35
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The work ships as a new atlas Kedro"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-36
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Kedro self-containment (Phases A–B)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-37
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Public index catalog completeness (Phase C, Tier 0–2)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-38
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Identity join in `upstream_discovery` (Phase D)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-39
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Quartet consumes Atlas exports (thin orchestration)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-40
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Bootstrap operator Vizro pages (optional follow-on, Story 21.9)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-41
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Kedro-Viz publish stays in sync (optional follow-on, Story 21.10)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-42
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Vizro parity with identity canvases (Epic 22 follow-on)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-43
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Complete inventory export, zero deferred (Epic 23 closure)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-44
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The lowest-risk rendering mode ships first: a curated"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-45
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Genuinely interactive views (filter, drill, re-sort live) layer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-46
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Widget TYPES are pluggable behind a small registry"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-47
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The CDN-URL-rewriting concern for air-gapped deployment is carried"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-48
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The query plane the views read serves BOTH"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-49
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The composed semantic stores the grounded dashboard pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-50
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "The deferred Vizro page inventory completes: the CIS"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-51
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the governed from-scratch run"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-52
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "execution-ready handoffs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-53
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "trending ingest"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-54
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "tier classification"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-55
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "operator surface"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-56
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "fixed-source audit track"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-57
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "downstream handoff"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-58
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "a minimal live Wagtail/La Suite instance satisfies `LaSuiteClient`'s"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-59
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "a real httpx-backed `Opener` replaces the mock at"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-60
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the round-trip + idempotency semantics `test_lasuite.py` already proves"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   # 2026-09-17 mason one-chain fold remints
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason

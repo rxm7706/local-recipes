@@ -1,12 +1,17 @@
 ---
+fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-09-07"
+updated: "2026-09-17"
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
 ---
+
+## Fold provenance (2026-09-17)
+
+Every FR in this PRD derives from spec-pyforge-atlas CAP-1..CAP-60. Kernel FR-1..FR-22 ← CAP-1..CAP-22. Later FRs cite the reminted CAP with the same number modulo the reminted set.
 
 # PRD: cf_atlas Kedro/Dagster/DuckDB Migration
 
@@ -202,7 +207,7 @@ FR locations: § 4.1 FR-1..4 · § 4.2 FR-5 · § 4.3 FR-6 · § 4.4 FR-7, FR-11
 every source and output cataloged, every phase a node, incremental state a
 reusable dataset class, resumability native. Realizes UJ-5.
 
-#### FR-1: Declarative data access via the Kedro Data Catalog
+#### FR-1: Declarative data access via the Kedro Data Catalog ← CAP-1
 All API sources and Parquet outputs are datasets in `conf/base/catalog.yml`;
 no data-access logic in node functions. Credentials are scoped **per
 destination host** — a fix, not a port: legacy `_http.py` injects the JFrog
@@ -212,7 +217,7 @@ credential on every outbound request. (Spec § 5.1; Story A2.)
 - Consequence: all 20 `resolve_*_urls` override points (incl. new
   `BASILISK_BASE_URL`) survive for enterprise/air-gapped routing.
 
-#### FR-2: Phases refactored into modular, DAG-resolved pipelines
+#### FR-2: Phases refactored into modular, DAG-resolved pipelines ← CAP-2
 The 23 cataloged phases become nodes in the seven domain pipelines; execution
 order resolves from the DAG. Phase I becomes an explicit node. The § 3.3
 per-phase engineering contracts bind the ports (Phase P two-layer cost gate,
@@ -226,14 +231,14 @@ B1, B2, B5, B6.)
 - Consequence: the maintainer-universe delta vs cf-graph (~44 feedstocks) is
   reconciled or documented (B1/B4).
 
-#### FR-3: `IncrementalParquetDataset` preserves TTL gating
+#### FR-3: `IncrementalParquetDataset` preserves TTL gating ← CAP-3
 The `*_fetched_at` TTL semantics live in one reusable dataset class with
 **per-dataset** TTLs (Phase D 7 d, Phase P 30 d, EPSS 1 d, CWE 90 d, …) —
 never a global constant. (Story A3, the designated first loop story/worktree
 smoke.)
 - Consequence: unit test proves stale rows re-fetch, fresh rows skip.
 
-#### FR-4: `phase_state` removed; resumability via runner + persisted Parquet
+#### FR-4: `phase_state` removed; resumability via runner + persisted Parquet ← CAP-4
 Checkpointing is Kedro-native; the bespoke `phase_state` table is deleted with
 the legacy orchestrator at B4 parity. (Stories A3, B4.)
 - Consequence: an interrupted run resumes from persisted intermediates
@@ -241,7 +246,7 @@ the legacy orchestrator at B4 parity. (Stories A3, B4.)
 
 ### 4.2 Compute Engine (Wave F)
 
-#### FR-5: DuckDB replaces SQLite and all fragmented compute proposals
+#### FR-5: DuckDB replaces SQLite and all fragmented compute proposals ← CAP-5
 One engine for analytical compute, graph traversal (recursive CTEs), and
 vector search (`vss`), reading partitioned Parquet natively. Sequencing: the
 Kedro path writes partitioned Parquet from Wave A (spec § 5.1) and B4 retires
@@ -257,7 +262,7 @@ residue cleanup (migrate/delete any surface still reading legacy
 
 ### 4.3 Orchestration & Operations (Wave C)
 
-#### FR-6: Dagster orchestrates schedules + retries via `kedro-dagster`
+#### FR-6: Dagster orchestrates schedules + retries via `kedro-dagster` ← CAP-6
 The Kedro DAG compiles to a Dagster repository; schedules encode the
 `guides/atlas-operations.md` cadence table; the three bootstrap profiles
 become named job configurations (profile defaults lose to explicit config);
@@ -276,14 +281,14 @@ UJ-1. (Stories C1, C2, B5, G3, H4.)
 
 ### 4.4 Agent Interfaces (Waves B, E)
 
-#### FR-7: MCP surface preserved (Kedro-API-native; kedro-mcp never load-bearing)
+#### FR-7: MCP surface preserved (Kedro-API-native; kedro-mcp never load-bearing) ← CAP-7
 The atlas-relevant MCP tools (23 of 46 in `conda_forge_server.py`) are audited
 and re-authored over Kedro session/catalog APIs; agents trigger named
 pipelines and read datasets via MCP. `library-futures` / `add-handoff` / the
 seed-gap suggesters stay CLI-only. Realizes UJ-2. (Story B3.)
 - Consequence: the trigger/read surface works with `kedro-mcp` absent.
 
-#### FR-11: A2A interface for inter-agent collaboration
+#### FR-11: A2A interface for inter-agent collaboration ← CAP-11
 The cf_atlas analytical agent exchanges structured payloads with the
 `conda-forge-expert` authoring agent (publish/subscribe or direct message);
 contract violations and policy breaches raise A2A alerts. Realizes UJ-2, UJ-4.
@@ -292,14 +297,14 @@ contract violations and policy breaches raise A2A alerts. Realizes UJ-2, UJ-4.
 
 ### 4.5 Semantic Layer & Read Surface (Wave D)
 
-#### FR-8: Boring Semantic Layer over the catalog (Ibis → DuckDB)
+#### FR-8: Boring Semantic Layer over the catalog (Ibis → DuckDB) ← CAP-8
 The metrics/business logic of the 28 read CLIs become declared BSL dimensions
 and measures — the single translation interface. Maintainer-role facts are
 first-class dimensions. Realizes UJ-3. (Story D1.)
 - Consequence: `bsl-metric-check` proves BSL answers match legacy CLI outputs
   on core metrics (staleness, adoption stage, feedstock health).
 
-#### FR-9: Read surface migrates from 28 CLIs to Vizro / Vizro-AI
+#### FR-9: Read surface migrates from 28 CLIs to Vizro / Vizro-AI ← CAP-9
 Read-only CLIs become Vizro pages plus a Vizro-AI NL field, exposed as web
 dashboard and as the `query_vizro_ai` MCP tool. Three exceptions stay
 CLI-first with latest-report artifacts surfaced read-only: `add-handoff`
@@ -325,7 +330,7 @@ spec § 2.4). Realizes UJ-3. (Stories D2, D3; Q3 gates the D3 LLM backend.)
 
 ### 4.6 Data Quality, Lineage & Observability (Waves E–F)
 
-#### FR-10: Data-quality contracts halt bad data (pandera-first)
+#### FR-10: Data-quality contracts halt bad data (pandera-first) ← CAP-10
 Inline pandera contracts in nodes; Great Expectations as boundary layer behind
 the same validator-agnostic `AfterNodeRunHook` — GX **version-capped at
 conda-forge 1.18.2** (upstream declares `<3.14` at 1.19.0; no GX ≥1.19
@@ -335,7 +340,7 @@ features). Dagster halts on violation and raises an A2A alert. Realizes UJ-4.
 - Consequence: swapping/stubbing the second validator requires no node
   changes.
 
-#### FR-12: Lineage + observability via OpenLineage + OpenTelemetry
+#### FR-12: Lineage + observability via OpenLineage + OpenTelemetry ← CAP-12
 Nodes, runs, and DuckDB queries are instrumented: lineage + per-node metrics
 (rows, latency, cache hits) via OpenLineage; end-to-end traces via OTel down
 to specific API calls. (Story E2.)
@@ -344,7 +349,7 @@ to specific API calls. (Story E2.)
 
 ### 4.7 Universal SBOM & Policy Gate (Waves B, F)
 
-#### FR-13: Universal SBOM ingestion normalized to CycloneDX
+#### FR-13: Universal SBOM ingestion normalized to CycloneDX ← CAP-13
 The SBOM pipeline parses the tiered intake (core: `pixi.toml`, `pixi.lock`,
 `pyproject.toml`, `recipe.yaml`, `meta.yaml`; extended tier per spec § 4.10),
 normalizing to CycloneDX. The normalizer preserves the `cfe:*` property
@@ -354,7 +359,7 @@ namespace (incl. the `recommend-2027` six-property set) and the
   `cfe:*` properties and the `?channel=conda-forge` qualifier intact — never
   stripped during normalization.
 
-#### FR-16: Dependency-hygiene scan node (deptry)
+#### FR-16: Dependency-hygiene scan node (deptry) ← CAP-16
 A hygiene node runs deptry when project source accompanies the manifest;
 source-less inputs report `not-applicable` (frozen semantics shared with
 pyforge-warden). Findings fill the `hygiene` axis of the four-axis
@@ -365,7 +370,7 @@ data or `not-applicable`. (Story F4.)
   `hygiene` finding; a source-less input reports `not-applicable`, never a
   failure.
 
-#### FR-17: Transitive resolution + the universe BOM extend the intake
+#### FR-17: Transitive resolution + the universe BOM extend the intake ← CAP-17
 A transitive-resolver node (pip `--dry-run --report` / py-rattler solve)
 upgrades bare manifests to full dependency sets (depth + fan-out recorded),
 honoring mirror routing and degrading gracefully offline (`unresolved`
@@ -376,7 +381,7 @@ dataset under the 14-day freshness contract. The matching node preserves
 - Consequence: NBSP-padded pasted `conda list`/`pip list` text parses
   identically to ASCII-space form (fixture).
 
-#### FR-18: Unified CI policy gate
+#### FR-18: Unified CI policy gate ← CAP-18
 One terminal node assembles the `ComplianceReport`, converges pyforge-warden's
 strict exit-code gate with `inventory-match --policy` thresholds, emits the
 schema-validated artifact, and halts Dagster on failure (A2A alert; CI
@@ -393,7 +398,7 @@ mode is recorded as future option, not committed. Realizes UJ-4. (Story F4.)
 
 ### 4.8 Portability (Wave G)
 
-#### FR-14: WASM portability for the intelligence surface
+#### FR-14: WASM portability for the intelligence surface ← CAP-14
 The Vizro-AI dashboard + BSL layer run in-browser via duckdb-wasm/Pyodide;
 Parquet artifacts publish to a static host (GitHub Pages per Q4 default;
 emitter host-agnostic) and are pulled via HTTP Range with zero backend.
@@ -403,7 +408,7 @@ emitter host-agnostic) and are pulled via HTTP Range with zero backend.
 
 ### 4.9 Toolchain & Provisioning (Wave A)
 
-#### FR-15: Pixi-first, nebi-scaffolded, conda-forge-only
+#### FR-15: Pixi-first, nebi-scaffolded, conda-forge-only ← CAP-15
 Every component sourced from conda-forge, managed in `pixi.toml`, scaffolded
 by `nebi`; no standalone binaries or JVM. The stack is **already resolved
 in-env** — adoption is wiring, not dependency addition; governing gates are
@@ -423,7 +428,7 @@ pixi env (worktree economics) and the `kedro-test` verify task. (Story A1.)
 evidence-gating pattern (measured evidence → FR + story). They are **riders**
 on the migration, never its justification (PRFAQ).
 
-#### FR-19: Conda-native vulnerability source — Basilisk (prefix.dev)
+#### FR-19: Conda-native vulnerability source — Basilisk (prefix.dev) ← CAP-19
 Two nodes: `POST /v1/querybatch` (≤1,000 queries/request) writes
 `basilisk_vulns` keyed by conda PURL (CEP-63 draft form); a bounded
 `GET /v1/vulns/{id}` detail fetch under standard rate-limit discipline.
@@ -439,7 +444,7 @@ via the `behind_upstream` join). Basilisk is pre-announcement: offline-skip +
 - Consequence: offline (consumer profile), the nodes skip gracefully and mark
   the dataset stale rather than failing.
 
-#### FR-20: Release-to-availability velocity signal (rebuild-cadence-guarded)
+#### FR-20: Release-to-availability velocity signal (rebuild-cadence-guarded) ← CAP-20
 `release_lag_hours` + `release_lag_qualifies` on the Phase H join — no new
 external source. Hard constraints: restrict to upstream releases ≤90 days old,
 and compute against **first availability of the matched version** (minimum
@@ -453,7 +458,7 @@ re-verify both against the spec § 15 evidence gists at B9. (Story B9.)
   release is excluded (`release_lag_qualifies = false`), and a same-version
   rebuild inside the window does not shift `release_lag_hours`.
 
-#### FR-21: Migration-readiness source — conda-forge-bot-data status datasets
+#### FR-21: Migration-readiness source — conda-forge-bot-data status datasets ← CAP-21
 Category-list + per-migration detail datasets (partitioned by active
 migration — new migrations need no code change) plus a readiness-classification
 node producing the four-way split (noarch / rebuild-done / confirmed-pending /
@@ -467,7 +472,7 @@ the existing `resolve_github_raw_urls`; `version_status.v2.json` is excluded.
 
 ### 4.11 The AI Software Factory Layer (Wave H)
 
-#### FR-22: Karpathy wiki + agent crews + CMS sync + Dagster triggers
+#### FR-22: Karpathy wiki + agent crews + CMS sync + Dagster triggers ← CAP-22
 Committed scope (Q5 resolution): (a) the `wiki/raw/ → compiled/ → outputs/`
 scaffold with the 5 personas (H1); (b) `agno` compile/lint/Q&A crews on that
 scaffold (H2); (c) La Suite/Wagtail REST sync to the Layer-1 CMS (H3);
@@ -2907,7 +2912,7 @@ adopted the same day: **a capability decomposes into this PRD iff its Dream is
 *Deliberately audit-and-decide, not adopt-on-sight. `kedro-skills` was one day old at
 v0.1.1 / 1 star when the Spec was written; "not yet" is a legitimate outcome.*
 
-#### FR-61: kedro-skills audit-then-adopt
+#### FR-61: kedro-skills audit-then-adopt ← CAP-1
 **Consequences:** the tool is run **pinned at the evaluated version** against the real
 `pyforge-atlas` project; every piece of generated guidance is audited against Atlas's
 AD-invariants (AD-1 no-inline-IO AST scan, injected-fetcher seams,
@@ -2916,41 +2921,41 @@ to `.claude/skills/` **reproducibly**; contradicting content is excluded **with 
 contradiction recorded**, not silently dropped. A verdict of "not yet" is a valid, final
 outcome and closes the FR.
 
-#### FR-62: Always-current published DAG view
+#### FR-62: Always-current published DAG view ← CAP-2
 **Consequences:** CI builds Kedro-Viz from the **real** package — never the 77-node
 stub-mirror prototype — on pushes touching the pipelines tree, and publishes it the way
 `docs/dashboard/` already does. Per the Spec's own *owner ≠ mechanism* constraint, the
 publish runs through **`steward deploy dashboard`**, not a second bespoke Action; Atlas
 owns the outcome, Steward owns the mechanism (Charter §5).
 
-#### FR-63: A recorded verdict on `vscode-kedro`
+#### FR-63: A recorded verdict on `vscode-kedro` ← CAP-3
 **Consequences:** an adopt/defer decision exists as a dated record; if deferred, an
 optional one-line `.vscode/extensions.json` recommendation is the whole deliverable. The
 FR is closed by the **decision**, not by an installation.
 
 ### Upstream discovery — `spec-upstream-discovery` (FR-64..FR-68)
 
-#### FR-64: Trending ingest
+#### FR-64: Trending ingest ← CAP-4
 **Consequences:** a discovery pipeline ingests GitHub-trending candidates on a schedule,
 writing to a named dataset under the shipped `<domain>_<entity>` convention; the fetcher
 is injected at the seam, never inlined (AD-1).
 
-#### FR-65: Tier classification
+#### FR-65: Tier classification ← CAP-5
 **Consequences:** each candidate is classified into a packaging tier by declared rules,
 and an unclassifiable candidate is reported rather than silently tiered.
 
-#### FR-66: Operator surface
+#### FR-66: Operator surface ← CAP-6
 **Consequences:** a `trending-candidates` CLI/MCP tool answers "what is worth packaging
 next?" with `--json`; it is read-only and offline-safe like every other atlas read-side
 surface.
 
-#### FR-67: Fixed-source audit track
+#### FR-67: Fixed-source audit track ← CAP-7
 **Consequences:** the org-audit track (the June-2026 `github.com/microsoft/*` sweep) runs
 from a declared candidate list rather than trending, and re-verifies each candidate's
 current state before proposing it — a candidate that shipped independently since the list
 was written is dropped, not re-proposed.
 
-#### FR-68: Downstream handoff
+#### FR-68: Downstream handoff ← CAP-8
 **Consequences:** a selected candidate hands off to Mason's packaging flow as structured
 data, not prose; Atlas proposes and never authors a recipe (Charter §4 — one craft each).
 
@@ -2963,7 +2968,7 @@ the pyforge-unifying-strategy pack
 (`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/`),
 and the shipped package at `src/shared/packages/pyforge-atlas/`.
 
-### FR-61..FR-68 delivered
+### FR-61..FR-68 delivered ← CAP-1
 
 Both Specs decomposed above on 2026-08-08 shipped in full: `spec-kedro-org-tooling-adoption`
 (Epic 12, stories 12.1–12.3 done — kedro-skills audited-then-adopted at a pinned

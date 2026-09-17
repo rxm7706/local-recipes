@@ -8,13 +8,19 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-07"
+updated: "2026-09-17"
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
+
+## Fold provenance (2026-09-17)
+
+Station Spec spec-pyforge-atlas reminted absorbed capabilities as CAP-1..CAP-60. This heading is the INV-A citation window for the folded set: spec-pyforge-atlas CAP-1 CAP-2 CAP-3 CAP-4 CAP-5 CAP-6 CAP-7 CAP-8 CAP-9 CAP-10 CAP-11 CAP-12 CAP-13 CAP-14 CAP-15 CAP-16 CAP-17 CAP-18 CAP-19 CAP-20 CAP-21 CAP-22 CAP-23 CAP-24 CAP-25 CAP-26 CAP-27 CAP-28 CAP-29 CAP-30 CAP-31 CAP-32 CAP-33 CAP-34 CAP-35 CAP-36 CAP-37 CAP-38 CAP-39 CAP-40 CAP-41 CAP-42 CAP-43 CAP-44 CAP-45 CAP-46 CAP-47 CAP-48 CAP-49 CAP-50 CAP-51 CAP-52 CAP-53 CAP-54 CAP-55 CAP-56 CAP-57 CAP-58 CAP-59 CAP-60.
+
+
 
 # cf_atlas Kedro/Dagster/DuckDB Migration - Epic Breakdown
 
@@ -1450,13 +1456,13 @@ or a minimal structural inference flagged as such.
 
 ---
 
-## Epic 12: Kedro-org tooling — audit, publish, decide
+## Epic 11: Kedro-org tooling — audit, publish, decide
 
 **Value delivered.** Atlas's own Kedro deployment stops being an unusually
 invariant-heavy island: the org's tooling is evaluated against it on the record, and the
 pipeline DAG is published continuously rather than screenshotted.
 
-### Story 12.1: kedro-skills audit-then-adopt (FR-61)
+### Story 11.1: kedro-skills audit-then-adopt (FR-61)
 **Effort:** S • **Status:** done
 **Given** `kedro-skills` pinned at the evaluated version **When** it runs against the real
 `pyforge-atlas` project **Then** every piece of generated guidance is audited against the
@@ -1464,13 +1470,13 @@ AD-invariants; passing content lands in `.claude/skills/` reproducibly; contradi
 content is excluded **with the contradiction recorded**; **And** "not yet" is a valid
 final verdict that closes the story.
 
-### Story 12.2: Publish the real DAG continuously (FR-62)
+### Story 11.2: Publish the real DAG continuously (FR-62)
 **Effort:** S • **Deps:** Steward S-2.1 (`deploy dashboard`) • **Status:** done
 **Given** a push touching the pipelines tree **Then** CI builds Kedro-Viz from the **real**
 package, never the stub-mirror, and publishes **through `steward deploy dashboard`** —
 Atlas owns the outcome, Steward owns the mechanism.
 
-### Story 12.3: Record the `vscode-kedro` verdict (FR-63)
+### Story 11.3: Record the `vscode-kedro` verdict (FR-63)
 **Effort:** XS • **Status:** done
 **Given** the evaluation **Then** a dated adopt/defer decision exists; if deferred, an
 optional `.vscode/extensions.json` recommendation is the whole deliverable. The
@@ -1478,40 +1484,40 @@ optional `.vscode/extensions.json` recommendation is the whole deliverable. The
 
 ---
 
-## Epic 13: Upstream discovery — what to package next
+## Epic 12: Upstream discovery — what to package next
 
 **Value delivered.** The factory stops picking packaging targets by hand. Atlas proposes;
 Mason packages.
 
-### Story 13.1: Trending ingest (FR-64)
+### Story 12.1: Trending ingest (FR-64)
 **Effort:** M • **Status:** done
 **Given** a schedule **Then** GitHub-trending candidates land in a named dataset under the
 `<domain>_<entity>` convention, via an **injected** fetcher (AD-1), never inline IO.
 
-### Story 13.2: Tier classification (FR-65)
+### Story 12.2: Tier classification (FR-65)
 **Effort:** M • **Deps:** S-13.1 • **Status:** done
 **Given** ingested candidates **Then** each is tiered by declared rules, and an
 unclassifiable candidate is **reported**, never silently tiered.
 
-### Story 13.3: `trending-candidates` operator surface (FR-66)
+### Story 12.3: `trending-candidates` operator surface (FR-66)
 **Effort:** S • **Deps:** S-13.2 • **Status:** done
 **Given** a classified set **Then** a CLI/MCP tool answers "what is worth packaging next?"
 with `--json`, read-only and offline-safe like every other atlas read surface.
 
-### Story 13.4: Fixed-source audit track (FR-67)
+### Story 12.4: Fixed-source audit track (FR-67)
 **Effort:** S • **Deps:** S-13.2 • **Status:** done
 **Given** the declared org-audit list **Then** each candidate's CURRENT state is
 re-verified before proposal — one that shipped independently since the list was written is
 dropped, not re-proposed.
 
-### Story 13.5: Downstream handoff to Mason (FR-68)
+### Story 12.5: Downstream handoff to Mason (FR-68)
 **Effort:** XS • **Deps:** S-13.3 • **Status:** done
 **Given** a selected candidate **Then** it hands off as structured data, not prose; Atlas
 proposes and never authors a recipe.
 
 ---
 
-## Epic 14: Atlas query dashboards — hand-someone-a-link views
+## Epic 13: Atlas query dashboards — hand-someone-a-link views
 
 Decomposes **`spec-atlas-query-dashboards`**
 (`planning-artifacts/specs/spec-atlas-query-dashboards/SPEC.md`, CAP-1..CAP-4).
@@ -1523,7 +1529,7 @@ profile. Fenced off: the existing Vizro `dashboard/` module (Story 5.2's surface
 the Parquet catalog through the D1 BSL seam) is untouched — this lands as a separate
 module under a non-colliding name, querying `cf_atlas.db` directly.
 
-### Story 14.1: Static view catalog (CAP-1)
+### Story 13.1: Static view catalog (CAP-1)
 **Effort:** M • **Deps:** — • **Status:** done
 **Given** the live `cf_atlas.db` **When** a curated catalog view mirroring one of the 11
 query CLIs (`staleness-report`, `feedstock-health`, `whodepends`, …) renders **Then** it
@@ -1531,7 +1537,7 @@ emits a self-contained HTML fragment whose rows agree with its CLI counterpart's
 the same database snapshot **And** rendering a static view opens zero WebSocket
 connections — the lowest-risk mode ships first and stays the base layer.
 
-### Story 14.2: Pluggable widget registry (CAP-3)
+### Story 13.2: Pluggable widget registry (CAP-3)
 **Effort:** S • **Deps:** S-14.1 • **Status:** done
 **Given** the view catalog **When** a view declares its query plus a widget-type NAME
 **Then** a small registry maps name → renderer for both the static-fragment and WebSocket
@@ -1540,7 +1546,7 @@ edits to existing view definitions; the seed set derives from a survey of the 11
 CLIs' query shapes (spec open question 1), not the source dream's
 Tabulator/Perspective/PGWalker catalog.
 
-### Story 14.3: Bokeh WebSocket interactivity (CAP-2)
+### Story 13.3: Bokeh WebSocket interactivity (CAP-2)
 **Effort:** M • **Deps:** S-14.2 • **Status:** done
 **Given** the ASGI host chosen in this story's spec (the contract is "any ASGI host" —
 explicitly NOT contingent on DW-H3/Wagtail) **When** at least one catalog view runs live
@@ -1548,7 +1554,7 @@ explicitly NOT contingent on DW-H3/Wagtail) **When** at least one catalog view r
 session **And** swapping the host touches mounting code only, never a view definition —
 the static mode (S-14.1) survives unchanged underneath.
 
-### Story 14.4: Air-gap asset rewriting (CAP-4)
+### Story 13.4: Air-gap asset rewriting (CAP-4)
 **Effort:** S • **Deps:** S-14.3 • **Status:** done
 **Given** the air-gapped render profile **When** any page — static fragment or WebSocket
 app — renders **Then** Bokeh/Panel asset URLs resolve to locally-served or mirrored
@@ -1558,7 +1564,7 @@ assets and the emitted HTML contains zero references to external CDN hosts
 
 ---
 
-## Epic 15: Artifactory download intelligence — mock-first AQL
+## Epic 14: Artifactory download intelligence — mock-first AQL
 
 Decomposes **`spec-artifactory-download-intelligence`**
 (`planning-artifacts/specs/spec-artifactory-download-intelligence/SPEC.md`, CAP-1..CAP-4).
@@ -1569,7 +1575,7 @@ public counterpart at all — built mock-first against an injectable transport (
 `LaSuiteClient` shape), with NO live instance named or contacted anywhere in scope, code,
 config, or tests; live bring-up is a separate, later, attended step outside this epic.
 
-### Story 15.1: Injectable AQL adapter (CAP-1)
+### Story 14.1: Injectable AQL adapter (CAP-1)
 **Effort:** M • **Deps:** — • **Status:** done
 **Given** a mock AQL transport serving canned topology + download responses **When** the
 adapter runs **Then** it resolves virtual-repo topology to the backing repositories and
@@ -1578,7 +1584,7 @@ fails loudly (no network default), no test path opens a live connection, and cre
 route only through `_http.py`'s existing truststore + JFrog chain — never a second
 bespoke credential path.
 
-### Story 15.2: Identity join and internal flag (CAP-2, CAP-3)
+### Story 14.2: Identity join and internal flag (CAP-2, CAP-3)
 **Effort:** M • **Deps:** S-15.1 • **Status:** done
 **Given** adapter rows for a public package and a mock-only package **When** they join
 into the SAME identity space Phase C/C.5 maintain (parselmouth's
@@ -1587,7 +1593,7 @@ resolves to the identical identity row Phase C/C.5 would produce — no new PyPI
 or conda-forge-crossref fetch path in the diff **And** exactly the mock-only package
 carries the queryable internal/private flag; identity is enriched, never forked.
 
-### Story 15.3: Kedro pipeline surfacing (CAP-4)
+### Story 14.3: Kedro pipeline surfacing (CAP-4)
 **Effort:** S • **Deps:** S-15.2 • **Status:** done
 **Given** the adapter + join **When** the work registers as a new atlas Kedro pipeline
 following the established phase conventions (per-phase caching, env-var concurrency
@@ -1597,7 +1603,7 @@ surface without a bespoke reader **And** no parallel report format is introduced
 
 ---
 
-## Epic 16: Wagtail corporate brain — the narrow DW-H3 contract
+## Epic 15: Wagtail corporate brain — the narrow DW-H3 contract
 
 Decomposes **`spec-wagtail-corporate-brain`**
 (`planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md`, CAP-1..CAP-3).
@@ -1611,7 +1617,7 @@ everything up to it; DW-H3 flips to closed only when that session later runs and
 citing the spec. `factory/lasuite.py` stays a read-only contract surface throughout
 (AC-2: no HTTP client enters package code).
 
-### Story 16.1: Instance deploy definition (CAP-1)
+### Story 15.1: Instance deploy definition (CAP-1)
 **Effort:** M • **Deps:** none (consumes Steward's deploy/credential verbs as the mechanism — Charter §5; atlas grows no deploy code) • **Status:** done
 **Given** `LaSuiteClient`'s frozen REST contract **When** the minimal-instance deploy
 definition lands (the substrate and DW-H1/SQLite open questions resolved in this story's
@@ -1624,7 +1630,7 @@ air-gap-deployable: mirrored indexes only, admin/site static assets served local
 zero CDN references, endpoint + token via env/secret-mount — never a committed
 credential.
 
-### Story 16.2: Httpx opener and rehearsal (CAP-2, CAP-3)
+### Story 15.2: Httpx opener and rehearsal (CAP-2, CAP-3)
 **Effort:** M • **Deps:** S-16.1 • **Status:** done
 **Given** a locally-stood-up instance per the S-16.1 definition **When** a real
 httpx-backed `Opener` — constructed OUTSIDE package code (a bring-up script / the C1
@@ -1637,13 +1643,13 @@ is recorded as the attended session's acceptance checklist (per the spec's verif
 home open question) — executing the ATTENDED live bring-up stays out of scope.
 
 
-## Epic 17: The packaging-inventory intake engine, governed
+## Epic 16: The packaging-inventory intake engine, governed
 
 **Spec binding.** Decomposes `spec-conda-forge-packaging-inventory-operations` CAP-1..2 —
 chartering the quartet (runner/prompt/config/replay) that already runs allowlisted in
 scripts/+conf/; the allowlist's own delete-when-specced rule executes at 17.1.
 
-### Story 17.1: The from-scratch run is a chartered capability
+### Story 16.1: The from-scratch run is a chartered capability
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-1 • **Status:** done
 **Given** a clean workspace **Then** the quartet regenerates the full inventory from the
 workbook + live indexes + curated feeds (Master Prompt v3.0 bound): PEP-503 identity +
@@ -1652,7 +1658,7 @@ append-only identity tabs, gist id via env — and the spec's `surface:` claims 
 with the allowlist lines DELETED. The parselmouth fold-placement question resolves here
 with a dated entry.
 
-### Story 17.2: Handoffs are execution-ready
+### Story 16.2: Handoffs are execution-ready
 **Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2 • **Status:** done
 **Given** a completed run **Then** the OpenTeams universe emits one `[Conda-Forge
 Packaging] {name}` issue per library + the dated Mason handoff tab (four dispositions),
@@ -1728,11 +1734,11 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
 `change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md`.
 
-## Epic 18: Kedro hooks on the shared contract
+## Epic 17: Kedro hooks on the shared contract
 
 Audit, do not rebuild. Atlas is already Kedro. **FR-45.** Deps: steward S-32.1.
 
-### Story 18.1: Map existing Kedro hooks to CAP-18
+### Story 17.1: Map existing Kedro hooks to CAP-18
 
 As an atlas maintainer,
 I want existing pipeline/project hooks to implement the shared registration shape,
@@ -1743,11 +1749,11 @@ So that atlas does not grow a second plugin API or a pipeline PR-gate.
 **And** today's backends remain the default plugins
 **And** no atlas job publishes a PR pass/fail beside Warden
 
-## Epic 19: Atlas owns its skill, persona, and one portal job
+## Epic 18: Atlas owns its skill, persona, and one portal job
 
 Steward 19/21 shipped the empty `/stations/atlas/` shell and host MCP. Steward 29 proved SKF+persona *shape*. This epic does **not** copy Canopy 18–30. Not DW-H3. Not Vizro on the host.
 
-### Story 19.1: SKF domain skill and BMAD persona for atlas
+### Story 18.1: SKF domain skill and BMAD persona for atlas
 
 As an autonomous agent,
 I want an atlas SKF skill from `pyforge-atlas/` and a `bmad-agent-atlas` persona,
@@ -1758,7 +1764,7 @@ So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 **And** the persona uses only `pyforge atlas …` and `POST /stations/atlas/mcp`
 **And** `conda-forge-expert` is not replaced
 
-### Story 19.2: First portal slice — one inventory/run row
+### Story 18.2: First portal slice — one inventory/run row
 
 As an atlas operator,
 I want HTMX on `/stations/atlas/` to show one factory inventory or run-state row,
@@ -1770,7 +1776,7 @@ So that Lane 2 does a real job without Vizro or La Suite.
 
 ---
 
-## Epic 20: The query plane meets the query surfaces
+## Epic 19: The query plane meets the query surfaces
 
 Decomposes **`spec-atlas-query-dashboards`**
 (`planning-artifacts/specs/spec-atlas-query-dashboards/SPEC.md`) **CAP-5..CAP-7** — the
@@ -1787,7 +1793,7 @@ the face-parity gate, the composed-dashboard-store derivation, the CIS two-spine
 the remaining 19 Vizro pages (adopting the DW-D2-1/2/3 residue, which had ledger entries but
 no story home for dispatch).
 
-### Story 20.1: One boot script raises both plane faces (CAP-5)
+### Story 19.1: One boot script raises both plane faces (CAP-5)
 **Effort:** M • **Deps:** — • **Status:** backlog
 **Given** the shipped CAP-19 engine (steward 34.1–34.5) **When** the single pixi-sourced boot
 script runs **Then** the in-process library face is available by default (AD-16 local-first;
@@ -1797,7 +1803,7 @@ stack down it degrades to library-face-only with a structured notice, never a cr
 no second boot path exists (grep-verifiable: exactly one `duckdb-server` launch site)
 (`query-plane-face` ruling, 2026-08-26).
 
-### Story 20.2: Face parity is part of done (CAP-5)
+### Story 19.2: Face parity is part of done (CAP-5)
 **Effort:** S • **Deps:** S-20.1 • **Status:** backlog
 **Given** both faces up on fixture data **When** the parity gate runs an identical query set
 against the library face and the HTTP/Arrow face **Then** results agree row-for-row **And** a
@@ -1806,7 +1812,7 @@ the HTTP face per CAP-19's success wording ("the plane DSN or HTTP face") — pa
 the face's definition of done per the `query-plane-face` ruling (2026-08-26); the gate is
 offline-safe.
 
-### Story 20.3: Named-pipeline derivation of the dashboard stores (CAP-6)
+### Story 19.3: Named-pipeline derivation of the dashboard stores (CAP-6)
 **Effort:** M • **Deps:** — • **Status:** backlog
 **Given** the sealed seven pipelines' canonical outputs **When** the NAMED downstream plane
 pipeline runs (one `kedro run --pipeline <named>`) **Then** the composed semantic stores the
@@ -1818,7 +1824,7 @@ per-call choice — canonical datasets direct, or the plane as the fast path **A
 `dashboard/data.py`'s "BSL-wired SHELL pages" banner retires, with DW-D2-2 closed citing this
 story.
 
-### Story 20.4: The CIS two-spine specs exist (CAP-7)
+### Story 19.4: The CIS two-spine specs exist (CAP-7)
 **Effort:** M • **Deps:** — • **Status:** backlog
 **Given** DW-D2-1 — checked 2026-08-27: the CIS DESIGN/EXPERIENCE gap STILL BLOCKS (the
 `DESIGN.md` + `EXPERIENCE.md` spine specs were never produced; no evidence-update since the
@@ -1827,7 +1833,7 @@ files land under `planning-artifacts/` covering every one of the 19 unshipped pa
 DW-D2-1's close cites them **And** until this story lands, S-20.5 must not expand the page
 set past the live-confirmed core.
 
-### Story 20.5: Port the remaining nineteen Vizro pages (CAP-7)
+### Story 19.5: Port the remaining nineteen Vizro pages (CAP-7)
 **Effort:** L • **Deps:** S-20.3, S-20.4 • **Status:** backlog
 **Given** the two-spine specs (S-20.4 — this story is GATED: the DW-D2-1 CIS gap still blocks
 as of 2026-08-27) and the materialized stores (S-20.3) **When** the remaining 19 of 28 CLI
@@ -1841,7 +1847,7 @@ serve entrypoint, evidence-update 2026-08-26) **And** Vizro stays outside the Ca
 
 ---
 
-## Epic 21: Kedro catalog expansion — self-contained inventory data plane
+## Epic 20: Kedro catalog expansion — self-contained inventory data plane
 
 **Spec binding.** Decomposes `spec-atlas-kedro-catalog-expansion` CAP-1..4 (+ optional CAP-5..6) —
 `docs/dreams/atlas-kedro-catalog-expansion.md`. Makes pyforge-atlas bootstrap and materialize
@@ -1849,7 +1855,7 @@ the public index + identity export Parquet the inventory quartet consumes via `-
 without `cf_atlas.db` on the Kedro path. **Renumbered 2026-08-29** from draft Epic 18 to avoid
 collision with Epic 18 (Kedro hooks) in this file.
 
-### Story 21.1: Relocate atlas data defaults and add pyforge-atlas-bootstrap
+### Story 20.1: Relocate atlas data defaults and add pyforge-atlas-bootstrap
 **Type:** feature • **Effort:** M • **Deps:** — • **Status:** done
 **Given** an empty `PYFORGE_ATLAS_DATA_ROOT` **When** `pixi run pyforge-atlas-bootstrap` runs
 **Then** `globals.yml` store paths resolve under `${paths.data_root}/stores/` (not
@@ -1857,136 +1863,136 @@ collision with Epic 18 (Kedro hooks) in this file.
 pixi task **And** bootstrap smoke passes on an empty data root (Phase A only — SQLite seeds
 unchanged).
 
-### Story 21.2: Remove cf_atlas.db seeds from production datasets
+### Story 20.2: Remove cf_atlas.db seeds from production datasets
 **Type:** feature • **Effort:** L • **Deps:** S-21.1 • **Status:** done
 **Given** no `CF_ATLAS_DB` on the Kedro path **When** production datasets load **Then** no
 dataset defaults to `cf_atlas.db`; `parity-diff` passes.
 
-### Story 21.3: Tier 0 harden and `--live-catalog` contract
+### Story 20.3: Tier 0 harden and `--live-catalog` contract
 **Type:** feature • **Effort:** M • **Deps:** S-21.2 • **Status:** done
 **Given** Tier 0 Parquet materialized **When** `metrics.py --live-catalog` runs **Then**
 verification BOOLs read Parquet only; scale gates pass. *(Landed PR #941, 2026-08-30. Scope
 is exactly the three Tier 0 verification sets; the package universe still comes from
 `--analysis-xlsx` until Story 23.8 — see the 2026-08-30 course-correction note below.)*
 
-### Story 21.4: Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS)
+### Story 20.4: Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS)
 **Type:** feature • **Effort:** L • **Deps:** S-21.3 • **Status:** backlog
 **Given** bootstrap **When** Tier 1 datasets fetch **Then** all Tier 1 entries in
 `catalog-sources.md` are live in `catalog.yml` with smoke floors.
 
-### Story 21.5: Tier 2 sources (about, curated orgs, Artifactory names)
+### Story 20.5: Tier 2 sources (about, curated orgs, Artifactory names)
 **Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** backlog
 **Given** attended creds when live fetch enabled **When** Tier 2 runs **Then** CDO universe
 names come from catalog Parquet (telemetry deferred to Epic 23).
 
-### Story 21.6: upstream_discovery identity join and export Parquet
+### Story 20.6: upstream_discovery identity join and export Parquet
 **Type:** feature • **Effort:** L • **Deps:** S-21.5 • **Status:** backlog
 **Given** associator + board fixtures **When** Phase D runs **Then** `identity_export_parquet`
 matches today's join parity.
 
-### Story 21.7: Quartet thin-out and gist wrapper
+### Story 20.7: Quartet thin-out and gist wrapper
 **Type:** feature • **Effort:** M • **Deps:** S-21.6 • **Status:** backlog
 **Given** identity export Parquet **When** `--gist-only` runs **Then** inventory scripts delegate
 join to Atlas; Epic 17 purl-associator constraint superseded with memlog.
 
-### Story 21.8: End-to-end verification gate
+### Story 20.8: End-to-end verification gate
 **Type:** feature • **Effort:** M • **Deps:** S-21.7 • **Status:** backlog
 **Given** no legacy DB on Kedro path **When** full bootstrap + `--live-catalog` **Then**
 `parity-diff` and `bsl-metric-check` pass — Epic 21 success signal.
 
-### Story 21.9: Vizro bootstrap health pages (optional, CAP-5)
+### Story 20.9: Vizro bootstrap health pages (optional, CAP-5)
 **Type:** feature • **Effort:** M • **Deps:** S-21.8 • **Status:** backlog • **Optional:** yes
 **Given** post-bootstrap Parquet **When** `dashboard-serve` **Then** three BSL health pages
 render non-empty tables.
 
-### Story 21.10: Kedro-Viz CI path sync (optional, CAP-6)
+### Story 20.10: Kedro-Viz CI path sync (optional, CAP-6)
 **Type:** chore • **Effort:** S • **Deps:** S-21.8 • **Status:** backlog • **Optional:** yes
 **Given** a catalog-only PR **When** merged to main **Then** `kedro-viz-publish.yml` republishes
 the static DAG export.
 
 ---
 
-## Epic 22: Vizro parity with identity canvases
+## Epic 21: Vizro parity with identity canvases
 
 **Spec binding.** `spec-atlas-kedro-catalog-expansion` CAP-7 — parallel browser replacement for
 the three Cursor Canvas identity views; deferred from Epic 21 for scope, not capability.
 **Renumbered 2026-08-29** from draft Epic 19.
 
-### Story 22.1: Ranked export bridge (quartet → Vizro feed)
+### Story 21.1: Ranked export bridge (quartet → Vizro feed)
 **Type:** feature • **Effort:** S • **Deps:** S-21.8 • **Status:** backlog
 **Given** `priority.py` on identity export **When** bridge runs **Then**
 `identity_ranked_export.parquet` feeds Vizro until Epic 23.5 supersedes.
 
-### Story 22.2: Vizro `identity-catalog` page
+### Story 21.2: Vizro `identity-catalog` page
 **Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
 **Given** ranked export **When** page loads **Then** row counts match catalog canvas fixture.
 
-### Story 22.3: Vizro `identity-ops` page
+### Story 21.3: Vizro `identity-ops` page
 **Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
 **Given** ranked export **When** four panes render **Then** pane totals match ops canvas fixture.
 
-### Story 22.4: Vizro `identity-workbook` page
+### Story 21.4: Vizro `identity-workbook` page
 **Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
 **Given** enterprise Parquet absent or present **When** page loads **Then** honest shell or full
 workbook parity respectively.
 
-### Story 22.5: Canvas vs Vizro parity gate
+### Story 21.5: Canvas vs Vizro parity gate
 **Type:** feature • **Effort:** M • **Deps:** S-22.2, S-22.3 • **Status:** backlog • **Optional:** yes
 **Given** shared fixture **When** `dashboard-dryrun` parity test runs **Then** Vizro matches
 canvas DATA aggregates.
 
-### Story 22.6: Canvas deprecation switch
+### Story 21.6: Canvas deprecation switch
 **Type:** chore • **Effort:** S • **Deps:** S-22.5 • **Status:** backlog • **Optional:** yes
 **Given** parity gate green **When** `INVENTORY_IDENTITY_UI=vizro|canvas|both` **Then** default
 `both` until operator opts into vizro-only.
 
 ---
 
-## Epic 23: Complete inventory export — zero deferred
+## Epic 22: Complete inventory export — zero deferred
 
 **Spec binding.** `spec-atlas-kedro-catalog-expansion` CAP-8 — closes
 `docs/dreams/atlas-kedro-catalog-expansion.md` with `identity_complete_export.parquet` and
 `enterprise_jfrog_consumption.parquet` per `complete-export-contract.md`.
 **Renumbered 2026-08-29** from draft Epic 20.
 
-### Story 23.1: Tier 3 bulk OS indexes
+### Story 22.1: Tier 3 bulk OS indexes
 **Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** backlog
 **Given** bootstrap **When** Tier 3 fetches run **Then** homebrew/nixpkgs/spack/debian/fedora
 BOOLs land on verification export.
 
-### Story 23.2: Enterprise JFROG consumption Parquet
+### Story 22.2: Enterprise JFROG consumption Parquet
 **Type:** feature • **Effort:** L • **Deps:** S-21.5, Epic 15 • **Status:** backlog
 **Given** mock or attended Artifactory transport **When** rollup runs **Then**
 `enterprise_jfrog_consumption.parquet` matches §1 column contract on fixture.
 
-### Story 23.3: Priority rules in Kedro (`inventory_priority_assignments`)
+### Story 22.3: Priority rules in Kedro (`inventory_priority_assignments`)
 **Type:** feature • **Effort:** L • **Deps:** S-21.6, S-23.2 • **Status:** backlog
 **Given** frozen priority fixture **When** Kedro node runs **Then** P/Score/Work parity vs
 `priority.py`.
 
-### Story 23.4: Deliverable A + `Packaging_Candidate_Status`
+### Story 22.4: Deliverable A + `Packaging_Candidate_Status`
 **Type:** feature • **Effort:** M • **Deps:** S-21.3, S-23.3, S-23.8 • **Status:** backlog
 **Given** verification + priority Parquet **And** `inventory_universe` (S-23.8) as the row
 grain **When** derived export writes **Then** `inventory_verified_packages.parquet` has exact
 14-column order at the full-inventory grain (~38k rows), not the OpenTeams-universe grain.
 
-### Story 23.5: `identity_complete_export.parquet` (canonical)
+### Story 22.5: `identity_complete_export.parquet` (canonical)
 **Type:** feature • **Effort:** L • **Deps:** S-23.3, S-23.4 • **Status:** backlog
 **Given** identity + priority + enterprise joins **When** export materializes **Then** full
 GIST_SCHEMA + handoff columns; supersedes Story 22.1 bridge.
 
-### Story 23.6: BSL gist aggregates (CAP-8d)
+### Story 22.6: BSL gist aggregates (CAP-8d)
 **Type:** feature • **Effort:** M • **Deps:** S-23.5 • **Status:** backlog
 **Given** complete export **When** BSL renders gist markdown **Then** parity vs today's gist
 files on fixture; `gh gist edit` is thin actuator only.
 
-### Story 23.7: Zero-deferred E2E gate
+### Story 22.7: Zero-deferred E2E gate
 **Type:** feature • **Effort:** M • **Deps:** S-23.5, S-23.6, S-23.8, S-23.9 • **Status:** backlog
 **Given** no workbook ingest — by the bootstrap **and** by the quartet (`openpyxl` absent
 from `scripts/`) **When** bootstrap + Vizro + gist **Then** quartet data logic retired; dream
 fully closed.
 
-### Story 23.8: Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx` optional)
+### Story 22.8: Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx` optional)
 **Type:** feature • **Effort:** L • **Deps:** S-21.4, S-21.5 • **Status:** backlog
 **Given** Tier 0–2 Parquet + the OpenTeams board dataset **When** `derived_artifacts` runs
 **Then** `inventory_universe.parquet` holds one row per PEP-503 name with the workbook's
@@ -1994,7 +2000,7 @@ provenance labels, `role`, and `openteams_universe_member` **And** `metrics.py -
 without `--analysis-xlsx` produces CSV/MD identical to the workbook run on a fixture (the
 `10kClosed`-only rows are the one reported delta). *(Minted 2026-08-30 course correction.)*
 
-### Story 23.9: Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`)
+### Story 22.9: Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`)
 **Type:** feature • **Effort:** L • **Deps:** S-23.4, S-23.5, S-23.6, S-23.8, S-22.1 • **Status:** backlog
 **Given** the Atlas exports **When** the four quartet scripts run **Then** identity/priority/
 dashboards/metrics read only Parquet (`identity_complete_export`, `inventory_priority_assignments`,
@@ -2004,7 +2010,7 @@ course correction.)*
 
 ---
 
-## Epic 24: Atlas builds its MCP face with `mcp-builder`
+## Epic 23: Atlas builds its MCP face with `mcp-builder`
 
 **Spec binding.** The atlas-side relay of `spec-bmad-suite-lifecycle` (Dream
 `docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): labs' `mcp-builder` (CAP-6) for the atlas MCP
@@ -2012,14 +2018,14 @@ face (`POST /stations/atlas/mcp`, spec-21-4). **HARD boundaries:** installed by 
 (steward 46.5), never the marketplace; the face's contract stays `pyforge atlas …` grammar
 (lifecycle spine AD-1, AD-2).
 
-### Story 24.1: `mcp-builder` is atlas-wielded for the MCP face
+### Story 23.1: `mcp-builder` is atlas-wielded for the MCP face
 **Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • spec-21-4 (MCP faces)
 **Surface:** `.claude/skills/bmad-agent-atlas/SKILL.md` (routing line), the register § 2 row (one AGENTS.md pointer line only, AD-2/AD-11), `adoption-register.md` § 2 row
 **Given** the labs skill installed by name **When** the atlas persona routes new MCP tool scaffolding to `mcp-builder` with the constraint that generated tools call `pyforge atlas …` verbs only **Then** the register names atlas as sole wielder, the routing line states the grammar constraint, and CLAUDE.md is untouched
 
 ---
 
-## Epic 25: Turn on what is built — atlas's realization-gate effect stories
+## Epic 24: Turn on what is built — atlas's realization-gate effect stories
 
 **Spec binding.** Atlas's satellite of the fleet realization gate — operator decision batch
 `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
@@ -2031,7 +2037,7 @@ in a new epic rather than reopening a completed one (Epic 11 never existed, by d
 next free number). **Effect test, per steward Story 49.2:** *does it have a caller outside its own
 test file?*
 
-### Story 25.1: Retire the second Lane-3 runtime
+### Story 24.1: Retire the second Lane-3 runtime
 **Type:** code • **Effort:** S • **Deps:** — • **FR/AD:** `spec-atlas-query-dashboards` CAP-1..CAP-4 (superseded) • decision batch § 2.3 C1 / row atlas-B1
 **Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/views/` (delete), `src/shared/packages/pyforge-atlas/tests/unit/views/` (delete), `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_no_inline_io.py` (the Story 14.3 ASGI-containment test and its positive control both name `views/asgi.py`), `src/shared/packages/pyforge-atlas/pyproject.toml` (`bokeh`/`tornado`/`starlette` run-deps, declared for `views/` only), `src/shared/packages/pyforge-atlas/pixi.toml` (the mirrored AUD-ATLAS-010 run-dependency lines)
 **Given** the `views/` package has **no importer anywhere outside `tests/unit/views/`** — no CLI verb, no pixi task, no ASGI mount, even though `views/__init__.py:10-13` describes `asgi.py::app` as a mount target — and it reaches the legacy SQLite `cf_atlas.db` through `views/cli_bridge.py`, whose own docstring (`:11-17`) records that its dynamic-import shape keeps the F1 DuckDB-singularity gate green *while the loaded script imports `sqlite3`* — a private, non-BSL read against the CAP-19 ruling "no private DuckDB … BSL is the dashboard/agent SQL contract" and against `spec-pyforge-atlas`'s own Non-goal "Continued SQLite"
@@ -2041,7 +2047,7 @@ test file?*
 **And** nothing is resurrected on the way out: the pluggable-widget-registry idea is re-introduced only if a Vizro page actually asks for it, and `httpx` stays declared in the root `pixi.toml` — it is named there as *also* required by Story 16.2's `tools/lasuite_bringup.py`, so pruning the starlette test must not take it.
 **And** the page-count literals the same surfaces carry are made current on the way through: `PAGE_INVENTORY` in `dashboard/app.py` holds **34** `PageDef` entries (Epic 22's three identity pages), while `app.py:13`'s docstring says 28 and the root `pixi.toml:1065` / `:1070` task descriptions say 31 — the literals are replaced by the measured count (or by wording that does not quote a number), closing the page-count open question `spec-pyforge-atlas` raised on 2026-09-09 (fleet readiness re-derive; chain-currency runbook § overtaken)
 
-### Story 25.2: Materialize CAP-8's canonical Parquets — one recorded run
+### Story 24.2: Materialize CAP-8's canonical Parquets — one recorded run
 **Type:** ops • **Effort:** M • **Deps:** — (ATTENDED; ledger status `blocked` on the credentialed path) • **FR/AD:** `spec-atlas-kedro-catalog-expansion` CAP-8 • decision batch § 2.2 row atlas-B5 + § 2.3 C6
 **Surface:** the `derived_artifacts` / `artifactory_downloads` pipelines and `conf/base/catalog.yml` (`identity_complete_export` `:987-989`, `enterprise_jfrog_consumption` `:1301-1303` — read, not edited), a tracked run record under `planning-artifacts/`, `docs/dreams/atlas-kedro-catalog-expansion.md` (status), atlas `deferred-work-ledger.md` (`DW-FU-23-5`, `DW-D2-3`)
 **Given** Epics 21, 22 and 23 are 100% `done` and the catalog **declares** both canonical exports — and a declared Kedro dataset is a contract, not data
@@ -2051,7 +2057,7 @@ test file?*
 **And** no gate is weakened and no row is fabricated to reach a green: honest-empty stays honest, and if the credentialed path is unavailable the story stays `blocked` rather than declaring success
 **Cross-station note** *(prose, deliberately NOT a cross-project `Deps:` token)*: the attended, credentialed Artifactory path this story needs is the **same event** `spec-conda-forge-packaging-inventory-operations` holds itself `in-progress` for ("CAP-2 (17.2) code landed, live-execution verification deferred (attended, credentialed run pending)"). One precondition, two Specs — they must not disagree about whether it has been met.
 
-### Story 25.3: Atlas's MCP tools pass the CLI⇄tool parity gate
+### Story 24.3: Atlas's MCP tools pass the CLI⇄tool parity gate
 **Type:** code • **Effort:** M • **Deps:** — • **FR/AD:** marshal Story 18.2 / FR-155 (the primitive) • decision batch § 2.3 C10 / marshal-A finding E6
 **Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py`, a new `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/parity.py`, `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py` (verb *enumeration* only — Kedro's routing is not reimplemented)
 **Given** CLI⇄tool parity is enforced today for **marshal alone** — `pyforge/marshal/mcp/parity.py` and its gated meta-test `tests/meta/test_cli_tool_parity.py` (Story 18.2, FR-155: "drift fails the gated meta-test; review is not the gate") — while atlas's six tools (`run_pipeline`, `read_dataset`, `query_vizro_ai`, `query_trending_candidates`, `list_pipelines`, `list_datasets`) are asserted against nothing
@@ -2061,7 +2067,7 @@ test file?*
 **And** the `PREPARATORY_UNINTROSPECTABLE["atlas"]` entry is re-pointed at this story or removed; a silent skip stays forbidden. That one line lives in `pyforge-core` (`core/dispatch.py:29`), which is **steward's** surface — so it is either split into a steward story or recorded in steward's memlog **before** the edit lands, otherwise `spec-surface-check` reds at merge (the doctor-B8 foreign-surface hazard)
 **Cross-station note** *(prose, deliberately NOT a cross-project `Deps:` token)*: C10's other half — the **46 conda-forge-expert MCP tools** — is **mason's**, not atlas's. This story does not widen to it, and nothing here changes the ruling that the HTTP station face (`POST /stations/atlas/mcp`) is the governed front door with stdio servers as local adapters.
 
-### Story 25.4: A live Artifactory transport exists for the attended operator to plug in
+### Story 24.4: A live Artifactory transport exists for the attended operator to plug in
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** unblocks Story 25.2's credentialed path • operator request 2026-09-10
 **Surface:** `src/shared/packages/pyforge-atlas/tools/live_artifactory_transport.py` (new — NOT inside `src/pyforge/atlas/`, which `tests/unit/catalog/test_no_inline_io.py`'s `IO_DENYLIST` bans `requests`/`urllib3`/`httpx` from anywhere in; `tools/` mirrors the existing `tools/bootstrap.py` sibling-location precedent for attended-operator scripts), `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py`
 **Given** `AqlTransport` (the sole HTTP seam `ArtifactoryAqlAdapter` takes) has only `_unconfigured_transport` wired anywhere in the package — Story 25.2 needs "an attended operator runs the pipelines end to end against live sources with the Artifactory credentials configured," but no live transport implementation exists for that operator to construct, only the injectable seam itself
