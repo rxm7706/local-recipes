@@ -1,15 +1,53 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-14'
+updated: '2026-09-17'
 status: final
-currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-doctor's SPEC.md moved to 2026-09-12 (surface-drift-exclude block; eight dated `verified:` CAP lines from the 2026-09-11 mechanical sweep, all PASS; three new Assumptions bullets) and its .memlog to 2026-09-14T05:18 (six surface-reconcile entries: the new capability_ledger.py source, the PR #1354 snapshot-test re-measure, board.py's INV-A delivered-Spec branch and INV-B epic arm, and marshal Epic 42's incoming surface claim) while this PRD sat at 2026-09-07; reconciled in the appended § Currency reconciliation — 2026-09-14. No FR/content change required. Prior: Reviewed 2026-09-07 — chain-currency sweep (marshal Story 31.1). Three specs' .memlog moved to 2026-09-07 (cross-station surface-reconcile for factory.py/hygiene_definitions.py's new TEA test-design classification rules) after this PRD sat at 2026-09-04; reconciled in the appended § Currency reconciliation — 2026-09-07. No FR/content change required. Prior: Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor's .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19, above this PRD's FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1); reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
+currency_review: 'Reviewed 2026-09-17 — one-chain doctor fold reminted spec-pyforge-doctor
+  CAP-1..76. Kernel FR-1..13 cite CAP-1..13 (original station CAPs, same numbers).
+  Absorbed CAPs were already decomposed as Epics 5–25 on their own Specs — remint
+  is provenance, not a new FR set. FR delta: citations only. Reviewed 2026-09-14 —
+  chain-currency sweep. spec-pyforge-doctor''s SPEC.md moved to 2026-09-12 (surface-drift-exclude
+  block; eight dated `verified:` CAP lines from the 2026-09-11 mechanical sweep, all
+  PASS; three new Assumptions bullets) and its .memlog to 2026-09-14T05:18 (six surface-reconcile
+  entries: the new capability_ledger.py source, the PR #1354 snapshot-test re-measure,
+  board.py''s INV-A delivered-Spec branch and INV-B epic arm, and marshal Epic 42''s
+  incoming surface claim) while this PRD sat at 2026-09-07; reconciled in the appended
+  § Currency reconciliation — 2026-09-14. No FR/content change required. Prior: Reviewed
+  2026-09-07 — chain-currency sweep (marshal Story 31.1). Three specs'' .memlog moved
+  to 2026-09-07 (cross-station surface-reconcile for factory.py/hygiene_definitions.py''s
+  new TEA test-design classification rules) after this PRD sat at 2026-09-04; reconciled
+  in the appended § Currency reconciliation — 2026-09-07. No FR/content change required.
+  Prior: Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor''s
+  .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product
+  work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against
+  already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19,
+  above this PRD''s FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1);
+  reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content
+  change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor''s
+  .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector
+  bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all
+  against already-described FR-14/FR-15 detector infrastructure — no new capability)
+  while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation
+  — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep''s own DEFERRED_SPECS
+  registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency
+  sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through
+  2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency
+  reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary
+  vs. the decompose-directly Spec convention, Canopy/operating-model obligations,
+  Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without
+  a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02
+  — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the
+  fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md).
+  §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated
+  (FR-11), not reopened wholesale.'
 inputs:
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md'
-  - 'docs/dreams/pyforge-doctor.md'
-  - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md
+- docs/dreams/pyforge-doctor.md
+- docs/dreams/ecosystem-crew.md § 6 Doctor
+fr-derivation-from: '2026-09-17'
 ---
 
 # PRD: Doctor (pyforge-doctor)
@@ -127,7 +165,7 @@ both — the default with neither flag given). Realizes UJ-1, UJ-2.
 
 **Functional Requirements:**
 
-#### FR-1: Wrap warden's engine-availability self-check
+#### FR-1: Wrap warden's engine-availability self-check ← CAP-1
 
 The operator or an agent can run `doctor check --engines` and receive the same
 engine-availability/version findings warden's own `--doctor` flag produces (deptry,
@@ -148,7 +186,7 @@ osv-scanner presence + minimum version), sourced via a library import of
 warden's self-check surface changes shape, Doctor's FR-1 output changes with it
 (single source of truth, not a second copy to drift).
 
-#### FR-2: Individually addressable, tri-state checks
+#### FR-2: Individually addressable, tri-state checks ← CAP-1
 
 Every check `doctor check` runs (engine or env/credential) reports one of `ok` /
 `warn` / `fail` — never a binary pass/fail — and is independently nameable/filterable,
@@ -164,7 +202,7 @@ mirroring `brew doctor --list-checks`' modular-check convention.
   `fail` does) — consistent with the tri-state-not-binary model and warden's own
   "informational warnings are not proof of brokenness" convention.
 
-#### FR-3: Environment / credential-hygiene check category (new)
+#### FR-3: Environment / credential-hygiene check category (new) ← CAP-1
 
 `doctor check --env` includes a check for unconditional-credential-injection-shaped
 configuration issues — the worked example being `JFROG_API_KEY`'s unconditional
@@ -194,7 +232,7 @@ Watch axis. Read-only. Realizes UJ-3.
 
 **Functional Requirements:**
 
-#### FR-4: Fleet-wide watch-axis query
+#### FR-4: Fleet-wide watch-axis query ← CAP-2
 
 The operator can run `doctor monitor --fleet --watch <axis>[,<axis>...]` where axes
 include at minimum `staleness` (→ `staleness-report`), `cve` (→ `cve-watcher`), and
@@ -213,7 +251,7 @@ tagged, schema-validated output document.
 - Each Finding's Source tag is queryable/filterable in output — an operator can ask
   "show me only what came from `behind-upstream`."
 
-#### FR-5: MCP-tool-first data access, CLI fallback
+#### FR-5: MCP-tool-first data access, CLI fallback ← CAP-2
 
 `monitor --fleet` queries cf_atlas via its existing MCP tool surface
 (`feedstock_health`, `staleness_report`, `behind_upstream`, `cve_watcher`,
@@ -243,7 +281,7 @@ FR-1 through FR-5's existing signal. Realizes UJ-4.
 
 **Functional Requirements:**
 
-#### FR-6: Partition findings by actionability
+#### FR-6: Partition findings by actionability ← CAP-3
 
 `diagnose --target <target>` partitions every gathered Finding into exactly one of
 `actionable` (a fix/upgrade path exists now), `blocked` (no fix available yet — e.g.
@@ -258,7 +296,7 @@ starts empty in v1). No Finding is silently dropped.
 - A `blocked` Finding is visibly listed (with why it's blocked), not omitted —
   directly testable by constructing a target with a known unfixed CVE.
 
-#### FR-7: Rank the actionable partition
+#### FR-7: Rank the actionable partition ← CAP-3
 
 Within the `actionable` partition, Prescriptions are ranked by severity × exploitability
 (reusing warden's KEV/EPSS gate signals and atlas's `vuln_max_epss_score`/CWE-category
@@ -278,7 +316,7 @@ factors that produced it — never an opaque priority number.
   boundary; flagged if a real multi-hop remediation case surfaces during
   implementation.
 
-#### FR-8: Root-cause naming
+#### FR-8: Root-cause naming ← CAP-3
 
 Every Prescription names a root cause (not just a symptom) — e.g. "upstream released
 a security patch you haven't picked up" rather than just "CVE-2026-XXXXX present."
@@ -299,7 +337,7 @@ mode on FR-1 through FR-8.
 
 **Functional Requirements:**
 
-#### FR-9: `--json` on every verb
+#### FR-9: `--json` on every verb ← CAP-4
 
 `doctor check`, `doctor monitor`, and `doctor diagnose` each accept a `--json` flag
 producing the same information as the human-readable default, structured as one
@@ -324,7 +362,7 @@ prove themselves, not concurrent with them.
 
 **Functional Requirements:**
 
-#### FR-10: Health scoring
+#### FR-10: Health scoring ← CAP-5
 
 An operator can see a composite health grade (A–F) per dependency, synthesized from
 Doctor's own already-gathered Finding data across axes (age/staleness, CVE exposure,
@@ -339,7 +377,7 @@ fourth scanning instrument.
 - An incomplete axis gather degrades the grade to explicitly `incomplete`, never a
   false `A` — a grade must never overstate confidence it does not have.
 
-#### FR-11: Persistent fleet-health surface
+#### FR-11: Persistent fleet-health surface ← CAP-6
 
 An operator can see the fleet's health condition as a tracked, at-a-glance surface
 instead of reconstructing it from a point-in-time `monitor --fleet` snapshot — the
@@ -352,7 +390,7 @@ graduation §6.2's `[NOTE FOR PM]` already flagged as worth revisiting.
 - The surface's own schema is versioned the same way `DoctorReport` is (FR-9's
   `schema_version` precedent) so a consumer can detect a format change.
 
-#### FR-12: Adoption-tracking watch axis
+#### FR-12: Adoption-tracking watch axis ← CAP-7
 
 An operator can add `adoption` to `monitor --fleet`'s `--watch` set and get
 cf_atlas's `adoption-stage` and `version-downloads` signals — named as candidate
@@ -368,7 +406,7 @@ Finding shape as the existing staleness/cve/abandonment axes.
 - A new `Source` enum member is added for it (FR-2's closed-taxonomy convention
   extended, never an open/stringly-typed source).
 
-#### FR-13: Safe upgrade-path recommendation
+#### FR-13: Safe upgrade-path recommendation ← CAP-8
 
 A Prescription from `diagnose --prescribe` can name a specific next-safe-version
 target, not just rank and explain — the narrow slice of "Version Intelligence" that
@@ -763,3 +801,7 @@ where the memlog already records it, and it is repeated here only so the PRD's r
 two entries are one story, not two.
 
 **No FR/content change required.** `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-17
+
+One-chain fold. `fr-derivation-from` set. Every kernel FR heading cites its source CAP. No new FR minted. Absorbed Spec CAPs stay epic-decomposed.

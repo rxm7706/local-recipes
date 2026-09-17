@@ -1,22 +1,60 @@
 ---
-name: 'pyforge-doctor'
+name: pyforge-doctor
 type: architecture-spine
 purpose: build-substrate
 altitude: feature
-paradigm: 'facade over existing instruments (pipes-and-filters gather → normalize → rank)'
-scope: 'pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo pixi workspace member consolidating pyforge-warden + cf_atlas'
+paradigm: facade over existing instruments (pipes-and-filters gather → normalize →
+  rank)
+scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo
+  pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-09-14'  # RE-STAMPED 2026-09-14: chain-currency cascade (spec -> PRD -> spine). The as-built sources/ inventory was RE-COUNTED against live code (12 modules / 14 dispatcher entries -> 20 / 22) — a real content correction, not a bare stamp; no AD added, changed, or removed. Prior: RE-STAMPED 2026-09-07: currency-only cascade (spec memlog -> PRD -> spine) from marshal Story 31.1's cross-station classify()/orphan-file rule additions (factory.py, hygiene_definitions.py) for TEA's new test-design artifact shape; no AD added, changed, or removed. Prior: RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1043; no AD added, changed, or removed.
-currency_review: "Reviewed 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after reconciling against spec-pyforge-doctor's 2026-09-12 SPEC.md + 2026-09-14 memlog). Appended § Currency reconciliation — 2026-09-14: the as-built sources/ divergence bullet was found STALE against live code and corrected (20 modules, 22 dispatcher entries); the four new sources named by the Spec delta (capability_ledger, capability_effect, general_docs_consistency, status_body_consistency, pixi_currency, platform_policy, frozen_path, bmad_config) are all one-module-behind-the-dispatcher additions — no module boundary moved, no AD reopened. Prior: Reviewed 2026-08-29 — chain-currency sweep cascade (the PRD re-dated 2026-08-29 after its own spec-pyforge-doctor reconciliation, five bookkeeping entries, no new capability). Appended § Currency reconciliation — 2026-08-29: the four sources/ modules named (chain.py, marshal.py, factory.py, board.py) are already in the as-built inventory below; PRs #903/#904/#906/#907 are bug fixes inside them, no module boundary moved, no AD reopened. No content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep cascade (the PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh). Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/ grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6 verified held, AD-11..AD-13's standing confirmed, Epic 17 hooks + Epic 18 Canopy tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier section (AD-7..AD-10)."
-binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13]
+updated: '2026-09-17'
+currency_review: 'Reviewed 2026-09-17 (prd→arch cascade after the one-chain doctor
+  fold). No AD added or changed. Reviewed 2026-09-14 — chain-currency sweep cascade
+  (the PRD re-dated 2026-09-14 after reconciling against spec-pyforge-doctor''s 2026-09-12
+  SPEC.md + 2026-09-14 memlog). Appended § Currency reconciliation — 2026-09-14: the
+  as-built sources/ divergence bullet was found STALE against live code and corrected
+  (20 modules, 22 dispatcher entries); the four new sources named by the Spec delta
+  (capability_ledger, capability_effect, general_docs_consistency, status_body_consistency,
+  pixi_currency, platform_policy, frozen_path, bmad_config) are all one-module-behind-the-dispatcher
+  additions — no module boundary moved, no AD reopened. Prior: Reviewed 2026-08-29
+  — chain-currency sweep cascade (the PRD re-dated 2026-08-29 after its own spec-pyforge-doctor
+  reconciliation, five bookkeeping entries, no new capability). Appended § Currency
+  reconciliation — 2026-08-29: the four sources/ modules named (chain.py, marshal.py,
+  factory.py, board.py) are already in the as-built inventory below; PRs #903/#904/#906/#907
+  are bug fixes inside them, no module boundary moved, no AD reopened. No content
+  change required. Prior: Reviewed 2026-08-26 — chain-currency sweep cascade (the
+  PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh).
+  Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the
+  Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/
+  grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6
+  verified held, AD-11..AD-13''s standing confirmed, Epic 17 hooks + Epic 18 Canopy
+  tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter
+  bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD''s
+  2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier
+  section (AD-7..AD-10).'
+binds:
+- FR-1
+- FR-2
+- FR-3
+- FR-4
+- FR-5
+- FR-6
+- FR-7
+- FR-8
+- FR-9
+- FR-10
+- FR-11
+- FR-12
+- FR-13
 sources:
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
-  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md'
-  - 'src/shared/packages/pyforge-warden/src/pyforge/warden/{engines,cli,models,verdict}.py'
-  - 'src/shared/packages/pyforge-atlas/pyproject.toml'
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md
+- _bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md
+- src/shared/packages/pyforge-warden/src/pyforge/warden/{engines,cli,models,verdict}.py
+- src/shared/packages/pyforge-atlas/pyproject.toml
 companions: []
 ---
 

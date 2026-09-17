@@ -3696,3 +3696,461 @@ capabilities:
     heading: "BMAD projection onto Internal GH"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+
+  # doctor one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-doctor:CAP-1
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator or Marshal can run `doctor check --env --engines` for a fast"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-2
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator can run `doctor monitor --fleet --watch <axis>[,<axis>"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-3
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator triaging a target can run `doctor diagnose --target <target>"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-4
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator or agent can request `--json` on every verb (`check`, `monit"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-5
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator can see a composite health grade (A–F) per dependency, synth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-6
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator can see the fleet's health condition as a tracked, at-a-glan"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-7
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "An operator can add `adoption` to `monitor --fleet`'s `--watch` set and"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-8
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "A Prescription from `diagnose --prescribe` can name a specific next-safe"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-9
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the verdict on the Marshal's own row"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-10
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "backlog-intake surfacing"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-11
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`classify()` recognizes the spike-report shape -- a file matching the"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-12
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "The fix ships as one classification rule, added in the same place and th"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-13
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "declared-vs-installed drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-14
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "installed-vs-upstream-latest drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-15
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "ambient, non-gating surface"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-16
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "suite-vs-upstream drift"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-17
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the caller-outside-its-own-tests check"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-18
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the `verified:` line, rendered per CAP"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-19
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "it renders where the operator already looks"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-20
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the sweep detector (SHIPPED)"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-21
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the runbook is the procedure of record"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-22
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "triggered per-station cascades"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-23
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the grounding triple"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-24
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "no stamp without reconcile"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-25
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Worked-Example accumulation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-26
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "due-for-verification selection"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-27
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "churn-based cost filtering"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-28
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "tiered verification, mechanical first"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-29
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "evidence-grounded verdict recording, four verdicts"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-30
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "cross-project reach"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-31
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "cross-entry, cross-project correlation"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-32
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "fleet-wide staleness signal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-33
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "backlog-intake check. SPLIT OUT 2026-08-21 — no longer part of this Spec"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-34
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the intake guard"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-35
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a deferral carries identity from birth"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-36
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the detector sees what it claims to check"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-37
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the existing 470 do not red every landing pass on day one"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-38
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a pre-CAP-1 anonymous entry is correctly parsed, whatever legacy shape it used"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-39
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a legacy entry mints a collision-free id in CAP-1's own per-station convention"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-40
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a `--fix` mode promotes every genuine legacy-anonymous entry safely"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-41
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the grandfather baseline stays in lockstep with `--fix`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-42
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a fleet-wide hygiene sweep, generalizing the warden-only precedent"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-43
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "hygiene findings are reported, never auto-applied"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-44
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "loop-home branch staleness is visible without a human asking"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-45
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "CAP-4"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-46
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Two fixes needed together to actually run `--fix` for real against all 8"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-47
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`deferred_work_promote"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-48
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "A fact useful to an operator lives once under `docs/` (or"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-49
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Unique operational steps from marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-50
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Sunset `docs/specs/` by frontmatter `status:`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-51
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Route intake using `docs/intake/README"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-52
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Inbound links to the five files now under"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-53
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`docs/dashboard/kedro-viz/` stays the Kedro-Viz upload"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-54
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "A new Doctor source (not an extension of"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-55
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the catalog stays a maintained, current artifact"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-56
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`EXEMPLAR-STANDARD.md`'s conformance table is refreshed and re-verified"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-57
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`chain-completeness`'s INV-A parses capability ids, not a bare substring match"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-58
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`dream-chain`'s gap count surfaces in `fleet-picture`'s ambient ATTENTION block"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-59
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`spec_surface_check.py --write-baseline`'s read-modify-write race is closed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-60
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Every authoritative source that describes what Doctor is and"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-61
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "The four confirmed decay findings in the repo's two"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-62
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "This class of drift gets a repeatable detector instead of"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-63
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Design and adopt a Diátaxis-adapted information architecture"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-64
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Give the general-facing docs layer a discoverable"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-65
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`README"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-66
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "SATISFIED by the Dream's ledgers, not by code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-67
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "SATISFIED by the Dream's ledgers, not by code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-68
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "SATISFIED by the Dream's ledgers, not by code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-69
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the one code capability; decomposed as a single doctor story"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-70
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "SATISFIED by the Dream's ledgers, not by code"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-71
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the drift check"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-72
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "progress-phrase-under-terminal-status"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-73
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`open_questions: []` over a live memlog question"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-74
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "promissory language under a terminal status"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-75
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a status comment that contradicts the ledger it cites"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-76
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "it renders where the operator already looks"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
