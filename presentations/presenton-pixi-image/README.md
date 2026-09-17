@@ -1,6 +1,6 @@
 # Presenton, Conda-Native deck (`presenton-pixi-image`)
 
-**Status: authored 2026-07-25 — 10 slides, extract + build green.** Local Wave C poster rebuild 2026-09-15 (Story 21.9); Design push still pending. Engine + glue copied
+**Status: authored 2026-07-25 — 10 slides, extract + build green.** Standalone infographic poster rebuilt to the family standard and pushed 2026-09-17 (Story 21.9 fix). The 2026-09-15 Wave C pass had corrupted the poster (repeated boilerplate past the intro, never caught by `deck-facts --check` since that check validates fact-span presence, not prose sanity) — caught before it reached Design, since the project's stored copy was still the original pre-corruption stub. Rebuilt clean: six acts, 37 sections, 4 SVGs, 20 tables, 92,582 bytes; pushed and read back byte-identical. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). Dream:
 `docs/dreams/presenton-pixi-image.md`; the Spec and its planning chain live in
 `_bmad-output/projects/presenton-pixi-image/planning-artifacts/`.
@@ -73,9 +73,9 @@ Seeded 2026-07-25 (every upload byte-verified against the local file):
 and MCP `write_files` accepts inline `data` only, so these three await a DesignSync pass
 (`finalize_plan` with `localDir`, then `write_files` with `localPath`).
 
-## Ledger — 2026-09-15 Wave C local rebuild (Story 21.9)
+## Ledger — 2026-09-17 corruption fix + push (Story 21.9 fix)
 
 | Artifact | Measured | Design etag | Notes |
 |---|---|---|---|
-| `Presenton Conda-Native Infographic standalone.html` | 145236 B · 21 sections · 6 acts · 3 SVG · 3 tables · facts 60/60 | `PENDING-PUSH` | rendered 2026-09-15, page 18737 px at 1240 px; 0 unmarked / 0 mismatch; Dream status archived |
-| `facts.yaml` | 34 facts at tree `506ad58622` | — | spec_status omitted (SPEC archived under Mason); no package/CLI rows |
+| `Presenton Conda-Native Infographic standalone.html` | 92582 B · 37 sections · 6 acts · 4 SVG · 20 tables · facts 31/31 (0 unmarked / 0 mismatch) | `1789645274081278` | rendered 2026-09-17, page 20389 px at 1240 px; pushed via `McpTransport` + read back full, SHA-256 `e8d81e2966f5904f8e200696f661447b597f9f011c5124a19f9d4625df68163c` on both sides; Dream status archived. Supersedes the 2026-09-15 Wave C pass, which was corrupted past the intro (repeated boilerplate, undetected by `--check` since it only validates fact-span presence) — caught before it ever reached Design, so this push is a normal first push, not a correction of a live Design copy. |
+| `facts.yaml` | 34 facts at tree `506ad58622` | — | untouched by this fix; spec_status/spec_capabilities omitted (SPEC folded into Mason's own `SPEC.md` as a satellite, no standalone `spec-presenton-pixi-image/SPEC.md`); no package/CLI rows (chain deck) |
