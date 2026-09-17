@@ -634,6 +634,162 @@ capabilities:
     heading: ""
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-recall-stale-between-nightlies/SPEC.md
+  - id: pyforge-scribe:CAP-1
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "A developer or agent can capture a decision"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-2
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "scribe graph compile --nightly reads named tool surfaces"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-3
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "A developer or agent can run scribe recall"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-4
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Scribe ships as an installable, pixi-workspace-member package (dist"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-5
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Session instructions and the graphify extra state that"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-6
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "An operator can ingest src/shared/packages/ through scribe index"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-7
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "The estate-owned nightly trigger compiles with the graphify"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-8
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "The nightly compile includes each Herald deck fact"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-9
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "When ingestrepo() is called with no target, walk"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-10
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Compile each in-flight story spec as one kind=doc"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-11
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "After a full rebuild, a node is stale"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-12
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Compile walks exclude archive trees, implementation-artifacts/, and tests/"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-13
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Named contract surfaces join the compile as kind=doc"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-14
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Default scribe recall (and answer()) excludes kind=code. --kind"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-15
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Session agents have a durable instruction to use"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-16
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "A scoped recall for project slug S can"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-17
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the scanner"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-18
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "a compile source"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-19
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Compile each docs/how-to/.md except README.md as one ordinary"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-20
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Compile each named planning artifact as one kind=doc"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-21
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Every wired recall door uses the CLI default"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-22
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Marshal planning-graph retrieve always names the planning surface"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-23
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "The portal recall job may name a mode"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-24
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "Session agents use --mode planning for decisions"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-25
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "scribe recall accepts --mode planning|memory|code. planning → {doc"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-26
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "The compiled store remembers when it was built"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward
