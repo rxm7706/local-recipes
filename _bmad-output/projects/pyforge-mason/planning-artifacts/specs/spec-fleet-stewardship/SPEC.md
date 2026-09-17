@@ -7,6 +7,7 @@ updated: "2026-09-17"
 owner-dream: docs/dreams/fleet-stewardship.md
 surface:
   - recipes/**
+surface-drift: exempt   # recipes are the product line — per-recipe governance is the CFE workflow, not spec re-derivation
 companions:
   - ../../../../../../docs/specs/feedstock-platform-expansion.md    # adopted: the per-feedstock procedural core (legacy Tier-1, in force)
   - ../../../../../../docs/specs/feedstock-failure-remediation.md   # adopted: the red-PR remediation loop (legacy Tier-1, in force)

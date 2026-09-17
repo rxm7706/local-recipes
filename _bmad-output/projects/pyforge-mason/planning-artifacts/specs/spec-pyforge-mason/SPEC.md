@@ -79,6 +79,76 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   - **success:** The knowledge deny-list is declared in one reviewable module where every entry cites the artifact it derives from, **and ships positive fixtures planting a violation of each category so that a deny-list matching nothing is a failing test, not a passing one**; weakening or removing an entry requires a rationale a companion test asserts is present; the sole-caller test finds no reference to the wrapped machinery outside the adapter; the independence test runs every `package` and `environment` verb with the root guaranteed unresolvable behind a **named one-entry allow-list**, asserting positively that the excepted target fails for the *right* reason; the governance check stays green with zero implementation commits touching the governed surface and exactly one sanctioned retrospective commit that does; the fidelity test proves Mason transforms presentation rather than semantics, is slow-marked, excluded from the default task, and **skips cleanly** when no root resolves; and the effort is not done until the retrospective lands skill edits plus a dated changelog entry with a semver bump.
   - **verified:** 2026-09-11 — PASS — mechanical re-verification at HEAD 9d882c3ea0d: `pytest tests/meta/test_no_recipe_knowledge.py tests/meta/test_cfe_independence.py tests/meta/test_capability_tiers.py` — 86 passed, including `test_deny_list_entries_all_carry_a_citation_and_rationale` (every entry cites its source plus a non-empty rationale) and `test_detector_fires_on_a_planted_gotcha_identifier`/`test_detector_fires_on_a_planted_check_code` (non-vacuous by construction) and `test_cfe_dependent_ship_targets_allow_list_has_exactly_one_entry` (the named one-entry allow-list, structurally asserted, not just a comment). `test_delegation_fidelity.py`'s 3 tests (slow-marked, excluded from the default `pyforge-mason-test` task) explicitly re-run this pass: the fidelity test itself passes, and `test_delegation_fidelity_test_skips_when_no_real_cfe_root_resolves` confirms the clean-skip contract. Governance check, git-verified directly against `origin/main`'s real merged history (not `--all`, which pulls in unmerged worktree-agent branches — 3 false positives were found and excluded that way): searched every commit touching `src/shared/packages/pyforge-mason/**` in `origin/main`'s ancestry for one that ALSO touches the governed CFE surface (`.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`, `.claude/tools/conda_forge_server.py`) in the same commit — **zero found**. Every `retro(cfe):`/`retro:` commit on `main` lands as its own dedicated, CFE-surface-only commit, never bundled with a mason src change — a cleaner invariant than the constraint's literal "one sanctioned exception" phrasing implies (CLAUDE.md Rule 2 retros run once per story, each its own standalone commit, not once ever across the whole project). Note: `scripts/cfe_rebuild_guard_check.py` (the Epic 6 CFE-rebuild-campaign's own governance script, belonging to the separate `spec-conda-forge-expert-rebuild`, explicitly named outside this kernel's CAP-1..7 scope by this Spec's own Currency reconciliation item 1) currently reports 2 "unmirrored-retro" findings for its own slice briefs — checked and confirmed out of this CAP's scope, not a CAP-7 finding.
 
+### CAP-14 — the slice map, derived not guessed
+
+- **intent:** Before any brief is written, `skf-analyze-source` runs against the live skill so the slice map is derived, not guessed.
+- **success:** A tracked slice-map artifact under this Spec's directory lists every slice.
+
+### CAP-15 — first slice: recipe generation, built and parallel-validated in one epic
+
+- **intent:** The recipe-generation slice is rebuilt and parallel-validated in one epic.
+- **success:** `skf-brief-skill` produces the slice brief with the relevant gotchas.
+
+### CAP-16 — the anti-atlas guard, parallel-run form
+
+- **intent:** Parallel-run killers — silent divergence and a skipped endgame — are detector-enforced.
+- **success:** A detector registered in `scripts/detectors.py` reads the slice map and fails on divergence.
+
+### CAP-17 — campaign state: the sequence survives sessions
+
+- **intent:** The multi-slice sequence is tracked by `skf-campaign` file-based state.
+- **success:** Campaign state records per-slice status from mapped through compiled.
+
+### CAP-18 — the local mirror as source of truth
+
+- **intent:** Every `recipes/<name>/` is a faithful, buildable mirror edited first, built locally, then pushed.
+- **success:** The local-mirror-first rule holds; the repo-wide recipe.yaml parse audit stays green.
+
+### CAP-19 — per-recipe internal metadata
+
+- **intent:** Every local recipe carries the `cfe-*` block, stripped on push.
+- **success:** The cfe meta-tests stay green; strip is verified on pushed artifacts.
+
+### CAP-20 — the recurring campaigns
+
+- **intent:** Refresh, platform expansion, and failure remediation run as parameterized waves.
+- **success:** Each wave's evidence lands in the owning workflow spec's Worked Examples / Current State.
+
+### CAP-21 — the generated catalog
+
+- **intent:** `failure-catalog.yaml` derives from SKILL.md gotchas with greppable signatures and `enforced_by:` pointers.
+- **success:** Regeneration is deterministic; hand-editing the catalog is detectably wrong.
+
+### CAP-22 — the lint + drift gate
+
+- **intent:** Every non-null pointer resolves against the live check surface; catalog↔SKILL.md drift fails CI.
+- **success:** Planting a bogus pointer or editing a gotcha without regenerating reds the suite.
+
+### CAP-23 — recipe lifecycle machinery
+
+- **intent:** The autonomous recipe lifecycle loop specified in conda-forge-expert SKILL.md.
+- **success:** The skill's own meta-test suite is green; gates are enforced per SKILL.md.
+
+### CAP-24 — atlas intelligence
+
+- **intent:** `cf_atlas.db` answers what to work on, whether it is safe, and what depends on it.
+- **success:** Ground-truth facts match BMAD artifacts; read CLIs answer offline.
+
+### CAP-25 — MCP surface
+
+- **intent:** `conda_forge_server.py` exposes recipe-authoring, atlas, and scanning tools to agent sessions.
+- **success:** Tool count and schemas match `reference/mcp-tools.md`.
+
+### CAP-26 — the self-improvement loop
+
+- **intent:** Every conda-forge effort ends with a Rule-2 retro that lands skill edits plus a CHANGELOG semver entry.
+- **success:** A governed edit without a CHANGELOG move is a checker finding.
+
+### CAP-27 — the standardized discipline
+
+- **intent:** One pixi base-layer convention across the estate Containerfiles.
+- **success:** The convention is written and guarded; shipped Containerfiles follow it.
+
 ## Constraints
 
 - **The central decision — wrap by capability, not by product.** Mason **wraps** the packaging machinery by subprocess for all recipe operations and **builds** natively for `package` and `environment`. The boundary is drawn by *capability*. Pure porcelain was rejected because two of the three charter verb families have **nothing to wrap** — no wheel build, no upload path and no lock orchestration exists anywhere in the wrapped machinery's 41,410 lines, so a pure wrapper is not a smaller Mason but a Mason missing its reason to exist. Extraction/reimplementation was rejected on three independently sufficient grounds: **governance makes a fork structurally adversarial** (Rule 1 makes the skill authoritative over any conflicting story, and Rule 2 mandates that every conda-forge effort *edits the skill* — so a fork is continuously invalidated by the loop that governs the domain); **the in-repo precedent failed** (a sibling project rebuilt ~29,000 lines across 32 merged stories and the 8,902-line original is still the live runtime — nothing routes to the rebuild); and **it forks the moat**, converting 106 gotchas and 10 constraints from an appreciating asset into a depreciating one. The accepted cost, paid deliberately: **Mason is not standalone** — `mason recipe` requires a discoverable installation and is inert without one.
