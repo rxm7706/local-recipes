@@ -867,8 +867,11 @@ def gather_direction(
             ),
         )
 
-    subjects_raw = _git(target, "log", "--format=%s", base_ref)
-    if subjects_raw is None:
+    # Story 27.5: carries the sha alongside each subject (was subject-only
+    # pre-27.5) -- the bare-form fallback in `_merged_ids_for_project` needs
+    # it to run `git diff --name-only <sha>^1 <sha>`.
+    commits_raw = _git(target, "log", "--format=%H%x00%s", base_ref)
+    if commits_raw is None:
         return (
             Finding(
                 source=Source.LEDGER_DIRECTION,
@@ -881,7 +884,17 @@ def gather_direction(
                 evidence={"target": str(target), "base_ref": base_ref},
             ),
         )
-    subjects = subjects_raw.splitlines()
+    commits: list[tuple[str, str]] = []
+    for line in commits_raw.splitlines():
+        if not line:
+            continue
+        sha, _, subject = line.partition("\0")
+        if sha and subject:
+            commits.append((sha, subject))
+    # Shared across every project audited below -- a given sha's touched
+    # station paths do not depend on which project is asking (see
+    # ``bare_merge.DiffCache``'s own docstring).
+    diff_cache: DiffCache = {}
 
     ledger_paths = sorted(
         p
@@ -935,7 +948,32 @@ def gather_direction(
             if status in TERMINAL:
                 done_ids.add(sid)
 
-        merged_ids = _merged_ids_for_project(target, subjects, project)
+        unreadable_diff_shas: list[str] = []
+        merged_ids = _merged_ids_for_project(
+            target, commits, project,
+            diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
+        )
+        for sha in sorted(set(unreadable_diff_shas)):
+            # Story 27.5: the bare-form fallback's `git diff` failed for
+            # this sha -- "cannot evaluate", never a silent non-match and
+            # never a crash. Named individually (project + sha), mirroring
+            # this function's existing per-item WARN Findings (e.g.
+            # `ledger-unreadable`, `rekey-map-unreadable`) rather than
+            # folded into a caveat string.
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="bare-merge-diff-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: first-parent diff for {sha} could not "
+                        "be read — a bare legacy-form merge subject naming "
+                        "a key this project's ledger knows could not be "
+                        "attributed"
+                    ),
+                    evidence={"project": project, "sha": sha},
+                )
+            )
         # Story 27.2: a merge subject names the OLD story id when the
         # station has since renumbered (a fold PR's rekey-*.md). Translate
         # through the station's own map before comparing, so a merge that
