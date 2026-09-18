@@ -14,78 +14,29 @@ source_pin: 'conda-forge-expert v8.86.1'
 > **Re-grounded 2026-09-05** (`source_pin` v8.81.0 → **conda-forge-expert v8.86.1**; hand pass per SYNC-RUNBOOK row 84 after the `bmad-drift` `pin-behind` warn). No structural change to this document's subject in the window — the deltas are CFE-internal retro findings and hardening. CFE releases in the window: v8.82.0–v8.82.3 (`scripts/_paths.py` shared data-dir/repo-root helper; `_http.py` JFrog credential host-gate + public-host floor + credential-kind gating; G108), v8.83.0 (G109/G110; SelfExplainML publish flow in the cheatsheet), v8.84.0 (`github_updater.py --head` HEAD-advance), v8.84.1 (`bmad_suite_metapackage.py` marker-splice fix + test), v8.85.0 (3.11 floor; 438 recipes lost a redundant `context.python_min`, 47 unparseable recipes repaired; `tests/meta/test_dashboard_renders.py` retired), v8.85.1 (G82 / CI-provider table correction), v8.85.2 (`_paths.get_repo_root` marker walk; both compiled slices back in equivalence), v8.86.0 (G111–G113; HEAD mode increments `build.number`; `config/failure-catalog.yaml` regenerated), v8.86.1 (`tests/meta/test_recipe_maintainers_nonempty.py`; the G26 marker-split extension re-landed from orphaned commit `74bc80fe61`). live `bmad-groundtruth` 2026-09-05: schema **v29**, MCP tools **46**, atlas phases **22 executable / 23 cataloged** — all three unchanged since the 2026-07-29 pass; gotchas now **G1–G113** (v8.82.0 G108 `sys.executable` for internal subprocess calls; v8.83.0 G109 upstream can renumber past a dev snapshot, G110 npm bin maps are release-mutable; v8.86.0 G111 `noarch_platforms` is required for selector-carrying noarch recipes, G112 npm-from-commit-archive build with a clean prod reinstall, G113 same-version content changes bump `build.number`); pixi **28 envs / 31 features / 236 tasks (146 in `local-recipes`)** counted from `pixi.toml` (`[environments]` keys / distinct `[feature.<x>…]` names / `[feature.<x>.tasks.<t>]` headers); SKILL.md **4,287 lines**; **71 `.py` files under `scripts/`** (including the `_`-prefixed shared helpers) and **63 entries in `.claude/scripts/conda-forge-expert/`**; conda-forge's Python floor is **3.11** since 2026-09-02 (v8.85.0 — the generator now reads it from the installed pinning). Body figures below that predate this pass (18 / 20 / 26 envs, 17 features, 152 / 106 tasks, G1–G107 / G1–G110, 3,887 lines, 66 canonical scripts) are historical — read them against the live numbers here.
 
 
-How to deploy and operate `local-recipes` in enterprise, air-gapped, and JFrog Artifactory environments. This guide consolidates `docs/reference/enterprise-deployment.md` with the deployment-relevant rules from `project-context.md` and the integration architecture's auth chain.
+How to deploy and operate `local-recipes` in enterprise, air-gapped, and JFrog Artifactory environments. This guide consolidates `docs/explanation/enterprise-deployment.md` with the deployment-relevant rules from `project-context.md` and the integration architecture's auth chain.
 
-For interactive dev setup, see `development-guide.md`. For end-to-end source provenance, see `docs/reference/enterprise-deployment.md` (this guide is the planning view; that file is the operational reference).
+For interactive dev setup, see `development-guide.md`. For end-to-end source provenance, see `docs/explanation/enterprise-deployment.md` (this guide is the planning view; that file is the operational reference).
 
 ---
 
 ## What actually deploys
 
-Read this before the rest of the guide — it reframes everything below.
-
-**`local-recipes` is not a service.** It is a packaging factory plus a set of local tools. "Deployment"
-here almost always means *installing and configuring the factory on a machine or CI agent*, not
-shipping a running system. Verified 2026-07-25:
-
-| Thing | Deploys? | Detail |
-|---|---|---|
-| **Guildhall dashboard** (`docs/dashboard/`) | **Yes — the only one** | GitHub Pages, `https://rxm7706.github.io/local-recipes/`. See § GitHub Pages below |
-| Feedstocks / conda packages | **No** | Since 2026-07-26 (PR #127) there is **no feedstock-creation workflow at all**: the inherited `create_feedstocks.yml` was hard-gated `if: github.repository == 'conda-forge/staged-recipes'` — a permanent no-op here — and was deleted, following upstream, which moved it to `conda-forge/admin-requests`. `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
-| Containers | **No** | The only tracked `Dockerfile` is a **test fixture** under `.claude/skills/conda-forge-expert/tests/fixtures/manifest_samples/` |
-| Kubernetes | **No** | Likewise the only tracked k8s manifest is a test fixture. There is **no `Chart.yaml` anywhere** in the repo |
-| `helm/lasuite-docs/values.yaml` | **No** | A values override with **no chart and no apply step** — an air-gapped La Suite Docs design artifact, described in `docs/reference/enterprise-deployment.md`. Unreferenced by any in-repo code path |
-| `conf/base/knowledge.yml` | **No** | Config for the `sentinel` wiki agent (`src/sentinel/`, the 14 `wiki-*` tasks). Also unreferenced by any deploy path |
-
-Treat `helm/` and `conf/` as **design/intent artifacts**, not deployable units. Nothing in this repo
-applies them.
+See [`docs/explanation/enterprise-deployment.md`](../../../../docs/explanation/enterprise-deployment.md)
+§ *What actually deploys* for the current picture (the Guildhall dashboard via GitHub Pages, the
+platform Helm chart via manual `helm install` / `workflow_dispatch`, and what does *not* deploy).
 
 ---
 
 ## Deployment Modes
 
-Three operational modes, listed by network constraint:
-
-| Mode | Network | Setup needed |
-|---|---|---|
-| **Open internet** | All public hosts reachable | None — pixi resolves from conda-forge + pypi.org directly |
-| **JFrog-proxied** | Public hosts via JFrog Artifactory remote repositories | `.pixi/config.toml` + per-host `*_BASE_URL` env vars |
-| **Fully air-gapped** | No public hosts; only internal mirrors | All of JFrog-proxied + internal CVE/vdb mirrors + S3 parquet mirror |
-
-**Most enterprise deployments are JFrog-proxied.** Fully air-gapped is the strictest case and the design target — workflows that fail air-gapped will also fail in JFrog-proxied environments where coverage is incomplete.
-
-### Which environments you actually have to provision
-
-The repo defines **20 pixi environments across 17 features** — not the 9 an earlier revision of this
-guide assumed. Provisioning cost differs sharply between the two families:
-
-- **Factory envs (9)** — `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`,
-  **`local-recipes`** (the default, and the fat one), `vuln-db`, `gcloud`. `local-recipes` composes
-  `python + build + grayskull + conda-smithy + local-recipes`; it is the env an air-gapped mirror
-  must fully cover.
-- **Product envs (6)** — `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`,
-  `pyforge-herald`, `bmad-ui` — all `no-default-feature = true`, so each excludes the fat default
-  dep set (`python 3.14.*`, `pixi`, `conda`, `pip`, `uv`) and carries only its own built package +
-  run-deps + pytest. These are cheap; that is deliberate, so a per-story worktree can materialize
-  one.
-
-Two provisioning notes that bite in restricted networks:
-
-1. **`build` is the env the CI linter exports.** The `environment.yaml`↔`pixi.toml` sync gate runs
-   `pixi project export conda-environment -e build`. Whatever else you trim, keep `build`
-   resolvable.
-2. **`bmad-ui` is linux-64 only and declares its own channels — including the local path
-   `./build_artifacts/linux64`.** It consumes locally-built `bmad-dashboard` /
-   `mybmad-dashboard` packages. `build_artifacts/` is gitignored but is a **real, referenced conda
-   channel**; a recent commit had to scrub a worktree-absolute `build_artifacts` channel path that
-   leaked into `pixi.lock` ("lock poisoning"). Never let an unfrozen re-solve in a worktree rewrite
-   the lock — see `development-guide.md` § `--frozen`.
-
-Also local-only, and therefore **not** something a deployment mirrors: `conda_build_config.yaml`
-(1,103 lines — a local copy of conda-forge-pinning so local rattler-build / conda-build can resolve
-compilers and `stdlib("c")` outside CI) and `.ci_support/local_testing_overrides.yaml` (explicitly
-"should NOT be used in real CI"). `SDKs/` is gitignored and holds the local `MacOSX11.0.sdk` used by
-`build-local-setup-sdk` / `OSX_SDK_DIR`.
+See [`docs/how-to/air-gapped-mirror-setup.md`](../../../../docs/how-to/air-gapped-mirror-setup.md)
+for the raw-mirror and JFrog-proxied procedural paths (setup + per-session checklists), and
+[`docs/explanation/enterprise-deployment.md`](../../../../docs/explanation/enterprise-deployment.md)
+for the architecture rationale behind each mode and the mirror-provisioning checklist. The
+factory-env-vs-product-env provisioning cost breakdown (which envs a mirror must fully cover, the
+`build`-env CI-export note, the `bmad-ui` / `build_artifacts` lock-poisoning gotcha) still lives in
+`development-guide.md` § Environments, in this same folder.
 
 ---
 
@@ -225,7 +176,7 @@ For full air-gap, you need:
 
 - **conda-forge mirror**: JFrog "Conda Remote Repository" pointing at `https://conda.anaconda.org/conda-forge` — proxies channel data
 - **PyPI mirror**: JFrog "PyPI Remote Repository" pointing at `https://pypi.org/simple/` — proxies PyPI Simple API
-- **`files.pythonhosted.org` mirror** (uncommon but required for many sdist URLs): JFrog "PyPI Remote Repository" pointing at `https://files.pythonhosted.org/` — see `docs/reference/enterprise-deployment.md` § 3 for why
+- **`files.pythonhosted.org` mirror** (uncommon but required for many sdist URLs): JFrog "PyPI Remote Repository" pointing at `https://files.pythonhosted.org/` — see `docs/explanation/enterprise-deployment.md` § 3 for why
 - **anaconda.org API mirror** (optional, for Phase F API path): JFrog "Generic Remote Repository" pointing at `https://api.anaconda.org/`
 - **S3 parquet mirror** (recommended, for Phase F S3 path): JFrog generic repository or internal S3-compatible store seeded from `s3://anaconda-package-data/`
 - **GitHub API mirror** (optional, for self-hosted GHES): point `GITHUB_API_BASE_URL` at `https://<ghes>/api`. Covers both REST (Phase K REST tail) and GraphQL (Phase K batched + Phase N + Phase E5).
@@ -239,7 +190,7 @@ For full air-gap, you need:
 
 The skill's `_http.py` will auto-route to each via the corresponding `*_BASE_URL` env var. No code changes required.
 
-See `docs/reference/enterprise-deployment.md` § 1-5 for JFrog REST API examples and full setup.
+See `docs/explanation/enterprise-deployment.md` § 1-5 for JFrog REST API examples and full setup.
 
 ---
 
@@ -335,7 +286,7 @@ Only export the key in envs that explicitly need it. Don't add it to `feature.lo
 
 ### Documentation locations
 
-- `docs/reference/enterprise-deployment.md` § 2 → "Cross-host credential leak" — operational reference with the subshell pattern + enumerated commands
+- `docs/explanation/enterprise-deployment.md` § 2 → "Cross-host credential leak" — operational reference with the subshell pattern + enumerated commands
 - `_bmad-output/projects/local-recipes/project-context.md` § Air-Gapped/Enterprise — Critical Constraint with the unset-before-external-commands rule
 - This doc § "Mitigation patterns" above
 - Auto-memory `project_http_jfrog_unconditional_injection.md` — durable reminder
@@ -344,41 +295,16 @@ Only export the key in envs that explicitly need it. Don't add it to `feature.lo
 
 ## Deployment Checklist
 
-For a new air-gapped / JFrog-proxied deployment:
-
-### Setup (one-time)
-
-- [ ] Confirm JFrog has remote repositories for: conda-forge, pypi.org, files.pythonhosted.org (recommended), api.anaconda.org (optional)
-- [ ] Set up corporate CA in OS trust store, or set `REQUESTS_CA_BUNDLE` env var, or pixi's `tls-root-certs = "native"`
-- [ ] Author `.pixi/config.toml` from template at `docs/reference/pixi-config-jfrog.example.toml`
-- [ ] Set up `*_BASE_URL` env vars in `~/.bashrc` / `.envrc` / pixi env activation (see table above)
-- [ ] Bootstrap CVE database from internal mirror: `pixi run -e vuln-db update-cve-db`
-- [ ] Bootstrap atlas: `pixi run bootstrap-data --fresh` (will take 30-45 min; uses your `*_BASE_URL` overrides)
-- [ ] Validate: `pixi run health-check` (expects no public-host errors)
-- [ ] Confirm the `build` env resolves — the CI linter exports `environment.yaml` from it
-- [ ] Decide which of the 6 product envs you need; they are `no-default-feature` and cheap, but each still pulls its own run-deps
-- [ ] **Do NOT** budget for `pixi run bmad-preflight` — that task is broken (`scripts/ensure-bmad-preflight.sh` does not exist)
-
-### Per-session
-
-- [ ] Confirm `JFROG_API_KEY` is set ONLY in JFrog-only shells (or use subshell scoping)
-- [ ] Confirm the active BMAD project. In an interactive single-agent session, `scripts/bmad-switch --current`. **From any parallel agent or automated job, do not call `bmad-switch` at all** — the marker and the two `_bmad-output/{planning,implementation}-artifacts` symlinks are per-working-tree global state; address projects by physical path and pass `BMAD_ACTIVE_PROJECT=<slug>` per invocation
-- [ ] Inside a bmad-loop worktree, every pixi command carries `--frozen` (an unfrozen re-solve panics `pixi-build-python` 0.8.3 and poisons `pixi.lock` with worktree-absolute `file://` channel paths)
-- [ ] If running cron jobs, ensure each cron command is wrapped in a subshell that unsets `JFROG_API_KEY` if it hits external hosts
-
-### Per-PR
-
-- [ ] Touched anything outside `recipes/`? → `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`
-- [ ] Touched `pixi.toml`? → `pixi project export conda-environment -e build > environment.yaml` and commit it (the `maintenance` label does **not** suppress this check)
-- [ ] Opening by hand? → `gh pr create --repo rxm7706/local-recipes …`
-
-### Periodic maintenance
-
-- [ ] Weekly: `pixi run atlas-phase F` + `atlas-phase G` + `atlas-phase H` + `atlas-phase K`
-- [ ] Weekly: `pixi run update-cve-db`
-- [ ] Monthly: `pixi run bootstrap-data --resume`
-- [ ] Quarterly: review skill CHANGELOG for new constraints; re-verify project-context.md drift pin
-- [ ] After any out-of-band change to `recipes/`, `.claude/`, `pixi.toml`, or `docs/specs/`: `pixi run --frozen -e local-recipes bmad-drift-check`, then reconcile per `SYNC-RUNBOOK.md`
+See [`docs/how-to/air-gapped-mirror-setup.md`](../../../../docs/how-to/air-gapped-mirror-setup.md)
+§ *JFrog-proxied deployment checklist* for the setup + per-session checklist (JFrog repos, CA
+trust, `.pixi/config.toml`, `*_BASE_URL` env vars, CVE/atlas bootstrap, `bmad-preflight` caveat,
+`JFROG_API_KEY` scoping, cron subshells). Per-PR duties (the `maintenance` label,
+`environment.yaml` sync) are the same always-on repo rules documented in `CLAUDE.md` § PR CI
+gates — not air-gap-specific, so not restated here. The periodic-maintenance cadence this
+checklist used to carry (weekly `atlas-phase F/G/H/K` + `update-cve-db`, monthly
+`bootstrap-data --resume`, quarterly CHANGELOG/drift-pin review) is general factory upkeep, not
+air-gap-specific either, and has no single canonical home today — it is not preserved by this
+fold; `SYNC-RUNBOOK.md` covers only BMAD-artifact drift-check cadence, a narrower duty.
 
 ---
 
@@ -398,7 +324,7 @@ index-url = "https://USER:TOKEN@artifactory.company.com/artifactory/api/pypi/pyp
 # authentication-override-file = "/path/to/auth.json"
 ```
 
-See `docs/reference/enterprise-deployment.md` § 4 for the full mechanism + diagnostic patterns.
+See `docs/explanation/enterprise-deployment.md` § 4 for the full mechanism + diagnostic patterns.
 
 ### Verification
 
@@ -593,8 +519,8 @@ equivalent, or serve `docs/dashboard/` as static files — it is a self-containe
 If you're rebuilding `local-recipes` on a clean repo and deployment matters:
 
 1. **Author `_http.py` first** — every other Part imports it. Include the truststore + JFrog + GitHub + .netrc chain AND the per-host base-URL override logic. **But do not reproduce the unconditional JFrog injection** — build the host allow-list in from day one. pyforge-atlas's Kedro catalog shows the target shape: per-dataset credentials, attached only where the endpoint-base resolves to an Artifactory host, no global injection.
-2. **Document the `JFROG_API_KEY` cross-host leak in 3 places** (CLAUDE.md, project-context, `docs/reference/enterprise-deployment.md`) — repetition is intentional; agents and humans both need the warning at the surface they read first.
-3. **Author `docs/reference/enterprise-deployment.md`** alongside the skill — without this, every new deployment will rediscover the JFrog gotchas the hard way.
+2. **Document the `JFROG_API_KEY` cross-host leak in 3 places** (CLAUDE.md, project-context, `docs/explanation/enterprise-deployment.md`) — repetition is intentional; agents and humans both need the warning at the surface they read first.
+3. **Author `docs/explanation/enterprise-deployment.md`** alongside the skill — without this, every new deployment will rediscover the JFrog gotchas the hard way.
 4. **Provide `docs/reference/pixi-config-jfrog.example.toml`** as a copy-pasteable starter for `.pixi/config.toml`.
 5. **Make the `vuln-db` env separate** from `local-recipes` — don't bundle AppThreat into the default env (Contract 6 in integration architecture).
 6. **Split factory envs from product envs from the start.** The `no-default-feature = true` pattern is what makes a per-story loop worktree affordable; retrofitting it later means re-deriving every product's run-dep set.

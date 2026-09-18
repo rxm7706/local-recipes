@@ -71,7 +71,7 @@ NFR-2: No standing GitOps control plane — `deploy`'s reconciliation is a CLI-i
 NFR-3: `provision` never invokes pixi at import/build time — pixi invocations are explicit, user-triggered CLI actions only, matching `pyforge-warden`'s "pixi is a build/dev-env floor, never a runtime dependency" precedent.
 NFR-4: Lean dependency posture — Steward's own `pyproject.toml` dependency set stays targeted (matches `pyforge-warden`'s lean, pure-stdlib-fallback discipline); external tools (`age`, `pixi`, `gh`, `git`) are wrapped, never reimplemented (AD-1).
 NFR-5: `argparse`-based CLI with sole-owned exit codes — one dispatcher (`cli.py`) owns every process exit code; no duty module calls `sys.exit` directly (AD-8).
-NFR-6: Enterprise/air-gap routing is inherited unchanged from `docs/reference/enterprise-deployment.md` — any new outbound endpoint adds one row to the existing `*_BASE_URL` override table, never a parallel config mechanism (AD-9).
+NFR-6: Enterprise/air-gap routing is inherited unchanged from `docs/explanation/enterprise-deployment.md` — any new outbound endpoint adds one row to the existing `*_BASE_URL` override table, never a parallel config mechanism (AD-9).
 NFR-7: Credential values are never printed — `steward keys list`/`audit` output never contains a raw secret value under any flag combination, enforced by a dedicated `tests/meta/` invariant test.
 
 ### Additional Requirements (from Architecture)

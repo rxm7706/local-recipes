@@ -1645,7 +1645,7 @@ afterthought.**
 
 ## What is real (the core)
 
-- **`docs/reference/enterprise-deployment.md`** + `docs/reference/pixi-config-jfrog.example.toml` —
+- **`docs/explanation/enterprise-deployment.md`** + `docs/reference/pixi-config-jfrog.example.toml` —
   the deployment doctrine.
 - **Runtime-driven routing** in `_http.py`: truststore + JFrog/GitHub/.netrc
   auth chain — env-vars only, never committed config (CFE v6.0/v7.0).

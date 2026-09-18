@@ -31,6 +31,9 @@ contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).
 ## Relocated to Explanation (redirect stubs remain here)
 
 - `mcp-server-architecture.md` → [`docs/explanation/mcp-server-architecture.md`](../explanation/mcp-server-architecture.md)
+
+## Relocated to Explanation (redirect stubs deleted, Story 23.2)
+
 - `enterprise-deployment.md` → [`docs/explanation/enterprise-deployment.md`](../explanation/enterprise-deployment.md)
 - `airgap-distribution-contract.md` → [`docs/explanation/airgap-distribution-contract.md`](../explanation/airgap-distribution-contract.md)
 

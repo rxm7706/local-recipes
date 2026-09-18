@@ -77,11 +77,14 @@ Every file that lived in `docs/reference/` before Story 22.4 is accounted for be
 | File | Kind | Notes |
 |------|------|-------|
 | [`mcp-server-architecture.md`](explanation/mcp-server-architecture.md) | Architecture rationale | FastMCP tool layer design (**still stale** — tool count may drift; refresh tracked separately) |
-| [`enterprise-deployment.md`](explanation/enterprise-deployment.md) | Architecture rationale | Air-gap + Artifactory deployment design (**still stale** — refresh tracked separately; procedural §§ 1–4 flagged for How-to split in Story 22.5) |
+| [`enterprise-deployment.md`](explanation/enterprise-deployment.md) | Architecture rationale | Air-gap + Artifactory deployment design (procedural §§ 1–4 flagged for How-to split in Story 22.5, done; §1 "What actually deploys", the mirror-provisioning checklist, and JFROG_API_KEY Pattern D refreshed from the marshal binders in Story 23.2 — remaining sections not re-verified this pass) |
 | [`airgap-distribution-contract.md`](explanation/airgap-distribution-contract.md) | Architecture rationale | Mason air-gap distributable contract ("socket, not installer") |
 
 Redirect stubs remain at the former `docs/reference/` paths for moved files until
-Story 22.6 updates entry-point links repo-wide.
+Story 22.6 updates entry-point links repo-wide. `enterprise-deployment.md` and
+`airgap-distribution-contract.md` are the exception — their stubs were deleted (Story 23.2) once
+their remaining live inbound references were repointed at `docs/explanation/`.
+`mcp-server-architecture.md`'s stub remains (different cluster, untouched).
 
 ### Split / relocated in Story 22.5 (complete)
 
