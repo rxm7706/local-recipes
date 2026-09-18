@@ -850,9 +850,9 @@ def _check_project_chain_completeness(
             })
             continue
         status = str(fm.get("status", "")).strip()
-        if status not in DECOMPOSITION_OWED_STATUSES:
+        if status not in decomposition_owed_statuses:
             continue
-        delivered = status in DELIVERED_SPEC_STATUSES
+        delivered = status in delivered_statuses
 
         declared = _parse_declared_cap_ids(spec_text)
         if delivered:
