@@ -2427,7 +2427,14 @@ def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(
 ):
     """Story 28.6 (CAP-8): supervisor spawn materializes
     ``compression-ladder.json`` from the composed ``[context]`` block when
-    the wire layer is on -- the same composition site dispatch uses."""
+    the wire layer is on -- the same composition site dispatch uses.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text(
         "[context]\n"
@@ -2439,6 +2446,9 @@ def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(
     )
     monkeypatch.setattr(
         spin_module, "conventional_project_policy_path", lambda _slug: policy_path
+    )
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
     )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
