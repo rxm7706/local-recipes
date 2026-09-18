@@ -191,10 +191,14 @@ class DeckSyncReport:
 @dataclass(frozen=True)
 class SyncAllReport:
     """The whole run: every targeted deck's own report, plus whether the
-    shared dossier-site publish step ran this run."""
+    shared dossier-site publish step ran this run. ``publish_error`` is set
+    (instead of raising) when that shared step itself fails, so a caller
+    still gets every deck's own report rather than losing all of them to
+    one publish failure."""
 
     decks: tuple[DeckSyncReport, ...]
     published: bool
+    publish_error: str | None = None
 
 
 # --- injectable seams (mirroring DeckExporter/GitCommitter) -------------
@@ -506,15 +510,34 @@ def _sync_one_deck(
             slug=slug, dry_run=dry_run,
             skipped_reason="not seeded -- run 'herald deck seed' first",
         )
+    if not existing.etags:
+        # A freshly seeded deck with nothing pulled/pushed yet -- distinct
+        # from a genuinely fully-synced "unchanged" deck (there is nothing
+        # here to compare against, pull-tracked or otherwise).
+        return DeckSyncReport(
+            slug=slug, dry_run=dry_run,
+            skipped_reason=(
+                "seeded but nothing pulled yet -- run 'herald deck pull' first"
+            ),
+        )
 
     if dry_run:
-        return _dry_run_preview(
-            transport, slug=slug, repo_root=repo_root, state_path=state_path
-        )
+        return _dry_run_preview(transport, slug=slug, existing=existing)
 
     deck_dir = repo_root / "presentations" / slug
     persona = _persona_from_slug(slug)
-    date_str = now().strftime("%Y-%m-%d")
+    # Resolved exactly once for this deck's whole sync pass: `pull_*`
+    # themselves call `now()` again internally for the actual write path,
+    # so passing the live `now` through here (rather than a callable
+    # frozen to this one value) could disagree across a UTC-midnight
+    # boundary with the value the dirty-check below already used to build
+    # `date_str` -- inspecting the wrong dated file.
+    frozen_now = now()
+
+    def _frozen_now() -> datetime:
+        return frozen_now
+
+    date_str = frozen_now.strftime("%Y-%m-%d")
 
     pulled: list[str] = []
     overwrote_local: list[str] = []
@@ -524,19 +547,36 @@ def _sync_one_deck(
         changed, overwrote = _pull_one(
             transport, slug=slug, repo_root=repo_root, state_path=state_path,
             artifact_key=artifact_key, deck_dir=deck_dir, persona=persona,
-            date_str=date_str, edit_detector=edit_detector, prover=prover, now=now,
+            date_str=date_str, edit_detector=edit_detector, prover=prover,
+            now=_frozen_now,
         )
         if changed:
             pulled.append(artifact_key)
         if overwrote:
             overwrote_local.append(artifact_key)
 
-    overrode = facts_refresher.refresh(slug=slug, repo_root=repo_root)
-    derived = deriver.derive(slug=slug, repo_root=repo_root)
-    push_result = push_exports(
-        transport, slug=slug, repo_root=repo_root, state_path=state_path,
-        prove=True, now=now,
-    )
+    # A refresh/derive/push failure here must not discard the pull facts
+    # already gathered above (including a real `overwrote-local` warning)
+    # -- the outer per-deck catch in `sync_all` would otherwise replace the
+    # whole report with a bare error. `AuthError` still propagates (module
+    # docstring): it means Design itself is unreachable, which halts the
+    # whole run, not just this deck.
+    try:
+        overrode = facts_refresher.refresh(slug=slug, repo_root=repo_root)
+        derived = deriver.derive(slug=slug, repo_root=repo_root)
+        push_result = push_exports(
+            transport, slug=slug, repo_root=repo_root, state_path=state_path,
+            prove=True, now=_frozen_now,
+        )
+    except errors.AuthError:
+        raise
+    except errors.HeraldError as exc:
+        return DeckSyncReport(
+            slug=slug,
+            pulled=tuple(pulled),
+            overwrote_local=tuple(overwrote_local),
+            error=str(exc),
+        )
 
     return DeckSyncReport(
         slug=slug,
@@ -611,6 +651,10 @@ def sync_all(
                     edit_detector=resolved_edit_detector, prover=prover, now=resolved_now,
                 )
             )
+        except errors.AuthError:
+            # Design itself is unreachable -- halts the whole run, not just
+            # this deck (module docstring).
+            raise
         except errors.HeraldError as exc:
             reports.append(DeckSyncReport(slug=one, dry_run=dry_run, error=str(exc)))
 
@@ -619,14 +663,24 @@ def sync_all(
         for r in reports
     )
     published = False
+    publish_error: str | None = None
     if any_change and not dry_run:
-        resolved_site_publisher.publish(repo_root=repo_root)
-        published = True
-        reports = [
-            replace(r, published=True)
-            if r.error is None and r.skipped_reason is None and not r.unchanged
-            else r
-            for r in reports
-        ]
+        try:
+            resolved_site_publisher.publish(repo_root=repo_root)
+        except errors.HeraldError as exc:
+            # A publish failure must not discard every deck's own
+            # already-gathered report -- the caller still needs to see what
+            # each deck did before the shared publish step broke.
+            publish_error = str(exc)
+        else:
+            published = True
+            reports = [
+                replace(r, published=True)
+                if r.error is None and r.skipped_reason is None and not r.unchanged
+                else r
+                for r in reports
+            ]
 
-    return SyncAllReport(decks=tuple(reports), published=published)
+    return SyncAllReport(
+        decks=tuple(reports), published=published, publish_error=publish_error
+    )

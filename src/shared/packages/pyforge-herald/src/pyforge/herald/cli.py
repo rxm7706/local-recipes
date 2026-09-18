@@ -1095,12 +1095,17 @@ def _run_deck_sync_all(args: argparse.Namespace) -> int:
                 t, slug=args.slug, repo_root=repo_root, dry_run=args.dry_run
             ),
         )
+        if not report.decks:
+            print("no registered decks found")
+            return
         for deck in report.decks:
             print(f"{deck.slug}: {', '.join(deck.labels())}")
             if deck.error is not None:
                 print(f"  error: {deck.error}")
         if report.published:
             print("published: dossier site rebuilt")
+        elif report.publish_error is not None:
+            print(f"publish failed: {report.publish_error}")
 
     return dispatch(operation)
 
