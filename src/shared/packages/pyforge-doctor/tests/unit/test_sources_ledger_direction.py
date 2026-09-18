@@ -392,6 +392,45 @@ def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
     assert findings[0].status == DoctorStatus.OK
 
 
+def test_chained_rekey_maps_resolve_to_current_key(tmp_path: Path) -> None:
+    """A station can ship a SECOND fold that renumbers an already-renumbered
+    sid (``13-5 -> 12-5`` in one map, ``12-5 -> 11-5`` in a later one). A
+    merge naming the OLDEST spelling must resolve all the way to the
+    CURRENT one, not stop at the intermediate hop -- otherwise this exact
+    bug class recurs one fold later."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"11-5-downstream-handoff-to-mason-final": "done"},
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "13-5-downstream-handoff-to-mason -> 12-5-downstream-handoff-to-mason-fr-68\n",
+        name="rekey-2026-09-17.md",
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "12-5-downstream-handoff-to-mason-fr-68 -> 11-5-downstream-handoff-to-mason-final\n",
+        name="rekey-2026-09-20.md",
+    )
+    _commit(repo, "seed ledger with two chained rekey maps")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
 def test_without_rekey_map_old_key_reads_as_unpromoted(tmp_path: Path) -> None:
     """Mutation-test companion to the above: same fixture, minus the map --
     the ``landed-but-unpromoted`` row returns."""
