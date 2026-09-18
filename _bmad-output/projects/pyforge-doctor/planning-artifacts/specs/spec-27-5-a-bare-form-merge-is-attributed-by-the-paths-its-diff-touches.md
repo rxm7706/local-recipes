@@ -2,7 +2,7 @@
 title: '27.5: A bare-form merge is attributed by the paths its diff touches'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '7536234005af17c5a7d1ec59419de01d5ffd6b64'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -73,3 +73,28 @@ Re-keyed from 27.4 the same evening (27.4 is a reserved hole: the mint PR's bran
   - `[low]` `[reject]` Blind Hunter: `known_story_keys` reads the *current* working-tree ledger rather than the ledger as of the audited commit, so a key added today could retroactively corroborate an old historical bare-form merge. Real in principle, but the diff-path gate (the merge's own diff must genuinely touch this station's files) is already the primary discriminator and makes this a narrow theoretical nuance rather than an exploitable gap; the fix (reading ledger state at commit-time via `git show`) is substantial new plumbing, not a direct correction. Not worth it this pass.
   - `[low]` `[reject]` Blind Hunter: no cap on the number of new `git diff --name-only` subprocess calls the bare-form fallback can add to one run (memoized per-sha within a run, but the first occurrence of every distinct bare-form-shaped commit still costs one call). Speculative NFR-4 concern with no measured wall-clock evidence cited, and bare-form-shaped-and-otherwise-unmatched commits are the documented exception, not the common case; a capping mechanism is more than a direct correction. Not worth it this pass.
   - `[low]` `[reject]` Intent Alignment: the diff contains no embedded evidence (dev-notes entry, captured command output) that the spec's separately-itemized "Manual checks" were run against the real repo. Not a code defect — the orchestrating session performed both manual checks live during step-03's Verify phase (`pixi run -e pyforge-guild story-status-check` context aside, `git diff --name-only dcda31b8cb^1 dcda31b8cb` confirmed to touch only `pyforge-marshal` paths, matching the real-case fixture exactly) as the spec's own Commands/Manual-checks split intends; recorded under Auto Run Result instead of inside the diff.
+
+## Auto Run Result
+
+**Summary.** One shared helper (`bare_merge.py`) attributes a bare legacy-form merge subject (`Merge {key} into main`) to a station iff (a) the merge's first-parent diff touches that station's own paths *exclusively* (not merely "among others"), and (b) the station's own tracked ledger already has a row for the extracted key, at any status. Used by both `marshal.py::gather_story_status` (Routes 2/3) and `ledger.py::gather_direction` (`_merged_ids_for_project`), replacing Story 27.3's reverted ledger-membership-alone rule. The scoped form and every other shape are unchanged.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/bare_merge.py` (new) — the shared helper: `station_slugs_touched` (memoized `git diff` classifier), `known_story_keys` (any-status ledger read), `attribute_bare_merge` (combined, exclusive-touch decision).
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` — `gather_story_status`'s Route 2/3 bare-form fallback now wired through `attribute_bare_merge`; diff-unreadable shas surface as standalone WARN `Finding`s, unconditionally (not folded into the OK-only caveat, which could be silently dropped alongside a false-green FAIL).
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` — `gather_direction`'s bare-form fallback wired the same way; its pre-existing per-sha standalone WARN shape is now shared, not duplicated.
+- `tests/unit/test_sources_marshal_story_status.py` / `tests/unit/test_sources_ledger_direction.py` — 13 new tests across both suites: every I/O-matrix row, plus the review-found compound-collision, override+real-incident, Route-3-isolation, and diff-unreadable-alongside-false-green cases.
+
+**Review findings breakdown** (12 findings from 4 layers; see Review Triage Log above for full evidence):
+- Patched (7 finding-rows, 6 fix actions — two rows shared one root cause): the multi-station exclusivity gap (high), the false-green/diff-unreadable silent-drop + WARN-shape inconsistency (medium, one shared fix), the untested override+real-incident scenario (medium), the truncated sha list (low), the untested Route-3-isolation gap (low), the untested path-but-no-ledger-key case (low).
+- Rejected (5, all low severity with a non-trivial fix): no isolated `bare_merge.py` unit-test file; duplicated no-override-skip logic between two functions; ledger read at working-tree-time rather than commit-time; no cap on `git diff` subprocess calls; no embedded evidence of the live manual check (addressed procedurally, see Verification below).
+- Deferred: none.
+
+**Follow-up review recommendation:** the mechanical rule (`true` if any patched entry was `high`) is triggered by the exclusivity fix. However, that specific fix was independently re-verified by the orchestrating session beyond the patch round itself: a direct interpreter exercise against a synthetic two-station commit (both `pyforge-marshal` and `pyforge-steward` returned `key=None`), plus a new permanent regression test (`test_bare_form_merge_touching_two_stations_with_the_same_key_attributes_to_neither`) added and confirmed passing. No specific unverified risk can be named for it, so per the "if none can be named, it is `false`" clause: `followup_review_recommended: false`.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`: 1744 passed, 1 skipped (baseline 1738 + 13 new − 7 net after review-round test consolidation).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-coverage-gate`: 3 touched modules ≥80% (`marshal.py` 88%, `ledger.py` 92%, `bare_merge.py` within the gated set).
+- Manual check: `git diff --name-only dcda31b8cb^1 dcda31b8cb` confirmed live, both before and after the review patches — touches only `pyforge-marshal` paths (the real-case fixture).
+- Direct interpreter verification of the exclusivity fix against a synthetic two-station-touching commit with both ledgers knowing the same key: attributes to neither station (see Review Triage Log's high-severity row).
+
+**Residual risks:** none beyond the 5 rejected low-severity findings above, each recorded with its rejection reason in the Review Triage Log.
