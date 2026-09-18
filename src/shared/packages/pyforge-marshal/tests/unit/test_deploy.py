@@ -1355,7 +1355,7 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["verdict"] == "clean"
-    expected_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    expected_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
     assert payload["data"]["subject"] == expected_subject
     assert payload["data"]["merge_sha"] == "merge-sha-456"
     assert payload["data"]["non_conforming_merges"] == []
@@ -1573,7 +1573,7 @@ def test_land_story_already_merged_is_a_clean_noop(tmp_path, capsys, monkeypatch
     entry."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
-    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         main_subjects=(already_landed_subject,),
@@ -1660,7 +1660,7 @@ def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(
     over (no fresh merge attempt)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
-    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         main_subjects=(already_landed_subject,),
@@ -1740,7 +1740,7 @@ def test_land_story_rerun_against_a_converged_system_is_zero_changes(
     # The second run's own `_FakeVcs.commit_subjects("main", ...)` must now
     # report the story as merged for the already-merged short-circuit to
     # fire -- exactly what a REAL git repo would show after a real merge.
-    landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
     vcs.main_subjects = (landed_subject,)
 
     second_exit = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())

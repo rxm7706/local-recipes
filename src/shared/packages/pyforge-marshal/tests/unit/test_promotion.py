@@ -413,7 +413,7 @@ def test_marshal_native_merged_keys_recognizes_the_templated_form():
 
 def test_marshal_native_merged_keys_recognizes_a_land_rendered_subject():
     """Story 5.10: `marshal land`'s full-merge path renders its subject via
-    the SAME `identity.render_merge_subject(key, template)` `deploy
+    the SAME `identity.render_merge_subject(key, template, slug)` `deploy
     land-story` already uses -- proving that rendered subject classifies as
     Marshal-native, not merely reading the code that claims it does."""
     key = StoryKey(5, 10)
