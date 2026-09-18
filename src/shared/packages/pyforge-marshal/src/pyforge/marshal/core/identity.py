@@ -64,6 +64,16 @@ _KEY_RE = re.compile(
 # the caller's job to resolve before calling either function.
 _KEY_PLACEHOLDER = "{key}"
 
+# The optional second placeholder (Story 50.4, FR-191 CAP-247): a template
+# may carry at most one `{slug}`, filled/matched against the caller's own
+# `project_slug` BEFORE `{key}` splitting even looks at the template -- a
+# template with no `{slug}` at all (every pre-existing per-station override)
+# is unaffected. This is what makes the templated shape self-scoping: a
+# subject rendered under a DIFFERENT project_slug carries a different literal
+# prefix/suffix and simply fails the `startswith`/`endswith` check below,
+# with no separate slug-comparison step needed.
+_SLUG_PLACEHOLDER = "{slug}"
+
 
 class MalformedStoryKeyError(PyforgeError, ValueError):
     """Raised by ``normalize()`` when ``raw`` does not contain a leading
@@ -199,6 +209,30 @@ def render_branch_segment(key: StoryKey) -> str:
     return _hyphen_form(key)
 
 
+def _instantiate_slug(template: str, project_slug: str) -> str:
+    """Fill ``template``'s optional ``{slug}`` with ``project_slug`` before
+    ``{key}`` splitting ever runs. A ``template`` with no ``{slug}`` passes
+    through unchanged (``project_slug`` is simply unused) -- every
+    pre-existing per-station override that hard-codes its slug as literal
+    text keeps working exactly as before. Raises ``ValueError`` for more
+    than one ``{slug}`` occurrence, or a non-``str``/empty ``project_slug``
+    when ``{slug}`` is actually present."""
+    if not isinstance(template, str):
+        raise ValueError(f"template must be a str, got {template!r}")
+    if _SLUG_PLACEHOLDER not in template:
+        return template
+    if template.count(_SLUG_PLACEHOLDER) != 1:
+        raise ValueError(
+            f"template must contain at most one {_SLUG_PLACEHOLDER!r} "
+            f"placeholder, got {template!r}"
+        )
+    if not isinstance(project_slug, str) or project_slug == "":
+        raise ValueError(
+            f"project_slug must be a non-empty str, got {project_slug!r}"
+        )
+    return template.replace(_SLUG_PLACEHOLDER, project_slug)
+
+
 def _split_template(template: str) -> tuple[str, str]:
     """Split ``template`` on its one ``{key}`` placeholder into the fixed
     literal ``(prefix, suffix)`` around it. Raises ``ValueError`` if
@@ -215,20 +249,29 @@ def _split_template(template: str) -> tuple[str, str]:
     return prefix, suffix
 
 
-def render_merge_subject(key: StoryKey, template: str) -> str:
+def render_merge_subject(key: StoryKey, template: str, project_slug: str) -> str:
     """The merge-subject external form (AD-24): substitutes ``key``'s hyphen
-    form into ``template``'s one ``{key}`` placeholder. Raises ``ValueError``
-    if ``template`` doesn't contain exactly one such placeholder."""
-    prefix, suffix = _split_template(template)
+    form into ``template``'s one ``{key}`` placeholder, after filling
+    ``template``'s optional ``{slug}`` with ``project_slug`` (Story 50.4).
+    Raises ``ValueError`` if ``template`` doesn't contain exactly one
+    ``{key}`` placeholder, more than one ``{slug}``, or ``project_slug`` is
+    empty/non-``str`` while ``{slug}`` is present."""
+    instantiated = _instantiate_slug(template, project_slug)
+    prefix, suffix = _split_template(instantiated)
     return f"{prefix}{render_filename_slug(key)}{suffix}"
 
 
-def parse_merge_subject(subject: str, template: str) -> StoryKey:
+def parse_merge_subject(subject: str, template: str, project_slug: str) -> StoryKey:
     """The inverse of ``render_merge_subject`` (AD-24): slices ``subject``
     against ``template``'s fixed literal prefix/suffix around its one
     ``{key}`` placeholder (exact positional slicing, never a second regex)
-    and re-normalizes the extracted middle. Any failure -- a non-``str``
-    ``subject``, a malformed template, a mismatched prefix/suffix, an
+    and re-normalizes the extracted middle. ``template``'s optional
+    ``{slug}`` is filled with ``project_slug`` before that split (Story
+    50.4) -- a ``subject`` rendered under a DIFFERENT project_slug carries a
+    different literal prefix/suffix and is refused by the same
+    ``startswith``/``endswith`` check below, no separate slug comparison
+    needed. Any failure -- a non-``str`` ``subject``, a malformed template,
+    a foreign or missing ``{slug}`` fill, a mismatched prefix/suffix, an
     extracted span shorter than the template's fixed literal text, or a
     middle that doesn't parse -- is wrapped into
     ``MergeSubjectConformanceError`` (chained ``from exc``) so a caller only
@@ -239,7 +282,8 @@ def parse_merge_subject(subject: str, template: str) -> StoryKey:
     try:
         if not isinstance(subject, str):
             raise ValueError(f"subject must be a str, got {subject!r}")
-        prefix, suffix = _split_template(template)
+        instantiated = _instantiate_slug(template, project_slug)
+        prefix, suffix = _split_template(instantiated)
         if not subject.startswith(prefix) or not subject.endswith(suffix):
             raise ValueError(
                 f"subject {subject!r} does not start with {prefix!r} and "
