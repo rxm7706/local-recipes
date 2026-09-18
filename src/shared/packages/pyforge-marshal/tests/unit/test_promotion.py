@@ -349,6 +349,56 @@ def test_merged_story_keys_known_keys_does_not_affect_already_scoped_shapes():
     ) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
 
 
+# --- Story 50.4/FR-191 CAP-247: the station-scoped `{slug}` template and
+# branch-corroborated story-direct commits -------------------------------------
+
+# Real subjects pulled verbatim from `git log origin/main --format='%s'`
+# (2026-09-18) -- the exact 2026-09-18 fixture this story's spec names.
+_SLUG_SCOPED_TEMPLATE = "Merge {slug}/{key} into main"
+
+_ATLAS_23_SUBJECTS = tuple(
+    f"Merge 23-{n} into main" for n in range(1, 10)
+)
+_HERALD_23_SUBJECTS = (
+    "Merge pyforge-herald/23-1 into main",
+    "Merge pyforge-herald/23-2 into main",
+    "Merge pyforge-herald/23-5 into main",
+    "Merge pyforge-herald/23-6 into main",
+)
+_STEWARD_DIRECT_SUBJECT_48_2 = "Story 48.2: R-18 platform chart sizing rewrite."
+_STEWARD_DIRECT_SUBJECT_48_4 = "Story 48.4: R-20 secrets profile for platform deploy."
+
+
+def test_merged_story_keys_slug_scoped_template_never_inherits_a_foreign_stations_landings():
+    """The motivating 2026-09-18 incident: atlas's seven unscoped `Merge
+    23-N into main` commits must NOT read as herald's own 23.1/23.2/23.5/
+    23.6 once herald renders/parses under the new `{slug}`-scoped default
+    template -- a foreign-station subject carries no `pyforge-herald/`
+    prefix at all and simply fails to match."""
+    assert (
+        merged_story_keys(_ATLAS_23_SUBJECTS, _SLUG_SCOPED_TEMPLATE, "pyforge-herald")
+        == frozenset()
+    )
+
+
+def test_merged_story_keys_slug_scoped_template_still_recognizes_its_own_stations_landings():
+    """The fix narrows false positives, it does not break real matches --
+    herald's OWN rendered subjects still classify under its own slug."""
+    assert merged_story_keys(
+        _HERALD_23_SUBJECTS, _SLUG_SCOPED_TEMPLATE, "pyforge-herald"
+    ) == frozenset({StoryKey(23, 1), StoryKey(23, 2), StoryKey(23, 5), StoryKey(23, 6)})
+
+
+def test_merged_story_keys_story_direct_commit_no_longer_poisons_a_foreign_stations_same_numbered_key():
+    """The other 2026-09-18 incident: steward's real `Story 48.2:`/`Story
+    48.4:` direct-commit subjects must NOT poison marshal's own 48.2/48.4 --
+    `merged_story_keys` never has branch data (a subject-only
+    `git log --format=%s` scan), so the story-direct shape now refuses by
+    default rather than matching unscoped."""
+    subjects = (_STEWARD_DIRECT_SUBJECT_48_2, _STEWARD_DIRECT_SUBJECT_48_4)
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
 # --- marshal_native_merged_keys (Story 5.9) -----------------------------------
 
 
@@ -367,7 +417,7 @@ def test_marshal_native_merged_keys_recognizes_a_land_rendered_subject():
     land-story` already uses -- proving that rendered subject classifies as
     Marshal-native, not merely reading the code that claims it does."""
     key = StoryKey(5, 10)
-    rendered_subject = render_merge_subject(key, _TEMPLATE)
+    rendered_subject = render_merge_subject(key, _TEMPLATE, _PROJECT_SLUG)
     assert marshal_native_merged_keys(
         (rendered_subject,), _TEMPLATE, _PROJECT_SLUG
     ) == frozenset({key})
