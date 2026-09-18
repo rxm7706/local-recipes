@@ -1119,6 +1119,15 @@ def _windowed_read(
     contract says a window "ends at a complete line", so a window that
     cannot say where it ended must never be silently treated as the whole
     file."""
+    # Lazy, not module-level -- mirrors `seed`'s own `MODERNIST_DESIGN_
+    # SYSTEM_ID` import (see its call site's comment): this function
+    # constructs a real `FileRead` at call time, unlike every other use of
+    # that name in this module, which is a `TYPE_CHECKING`-only
+    # annotation. `test_importing_deck_pipeline_does_not_load_the_
+    # transport_package` asserts merely importing this module must not
+    # load `transport/__init__.py`'s eager adapter imports.
+    from .transport.base import FileRead
+
     first = transport.read_file(
         project_id=project_id, path=path, if_none_match=if_none_match
     )
