@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=c287fd8ca978110c -->
+<!-- pixi-env-matrix:begin lock-sha256=be5a6c1c9026bfec -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -476,7 +476,7 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``build`` | ``3.14.*`` | 240 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``conda-smithy`` | ``3.14.*`` | 231 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``dbgpt-sidecar`` | ``3.14.*`` | 404 | ``linux-64`` |
-| ``default`` | ``3.14.*`` | 119 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``default`` | ``3.14.*`` | 167 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``detectors`` | ``3.14.*`` | 86 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``gcloud`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min`` |
 | ``grayskull`` | ``3.14.*`` | 245 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |

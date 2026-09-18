@@ -822,6 +822,41 @@ def test_benchmark_artifact_is_classified_and_not_flagged_uncovered(
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_bak_cursor_editor_backup_is_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-18 shape: a Cursor editor backup sibling
+    (`<name>.bak-cursor-<date>`) left behind by a concurrent editing session,
+    found live under three projects' `planning-artifacts/` roots -- must be
+    classified rather than falling through to `UNKNOWN`. The date varies, so
+    a fixed `STRAY_SUFFIXES` entry (`Path.suffix` only returns the LAST dot
+    segment) could not have covered it; the fix matches the pattern."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "marshal-policy.toml.bak-cursor-20260918").write_text(
+        "x\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+    assert (
+        factory.classify(
+            Path("planning-artifacts/marshal-policy.toml.bak-cursor-20260918"), repo
+        )
+        == "stray:editor-backup"
+    )
+    # A different date must generalize the same way -- not hard-coded to today.
+    assert (
+        factory.classify(
+            Path("planning-artifacts/marshal-policy.toml.bak-cursor-20261225"), repo
+        )
+        == "stray:editor-backup"
+    )
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
