@@ -715,18 +715,24 @@ does not assume it.
 
 ### The Spec ladder — eight states, three ended acts *(amended 2026-09-18)*
 
-Eight Spec statuses are live in the estate, and until now only one —
-`extension-point` — was defined anywhere: in prose, in
-`docs/dreams/README.md`. The other seven existed only as a hardcoded set
-inside `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
-`DELIVERED_SPEC_STATUSES`), so a reader had to open that module's source to
-learn what `shipped` or `absorbed` even meant.
+Eight Spec statuses are live in the estate. Before this amendment, only one —
+`extension-point` — carried a prose definition, in `docs/dreams/README.md`.
+The other seven existed only as hardcoded sets split across two Doctor
+modules: `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
+`DELIVERED_SPEC_STATUSES`, covering `draft`/`ready`/`in-progress`/`shipped`)
+and `pyforge.doctor.sources.one_chain` (`_CLOSED_SPEC_STATUSES`, covering
+`archived`/`absorbed`/`superseded`) — so a reader had to open both modules'
+source to learn what `shipped` or `absorbed` even meant.
+`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4 already
+carried a summary table listing all eight values (added 2026-09-17), but
+with no per-value definition and not machine-readable — that gap, not the
+bare enumeration, is this amendment's actual delta.
 
 All eight — `draft · ready · in-progress · shipped · archived · absorbed ·
-superseded · extension-point` — are now declared in one machine-readable
-place:
+superseded · extension-point` — are now declared, one definition each, in
+one machine-readable place:
 [`docs/governance/guild-roster.json`](../governance/guild-roster.json)'s
-`spec_statuses`, with a definition for each value.
+`spec_statuses`.
 
 Four rulings apply:
 
@@ -737,15 +743,15 @@ Four rulings apply:
 2. **`shipped` remains Spec-terminal**, grouped with the three ended acts as
    terminal but distinct from them — the one terminal value that delivered
    rather than ended. It is a Spec-only fact, distinct from story `done` and
-   Dream `realized`; the full cross-walk between those three is Charter
-   CAP-3, not restated here.
+   Dream `realized`; the full cross-walk between those three is
+   `spec-vocabulary-one-name-one-job` CAP-3, not restated here.
 3. **`in-progress` is grandfathered.** No new Spec may be minted at it;
    existing files stay open until next edited. See
    `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4 for what
    finally retires it.
-4. **The enum is recommended, not required.** An unregistered status value is
-   preserved exactly as written and produces a warning — never silently
-   reset to a value in this list.
+4. **The enum is recommended, not required.** An unregistered status value
+   must be preserved exactly as written and must produce a warning — never
+   silently reset to a value in this list.
 
 The coupling to the Dream ladder is unchanged and stays in
 [`docs/dreams/README.md`](README.md), which this section cites, not
@@ -1166,9 +1172,14 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-09-18 (amendment, declaration)** — **The Spec ladder's eight statuses
   are declared in one machine-readable place**, closing the gap where only
   `extension-point` was defined (in prose, `docs/dreams/README.md`) and the
-  other seven lived only as a hardcoded set inside
+  other seven lived only as hardcoded sets split across
   `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
-  `DELIVERED_SPEC_STATUSES`). `docs/governance/guild-roster.json` gains a new
+  `DELIVERED_SPEC_STATUSES`, covering `draft`/`ready`/`in-progress`/`shipped`)
+  and `pyforge.doctor.sources.one_chain` (`_CLOSED_SPEC_STATUSES`, covering
+  `archived`/`absorbed`/`superseded`) — `CHAIN-STANDARD.md` §4 (2026-09-17)
+  already enumerated all eight in a summary table, but with no per-value
+  definition and not machine-readable, which is this amendment's real delta.
+  `docs/governance/guild-roster.json` gains a new
   `spec_statuses` block (mirroring the existing `dream_statuses` block) plus
   `spec_statuses_ended_acts`, `spec_statuses_terminal`, and
   `spec_statuses_grandfathered`, each with a `$comment_spec_statuses` prose
@@ -1178,12 +1189,14 @@ herald broadcast slack,email --channel engineering-updates
   collapsed; `shipped` remains Spec-terminal, grouped with the ended acts as
   terminal but explicitly not one of them; `in-progress` stays the sole
   grandfathered value (CHAIN-STANDARD.md §4 retires it); the enum is
-  recommended, not required — an unregistered value is preserved and
-  warned, never silently reset. `docs/dreams/README.md` was **not** touched;
-  it stays the Dream ladder's home, coupled but separate. Pinned by
-  `tests/scripts/test_spec_ladder_is_declared.py`. **Deferred, out of
-  scope here:** wiring `board.py` / `chain.py` / `status_body_consistency.py`
-  to *consume* this declaration (rather than hardcode their own copies) is
-  Story 59.2, not yet landed; the BMAD↔Lexicon cross-walk content (Spec
-  `shipped` ≠ story `done` ≠ Dream `realized`) is Story 59.3 / Charter CAP-3,
-  referenced above but not written out here.
+  recommended, not required — an unregistered value must be preserved and
+  must produce a warning, never silently reset. `docs/dreams/README.md` was
+  **not** touched; it stays the Dream ladder's home, coupled but separate.
+  Pinned by `tests/scripts/test_spec_ladder_is_declared.py`. **Deferred, out
+  of scope here:** wiring `board.py` / `chain.py` / `one_chain.py` /
+  `status_body_consistency.py` to *consume* this declaration (rather than
+  hardcode their own copies — `one_chain.py`'s `_CLOSED_SPEC_STATUSES` is an
+  exact duplicate of the new `spec_statuses_ended_acts`) is Story 59.2, not
+  yet landed; the BMAD↔Lexicon cross-walk content (Spec `shipped` ≠ story
+  `done` ≠ Dream `realized`) is `spec-vocabulary-one-name-one-job` CAP-3
+  (Story 59.3), referenced above but not written out here.
