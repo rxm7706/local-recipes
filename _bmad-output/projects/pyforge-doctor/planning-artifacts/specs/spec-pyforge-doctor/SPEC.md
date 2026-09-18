@@ -26,13 +26,14 @@ status: ready
 owner-dream: docs/dreams/pyforge-doctor.md
 companions:
   - ../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
+  - live-proof-surfaces.md
 sources:
   - ../../../../../../docs/dreams/pyforge-doctor.md
   - ../../briefs/brief-pyforge-doctor-2026-07-25/brief.md
   - ../../prds/prd-pyforge-doctor-2026-07-25/prd.md
   - ../../epics.md
 spec: pyforge-doctor
-updated: '2026-09-17'
+updated: '2026-09-18'
 covers-dreams:
   - docs/dreams/bmad-drift-new-artifact-shape.md
   - docs/dreams/bmad-method-version-drift.md
@@ -290,6 +291,9 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - **CAP-76 — it renders where the operator already looks** ← spec-status-body-consistency CAP-5 (draft 2026-09-17)
   - **intent:** A `report-schema.json` entry plus detectors membership, so the finding appears
   - **success:** The finding shows up in the doctor report and the `fleet-picture` ATTENTION
+- **CAP-77 — the map of what no agent can verify without a live proof** ← spec-pyforge-doctor CAP-77 (ready 2026-09-18)
+  - **intent:** A fleet-wide, doctor-owned inventory of surfaces a dev/review pass structurally cannot verify from inside the repo alone — station, surface, what a static pass cannot see, how to prove it live, roughly how expensive — catalogued in `live-proof-surfaces.md`, cited by name from a Finding when a touched surface matches.
+  - **success:** A story/PR touching a catalogued surface gets an advisory Doctor finding naming it, never gating; the catalog is read from real, current mechanisms only (existing live-test scripts, opt-in env flags, service-up tasks), never invented. Motivating incident (2026-09-17/18): herald's mcp SDK transport broke across two 2.x changes — `streamablehttp_client` renamed to `streamable_http_client` with a different call signature, `CallToolResult.isError` renamed to `.is_error` — caught by neither review nor the test suite nor a dev pass's own self-report; only a real live push-then-read-back against Claude Design surfaced it.
 
 ## Constraints
 
@@ -305,6 +309,7 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - **Env-hygiene detection boundary:** the check fires on an env-var read (`os.environ.get`/`os.getenv`) feeding an HTTP-header/auth assignment with no accompanying host-scope conditional; a host-scoped credential attach must NOT produce a finding. The scanner uses `ast.parse` only — never `exec`/`eval`/dynamic-import of scanned code.
 - **Default Watch-axis set:** omitting `--watch` runs `staleness`+`cve` as the two highest-signal defaults, not every axis unconditionally. Adding `adoption` (CAP-7) does not change this default.
 - **`check --list` ships in v1:** it enumerates every named check without running them; running one named check in isolation matches that check's result within the full suite.
+- **CAP-77's catalog names only what already exists:** a live-proof mechanism cited in `live-proof-surfaces.md` must be a real, existing script/flag/task, never invented; a surface with no existing mechanism is recorded as a genuine gap. Extends AD-2's operability-not-policy posture — the finding is always advisory, never a second PR gate.
 
 ## Non-goals
 

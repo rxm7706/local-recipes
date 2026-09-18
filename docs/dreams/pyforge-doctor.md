@@ -86,6 +86,33 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-18** — **Proposed: the map of what no agent can verify without a
+  live proof.** Bugs cluster where agents cannot see them — not because the
+  code is hard, but because verifying it correct needs a real round-trip
+  against something outside the repo (a third-party API, a live browser, a
+  service with its own auth and its own drift), and a dev pass's own
+  self-report is never evidence of that, only a live proof is. This fleet
+  already has several such surfaces, each documented only in its own
+  station's prose, nowhere aggregated: herald's Claude Design MCP bridge (a
+  push isn't proven until read back through the live serve URL, harness
+  stripped, byte-compared), herald's live webhook host (opt-in only,
+  `HERALD_LIVE_WEBHOOK=1`, never in the default gate), scribe's
+  Postgres+pgvector cluster (`scribe-pg-up` first), atlas's
+  Chromium/DuckDB/WASM pipeline, warden's live OSV-scanner/CISA-KEV/EPSS
+  feeds. Every one already has a real, working live-proof mechanism; what's
+  missing is one place that says *these exist, here's how to actually prove
+  them, and a dev pass's own confidence is not enough evidence on its own.*
+  Motivating incident, same session: herald's mcp SDK transport broke across
+  two separate 2.x changes (`streamablehttp_client` renamed with a different
+  call signature; `CallToolResult.isError` renamed to `.is_error`), caught
+  by neither review nor the test suite nor a dev pass's self-report — only a
+  real live push-then-read-back against Claude Design surfaced it. Shape:
+  one doctor-owned, fleet-wide inventory of these surfaces (station, surface,
+  what a static pass cannot see, how to prove it live, roughly how
+  expensive); a story/PR touching one gets an advisory finding naming it,
+  never gating, matching Doctor's own posture. Not yet a CAP or an Epic —
+  recorded here as the seed; decomposition follows if greenlit.
+
 - **2026-08-08** — **Doctor took the verdict on the Marshal's own row.** Charter §6
   has said since 2026-07-28 that the Doctor holds it, *"the one station that would
   otherwise grade itself"* — but nothing implemented it. A single `sprint-ledger-sync`
