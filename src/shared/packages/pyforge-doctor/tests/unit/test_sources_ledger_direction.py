@@ -311,10 +311,23 @@ def test_own_scoped_template_merge_counts_as_landed(tmp_path: Path) -> None:
     assert fails[0].evidence["project"] == "pyforge-atlas"
 
 
-def test_no_policy_file_falls_back_to_legacy_default_template(tmp_path: Path) -> None:
+def test_no_policy_file_never_attempts_the_bare_default_template(
+    tmp_path: Path,
+) -> None:
     """A project with no ``marshal-policy.toml`` (or none declaring the key)
-    keeps the pre-existing, unscoped legacy-default behavior -- the
-    acknowledged residual this story does not claim to close."""
+    keeps its EXACT pre-Story-27.1 behavior for the templated shape: no
+    attribution attempt at all, never the ambiguous bare-default match.
+
+    Verified live 2026-09-18: wiring the bare default into this
+    fleet-spanning check unconditionally turned 3 real findings into 306,
+    because most stations still share it -- every one of them would light up
+    on every OTHER station's own bare-templated landing. Scoping this
+    function's templated check to "only when a project's OWN template
+    differs from the bare default" is what keeps a project with no override
+    from becoming a NEW source of noise -- the acknowledged residual this
+    story does not claim to close (Marshal's own spec-pyforge-marshal
+    CAP-247 / Story 50.4 is what makes the repo default itself
+    station-scoped fleet-wide)."""
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_ledger(repo, "pyforge-mason", {"7-2-something": "backlog"})
@@ -324,6 +337,4 @@ def test_no_policy_file_falls_back_to_legacy_default_template(tmp_path: Path) ->
     findings = ledger.gather_direction(repo)
 
     fails = [f for f in findings if f.status == DoctorStatus.FAIL]
-    assert len(fails) == 1
-    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
-    assert fails[0].evidence["project"] == "pyforge-mason"
+    assert fails == []
