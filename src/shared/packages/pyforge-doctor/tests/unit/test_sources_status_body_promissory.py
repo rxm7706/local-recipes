@@ -84,26 +84,20 @@ def test_gather_promissory_fires_on_fixture_pair_and_stays_quiet(tmp_path: Path)
 
 
 def test_gather_live_herald_pair_and_zero_false_positives():
-    """Re-measured 2026-09-14 (was herald_pair_fired == 2): the Spec side of
-    the known pair had its promissory language cleaned up since this was
-    first measured, so only the Dream still fires -- a real improvement,
-    still zero false positives, still `accepted`."""
+    """Re-measured 2026-09-18 (was herald_pair_fired == 1): the Dream side of
+    the known pair was cleaned too -- zero live promissory hits, still zero
+    false positives, still `accepted`. Fixture tests above still prove the
+    detector fires."""
     repo_root = Path(__file__).resolve().parents[6]
     measurement = sbc.measure_promissory_language_precision(repo_root)
-    assert measurement.herald_pair_fired == 1
+    assert measurement.herald_pair_fired == 0
     assert measurement.false_positive_documents == 0
     assert measurement.accepted is True
     assert sbc.PROMISSORY_LANGUAGE_ACCEPTED is True
 
     findings = sbc.gather_promissory_language(repo_root)
     promissory = [f for f in findings if f.check == sbc._CHECK_PROMISSORY]
-    assert promissory
-    fired_paths = {f.evidence["path"] for f in promissory}
-    assert "docs/dreams/pyforge-herald.md" in fired_paths
-    assert not any(
-        p.endswith("pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md")
-        for p in fired_paths
-    )
+    assert promissory == []
 
 
 def test_gather_combined_includes_cap3(tmp_path: Path):
@@ -136,8 +130,12 @@ def test_gather_measured_and_rejected_when_not_accepted(
 
 
 def test_gather_live_includes_cap1_and_cap3_together():
+    """Re-measured 2026-09-18: CAP-1/CAP-3 live hits are zero (fleet cleaned).
+    Combined gather still returns other status-body checks; fixture tests
+    cover CAP-1/CAP-3 firing."""
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather(repo_root)
     checks = {f.check for f in findings}
-    assert sbc._CHECK_PROGRESS in checks
-    assert sbc._CHECK_PROMISSORY in checks
+    assert sbc._CHECK_PROGRESS not in checks
+    assert sbc._CHECK_PROMISSORY not in checks
+    assert checks  # still reports other live status-body findings

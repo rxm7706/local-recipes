@@ -111,9 +111,9 @@ DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES
 # station's epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
 # de-registered 2026-08-10 on explicit operator confirmation of doctor Epic 7).
 DEFERRED_SPECS: dict[str, str] = {
-    "spec-agentic-sdlc-autonomy":
-        "a standing position, explicitly 'not a deliverable' by its own text — "
-        "there is nothing to decompose and an FR would manufacture one",
+    # `spec-agentic-sdlc-autonomy` was registered here as a standing non-deliverable.
+    # De-registered 2026-09-18: Spec status is now `absorbed` (folded); an inert
+    # DEFERRED_SPECS entry fails Story 21.1's live-status reconciliation.
     # `spec-build-league-scorecard` was registered here while Q5 had no numbers.
     # De-registered 2026-09-15: operator published eight already-counted
     # signals with on/off/archived config; Spec `ready`; steward Epic 62

@@ -313,15 +313,13 @@ def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
 
 
 def test_live_tree_dream_readme_missing_count() -> None:
-    """Measured live 2026-09-11 (re-measured 2026-09-12, mason 15.1 recovery
-    pass): 67 Dream files lack a README.md table row (one more than the prior
-    2026-09-16 measurement — an unrelated Dream landed on `main` in between
-    without its row; not chased down further here, this test only tracks the
-    live count)."""
+    """Measured live 2026-09-18: 65 Dream files lack a README.md table row
+    (was 67 on 2026-09-12 — two rows caught up; this test only tracks the live
+    count)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     missing = [f for f in findings if f.check == "dream-readme-missing"]
-    assert len(missing) == 67
+    assert len(missing) == 65
 
 
 def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
@@ -351,18 +349,12 @@ def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
 
 
 def test_live_tree_specified_spec_not_ready_count() -> None:
-    """Measured live 2026-09-11: 3 ``specified`` Dreams whose covering Spec is
-    not ``ready`` or beyond (``django-accelerator-framework`` archived since)."""
+    """Measured live 2026-09-18: 0 ``specified`` Dreams whose covering Spec is
+    not ``ready`` or beyond (was 3 on 2026-09-11 — those cleared)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     bad = [f for f in findings if f.check == "specified-spec-not-ready"]
-    assert len(bad) == 3
-    subjects = {f.evidence["subject"] for f in bad}
-    assert subjects == {
-        "miniforge-installer",
-        "python-agent-platform",
-        "reusable-cicd-workflows",
-    }
+    assert len(bad) == 0
 
 
 def test_kinship_wikilink_dead_reports_on_fixture(tmp_path: Path) -> None:
@@ -423,14 +415,13 @@ def test_kinship_wikilink_skips_frontmatter_fence(tmp_path: Path) -> None:
 
 
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-09-14: 26 dead Kinship wikilinks under docs/dreams/
-    (was 24 on 2026-09-11 -- re-measured, not a regression this guard needs
-    to catch: new Dream content merged in the interim added two more dead
-    targets)."""
+    """Measured live 2026-09-18: 33 dead Kinship wikilinks under docs/dreams/
+    (was 26 on 2026-09-14 — new Dream content added targets; this test only
+    tracks the live count)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 26
+    assert len(dead) == 33
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
