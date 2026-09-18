@@ -49,9 +49,11 @@ from __future__ import annotations
 import json
 import re
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 from pyforge.core.landing_evidence import (
+    LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
     classify_commit,
@@ -207,10 +209,10 @@ def _keys_from_merge_subjects(
 ) -> frozenset[StoryKeyRef]:
     """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
 
-    The templated shape (tried first) uses ``project_slug``'s OWN
-    ``merge_subject_template`` (Story 27.1), not the bare repo default --
-    see ``_project_merge_subject_template``'s own docstring for why an
-    unscoped read misattributes a sibling station's landing.
+    The templated shape (tried first, ONLY when ``project_slug`` declares
+    its OWN override) uses that override (Story 27.1), not the bare repo
+    default -- see ``_project_merge_subject_template``'s own docstring for
+    why an unscoped read misattributes a sibling station's landing.
 
     Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
     AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
@@ -220,22 +222,34 @@ def _keys_from_merge_subjects(
     shared verbatim with ``sources/ledger.py::_merged_ids_for_project``).
     Replaces Story 27.3's reverted ledger-membership-alone gate, which
     reopened the cross-station collision whenever two stations share a
-    numeric key -- the common case under one shared grammar. ``commits``
-    therefore carries the sha alongside each subject (routed from ``git log
+    numeric key -- the common case under one shared grammar.
+
+    A project with NO override of its own is exactly the case where
+    ``_project_merge_subject_template`` returns the bare default itself --
+    trying ``parse_templated_merge_subject`` against THAT would match every
+    OTHER station's own unscoped bare-form merge too (this module's own
+    pre-27.5 defect: unconditional and unscoped), so that parser is skipped
+    entirely for such a project and every bare-form subject instead goes
+    through the corroborated fallback below. ``commits`` therefore carries
+    the sha alongside each subject (routed from ``git log
     --format=%H%x00%s``), unlike this function's pre-27.5 subject-only
     shape.
     """
     template = _project_merge_subject_template(target, project_slug)
+    has_override = template != _MERGE_SUBJECT_TEMPLATE
     known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
-        for parser in (
-            lambda s: parse_templated_merge_subject(s, template),
+        parsers: list[Callable[[str], StoryKeyRef | None]] = []
+        if has_override:
+            parsers.append(lambda s: parse_templated_merge_subject(s, template))
+        parsers.extend((
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
             lambda s: _branch_name_fallback_key(s, project_slug),
-        ):
+        ))
+        for parser in parsers:
             key = parser(subject)
             if key is not None:
                 keys.add(key)
@@ -265,6 +279,7 @@ def _keys_from_main_commits(
     unreadable_diff_shas: list[str] | None = None,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
+    has_override = template != _MERGE_SUBJECT_TEMPLATE
     known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
@@ -274,7 +289,13 @@ def _keys_from_main_commits(
             template=template,
             project_slug=project_slug,
         )
-        if match is not None:
+        # A project with no override of its own must not accept a match
+        # `classify_commit` only found via the bare default it was handed
+        # (see `_keys_from_merge_subjects`'s own docstring) -- every OTHER
+        # shape `classify_commit` recognizes stays trusted unconditionally.
+        if match is not None and (
+            has_override or match.shape is not LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+        ):
             keys.add(match.key)
             continue
         fallback = _branch_name_fallback_key(subject, project_slug)
