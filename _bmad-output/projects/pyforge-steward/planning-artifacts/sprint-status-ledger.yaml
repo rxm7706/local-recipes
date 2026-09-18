@@ -236,7 +236,7 @@ development_status:
   58-1-a-stations-real-mcp-tool-is-reachable-through-a-deployed-cluster: done
   58-2-a-station-with-no-real-app-keeps-the-slice-1-stub-unchanged: done
   58-3-the-one-unproven-run-state-row-flips-to-pass: done
-  59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule: backlog
+  59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule: done
   59-2-detectors-read-one-declaration-in-progress-is-grandfathered: backlog
   59-3-the-charter-carries-the-bmad-cross-walk-and-pitched-stays-optional: backlog
   59-4-design-teaching-is-named-the-pull-cannot-silently-rot: backlog
