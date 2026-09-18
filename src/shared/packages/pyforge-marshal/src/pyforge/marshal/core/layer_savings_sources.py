@@ -25,6 +25,10 @@ __all__ = (
     "GRAPH_STORE_RELPATH",
     "PLANNING_GRAPH_TELEMETRY_RELPATH",
     "CODEGRAPH_STATS_RELPATH",
+    "SILENT_LAYER_KEYS",
+    "CONFIGURED_LAYER_KEYS",
+    "HARNESS_CURRENCY",
+    "UNKNOWN_HARNESS_CURRENCY",
     "loop_home_from_run_dir",
     "read_caveman_output_saved",
     "read_cocoindex_cache_hits",
@@ -32,6 +36,9 @@ __all__ = (
     "read_headroom_wire_saved",
     "read_planning_graph_tokens_saved",
     "read_dispatch_idle_timing",
+    "classify_layer_kind",
+    "currency_for_harness",
+    "read_rollup_by_harness",
 )
 
 COCOINDEX_INDEX_RELPATH = ".claude/data/pyforge-scribe/cocoindex-index.json"
@@ -40,6 +47,37 @@ PLANNING_GRAPH_TELEMETRY_RELPATH = (
     ".claude/data/pyforge-marshal/planning-graph/last-retrieval.json"
 )
 CODEGRAPH_STATS_RELPATH = ".claude/data/pyforge-marshal/layer-savings/codegraph.json"
+
+# Story 46.5 (CAP-193): the journal taxonomy distinguishing the 4
+# harness-agnostic repo-default layers (Story 46.4's "silent" tier -- they
+# run unconditionally, with no per-harness capability check) from the 1
+# capability/config-resolved layer (`wire_compression_saved`, gated on
+# `[wrapper]` policy AND the harness profile declaring wire support). These
+# are the SAME 5 field names ``ports.harness.LayerSavings`` carries --
+# ``classify_layer_kind`` is the single source of truth mapping each to its
+# tier.
+SILENT_LAYER_KEYS = (
+    "output_compression_saved",
+    "graph_hits_vs_file_reads",
+    "derived_context_cache_hits",
+    "planning_graph_tokens_saved",
+)
+CONFIGURED_LAYER_KEYS = ("wire_compression_saved",)
+
+# Story 46.5: the per-harness binding currency table -- a Cursor-first
+# station's savings are quota-burn, never a Claude-shaped USD number.
+# ``UNKNOWN_HARNESS_CURRENCY`` is the honest degrade for an absent or
+# unrecognized harness name (``currency_for_harness`` never raises), mirroring
+# this epic's "a repo default can never claim a wrap a harness can't perform"
+# ethos rather than silently defaulting to USD.
+HARNESS_CURRENCY: dict[str, str] = {
+    "claude": "usd",
+    "cursor": "quota-burn",
+    "copilot": "quota-burn",
+    "gemini": "request-count",
+    "devin": "acus",
+}
+UNKNOWN_HARNESS_CURRENCY = "unknown"
 
 IntSavings = int | str
 GraphStats = tuple[int, int] | str
