@@ -21,6 +21,7 @@ from pyforge.marshal.core.dispatch_supervisor_state import (
     supervisor_should_exit,
 )
 from pyforge.marshal.core.gate import widen_effective_surface_with_paths
+from pyforge.marshal.core import harness_session
 from pyforge.marshal.core.harness_session import (
     HarnessSessionOutcome,
     classify_session_log,
@@ -65,6 +66,22 @@ def test_exclude_harness_after_cursor_usage_wall() -> None:
         preference, _CURSOR_USAGE_WALL_LOG
     )
     assert result == ("claude", "copilot")
+
+
+def test_classify_session_log_reterminalizes_without_cursor_markers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mutation test: removing the Cursor markers reproduces the original
+    Story 50.2 defect (the fixture goes back to ``unknown``)."""
+    monkeypatch.setattr(
+        harness_session,
+        "_QUOTA_MARKERS",
+        harness_session._QUOTA_MARKERS_BY_HARNESS["claude"],
+    )
+    assert (
+        classify_session_log(_CURSOR_USAGE_WALL_LOG)
+        is HarnessSessionOutcome.UNKNOWN
+    )
 
 
 def test_classify_session_log_auth() -> None:
