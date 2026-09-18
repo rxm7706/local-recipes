@@ -1080,3 +1080,14 @@ deployment.
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-23-6: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-one-command-idempotent-reported.md`
+  summary: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
+  evidence: No live Claude Design credentials are available in this or any other automated dispatch environment. If the gap is real it would be medium: a verification-depth gap, not a code defect. It would be settled by running `herald deck sync-all` twice against a deck with live Design credentials and real tracked state.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  origin: spec-deferred 9aa35103a2ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
