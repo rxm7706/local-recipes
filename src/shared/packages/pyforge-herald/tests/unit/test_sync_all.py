@@ -9,13 +9,14 @@ real functions, exercised over a fake ``DesignTransport``, exactly like
 
 from __future__ import annotations
 
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 from pyforge.herald import sync_all as sync_all_module
-from pyforge.herald import state
+from pyforge.herald import stamps, state
 from pyforge.herald.deck_pipeline import (
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
@@ -175,6 +176,21 @@ def _make_deck_dir(tmp_path: Path, slug: str) -> Path:
     return deck_dir
 
 
+def _init_committed_git_repo(tmp_path: Path) -> None:
+    """A git repo with one commit -- ``stamps.write_stamp`` (called by
+    ``_write_proof``) needs a real ``HEAD`` to name as the proof report's
+    tree ref."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "init", "--allow-empty"], cwd=tmp_path, check=True
+    )
+
+
 def _seams(**overrides):
     """Every write-capable seam defaulted to an inert fake, so a test that
     only cares about one behavior does not have to spell out the rest."""
@@ -281,6 +297,123 @@ def test_sync_all_reports_nothing_pulled_when_the_etag_did_not_move(tmp_path: Pa
     assert deck.pulled == ()
     assert deck.unchanged is True
     assert deck.labels() == ("unchanged",)
+
+
+# --- proof_dir (Story 24.3, spec-pyforge-herald CAP-50) --------------------
+
+
+def _proof_report_files(deck_proof_dir: Path) -> list[Path]:
+    """``report-*.json``, excluding the ``.stamp.json`` sidecars -- a bare
+    ``glob("report-*.json")`` also matches ``report-<ts>.json.stamp.json``
+    (its filename still ends in ``.json``)."""
+    return sorted(
+        p for p in deck_proof_dir.glob("report-*.json")
+        if not p.name.endswith(".stamp.json")
+    )
+
+
+def test_sync_all_writes_a_proof_report_and_stamp_when_a_deck_changed(
+    tmp_path: Path,
+):
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _init_committed_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="<html>new</html>", unchanged=False
+        )
+    )
+    proof_dir = tmp_path / "proof"
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        **_seams(),
+    )
+
+    deck = report.decks[0]
+    report_files = _proof_report_files(proof_dir / "pyforge-warden")
+    assert len(report_files) == 1
+    payload = json.loads(report_files[0].read_text(encoding="utf-8"))
+    assert payload["slug"] == "pyforge-warden"
+    assert payload["labels"] == list(deck.labels())
+    assert payload["pulled"] == [PROTOTYPE_ARTIFACT_KEY]
+    stamp = stamps.read_stamp(report_files[0])
+    assert stamp is not None
+    assert stamp.etag == "E2"
+
+
+def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
+    tmp_path: Path,
+):
+    """The core AC: a second consecutive proof-run over an already-synced
+    deck writes a second, distinctly-named ``unchanged`` report -- the
+    first run's report file is left untouched."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _init_committed_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
+    proof_dir = tmp_path / "proof"
+
+    first = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        **_seams(),
+    )
+    first_files = _proof_report_files(proof_dir / "pyforge-warden")
+    assert len(first_files) == 1
+    first_contents = first_files[0].read_text(encoding="utf-8")
+    first_stamp = stamps.read_stamp(first_files[0])
+    assert first_stamp is not None
+
+    second = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        **_seams(),
+    )
+
+    assert first.decks[0].labels() == ("unchanged",)
+    assert second.decks[0].labels() == ("unchanged",)
+    second_files = _proof_report_files(proof_dir / "pyforge-warden")
+    assert len(second_files) == 2
+    assert first_files[0].is_file()
+    assert first_files[0].read_text(encoding="utf-8") == first_contents
+    second_only = [p for p in second_files if p not in first_files]
+    assert len(second_only) == 1
+    second_payload = json.loads(second_only[0].read_text(encoding="utf-8"))
+    assert second_payload["labels"] == ["unchanged"]
+
+
+def test_sync_all_without_proof_dir_writes_nothing_under_sync_proof(tmp_path: Path):
+    """Regression guard: ``proof_dir`` is ``None`` at every call site this
+    story did not touch -- behavior must be identical to before it."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
+
+    sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, **_seams())
+
+    assert not (tmp_path / ".herald" / "sync-proof").exists()
+
+
+def test_sync_all_dry_run_with_proof_dir_still_writes_a_proof_report(tmp_path: Path):
+    """The gate/write logic does not special-case ``dry_run`` -- a dry-run
+    preview still gets its own proof report."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _init_committed_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
+    proof_dir = tmp_path / "proof"
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
+        proof_dir=proof_dir, **_seams(),
+    )
+
+    deck = report.decks[0]
+    assert deck.dry_run is True
+    assert deck.labels() == ("unchanged",)
+    report_files = _proof_report_files(proof_dir / "pyforge-warden")
+    assert len(report_files) == 1
+    payload = json.loads(report_files[0].read_text(encoding="utf-8"))
+    assert payload["dry_run"] is True
 
 
 def test_sync_all_never_pulls_an_export_tracked_key(tmp_path: Path):
