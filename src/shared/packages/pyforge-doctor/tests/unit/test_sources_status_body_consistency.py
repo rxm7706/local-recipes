@@ -161,6 +161,9 @@ def test_gather_ok_when_no_terminal_docs(tmp_path: Path):
     assert len(findings) == 1
     assert findings[0].status == DoctorStatus.OK
     assert findings[0].evidence["scanned_terminal"] == 0
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same OK result.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
 
 
 def test_gather_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path):
