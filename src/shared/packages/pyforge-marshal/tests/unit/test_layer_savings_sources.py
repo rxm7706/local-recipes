@@ -495,6 +495,320 @@ def test_read_rollup_by_harness_merges_nonoverlapping_keys_across_entries(
     assert claude["configured"] == {"wire_compression_saved": [200]}
 
 
+def test_headroom_wire_saved_names_missing_database(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    (home / CCR_STORE_RELPATH).mkdir(parents=True)
+    assert sources.read_headroom_wire_saved(home) == "ccr-store-database-missing"
+
+
+def test_headroom_wire_saved_names_unreadable_database(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    store_dir = home / CCR_STORE_RELPATH
+    store_dir.mkdir(parents=True)
+    (store_dir / "ccr_store.db").write_text("not a sqlite file", encoding="utf-8")
+    assert sources.read_headroom_wire_saved(home) == "ccr-store-schema-unreadable"
+
+
+def test_headroom_wire_saved_names_unreadable_uri(tmp_path: Path, monkeypatch) -> None:
+    home = tmp_path / "home"
+    store_dir = home / CCR_STORE_RELPATH
+    store_dir.mkdir(parents=True)
+    (store_dir / "ccr_store.db").write_text("", encoding="utf-8")
+
+    def _raises(*_a, **_k):
+        raise sqlite3.Error("simulated connect failure")
+
+    monkeypatch.setattr(sqlite3, "connect", _raises)
+    assert sources.read_headroom_wire_saved(home) == "ccr-store-database-unreadable"
+
+
+def test_headroom_wire_saved_zero_on_empty_store(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    store_dir = home / CCR_STORE_RELPATH
+    store_dir.mkdir(parents=True)
+    conn = sqlite3.connect(store_dir / "ccr_store.db")
+    conn.execute(
+        "CREATE TABLE ccr_entries (hash TEXT PRIMARY KEY, entry_json TEXT NOT NULL, "
+        "created_at REAL NOT NULL, ttl INTEGER NOT NULL)"
+    )
+    conn.commit()
+    conn.close()
+    assert sources.read_headroom_wire_saved(home) == 0
+
+
+def test_headroom_wire_saved_skips_malformed_and_incomplete_entries(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    store_dir = home / CCR_STORE_RELPATH
+    store_dir.mkdir(parents=True)
+    db_path = store_dir / "ccr_store.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE ccr_entries (hash TEXT PRIMARY KEY, entry_json TEXT NOT NULL, "
+        "created_at REAL NOT NULL, ttl INTEGER NOT NULL)"
+    )
+    conn.executemany(
+        "INSERT INTO ccr_entries VALUES (?, ?, ?, ?)",
+        [
+            ("bad-json", "not valid json", 1.0, 1800),
+            ("incomplete", json.dumps({"original_tokens": 1000}), 1.0, 1800),
+            (
+                "good",
+                json.dumps({"original_tokens": 1000, "compressed_tokens": 700}),
+                1.0,
+                1800,
+            ),
+        ],
+    )
+    conn.commit()
+    conn.close()
+    assert sources.read_headroom_wire_saved(home) == 300
+
+
+def test_caveman_output_saved_names_missing_ledger(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    skill = home / CAVEMAN_SKILL_RELPATH
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: caveman\n---\n", encoding="utf-8")
+    assert sources.read_caveman_output_saved(home) == "output-savings-ledger-missing"
+
+
+def test_caveman_output_saved_names_unreadable_ledger(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    skill = home / CAVEMAN_SKILL_RELPATH
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: caveman\n---\n", encoding="utf-8")
+    ledger = home / CCR_STORE_RELPATH / "output_savings.json"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("not valid json", encoding="utf-8")
+    assert sources.read_caveman_output_saved(home) == "output-savings-ledger-unreadable"
+
+
+def test_caveman_output_saved_reads_top_level_tokens_saved(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    skill = home / CAVEMAN_SKILL_RELPATH
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: caveman\n---\n", encoding="utf-8")
+    ledger = home / CCR_STORE_RELPATH / "output_savings.json"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(json.dumps({"tokens_saved": 250}), encoding="utf-8")
+    assert sources.read_caveman_output_saved(home) == 250
+
+
+def test_caveman_output_saved_names_not_recorded(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    skill = home / CAVEMAN_SKILL_RELPATH
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: caveman\n---\n", encoding="utf-8")
+    ledger = home / CCR_STORE_RELPATH / "output_savings.json"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(json.dumps({"unrelated": True}), encoding="utf-8")
+    assert sources.read_caveman_output_saved(home) == "output-savings-not-recorded"
+
+
+def test_codegraph_stats_names_unreadable_sidecar(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    stats = home / sources.CODEGRAPH_STATS_RELPATH
+    stats.parent.mkdir(parents=True)
+    stats.write_text("not valid json", encoding="utf-8")
+    assert sources.read_codegraph_hits_vs_reads(home) == "codegraph-stats-unreadable"
+
+
+def test_codegraph_stats_names_shape_unrecognized(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    stats = home / sources.CODEGRAPH_STATS_RELPATH
+    stats.parent.mkdir(parents=True)
+    stats.write_text(json.dumps({"unrelated": True}), encoding="utf-8")
+    assert sources.read_codegraph_hits_vs_reads(home) == "codegraph-stats-shape-unrecognized"
+
+
+def test_codegraph_stats_names_not_recorded_when_index_present(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    index = home / CODEGRAPH_INDEX_RELPATH
+    index.parent.mkdir(parents=True)
+    index.write_text("{}", encoding="utf-8")
+    assert sources.read_codegraph_hits_vs_reads(home) == "codegraph-stats-not-recorded"
+
+
+def test_cocoindex_cache_hits_names_unreadable_index(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    index = home / sources.COCOINDEX_INDEX_RELPATH
+    index.parent.mkdir(parents=True)
+    index.write_text("not valid json", encoding="utf-8")
+    assert sources.read_cocoindex_cache_hits(home) == "cocoindex-index-unreadable"
+
+
+def test_cocoindex_cache_hits_falls_back_to_skipped_artifacts_length(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    index = home / sources.COCOINDEX_INDEX_RELPATH
+    index.parent.mkdir(parents=True)
+    index.write_text(json.dumps({"skipped_artifacts": ["a", "b", "c"]}), encoding="utf-8")
+    assert sources.read_cocoindex_cache_hits(home) == 3
+
+
+def test_cocoindex_cache_hits_names_not_recorded(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    index = home / sources.COCOINDEX_INDEX_RELPATH
+    index.parent.mkdir(parents=True)
+    index.write_text(json.dumps({"unrelated": True}), encoding="utf-8")
+    assert sources.read_cocoindex_cache_hits(home) == "cocoindex-cache-hits-not-recorded"
+
+
+def test_planning_graph_tokens_saved_names_retrieval_not_recorded(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    graph_path = home / sources.GRAPH_STORE_RELPATH
+    graph_path.parent.mkdir(parents=True)
+    graph_path.write_text("{}", encoding="utf-8")
+    assert sources.read_planning_graph_tokens_saved(home) == "planning-graph-retrieval-not-recorded"
+
+
+def test_planning_graph_tokens_saved_names_unreadable_telemetry(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    telemetry = home / sources.PLANNING_GRAPH_TELEMETRY_RELPATH
+    telemetry.parent.mkdir(parents=True)
+    telemetry.write_text("not valid json", encoding="utf-8")
+    assert sources.read_planning_graph_tokens_saved(home) == "planning-graph-telemetry-unreadable"
+
+
+def test_planning_graph_tokens_saved_zero_when_grounded_without_tokens(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    telemetry = home / sources.PLANNING_GRAPH_TELEMETRY_RELPATH
+    telemetry.parent.mkdir(parents=True)
+    telemetry.write_text(json.dumps({"grounded": True}), encoding="utf-8")
+    assert sources.read_planning_graph_tokens_saved(home) == 0
+
+
+def test_planning_graph_tokens_saved_names_not_recorded(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    telemetry = home / sources.PLANNING_GRAPH_TELEMETRY_RELPATH
+    telemetry.parent.mkdir(parents=True)
+    telemetry.write_text(json.dumps({"grounded": False}), encoding="utf-8")
+    assert sources.read_planning_graph_tokens_saved(home) == "planning-graph-tokens-not-recorded"
+
+
+def test_dispatch_idle_timing_no_runs_dir(tmp_path: Path) -> None:
+    report = sources.read_dispatch_idle_timing(tmp_path)
+    assert report["status"] == "no-dispatch-journals"
+    assert report["sessions"] == []
+
+
+def test_dispatch_idle_timing_skips_blank_malformed_and_non_numeric_lines(
+    tmp_path: Path,
+) -> None:
+    runs = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
+    )
+    runs.mkdir(parents=True)
+    journal = runs / "journal.jsonl"
+    journal.write_text(
+        "\n".join(
+            [
+                "",
+                "not valid json",
+                json.dumps({"payload": "not-a-dict"}),
+                json.dumps({"payload": {"idle_seconds": "not-a-number"}}),
+                json.dumps({"payload": {"idle_seconds": 600}}),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report = sources.read_dispatch_idle_timing(tmp_path)
+    assert report["status"] == "ok"
+    assert report["sessions"][0]["idle_samples"] == 1
+
+
+def test_dispatch_idle_timing_names_no_idle_samples(tmp_path: Path) -> None:
+    runs = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
+    )
+    runs.mkdir(parents=True)
+    (runs / "journal.jsonl").write_text(
+        json.dumps({"payload": {"no_idle_seconds_here": True}}) + "\n", encoding="utf-8"
+    )
+    report = sources.read_dispatch_idle_timing(tmp_path)
+    assert report["status"] == "no-idle-samples"
+    assert report["sessions"] == []
+
+
+def test_read_rollup_by_harness_skips_glob_permission_error(
+    tmp_path: Path, monkeypatch
+) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    runs_dir.mkdir(parents=True)
+
+    def _raises(self, _pattern):
+        raise PermissionError("simulated unreadable dispatch-runs directory")
+
+    monkeypatch.setattr(type(runs_dir), "glob", _raises, raising=False)
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report == {"status": "no-dispatch-journals", "harnesses": {}}
+
+
+def test_read_rollup_by_harness_tolerates_blank_lines_and_non_dict_json(
+    tmp_path: Path,
+) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    run_dir = runs_dir / "run-odd-shapes"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        "\n".join(
+            [
+                "",
+                json.dumps(["not", "a", "dict"]),
+                json.dumps(
+                    {
+                        "kind": "dispatch-launch",
+                        "phase": "outcome",
+                        "payload": {"ok": True, "harness_profile": "claude"},
+                    }
+                ),
+                json.dumps({"kind": "some-other-kind", "phase": "observation", "payload": {}}),
+                json.dumps(
+                    {
+                        "kind": "budget-usage",
+                        "phase": "observation",
+                        "payload": {"layer_savings": {"output_compression_saved": 500}},
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["status"] == "ok"
+    assert report["harnesses"]["claude"]["silent"] == {"output_compression_saved": [500]}
+
+
+def test_read_rollup_by_harness_skips_non_dict_payload(tmp_path: Path) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    run_dir = runs_dir / "run-non-dict-payload"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        "\n".join(
+            [
+                json.dumps({"kind": "dispatch-launch", "phase": "outcome", "payload": "oops"}),
+                json.dumps({"kind": "budget-usage", "phase": "observation", "payload": "oops"}),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report == {"status": "no-savings-samples", "harnesses": {}}
+
+
 def test_dispatch_idle_timing_reads_journal_samples(tmp_path: Path) -> None:
     runs = (
         tmp_path
