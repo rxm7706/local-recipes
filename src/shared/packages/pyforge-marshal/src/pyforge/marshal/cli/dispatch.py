@@ -1132,6 +1132,15 @@ def station_finalize_pending_story(
         journal.supervisor_pid
     )
     landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
+    session_alive = journal.session_pid is not None and process.is_alive(
+        journal.session_pid
+    )
+    if session_alive and not landing_complete:
+        # A session still running is plain in-flight, not finalize-pending:
+        # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
+        # reports it. Clause (a) is about the window AFTER the session exits,
+        # so it must never pre-empt that already-correct path.
+        return None
     if not dispatch_fleet.is_finalize_pending(
         supervisor_alive=supervisor_alive,
         completion_journaled=journal.completion_verdict is not None,
