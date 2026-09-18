@@ -3276,6 +3276,204 @@ def _intent_dict(story_key: str = "1.1") -> dict[str, object]:
     }
 
 
+def _write_dispatch_run_journal(
+    repo_root: Path,
+    slug: str,
+    run_id: str,
+    *,
+    harness_profile: str,
+    layer_savings: dict[str, object],
+) -> None:
+    """Story 46.5 (CAP-193) test-fixture helper -- writes one dispatch-run's
+    ``journal.jsonl`` under ``<repo_root>/_bmad-output/projects/<slug>/
+    implementation-artifacts/dispatch-runs/<run_id>/`` (a DIFFERENT tree
+    from the loop-home's own ``.bmad-loop/runs/`` journal this file's other
+    fixtures seed): one ``dispatch-launch`` outcome entry naming
+    ``harness_profile``, then one ``budget-usage`` entry carrying
+    ``layer_savings`` -- mirrors ``test_layer_savings_sources.py::
+    _write_run_journal``'s shape."""
+    run_dir = (
+        repo_root
+        / "_bmad-output/projects"
+        / slug
+        / "implementation-artifacts/dispatch-runs"
+        / run_id
+    )
+    run_dir.mkdir(parents=True)
+    lines = [
+        json.dumps(
+            {
+                "kind": "dispatch-launch",
+                "phase": "outcome",
+                "payload": {"ok": True, "harness_profile": harness_profile},
+            }
+        ),
+        json.dumps(
+            {
+                "kind": "budget-usage",
+                "phase": "observation",
+                "payload": {"layer_savings": layer_savings},
+            }
+        ),
+    ]
+    (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+class TestFormatRollupByHarness:
+    """Story 46.5 (CAP-193): pure formatter unit tests for
+    ``_format_rollup_by_harness``, sibling of ``_format_savings_summary``."""
+
+    def test_empty_and_no_data_statuses_render_blank(self) -> None:
+        assert status_cli._format_rollup_by_harness({}) == ""
+        assert (
+            status_cli._format_rollup_by_harness(
+                {"status": "no-dispatch-journals", "harnesses": {}}
+            )
+            == ""
+        )
+        assert (
+            status_cli._format_rollup_by_harness(
+                {"status": "no-savings-samples", "harnesses": {}}
+            )
+            == ""
+        )
+
+    def test_renders_both_harnesses_own_currency_no_blended_total(self) -> None:
+        rollup = {
+            "status": "ok",
+            "harnesses": {
+                "claude": {
+                    "currency": "usd",
+                    "silent": {"output_compression_saved": [500]},
+                    "configured": {"wire_compression_saved": [200]},
+                    "runs": 1,
+                },
+                "cursor": {
+                    "currency": "quota-burn",
+                    "silent": {"derived_context_cache_hits": [3]},
+                    "configured": {},
+                    "runs": 1,
+                },
+            },
+        }
+        text = status_cli._format_rollup_by_harness(rollup)
+        assert "usd" in text
+        assert "quota-burn" in text
+        assert "claude" in text and "cursor" in text
+        # No raw dict repr() leakage (the exact shape the spec calls out).
+        assert "{'output_compression_saved'" not in text
+        # No blended cross-harness total anywhere in the rendering.
+        assert "total" not in text.lower()
+
+    def test_formats_byte_and_graph_hits_values_without_repr(self) -> None:
+        rollup = {
+            "status": "ok",
+            "harnesses": {
+                "claude": {
+                    "currency": "usd",
+                    "silent": {
+                        "output_compression_saved": [500, 1536],
+                        "graph_hits_vs_file_reads": [
+                            (12, 3),
+                            "unavailable: no codegraph stats",
+                        ],
+                    },
+                    "configured": {"wire_compression_saved": [2048]},
+                    "runs": 2,
+                },
+            },
+        }
+        text = status_cli._format_rollup_by_harness(rollup)
+        # Byte-valued keys go through `_format_bytes` per element, not a
+        # raw int/list.
+        assert "output_compression_saved=500B, 1.5KB" in text
+        assert "wire_compression_saved=2.0KB" in text
+        # `graph_hits_vs_file_reads`: tuple -> "hits/reads", string element
+        # (a combined error/unavailable reason) passes through as-is.
+        assert "graph_hits_vs_file_reads=12/3, unavailable: no codegraph stats" in text
+        # No raw Python list/tuple repr() anywhere in the rendering.
+        assert "[500" not in text
+        assert "(12, 3)" not in text
+
+
+class TestSavingsRollupByHarness:
+    """Story 46.5 (CAP-193): ``run_status``-level envelope wiring."""
+
+    def test_project_scoped_status_carries_rollup(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        )
+        _write_dispatch_run_journal(
+            tmp_path,
+            "acme",
+            "run-claude",
+            harness_profile="claude",
+            layer_savings={"output_compression_saved": 500},
+        )
+        _write_dispatch_run_journal(
+            tmp_path,
+            "acme",
+            "run-cursor",
+            harness_profile="cursor",
+            layer_savings={"derived_context_cache_hits": 3},
+        )
+
+        exit_code = status_cli.run_status(
+            _args(project="acme"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        rollup = payload["data"]["savings_rollup_by_harness"]
+        assert rollup["status"] == "ok"
+        assert rollup["harnesses"]["claude"]["currency"] == "usd"
+        assert rollup["harnesses"]["cursor"]["currency"] == "quota-burn"
+        assert exit_code == 0
+
+        exit_code = status_cli.run_status(
+            _args(project="acme", format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        text_out = capsys.readouterr().out
+        assert exit_code == 0
+        assert "usd" in text_out
+        assert "quota-burn" in text_out
+
+    def test_whole_fleet_status_has_no_rollup_key(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert "savings_rollup_by_harness" not in payload["data"]
+        assert exit_code == 0
+
+
 class TestBuildRunDetail:
     def test_not_found_reports_mrs_status_004(self):
         facts = status.RunDetailFacts(project="acme", run_id="acme-run9", found=False)

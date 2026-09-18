@@ -125,6 +125,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
 from ..core import dispatch_fleet
+from ..core import layer_savings_sources
 from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
@@ -266,6 +267,73 @@ def _format_bytes(byte_count: int | float) -> str:
         return f"{byte_count / (1024 * 1024):.1f}MB"
     else:
         return f"{byte_count / (1024 * 1024 * 1024):.1f}GB"
+
+
+_BYTE_VALUED_LAYER_KEYS = ("output_compression_saved", "wire_compression_saved")
+
+
+def _format_layer_values(layer_key: str, values: object) -> str:
+    """Humanize one layer key's accumulated value list -- never a raw
+    Python list/tuple ``repr()`` (see ``_format_rollup_by_harness``).
+    Byte-valued keys reuse ``_format_bytes`` per element;
+    ``graph_hits_vs_file_reads`` renders each ``(hits, reads)`` tuple as
+    ``hits/reads`` and passes any string element (a combined error/
+    unavailable reason) through as-is; everything else joins plain."""
+    if not isinstance(values, list):
+        return str(values)
+    pieces = []
+    for value in values:
+        if layer_key in _BYTE_VALUED_LAYER_KEYS and isinstance(value, (int, float)):
+            pieces.append(_format_bytes(value))
+        elif layer_key == "graph_hits_vs_file_reads" and isinstance(value, tuple):
+            hits, reads = value
+            pieces.append(f"{hits}/{reads}")
+        else:
+            pieces.append(str(value))
+    return ", ".join(pieces)
+
+
+def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
+    """Format ``layer_savings_sources.read_rollup_by_harness``'s envelope
+    into one line per harness (Story 46.5, CAP-193), sibling of
+    ``_format_savings_summary``: each layer key renders as ``key=value``
+    joined by ``", "`` -- never a raw Python ``repr()`` of the per-harness
+    dict -- and each harness's own ``currency`` string is named inline, so
+    no line anywhere sums savings across harnesses (a Cursor-first station's
+    quota-burn number is never folded into a Claude station's USD one).
+
+    Returns ``""`` when there is nothing to show (empty rollup, or a
+    ``"no-dispatch-journals"``/``"no-savings-samples"`` status)."""
+    if not rollup:
+        return ""
+    status = rollup.get("status")
+    if status in ("no-dispatch-journals", "no-savings-samples"):
+        return ""
+    harnesses = rollup.get("harnesses")
+    if not isinstance(harnesses, Mapping) or not harnesses:
+        return ""
+    lines = []
+    for profile_name in sorted(harnesses):
+        harness_bucket = harnesses[profile_name]
+        if not isinstance(harness_bucket, Mapping):
+            continue
+        currency = harness_bucket.get("currency", "unknown")
+        runs = harness_bucket.get("runs", 0)
+        parts = []
+        for layer_kind in ("silent", "configured"):
+            layers = harness_bucket.get(layer_kind)
+            if not isinstance(layers, Mapping) or not layers:
+                continue
+            layer_text = ", ".join(
+                f"{layer_key}={_format_layer_values(layer_key, values)}"
+                for layer_key, values in layers.items()
+            )
+            parts.append(f"{layer_kind}: {layer_text}")
+        body = "; ".join(parts)
+        lines.append(
+            f"  {profile_name} (currency={currency}, runs={runs}): {body}"
+        )
+    return "\n".join(lines)
 
 
 # Story 5.2 (per-run detail, FR-37/NFR-12): `--run <run_id>` requires
@@ -1935,6 +2003,14 @@ def run_status(
         rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
 
     data["homes"] = rows
+    # Story 46.5 (CAP-193): the per-harness savings rollup -- scoped-project
+    # views only (whole-fleet `--project`-less status does not compute a
+    # cross-project rollup; each project's dispatch-runs are scoped to that
+    # project alone).
+    if args.project is not None:
+        data["savings_rollup_by_harness"] = layer_savings_sources.read_rollup_by_harness(
+            git_repo_root, project_slug=args.project
+        )
     return _emit(args, data, findings)
 
 
@@ -2367,6 +2443,16 @@ def _render_text_status(
             ))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
+
+    # Story 46.5 (CAP-193): the per-harness rollup -- its own line(s),
+    # never folded into any per-home `savings_text` above (no cross-harness
+    # summed total anywhere in this output).
+    rollup = data.get("savings_rollup_by_harness")
+    if isinstance(rollup, Mapping):
+        rollup_text = _format_rollup_by_harness(rollup)
+        if rollup_text:
+            lines.append("savings rollup by harness:")
+            lines.append(rollup_text)
 
     if findings:
         lines.append("findings:")
