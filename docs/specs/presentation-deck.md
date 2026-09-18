@@ -133,7 +133,11 @@ injected after `<head>` (splice with a single newline; verify the byte count
 against `list_files`). This bypasses `read_file`'s 256 KiB cap and its
 entity-escaping, and nothing relays through the agent context. Never write the
 serve URL into any persisted file. Both directions are now mechanized; the
-herald CLI formalizes them but no longer gates them.
+herald CLI formalizes them but no longer gates them. Using this same
+`render_preview` → fetch → strip recipe to verify a *push* landed correctly
+(read the just-written file back and diff it byte-for-byte against what was
+sent) is now mechanized too, by `herald deck push --prove` (Story 23.4) —
+no longer a curl-and-strip recipe an agent runs by hand.
 
 ### The deck registry and the bridge state (two parts, one truth)
 

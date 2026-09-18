@@ -97,6 +97,9 @@ class FakeTransport:
     def list_files(self, *, project_id):
         return [ListedFile(path="x", etag="E1")]
 
+    def fetch_rendered_bytes(self, *, project_id, path) -> bytes:
+        return b""
+
 
 def test_fake_transport_conforms_to_the_design_transport_protocol():
     """``runtime_checkable`` ``isinstance`` proves method *presence* only --

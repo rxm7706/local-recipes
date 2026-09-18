@@ -15,6 +15,7 @@ import pytest
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.registry import (
     DesignProject,
+    append_push_ledger_row,
     read,
     read_potx_template,
     register,
@@ -632,6 +633,185 @@ def test_register_potx_template_wraps_a_failed_replace_and_leaks_no_temp_file(
     monkeypatch.setattr("pyforge.core.atomic_write.os.replace", _refuse)
     with pytest.raises(HeraldError, match="disk full"):
         register_potx_template(readme_path, "presentations/pyforge-demo/deck.potx")
+
+    assert readme_path.read_text() == "# My Deck\n"
+    assert list(tmp_path.iterdir()) == [readme_path]
+
+
+# --- Story 23.4: § *Ledger* push-and-prove rows ------------------------------
+
+_LEDGER_HEADING_16 = "## Ledger — 2026-09-16 push-and-prove (spec-design-sync-loop CAP-6)"
+_LEDGER_HEADING_17 = "## Ledger — 2026-09-17 push-and-prove (spec-design-sync-loop CAP-6)"
+
+
+def test_append_push_ledger_row_into_a_readme_with_no_section_appends_it(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\nSome existing content.\n")
+
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 1234)])
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\nSome existing content.\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 1,234 | identical ✓ |\n"
+    )
+
+
+def test_append_push_ledger_row_with_multiple_rows_in_one_call(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    append_push_ledger_row(
+        readme_path,
+        date="2026-09-16",
+        rows=[("a.html", 100), ("b.pptx", 200), ("c.pptx", 300)],
+    )
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.html | 100 | identical ✓ |\n"
+        "| b.pptx | 200 | identical ✓ |\n"
+        "| c.pptx | 300 | identical ✓ |\n"
+    )
+
+
+def test_append_push_ledger_row_adds_to_todays_existing_section_without_duplicating_the_heading(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 100)])
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("b.pptx", 200)])
+
+    text = readme_path.read_text()
+    assert text.count(_LEDGER_HEADING_16) == 1
+    assert text == (
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 100 | identical ✓ |\n"
+        "| b.pptx | 200 | identical ✓ |\n"
+    )
+
+
+def test_append_push_ledger_row_on_a_later_date_appends_a_new_section(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 100)])
+    append_push_ledger_row(readme_path, date="2026-09-17", rows=[("c.pptx", 300)])
+
+    text = readme_path.read_text()
+    assert text.count(_LEDGER_HEADING_16) == 1
+    assert text.count(_LEDGER_HEADING_17) == 1
+    assert text == (
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 100 | identical ✓ |\n\n"
+        f"{_LEDGER_HEADING_17}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| c.pptx | 300 | identical ✓ |\n"
+    )
+
+
+def test_append_push_ledger_row_to_todays_section_preserves_content_that_follows_it(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 100 | identical ✓ |\n\n"
+        "## Other Section\n"
+        "Some text.\n"
+    )
+
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("b.pptx", 200)])
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 100 | identical ✓ |\n"
+        "| b.pptx | 200 | identical ✓ |\n\n"
+        "## Other Section\n"
+        "Some text.\n"
+    )
+
+
+def test_append_push_ledger_row_against_a_missing_file_raises_herald_error(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "does-not-exist" / "README.md"
+
+    with pytest.raises(HeraldError, match=str(readme_path)):
+        append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 1)])
+
+
+def test_append_push_ledger_row_refuses_empty_rows(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    with pytest.raises(HeraldError, match="no rows given"):
+        append_push_ledger_row(readme_path, date="2026-09-16", rows=[])
+
+    assert readme_path.read_text() == "# My Deck\n"
+
+
+def test_append_push_ledger_row_wraps_an_unreadable_file(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.mkdir()  # a directory, not a file -- OSError on read
+
+    with pytest.raises(HeraldError, match=str(readme_path)):
+        append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 1)])
+
+
+def test_append_push_ledger_row_collapses_multiple_trailing_blank_lines_before_appending(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n\n\n\n")
+
+    append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 100)])
+
+    assert readme_path.read_text() == (
+        "# My Deck\n\n"
+        f"{_LEDGER_HEADING_16}\n\n"
+        "| Artifact | Bytes | Read-back |\n"
+        "|---|---|---|\n"
+        "| a.pptx | 100 | identical ✓ |\n"
+    )
+
+
+def test_append_push_ledger_row_wraps_a_failed_replace_and_leaks_no_temp_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# My Deck\n")
+
+    def _refuse(src, dst):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("pyforge.core.atomic_write.os.replace", _refuse)
+    with pytest.raises(HeraldError, match="disk full"):
+        append_push_ledger_row(readme_path, date="2026-09-16", rows=[("a.pptx", 1)])
 
     assert readme_path.read_text() == "# My Deck\n"
     assert list(tmp_path.iterdir()) == [readme_path]

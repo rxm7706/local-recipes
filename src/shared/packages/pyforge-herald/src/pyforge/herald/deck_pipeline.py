@@ -45,13 +45,15 @@ the story spec's Design Notes:**
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import re
 import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pyforge.core.atomic_write import atomic_write_text as core_atomic_write_text
 
@@ -1263,47 +1265,112 @@ def _status_or_conflict(
 # per-file conflict is refused structurally, without aborting the rest of the
 # batch. Design-side names mirror the repo filenames verbatim.
 #
-# **Scope judgment call (recorded here and in the Story 5.1 spec's Design
-# Notes):** `DesignTransport.write_files`'s `data` field is documented as
-# inline *text* content ("Write inline file contents") -- exactly the shape
-# `seed`/`pull_prototype` already exercise for the `.dc.html` prototype, and
-# the only shape any adapter or the wire-format docs in this package have
-# ever proven. Of the three derived exports `docs/specs/presentation-deck.md`
-# § *Standard export set* names (the standalone HTML poster, and two PPTX
-# files), only the HTML is text -- the PPTX pair is binary, and no story in
-# this package has observed or proven a binary write_files wire shape (the
-# same "unpinned wire shape" caveat `seed`'s own module doc already records
-# for a conflicted write, DW-1-2-5). Rather than invent an unverified
-# encoding convention, `_discover_export_files` below covers only the
-# standalone HTML export for now; pushing the two PPTX companions back is a
-# deferred follow-up once a binary `write_files` shape is proven live (see
-# the Story 5.1 spec's Verification section).
+# **Binary write shape, proven live (Story 23.4).**
+# `DesignTransport.write_files`'s `data` field is documented as inline
+# *text* content ("Write inline file contents") -- exactly the shape
+# `seed`/`pull_prototype` already exercise for the `.dc.html` prototype. Of
+# the three derived exports `docs/specs/presentation-deck.md` § *Standard
+# export set* names (the standalone HTML poster, and two PPTX files), only
+# the HTML is text -- the PPTX pair is binary. Story 5.1 deferred pushing
+# them until a binary `write_files` wire shape was proven live (the same
+# "unpinned wire shape" caveat `seed`'s own module doc already records for a
+# conflicted write, DW-1-2-5); Story 23.4 closes that gap -- `write_files`
+# accepts `encoding: "base64"` alongside a base64-encoded `data` string, so
+# `_discover_export_files` below now also discovers the two PPTX
+# companions. The poster's own text push stays byte-for-byte unchanged: it
+# never carries an `encoding` key.
+#
+# **`--prove` (Story 23.4, CAP-6).** `push_exports`'s optional `prove=True`
+# mechanizes the manual "curl the serve URL, strip the injected harness,
+# diff the bytes" recipe (`docs/specs/presentation-deck.md` § *Large-file
+# uploads*) into a read-back assertion run right after a successful push:
+# `transport.fetch_rendered_bytes` fetches each just-pushed file's
+# currently-rendered bytes, `_strip_serve_harness` removes the
+# `data-omelette-injected` harness for an `.html` path (a no-op passthrough
+# for anything else), and the result is compared byte-for-byte against what
+# was actually sent. Every match appends one row to the deck README's dated
+# Ledger (`registry.append_push_ledger_row`); any mismatch raises
+# `errors.ReadBackMismatchError` naming every mismatched file, and that
+# file's `export:` state entry is left exactly as it was (never marked
+# "successfully pushed"), so a retry sees it as still-changed.
 
 
 @dataclass(frozen=True)
 class ExportPushResult:
     """What ``push_exports`` returns: which export filenames were actually
-    written, and which were skipped because their local content hash
-    already matched the last-pushed record. Never populated on a run that
-    hit a conflict -- that path raises ``errors.ExportConflictError``
-    instead (see ``push_exports``'s own docstring)."""
+    written, which were skipped because their local content hash already
+    matched the last-pushed record, and (only when ``prove=True``) which of
+    the pushed files read back byte-identical. ``proven`` is always empty
+    when ``prove`` was not passed (Story 23.4) -- no read-back call is ever
+    made in that case. Never populated on a run that hit a conflict -- that
+    path raises ``errors.ExportConflictError`` instead (see
+    ``push_exports``'s own docstring)."""
 
     slug: str
     pushed: tuple[str, ...]
     skipped: tuple[str, ...]
+    proven: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class _ExportCandidate:
     """One discovered derived-export file: its Design-side filename (the
-    repo basename, mirrored verbatim per ``bridge-protocol.md``), the text
-    content to write, and that content's hash -- computed once, reused both
-    for the skip comparison and for the post-push state record."""
+    repo basename, mirrored verbatim per ``bridge-protocol.md``), the wire
+    payload to write, and that payload's hash -- computed once, reused both
+    for the skip comparison and for the post-push state record.
+
+    ``data`` is the exact ``write_files`` ``data`` field: the file's own
+    text for a text candidate (``binary=False``, the poster), or its bytes
+    base64-encoded to ASCII for a binary one (``binary=True``, Story 23.4's
+    PPTX pair) -- ``_candidate_raw_bytes`` below undoes that encoding for
+    the ``local_hash``/``--prove`` comparisons. ``local_hash`` is always
+    ``hashlib.sha256`` of the *raw* bytes (the text UTF-8-encoded, or the
+    PPTX's own bytes) -- never of the base64 string, so a binary file's
+    hash matches what a byte-for-byte disk comparison would give."""
 
     filename: str
     local_path: Path
     data: str
     local_hash: str
+    binary: bool = False
+
+
+def _candidate_raw_bytes(candidate: _ExportCandidate) -> bytes:
+    """The exact bytes ``push_exports`` sent to Design for ``candidate`` --
+    base64-decoded from the wire payload for a binary candidate, UTF-8
+    encoded from it otherwise. Shared by the ``--prove`` read-back
+    comparison and the Ledger row's byte count (Story 23.4)."""
+    if candidate.binary:
+        return base64.b64decode(candidate.data)
+    return candidate.data.encode("utf-8")
+
+
+def _newest_dated_match(directory: Path, prefix: str, suffix: str) -> Path | None:
+    """The most recent ``{prefix}<ISO-date>{suffix}`` file directly under
+    ``directory``, or ``None`` when ``directory`` does not exist or holds no
+    such file -- the "newest ISO-dated file per kind" rule Story 5.1
+    established for the HTML poster, generalized (Story 23.4) so the PPTX
+    pair uses the identical rule rather than a second copy of it.
+
+    A candidate whose date segment does not parse as ``YYYY-MM-DD`` is
+    excluded rather than risk a plain lexicographic sort silently picking a
+    stray same-prefix file (a hand-copied backup, an aborted draft) over
+    the genuine newest export -- letters would otherwise sort after
+    digits, putting a file like ``-old-backup{suffix}`` last."""
+    if not directory.is_dir():
+        return None
+    dated: list[tuple[str, Path]] = []
+    for candidate_path in directory.glob(f"{prefix}*{suffix}"):
+        date_segment = candidate_path.name[len(prefix) : -len(suffix)]
+        try:
+            date.fromisoformat(date_segment)
+        except ValueError:
+            continue
+        dated.append((date_segment, candidate_path))
+    if not dated:
+        return None
+    # ISO 8601 dates compare lexicographically in filename order.
+    return max(dated, key=lambda pair: pair[0])[1]
 
 
 _EXPORT_ARTIFACT_PREFIX = "export:"
@@ -1317,53 +1384,124 @@ recorded under an export key is a locally computed content hash, not a
 Design-returned etag -- see ``push_exports``'s own docstring for why."""
 
 
-def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
-    """The derived export file(s) currently on disk for ``slug``, newest
-    first by dated filename. Only the standalone HTML poster is covered
-    today -- see this section's own module-level scope note for why the
-    PPTX companions are deferred.
+_PPTX_PREFIXES = (
+    "{slug}-deck-",
+    "{slug}_infographic_deck-",
+)
+"""The two ``src/pptx/`` filename kinds ``scripts/deck_export.py`` produces
+(``deck-pptx`` / ``infographic-pptx``) -- also the kind Story 23.5's
+``PptxTemplateExporter`` writes for the ``.potx`` path, since both routes
+write the identical ``{slug}-deck-<date>.pptx`` name for the "deck" target.
+``_discover_export_files`` below applies ``_newest_dated_match`` to each,
+regardless of which exporter produced it."""
 
-    Returns an empty list when ``deck-export`` has never produced the file
-    yet (nothing to push, not an error)."""
-    marp_dir = deck_dir / "src" / "marp"
-    if not marp_dir.is_dir():
-        return []
-    prefix = f"{slug}-infographic-standalone-"
-    dated: list[tuple[str, Path]] = []
-    for candidate_path in marp_dir.glob(f"{prefix}*.html"):
-        date_segment = candidate_path.stem.removeprefix(prefix)
+
+def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
+    """The derived export file(s) currently on disk for ``slug``: the
+    standalone HTML poster plus (Story 23.4) the two PPTX companions --
+    each the newest ISO-dated file of its own kind, discovered
+    independently, so a deck with only some of the three exports on disk
+    still pushes whichever ones exist.
+
+    Returns an empty list when ``deck-export`` has never produced any of
+    them yet (nothing to push, not an error)."""
+    candidates: list[_ExportCandidate] = []
+
+    html_path = _newest_dated_match(
+        deck_dir / "src" / "marp", f"{slug}-infographic-standalone-", ".html"
+    )
+    if html_path is not None:
         try:
-            date.fromisoformat(date_segment)
-        except ValueError:
-            # Not a dated export -- a stray backup/draft/renamed file that
-            # happens to share the prefix (e.g. "-old-backup.html",
-            # "-FINAL.html"). Plain lexicographic sort would put these
-            # AFTER every real dated file (letters sort after digits),
-            # silently selecting stale/unrelated content instead of the
-            # genuine newest export. Excluded rather than risk pushing it.
-            continue
-        dated.append((date_segment, candidate_path))
-    if not dated:
-        return []
-    # ISO 8601 dates compare lexicographically in filename order -- the
-    # same "newest by name" rule deck_export.py's own `find_source` uses
-    # for its Marp sources, now applied only to confirmed-dated matches.
-    local_path = max(dated, key=lambda pair: pair[0])[1]
-    try:
-        text = local_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise errors.HeraldError(
-            f"cannot push exports for {slug!r}: could not read {local_path} ({exc})"
-        ) from exc
-    local_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return [
-        _ExportCandidate(
-            filename=local_path.name,
-            local_path=local_path,
-            data=text,
-            local_hash=local_hash,
+            text = html_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise errors.HeraldError(
+                f"cannot push exports for {slug!r}: could not read {html_path} ({exc})"
+            ) from exc
+        candidates.append(
+            _ExportCandidate(
+                filename=html_path.name,
+                local_path=html_path,
+                data=text,
+                local_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            )
         )
-    ]
+
+    pptx_dir = deck_dir / "src" / "pptx"
+    for prefix_template in _PPTX_PREFIXES:
+        pptx_path = _newest_dated_match(
+            pptx_dir, prefix_template.format(slug=slug), ".pptx"
+        )
+        if pptx_path is None:
+            continue
+        try:
+            raw_bytes = pptx_path.read_bytes()
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"cannot push exports for {slug!r}: could not read {pptx_path} ({exc})"
+            ) from exc
+        candidates.append(
+            _ExportCandidate(
+                filename=pptx_path.name,
+                local_path=pptx_path,
+                data=base64.b64encode(raw_bytes).decode("ascii"),
+                local_hash=hashlib.sha256(raw_bytes).hexdigest(),
+                binary=True,
+            )
+        )
+
+    return candidates
+
+
+_HEAD_OPEN_RE = re.compile(rb"<head\b[^>]*>", re.IGNORECASE)
+_WHITESPACE_RE = re.compile(rb"\s*")
+_OMELETTE_TAG_RE = re.compile(
+    rb"<(style|script)\b[^>]*\bdata-omelette-injected\b[^>]*>.*?</\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+"""One ``<style>``/``<script>`` tag carrying ``data-omelette-injected``
+anywhere in its opening tag (``docs/specs/presentation-deck.md`` § *Large-file
+uploads*: the host editor injects these into a served HTML document and
+marks them so they are "never written back as authored source"). The
+non-greedy ``.*?`` body plus a backreferenced closing tag keeps a run of
+several such tags from being swallowed as one match."""
+
+
+def _strip_serve_harness(content: bytes, *, path: str) -> bytes:
+    """Undo Design's injected preview harness from ``render_preview``'s
+    served bytes for ``path`` (Story 23.4's ``--prove``), so the result can
+    be compared byte-for-byte against what was actually pushed.
+
+    Only an ``.html`` path can carry the harness described in
+    ``docs/specs/presentation-deck.md``: a contiguous run of
+    ``data-omelette-injected`` ``<style>``/``<script>`` tags spliced in
+    immediately after the document's ``<head ...>`` opening tag (whitespace
+    between tags is tolerated). Every other extension -- including both
+    PPTX exports this story adds to the push path -- is returned unchanged;
+    a PPTX is a binary zip archive, not an HTML document, so there is no
+    ``<head>`` for a host editor to inject into (confirmed live during this
+    story's own implementation -- see its spec's Design Notes).
+
+    A match is spliced out and replaced with a single newline, mirroring
+    the manual recipe's own "splice with a single newline" step. Content
+    with no ``<head>`` tag at all, or an ``<head>`` with nothing injected
+    directly after it, is returned unchanged -- this is a targeted removal
+    of a known-shaped block, never a heuristic HTML rewrite."""
+    if not path.lower().endswith(".html"):
+        return content
+    head_match = _HEAD_OPEN_RE.search(content)
+    if head_match is None:
+        return content
+    start = head_match.end()
+    pos = start
+    while True:
+        probe = _WHITESPACE_RE.match(content, pos).end()
+        tag_match = _OMELETTE_TAG_RE.match(content, probe)
+        if tag_match is None:
+            break
+        pos = tag_match.end()
+    if pos == start:
+        return content
+    return content[:start] + b"\n" + content[pos:]
 
 
 def push_exports(
@@ -1373,10 +1511,12 @@ def push_exports(
     repo_root: Path,
     export_dir: Path | None = None,
     state_path: Path | None = None,
+    prove: bool = False,
+    now: Callable[[], datetime] | None = None,
 ) -> ExportPushResult:
-    """CAP-5, Story 5.1/5.2: push the derived export set back into Design
-    after a pull + ``deck-export`` regeneration (``bridge-protocol.md`` §
-    Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
+    """CAP-5, Story 5.1/5.2/23.6: push the derived export set back into
+    Design after a pull + ``deck-export`` regeneration (``bridge-protocol.md``
+    § Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
     reused from CAP-2).
 
     For each discovered export file (``_discover_export_files``): compares
@@ -1388,7 +1528,8 @@ def push_exports(
     filenames together, mirroring ``seed``'s own batch-declare shape), then
     written one ``write_files`` call at a time using that file's current
     server-side etag from ``plan.base_etags`` (``"0"`` for a path that does
-    not exist there yet -- FR-18).
+    not exist there yet -- FR-18). A binary candidate's entry also carries
+    ``"encoding": "base64"``; the poster's own text entry never does.
 
     **Conflict handling (Story 5.2, FR-20/NFR-02).** A per-file
     ``write_files`` call that raises ``errors.TransportCallError`` (the
@@ -1403,13 +1544,31 @@ def push_exports(
     ``TransportError``, so a mid-batch credential expiry or outage is never
     mistaken for a per-file conflict, and the caller isn't left hammering
     the remaining files against a connection that's still broken).
-    ``state.py`` is updated once, after every file has been attempted, and
-    only with the files that actually succeeded -- a conflicted file's own
+
+    **``--prove`` (Story 23.4, CAP-6).** When ``prove=True``, every file
+    that was actually written this run (never a skipped or conflicted one)
+    is read back via ``transport.fetch_rendered_bytes`` and compared,
+    after ``_strip_serve_harness``, against the exact bytes just sent. A
+    match appends that file to the returned ``proven`` tuple and one row to
+    the deck README's dated Ledger (``registry.append_push_ledger_row``); a
+    mismatch reverts that file's ``export:`` state entry to whatever it was
+    before this run (so a retry sees it as still-changed) and is collected
+    for ``errors.ReadBackMismatchError``, raised after every other file has
+    been given its own chance to prove -- one file's bad read-back never
+    stops another's. ``prove=False`` (the default) makes no read-back call
+    at all and never touches the README.
+
+    ``state.py`` is updated once, after every file has been attempted, with
+    exactly the files that both pushed successfully and (when ``prove`` is
+    set) proved byte-identical -- a conflicted or mismatched file's own
     ``export:`` record is left exactly as it was, so a retry sees it as
     still-changed rather than falsely "already pushed". If any file
     conflicted, ``push_exports`` raises ``errors.ExportConflictError``
-    naming every conflicted file (after the state write for the successful
-    ones has already landed); otherwise it returns ``ExportPushResult``."""
+    naming every conflicted file; if (with no conflicts) any file
+    mismatched on read-back, it raises ``errors.ReadBackMismatchError``
+    naming every mismatched file -- both after the state write and any
+    Ledger append for the rest of the batch have already landed. Otherwise
+    it returns ``ExportPushResult``."""
     resolved_state_path = (
         repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     )
@@ -1439,18 +1598,20 @@ def push_exports(
     pushed: list[str] = []
     conflicts: list[str] = []
     new_etags = dict(existing.etags)
+    pushed_candidates: dict[str, _ExportCandidate] = {}
     for candidate in to_push:
         if_match = plan.base_etags.get(candidate.filename, _FRESH_ETAG)
+        file_entry: dict[str, Any] = {
+            "path": candidate.filename,
+            "data": candidate.data,
+            "if_match": if_match,
+        }
+        if candidate.binary:
+            file_entry["encoding"] = "base64"
         try:
             transport.write_files(
                 project_id=existing.project_id,
-                files=[
-                    {
-                        "path": candidate.filename,
-                        "data": candidate.data,
-                        "if_match": if_match,
-                    }
-                ],
+                files=[file_entry],
                 plan_token=plan.plan_token,
             )
         except errors.TransportCallError as exc:
@@ -1460,12 +1621,63 @@ def push_exports(
             candidate.local_hash
         )
         pushed.append(candidate.filename)
+        pushed_candidates[candidate.filename] = candidate
+
+    proven: list[str] = []
+    mismatches: list[str] = []
+    ledger_rows: list[tuple[str, int]] = []
+    if prove and pushed:
+        for filename in pushed:
+            candidate = pushed_candidates[filename]
+            expected = _candidate_raw_bytes(candidate)
+            try:
+                raw = transport.fetch_rendered_bytes(
+                    project_id=existing.project_id, path=filename
+                )
+            except errors.TransportCallError:
+                # A transient read-back failure (network/HTTP) is not a byte
+                # mismatch, but it must be treated identically: the write
+                # already landed, so the file cannot be proven this run and
+                # its `export:` record must revert exactly like a genuine
+                # mismatch, rather than aborting the whole batch or leaking
+                # the new hash for a file nothing ever confirmed.
+                mismatches.append(filename)
+                key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
+                if key in existing.etags:
+                    new_etags[key] = existing.etags[key]
+                else:
+                    new_etags.pop(key, None)
+                continue
+            actual = _strip_serve_harness(raw, path=filename)
+            if actual != expected:
+                mismatches.append(filename)
+                key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
+                if key in existing.etags:
+                    new_etags[key] = existing.etags[key]
+                else:
+                    new_etags.pop(key, None)
+                continue
+            proven.append(filename)
+            ledger_rows.append((filename, len(expected)))
+
+    # The Ledger append runs BEFORE state.write: if it raises (e.g. a disk
+    # error), state must stay uncommitted so a retry legitimately
+    # re-pushes/re-proves/re-appends a proven file, rather than state
+    # already recording it as unchanged while its Ledger row was lost.
+    if ledger_rows:
+        resolved_now = now or _default_now
+        registry.append_push_ledger_row(
+            deck_dir / "README.md",
+            date=resolved_now().strftime("%Y-%m-%d"),
+            rows=ledger_rows,
+        )
 
     # Persist whichever files actually succeeded -- even when some
-    # conflicted -- so a retry never re-pushes a file that already landed.
-    # A conflicted file's record is simply absent from `new_etags`'s delta
-    # (still whatever it was before this run), so the next attempt sees it
-    # as changed and tries again.
+    # conflicted or (with `--prove`) mismatched on read-back -- so a retry
+    # never re-pushes a file that already landed. A conflicted or
+    # mismatched file's record is simply absent from (or reverted in)
+    # `new_etags`'s delta (still whatever it was before this run), so the
+    # next attempt sees it as changed and tries again.
     if pushed:
         state.write(
             resolved_state_path,
@@ -1487,4 +1699,13 @@ def push_exports(
             f"a Design-side edit{success_note}"
         )
 
-    return ExportPushResult(slug=slug, pushed=tuple(pushed), skipped=tuple(skipped))
+    if mismatches:
+        raise errors.ReadBackMismatchError(
+            f"read-back after push did not match for {len(mismatches)} "
+            f"file(s) in {slug!r}: {', '.join(mismatches)} -- refused rather "
+            f"than record an unproven push"
+        )
+
+    return ExportPushResult(
+        slug=slug, pushed=tuple(pushed), skipped=tuple(skipped), proven=tuple(proven)
+    )

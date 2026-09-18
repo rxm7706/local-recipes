@@ -63,6 +63,7 @@ the file, not just the owned span.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
@@ -437,3 +438,103 @@ def read_potx_template(readme_path: Path) -> str | None:
             f"entirely"
         )
     return template_path
+
+
+# --- Story 23.4: § *Ledger* push-and-prove rows ------------------------------
+#
+# Unlike `register`/`register_potx_template` above -- each owning one fixed
+# heading, replaced in place -- every real `## Ledger — <date> ...` section
+# in a deck README (e.g. `presentations/pyforge-herald/README.md`) behaves
+# like a dated changelog entry: appended once per sweep, never touched again
+# by a LATER sweep. `append_push_ledger_row` follows that second, already-
+# established convention instead of `register`'s replace-in-place one.
+
+_LEDGER_TABLE_HEADER = "| Artifact | Bytes | Read-back |"
+_LEDGER_TABLE_SEPARATOR = "|---|---|---|"
+
+
+def _push_ledger_heading(date: str) -> str:
+    """Today's own dated heading -- distinct from any other day's, so a
+    second push-and-prove run on a LATER date appends a new section rather
+    than folding into an old one (mirroring every hand-written dated Ledger
+    section already in this repo)."""
+    return f"## Ledger — {date} push-and-prove (spec-design-sync-loop CAP-6)"
+
+
+def _format_ledger_row(filename: str, size: int) -> str:
+    return f"| {filename} | {size:,} | identical ✓ |"
+
+
+def append_push_ledger_row(
+    readme_path: Path, *, date: str, rows: Sequence[tuple[str, int]]
+) -> None:
+    """Append one Ledger row per ``(filename, size)`` in ``rows`` to
+    ``readme_path``'s dated ``## Ledger — {date} push-and-prove
+    (spec-design-sync-loop CAP-6)`` section (Story 23.4's ``herald deck push
+    --prove``) -- one row per file that was both pushed and read back
+    byte-identical this run (``deck_pipeline.push_exports`` never calls this
+    for a skipped, conflicted, or mismatched file).
+
+    Unlike ``register``/``register_potx_template``, this never replaces a
+    section: a README with no heading for ``date`` yet gets a brand new one
+    appended at the end (with its own table header + separator); a README
+    that already carries today's heading (a second push-and-prove run the
+    same day) gets ``rows`` appended to that same section's existing table,
+    below whatever rows are already there -- the heading is written exactly
+    once per date, never duplicated.
+
+    Raises ``errors.HeraldError`` naming ``readme_path`` when ``rows`` is
+    empty (an empty append is a caller bug, not "nothing to record" -- the
+    caller only invokes this when it already knows at least one file
+    proved), when the file does not exist (this module never fabricates a
+    whole README), or when the filesystem otherwise refuses the read or the
+    write."""
+    could_not = f"push ledger row could not be appended to {readme_path}"
+    if not rows:
+        raise errors.HeraldError(f"{could_not}: no rows given")
+
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+        original_mode = readme_path.stat().st_mode
+    except FileNotFoundError as exc:
+        raise errors.HeraldError(f"{could_not}: file does not exist") from exc
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+
+    lines = text.splitlines()
+    heading = _push_ledger_heading(date)
+    new_row_lines = [_format_ledger_row(filename, size) for filename, size in rows]
+    heading_index = _find_heading(lines, heading)
+    if heading_index is None:
+        prefix = list(lines)
+        while prefix and prefix[-1] == "":
+            prefix.pop()
+        section = [
+            heading,
+            "",
+            _LEDGER_TABLE_HEADER,
+            _LEDGER_TABLE_SEPARATOR,
+            *new_row_lines,
+        ]
+        new_lines = [*prefix, "", *section] if prefix else section
+    else:
+        span_end = _section_span_end(lines, heading_index)
+        body = lines[heading_index + 1 : span_end]
+        while body and body[-1] == "":
+            body.pop()
+        following = lines[span_end:]
+        separator = [""] if following else []
+        new_lines = [
+            *lines[:heading_index],
+            heading,
+            *body,
+            *new_row_lines,
+            *separator,
+            *following,
+        ]
+    new_text = "\n".join(new_lines) + "\n"
+
+    try:
+        atomic_write_text(readme_path, new_text, mode=original_mode & 0o7777)
+    except (OSError, ValueError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc

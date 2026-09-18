@@ -41,9 +41,35 @@ _SERVE_URL = f"https://abc123.{TOKENIZED_PREVIEW_HOST}/p/x?token=fake-preview-to
 _ETAG = "E7"
 
 
-def _transport(fake_caller, responses=None):
+def _transport(fake_caller, responses=None, *, http_client=None):
     caller = fake_caller(responses)
-    return McpTransport(caller=caller), caller
+    return McpTransport(caller=caller, http_client=http_client), caller
+
+
+class FakeHttpClient:
+    """A hand-written low-level GET seam for ``fetch_rendered_bytes``'s
+    tests (Story 23.4) -- mirrors ``evidence.py``'s ``FakeHttpClient``/
+    ``_HttpClient`` convention: no network, no ``httpx2``. ``.get`` returns
+    ``self`` (duck-typing ``httpx2``'s own ``Response``, which offers
+    ``.raise_for_status()``/``.content`` on the object ``.get`` returns)."""
+
+    def __init__(self, *, content: bytes = b"", error: Exception | None = None):
+        self.calls: list[tuple[str, float, bool]] = []
+        self._content = content
+        self._error = error
+
+    def get(self, url: str, *, timeout: float, follow_redirects: bool):
+        self.calls.append((url, timeout, follow_redirects))
+        if self._error is not None:
+            raise self._error
+        return self
+
+    def raise_for_status(self) -> None:
+        pass
+
+    @property
+    def content(self) -> bytes:
+        return self._content
 
 
 # --- constants -------------------------------------------------------------
@@ -463,6 +489,103 @@ def test_list_files_refuses_a_non_object_entry(fake_caller):
     transport, _ = _transport(fake_caller, {"list_files": payload})
     with pytest.raises(TransportCallError, match="non-object file entry"):
         transport.list_files(project_id="p-1")
+
+
+# --- fetch_rendered_bytes (Story 23.4, CAP-6) -------------------------------
+
+
+def test_fetch_rendered_bytes_fetches_the_serve_url_and_returns_its_content(
+    fake_caller,
+):
+    payload = json.dumps(
+        {
+            "open_url": "https://claude.ai/design/p/p-1?file=a.pptx",
+            "serve_url": _SERVE_URL,
+        }
+    )
+    http_client = FakeHttpClient(content=b"THE-RENDERED-BYTES")
+    transport, caller = _transport(
+        fake_caller, {"render_preview": payload}, http_client=http_client
+    )
+
+    result = transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
+
+    assert result == b"THE-RENDERED-BYTES"
+    assert caller.tools == ["render_preview"]
+    assert caller.arguments_for("render_preview") == {
+        "project_id": "p-1",
+        "path": "a.pptx",
+    }
+    assert http_client.calls == [(_SERVE_URL, 30.0, True)]
+
+
+def test_fetch_rendered_bytes_uses_the_raw_answer_never_call_json(fake_caller):
+    """``render_preview``'s own port method never sees ``serve_url``
+    (``_call_json`` strips it first) -- ``fetch_rendered_bytes`` must read
+    it via ``_raw_text`` directly, so a payload with ONLY ``serve_url`` (no
+    ``open_url`` at all, something ``render_preview``'s own ``PreviewRef``
+    could never represent) still fetches successfully."""
+    payload = json.dumps({"serve_url": _SERVE_URL})
+    http_client = FakeHttpClient(content=b"X")
+    transport, _ = _transport(
+        fake_caller, {"render_preview": payload}, http_client=http_client
+    )
+
+    assert (
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx") == b"X"
+    )
+
+
+def test_fetch_rendered_bytes_raises_when_render_preview_answer_has_no_serve_url(
+    fake_caller,
+):
+    payload = json.dumps({"open_url": "https://claude.ai/design/p/p-1"})
+    transport, _ = _transport(fake_caller, {"render_preview": payload})
+
+    with pytest.raises(TransportCallError, match="a.pptx"):
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
+
+
+def test_fetch_rendered_bytes_raises_on_unparseable_render_preview_answer(fake_caller):
+    transport, _ = _transport(fake_caller, {"render_preview": "{oops"})
+
+    with pytest.raises(TransportCallError):
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
+
+
+def test_fetch_rendered_bytes_raises_on_a_non_object_render_preview_answer(fake_caller):
+    transport, _ = _transport(fake_caller, {"render_preview": "[1,2]"})
+
+    with pytest.raises(TransportCallError):
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
+
+
+def test_fetch_rendered_bytes_wraps_a_get_failure_and_never_echoes_the_url(fake_caller):
+    payload = json.dumps(
+        {"open_url": "https://claude.ai/design/p/p-1", "serve_url": _SERVE_URL}
+    )
+    http_client = FakeHttpClient(error=RuntimeError(f"boom at {_SERVE_URL}"))
+    transport, _ = _transport(
+        fake_caller, {"render_preview": payload}, http_client=http_client
+    )
+
+    with pytest.raises(TransportCallError) as excinfo:
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
+
+    message = str(excinfo.value)
+    assert TOKENIZED_PREVIEW_HOST not in message
+    assert _SERVE_URL not in message
+    assert "a.pptx" in message
+
+
+def test_fetch_rendered_bytes_raises_the_servers_own_error_via_raw_text(fake_caller):
+    transport, _ = _transport(
+        fake_caller,
+        {"render_preview": ToolResult(text="render failed", is_error=True)},
+    )
+
+    with pytest.raises(TransportCallError, match="render_preview"):
+        transport.fetch_rendered_bytes(project_id="p-1", path="a.pptx")
 
 
 def test_a_generic_payload_is_scrubbed_before_it_crosses_the_boundary(fake_caller):
