@@ -733,8 +733,9 @@ def _rekey_sid_maps(
     maps: dict[str, dict[str, str]] = {}
     problems: list[Finding] = []
     for path in _rekey_paths(target, rev):
-        m = _REKEY_RE.match(path)
-        project = m.group(1) if m else path.split("/")[2]
+        # `_rekey_paths` already filtered every entry through `_REKEY_RE`,
+        # so the match can never be None here.
+        project = _REKEY_RE.match(path).group(1)
         text = _git(target, "show", f"{rev}:{path}")
         if text is None:
             problems.append(
@@ -779,6 +780,20 @@ def _rekey_sid_maps(
             new_sid = _story_id(new)
             if old_sid and new_sid:
                 project_map[old_sid] = new_sid
+
+    # A station can ship a SECOND rekey map that renumbers an already
+    # renumbered sid (13-5 -> 12-5 in one file, 12-5 -> 11-5 in a later
+    # one). Resolve every entry to its fixed point through its own map --
+    # same hop-walk, same cap, as ``rekey.reverse_map`` -- so a merge naming
+    # the OLDEST spelling still lands on the CURRENT one, not an
+    # intermediate one that itself moved on.
+    for project_map in maps.values():
+        for old_sid in project_map:
+            cur, hops = project_map[old_sid], 0
+            while cur in project_map and hops < 64:
+                cur = project_map[cur]
+                hops += 1
+            project_map[old_sid] = cur
     return maps, problems
 
 
@@ -843,8 +858,10 @@ def gather_direction(
         for p in target.glob(f"{PROJECTS_PREFIX}*/{LEDGER_SUFFIX}")
         if p.is_file()
     )
+    rekey_maps, rekey_problems = _rekey_sid_maps(target, base_ref)
     if not ledger_paths:
         return (
+            *rekey_problems,
             Finding(
                 source=Source.LEDGER_DIRECTION,
                 check="ledger-direction",
@@ -856,7 +873,6 @@ def gather_direction(
 
     findings: list[Finding] = []
     audited = 0
-    rekey_maps, rekey_problems = _rekey_sid_maps(target, base_ref)
     findings.extend(rekey_problems)
     for path in ledger_paths:
         project = path.relative_to(target).parts[2]
