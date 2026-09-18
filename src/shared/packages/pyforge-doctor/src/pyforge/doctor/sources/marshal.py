@@ -213,7 +213,7 @@ def _keys_from_merge_subjects(
     keys: set[StoryKeyRef] = set()
     for subject in subjects:
         for parser in (
-            lambda s: parse_templated_merge_subject(s, template),
+            lambda s: parse_templated_merge_subject(s, template, project_slug),
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
