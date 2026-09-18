@@ -2,12 +2,27 @@
 title: '50.3: `--harness` outranks a dead tier-map harness'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '2f2f407d94ea9e563113c3d8aee5f1f0ade0fa02'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model
+      isn't catalogued under ANY provider, so a genuinely foreign model
+      could still reach a live launch uncaught.
+    evidence: |-
+      provider_declaring_model returns None for an uncatalogued model, and
+      the guard's condition (`model_provider is not None and model_provider
+      != resolved_provider`) only fires when the model IS found under some
+      OTHER provider -- an uncatalogued-but-foreign model slips through
+      silently. Pre-existing since the guard's 2026-09-12 introduction;
+      unchanged by Story 50.3's diff, and explicitly outside this story's
+      boundary ("Never ... add a second gate").
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1901-1904
+    severity: medium
 declared_low_risk: false
 ---
 
