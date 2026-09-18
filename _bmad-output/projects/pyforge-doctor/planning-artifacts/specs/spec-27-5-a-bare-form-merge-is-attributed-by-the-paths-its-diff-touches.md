@@ -2,7 +2,8 @@
 title: '27.5: A bare-form merge is attributed by the paths its diff touches'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '7536234005af17c5a7d1ec59419de01d5ffd6b64'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
