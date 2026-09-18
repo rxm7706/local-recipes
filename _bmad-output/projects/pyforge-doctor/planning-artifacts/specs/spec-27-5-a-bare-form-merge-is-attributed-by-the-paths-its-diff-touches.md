@@ -1,5 +1,5 @@
 ---
-title: '27.4: A bare-form merge is attributed by the paths its diff touches'
+title: '27.5: A bare-form merge is attributed by the paths its diff touches'
 type: 'fix'
 created: '2026-09-18'
 status: 'ready'
@@ -44,8 +44,8 @@ declared_low_risk: false
 
 Parent Spec capability: `spec-pyforge-doctor CAP-80` (Approach amended 2026-09-18).
 Surface: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py`; `.../sources/ledger.py`; tests. Prior art: `.worktrees/dispatch-pyforge-doctor-27.3/_bmad-output/implementation-artifacts/spec-27-3-attempted-patch-2026-09-18.patch` (plumbing only — its rule is the one this story replaces).
-Ledger key: `27-4-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches`.
-Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spec-27-4-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches.md`.
+Ledger key: `27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches`.
+Re-keyed from 27.4 the same evening (27.4 is a reserved hole: the mint PR's branch name `doctor/27-4-mint` parses under the station-branch landing grammar, so its merge subject reads as 27.4 landed and any dispatch of that key short-circuits `story_merged_on_main`). Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spec-27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches.md`.
 
 ## Verification
 
