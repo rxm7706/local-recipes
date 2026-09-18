@@ -205,7 +205,7 @@ def _keys_from_merge_subjects(
     *,
     project_slug: str,
     diff_cache: DiffCache,
-    unreadable_diff_shas: list[str] | None = None,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
     """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
 
@@ -266,7 +266,7 @@ def _keys_from_merge_subjects(
                 attribution.diff_unreadable_sha is not None
                 and unreadable_diff_shas is not None
             ):
-                unreadable_diff_shas.append(attribution.diff_unreadable_sha)
+                unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
@@ -276,7 +276,7 @@ def _keys_from_main_commits(
     *,
     project_slug: str,
     diff_cache: DiffCache,
-    unreadable_diff_shas: list[str] | None = None,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
     has_override = template != _MERGE_SUBJECT_TEMPLATE
@@ -317,7 +317,7 @@ def _keys_from_main_commits(
             attribution.diff_unreadable_sha is not None
             and unreadable_diff_shas is not None
         ):
-            unreadable_diff_shas.append(attribution.diff_unreadable_sha)
+            unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
@@ -732,7 +732,10 @@ def gather_story_status(
     # paths do not depend on which key or project is asking) -- see
     # ``bare_merge.DiffCache``'s own docstring.
     diff_cache: DiffCache = {}
-    unreadable_diff_shas: list[str] = []
+    # (project_slug, sha) pairs -- carries the project so the standalone WARN
+    # Finding below can name it, mirroring ``sources/ledger.py``'s own
+    # per-sha WARN Finding shape.
+    unreadable_diff_shas: list[tuple[str, str]] = []
 
     false_greens: list[dict] = []
     audited = 0
@@ -873,8 +876,30 @@ def gather_story_status(
     # FAIL is a specific accusation about one named story, not a claim about
     # the audit's completeness, so it needs no qualifier -- and widening the
     # FAIL evidence to carry them would put the same counts in two shapes.
+    #
+    # Story 27.5: a bare-form merge subject's `git diff` query failing is its
+    # OWN standalone WARN Finding (mirrors `sources/ledger.py::gather_
+    # direction`'s per-sha `bare-merge-diff-unreadable` WARN) -- built here,
+    # BEFORE the `false_greens` branch, so it surfaces unconditionally. A
+    # version of this that only rode on the OK-message caveat dropped it
+    # silently whenever the same run also had an unrelated false-green FAIL.
+    diff_warn_findings = tuple(
+        Finding(
+            source=Source.STORY_STATUS,
+            check="bare-merge-diff-unreadable",
+            status=DoctorStatus.WARN,
+            message=(
+                f"{project}: first-parent diff for {sha} could not be read "
+                "— a bare legacy-form merge subject naming a key this "
+                "project's ledger knows could not be attributed"
+            ),
+            evidence={"project": project, "sha": sha},
+        )
+        for project, sha in sorted(set(unreadable_diff_shas))
+    )
+
     if false_greens:
-        return tuple(
+        return diff_warn_findings + tuple(
             Finding(
                 source=Source.STORY_STATUS,
                 check="story-status",
@@ -924,19 +949,10 @@ def gather_story_status(
         detail += f", {len(unreadable_run_files)} run record file(s) unreadable"
     if unreadable_feeds:
         detail += f", {unreadable_feeds} sprint feed(s) unreadable"
-    if unreadable_diff_shas:
-        # Story 27.5: a bare-form merge subject's `git diff` could not be
-        # read for these sha(s) -- named here (never crash, never a silent
-        # false green) rather than as a separate WARN Finding, matching this
-        # function's existing pattern for every other per-item cannot-
-        # evaluate caveat above. Deduplicated: the same sha can be revisited
-        # once per audited key sharing its station.
-        unique_shas = sorted(set(unreadable_diff_shas))
-        detail += (
-            f", {len(unique_shas)} bare-form merge diff(s) unreadable "
-            f"({', '.join(unique_shas[:5])})"
-        )
-    return (
+    # Story 27.5: `unreadable_diff_shas` is surfaced above as its own
+    # standalone WARN Finding per sha (`diff_warn_findings`), not folded
+    # into this OK message's detail string -- one shape, not two.
+    return diff_warn_findings + (
         Finding(
             source=Source.STORY_STATUS,
             check="story-status",
