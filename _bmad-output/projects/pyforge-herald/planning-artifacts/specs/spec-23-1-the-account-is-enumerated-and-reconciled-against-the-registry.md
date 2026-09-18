@@ -7,7 +7,20 @@ baseline_revision: 'e2a1fe04044bd28a4636cc6a295c9dce422a4a0f'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      sprint-status-ledger.yaml still reads `backlog` for this story's key even though
+      implementation, verification and review are complete.
+    evidence: |-
+      This workflow's own step files never touch sprint-status-ledger.yaml -- that sync is
+      owned by dedicated ledger-sync tooling run separately, not a hand-edit inside
+      bmad-build-auto. A stale `backlog` row left against a story whose spec already reads
+      `done` has previously caused indefinite redispatch in this repo (auto-memory:
+      "Merged story + backlog ledger row respawns forever").
+    location: >-
+      _bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml (key
+      23-1-the-account-is-enumerated-and-reconciled-against-the-registry)
+    severity: medium
 declared_low_risk: false
 ---
 
