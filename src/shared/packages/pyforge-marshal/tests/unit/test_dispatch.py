@@ -1826,6 +1826,8 @@ def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     live `build_harness.dispatch(model=..., ...)` call, not just the
     envelope's `data["model"]`, or the drop is cosmetic and the launch still
     ships the foreign model id."""
+    import json
+
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
 
@@ -1884,6 +1886,17 @@ def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     # The live launch call -- not just the envelope -- must never receive
     # the foreign `grok-4.6` model id.
     assert build_harness.calls[-1]["model"] is None
+    # The entry actually PERSISTED to the journal must be equally clean --
+    # not just the in-memory `attempt.data` envelope -- or the drop is
+    # cosmetic in exactly the disk-durable record an operator would read.
+    launch_lines = [line for _, line, _ in build_harness_journal_fs(fs=None) or [] for _ in ()]  # placeholder never used
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]  # type: ignore[name-defined]
+    assert launch_lines
+    journaled_payload = json.loads(launch_lines[0])["payload"]
+    assert journaled_payload.get("model") is None
+    assert "escalated" not in journaled_payload
+    assert "from_model" not in journaled_payload
+    assert "to_model" not in journaled_payload
 
 
 def test_dispatch_tier_map_leads_without_an_explicit_harness_flag(
