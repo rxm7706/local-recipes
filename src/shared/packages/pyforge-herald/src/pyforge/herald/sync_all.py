@@ -75,12 +75,12 @@ from .deck_pipeline import (
     _discover_export_files,
     _known_slugs,
     _persona_from_slug,
+    _remote_path_for_artifact,
     pull_marp_source,
     pull_prototype,
     pull_standalone_bundle,
     push_exports,
     select_exporter,
-    status as deck_status,
 )
 
 if TYPE_CHECKING:
@@ -449,13 +449,42 @@ def _pull_one(
 
 
 def _dry_run_preview(
-    transport: DesignTransport, *, slug: str, repo_root: Path, state_path: Path
+    transport: DesignTransport, *, slug: str, existing: state.DeckState
 ) -> DeckSyncReport:
-    statuses = deck_status(transport, slug=slug, repo_root=repo_root, state_path=state_path)
-    one = statuses[0]
-    return DeckSyncReport(
-        slug=slug, dry_run=True, would_sync=one.sync in ("changed", "conflict")
-    )
+    """Read-only preview of the pull step only (module docstring). Compares
+    only pull-tracked keys, skipping ``_EXPORT_ARTIFACT_PREFIX`` ones the
+    same way ``_sync_one_deck``'s real-run loop does -- unlike
+    ``deck_pipeline.status``, which walks every tracked key including
+    ``export:*`` ones and raises via ``_remote_path_for_artifact`` for any
+    of them (an ``export:*`` key is push-tracked, never pull-tracked, so it
+    has no remote path to compare at all).
+
+    A transport failure or a since-deleted remote file
+    (``errors.TransportError``) is reported as a conflict (``error=...``,
+    ``labels() == ("failed",)``) rather than folded into ``would_sync``: a
+    conflict is not a confirmed pending change, and calling it
+    ``unchanged`` would be equally misleading."""
+    saw_conflict = False
+    saw_change = False
+    for artifact_key, etag in sorted(existing.etags.items()):
+        if artifact_key.startswith(_EXPORT_ARTIFACT_PREFIX):
+            continue  # push-tracked, not pull-tracked
+        remote_path = _remote_path_for_artifact(slug, artifact_key)
+        try:
+            file_read = transport.read_file(
+                project_id=existing.project_id, path=remote_path, if_none_match=etag
+            )
+        except errors.TransportError:
+            saw_conflict = True
+            continue
+        if not file_read.unchanged:
+            saw_change = True
+    if saw_conflict:
+        return DeckSyncReport(
+            slug=slug, dry_run=True,
+            error="dry-run: could not compare against Design (conflict)",
+        )
+    return DeckSyncReport(slug=slug, dry_run=True, would_sync=saw_change)
 
 
 def _sync_one_deck(
