@@ -2,7 +2,8 @@
 title: '27.1: A PR is judged at its merge-base, and a merge subject names its station'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'ed367a47d8fb4e2da2275f1f0504e5084840d7c2'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
