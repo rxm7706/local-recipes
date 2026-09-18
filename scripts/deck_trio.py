@@ -61,6 +61,8 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
+from pyforge.herald import stamps
+
 ROOT = Path(__file__).resolve().parent.parent
 POSTER_SUFFIX = " Infographic standalone.html"
 DECK_SUFFIX = " - Infographic Deck.dc.html"
@@ -850,8 +852,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if head_path is not None and head_bytes is not None:
         _write_if_changed(args.slug, root, head_path, head_bytes)
+        stamps.write_stamp(head_path, repo_root=root, slug=args.slug)
     if deck_path is not None and deck_bytes is not None:
         _write_if_changed(args.slug, root, deck_path, deck_bytes)
+        stamps.write_stamp(deck_path, repo_root=root, slug=args.slug)
     return 0
 
 

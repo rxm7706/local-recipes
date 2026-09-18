@@ -3,17 +3,28 @@
 Infographic Deck (``project/<Persona> - Infographic Deck.dc.html``, spec-21-2, herald
 Story 21.2) from its standalone poster via the documented mechanical transforms,
 refusing rather than guessing on malformed input, and never touching the standalone.
-Covers every I/O matrix row of both specs.
+Covers every I/O matrix row of both specs, plus (Story 23.5) that every derived
+write also lands a ``<artifact>.stamp.json`` sidecar via the shared ``stamps``
+module.
 
 Fixture style mirrors tests/scripts/test_deck_facts.py: a synthetic repo root under
 tmp_path, the module reached through sys.path since scripts/ has no __init__.py, and
 ``deck_trio.ROOT`` / ``deck_trio.measure_height`` / ``deck_trio.measure_all_sections``
 monkeypatched so the run is offline, independent of the live tree, and needs no real
-browser.
+browser. ``root`` is ALSO a real (throwaway) git repo (Story 23.5): ``deck_trio.py``
+now calls ``pyforge.herald.stamps.write_stamp`` after every derived write, and that
+module shells real ``git`` commands to determine the source tree ref -- mirrors
+``test_deck_pipeline.py``'s own ``_init_git_repo`` helper. ``pyforge-herald``'s own
+``src/`` is not a `local-recipes` pixi dependency (only its ``deck-export``/
+``deck-trio`` TASKS get a ``PYTHONPATH`` env override in pixi.toml, per this
+story) -- a bare ``python -m pytest`` invocation of this file needs the same path
+on ``sys.path`` itself, so it is added here too, mirroring the ``_SCRIPTS_DIR``
+insertion just below.
 """
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -24,8 +35,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
+_HERALD_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-herald" / "src"
+if str(_HERALD_SRC) not in sys.path:
+    sys.path.insert(0, str(_HERALD_SRC))
 
 import deck_trio  # noqa: E402
+from pyforge.herald import stamps  # noqa: E402
 
 # Captured before any fixture monkeypatches ``deck_trio.measure_height`` (the
 # ``root`` fixture below does, for every other test) -- the real-playwright-shape
@@ -448,6 +463,20 @@ def _write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def _init_git_repo(root: Path) -> None:
+    """Mirrors ``test_deck_pipeline.py``'s own helper of the same name --
+    ``stamps.write_stamp`` (called after every derived write since Story
+    23.5) shells real ``git`` commands, so every test that reaches a write
+    needs a real, throwaway git repo under it."""
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=root, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=root, check=True)
+
+
 @pytest.fixture
 def root(tmp_path, monkeypatch) -> Path:
     """A synthetic repo with one deck (``pyforge-alpha``) carrying a standalone
@@ -455,8 +484,10 @@ def root(tmp_path, monkeypatch) -> Path:
     ``deck_trio.measure_all_sections`` are monkeypatched so every test runs
     offline against tmp_path, with no live browser. The default
     ``measure_all_sections`` reports every section as fitting (total=0), so
-    most --deck tests need not think about splitting unless they override it."""
+    most --deck tests need not think about splitting unless they override it.
+    Also a real (throwaway) git repo (Story 23.5) -- see ``_init_git_repo``."""
     _write(tmp_path / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", POSTER)
+    _init_git_repo(tmp_path)
     monkeypatch.setattr(deck_trio, "ROOT", tmp_path)
     monkeypatch.setattr(deck_trio, "measure_height", lambda poster: MEASURED_HEIGHT)
     monkeypatch.setattr(
@@ -1442,3 +1473,67 @@ def test_deck_standalone_is_never_modified_on_refusal(root):
     with pytest.raises(SystemExit):
         deck_trio.main(["pyforge-alpha", "--deck"])
     assert _standalone_path(root).read_bytes() == before
+
+
+# --------------------------------------------------------------- stamps (23.5)
+
+
+def test_head_write_lands_a_stamp_sidecar(root):
+    deck_trio.main(["pyforge-alpha", "--head"])
+
+    stamp = stamps.read_stamp(_head_path(root))
+    assert stamp is not None
+    assert stamp.tree
+    assert stamp.derived_at
+    assert stamp.etag is None  # pyforge-alpha was never seeded in this fixture
+
+
+def test_deck_write_lands_a_stamp_sidecar(root):
+    _write(root / "presentations/pyforge-zeta/project/Zeta Infographic standalone.html", DECK_POSTER)
+
+    deck_trio.main(["pyforge-zeta", "--deck"])
+
+    stamp = stamps.read_stamp(_deck_path_for(root, "pyforge-zeta", "Zeta"))
+    assert stamp is not None
+    assert stamp.tree
+
+
+def test_head_and_deck_together_both_get_stamped(root):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", DECK_POSTER)
+
+    deck_trio.main(["pyforge-alpha", "--head", "--deck"])
+
+    assert stamps.read_stamp(_head_path(root)) is not None
+    assert stamps.read_stamp(_deck_path_for(root, "pyforge-alpha", "Alpha")) is not None
+
+
+def test_second_unchanged_run_still_refreshes_the_stamp(root, monkeypatch):
+    """``_write_if_changed`` skips the rewrite on an unchanged poster, but
+    every call still reaches ``stamps.write_stamp`` -- the stamp records
+    "derived (or reverified) at this tree", not only "bytes changed"."""
+    deck_trio.main(["pyforge-alpha", "--head"])
+    first = stamps.read_stamp(_head_path(root))
+
+    calls: list[Path] = []
+    real_write_stamp = stamps.write_stamp
+
+    def _spy(artifact_path, **kwargs):
+        calls.append(artifact_path)
+        return real_write_stamp(artifact_path, **kwargs)
+
+    monkeypatch.setattr(deck_trio.stamps, "write_stamp", _spy)
+    deck_trio.main(["pyforge-alpha", "--head"])
+
+    assert calls == [_head_path(root)]
+    second = stamps.read_stamp(_head_path(root))
+    assert second.tree == first.tree
+    assert second.derived_at >= first.derived_at
+
+
+def test_a_refused_run_writes_no_stamp(root):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", NO_STYLE_POSTER)
+
+    with pytest.raises(SystemExit):
+        deck_trio.main(["pyforge-alpha", "--head"])
+
+    assert stamps.read_stamp(_head_path(root)) is None
