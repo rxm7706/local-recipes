@@ -47,13 +47,13 @@ and **6(b)** — `mem0ai` + `fastembed-vectorstore` are unconditional Presenton 
 with no conda-forge presence, making the v1 recipe count 5-or-7, not a fixed six.
 
 ## Design project (the bridge's far end)
-
-Prototype lives in Claude Design project **"Presenton, Conda-Native deck"**
-(`c824a332-8e43-4b17-bf84-f38307085289`), bound to the **Modernist** design system
-(`fbc1d6c8-b35f-4df6-9044-a64d2675427b`):
+Prototype lives in Claude Design project **"Presenton, Conda-Native deck"** (`c824a332-8e43-4b17-bf84-f38307085289`):
 https://claude.ai/design/p/c824a332-8e43-4b17-bf84-f38307085289?file=Presenton+Conda-Native.dc.html
-Pull it with the MCP bridge ("pull presenton") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+### Provenance
+
+Bound to the **Modernist** design system (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with
+the MCP bridge ("pull presenton") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (every upload byte-verified against the local file):
 
