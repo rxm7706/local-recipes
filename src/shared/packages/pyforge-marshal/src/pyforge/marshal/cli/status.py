@@ -269,6 +269,30 @@ def _format_bytes(byte_count: int | float) -> str:
         return f"{byte_count / (1024 * 1024 * 1024):.1f}GB"
 
 
+_BYTE_VALUED_LAYER_KEYS = ("output_compression_saved", "wire_compression_saved")
+
+
+def _format_layer_values(layer_key: str, values: object) -> str:
+    """Humanize one layer key's accumulated value list -- never a raw
+    Python list/tuple ``repr()`` (see ``_format_rollup_by_harness``).
+    Byte-valued keys reuse ``_format_bytes`` per element;
+    ``graph_hits_vs_file_reads`` renders each ``(hits, reads)`` tuple as
+    ``hits/reads`` and passes any string element (a combined error/
+    unavailable reason) through as-is; everything else joins plain."""
+    if not isinstance(values, list):
+        return str(values)
+    pieces = []
+    for value in values:
+        if layer_key in _BYTE_VALUED_LAYER_KEYS and isinstance(value, (int, float)):
+            pieces.append(_format_bytes(value))
+        elif layer_key == "graph_hits_vs_file_reads" and isinstance(value, tuple):
+            hits, reads = value
+            pieces.append(f"{hits}/{reads}")
+        else:
+            pieces.append(str(value))
+    return ", ".join(pieces)
+
+
 def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
     """Format ``layer_savings_sources.read_rollup_by_harness``'s envelope
     into one line per harness (Story 46.5, CAP-193), sibling of
@@ -301,7 +325,8 @@ def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
             if not isinstance(layers, Mapping) or not layers:
                 continue
             layer_text = ", ".join(
-                f"{layer_key}={value}" for layer_key, value in layers.items()
+                f"{layer_key}={_format_layer_values(layer_key, values)}"
+                for layer_key, values in layers.items()
             )
             parts.append(f"{layer_kind}: {layer_text}")
         body = "; ".join(parts)
@@ -2426,7 +2451,7 @@ def _render_text_status(
     if isinstance(rollup, Mapping):
         rollup_text = _format_rollup_by_harness(rollup)
         if rollup_text:
-            lines.append("savings_rollup_by_harness:")
+            lines.append("savings rollup by harness:")
             lines.append(rollup_text)
 
     if findings:

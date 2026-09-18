@@ -299,12 +299,17 @@ def read_rollup_by_harness(
     paths, unchanged here), so the per-harness split is purely a read-time
     correlation keyed by ``run_id`` (the journal's parent directory name).
 
-    "Last non-empty wins", NOT literal-last-entry-wins: a terminal
-    ``budget-usage`` flush can legitimately omit ``layer_savings`` (e.g. a
-    final cost-only snapshot), and falling back to ``{}`` in that case would
-    silently blank out real savings a station earned earlier in the same
-    run. This is an intentional, named divergence from
-    ``cli/status.py::_gather_run_journal_facts``'s literal
+    Per-key merge across every non-empty ``budget-usage`` entry in the run,
+    NOT whole-payload replacement: a terminal ``budget-usage`` flush can
+    legitimately omit ``layer_savings`` (e.g. a final cost-only snapshot),
+    and two non-empty entries in the same run can carry different,
+    non-overlapping key subsets (``supervisor/__main__.py::
+    _layer_savings_payload`` only includes a key when its ``LayerSavings``
+    field ``is not None``) -- replacing the whole dict on each non-empty
+    sighting would silently drop keys present only in an earlier entry, so
+    this accumulates via ``dict.update`` instead (last non-null VALUE per
+    key wins, not last entry wins). This remains an intentional, named
+    divergence from ``cli/status.py::_gather_run_journal_facts``'s literal
     ``usage_entries[-1]`` convention (that function reports a single run's
     point-in-time cost readout, not a savings rollup) -- do not "fix" this
     to match it exactly.
@@ -333,17 +338,27 @@ def read_rollup_by_harness(
         return {"status": "no-dispatch-journals", "harnesses": {}}
 
     harnesses: dict[str, dict[str, object]] = {}
-    for journal_path in sorted(runs_dir.glob("*/journal.jsonl")):
+    try:
+        journal_paths = sorted(runs_dir.glob("*/journal.jsonl"))
+    except OSError:
+        # A permission-denied (or otherwise unreadable) subdirectory hit
+        # during iteration skips the whole rollup rather than crashing
+        # `marshal status --project <slug>` -- same degraded shape as the
+        # directory-missing branch above.
+        return {"status": "no-dispatch-journals", "harnesses": {}}
+
+    for journal_path in journal_paths:
         try:
             text = journal_path.read_text(encoding="utf-8")
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             # A filesystem race (removed/permission-changed between glob and
-            # read) skips this one run, matching this module's own per-line
-            # JSONDecodeError tolerance -- never crashes the whole rollup.
+            # read), or a non-UTF-8 journal file, skips this one run,
+            # matching this module's own per-line JSONDecodeError tolerance
+            # -- never crashes the whole rollup.
             continue
 
         harness_profile: str | None = None
-        last_layer_savings: dict[str, object] | None = None
+        accumulated_layer_savings: dict[str, object] = {}
         for line in text.splitlines():
             if not line.strip():
                 continue
@@ -364,9 +379,9 @@ def read_rollup_by_harness(
             elif kind == _BUDGET_USAGE_KIND:
                 layer_savings = payload.get("layer_savings")
                 if isinstance(layer_savings, dict) and layer_savings:
-                    last_layer_savings = layer_savings
+                    accumulated_layer_savings.update(layer_savings)
 
-        if harness_profile is None or last_layer_savings is None:
+        if harness_profile is None or not accumulated_layer_savings:
             # An incomplete run (missing either signal) contributes no
             # partial data -- never bucketed under "unknown".
             continue
@@ -392,14 +407,22 @@ def read_rollup_by_harness(
         # before classification, or a real run's tuple-shaped payload makes
         # `classify_layer_kind` raise on live data instead of a genuine
         # schema-drift key.
-        normalized_layer_savings = dict(last_layer_savings)
+        normalized_layer_savings = dict(accumulated_layer_savings)
         graph_hits = normalized_layer_savings.pop("graph_hits", None)
         file_reads = normalized_layer_savings.pop("file_reads", None)
         if graph_hits is not None or file_reads is not None:
             normalized_layer_savings["graph_hits_vs_file_reads"] = (graph_hits, file_reads)
 
         for layer_key, value in normalized_layer_savings.items():
-            layer_kind = classify_layer_kind(layer_key)
+            try:
+                layer_kind = classify_layer_kind(layer_key)
+            except ValueError:
+                # An unrecognized key (schema drift not yet in the
+                # taxonomy) skips just that key -- the rest of this run's
+                # recognized keys still bucket normally, matching this
+                # function's existing per-run/per-line tolerance idiom
+                # rather than crashing `marshal status --project <slug>`.
+                continue
             layer_kind_bucket = harness_bucket[layer_kind]
             layer_kind_bucket.setdefault(layer_key, []).append(value)  # type: ignore[union-attr]
 
