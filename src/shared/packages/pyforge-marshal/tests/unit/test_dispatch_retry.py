@@ -104,23 +104,32 @@ def test_all_eight_stations_declare_model_tier_map(station: str) -> None:
     assert {"heavy", "medium", "easy"}.issubset(tier_map)
 
 
-_EXPECTED_DIFFICULTY_MODEL = {
-    "heavy": "composer-2.5-fast",
-    "medium": "grok-4.6",
-    "easy": "composer-2.5",
-}
-"""2026-09-13 (spec-cursor-native-tier-map / Story 33.15): every station's
-`model_tier_map` now names its Cursor Ultra ladder as an explicit
-`{harness, model}` inline table rather than a bare string (CAP-1) -- the
-2026-09-12 `sonnet` fleet-wide revert this test originally asserted was
-superseded by that later, better-scoped fix. `resolve_dispatch_model_with_
-retry_escalation` resolves whichever model the tier map configures,
-harness-agnostic by design (it only knows "dev"/"review" stages, not the
-actual dispatch harness); the CAP-2 fails-safe that refuses to launch a
-Cursor-catalogued model on a `claude` adapter lives one layer up, in
-`dispatch_once`'s own live harness cross-check
-(`test_dispatch.py::test_cross_provider_model_override_is_dropped_...`,
-MRS-DISP-043) -- unaffected by this table and still green."""
+def _declared_dev_model(project: dict, difficulty: str) -> str:
+    """The dev model the station's OWN `model_tier_map` names for
+    `difficulty` -- the expectation this test derives per station instead
+    of pinning a fleet-wide table.
+
+    2026-09-13 (spec-cursor-native-tier-map / Story 33.15) every station's
+    `model_tier_map` became an explicit `{harness, model}` inline table (CAP-1)
+    and this test pinned the Cursor Ultra ladder ids fleet-wide. 2026-09-18:
+    Cursor ran out of usage for the week and herald's policy moved back to
+    the Claude harness (PR #1458), which turned three parametrizations red on
+    `main` for five hours -- the pinned ids were volatile per-station config,
+    not the Story 33.6 CAP-1 contract ("a composed station policy resolves a
+    NON-NULL dev model on dispatch"). The contract is what this asserts now:
+    the resolved model is exactly what that station's tier map declares, and
+    it is non-empty. `resolve_dispatch_model_with_retry_escalation` stays
+    harness-agnostic by design (it only knows "dev"/"review" stages); the
+    CAP-2 fails-safe that refuses to launch a Cursor-catalogued model on a
+    `claude` adapter lives one layer up, in `dispatch_once`'s own live
+    harness cross-check (`test_dispatch.py::test_cross_provider_model_
+    override_is_dropped_...`, MRS-DISP-043) -- unaffected here."""
+    entry = project["model_tier_map"][difficulty]["dev"]
+    model = entry["model"] if isinstance(entry, dict) else entry
+    assert isinstance(model, str) and model, (
+        f"{difficulty}: station tier map names no dev model ({entry!r})"
+    )
+    return model
 
 
 @pytest.mark.parametrize(
@@ -138,9 +147,9 @@ MRS-DISP-043) -- unaffected by this table and still green."""
 def test_newly_fed_station_policies_compose_non_null_dispatch_model(
     station: str, difficulty: str
 ) -> None:
-    """Story 33.6 CAP-1: composed station policy resolves a dev model on
-    dispatch. Values updated 2026-09-14 for spec-cursor-native-tier-map
-    (Story 33.15, see `_EXPECTED_DIFFICULTY_MODEL`)."""
+    """Story 33.6 CAP-1: composed station policy resolves a non-null dev
+    model on dispatch -- the one its own tier map declares (see
+    `_declared_dev_model` for why this is no longer a pinned table)."""
     repo_root = Path(__file__).resolve().parents[6]
     policy_path = (
         repo_root
@@ -155,5 +164,5 @@ def test_newly_fed_station_policies_compose_non_null_dispatch_model(
     model, escalated, _, _ = resolve_dispatch_model_with_retry_escalation(
         effective, difficulty=difficulty, prior_failed_attempts=0
     )
-    assert model == _EXPECTED_DIFFICULTY_MODEL[difficulty]
+    assert model == _declared_dev_model(project, difficulty)
     assert escalated is False

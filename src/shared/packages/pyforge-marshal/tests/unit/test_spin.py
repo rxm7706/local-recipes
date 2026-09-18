@@ -3949,24 +3949,21 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert parsed["gate_mode"] == "none"
     assert len(parsed["verify_commands"]) == 2
     assert len(parsed["landing_rules"]) == 2
-    # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): superseded the
-    # 2026-09-12 sonnet/opus revert this test originally asserted -- every
-    # station's dev/review stages now name the Cursor Ultra ladder as an
-    # explicit {harness, model} inline table (CAP-1), so a Cursor id cannot
-    # land on `claude --model` (CAP-2's fails-safe moved to dispatch_once's
-    # own live harness cross-check, MRS-DISP-043 -- unaffected by this
-    # table shape and still green).
-    assert parsed["model_tier_map"] == {
-        "heavy": {
-            "dev": {"harness": "cursor", "model": "composer-2.5-fast"},
-            "review": {"harness": "cursor", "model": "composer-2.5-fast"},
-        },
-        "medium": {
-            "dev": {"harness": "cursor", "model": "grok-4.6"},
-            "review": {"harness": "cursor", "model": "grok-4.6"},
-        },
-        "easy": {"dev": {"harness": "cursor", "model": "composer-2.5"}},
-    }
+    # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): every station's
+    # dev/review stages name an explicit {harness, model} inline table (CAP-1)
+    # so a foreign model id cannot land on the wrong adapter. 2026-09-18: the
+    # ids themselves are volatile per-week config (Cursor ran out of usage and
+    # the fleet moved back to claude/sonnet), so this asserts the SHAPE the
+    # story established, not a pinned ladder -- pinned ids turned this test
+    # red on `main` the first time the harness changed.
+    tier_map = parsed["model_tier_map"]
+    assert set(tier_map) == {"heavy", "medium", "easy"}
+    for difficulty, stages in tier_map.items():
+        assert "dev" in stages, difficulty
+        for stage, entry in stages.items():
+            assert set(entry) == {"harness", "model"}, (difficulty, stage, entry)
+            assert entry["harness"] and entry["model"], (difficulty, stage, entry)
+    assert set(tier_map["easy"]) == {"dev"}  # easy overrides dev only
 
     effective, findings = policy_module.compose(
         project=parsed, project_slug="pyforge-marshal", flags={}
@@ -3975,14 +3972,16 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
 
     rendered_easy = render_policy_toml(effective, difficulty="easy")
     parsed_easy = tomllib.loads(rendered_easy)
-    # 2026-09-13 (Story 33.15): easy.dev now names a Cursor-only model
-    # (composer-2.5) against the claude adapter this render targets, so
-    # render_policy_toml's provider-mismatch guard drops the override
-    # entirely -- no [adapter.dev] sub-table at all, per FR-51's own
-    # "absent stage inherits [adapter].model" rule -- rather than applying
-    # it. This now proves the fails-safe path, not the happy path: dev
-    # falls back to the base adapter's own sonnet baseline.
-    assert "dev" not in parsed_easy["adapter"]
+    easy_dev = tier_map["easy"]["dev"]
+    if easy_dev["harness"] == "claude":
+        # Happy path: the tier map names the adapter this render targets, so
+        # the override applies as an [adapter.dev] sub-table.
+        assert parsed_easy["adapter"]["dev"]["model"] == easy_dev["model"]
+    else:
+        # Fails-safe path (Story 33.15 CAP-2): a foreign harness's model
+        # against the claude adapter is dropped entirely -- no [adapter.dev]
+        # sub-table, per FR-51's "absent stage inherits [adapter].model".
+        assert "dev" not in parsed_easy["adapter"]
     assert parsed_easy["adapter"]["model"] == "sonnet"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
 

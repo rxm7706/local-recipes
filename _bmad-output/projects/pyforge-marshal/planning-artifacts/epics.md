@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 42  # 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 273  # 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-15"   # Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
+epicCount: 48  # 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 300  # 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-09-18"   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -6246,3 +6246,145 @@ no synthesized "nothing found" confidence claim
 **And** a fixture test asserts the empty-hit case produces zero injected text, distinguishing it
 from a non-empty hit's formatted block
 **Status:** backlog
+
+## Epic 50: The landing self-drives — what the first autonomous drain still needed a human for (spec-pyforge-marshal CAP-244..248)
+
+Minted 2026-09-18 from the station Dream's same-day Realization-log entry (`docs/dreams/pyforge-marshal.md`,
+Dream-append-first per `one-chain-per-station`). Herald's Epic 23 was drained to zero today by
+`marshal factory dispatch` on the Claude harness — four stories verified, landed and ledger-flipped
+without a human in the loop — and every one of the four still needed a human within the hour. Each
+story below closes one of the five things that human did, measured on the run journals named in the
+Dream entry, not remembered. **Epics 48 and 49 are reserved holes, deliberately skipped:** their keys are
+already poisoned on `origin/main` by steward's `Story 48.N:` / `Story 49.N:` direct-commit subjects (the
+un-scoped landing-evidence shape Story 50.4 closes), and the standing rule is renumber, never exclude.
+The sixth human act — `ledger-regression` reddening a story PR's `detectors` lane after the unattended
+merge — is doctor's source and is Story 27.1 on `pyforge-doctor` (`spec-pyforge-doctor:CAP-78`), not re-implemented here.
+**HARD boundaries:** the supervisor still observes from outside and never trusts self-report; git stays
+the sole authority for merged facts (CAP-247 stops the *parser* inventing a station, it never re-attributes
+history); one harness seam; no new gate.
+
+### Story 50.1: A landing never re-dispatches the story it just landed
+
+As a fleet operator running `marshal factory drain --mode drain_to_zero`,
+I want the campaign supervisor to treat the window between a dispatch session exiting and
+`dispatch_land_finalize` promoting the ledger as still in flight, and to read a session's own
+"already merged" refusal as *advance*, not *blocked*,
+So that a multi-story drain reaches zero with zero manual relaunches.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-244
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the fleet cycle:
+`_live_dispatch_story_keys` / `_station_block_evidence` / `_classify_attempt`), `.../core/dispatch_fleet.py`
+(`plan_station_queue`, `classify_fleet_block`, the harness-done advance reason), `.../dispatch_supervisor/__main__.py`
+(only if a "session exited, finalize pending" journal fact is needed), tests.
+**Given** the campaign cycles every 60 s and, on 2026-09-18, four times in a row saw a story neither live
+nor `done` inside the ~45 s between session exit and ledger promotion (`fleet-drain-runs/…151925342Z-82ce96c8`:
+`in-flight` 16:19:45Z → `dispatched` 16:20:47Z → `blocked … ended 'failed'` 16:21:47Z, `complete=true`)
+**When** a station whose most recent run's supervisor is alive but has not journaled `dispatch-completion`
+(or has journaled `dispatch-land` but the tracked ledger has not yet moved) reads as in flight, and a most-recent
+run that is a self-refusal of the already-merged kind (zero changed paths, session log names the merged PR /
+`done` spec) classifies as an advance reason
+**Then** the campaign reports `in-flight` for that cycle and chains the next ready story on the following one,
+and a fixture journal replaying the herald sequence completes the campaign with the next story `dispatched`
+rather than the same story `blocked`
+**And** a genuine failed dispatch with zero changed paths and no merged evidence still blocks exactly as today
+(mutation test: removing the advance classification re-blocks the fixture)
+
+### Story 50.2: A harness's own usage-wall wording is a transient outcome
+
+As a fleet operator whose stations run on whichever harness has usage left this week,
+I want a session that dies on a harness quota/usage wall to classify `quota_exceeded` from the harness's
+*current* wording,
+So that the fleet planner retries or re-routes it instead of recording a terminal block that only a human
+can clear.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-245
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py` (`_QUOTA_MARKERS`
+becomes per-harness and covers Cursor's live text), `.../core/dispatch_retry.py` (no behaviour change expected;
+covered by test), tests with the real `pyforge-herald-20260918T132400673Z-194af3a0` session log as a fixture.
+**Given** `classify_session_log` returned `unknown` for `ActionRequiredError: Increase limits for faster responses
+You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue.` (none of
+`monthly spend limit` / `spend limit` / `usage limit` / `rate limit` / `quota exceeded` / `insufficient quota`
+match), so `classify_dispatch_block` returned `terminal` and the drain refused 23.1 until a human re-dispatched it
+**When** the marker table recognises `out of usage` and `increase your limit` (Cursor) beside the Claude Code
+weekly/monthly-limit text already catalogued, keyed per harness in one place
+**Then** the fixture classifies `QUOTA_EXCEEDED`, `classify_dispatch_block(session_log=fixture, failed_gate=None,
+changed_path_count=0)` returns `TRANSIENT`, and `exclude_harness_profiles_after_transient_failure` drops the
+first preference entry for it
+**And** removing the new markers re-terminalises the fixture (mutation test), and no existing classification
+changes (the current marker fixtures stay green)
+
+### Story 50.3: `--harness` outranks a dead tier-map harness
+
+As a fleet operator passing `--harness claude` because Cursor is out of usage this week,
+I want the explicit invocation flag to lead the harness walk over the tier map's inline-table harness for that
+dispatch,
+So that a station can move on the harness I named without a policy PR first.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-246 • preserves spec-cursor-native-tier-map CAP-1
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the Story 28.11 walk-order
+block: tier-map harness leads unless an explicit `--harness` flag names a different profile), `.../core/tier_routing.py`
+(`resolve_tier_launch` takes the flag as an exclusion/override), `.../core/dispatch.py::resolve_tier_harness`, tests
+with herald's pre-#1458 `marshal-policy.toml` as a fixture.
+**Given** on 2026-09-18 `marshal factory drain --station herald --harness claude` launched
+`pyforge-herald-20260918T132400673Z-194af3a0` on cursor/grok-4.6 because the station's
+`[model_tier_map.medium] dev = { harness = "cursor", … }` led the walk regardless of the flag, cursor's authcheck
+passed, and the session died in three seconds
+**When** an explicit `--harness` (the composed `harness_preference` flag layer, not the policy layer) is present,
+the walk starts from the flag's profiles and a tier-map harness the flag does not name contributes nothing,
+and the model is resolved for the harness actually chosen — the tier map's model for that harness when it names
+one, else the harness's own default — never a foreign model id
+**Then** the launch journal records `harness_profile: claude`, `model: sonnet` for the fixture, and without the flag
+the resolution is byte-identical to today's (tier map leads)
+**And** the fails-safe guard (`provider_declaring_model` mismatch drops the override) is exercised by a test where
+the flag names claude and the tier map names only a Cursor model
+
+### Story 50.4: Landing evidence carries the station in every shape
+
+As a station whose story keys collide with every other station's by construction (eight ledgers, one integer
+grammar),
+I want no commit-subject shape to mark my story merged unless the subject names my station,
+So that a dispatch is never a one-second no-op, a land is never `already_landed` for another station's merge,
+and an epic number is never poisoned by a sibling's history.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-247 • extends Story 35.1 (spec-marshal-templated-merge-subject-cross-project-collision CAP-1)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (repo default
+`merge_subject_template` → `"Merge {slug}/{key} into main"`, `{slug}` a second placeholder validated beside `{key}`),
+`.../core/identity.py` (`render_merge_subject` / `parse_merge_subject` / `_split_template` learn `{slug}`),
+`src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` (`parse_templated_merge_subject` refuses a
+foreign slug; `parse_story_direct_commit_subject` requires branch/station corroboration before it counts),
+`.../core/promotion.py` (`_classify_merge_subject`), `.../core/dispatch_landing.py::merge_subject_is_marshal_native`,
+the eight stations' `marshal-policy.toml` (herald's #1458 override becomes redundant and is removed), tests.
+**Given** on 2026-09-18 atlas's seven `Merge 23-N into main` commits marked herald's 23.1/23.2/23.5/23.6
+`story_merged_on_main` (doctor's 23.1–23.3 dispatches completed in one second that morning and detached from live
+sessions), and steward's `Story 48.2:` / `Story 48.4:` subjects poison marshal 48.2/48.4 today — Story 35.1's
+`known_keys` corroboration cannot help when the key exists in both ledgers
+**When** the templated shape renders and parses with the station slug and the un-scoped direct-commit shape needs
+a station-scoped branch (`<station>/…`, `dispatch/<slug>/…`, `land/<station>-…`) or the recovery allowlist to
+corroborate it
+**Then** `merged_story_keys` for `pyforge-marshal` against today's `origin/main` no longer contains 48.2/48.4 and for
+`pyforge-herald` no longer contains 23.1..23.6 via atlas, while every `done` row of all eight tracked ledgers that
+has real landing evidence still classifies (regression fixture: ledgers × `git log origin/main --format=%s`)
+**And** live history is never re-attributed: the existing `Merge {key} into main` and `Story N.M:` subjects on
+`main` are grandfathered through the SHA/recovery allowlist and branch-scoped shapes only; the new default applies
+to landings after this story merges
+
+### Story 50.5: The promoter reads a spec through its banner
+
+As a station whose tracked story specs were recovered or minted with a provenance banner,
+I want a tracked spec that begins with an HTML comment to count as a valid, already-promoted spec,
+So that `dispatch_land_finalize` never overwrites a reconciled tracked copy with a stale Tier-3 twin.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-248
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text`,
+`.../core/spec_surface.py::parse_declared_surface` (shares the "line 1 must be `---`" assumption),
+`.../cli/deploy.py::_already_promoted_keys` (covered by test, no behaviour change expected), tests with herald's
+pre-#1460 `spec-1-4-…` as a fixture beside its Tier-3 twin.
+**Given** on 2026-09-18 herald 23.1's finalize committed `b0b7f3019f marshal: promote 1 story spec(s) to tracked
+artifacts` on local `main`, replacing the reconciled tracked `spec-1-4` (2026-08-30 Verification reconcile) with its
+stale Tier-3 twin, because the tracked copy began `<!-- Promoted from implementation-artifacts/ … -->` and
+`is_valid_spec_text` requires `text.startswith("---")`; PR #1460 moved 45 such banners fleet-wide as the data-side fix
+**When** both parsers skip a leading `<!-- … -->` block (possibly multi-line) before looking for the frontmatter fence
+**Then** the fixture's tracked copy is valid, `_already_promoted_keys` includes 1.4, `_scan_promotions` yields an empty
+`to_promote` for the pair, and `parse_declared_surface` returns the banner-topped spec's `surface:` list
+**And** a spec with no frontmatter at all, or an unclosed banner, is still invalid (negative fixtures), and the 45
+banner-below-frontmatter files #1460 produced parse identically before and after

@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-17'
+updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2268,3 +2268,45 @@ never invents a proof step to fill the gap, per CAP-77's own constraint against 
 mechanisms
 **And** a PR touching no catalogued surface produces zero `LIVE_PROOF_SURFACE` findings — the check is
 silent by default, matching every other advisory source's own baseline behavior
+
+## Epic 27: A PR is judged at its merge-base, and a merge subject names its station (spec-pyforge-doctor CAP-78)
+
+Minted 2026-09-18 from `spec-pyforge-doctor` CAP-78, seeded the same day in `docs/dreams/pyforge-doctor.md`'s
+Realization log (Dream-append-first). Two false regressions in one day, both from Doctor's merge-history
+sources asking the right question against the wrong base or the wrong station: herald PR #1465's blocking
+`ledger-regression` step redded two minutes *after* `marshal factory dispatch` had merged it unattended and
+promoted `23-6 → done` on `main` (the PR head, compared to the tip of `main`, "un-finished" a row it never
+touched); and `ledger-direction` reported atlas 13-5/14-4/15-3 `landed-but-unpromoted` all day because
+`sources/marshal.py:87` hardcodes `Merge {key} into main`, so a sibling station's merge reads as atlas's.
+Marshal is closing its own side of the second finding as `spec-pyforge-marshal:CAP-247` (Story 50.4);
+this epic makes Doctor read the station's own template rather than wait for it. **HARD boundaries:**
+`ledger-regression` stays the one blocking Doctor step in CI (ruling 2026-09-14) — a branch that genuinely
+moves a `done` key still FAILs; Doctor reads a station's `marshal-policy.toml` as TOML, never imports
+`pyforge.marshal`; every other source stays advisory.
+
+### Story 27.1: A PR is judged at its merge-base, and a merge subject names its station
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-78
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` (`gather`: when `base` and
+`head` differ, compare against `merge-base(base, head)` and carry `merge_base` / `base_requested` in evidence; the
+push-to-main first-parent fallback unchanged), `.../sources/marshal.py` (`_MERGE_SUBJECT_TEMPLATE` replaced by a
+per-station read of `merge_subject_template` from `_bmad-output/projects/<slug>/planning-artifacts/marshal-policy.toml`,
+falling back to the legacy default only when the policy declares none; a templated match counts only when the
+rendered slug segment, if the template has one, is that station's), `scripts/ledger_regression_check.py` (the
+mutation-only residual keeps parity), `.github/workflows/detectors.yml` (no change expected — the step's command is
+unchanged), tests with two fixtures: herald PR #1465's shape and a repo whose `main` carries a sibling's
+`Merge 13-5 into main`.
+**Given** on 2026-09-18 `ledger-regression` on PR #1465's `detectors` lane ran at 18:17Z against an `origin/main`
+that already carried `34f1df91d4 marshal: promote sprint-status ledger for 'pyforge-herald' (1 key(s) -> done)` and
+reported `done-key-regressed: pyforge-herald: 1 story key(s) moved out of done` for a branch that never touched that
+row, and `ledger-direction` reported `pyforge-atlas/13-5`, `14-4`, `15-3` `landed-but-unpromoted` because
+`Merge 13-5 into main` / `Merge 14-4 into main` / `Merge 15-3 into main` on `main` belong to other stations
+**When** a PR-shaped comparison (`base` ≠ `head`) reads the ledgers at `merge-base(base, head)` instead of at `base`'s
+tip, and a templated merge subject is attributed to a station only when it renders from *that* station's own
+`merge_subject_template` (slug included when the template carries one)
+**Then** the PR #1465 fixture reports `ok` and a fixture branch that genuinely flips a `done` row to `backlog` still
+FAILs; the sibling-merge fixture reports no `landed-but-unpromoted` row for atlas while `Merge pyforge-atlas/13-5 into
+main` still counts; and the eight tracked ledgers' existing `done` rows keep their evidence under each station's
+current template (regression fixture)
+**And** the evidence payload of every `ledger-regression` finding names `merge_base` and `base_requested` when a
+substitution happened, and the detector's exit-code domain (`{0, 2, 130}`) is untouched

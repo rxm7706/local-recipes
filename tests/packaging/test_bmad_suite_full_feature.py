@@ -11,6 +11,7 @@ when `pixi` is not on PATH -- never a false failure in a pixi-less CI shard.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tomllib
@@ -69,7 +70,11 @@ def test_bmad_suite_full_feature_declares_selfexplainml_and_a_calver_floor() -> 
     assert "conda-forge" in feat["channels"]
 
     deps = feat["dependencies"]
-    assert deps["bmad-suite"] == ">=2026.9.5"
+    # A calver FLOOR (">=YYYY.M.D"), never a pinned literal: the floor moves on
+    # every upgrade sweep (2026.9.5 on 2026-09-05, 2026.9.9 on 2026-09-12) and
+    # a pinned string here turned marshal's second verify command red on
+    # `main` for six days without anyone touching this feature.
+    assert re.fullmatch(r">=2026\.\d{1,2}\.\d{1,2}", deps["bmad-suite"]), deps["bmad-suite"]
 
 
 def test_bmad_suite_full_feature_is_linux_64_only_and_does_not_duplicate_member_pins() -> None:

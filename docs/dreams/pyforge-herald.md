@@ -116,6 +116,29 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-18** — **Epic 23 drained to zero; what its four landings deferred.**
+  The Design sync loop is real: 23.1 (`deck status` enumerates the whole account,
+  PR #1459), 23.2 (every presentation twinned, three design systems mirrored
+  byte-exact, #1461), 23.5 (family pages on Pages, #1463) and 23.6
+  (`herald deck sync-all`, #1465) all landed today by `marshal factory dispatch`
+  on the Claude harness — verified, merged and ledger-flipped without a human in
+  the loop, 46–66 min each. Each dispatched session deferred exactly one thing it
+  could not settle from inside its worktree, now twinned in the tracked ledger:
+  **DW-FU-23-2** — `deck_pipeline._windowed_read` has no guard against a server
+  that returns a non-advancing `last_line` (a real pagination-loop hazard; every
+  live call paged forward, so reachability is unproven); **DW-FU-23-5** — no
+  PR-gating CI lane runs `docsite/build.py` or `site-check`, and the station's
+  verify command covers none of `docsite/`, so the family-page code (and the
+  dossier/gallery/artifact code before it) can regress with every gate green;
+  **DW-FU-23-6** — `sync-all`'s idempotency AC is proven over fakes and one live
+  smoke of the skipped path only, never a seeded deck's unchanged path, because
+  no dispatch environment has live Claude Design credentials. Those three are the
+  residue of the Dream, not new dreams — a loop that can hang, a site that can
+  regress unseen, and a "second run writes nothing" promise proven only on paper.
+  Seeded as CAP-48..50 and decomposed the same day as Epic 24 (24.1..24.3);
+  Epic 23 flips `done`. DW-FU-23-6's live half is an operator-run proof (it needs
+  the credentials only a person has), so 24.3 is minted to make that proof a
+  one-command, recorded act rather than a memory.
 - **2026-08-02 (second pass)** — Folded [[herald-pitch]] (Moment 1 complete
   orchestration, 7 capabilities) into this Dream's narrative. Dream-level
   consolidation only — `spec-herald-pitch` and its 4 companions stay fully

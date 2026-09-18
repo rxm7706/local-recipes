@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: '2026-09-17'
+updated: '2026-09-18'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - docs/dreams/deck-family-currency.md
@@ -323,7 +323,15 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-47 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-5 (ready 2026-09-17)
   - **intent:** The Claude Artifact host receives a body-only render from the same templates as the site.
   - **success:** `build.py --check` asserts the artifact shell has no wrapping `<html>` / `<body>` that the host already supplies.
-
+- **CAP-48 — the windowed Design read never loops on a stalled window** ← spec-pyforge-herald CAP-48 (ready 2026-09-18)
+  - **intent:** `deck_pipeline._windowed_read` refuses, with a named error, a server that returns a window whose `last_line` did not advance, instead of looping forever.
+  - **success:** A fake transport returning the same `(last_line, total_lines)` pair twice raises a typed pagination error naming the file and the stalled line; every existing live-shaped fixture (3377-line, 136,293-byte pulls) still pages to completion byte-exact; DW-FU-23-2 closes with the test as evidence.
+- **CAP-49 — the docsite has a PR gate** ← spec-pyforge-herald CAP-49 (ready 2026-09-18)
+  - **intent:** A change that touches `docsite/**` (or the templates/content it renders) cannot merge with every gate green while `docsite/build.py` or `site-check` would fail.
+  - **success:** A `pull_request`-triggered lane, path-filtered to `docsite/**` and the dashboard render inputs, runs `docsite/build.py --check` and `site-check` and is red on a fixture regression (a broken family-page template) and green on `main`; `pr-preflight` gains the same leg so the local run predicts the lane; `dashboard.yml` stays the only `deploy-pages` caller; DW-FU-23-5 closes with the lane's first green run as evidence.
+- **CAP-50 — the second `sync-all` run is proven unchanged on a real deck** ← spec-pyforge-herald CAP-50 (ready 2026-09-18)
+  - **intent:** The idempotency promise of `herald deck sync-all` is a recorded, repeatable, one-command live proof against a seeded deck with real Design credentials and real tracked state — not a fake-only test plus a memory.
+  - **success:** An opt-in task (`HERALD_LIVE_SYNC_PROOF=1`, never in the default gate, listed in doctor's `live-proof-surfaces.md`) runs `sync-all --slug <seeded deck>` twice against live Design and asserts the second report is all-`unchanged` with zero git and zero Design writes, writing the two reports and the etag/tree stamps to `.herald/sync-proof/<slug>/`; run once by the operator on 2026-09-1x with the artifacts committed as the story's evidence; DW-FU-23-6 closes citing that run.
 
 ## Fold provenance
 

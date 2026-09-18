@@ -92,6 +92,9 @@ development_status:
   23-4-powerpoints-push-back-and-every-push-proves-itself: done
   23-5-the-family-is-browsable-and-downloadable-on-pages: done
   23-6-one-command-idempotent-reported: done
+  24-1-the-windowed-design-read-never-loops-on-a-stalled-window: backlog
+  24-2-the-docsite-has-a-pr-gate: backlog
+  24-3-the-second-sync-all-run-is-proven-unchanged-on-a-real-deck: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -145,8 +148,10 @@ development_status:
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional
-  epic-23: in-progress
+  epic-23: done
   epic-23-retrospective: optional
+  epic-24: backlog
+  epic-24-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

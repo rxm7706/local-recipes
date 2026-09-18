@@ -2,7 +2,7 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-09-16"
+updated: "2026-09-18"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
@@ -959,6 +959,21 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-243 — from spec-surface-overlap-tolerance** ← spec-surface-overlap-tolerance CAP-2
   - **intent:** A genuinely unreconciled change is still caught exactly as today — this
   - **success:** The existing `spec-surface-check` test suite's single-owner drift/
+- **CAP-244 — a landing never re-dispatches the story it just landed** ← spec-pyforge-marshal CAP-244 (ready 2026-09-18)
+  - **intent:** The fleet campaign supervisor treats the window between a dispatch session exiting and `dispatch_land_finalize` promoting the ledger as *still in flight*, so a story is never re-dispatched, never refuses itself, and never turns its own refusal into a campaign-ending block.
+  - **success:** With a story whose session has exited but whose supervisor has not yet journaled `dispatch-completion`/`dispatch-land`, the next cycle reports that station `in-flight` (MRS-DISP-011-shaped), never `dispatched`; a story whose most recent run is a self-refusal of the already-merged kind classifies as **advance**, not `blocked`, so the campaign chains the next ready story; a drain over ≥2 serial stories completes with zero operator relaunches, proven on a fixture journal replaying the 2026-09-18 herald sequence (`…151925342Z-82ce96c8`: dispatched 15:19Z → landed 16:21Z → respawned 16:20:47Z → blocked, complete).
+- **CAP-245 — a harness's own usage-wall wording is a transient outcome** ← spec-pyforge-marshal CAP-245 (ready 2026-09-18)
+  - **intent:** A session that dies on a harness quota/usage wall is classified `quota_exceeded` (transient) from the harness's *current* wording, so the fleet planner retries or re-routes it instead of recording a terminal block.
+  - **success:** `classify_session_log` returns `QUOTA_EXCEEDED` for Cursor's live text (`ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit`) and for the Claude Code weekly/monthly limit text already catalogued; the marker table is per-harness and read from one place; `classify_dispatch_block` on the real `…132400673Z-194af3a0` session log with zero changed paths returns `TRANSIENT`; mutation-tested — removing the new marker re-terminalises the fixture.
+- **CAP-246 — `--harness` outranks a dead tier-map harness** ← spec-pyforge-marshal CAP-246 (ready 2026-09-18)
+  - **intent:** An explicit `--harness` invocation flag is the operator's word and beats the tier map's inline-table harness for that dispatch, without editing policy; a tier-map harness the flag excludes contributes nothing to the walk.
+  - **success:** With a station policy naming `{ harness = "cursor", … }` for dev and `--harness claude`, `resolve_tier_harness` leads the walk with `claude` and the launch journal records `harness_profile: claude`; the model override is resolved for the harness actually chosen (the harness's own default when the tier map names no model for it), never a foreign model id (fails-safe CAP-1 of spec-cursor-native-tier-map preserved); without the flag, today's tier-map-leads behaviour is byte-identical. Proven against herald's pre-#1458 policy as a fixture.
+- **CAP-247 — landing evidence carries the station in every shape** ← spec-pyforge-marshal CAP-247 (ready 2026-09-18)
+  - **intent:** No commit subject shape can mark a story merged for a station it does not name: the AD-24 templated shape renders and parses with the station slug, and the un-scoped `Story N.M:` direct-commit shape is corroborated by branch or station evidence before it counts.
+  - **success:** The repo default `merge_subject_template` becomes `Merge {slug}/{key} into main` (rendered `Merge pyforge-herald/23-1 into main`, exactly herald's #1458 form) and `parse_templated_merge_subject` refuses a subject whose slug segment is another station's; `merged_story_keys` for `pyforge-marshal` against today's origin/main no longer contains 48.2/48.4 (steward's `Story 48.2:` / `Story 48.4:` subjects) nor 23.1..23.6 for herald (atlas's `Merge 23-N into main`); every shipped station's own already-landed keys still classify (regression fixture over the eight ledgers' `done` rows vs. `git log`); the repo's live `Merge {key} into main` history is grandfathered through the SHA/recovery allowlist, never re-attributed.
+- **CAP-248 — the promoter reads a spec through its banner** ← spec-pyforge-marshal CAP-248 (ready 2026-09-18)
+  - **intent:** A tracked story spec whose frontmatter is preceded by an HTML comment banner is still a valid, already-promoted spec; the promotion scan never overwrites a tracked copy with a Tier-3 twin because of a banner.
+  - **success:** `is_valid_spec_text` (and `parse_declared_surface`, which shares the "must start with `---`" assumption) accept a leading `<!-- … -->` block before the frontmatter; `_already_promoted_keys` counts herald's pre-#1460 `spec-1-4` as promoted; a fixture with a banner-topped tracked spec and a differing Tier-3 twin produces an empty `to_promote`; the 45 files #1460 moved are unaffected either way.
 
 ## Constraints
 

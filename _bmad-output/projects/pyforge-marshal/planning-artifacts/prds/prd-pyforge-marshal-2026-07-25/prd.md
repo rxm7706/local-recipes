@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-14"
+updated: "2026-09-18"
+# 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
 # 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
 # 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
 # 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
@@ -2363,3 +2364,69 @@ superseded by growth, not corrected.
 
 **Content changed:** § 8 (one Non-Goal amended), § 11 (C-11, C-12 added), § 13 (four
 answers folded in). No FR added, renumbered or removed — the FR space is unchanged.
+
+## 20. Currency reconciliation — 2026-09-18
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-244..248 on 2026-09-18 (its
+`.memlog` stamped 2026-09-18T18:50) while this PRD sat at 2026-09-14. Same-day
+reconcile; FRs derived from the CAPs per `one-chain-per-station`'s rule that the PRD is the
+Spec's decomposition, never an independent namespace.*
+
+### 20.1 The FR space: FR-196..FR-200 registered
+
+Herald's Epic 23 was drained to zero on 2026-09-18 by `marshal factory dispatch` on the Claude
+harness — four stories verified, landed and ledger-flipped unattended, the first since
+2026-09-12 — and every one of the four still needed a human within the hour. The station Dream's
+2026-09-18 Realization-log entry measures the five things that human did on the run journals;
+each FR below is one of them, decomposed into **Epic 50** (Stories 50.1–50.5). Epics 48 and 49
+are reserved holes: their keys are already poisoned on `origin/main` by steward's
+`Story 48.N:` / `Story 49.N:` direct-commit subjects — the very defect FR-199 closes.
+
+#### FR-196: A landing never re-dispatches the story it just landed ← CAP-244
+The fleet campaign supervisor treats the window between a dispatch session exiting and
+`dispatch_land_finalize` promoting the ledger as still in flight, and reads a session's own
+"already merged" refusal as *advance*, never *blocked*. Success: a fixture journal replaying
+the herald sequence (`…151925342Z-82ce96c8`: dispatched → landed → respawned 46 s later →
+blocked, complete) chains the next story instead. Story 50.1.
+
+#### FR-197: A harness's own usage-wall wording is a transient outcome ← CAP-245
+`classify_session_log` recognises Cursor's live "You're out of usage … increase your limit"
+text (and Claude Code's weekly/monthly-limit text) as `quota_exceeded`, keyed per harness in
+one table, so the fleet planner classifies the block transient. Story 50.2.
+
+#### FR-198: `--harness` outranks a dead tier-map harness ← CAP-246
+An explicit invocation flag leads the harness walk over an inline-table tier-map harness
+without a policy edit; the model is resolved for the harness actually chosen, never a foreign
+id (spec-cursor-native-tier-map CAP-1's fails-safe preserved); without the flag, today's
+behaviour is byte-identical. Story 50.3.
+
+#### FR-199: Landing evidence carries the station in every shape ← CAP-247
+The AD-24 templated merge subject carries the station slug by default
+(`Merge {slug}/{key} into main`); the un-scoped `Story N.M:` shape needs branch/station
+corroboration; live history is grandfathered through the SHA/recovery allowlist and never
+re-attributed. Extends FR-193's Story 35.1 corroboration, which cannot help when the key exists
+in both ledgers. Story 50.4.
+
+#### FR-200: The promoter reads a spec through its banner ← CAP-248
+`is_valid_spec_text` and `parse_declared_surface` accept a leading `<!-- … -->` block before
+the frontmatter, so `_already_promoted_keys` never mistakes a banner-topped tracked spec for
+unpromoted and finalize never overwrites a reconciled copy with a stale Tier-3 twin
+(local commit `b0b7f3019f`, 2026-09-18, dropped before push). Story 50.5.
+
+**ONE FR space now FR-1..FR-200** (FR-201 = next free id).
+
+### 20.2 Harness policy, this week
+
+Cursor ran out of usage on 2026-09-18 (operator ruling). Every station's `marshal-policy.toml`
+that named the 2026-09-13 Cursor Ultra ladder moved back to `harness_preference = ["claude"]`
+with the sonnet-dev / opus-review tier map (herald PR #1458 first; marshal and doctor with this
+reconcile). FR-198 exists so the next such flip needs no policy PR. The tests that pinned the
+Cursor ids (`test_dispatch_retry.py`, `test_spin.py`) now assert the shape the station's own
+tier map declares — a pinned ladder had turned marshal's own verify command red on `main`.
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a regex):
+**300 story keys — 281 `done`, 18 `backlog`, 1 `blocked` — across 48 epics** (44 `done`, 3
+`backlog`, 1 `in-progress`). Epic 50 is the newest of the three backlog epics.
+
+**Content changed:** § 20 added (FR-196..FR-200 registered, harness-policy note). No FR
+renumbered or removed.

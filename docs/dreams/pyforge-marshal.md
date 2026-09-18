@@ -285,6 +285,41 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
 
 ## Realization log
 
+- **2026-09-18** — **Proposed: the landing self-drives — what the first autonomous
+  drain still needed a human for.** Herald's Epic 23 (four stories) was drained to
+  zero today by `marshal factory dispatch` on the Claude harness — the first
+  verified-landed-ledger-flipped stories since 2026-09-12, 46–66 min each. Every one
+  landed itself, and every one still needed a human within the hour. Measured on
+  the journals, not remembered: (1) the campaign supervisor cycles every 60 s and,
+  inside the ~45 s between the session exiting and `dispatch_land_finalize`
+  flipping the ledger, sees the story neither live nor `done`, re-dispatches it, the
+  new session refuses ("already merged"), and the campaign records its own refusal
+  as a story block and **exits** — four landings, four manual relaunches
+  (`fleet-drain-runs/…151925342Z-82ce96c8`, `…162241936Z-bfc1f666`). (2) Cursor's
+  live wording *"You're out of usage. Switch to Auto, or ask your admin to increase
+  your limit"* matches none of `harness_session._QUOTA_MARKERS`, so a three-second
+  cursor death classifies `unknown` → **terminal** block, never retried
+  (`…132400673Z-194af3a0`). (3) `--harness claude` cannot rescue a station whose
+  tier map names an inline `{ harness = "cursor", … }` — Story 28.11 puts the tier
+  map's harness at the head of the walk regardless of the flag, and cursor's
+  authcheck passes while the session dies on the usage wall; herald needed a policy
+  PR (#1458) to move at all. (4) `Merge {key} into main` carries no station token and
+  Story 35.1's `known_keys` only rejects keys the ledger does *not* know — atlas's
+  seven `Merge 23-N into main` merges read as herald's 23.1/23.2/23.5/23.6 already
+  merged, and the un-scoped `Story N.M:` direct-commit shape does the same across
+  stations (steward's `Story 48.2:` poisons marshal 48.2 today — this very epic had
+  to skip 48 and 49). (5) `_already_promoted_keys` trusts `is_valid_spec_text`,
+  which requires the tracked spec to *start* with `---`; 45 tracked specs fleet-wide
+  began with a `<!-- RECOVERED/MINTED/Promoted -->` banner, and finalize re-promoted
+  herald's stale Tier-3 `spec-1-4` over the reconciled tracked copy (local commit
+  `b0b7f3019f`, caught before push; PR #1460 moved the banners, the promoter still
+  cannot read a banner). The Dream is that a drain launched at 09:00 is at zero by
+  lunch with nobody watching. Decomposed the same day as CAP-244..248 / Epic 50
+  (48 and 49 are reserved holes: their keys are poisoned by steward's
+  `Story 48.N:` / `Story 49.N:` subjects, per the renumber-not-exclude rule). The
+  sixth thing a human did — `ledger-regression` reddening a story PR's `detectors`
+  lane *after* the unattended merge, because the PR head is stale against the
+  promoted ledger — is doctor's source and is seeded on [[pyforge-doctor]] as `spec-pyforge-doctor:CAP-78`.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
