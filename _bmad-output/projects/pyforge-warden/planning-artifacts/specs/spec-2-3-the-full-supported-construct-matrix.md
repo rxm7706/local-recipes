@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript fb91651f-d7e7-43e5-8794-b0d042511216.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 2.3: The full supported-construct matrix (ratcheted)'
 type: 'feature'
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-2-context.md'
 warnings: []
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript fb91651f-d7e7-43e5-8794-b0d042511216.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

@@ -1,5 +1,3 @@
-<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 13.1). No Tier-3 draft was
-     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 ---
 title: "Story 13.1: A drafting session surfaces matching deferred-work entries for an epic"
 type: "feature"
@@ -9,6 +7,9 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-09-18"
 ---
+
+<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 13.1). No Tier-3 draft was
+     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 
 ## Intent
 

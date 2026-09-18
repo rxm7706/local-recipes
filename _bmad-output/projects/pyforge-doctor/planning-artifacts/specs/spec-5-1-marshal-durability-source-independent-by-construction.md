@@ -1,8 +1,3 @@
-<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
-     bmad-loop worktree snapshot, or Tier-3 draft survived for this story — it landed via a
-     hand-driven PR, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated
-     from epics.md per CLAUDE.md's recovery priority order, plus its merged-commit Delivery
-     Record. Same class as spec-2-1. -->
 ---
 title: "Story 5-1: Marshal-durability source, independent by construction"
 type: "feature"
@@ -12,6 +7,12 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-09"
 ---
+
+<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
+     bmad-loop worktree snapshot, or Tier-3 draft survived for this story — it landed via a
+     hand-driven PR, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated
+     from epics.md per CLAUDE.md's recovery priority order, plus its merged-commit Delivery
+     Record. Same class as spec-2-1. -->
 
 ## Intent
 

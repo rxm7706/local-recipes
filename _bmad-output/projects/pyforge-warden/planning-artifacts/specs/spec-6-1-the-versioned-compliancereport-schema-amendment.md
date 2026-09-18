@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript e35cde46-7b89-45b5-b4c0-0a317a766344.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'The versioned ComplianceReport schema amendment (Story 6.1)'
 type: 'feature'
@@ -11,6 +10,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-6-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript e35cde46-7b89-45b5-b4c0-0a317a766344.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

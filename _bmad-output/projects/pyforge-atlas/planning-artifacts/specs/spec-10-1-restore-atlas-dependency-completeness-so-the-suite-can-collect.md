@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-08-04 Tier 3 (epics.md-derived Intent + ACs). Promote to full spec after initial stories land. -->
 ---
 title: "Story 10-1: Restore atlas dependency completeness"
 type: "feature"
@@ -8,6 +7,8 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-04"
 ---
+
+<!-- RECOVERED 2026-08-04 Tier 3 (epics.md-derived Intent + ACs). Promote to full spec after initial stories land. -->
 
 ## Intent
 Ensure all 31/31 shipped story specs are promoted to tracked planning-artifacts/specs; audit tooling that flagged 'missing' specs.

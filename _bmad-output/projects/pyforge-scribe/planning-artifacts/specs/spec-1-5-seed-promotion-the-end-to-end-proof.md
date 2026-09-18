@@ -1,6 +1,3 @@
-<!-- RECOVERED 2026-08-08 Tier 3 (epics.md-derived Intent + ACs). No session transcript or
-     bmad-loop worktree snapshot survived for this story — regenerated from epics.md per
-     CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 1-5: Seed promotion — the end-to-end proof"
 type: "feature"
@@ -10,6 +7,10 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-08"
 ---
+
+<!-- RECOVERED 2026-08-08 Tier 3 (epics.md-derived Intent + ACs). No session transcript or
+     bmad-loop worktree snapshot survived for this story — regenerated from epics.md per
+     CLAUDE.md's recovery priority order. -->
 
 ## Intent
 The two existing BMAD↔CFE feedback rules are promoted as Epic 1's seed content, performed by

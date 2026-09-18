@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript fb0d0487-80ac-47c7-9584-793ce42525fa.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'CycloneDX 1.6 SBOM emission'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: ['oversized']
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript fb0d0487-80ac-47c7-9584-793ce42525fa.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

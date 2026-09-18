@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 ---
 title: 'Story 1.5: The operator can see every credential Steward knows about, never a secret value'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: []
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 
 <intent-contract>
 

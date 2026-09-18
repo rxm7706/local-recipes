@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-6-10-amendment-design-spike-finding-id-families-verdict-encoding-rung-discriminator-fold-semantics.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 ---
 title: 'Story 6.10: Amendment design spike — finding-ID families, verdict encoding, rung-discriminator & fold semantics (decision record)'
 type: 'chore' # spike — decision record only; no production code, no schema edits
@@ -15,6 +14,8 @@ context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-6-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-6-10-amendment-design-spike-finding-id-families-verdict-encoding-rung-discriminator-fold-semantics.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 
 <intent-contract>
 

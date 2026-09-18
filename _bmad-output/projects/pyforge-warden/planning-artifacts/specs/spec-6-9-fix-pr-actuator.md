@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 5ebb7fa7-4c1e-4abe-a838-51e00b960567.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 6.9: Fix-PR actuator (opt-in remediation PRs)'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: ['oversized']
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 5ebb7fa7-4c1e-4abe-a838-51e00b960567.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

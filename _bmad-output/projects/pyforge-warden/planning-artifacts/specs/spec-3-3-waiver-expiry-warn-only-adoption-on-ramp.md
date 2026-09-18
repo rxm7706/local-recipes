@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 12db9514-1d7c-46c7-98ea-bd92bc2108f6.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Waiver expiry + warn-only adoption on-ramp'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: []
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 12db9514-1d7c-46c7-98ea-bd92bc2108f6.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

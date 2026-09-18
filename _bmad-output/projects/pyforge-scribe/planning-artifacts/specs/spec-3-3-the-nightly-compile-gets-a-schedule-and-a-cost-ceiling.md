@@ -1,6 +1,3 @@
-<!-- RECOVERED 2026-09-18 Tier 3 (epics.md-derived Intent + ACs). No session
-     transcript or bmad-loop worktree snapshot survived as a tracked story spec
-     — regenerated from epics.md per CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 3-3: The nightly compile gets a schedule and a cost ceiling"
 type: "feature"
@@ -10,6 +7,10 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-09-18"
 ---
+
+<!-- RECOVERED 2026-09-18 Tier 3 (epics.md-derived Intent + ACs). No session
+     transcript or bmad-loop worktree snapshot survived as a tracked story spec
+     — regenerated from epics.md per CLAUDE.md's recovery priority order. -->
 
 ## Intent
 

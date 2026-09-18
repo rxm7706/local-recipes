@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 2d5e330f-6952-4044-8b52-a4c284b6177e.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 1.8: Human & machine report renderers'
 type: 'feature'
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-1-context.md'
 warnings: []
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 2d5e330f-6952-4044-8b52-a4c284b6177e.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

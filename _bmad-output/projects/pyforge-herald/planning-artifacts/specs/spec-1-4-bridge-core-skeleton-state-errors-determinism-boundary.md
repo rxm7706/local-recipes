@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Bridge-core skeleton — state, errors, determinism boundary'
 type: 'feature'
@@ -11,6 +10,8 @@ warnings: ['oversized']
 baseline_revision: 'e868b607a10a8fbfba046a191d5ac637bde42f80'
 final_revision: '3a0f55ae9d6dc8f7e33806e1046888554f2f840e'
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 
 <intent-contract>
 
