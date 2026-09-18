@@ -22,3 +22,12 @@ def test_deck_sync_all_pixi_task_is_registered() -> None:
     task = pixi["feature"]["pyforge-herald"]["tasks"]["deck-sync-all"]
     assert task["cmd"] == "herald deck sync-all"
     assert "cwd" not in task
+
+
+def test_deck_sync_proof_pixi_task_is_registered() -> None:
+    """Story 24.3: the opt-in live idempotency-proof caller surface exists
+    in pixi and forwards ``--proof-dir .herald/sync-proof``."""
+    pixi = tomllib.loads((_repo_root() / "pixi.toml").read_text(encoding="utf-8"))
+    task = pixi["feature"]["pyforge-herald"]["tasks"]["deck-sync-proof"]
+    assert task["cmd"] == "herald deck sync-all --proof-dir .herald/sync-proof"
+    assert "cwd" not in task
