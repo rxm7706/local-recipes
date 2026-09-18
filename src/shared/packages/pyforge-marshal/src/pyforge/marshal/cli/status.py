@@ -125,6 +125,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
 from ..core import dispatch_fleet
+from ..core import layer_savings_sources
 from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
