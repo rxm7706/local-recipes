@@ -5022,6 +5022,18 @@ capabilities:
     heading: "a PR is judged at its merge-base, and a merge subject is attributed to the station it names"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-79
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "`ledger-direction` reads the station's rekey map"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-80
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a station's legacy-template history stays attributed after its template changes"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald

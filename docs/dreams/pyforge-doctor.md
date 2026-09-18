@@ -86,6 +86,22 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-18 (later still)** — **Corrected: the atlas rows were a rekey, not a
+  sibling.** Story 27.1 landed (PR #1471) with both halves of CAP-78 real —
+  `ledger-regression` judges a PR at its merge-base, and the merge-history
+  sources read each station's own `merge_subject_template` — but its dispatched
+  session refused, correctly, to claim the second symptom: atlas's 13-5 / 14-4 /
+  15-3 `landed-but-unpromoted` rows come from atlas's *own* bmad-loop merges
+  read with pre-rekey keys (`rekey-2026-09-17.md`: 13-5→12-5, 14-4→13-4,
+  15-3→14-3), which `gather_direction` cannot map because only `gather()` was
+  made rekey-aware (Story 25.3). The entry below overstated the cause; CAP-78's
+  success is corrected and the real fix is CAP-79 / Story 27.2. And one thing
+  27.1 broke by doing exactly what CAP-78 said: reading only a station's
+  *current* template orphans the merges it landed under the old one — marshal
+  `34-3` (`Merge 34-3 into main`, 2026-09-12) read as `done` with no merge
+  anywhere the moment marshal's policy moved to `Merge pyforge-marshal/{key}
+  into main`. CAP-80 / Story 27.3: the legacy form counts for a station for the
+  keys its own ledger knows, and for nothing else.
 - **2026-09-18 (later)** — **Proposed: a PR is judged at its merge-base, and a
   merge subject is attributed to the station it names.** Twice today Doctor's
   merge-history sources reported a regression that was not one. (1) `ledger-

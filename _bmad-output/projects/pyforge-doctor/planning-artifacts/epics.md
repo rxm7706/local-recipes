@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78). Prior 2026-09-17
+updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3 added later the same day (CAP-79/CAP-80). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2310,3 +2310,17 @@ main` still counts; and the eight tracked ledgers' existing `done` rows keep the
 current template (regression fixture)
 **And** the evidence payload of every `ledger-regression` finding names `merge_base` and `base_requested` when a
 substitution happened, and the detector's exit-code domain (`{0, 2, 130}`) is untouched
+
+### Story 27.2: `ledger-direction` reads the station's rekey map
+
+**Type:** fix • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** spec-pyforge-doctor CAP-79 • mirrors Story 25.3 (`gather()`'s rekey-awareness)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` (`gather_direction` applies the station's `rekey-*.md` maps via `pyforge.doctor.rekey.parse_rekey` — the reader `gather()` already uses — to merge-history keys before the ledger comparison; an unreadable map is a WARN naming the file), `tests/unit/test_sources_ledger_direction.py` (fixture: a rekey map + a merge naming the old key; mutation: map removed), the three live atlas rows as the acceptance fixture.
+**Given** Story 27.1's dispatched session traced atlas's 13-5 / 14-4 / 15-3 `landed-but-unpromoted` rows to their real cause — those merges are atlas's own `Merge bmad-loop/<run>/<key> into loop/pyforge-atlas (bmad-loop)` subjects naming keys that atlas's 2026-09-17 rekey renumbered (13-5 → 12-5-downstream-handoff-to-mason-fr-68, 14-4 → 13-4-air-gap-asset-rewriting-cap-4, 15-3 → 14-3-kedro-pipeline-surfacing-cap-4), and `gather_direction` has no rekey awareness while `gather()` has had it since Story 25.3 **When** every key parsed from merge history is passed through the station's rekey maps before it is compared against the tracked ledger **Then** `ledger-direction-check` on today's `main` reports no atlas `landed-but-unpromoted` row, the fixture with a map reports nothing and the same fixture without it reports the row (mutation test), and the exit-code domain `{0, 2, 130}` is untouched
+**And** an unreadable or malformed rekey map is a WARN that names the file, never a silent pass or a crash — the same posture `gather()`'s `rekey-map-unreadable` already takes
+
+### Story 27.3: A station's legacy-template history stays attributed after its template changes
+
+**Type:** fix • **Effort:** S • **Deps:** S-27.1 • **FR/AD:** spec-pyforge-doctor CAP-80 • regression on `main` after PR #1471
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` and `.../sources/ledger.py` (the per-station template read from Story 27.1 gains a second accepted form: the repo-default `Merge {key} into main`, honoured for the querying station only for keys its own tracked ledger knows — Story 35.1's corroboration — and never otherwise), `tests/unit/test_sources_marshal_story_status.py`, `tests/unit/test_sources_ledger_direction.py`, marshal `34-3` on today's `main` as the acceptance fixture.
+**Given** Story 27.1 made Doctor read each station's *current* `merge_subject_template`, and marshal landed `34-3` on 2026-09-12 as `Merge 34-3 into main` under the then-default template — so the moment marshal's policy moved to `Merge pyforge-marshal/{key} into main` (PR #1467), `story-status` on `main` reports `marshal/34-3: reads done in the sprint feed, but the harness says 'deferred' with no commit and no merge commit anywhere`, a `done` story orphaned by its own station's template move **When** a bare legacy-form subject is attributed to a station only when that station's tracked ledger knows the key **Then** marshal `34-3` reads as merged and `story-status` on `main` reports no finding for it, a fixture where the bare subject names a key the querying station's ledger does not know still attributes nothing, the scoped form still attributes, and CAP-78's PR #1465 replay stays `ok`
+**And** the rule is one function used by both sources, never two readings of "legacy"; the exit-code domain `{0, 2, 130}` is untouched

@@ -2,7 +2,7 @@
 title: '27.1: A PR is judged at its merge-base, and a merge subject names its station'
 type: 'fix'
 created: '2026-09-18'
-status: 'blocked'
+status: 'done'
 baseline_revision: 'ed367a47d8fb4e2da2275f1f0504e5084840d7c2'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -54,7 +54,8 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; MRS-GATE-010 binds the dispatch gate to this Success signal and reads it from the primary tree's tracked spec, so it is declared here before dispatch).
 
 **Manual checks:**
-- `pixi run -e pyforge-guild ledger-regression-check` on a checkout whose `HEAD` is a stale story branch and whose `origin/main` carries the promoted row reports `ok` with `merge_base` in evidence; `pixi run -e pyforge-guild ledger-direction-check` on today's `main` no longer lists atlas 13-5 / 14-4 / 15-3.
+- `pixi run -e pyforge-guild ledger-regression-check` on a checkout whose `HEAD` is a stale story branch and whose `origin/main` carries the promoted row reports `ok` with `merge_base` in evidence.
+- *(Corrected 2026-09-18 after the dispatched session's trace:)* the atlas 13-5 / 14-4 / 15-3 `landed-but-unpromoted` rows are NOT this story's — those merges are atlas's own bmad-loop-scoped subjects read with pre-rekey keys (`rekey-2026-09-17.md`: 13-5→12-5, 14-4→13-4, 15-3→14-3), which `gather_direction` cannot map because only `gather()` got rekey-awareness (Story 25.3). That is Story 27.2 (CAP-79); this story's `blocked` was the session refusing to bundle it, correctly.
 
 ## Auto Run Result
 
