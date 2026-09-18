@@ -800,6 +800,13 @@ def gather_direction(
 
     Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
     to WARN when git is unavailable; OK when every twin agrees with git.
+
+    Story 27.2: before the ``landed-but-unpromoted``/``done-but-unmerged``
+    comparison, every merge-derived story id is translated through the
+    station's own ``rekey-*.md`` map(s), if any (``_rekey_sid_maps``) — the
+    same reader ``gather()`` already applies. Without it, a station that
+    renumbered its stories (a fold PR) reads its own merges, which still
+    name the pre-fold number, as ``landed-but-unpromoted`` forever.
     """
     if _git(target, "rev-parse", "--git-dir") is None:
         return (
@@ -883,6 +890,15 @@ def gather_direction(
                 done_ids.add(sid)
 
         merged_ids = _merged_ids_for_project(target, subjects, project)
+        # Story 27.2: a merge subject names the OLD story id when the
+        # station has since renumbered (a fold PR's rekey-*.md). Translate
+        # through the station's own map before comparing, so a merge that
+        # still names the pre-fold number resolves to what the CURRENT
+        # ledger actually calls it, instead of reading as a phantom
+        # landed-but-unpromoted row forever.
+        sid_map = rekey_maps.get(project)
+        if sid_map:
+            merged_ids = {sid_map.get(sid, sid) for sid in merged_ids}
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not

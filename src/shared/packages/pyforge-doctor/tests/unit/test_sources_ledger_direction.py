@@ -72,6 +72,24 @@ def _commit(repo: Path, message: str, *, allow_empty: bool = False) -> None:
     _git(repo, *args)
 
 
+def _write_rekey(
+    repo: Path, project: str, text: str, name: str = "rekey-2026-09-17.md"
+) -> Path:
+    """A fold PR's re-key map -- same shape ``sources/ledger.py``'s
+    ``gather()`` already reads (doctor Story 25.3)."""
+    p = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / project
+        / "planning-artifacts"
+        / name
+    )
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
 def _write_policy(repo: Path, project: str, merge_subject_template: str) -> None:
     """A minimal ``marshal-policy.toml`` declaring only the one key this
     module reads -- Story 27.1's per-station template read."""
@@ -338,3 +356,99 @@ def test_no_policy_file_never_attempts_the_bare_default_template(
 
     fails = [f for f in findings if f.status == DoctorStatus.FAIL]
     assert fails == []
+
+
+# --- Story 27.2: gather_direction reads the station's rekey map -----------
+
+
+def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
+    """The live incident: atlas's own ``rekey-2026-09-17.md`` renumbered
+    ``13-5`` to ``12-5``, and its own bmad-loop merge still names the OLD
+    key -- reading that merge as ``landed-but-unpromoted`` forever was the
+    bug this story fixes."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"12-5-downstream-handoff-to-mason-fr-68": "done"},
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "13-5-downstream-handoff-to-mason -> 12-5-downstream-handoff-to-mason-fr-68\n",
+    )
+    _commit(repo, "seed ledger with rekey map")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_without_rekey_map_old_key_reads_as_unpromoted(tmp_path: Path) -> None:
+    """Mutation-test companion to the above: same fixture, minus the map --
+    the ``landed-but-unpromoted`` row returns."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"12-5-downstream-handoff-to-mason-fr-68": "done"},
+    )
+    _commit(repo, "seed ledger without rekey map")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "13-5"
+    assert fails[0].evidence["project"] == "pyforge-atlas"
+
+
+def test_malformed_rekey_map_is_warn_naming_the_file(tmp_path: Path) -> None:
+    """An unparseable rekey map degrades to a WARN naming the file -- never
+    a silent pass, never a crash."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"1-1-something": "backlog"})
+    _write_rekey(repo, "pyforge-atlas", "not a valid rekey line at all\n")
+    _commit(repo, "seed with a broken rekey map")
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "rekey-map-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert "rekey-2026-09-17.md" in warns[0].message
+
+
+def test_unreadable_rekey_map_never_crashes(tmp_path: Path) -> None:
+    """A rekey map whose blob cannot be decoded degrades to the same WARN,
+    rather than raising out of ``gather_direction``."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"1-1-something": "backlog"})
+    rekey_path = _write_rekey(repo, "pyforge-atlas", "placeholder\n")
+    rekey_path.write_bytes(b"1-1-x -> 1-1-\xe9\n")
+    _commit(repo, "seed with an undecodable rekey map")
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "rekey-map-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert "rekey-2026-09-17.md" in warns[0].message
