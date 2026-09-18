@@ -93,7 +93,7 @@ development_status:
   23-5-the-family-is-browsable-and-downloadable-on-pages: done
   23-6-one-command-idempotent-reported: done
   24-1-the-windowed-design-read-never-loops-on-a-stalled-window: done
-  24-2-the-docsite-has-a-pr-gate: backlog
+  24-2-the-docsite-has-a-pr-gate: done
   24-3-the-second-sync-all-run-is-proven-unchanged-on-a-real-deck: backlog
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
