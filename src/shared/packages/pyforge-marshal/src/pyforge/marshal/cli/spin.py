@@ -1274,9 +1274,17 @@ def _spawn_supervisor_sidecar(
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
+    # Story 46.4: no harness profile is in scope at this composition-time
+    # call (same shape as the no-adapter-resolved fallback above), so
+    # ``"auto"`` must resolve via ``resolve_wire_enabled`` (wrapper_declared
+    # False), never a blind ``bool(...)`` -- ``bool("auto")`` would write
+    # this sidecar unconditionally under the new repo-default tri-state,
+    # regardless of whether the concrete profile ever actually applies wire.
     context_layers = policy.resolve_context_layers(effective_policy)
     wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-    if bool(wire_layer["enabled"]):
+    if harness_profile.resolve_wire_enabled(
+        wire_layer["enabled"], wrapper_declared=False
+    ):
         compression_sidecar = {
             "escalation_threshold": policy.resolve_compression_escalation_threshold(
                 effective_policy
