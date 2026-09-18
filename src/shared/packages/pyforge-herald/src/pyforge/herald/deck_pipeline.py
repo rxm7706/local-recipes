@@ -1179,6 +1179,7 @@ def _windowed_read(
     parts: list[str] = []
     etag = first.etag
     window: FileRead = first
+    previous_last_line: int | None = None
     while True:
         if window.body is None:
             raise errors.HeraldError(
@@ -1199,8 +1200,21 @@ def _windowed_read(
                 f"cannot read {path!r}: server reported a partial window "
                 f"with no last_line/total_lines pair to resume from"
             )
+        if previous_last_line is not None and window.last_line <= previous_last_line:
+            # DW-FU-23-2: a paged-for window whose own last_line did not
+            # advance past the window it was paged FOR (`offset=
+            # previous_last_line + 1`) would otherwise be re-requested at
+            # the same offset forever -- refuse instead of looping.
+            raise errors.PaginationStalledError(
+                f"cannot read {path!r}: read_file returned a window ending "
+                f"at line {window.last_line} of {window.total_lines}, which "
+                f"did not advance past the previous window's line "
+                f"{previous_last_line} -- refusing rather than looping "
+                f"forever on a stalled window"
+            )
         if window.last_line >= window.total_lines:
             break  # this window reached end of file
+        previous_last_line = window.last_line
         window = transport.read_file(
             project_id=project_id, path=path, offset=window.last_line + 1
         )

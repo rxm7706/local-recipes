@@ -1068,7 +1068,9 @@ deployment.
   origin: spec-deferred dd34204da6b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by Story 24.1 (spec-pyforge-herald CAP-48). `_windowed_read` (`deck_pipeline.py`) now tracks the previous window's `last_line` and raises the new `errors.PaginationStalledError` -- naming the file and the stalled line -- the moment a paged-for window's own `last_line` fails to advance past it, instead of looping forever. Evidence: `test_windowed_read_raises_pagination_stalled_error_on_a_non_advancing_window` (`tests/unit/test_deck_pipeline.py`) — a fake transport returning the same `(last_line=2773, total_lines=6000)` pair twice raises `PaginationStalledError` on the second window, matching on `big.dc.html` and both occurrences of the stalled line, after exactly 2 transport calls (never a third, never a loop). Both pre-existing live-shaped fixtures still pass unchanged: `test_windowed_read_reassembles_across_multiple_windows` / `test_windowed_read_strips_the_truncation_trailer_from_a_non_final_window` (the 3377-line pull) and `test_windowed_read_single_call_when_the_server_answers_whole` (the under-cap single-call shape the 136293-byte pull took) — full suite green via `pixi run --frozen -e pyforge-herald pyforge-herald-test`.
 
 ### DW-FU-23-5: No PR-gating CI lane runs docsite/build.py or site-check before merge, and this story's own mandated Verification command (pyforge-herald-test) has zero coverage of docsite/, so a regression in the family-page code (or the pre-existing dossier/gallery/artifact code) can merge to main with every gate green.
 
