@@ -6,6 +6,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 from pyforge.marshal.cli.status import _format_savings_summary
 from pyforge.marshal.core import layer_savings_sources as sources
@@ -183,6 +185,215 @@ def test_benchmark_compare_voids_on_verdict_mismatch() -> None:
     )
     result = check_equivalence(off, on)
     assert result.passed is False
+
+
+def test_classify_layer_kind_silent_keys() -> None:
+    for key in sources.SILENT_LAYER_KEYS:
+        assert sources.classify_layer_kind(key) == "silent"
+
+
+def test_classify_layer_kind_configured_key() -> None:
+    for key in sources.CONFIGURED_LAYER_KEYS:
+        assert sources.classify_layer_kind(key) == "configured"
+
+
+def test_classify_layer_kind_unrecognized_raises() -> None:
+    with pytest.raises(ValueError):
+        sources.classify_layer_kind("not_a_real_layer_key")
+
+
+def test_currency_for_harness_known_names() -> None:
+    assert sources.currency_for_harness("claude") == "usd"
+    assert sources.currency_for_harness("cursor") == "quota-burn"
+    assert sources.currency_for_harness("copilot") == "quota-burn"
+    assert sources.currency_for_harness("gemini") == "request-count"
+    assert sources.currency_for_harness("devin") == "acus"
+
+
+def test_currency_for_harness_none_and_unrecognized() -> None:
+    assert sources.currency_for_harness(None) == sources.UNKNOWN_HARNESS_CURRENCY
+    assert (
+        sources.currency_for_harness("some-future-harness")
+        == sources.UNKNOWN_HARNESS_CURRENCY
+    )
+
+
+def _write_run_journal(
+    runs_dir: Path,
+    run_id: str,
+    *,
+    include_launch: bool = True,
+    harness_profile: str | None = None,
+    layer_savings_entries: tuple[dict[str, object] | None, ...] = (),
+) -> None:
+    """Test-fixture helper (Story 46.5): writes a run's `journal.jsonl` with
+    an optional `dispatch-launch` outcome entry naming `harness_profile`,
+    followed by one `budget-usage` entry per `layer_savings_entries` item
+    (`None` writes a `budget-usage` entry with no `layer_savings` key at
+    all, e.g. a terminal cost-only flush)."""
+    run_dir = runs_dir / run_id
+    run_dir.mkdir(parents=True)
+    lines: list[str] = []
+    if include_launch:
+        lines.append(
+            json.dumps(
+                {
+                    "kind": "dispatch-launch",
+                    "phase": "outcome",
+                    "payload": {"ok": True, "harness_profile": harness_profile},
+                }
+            )
+        )
+    for entry in layer_savings_entries:
+        payload: dict[str, object] = {"story_key": run_id}
+        if entry is not None:
+            payload["layer_savings"] = entry
+        lines.append(
+            json.dumps({"kind": "budget-usage", "phase": "observation", "payload": payload})
+        )
+    (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_read_rollup_by_harness_no_dispatch_runs_dir(tmp_path: Path) -> None:
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report == {"status": "no-dispatch-journals", "harnesses": {}}
+
+
+def test_read_rollup_by_harness_splits_two_harnesses(tmp_path: Path) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-claude",
+        harness_profile="claude",
+        layer_savings_entries=[
+            {"output_compression_saved": 500, "wire_compression_saved": 200}
+        ],
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-cursor",
+        harness_profile="cursor",
+        layer_savings_entries=[{"derived_context_cache_hits": 3}],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["status"] == "ok"
+    harnesses = report["harnesses"]
+    assert set(harnesses) == {"claude", "cursor"}
+    assert harnesses["claude"]["currency"] == "usd"
+    assert harnesses["claude"]["silent"] == {"output_compression_saved": [500]}
+    assert harnesses["claude"]["configured"] == {"wire_compression_saved": [200]}
+    assert harnesses["claude"]["runs"] == 1
+    assert harnesses["cursor"]["currency"] == "quota-burn"
+    assert harnesses["cursor"]["silent"] == {"derived_context_cache_hits": [3]}
+    assert harnesses["cursor"]["configured"] == {}
+    assert harnesses["cursor"]["runs"] == 1
+
+
+def test_read_rollup_by_harness_last_non_empty_wins(tmp_path: Path) -> None:
+    # Proves last-*non-empty*-wins, not literal-last-entry-wins: the LATER
+    # budget-usage entry omits `layer_savings` entirely (a terminal
+    # cost-only flush), so the rollup must fall back to the EARLIER entry
+    # that actually carried data rather than reporting nothing.
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-a",
+        harness_profile="claude",
+        layer_savings_entries=[
+            {"output_compression_saved": 700},
+            None,
+        ],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["harnesses"]["claude"]["silent"] == {"output_compression_saved": [700]}
+
+
+def test_read_rollup_by_harness_accumulates_across_runs_same_harness(
+    tmp_path: Path,
+) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-a",
+        harness_profile="claude",
+        layer_savings_entries=[{"output_compression_saved": 100}],
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-b",
+        harness_profile="claude",
+        layer_savings_entries=[{"output_compression_saved": 250}],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    claude = report["harnesses"]["claude"]
+    assert claude["runs"] == 2
+    assert claude["silent"] == {"output_compression_saved": [100, 250]}
+
+
+def test_read_rollup_by_harness_skips_run_missing_launch_or_usage(
+    tmp_path: Path,
+) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-no-launch",
+        include_launch=False,
+        layer_savings_entries=[{"output_compression_saved": 400}],
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-no-usage",
+        harness_profile="claude",
+        layer_savings_entries=[],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report == {"status": "no-savings-samples", "harnesses": {}}
+
+
+def test_read_rollup_by_harness_tolerates_malformed_and_non_dict(tmp_path: Path) -> None:
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    run_dir = runs_dir / "run-malformed"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        "\n".join(
+            [
+                "not valid json",
+                json.dumps(
+                    {
+                        "kind": "dispatch-launch",
+                        "phase": "outcome",
+                        "payload": {"ok": True, "harness_profile": "claude"},
+                    }
+                ),
+                json.dumps(
+                    {
+                        "kind": "budget-usage",
+                        "phase": "observation",
+                        "payload": {"layer_savings": "not-a-dict"},
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report == {"status": "no-savings-samples", "harnesses": {}}
 
 
 def test_dispatch_idle_timing_reads_journal_samples(tmp_path: Path) -> None:
