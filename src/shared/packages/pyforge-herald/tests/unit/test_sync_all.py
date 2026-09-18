@@ -16,8 +16,11 @@ from pathlib import Path
 import pytest
 from pyforge.herald import sync_all as sync_all_module
 from pyforge.herald import state
-from pyforge.herald.deck_pipeline import PROTOTYPE_ARTIFACT_KEY
-from pyforge.herald.errors import HeraldError
+from pyforge.herald.deck_pipeline import (
+    PROTOTYPE_ARTIFACT_KEY,
+    STANDALONE_BUNDLE_ARTIFACT_KEY,
+)
+from pyforge.herald.errors import AuthError, HeraldError, TransportUnreachableError
 from pyforge.herald.sync_all import (
     DeckSyncReport,
     GitLocalEditDetector,
@@ -208,6 +211,22 @@ def test_sync_all_skips_a_deck_directory_with_no_bridge_state(tmp_path: Path):
     assert report.published is False
 
 
+def test_sync_all_reports_a_seeded_but_never_pulled_deck_distinctly(tmp_path: Path):
+    """A freshly-seeded deck with an empty ``etags`` map has nothing to
+    compare -- must not be indistinguishable from a genuinely fully-synced
+    deck (review fix)."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden")  # etags={} -- seeded, nothing tracked
+
+    report = sync_all(
+        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams()
+    )
+
+    deck = report.decks[0]
+    assert deck.skipped_reason is not None
+    assert deck.labels() == ("skipped",)
+
+
 def test_sync_all_raises_for_a_slug_with_no_presentations_directory_at_all(
     tmp_path: Path,
 ):
@@ -280,6 +299,29 @@ def test_sync_all_never_pulls_an_export_tracked_key(tmp_path: Path):
     assert transport.read_file_calls == []
 
 
+def test_sync_all_reports_pulled_for_a_marp_source_key(tmp_path: Path):
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "E1"})
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="# new deck source", unchanged=False
+        )
+    )
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
+    )
+
+    deck = report.decks[0]
+    assert deck.pulled == ("marp:deck",)
+    assert "pulled" in deck.labels()
+    written = (
+        tmp_path / "presentations" / "pyforge-warden" / "src" / "marp"
+        / "pyforge-warden-deck-2026-09-18.md"
+    )
+    assert written.read_text(encoding="utf-8") == "# new deck source"
+
+
 # --- overwrote-local ---------------------------------------------------------
 
 
@@ -344,6 +386,34 @@ def test_sync_all_does_not_report_overwrote_local_for_a_clean_local_file(
     )
 
     assert report.decks[0].overwrote_local == ()
+
+
+def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
+    tmp_path: Path,
+):
+    deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
+    (deck_dir / "src" / "marp").mkdir(parents=True)
+    bundle_path = (
+        deck_dir / "src" / "marp" / "pyforge-warden-infographic-standalone-2026-09-18.html"
+    )
+    bundle_path.write_text("<html>local edit</html>", encoding="utf-8")
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"}
+    )
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
+        )
+    )
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path,
+        **_seams(edit_detector=FakeEditDetector(dirty_paths=(bundle_path,))),
+    )
+
+    deck = report.decks[0]
+    assert deck.overwrote_local == (STANDALONE_BUNDLE_ARTIFACT_KEY,)
+    assert "overwrote-local" in deck.labels()
 
 
 # --- refresh / derive / push composition + ordering -------------------------
@@ -525,8 +595,8 @@ def test_sync_all_publishes_once_for_multiple_decks(tmp_path: Path):
 def test_sync_all_isolates_one_decks_failure_from_the_rest(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _make_deck_dir(tmp_path, "pyforge-doctor")
-    _seed_state(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-doctor")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    _seed_state(tmp_path, "pyforge-doctor", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
 
     class FlakyRefresher(FakeFactsRefresher):
         def refresh(self, *, slug, repo_root):
@@ -535,7 +605,8 @@ def test_sync_all_isolates_one_decks_failure_from_the_rest(tmp_path: Path):
             return super().refresh(slug=slug, repo_root=repo_root)
 
     report = sync_all(
-        FakeSyncTransport(), slug=None, repo_root=tmp_path,
+        FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
+        slug=None, repo_root=tmp_path,
         **_seams(facts_refresher=FlakyRefresher()),
     )
 
@@ -588,6 +659,57 @@ def test_sync_all_dry_run_reports_unchanged_when_the_etag_did_not_move(tmp_path:
     assert deck.would_sync is False
     assert deck.unchanged is True
     assert deck.labels() == ("unchanged",)
+
+
+def test_sync_all_dry_run_skips_export_tracked_keys(tmp_path: Path):
+    """Review fix: an ``export:*`` key is push-tracked, never pull-tracked,
+    and has no remote path to compare -- ``--dry-run`` must not attempt one
+    (it used to delegate to ``deck_pipeline.status``, which raised for
+    exactly this key and reported ``failed`` instead of ``unchanged``)."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(
+        tmp_path, "pyforge-warden",
+        etags={
+            PROTOTYPE_ARTIFACT_KEY: "E1",
+            "export:pyforge-warden-infographic-standalone-2026-09-01.html": "h1",
+        },
+    )
+    transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams()
+    )
+
+    deck = report.decks[0]
+    assert deck.error is None
+    assert deck.would_sync is False
+    assert len(transport.read_file_calls) == 1
+    assert transport.read_file_calls[0]["path"] == "PyForge Warden.dc.html"
+
+
+def test_sync_all_dry_run_reports_a_conflict_as_failed_not_would_sync(tmp_path: Path):
+    """Review fix: a transport conflict (Design unreachable, or the tracked
+    file gone) is not a confirmed pending change -- must not be folded
+    into ``would_sync``, and must not be reported ``unchanged`` either."""
+
+    class ConflictTransport(FakeSyncTransport):
+        def read_file(self, **kwargs):
+            self.read_file_calls.append(kwargs)
+            raise TransportUnreachableError("could not reach Design")
+
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+
+    report = sync_all(
+        ConflictTransport(), slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
+        **_seams(),
+    )
+
+    deck = report.decks[0]
+    assert deck.would_sync is False
+    assert deck.unchanged is False
+    assert deck.error is not None
+    assert deck.labels() == ("failed",)
 
 
 def test_sync_all_dry_run_still_reports_an_unseeded_deck_as_skipped(tmp_path: Path):
