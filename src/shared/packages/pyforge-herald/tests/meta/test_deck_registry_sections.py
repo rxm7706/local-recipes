@@ -17,7 +17,12 @@ from pathlib import Path
 from pyforge.herald import registry
 from pyforge.herald.errors import HeraldError
 
-DELIBERATELY_UNREGISTERED = frozenset({"agentic-sdlc"})
+DELIBERATELY_UNREGISTERED: frozenset[str] = frozenset()
+"""Story 23.2 registered ``agentic-sdlc`` (its Design project had a twin
+but no § *Design project* section) -- every real deck README now either
+parses or does not exist yet at all, so this set is empty rather than
+removed outright: the next deck seeded by hand before it is ever pulled is
+this test's next legitimate tenant."""
 
 
 def _repo_root() -> Path:

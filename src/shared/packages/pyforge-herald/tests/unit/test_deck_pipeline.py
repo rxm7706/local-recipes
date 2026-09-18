@@ -24,6 +24,8 @@ from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
+    AdoptedArtifact,
+    AdoptResult,
     ExportPushResult,
     NpmLocalProver,
     PixiDeckExporter,
@@ -33,6 +35,8 @@ from pyforge.herald.deck_pipeline import (
     SubprocessGitCommitter,
     _persona_from_slug,
     _PixiPartialDeckExporter,
+    _windowed_read,
+    adopt,
     pull_marp_source,
     pull_prototype,
     pull_standalone_bundle,
@@ -2461,3 +2465,264 @@ def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_comma
          "html", "infographic-pptx"]
     ]
     assert "deck-pptx" not in calls[0]
+
+
+# --- Story 23.2 (CAP-2 from spec-design-sync-loop): _windowed_read ----------
+
+
+def test_windowed_read_short_circuits_on_unchanged():
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    result = _windowed_read(
+        transport, project_id="p-1", path="x.dc.html", if_none_match="E1"
+    )
+    assert result.unchanged is True
+    assert transport.calls == [
+        {"project_id": "p-1", "path": "x.dc.html", "if_none_match": "E1"}
+    ]
+
+
+def test_windowed_read_single_call_when_the_server_answers_whole():
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E2", body="<html></html>", unchanged=False)
+    )
+    result = _windowed_read(transport, project_id="p-1", path="x.dc.html")
+    assert result == FileRead(
+        path="x.dc.html", etag="E2", body="<html></html>", unchanged=False
+    )
+    assert len(transport.calls) == 1
+
+
+def test_windowed_read_reassembles_across_multiple_windows():
+    """Mirrors the live-verified 2026-09-18 evidence: a 3377-line file
+    answered as two windows (``1-2773``/``total_lines=3377``, then
+    ``2774-3377``), joined back into one file with exactly the newline
+    that separated line 2773 from line 2774 in the original -- neither
+    doubled nor lost."""
+    transport = FakePullTransport(
+        answers=[
+            FileRead(
+                path="x",
+                etag="E3",
+                body="line1\nline2773",
+                unchanged=False,
+                first_line=1,
+                last_line=2773,
+                total_lines=3377,
+            ),
+            FileRead(
+                path="x",
+                etag="E3",
+                body="line2774\nline3377",
+                unchanged=False,
+                first_line=2774,
+                last_line=3377,
+                total_lines=3377,
+            ),
+        ]
+    )
+    result = _windowed_read(transport, project_id="p-1", path="big.dc.html")
+    assert result.unchanged is False
+    assert result.etag == "E3"
+    assert result.body == "line1\nline2773\nline2774\nline3377"
+    assert len(transport.calls) == 2
+    assert transport.calls[1] == {
+        "project_id": "p-1",
+        "path": "big.dc.html",
+        "offset": 2774,
+    }
+
+
+def test_windowed_read_refuses_a_changed_answer_with_no_body():
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E4", body=None, unchanged=False)
+    )
+    with pytest.raises(HeraldError, match="returned no body"):
+        _windowed_read(transport, project_id="p-1", path="x.dc.html")
+
+
+def test_windowed_read_refuses_a_partial_window_with_no_resume_point():
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x",
+            etag="E5",
+            body="partial",
+            unchanged=False,
+            first_line=1,
+            last_line=None,
+            total_lines=None,
+        )
+    )
+    # first_line is set with no last_line/total_lines -- a malformed,
+    # unresumable partial window (see FileRead.truncated's own docstring
+    # for why this combination is a genuine "no window at all" only when
+    # BOTH are None).
+    with pytest.raises(HeraldError, match="no last_line/total_lines"):
+        _windowed_read(transport, project_id="p-1", path="x.dc.html")
+
+
+# --- Story 23.2 (CAP-2 from spec-design-sync-loop): adopt --------------------
+
+
+def test_adopt_bootstraps_a_new_twin_and_registers(tmp_path: Path):
+    transport = FakePullTransport(
+        answers=[
+            FileRead(path="x", etag="E1", body="<html>one</html>", unchanged=False),
+            FileRead(path="y", etag="E2", body="<html>two</html>", unchanged=False),
+        ]
+    )
+    dest_dir = tmp_path / "presentations" / "six-quarter-roadmap"
+
+    result = adopt(
+        transport,
+        state_key="six-quarter-roadmap",
+        project_id="p-roadmap",
+        project_name="PyForge six-quarter roadmap",
+        project_url="https://claude.ai/design/p/p-roadmap",
+        artifacts=[
+            ("PyForge Roadmap.dc.html", "project/PyForge Roadmap.dc.html"),
+            ("github.md", "project/github.md"),
+        ],
+        dest_dir=dest_dir,
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result.bootstrapped is True
+    assert result.registered is True
+    assert result.artifacts == (
+        AdoptedArtifact(
+            remote_path="PyForge Roadmap.dc.html",
+            local_path=dest_dir / "project" / "PyForge Roadmap.dc.html",
+            unchanged=False,
+        ),
+        AdoptedArtifact(
+            remote_path="github.md",
+            local_path=dest_dir / "project" / "github.md",
+            unchanged=False,
+        ),
+    )
+    assert (dest_dir / "project" / "PyForge Roadmap.dc.html").read_text(
+        encoding="utf-8"
+    ) == "<html>one</html>"
+    assert (dest_dir / "project" / "github.md").read_text(
+        encoding="utf-8"
+    ) == "<html>two</html>"
+
+    registered = read_registry(dest_dir / "README.md")
+    assert registered.project_name == "PyForge six-quarter roadmap"
+    assert registered.project_id == "p-roadmap"
+    assert registered.file_url == "https://claude.ai/design/p/p-roadmap"
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "six-quarter-roadmap")
+    assert recorded.project_id == "p-roadmap"
+    assert recorded.etags == {"PyForge Roadmap.dc.html": "E1", "github.md": "E2"}
+    assert recorded.last_pull == _FIXED_NOW.isoformat()
+
+
+def test_adopt_second_call_against_unchanged_content_writes_nothing(tmp_path: Path):
+    dest_dir = tmp_path / "presentations" / "six-quarter-roadmap"
+    first_transport = FakePullTransport(
+        answers=[FileRead(path="x", etag="E1", body="<html>one</html>", unchanged=False)]
+    )
+    adopt(
+        first_transport,
+        state_key="six-quarter-roadmap",
+        project_id="p-roadmap",
+        project_name="PyForge six-quarter roadmap",
+        project_url="https://claude.ai/design/p/p-roadmap",
+        artifacts=[("PyForge Roadmap.dc.html", "project/PyForge Roadmap.dc.html")],
+        dest_dir=dest_dir,
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+    readme_before = (dest_dir / "README.md").read_text(encoding="utf-8")
+
+    second_transport = FakePullTransport(
+        answers=[FileRead(path="x", etag="E1", body=None, unchanged=True)]
+    )
+    result = adopt(
+        second_transport,
+        state_key="six-quarter-roadmap",
+        project_id="p-roadmap",
+        project_name="PyForge six-quarter roadmap",
+        project_url="https://claude.ai/design/p/p-roadmap",
+        artifacts=[("PyForge Roadmap.dc.html", "project/PyForge Roadmap.dc.html")],
+        dest_dir=dest_dir,
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result.bootstrapped is False
+    assert result.registered is False
+    assert result.artifacts == (
+        AdoptedArtifact(
+            remote_path="PyForge Roadmap.dc.html",
+            local_path=dest_dir / "project" / "PyForge Roadmap.dc.html",
+            unchanged=True,
+        ),
+    )
+    assert second_transport.calls[0]["if_none_match"] == "E1"
+    # The registry section is byte-identical -- adopt never rewrites it once
+    # a section already parses.
+    assert (dest_dir / "README.md").read_text(encoding="utf-8") == readme_before
+
+
+def test_adopt_skips_the_registry_for_a_design_system_mirror(tmp_path: Path):
+    transport = FakePullTransport(
+        answers=[
+            FileRead(path="x", etag="E1", body="body { color: red; }", unchanged=False)
+        ]
+    )
+    dest_dir = tmp_path / "presentations" / "_design-systems" / "modernist"
+
+    result = adopt(
+        transport,
+        state_key="design-system-modernist",
+        project_id="p-modernist",
+        artifacts=[("styles.css", "styles.css")],
+        dest_dir=dest_dir,
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result.registered is False
+    assert not (dest_dir / "README.md").exists()
+    assert (dest_dir / "styles.css").read_text(encoding="utf-8") == "body { color: red; }"
+
+
+def test_adopt_refuses_an_empty_artifact_list(tmp_path: Path):
+    with pytest.raises(HeraldError, match="no artifacts given"):
+        adopt(
+            FakePullTransport(answers=None),
+            state_key="six-quarter-roadmap",
+            project_id="p-roadmap",
+            artifacts=[],
+            dest_dir=tmp_path / "presentations" / "six-quarter-roadmap",
+            repo_root=tmp_path,
+        )
+
+
+def test_adopt_refuses_a_project_id_mismatch_on_a_later_call(tmp_path: Path):
+    dest_dir = tmp_path / "presentations" / "six-quarter-roadmap"
+    adopt(
+        FakePullTransport(
+            answers=[FileRead(path="x", etag="E1", body="one", unchanged=False)]
+        ),
+        state_key="six-quarter-roadmap",
+        project_id="p-roadmap",
+        artifacts=[("a.md", "a.md")],
+        dest_dir=dest_dir,
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+    with pytest.raises(HeraldError, match="already adopted against Design project"):
+        adopt(
+            FakePullTransport(answers=None),
+            state_key="six-quarter-roadmap",
+            project_id="p-different",
+            artifacts=[("a.md", "a.md")],
+            dest_dir=dest_dir,
+            repo_root=tmp_path,
+        )
