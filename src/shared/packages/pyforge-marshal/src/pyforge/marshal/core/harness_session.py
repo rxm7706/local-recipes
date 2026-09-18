@@ -19,13 +19,31 @@ class HarnessSessionOutcome(StrEnum):
     UNKNOWN = "unknown"
 
 
-_QUOTA_MARKERS: tuple[str, ...] = (
-    "monthly spend limit",
-    "spend limit",
-    "usage limit",
-    "rate limit",
-    "quota exceeded",
-    "insufficient quota",
+# Each harness words its own usage wall differently, and that wording is a
+# transient outcome (it changes as harnesses ship copy updates) — keyed per
+# harness in one place so a future wording change touches one entry, not a
+# flat list with no provenance. ``classify_session_log`` pools every
+# harness's markers because the log text alone doesn't say which harness
+# produced it (Story 50.2, spec-pyforge-marshal CAP-245).
+_QUOTA_MARKERS_BY_HARNESS: dict[str, tuple[str, ...]] = {
+    "claude": (
+        "monthly spend limit",
+        "spend limit",
+        "usage limit",
+        "rate limit",
+        "quota exceeded",
+        "insufficient quota",
+    ),
+    "cursor": (
+        "out of usage",
+        "increase your limit",
+    ),
+}
+
+_QUOTA_MARKERS: tuple[str, ...] = tuple(
+    marker
+    for markers in _QUOTA_MARKERS_BY_HARNESS.values()
+    for marker in markers
 )
 
 _AUTH_MARKERS: tuple[str, ...] = (
