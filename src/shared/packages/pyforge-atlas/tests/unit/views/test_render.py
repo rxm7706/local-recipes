@@ -129,3 +129,21 @@ def test_no_registered_view_fragment_opens_a_websocket(view, atlas_db_path, monk
 def test_render_view_unknown_name_raises_key_error():
     with pytest.raises(KeyError, match="totally-unknown-view"):
         render_view("totally-unknown-view")
+
+
+def test_render_view_happy_path_drives_the_full_public_entrypoint(atlas_db_path, monkeypatch):
+    """Exercises ``render_view`` itself end-to-end (view lookup -> CLI module load ->
+    ``query()`` -> render), not just its ``render_rows`` half — ``load_cli_module`` memoizes
+    per ``(name, scripts_dir)``, so pre-loading the module here to monkeypatch ``DB_PATH``
+    means ``render_view``'s own internal load returns this same patched module."""
+    scripts_dir = cli_bridge.default_scripts_dir()
+    view = get_view("staleness-report")
+    module = cli_bridge.load_cli_module(view.script, scripts_dir=scripts_dir)
+    monkeypatch.setattr(module, "DB_PATH", atlas_db_path)
+
+    script, div = render_view("staleness-report", scripts_dir=scripts_dir)
+
+    assert "<script" in script
+    assert "data-root-id" in div
+    for column in view.columns:
+        assert column in script
