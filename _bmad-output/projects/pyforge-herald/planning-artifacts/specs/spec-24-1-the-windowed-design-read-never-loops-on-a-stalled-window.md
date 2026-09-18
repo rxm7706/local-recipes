@@ -2,7 +2,8 @@
 title: '24.1: The windowed Design read never loops on a stalled window'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'ed367a47d8fb4e2da2275f1f0504e5084840d7c2'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
