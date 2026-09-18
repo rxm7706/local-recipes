@@ -3329,9 +3329,9 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py": "8dcb54db029a739caeeedbc0cc9d1902a27c55d9",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "42ce1a86524428465913e15977a9b3c34d7b85ce",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/db.py": "86a99fc20eded5eb8591997c809c8b3b8892c917",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "e2f7c70d026de458434d30444d996969047ab304",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "8fd938bbef64c8372a6076b2a947093c49b31844",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py": "12f788af7b21d11c621228aee3a05e974a80d746",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py": "fbe4899cb5e10dc96d5e1fa39f98b11961b064b9",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py": "f8d5407af6e45963baedf18673ad8f44fc013a06",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py": "61c0aa0fe613fe8c5b49f6824235aa9449c2207e",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/exporters.py": "22d17e60c55e21850da550cde6074f8a4ace7286",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/locking.py": "fd407b6dd597e4d5584bc8b67a0fbde7bb0ab256",
@@ -3396,7 +3396,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/derived_context.py": "bb531be9dfb9e8e138d488826d5c3343525b24c7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py": "e56bc0812cbb589741da504a854985a8381a7809",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_completion.py": "d8966e61885eaf240af6c802d05acd522e125694",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "e912ce8a5b902762338ab727059462261800a887",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "1ed25688c593c99800b06cf8bf7a4deeaf2a49d4",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py": "47e8399772c2dcbe139661008a192d3ad34065f5",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_land_heal.py": "acd5f7d734b2195e0fe43909373c8c3bb2cb370a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py": "c82ff47b3e7f482efd9856c5ac6cd8a1948ae073",
@@ -3661,7 +3661,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "95c86bb2a1506b10035794a37f665f0f96158db6"
+  "memlog": "5279b331f012165a962987f655fb11de60b2e93f"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
