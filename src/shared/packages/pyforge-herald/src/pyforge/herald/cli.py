@@ -1129,6 +1129,8 @@ def _run_deck_sync_all(args: argparse.Namespace) -> int:
             print("published: dossier site rebuilt")
         elif report.publish_error is not None:
             print(f"publish failed: {report.publish_error}")
+        if args.proof_dir is not None:
+            print(f"proof reports written under {args.proof_dir}")
 
     return dispatch(operation)
 

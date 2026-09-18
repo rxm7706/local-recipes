@@ -124,6 +124,29 @@ def test_deck_sync_all_without_proof_dir_never_requires_the_gate(monkeypatch):
     assert exit_code == 0
 
 
+def test_deck_sync_all_gate_env_var_set_but_proof_dir_omitted_is_the_ordinary_path(
+    monkeypatch, tmp_path
+):
+    """Story 24.3: ``HERALD_LIVE_SYNC_PROOF=1`` being set incidentally must
+    not change the ordinary sync path when ``--proof-dir`` is not given --
+    the gate only fires when ``--proof-dir`` is present."""
+    seen = {}
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
+        seen["proof_dir"] = proof_dir
+        return SyncAllReport(decks=(), published=False)
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+    monkeypatch.setenv("HERALD_LIVE_SYNC_PROOF", "1")
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = cli.main(["deck", "sync-all"])
+
+    assert exit_code == 0
+    assert seen["proof_dir"] is None
+    assert not (tmp_path / ".herald" / "sync-proof").exists()
+
+
 def test_deck_sync_all_default_slug_is_none_and_dry_run_is_false(monkeypatch, tmp_path):
     seen = {}
 
