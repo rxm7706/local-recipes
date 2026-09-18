@@ -1081,7 +1081,9 @@ deployment.
   origin: spec-deferred 44bbdb936a4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by Story 24.2 (spec-pyforge-herald CAP-49). A new `pull_request`-triggered workflow, `.github/workflows/docsite-check.yml`, path-filtered to `docsite/**`, `docs/dashboard/**` and its own workflow file, now runs two independent checks before merge: `docsite/build.py --check` with the same pip-installed deps `dashboard.yml` itself uses (predicting exactly what the real deploy step would do), and `pixi run -e site site-check` (the existing, reused task). `pixi.toml`'s `pr-preflight` gained the same `site-check` leg (`{ task = "site-check", environment = "site" }`) so a local run predicts the lane. Fixture-regression proof (2026-09-18, reverted after): inserting `{% raw %}{{ this_stays_unrendered }}{% endraw %}` into `docsite/templates/page_family.html.j2`'s rendered body made `docsite/build.py --check` fail with "unrendered Jinja delimiters in decks/<slug>/index.html" for all 10 registered deck families (exit 1); reverting made both `python docsite/build.py --check` and `pixi run -e site site-check` pass clean again (`checks passed — 7 required outputs, 10 infographics, 10 deck families`). `dashboard.yml` is unchanged and remains the only `deploy-pages` caller; `docs/how-to/presentation-deck.md`'s Acceptance criteria checklist names the new lane. The lane's first live GitHub Actions run has not happened yet as of this entry (the branch has not been pushed/opened as a PR) — the evidence above is the local-command equivalent of the lane's own two steps, both green; update this note with the run URL once the PR's own `Docsite check` job completes.
 
 ### DW-FU-23-6: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
 
