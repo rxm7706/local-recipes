@@ -2,7 +2,8 @@
 title: '23.2: Every presentation has a local twin; design systems are mirrored as libraries'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '7fd7a6f944764c5a741ba6a6df8352bcc42cf55b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
