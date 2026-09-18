@@ -2,7 +2,8 @@
 title: '23.1: The account is enumerated and reconciled against the registry'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'e2a1fe04044bd28a4636cc6a295c9dce422a4a0f'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
