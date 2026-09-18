@@ -917,12 +917,19 @@ def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
 @pytest.mark.parametrize(
     ("slug", "key", "subject", "commit_sha"),
     [
-        (
-            "marshal",
-            "8-2-region-parser",
-            "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
-            "accc097e6a",
-        ),
+        # marshal 8-2's real historical commit ("Story 8.2: region parser
+        # ...", sha accc097e6a) is intentionally NOT parametrized here.
+        # Story 50.4/FR-191 CAP-247 requires branch corroboration for a bare
+        # ``Story <epic>.<seq>:`` subject (see
+        # ``test_hand_landed_commit_subject_on_main_suppresses_the_false_
+        # green``), so this case only ever passed via the SHA allowlist --
+        # but ``_git(target, "commit", ...)`` cannot fabricate a commit with
+        # that exact real SHA, so this repo-level fixture never actually
+        # exercised the allowlist path. The allowlist match itself is
+        # covered directly (no synthetic git repo needed) by
+        # ``landing_evidence.conformance_fixtures()``'s
+        # ``allowlist_accc097e6a`` row, shared with
+        # ``test_landing_evidence_conformance.py``.
         (
             "marshal",
             "10-1-copier-engine",
