@@ -311,6 +311,57 @@ def test_own_scoped_template_merge_counts_as_landed(tmp_path: Path) -> None:
     assert fails[0].evidence["project"] == "pyforge-atlas"
 
 
+# --- Story 27.3 (CAP-80): a station's legacy-template history stays
+# attributed once its template moves, corroborated by its own tracked
+# ledger's `done` entries -------------------------------------------------
+
+
+def test_own_legacy_default_merge_counts_once_ledger_marks_it_done(
+    tmp_path: Path,
+) -> None:
+    """Once a station's own template has moved to a scoped form, its own
+    PRE-move history (rendered under the bare legacy default) still counts
+    -- corroborated by the tracked ledger already marking the key `done`.
+    Mirrors the real marshal `34-3` regression this story fixes (PR #1471),
+    at the ``gather_direction`` level."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "seed")
+    # This station's own pre-move history, rendered under the now-retired
+    # bare legacy default.
+    _commit(repo, "Merge 34-3 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_sibling_default_template_merge_still_not_attributed_when_ledger_key_is_not_done(
+    tmp_path: Path,
+) -> None:
+    """The exact sibling-collision fixture above
+    (``test_sibling_default_template_merge_is_not_attributed_when_station_
+    has_its_own``), restated to pin WHY it still holds under Story 27.3's
+    new corroborated fallback: atlas's own ledger carries `13-5` with a
+    NON-done status, so it must not corroborate the sibling's bare-form
+    merge into a `landed-but-unpromoted` FAIL."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-atlas", "Merge pyforge-atlas/{key} into main")
+    _write_ledger(repo, "pyforge-atlas", {"13-5-trending-ingest": "backlog"})
+    _commit(repo, "seed")
+    _commit(repo, "Merge 13-5 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
 def test_no_policy_file_never_attempts_the_bare_default_template(
     tmp_path: Path,
 ) -> None:
