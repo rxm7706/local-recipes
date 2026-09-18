@@ -739,6 +739,10 @@ def sync_all(
                 for r in reports
             ]
 
+    if proof_dir is not None:
+        for report in reports:
+            _write_proof(report, proof_dir=proof_dir, repo_root=repo_root)
+
     return SyncAllReport(
         decks=tuple(reports), published=published, publish_error=publish_error
     )

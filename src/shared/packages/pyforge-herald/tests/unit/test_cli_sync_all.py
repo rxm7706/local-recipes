@@ -28,7 +28,7 @@ def test_deck_sync_all_help_exits_zero():
 def test_deck_sync_all_forwards_slug_repo_root_and_dry_run(monkeypatch, tmp_path):
     seen = {}
 
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         seen["transport"] = transport
         seen["slug"] = slug
         seen["repo_root"] = repo_root
@@ -55,7 +55,7 @@ def test_deck_sync_all_forwards_slug_repo_root_and_dry_run(monkeypatch, tmp_path
 def test_deck_sync_all_default_slug_is_none_and_dry_run_is_false(monkeypatch, tmp_path):
     seen = {}
 
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         seen["slug"] = slug
         seen["dry_run"] = dry_run
         return SyncAllReport(decks=(), published=False)
@@ -72,7 +72,7 @@ def test_deck_sync_all_default_slug_is_none_and_dry_run_is_false(monkeypatch, tm
 def test_deck_sync_all_default_repo_root_is_cwd(monkeypatch, tmp_path):
     seen = {}
 
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         seen["repo_root"] = repo_root
         return SyncAllReport(decks=(), published=False)
 
@@ -85,7 +85,7 @@ def test_deck_sync_all_default_repo_root_is_cwd(monkeypatch, tmp_path):
 
 
 def test_deck_sync_all_prints_one_line_per_deck_with_its_labels(monkeypatch, capsys):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(
                 DeckSyncReport(slug="pyforge-warden", pulled=("prototype",)),
@@ -109,7 +109,7 @@ def test_deck_sync_all_prints_a_message_when_no_decks_are_found(monkeypatch, cap
     no ``presentations/`` dir) must not print nothing at exit 0 --
     indistinguishable from "everything already synced"."""
 
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(decks=(), published=False)
 
     monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
@@ -121,7 +121,7 @@ def test_deck_sync_all_prints_a_message_when_no_decks_are_found(monkeypatch, cap
 
 
 def test_deck_sync_all_prints_the_error_line_for_a_failed_deck(monkeypatch, capsys):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(
                 DeckSyncReport(slug="pyforge-warden", error="deck-facts --refresh failed: boom"),
@@ -142,7 +142,7 @@ def test_deck_sync_all_prints_the_error_line_for_a_failed_deck(monkeypatch, caps
 def test_deck_sync_all_prints_a_published_line_when_the_site_was_rebuilt(
     monkeypatch, capsys
 ):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(DeckSyncReport(slug="pyforge-warden", pushed=("a.html",), published=True),),
             published=True,
@@ -157,7 +157,7 @@ def test_deck_sync_all_prints_a_published_line_when_the_site_was_rebuilt(
 
 
 def test_deck_sync_all_no_published_line_when_nothing_changed(monkeypatch, capsys):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(decks=(DeckSyncReport(slug="pyforge-warden"),), published=False)
 
     monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
@@ -171,7 +171,7 @@ def test_deck_sync_all_no_published_line_when_nothing_changed(monkeypatch, capsy
 def test_deck_sync_all_prints_the_publish_error_when_publish_failed(
     monkeypatch, capsys
 ):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(DeckSyncReport(slug="pyforge-warden", pushed=("a.html",)),),
             published=False,
@@ -189,7 +189,7 @@ def test_deck_sync_all_prints_the_publish_error_when_publish_failed(
 
 
 def test_deck_sync_all_herald_error_propagates_through_dispatch(monkeypatch, capsys):
-    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         raise HeraldError("presentations/nope not found")
 
     monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)

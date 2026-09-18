@@ -2830,6 +2830,10 @@ cmd = "herald deck qa"
 description = "Story 23.6 (spec-design-sync-loop CAP-8, plus CAP-3's sweep half): one command composing enumerate -> pull -> refresh -> derive -> push -> prove -> publish, in order, for every registered deck (or one --slug), printing a per-deck report (pulled / overwrote-local / overrode / derived / pushed / proven / published / unchanged). Idempotent: a second consecutive run reports every deck unchanged with zero writes to git or Design. --dry-run previews the pull step read-only (per deck: unchanged / would-sync), writing nothing. One deck's own failure is isolated into that deck's own report line rather than aborting the run -- advisory, never a PR gate. Run from repo root: pixi run -e pyforge-herald deck-sync-all -- [--slug <slug>] [--dry-run]. See docs/how-to/presentation-deck.md § The MCP bridge."
 cmd = "herald deck sync-all"
 
+[feature.pyforge-herald.tasks.deck-sync-proof]
+description = "Story 24.3 (spec-pyforge-herald CAP-50): opt-in live idempotency proof for `deck sync-all`, gated on HERALD_LIVE_SYNC_PROOF=1. Run it twice against a real seeded deck; each run's per-deck report plus its tree/etag stamp is written under --proof-dir (default .herald/sync-proof/, gitignored -- per-deck subdirectory is <proof-dir>/<slug>/). The second run's report must be all-unchanged with zero git/Design writes. Never in the default gate, pr-preflight, or any CI lane -- operator-run only, needs live Claude Design credentials. Run from repo root: HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <slug>. See live-proof-surfaces.md."
+cmd = "herald deck sync-all --proof-dir .herald/sync-proof"
+
 [feature.pyforge-core.tasks.pyforge-core-test]
 description = "Run the pyforge.core test suite"
 cmd = "pytest src/shared/packages/pyforge-core/tests -q"

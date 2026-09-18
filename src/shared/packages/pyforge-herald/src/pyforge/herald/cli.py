@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections.abc import Callable
@@ -372,6 +373,17 @@ def _build_parser() -> _HeraldArgumentParser:
         help=(
             "preview the pull step read-only (per deck: unchanged / "
             "would-sync) without writing to git, Design, or the dossier site"
+        ),
+    )
+    sync_all_parser.add_argument(
+        "--proof-dir",
+        type=Path,
+        default=None,
+        help=(
+            "opt-in idempotency-proof dir, gated on HERALD_LIVE_SYNC_PROOF=1: "
+            "write this run's per-deck report plus its tree/etag stamp under "
+            "<proof-dir>/<slug>/ (Story 24.3, CAP-50); never required for a "
+            "normal sync"
         ),
     )
     qa = deck_subparsers.add_parser(
@@ -1068,13 +1080,13 @@ def _run_deck_push(args: argparse.Namespace) -> int:
 
 
 def _run_deck_sync_all(args: argparse.Namespace) -> int:
-    """``herald deck sync-all [--slug SLUG] [--dry-run]`` (Story 23.6, CAP-8
-    + CAP-3's sweep half): composes enumerate -> pull -> refresh -> derive
-    -> push -> prove -> publish, in order, for every registered deck (or
-    just ``--slug``), and prints one report line per deck. Mirrors
-    ``_run_deck_seed``/``_run_deck_pull``'s composition shape exactly:
-    ``McpTransport()`` is constructed inside ``operation``, never before
-    ``dispatch`` is called.
+    """``herald deck sync-all [--slug SLUG] [--dry-run] [--proof-dir DIR]``
+    (Story 23.6, CAP-8 + CAP-3's sweep half): composes enumerate -> pull ->
+    refresh -> derive -> push -> prove -> publish, in order, for every
+    registered deck (or just ``--slug``), and prints one report line per
+    deck. Mirrors ``_run_deck_seed``/``_run_deck_pull``'s composition shape
+    exactly: ``McpTransport()`` is constructed inside ``operation``, never
+    before ``dispatch`` is called.
 
     A single deck's own failure (a broken subprocess call, a push
     conflict, a read-back mismatch, ...) is isolated into that deck's own
@@ -1084,15 +1096,26 @@ def _run_deck_sync_all(args: argparse.Namespace) -> int:
     run``'s advisory exit-0 convention. Only a structural problem outside
     any one deck's own sync (an unknown ``--slug``, an auth failure
     reaching Design at all) raises and reaches ``dispatch``'s usual
-    non-zero exit."""
+    non-zero exit.
+
+    ``--proof-dir`` (Story 24.3, CAP-50) is refused outright unless
+    ``HERALD_LIVE_SYNC_PROOF=1`` is set -- an opt-in live idempotency
+    proof, never run unattended -- before any transport is constructed."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
+        if args.proof_dir is not None and os.environ.get("HERALD_LIVE_SYNC_PROOF") != "1":
+            raise errors.HeraldError(
+                "--proof-dir requires HERALD_LIVE_SYNC_PROOF=1 -- this is an "
+                "opt-in live idempotency proof, never run by default (Story "
+                "24.3, CAP-50); set the env var to run it deliberately"
+            )
         transport = McpTransport()
         report = bridge.run(
             transport,
             lambda t: sync_all.sync_all(
-                t, slug=args.slug, repo_root=repo_root, dry_run=args.dry_run
+                t, slug=args.slug, repo_root=repo_root, dry_run=args.dry_run,
+                proof_dir=args.proof_dir,
             ),
         )
         if not report.decks:
