@@ -3124,7 +3124,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "83588ffa13df56f6b8fc7702f6eb2b112cda6d0b",
+   "pixi.toml": "34afeec2afed017cbb5bae5431d64a3e28567d3a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "8a93e5e51a08423391a0da2cfb4b65cee68a3e3c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "9d9485c06b1708568247d4eb1184a55b406a3d00",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3327,7 +3327,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/auth.py": "4c8a0171157cdd5b10b61b0641ec3f8ef5f52b6b",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/bridge.py": "b5d60f965604407935f74660988e156cd7e9b7ab",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py": "8dcb54db029a739caeeedbc0cc9d1902a27c55d9",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "42ce1a86524428465913e15977a9b3c34d7b85ce",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "1396c5c731bd6e415410dc049b0680dddb0dbaed",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/db.py": "86a99fc20eded5eb8591997c809c8b3b8892c917",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "8fd938bbef64c8372a6076b2a947093c49b31844",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py": "12f788af7b21d11c621228aee3a05e974a80d746",
@@ -3344,7 +3344,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/stamps.py": "74923ff4e73de7e7297ba9584b851c57c9b1d45f",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/state.py": "26c8f407befe5b53421701efc81abab6873e0c51",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py": "c3ff67b0f7e710ac3135ea53232c15e6d5b88991",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py": "1da14a4110fef7c5e5994c7d9b4a53a8ba0014f9",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py": "76fb18ee1ea3ea0bc1049b5b8f02812e5492f504",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/templates/pyforge-deck-template.pptx": "e363313f26d9d8588c49d6dc3c18193b86350421",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py": "3cafa21a0352aa4af988c80011341ab9ba1af741",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py": "3c16a235d5c4d5ce9e21eaa88fa384a7c0e1e32c",
@@ -3661,7 +3661,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "31c7fbc18b364f37ab1d57789da8b9485de8101f"
+  "memlog": "b8cae6c0bfc097281525431cd8ea40360faca12c"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
