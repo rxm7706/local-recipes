@@ -3,18 +3,22 @@
 
 Eight Spec statuses are live in the estate, and until this story only one --
 ``extension-point`` -- was defined anywhere: in prose, in
-``docs/dreams/README.md``. The other seven existed only as a hardcoded set
-inside ``pyforge.doctor.sources.board`` (``OPEN_SPEC_STATUSES`` /
-``DELIVERED_SPEC_STATUSES``), so a reader had to open that module's source to
-learn what ``shipped`` or ``absorbed`` even meant.
+``docs/dreams/README.md``. The other seven existed only as hardcoded sets
+split across two Doctor modules: ``pyforge.doctor.sources.board``
+(``OPEN_SPEC_STATUSES`` / ``DELIVERED_SPEC_STATUSES``, covering ``draft`` /
+``ready`` / ``in-progress`` / ``shipped``) and
+``pyforge.doctor.sources.one_chain`` (``_CLOSED_SPEC_STATUSES``, covering
+``archived`` / ``absorbed`` / ``superseded``), so a reader had to open both
+modules' source to learn what ``shipped`` or ``absorbed`` even meant.
 
 This test pins the new declaration's shape so that renaming, dropping, or
 re-collapsing a value fails here rather than silently drifting from the
 Charter's own prose (``docs/dreams/pyforge-charter.md`` § The Lexicon, "The
 Spec ladder -- eight states, three ended acts"). Wiring ``board.py`` /
-``chain.py`` / ``status_body_consistency.py`` to *consume* this declaration is
-Story 59.2 and is out of scope here -- this test only reads the declaration
-and the Charter text, nothing that imports ``pyforge.doctor``.
+``chain.py`` / ``one_chain.py`` / ``status_body_consistency.py`` to *consume*
+this declaration is Story 59.2 and is out of scope here -- this test only
+reads the declaration and the Charter text, nothing that imports
+``pyforge.doctor``.
 """
 
 from __future__ import annotations
