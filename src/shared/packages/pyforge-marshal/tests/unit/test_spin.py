@@ -1825,13 +1825,23 @@ def test_spin_foreground_never_spawns_a_supervisor(home):
 # --- follow-up review pass: the sidecar branch of _append_entry ----------------
 
 
-def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
+def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(
+    home, monkeypatch, tmp_path
+):
     """Review finding (Blind Hunter): ``_append_entry``'s sidecar branch was
     reachable from ``run_spin`` (a preview list long enough to push the
     payload past ``SIDECAR_THRESHOLD_BYTES``) but entirely unexercised --
     no test built a payload that large. The ordering is the invariant that
     matters: the blob must land BEFORE the line referencing it, or a reader
-    can observe a ``sidecar_ref`` that does not yet resolve."""
+    can observe a ``sidecar_ref`` that does not yet resolve.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and -- when it resolves -- write a second file
+    via ``compression-ladder.json``, breaking this test's own single-write
+    assertion) -- incidental to this test's intent, which is purely about
+    sidecar-blob ordering, not wire disposition."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
     events: list[str] = []
     fs = FakeFs(dirs={home}, events=events)
     harness = FakeHarness(events=events)

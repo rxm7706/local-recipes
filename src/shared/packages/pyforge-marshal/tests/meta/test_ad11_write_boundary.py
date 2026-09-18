@@ -58,6 +58,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import pyforge.marshal.cli.spin as spin_module
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.cli.spin import run_spin
 from pyforge.marshal.core.verdict import EXIT_OK
