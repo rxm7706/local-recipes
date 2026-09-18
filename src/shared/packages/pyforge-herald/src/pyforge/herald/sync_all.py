@@ -62,11 +62,11 @@ serialized to ``<proof_dir>/<slug>/report-<timestamp>.json`` plus a
 prototype etag -- the durable evidence a live idempotency proof (run
 ``sync-all`` twice against a real seeded deck) needs to point at. This
 module stays env-var-free by design (every other optional seam here is
-injected, never gated on an environment variable): the ``HERALD_LIVE_SYNC_
-PROOF=1`` gate that makes ``--proof-dir`` opt-in lives in ``cli.py``
-instead, consistent with the existing split between "what the library
-does" and "what the CLI permits" (see ``_run_deck_status``'s own
-``--account`` refusal for the precedent).
+injected, never gated on an environment variable): the
+``HERALD_LIVE_SYNC_PROOF=1`` gate that makes ``--proof-dir`` opt-in lives
+in ``cli.py`` instead, consistent with the existing split between "what
+the library does" and "what the CLI permits" (see ``_run_deck_status``'s
+own ``--account`` refusal for the precedent).
 """
 
 from __future__ import annotations

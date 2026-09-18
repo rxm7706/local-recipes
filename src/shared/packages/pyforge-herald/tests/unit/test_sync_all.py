@@ -361,6 +361,8 @@ def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
     first_files = _proof_report_files(proof_dir / "pyforge-warden")
     assert len(first_files) == 1
     first_contents = first_files[0].read_text(encoding="utf-8")
+    first_stamp = stamps.read_stamp(first_files[0])
+    assert first_stamp is not None
 
     second = sync_all(
         transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
