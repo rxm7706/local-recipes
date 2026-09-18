@@ -416,6 +416,47 @@ def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
     assert "overwrote-local" in deck.labels()
 
 
+def test_sync_all_uses_one_frozen_now_for_the_whole_deck_sync(tmp_path: Path):
+    """Review fix: ``now()`` is resolved exactly once per deck and reused
+    for both the dirty-check path (``date_str``) and the actual pull/push
+    write path -- a live ``now`` that ticks across a UTC-midnight boundary
+    between calls must not make the two disagree on which dated file is in
+    play."""
+    deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
+    (deck_dir / "src" / "marp").mkdir(parents=True)
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"}
+    )
+    filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="<html>new</html>", unchanged=False
+        ),
+        rendered_bytes={filename: b"<html>new</html>"},
+    )
+    ticking_values = iter(
+        [
+            datetime(2026, 9, 18, 23, 59, 59, tzinfo=timezone.utc),
+            datetime(2026, 9, 19, 0, 0, 1, tzinfo=timezone.utc),
+        ]
+    )
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path,
+        **_seams(now=lambda: next(ticking_values)),
+    )
+
+    deck = report.decks[0]
+    assert deck.error is None
+    assert deck.pulled == (STANDALONE_BUNDLE_ARTIFACT_KEY,)
+    assert (deck_dir / "src" / "marp" / filename).is_file()
+    # The second, later-dated `now()` value was never consumed -- proof
+    # `now` was resolved exactly once for this deck's whole sync pass.
+    assert list(ticking_values) == [
+        datetime(2026, 9, 19, 0, 0, 1, tzinfo=timezone.utc)
+    ]
+
+
 # --- refresh / derive / push composition + ordering -------------------------
 
 
@@ -615,6 +656,83 @@ def test_sync_all_isolates_one_decks_failure_from_the_rest(tmp_path: Path):
     assert by_slug["pyforge-warden"].labels() == ("failed",)
     assert by_slug["pyforge-doctor"].error is None
     assert by_slug["pyforge-doctor"].unchanged is True
+
+
+def test_sync_all_preserves_pulled_facts_when_a_tail_step_fails(tmp_path: Path):
+    """Review fix: a refresh/derive/push failure AFTER a real pull must not
+    discard the pull facts already gathered (including a real
+    overwrote-local warning) -- the deck's own report must still carry
+    them alongside the error, not just the bare error."""
+    deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
+    (deck_dir / "project").mkdir()
+    prototype_path = deck_dir / "project" / "PyForge Warden.dc.html"
+    prototype_path.write_text("<html>local edit</html>", encoding="utf-8")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
+        )
+    )
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path,
+        **_seams(
+            edit_detector=FakeEditDetector(dirty_paths=(prototype_path,)),
+            facts_refresher=FakeFactsRefresher(
+                fails=HeraldError("deck-facts --refresh failed: boom")
+            ),
+        ),
+    )
+
+    deck = report.decks[0]
+    assert deck.pulled == (PROTOTYPE_ARTIFACT_KEY,)
+    assert deck.overwrote_local == (PROTOTYPE_ARTIFACT_KEY,)
+    assert deck.error == "deck-facts --refresh failed: boom"
+
+
+def test_sync_all_auth_error_propagates_and_aborts_the_whole_run(tmp_path: Path):
+    """Review fix: an ``AuthError`` reaching Design must not be isolated
+    per-deck (module docstring) -- it means Design itself is unreachable,
+    which halts the whole run rather than being swallowed as one deck's
+    ``error``."""
+
+    class UnauthorizedTransport(FakeSyncTransport):
+        def read_file(self, **kwargs):
+            self.read_file_calls.append(kwargs)
+            raise AuthError("/design-login required")
+
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _make_deck_dir(tmp_path, "pyforge-doctor")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    _seed_state(tmp_path, "pyforge-doctor", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+
+    with pytest.raises(AuthError):
+        sync_all(UnauthorizedTransport(), slug=None, repo_root=tmp_path, **_seams())
+
+
+def test_sync_all_publish_failure_still_returns_every_decks_report(tmp_path: Path):
+    """Review fix: a publish failure must not discard every already-
+    gathered per-deck report."""
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakeSyncTransport(
+        read_file_answers=FileRead(
+            path="x", etag="E2", body="<html>new</html>", unchanged=False
+        )
+    )
+    publisher = FakeSitePublisher(
+        fails=HeraldError("site publish failed: template error")
+    )
+
+    report = sync_all(
+        transport, slug="pyforge-warden", repo_root=tmp_path,
+        **_seams(site_publisher=publisher),
+    )
+
+    assert len(report.decks) == 1
+    assert report.decks[0].pulled == (PROTOTYPE_ARTIFACT_KEY,)
+    assert report.published is False
+    assert report.publish_error == "site publish failed: template error"
 
 
 # --- --dry-run ---------------------------------------------------------------
