@@ -332,7 +332,7 @@ class McpTransport:
         self._url = url
         self._http_client = http_client
 
-    # --- the 10 port methods --------------------------------------------
+    # --- the 11 port methods --------------------------------------------
 
     def get_design_prompt(
         self, *, design_system_id: str | None = None, project_id: str | None = None

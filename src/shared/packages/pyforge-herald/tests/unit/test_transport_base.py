@@ -38,7 +38,7 @@ def test_fake_caller_conforms_to_the_caller_seam(fake_caller):
     assert isinstance(fake_caller(), ToolCaller)
 
 
-def test_port_exposes_exactly_the_ten_port_methods():
+def test_port_exposes_exactly_the_eleven_port_methods():
     """Widened from 8 to 9 by Story 3.1/3.2's spine amendment (F10, ``base.py``'s
     own module docstring): ``list_files`` is CAP-3's only way to enumerate a
     Design project's files, needed for the stale-hand-mirror heuristic.
@@ -46,7 +46,9 @@ def test_port_exposes_exactly_the_ten_port_methods():
     only way to reach ``render_preview``'s ``serve_url`` for a byte-for-byte
     ``--prove`` read-back -- a 10th *port method*, not a 10th remote tool
     (it calls ``render_preview`` itself; see ``base.py``'s own module
-    docstring)."""
+    docstring). Widened again, 10 to 11, by Story 23.1 (CAP-1):
+    ``list_projects`` is the only way to enumerate the whole signed-in
+    account's projects, needed for the account-wide reconciliation report."""
     expected = {
         "get_design_prompt",
         "create_project",
@@ -58,6 +60,7 @@ def test_port_exposes_exactly_the_ten_port_methods():
         "render_preview",
         "list_files",
         "fetch_rendered_bytes",
+        "list_projects",
     }
     assert set(DesignTransport.__protocol_attrs__) == expected
 
