@@ -2,7 +2,7 @@
 title: '23.6: One command, idempotent, reported'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '537da5f6ebee2df7115fc5d75671fc68af18ccb1'
 review_loop_iteration: 0
 followup_review_recommended: false
