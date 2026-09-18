@@ -2,7 +2,8 @@
 title: '50.1: A landing never re-dispatches the story it just landed'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'ed367a47d8fb4e2da2275f1f0504e5084840d7c2'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
