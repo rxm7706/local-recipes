@@ -25,10 +25,6 @@ __all__ = (
     "GRAPH_STORE_RELPATH",
     "PLANNING_GRAPH_TELEMETRY_RELPATH",
     "CODEGRAPH_STATS_RELPATH",
-    "SILENT_LAYER_KEYS",
-    "CONFIGURED_LAYER_KEYS",
-    "HARNESS_CURRENCY",
-    "UNKNOWN_HARNESS_CURRENCY",
     "loop_home_from_run_dir",
     "read_caveman_output_saved",
     "read_cocoindex_cache_hits",
@@ -36,9 +32,6 @@ __all__ = (
     "read_headroom_wire_saved",
     "read_planning_graph_tokens_saved",
     "read_dispatch_idle_timing",
-    "classify_layer_kind",
-    "currency_for_harness",
-    "read_rollup_by_harness",
 )
 
 COCOINDEX_INDEX_RELPATH = ".claude/data/pyforge-scribe/cocoindex-index.json"
@@ -47,37 +40,6 @@ PLANNING_GRAPH_TELEMETRY_RELPATH = (
     ".claude/data/pyforge-marshal/planning-graph/last-retrieval.json"
 )
 CODEGRAPH_STATS_RELPATH = ".claude/data/pyforge-marshal/layer-savings/codegraph.json"
-
-# Story 46.5 (CAP-193): the journal taxonomy distinguishing the 4
-# harness-agnostic repo-default layers (Story 46.4's "silent" tier -- they
-# run unconditionally, with no per-harness capability check) from the 1
-# capability/config-resolved layer (`wire_compression_saved`, gated on
-# `[wrapper]` policy AND the harness profile declaring wire support). These
-# are the SAME 5 field names ``ports.harness.LayerSavings`` carries --
-# ``classify_layer_kind`` is the single source of truth mapping each to its
-# tier.
-SILENT_LAYER_KEYS = (
-    "output_compression_saved",
-    "graph_hits_vs_file_reads",
-    "derived_context_cache_hits",
-    "planning_graph_tokens_saved",
-)
-CONFIGURED_LAYER_KEYS = ("wire_compression_saved",)
-
-# Story 46.5: the per-harness binding currency table -- a Cursor-first
-# station's savings are quota-burn, never a Claude-shaped USD number.
-# ``UNKNOWN_HARNESS_CURRENCY`` is the honest degrade for an absent or
-# unrecognized harness name (``currency_for_harness`` never raises), mirroring
-# this epic's "a repo default can never claim a wrap a harness can't perform"
-# ethos rather than silently defaulting to USD.
-HARNESS_CURRENCY: dict[str, str] = {
-    "claude": "usd",
-    "cursor": "quota-burn",
-    "copilot": "quota-burn",
-    "gemini": "request-count",
-    "devin": "acus",
-}
-UNKNOWN_HARNESS_CURRENCY = "unknown"
 
 IntSavings = int | str
 GraphStats = tuple[int, int] | str
@@ -250,154 +212,3 @@ def read_dispatch_idle_timing(
         "sessions": sessions,
         "recommended_idle_threshold_minutes": 25,
     }
-
-
-def classify_layer_kind(layer_key: str) -> str:
-    """Story 46.5: the single source of truth for the silent-vs-configured
-    taxonomy. DOES raise on an unrecognized key -- unlike
-    ``currency_for_harness``, an unknown ``LayerSavings`` field name is a
-    programmer error (a new layer added to ``ports/harness.py`` without
-    updating this taxonomy), not user-facing data absence, and should fail
-    loud rather than silently mis-bucket."""
-    if layer_key in SILENT_LAYER_KEYS:
-        return "silent"
-    if layer_key in CONFIGURED_LAYER_KEYS:
-        return "configured"
-    raise ValueError(f"unrecognized layer key: {layer_key!r}")
-
-
-def currency_for_harness(profile_name: str | None) -> str:
-    """Story 46.5: the per-harness binding-currency lookup. Never raises --
-    ``None`` or an unrecognized harness name both degrade to the honest
-    ``UNKNOWN_HARNESS_CURRENCY`` label rather than a crash or a silent USD
-    default that would misrepresent a non-Claude station's savings."""
-    if profile_name is None:
-        return UNKNOWN_HARNESS_CURRENCY
-    return HARNESS_CURRENCY.get(profile_name, UNKNOWN_HARNESS_CURRENCY)
-
-
-# Story 46.5: the kinds this reader correlates, both already durably written
-# into the SAME per-run ``journal.jsonl`` (``cli/dispatch.py``'s
-# ``dispatch-launch`` outcome, ``supervisor/__main__.py``'s ``budget-usage``
-# observations) -- hardcoded locally rather than imported, matching this
-# module's own "pure JSONL reader, no domain-model import" discipline
-# (`cli/status.py` redeclares its own local ``_BUDGET_USAGE_KIND`` for the
-# identical reason).
-_DISPATCH_LAUNCH_KIND = "dispatch-launch"
-_BUDGET_USAGE_KIND = "budget-usage"
-_OUTCOME_PHASE = "outcome"
-
-_ALL_LAYER_FIELD_NAMES = SILENT_LAYER_KEYS + CONFIGURED_LAYER_KEYS
-
-
-def _extract_layer_value(
-    layer_savings: dict[str, object], field_name: str
-) -> object | None:
-    """One ``LayerSavings`` field's raw value out of a journal-written
-    ``layer_savings`` payload dict, honoring
-    ``supervisor/__main__.py::_layer_savings_payload``'s on-wire split of
-    ``graph_hits_vs_file_reads`` into two sibling keys (``graph_hits``,
-    ``file_reads``) when the value is a measured ``(hits, reads)`` pair
-    rather than an unavailable-reason string -- the same normalization
-    ``cli/status.py::_format_savings_summary`` already performs. Returns
-    ``None`` when the field is absent from this payload (nothing to bucket)."""
-    if field_name == "graph_hits_vs_file_reads":
-        if "graph_hits_vs_file_reads" in layer_savings:
-            return layer_savings["graph_hits_vs_file_reads"]
-        if "graph_hits" in layer_savings and "file_reads" in layer_savings:
-            return (layer_savings["graph_hits"], layer_savings["file_reads"])
-        return None
-    return layer_savings.get(field_name)
-
-
-def _bucket_layer_savings(
-    layer_savings: dict[str, object],
-    silent: dict[str, object],
-    configured: dict[str, object],
-) -> None:
-    """Classify and accumulate one run's ``layer_savings`` payload into the
-    caller's ``silent``/``configured`` dicts, keyed by field name, each
-    value a list of the raw per-run readings (string unavailable-reasons and
-    numeric measurements alike -- no lossy aggregation)."""
-    for field_name in _ALL_LAYER_FIELD_NAMES:
-        value = _extract_layer_value(layer_savings, field_name)
-        if value is None:
-            continue
-        target = silent if classify_layer_kind(field_name) == "silent" else configured
-        target.setdefault(field_name, []).append(value)
-
-
-def read_rollup_by_harness(
-    repo_root: Path, *, project_slug: str = "pyforge-marshal"
-) -> dict[str, object]:
-    """Story 46.5 (CAP-193): per-harness savings rollup, keyed by binding
-    currency -- never a cross-harness summed total.
-
-    Mirrors ``read_dispatch_idle_timing``'s manual-JSONL-scan idiom. Per run
-    under ``dispatch-runs/*/journal.jsonl``: extracts ``harness_profile``
-    from the ``dispatch-launch`` kind's OUTCOME-phase entry, and the
-    ``layer_savings`` dict from that run's LAST ``budget-usage``-kind entry
-    (last-write-wins per run, matching
-    ``cli/status.py::_gather_run_journal_facts``'s own convention). A run
-    missing either is skipped entirely -- an incomplete run contributes no
-    partial data, never an ``"unknown"`` bucket. Each present layer value is
-    classified silent/configured via ``classify_layer_kind`` and bucketed
-    under its harness's own ``currency`` (via ``currency_for_harness``)."""
-    runs_dir = (
-        repo_root
-        / "_bmad-output/projects"
-        / project_slug
-        / "implementation-artifacts/dispatch-runs"
-    )
-    if not runs_dir.is_dir():
-        return {"status": "no-dispatch-journals", "harnesses": {}}
-
-    harnesses: dict[str, dict[str, object]] = {}
-
-    for journal_path in sorted(runs_dir.glob("*/journal.jsonl")):
-        harness_profile: str | None = None
-        last_layer_savings: dict[str, object] | None = None
-        for line in journal_path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                entry = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(entry, dict):
-                continue
-            payload = entry.get("payload")
-            if not isinstance(payload, dict):
-                continue
-            kind = entry.get("kind")
-            if kind == _DISPATCH_LAUNCH_KIND and entry.get("phase") == _OUTCOME_PHASE:
-                profile = payload.get("harness_profile")
-                if isinstance(profile, str) and profile:
-                    harness_profile = profile
-            elif kind == _BUDGET_USAGE_KIND:
-                layer_savings = payload.get("layer_savings")
-                if isinstance(layer_savings, dict):
-                    # Last-write-wins per run: later lines overwrite earlier
-                    # ones, matching `_gather_run_journal_facts`'s own
-                    # `usage_entries[-1]` convention.
-                    last_layer_savings = layer_savings
-
-        if harness_profile is None or last_layer_savings is None:
-            continue
-
-        bucket = harnesses.setdefault(
-            harness_profile,
-            {
-                "currency": currency_for_harness(harness_profile),
-                "silent": {},
-                "configured": {},
-                "runs": 0,
-            },
-        )
-        bucket["runs"] = int(bucket["runs"]) + 1  # type: ignore[arg-type]
-        _bucket_layer_savings(last_layer_savings, bucket["silent"], bucket["configured"])  # type: ignore[arg-type]
-
-    if not harnesses:
-        return {"status": "no-savings-samples", "harnesses": {}}
-
-    return {"status": "ok", "harnesses": harnesses}

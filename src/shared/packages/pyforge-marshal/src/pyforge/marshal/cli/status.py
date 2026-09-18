@@ -125,7 +125,6 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
 from ..core import dispatch_fleet
-from ..core import layer_savings_sources
 from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
@@ -255,32 +254,6 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
             parts.append(f"planning:{tokens_saved}tok")
     
     return ",".join(parts)
-
-
-def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
-    """Format the per-harness savings rollup (Story 46.5, CAP-193) into a
-    compact multi-line summary for status display -- one line per harness,
-    each in its OWN `currency`, NEVER summed into a single blended total (a
-    Cursor-first station's quota-burn number and a Claude station's USD
-    number are not the same unit). Returns an empty string when there is no
-    rollup, or its status is anything other than "ok" ("no-dispatch-
-    journals"/"no-savings-samples" are real "no data yet" states, not
-    failures)."""
-    if not rollup or rollup.get("status") != "ok":
-        return ""
-    harnesses = rollup.get("harnesses")
-    if not isinstance(harnesses, dict) or not harnesses:
-        return ""
-    lines = []
-    for harness_name in sorted(harnesses):
-        entry = harnesses[harness_name]
-        if not isinstance(entry, dict):
-            continue
-        currency = entry.get("currency", layer_savings_sources.UNKNOWN_HARNESS_CURRENCY)
-        silent = entry.get("silent", {})
-        configured = entry.get("configured", {})
-        lines.append(f"  {harness_name} ({currency}): silent={silent} configured={configured}")
-    return "\n".join(lines)
 
 
 def _format_bytes(byte_count: int | float) -> str:
@@ -1962,14 +1935,6 @@ def run_status(
         rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
 
     data["homes"] = rows
-    # Story 46.5 (CAP-193): the per-harness savings rollup -- scoped to a
-    # single project's own `dispatch-runs/` (whole-fleet status, `args.
-    # project is None`, computes no cross-project rollup: each project's
-    # dispatch-runs are scoped to that project only).
-    if args.project is not None:
-        data["savings_rollup_by_harness"] = layer_savings_sources.read_rollup_by_harness(
-            git_repo_root, project_slug=args.project
-        )
     return _emit(args, data, findings)
 
 
@@ -2402,13 +2367,6 @@ def _render_text_status(
             ))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
-
-    # Story 46.5 (CAP-193): the per-harness savings rollup, appended as its
-    # own line(s) -- never summed into any per-home `savings_text` above.
-    rollup_text = _format_rollup_by_harness(data.get("savings_rollup_by_harness") or {})
-    if rollup_text:
-        lines.append("savings_rollup_by_harness:")
-        lines.append(rollup_text)
 
     if findings:
         lines.append("findings:")
