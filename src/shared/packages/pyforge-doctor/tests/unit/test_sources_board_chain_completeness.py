@@ -200,7 +200,7 @@ def test_deferred_spec_reports_no_finding(tmp_path: Path) -> None:
     """A slug registered in DEFERRED_SPECS is a recorded decision, not a
     silent gap -- INV-A must not fire for it even though it is undecomposed."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    _write_spec(pa / "specs" / "spec-agentic-sdlc-autonomy" / "SPEC.md", "draft")
+    _write_spec(pa / "specs" / "spec-pyforge-charter" / "SPEC.md", "draft")
 
     findings = board.gather_chain_completeness(tmp_path)
 
@@ -316,7 +316,7 @@ def test_deferred_spec_without_status_key_reports_no_finding(tmp_path: Path) -> 
     """``DEFERRED_SPECS`` remains a whole-Spec escape hatch even when the
     ``status:`` key is absent."""
     pa = _pa(tmp_path, "pyforge-testproj")
-    spec_path = pa / "specs" / "spec-agentic-sdlc-autonomy" / "SPEC.md"
+    spec_path = pa / "specs" / "spec-pyforge-charter" / "SPEC.md"
     spec_path.parent.mkdir(parents=True, exist_ok=True)
     spec_path.write_text(
         "---\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
