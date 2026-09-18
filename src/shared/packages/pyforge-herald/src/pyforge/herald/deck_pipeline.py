@@ -1028,6 +1028,248 @@ def pull_standalone_bundle(
     )
 
 
+# --- CAP-2 (from spec-design-sync-loop): adopt, Story 23.2 -------------------
+#
+# `_require_seeded_state`'s own docstring names the gap: pulling (and
+# pushing) a deck needs a `project_id` `state.py` already has on record, and
+# unlike `seed`'s registry-bootstrap fallback there was, until this story,
+# "no analogous 'adopt an already-linked deck' path". `docs/dreams/
+# design-sync-loop.md`'s own measured evidence is the concrete case: Design
+# projects that already exist -- `PyForge six-quarter roadmap`,
+# `LLM Knowledge Bases`, `Agentic AI SLDC deck`, plus the three design-system
+# libraries (`Modernist`/`Broadsheet`/`Nocturne`) -- with no local twin (or,
+# for `agentic-sdlc`, a twin that was never registered). None of these
+# follow the `PyForge <Persona> deck` / `PyForge <Persona>.dc.html` naming
+# convention `_persona_from_slug` derives (`agentic-sdlc`'s own file is
+# `Agentic SDLC.dc.html`; `six-quarter-roadmap`'s are `PyForge Roadmap*.dc.
+# html`; a design system has no "prototype" at all, only a library tree) --
+# so `adopt`, unlike every `pull_*` function above, never derives a remote
+# filename from `slug`. Every artifact is named explicitly by the caller.
+#
+# `adopt` also pulls double duty as the design-system mirror (CAP-30's other
+# half): passing `project_name=None`/`project_url=None` skips the `registry.
+# py` §*Design project* section entirely -- that section's own module doc
+# frames itself narrowly around a deck's single bridge, and design systems
+# are libraries the decks bind to, never decks themselves (`registry.
+# DESIGN_SYSTEM_PROJECT_NAMES`'s own docstring). `state_key` still tracks
+# per-artifact etags in the same shared `.herald/bridge-state.json` --
+# `state.py` treats it as an opaque JSON key, never a deck slug specifically.
+
+
+@dataclass(frozen=True)
+class AdoptedArtifact:
+    """One artifact `adopt` considered: its remote path, where it landed
+    locally, and whether THIS run actually pulled new bytes (`unchanged`
+    mirrors `PullResult`'s own field -- an etag short-circuit is not a
+    write, so a fully-synced second `adopt` call reports every artifact
+    `unchanged` and touches no file)."""
+
+    remote_path: str
+    local_path: Path
+    unchanged: bool
+
+
+@dataclass(frozen=True)
+class AdoptResult:
+    """What `adopt` returns: whether this run bootstrapped a NEW local
+    twin (false on every later, idempotent call), whether it wrote the
+    registry section (false when one already existed, or when this
+    `adopt` call never registers at all -- the design-system case), and
+    one `AdoptedArtifact` per requested artifact, in request order."""
+
+    state_key: str
+    bootstrapped: bool
+    registered: bool
+    artifacts: tuple[AdoptedArtifact, ...]
+
+
+def _windowed_read(
+    transport: DesignTransport,
+    *,
+    project_id: str,
+    path: str,
+    if_none_match: str | None = None,
+) -> FileRead:
+    """`transport.read_file`, reassembled across as many offset-paged calls
+    as the server's per-call size cap requires. `_pull_and_land` refuses
+    outright on a truncated single read -- every existing deck's prototype
+    fits comfortably under the cap. `adopt`'s artifacts make no such
+    promise (`docs/dreams/design-sync-loop.md`'s own measured evidence
+    includes one that does not: `six-quarter-roadmap`'s primary prototype,
+    ~320 KB), so this helper pages through ``offset`` until a window's own
+    ``last_line`` reaches its ``total_lines`` -- or, for a file the server
+    answered whole (no window metadata at all), after exactly one call.
+    ``if_none_match`` is honoured only on the FIRST call: an etag
+    precondition is checked against the file's current whole state, never
+    any one window of it, and every later transport in this repo that
+    windows a read (`FileRead.truncated`'s own docstring) treats a
+    declared window the same way.
+
+    Windows are joined on their shared line boundary (``"\\n".join``):
+    ``parse_read_response`` already strips exactly the wrapper's own
+    framing newline from each window's ``body``, so the real newline that
+    separated a window's last line from the next window's first line in
+    the original file survives only if this join re-adds it -- never
+    doubled (the framing one was already stripped) and never lost (two
+    real lines were always either side of it).
+
+    Raises ``errors.HeraldError`` naming ``path`` when a window reports a
+    change but returns no body, or reports itself as partial with no
+    ``last_line``/``total_lines`` pair to resume from -- the server's own
+    contract says a window "ends at a complete line", so a window that
+    cannot say where it ended must never be silently treated as the whole
+    file."""
+    first = transport.read_file(
+        project_id=project_id, path=path, if_none_match=if_none_match
+    )
+    if first.unchanged:
+        return first
+    parts: list[str] = []
+    etag = first.etag
+    window: FileRead = first
+    while True:
+        if window.body is None:
+            raise errors.HeraldError(
+                f"cannot read {path!r}: read_file reported a change but "
+                f"returned no body"
+            )
+        parts.append(window.body)
+        etag = window.etag
+        if window.total_lines is None and window.last_line is None:
+            break  # the whole file arrived in this one call
+        if window.last_line is None or window.total_lines is None:
+            raise errors.HeraldError(
+                f"cannot read {path!r}: server reported a partial window "
+                f"with no last_line/total_lines pair to resume from"
+            )
+        if window.last_line >= window.total_lines:
+            break  # this window reached end of file
+        window = transport.read_file(
+            project_id=project_id, path=path, offset=window.last_line + 1
+        )
+    return FileRead(path=path, etag=etag, body="\n".join(parts), unchanged=False)
+
+
+def adopt(
+    transport: DesignTransport,
+    *,
+    state_key: str,
+    project_id: str,
+    artifacts: Sequence[tuple[str, str]],
+    dest_dir: Path,
+    repo_root: Path,
+    project_name: str | None = None,
+    project_url: str | None = None,
+    state_path: Path | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> AdoptResult:
+    """Story 23.2 (CAP-2): adopt an existing Design project that has no
+    local twin (or, `agentic-sdlc`'s case, an unregistered one) -- see the
+    module comment above this function for why this cannot reuse `seed`
+    (repo -> Design, creates a NEW remote project) or any `pull_*`
+    function (bound to the `PyForge <Persona>` naming convention).
+
+    ``artifacts`` is ``(remote_path, local_relative_path)`` pairs, pulled
+    in order via ``_windowed_read`` and landed at ``dest_dir /
+    local_relative_path``. Idempotent by construction: each artifact's
+    last-seen etag (``state.py``, keyed by its own ``remote_path`` under
+    ``state_key``) short-circuits exactly like every `pull_*` function's
+    `if_none_match`, so a second `adopt` call for an already-adopted
+    ``state_key`` against unchanged Design content pulls nothing and
+    writes nothing (CAP-30's own success criterion) -- each artifact's new
+    etag is recorded immediately after it lands, mirroring
+    `_record_pull_etag`'s own "only after the write genuinely succeeds"
+    discipline, so a crash mid-loop leaves a retry only re-pulling what
+    did not yet land.
+
+    Creates ``dest_dir`` (and a minimal ``README.md`` skeleton, when
+    ``project_name``/``project_url`` are both given and no README exists
+    yet) on first adoption -- the one structural difference from every
+    ``pull_*`` function, which all require a seeded deck directory to
+    already exist. When both are given, registers the README's §*Design
+    project* section (``registry.register``) exactly once -- skipped on
+    every later call once a section already parses (``registry.read``),
+    never re-written even though its content would come out identical,
+    so a fully-synced second call touches that file not at all. When
+    either is ``None`` (the design-system mirror case -- see the module
+    comment), no README is created or touched and no registry section is
+    ever written.
+
+    Raises ``errors.HeraldError`` when ``artifacts`` is empty, or when
+    ``state_key`` was already adopted against a *different*
+    ``project_id`` (a caller bug or a slug collision -- silently
+    re-pointing an existing twin at a different remote project would
+    misattribute every artifact already on record for it)."""
+    if not artifacts:
+        raise errors.HeraldError(f"cannot adopt {state_key!r}: no artifacts given")
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = state.read(resolved_state_path, state_key)
+    bootstrapped = existing is None
+    if existing is None:
+        existing = state.DeckState(project_id=project_id, etags={}, last_pull=None)
+    elif existing.project_id != project_id:
+        raise errors.HeraldError(
+            f"cannot adopt {state_key!r}: already adopted against Design "
+            f"project {existing.project_id!r}, not {project_id!r}"
+        )
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    registered = False
+    if project_name is not None and project_url is not None:
+        readme_path = dest_dir / "README.md"
+        if not readme_path.is_file():
+            _atomic_write_text(readme_path, f"# {state_key}\n")
+        if registry.read(readme_path) is None:
+            registry.register(
+                readme_path=readme_path,
+                project_name=project_name,
+                project_id=project_id,
+                file_url=project_url,
+            )
+            registered = True
+
+    results: list[AdoptedArtifact] = []
+    for remote_path, relative_local_path in artifacts:
+        local_path = dest_dir / relative_local_path
+        file_read = _windowed_read(
+            transport,
+            project_id=project_id,
+            path=remote_path,
+            if_none_match=existing.etags.get(remote_path),
+        )
+        if file_read.unchanged:
+            results.append(
+                AdoptedArtifact(
+                    remote_path=remote_path, local_path=local_path, unchanged=True
+                )
+            )
+            continue
+        _atomic_write_text(local_path, file_read.body or "")
+        new_etags = dict(existing.etags)
+        new_etags[remote_path] = file_read.etag
+        existing = state.DeckState(
+            project_id=existing.project_id,
+            etags=new_etags,
+            last_pull=resolved_now().isoformat(),
+        )
+        state.write(resolved_state_path, state_key, existing)
+        results.append(
+            AdoptedArtifact(
+                remote_path=remote_path, local_path=local_path, unchanged=False
+            )
+        )
+
+    return AdoptResult(
+        state_key=state_key,
+        bootstrapped=bootstrapped,
+        registered=registered,
+        artifacts=tuple(results),
+    )
+
+
 # --- CAP-3: status (Story 3.1/3.2) -------------------------------------------
 #
 # `bridge-protocol.md`'s pilot table (§ Pilot evidence) names the cautionary
