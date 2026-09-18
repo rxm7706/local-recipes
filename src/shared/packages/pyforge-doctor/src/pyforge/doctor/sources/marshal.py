@@ -62,6 +62,7 @@ from pyforge.core.landing_evidence import (
 )
 
 from ..cli_bridge import CliBridgeError, run_git
+from ..known_keys import legacy_bare_merge_key, load_done_story_keys
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import load_rekey_maps, reverse_map
 
