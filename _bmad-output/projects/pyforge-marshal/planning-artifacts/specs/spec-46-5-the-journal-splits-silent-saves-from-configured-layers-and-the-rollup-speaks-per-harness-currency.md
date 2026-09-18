@@ -2,7 +2,7 @@
 title: '46.5: The journal splits silent saves from configured layers, and the rollup speaks per-harness currency'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '887d02532d8cbe1489b21646ea2331a9494e1ee7'
 review_loop_iteration: 1
 followup_review_recommended: false
