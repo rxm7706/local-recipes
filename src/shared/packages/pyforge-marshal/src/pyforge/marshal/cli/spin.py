@@ -1281,7 +1281,10 @@ def _spawn_supervisor_sidecar(
     # which silently stopped writing this sidecar for every launch where
     # wire resolves ``"auto"`` -> applied under a real wrapper -- the new
     # repo-default's common case, since this story also removes
-    # pyforge-marshal's own explicit override.
+    # pyforge-marshal's own explicit override. ``wire_payload`` (not the
+    # no-longer-locally-bound ``wire_layer``) is also the source for
+    # ``aggressiveness`` below -- it is defined on every path above,
+    # whereas ``wire_layer`` was only ever bound inside one of them.
     if wire_payload.get("applied"):
         compression_sidecar = {
             "escalation_threshold": policy.resolve_compression_escalation_threshold(
@@ -1289,7 +1292,7 @@ def _spawn_supervisor_sidecar(
             ),
             "wire": {
                 "enabled": True,
-                "aggressiveness": wire_layer["aggressiveness"],
+                "aggressiveness": wire_payload["aggressiveness"],
             },
         }
         try:
