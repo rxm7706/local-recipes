@@ -557,6 +557,101 @@ def test_bare_form_merge_diff_query_failure_warns_even_alongside_a_false_green(
     assert fails[0].evidence["key"] == "34-3-factory-drain"
 
 
+def test_keys_from_main_commits_attributes_a_bare_form_merge_via_diff_and_ledger(
+    tmp_path: Path,
+) -> None:
+    """Direct proof at Route 3's own boundary: ``_keys_from_main_commits``'s
+    bare-merge fallback branch alone, isolated from Route 2
+    (``_keys_from_merge_subjects`` over ``--all``, a superset of ``main``)
+    which always resolves first inside ``gather_story_status`` and would
+    shadow a bug in Route 3's own fallback forever."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    sha = _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+
+    keys = marshal._keys_from_main_commits(
+        target,
+        [(sha, "Merge 34-3 into main")],
+        project_slug="pyforge-marshal",
+        diff_cache={},
+    )
+
+    assert keys == frozenset({StoryKeyRef(34, 3)})
+
+
+def test_bare_form_merge_still_attributes_once_the_station_has_its_own_override(
+    tmp_path: Path,
+) -> None:
+    """The literal real-world scenario this story exists to fix: marshal
+    has carried its own scoped ``merge_subject_template`` since PR #1467,
+    but ``34-3`` (``dcda31b8cb``) landed under the bare default BEFORE that
+    override existed. A real (non-empty) historical bare-form commit whose
+    diff touches only marshal's own paths, naming a key marshal's own
+    ledger already knows, must still attribute -- the scoped-template
+    fixtures elsewhere in this file all use EMPTY commits, and the
+    bare-fallback fixtures elsewhere all use a project with NO override, so
+    neither alone proves this combination works."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """The mirror of the already-covered "ledger knows it, path doesn't
+    match" case: the diff touches ONLY this station's own paths, but the
+    extracted key is absent from this station's own tracked ledger
+    entirely -- the ledger gate is checked BEFORE the diff is even queried
+    (``bare_merge.attribute_bare_merge``), so this must not attribute
+    either."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"9-9-unrelated": "done"})  # no 34-3 row at all
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
 
 

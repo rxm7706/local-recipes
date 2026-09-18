@@ -475,6 +475,59 @@ def test_bare_form_merge_diff_query_failure_warns_naming_the_sha(
     assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
 
 
+def test_bare_form_merge_still_attributes_once_the_station_has_its_own_override(
+    tmp_path: Path,
+) -> None:
+    """The literal real-world scenario this story exists to fix: marshal has
+    carried its own scoped ``merge_subject_template`` since PR #1467, but
+    ``34-3`` (``dcda31b8cb``) landed under the bare default BEFORE that
+    override existed. A real (non-empty) historical bare-form commit whose
+    diff touches only marshal's own paths, naming a key marshal's own
+    ledger already knows, must still attribute even though this project HAS
+    an override -- the existing override fixtures elsewhere in this file
+    all use EMPTY commits, and the existing bare-fallback-positive fixtures
+    all use a project with NO override, so neither alone proves this
+    combination works."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "seed ledger + policy")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """The mirror of the already-covered "ledger knows it, path doesn't
+    match" case: the diff touches ONLY marshal's own paths, but the
+    extracted key is absent from marshal's own tracked ledger entirely --
+    the ledger gate is checked BEFORE the diff is even queried
+    (``bare_merge.attribute_bare_merge``), so this must not attribute
+    either."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"9-9-unrelated": "done"})  # no 34-3 row
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
 # --- Story 27.2: gather_direction reads the station's rekey map -----------
 
 
