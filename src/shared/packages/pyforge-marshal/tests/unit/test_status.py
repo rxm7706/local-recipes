@@ -3365,6 +3365,36 @@ class TestFormatRollupByHarness:
         # No blended cross-harness total anywhere in the rendering.
         assert "total" not in text.lower()
 
+    def test_formats_byte_and_graph_hits_values_without_repr(self) -> None:
+        rollup = {
+            "status": "ok",
+            "harnesses": {
+                "claude": {
+                    "currency": "usd",
+                    "silent": {
+                        "output_compression_saved": [500, 1536],
+                        "graph_hits_vs_file_reads": [
+                            (12, 3),
+                            "unavailable: no codegraph stats",
+                        ],
+                    },
+                    "configured": {"wire_compression_saved": [2048]},
+                    "runs": 2,
+                },
+            },
+        }
+        text = status_cli._format_rollup_by_harness(rollup)
+        # Byte-valued keys go through `_format_bytes` per element, not a
+        # raw int/list.
+        assert "output_compression_saved=500B, 1.5KB" in text
+        assert "wire_compression_saved=2.0KB" in text
+        # `graph_hits_vs_file_reads`: tuple -> "hits/reads", string element
+        # (a combined error/unavailable reason) passes through as-is.
+        assert "graph_hits_vs_file_reads=12/3, unavailable: no codegraph stats" in text
+        # No raw Python list/tuple repr() anywhere in the rendering.
+        assert "[500" not in text
+        assert "(12, 3)" not in text
+
 
 class TestSavingsRollupByHarness:
     """Story 46.5 (CAP-193): ``run_status``-level envelope wiring."""

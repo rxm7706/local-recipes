@@ -420,6 +420,81 @@ def test_read_rollup_by_harness_tolerates_malformed_and_non_dict(tmp_path: Path)
     assert report == {"status": "no-savings-samples", "harnesses": {}}
 
 
+def test_read_rollup_by_harness_skips_unrecognized_layer_key(tmp_path: Path) -> None:
+    # A schema-drift key (not yet added to the taxonomy) must not crash the
+    # whole rollup via an uncaught `ValueError` -- only that key is skipped;
+    # the run's other, recognized keys still bucket normally.
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-claude",
+        harness_profile="claude",
+        layer_savings_entries=[
+            {"output_compression_saved": 500, "some_future_layer_key": 42}
+        ],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["status"] == "ok"
+    claude = report["harnesses"]["claude"]
+    assert claude["silent"] == {"output_compression_saved": [500]}
+    assert "some_future_layer_key" not in claude["silent"]
+    assert "some_future_layer_key" not in claude["configured"]
+
+
+def test_read_rollup_by_harness_skips_non_utf8_journal(tmp_path: Path) -> None:
+    # A non-UTF-8 journal file raises `UnicodeDecodeError` from
+    # `read_text(encoding="utf-8")` -- a `ValueError` subclass, NOT an
+    # `OSError` subclass -- so it needs its own tolerance, not just the
+    # `OSError` guard. Skips that one run; other runs still roll up.
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    bad_run_dir = runs_dir / "run-bad-encoding"
+    bad_run_dir.mkdir(parents=True)
+    (bad_run_dir / "journal.jsonl").write_bytes(b"\xff\xfe\x00\x01not utf-8 at all")
+    _write_run_journal(
+        runs_dir,
+        "run-claude",
+        harness_profile="claude",
+        layer_savings_entries=[{"output_compression_saved": 500}],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["status"] == "ok"
+    assert set(report["harnesses"]) == {"claude"}
+    assert report["harnesses"]["claude"]["silent"] == {"output_compression_saved": [500]}
+
+
+def test_read_rollup_by_harness_merges_nonoverlapping_keys_across_entries(
+    tmp_path: Path,
+) -> None:
+    # Two non-empty `budget-usage` entries in the same run can carry
+    # different, non-overlapping key subsets (`_layer_savings_payload` only
+    # includes a key when its `LayerSavings` field `is not None`) -- both
+    # must survive in the rollup via per-key merge, not whole-payload
+    # replacement (which would drop whichever entry came first).
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-claude",
+        harness_profile="claude",
+        layer_savings_entries=[
+            {"output_compression_saved": 500},
+            {"wire_compression_saved": 200},
+        ],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    claude = report["harnesses"]["claude"]
+    assert claude["silent"] == {"output_compression_saved": [500]}
+    assert claude["configured"] == {"wire_compression_saved": [200]}
+
+
 def test_dispatch_idle_timing_reads_journal_samples(tmp_path: Path) -> None:
     runs = (
         tmp_path
