@@ -1059,3 +1059,13 @@ deployment.
 
   verified: 2026-09-18 — RESOLVED by the landing itself. `marshal factory dispatch`'s land-finalize promoted the row (`7fd7a6f944 marshal: promote sprint-status ledger for 'pyforge-herald' (1 key(s) -> done)`, on origin/main 44 s after PR #1459 merged as `1dd017bc21 Merge pyforge-herald/23-1 into main`); the tracked ledger reads `done` for `23-1-the-account-is-enumerated-and-reconciled-against-the-registry`. The respawn the deferral feared did fire once inside that 44 s window (run pyforge-herald-20260918T151511146Z-3f6a3426, which correctly refused as already-merged) — a dispatch-supervisor race, not a ledger gap, and no work was duplicated.
 
+### DW-FU-23-2: _windowed_read has no guard against a server that repeatedly returns a non-advancing last_line, which would loop forever.
+
+- source_spec: `planning-artifacts/specs/spec-23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries.md`
+  summary: _windowed_read has no guard against a server that repeatedly returns a non-advancing last_line, which would loop forever.
+  evidence: Edge Case Hunter review pass (2026-09-18): traced the pagination loop in src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py's _windowed_read -- it breaks only when window.last_line >= window.total_lines, with no check that last_line actually advanced between calls. Could not verify reachability: every live call against the real Design read_file MCP tool during this story paged forward correctly (confirmed pulling a 3377-line file and a 136293-byte file). What would settle it: observing the real API return a stalled/non-advancing window pair, which has never been seen.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:_windowed_read
+  origin: spec-deferred dd34204da6b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
