@@ -40,3 +40,11 @@ Parent Spec capability: `spec-design-sync-loop CAP-2`.
 Surface: presentations/agentic-sdlc/README.md; six-quarter-roadmap/**; llm-knowledge-bases/**; _design-systems/{modernist,broadsheet,nocturne}/**..
 Ledger key: `23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's policy `verify_commands` entry; MRS-GATE-010 binds the dispatch gate to this Success signal, and it is read from the primary tree's tracked spec, so it must be declared here before dispatch, not by the session).
+
+**Manual checks:**
+- `registry.read` resolves the fourteen decks plus `agentic-sdlc`, `six-quarter-roadmap` and `llm-knowledge-bases`; the three `presentations/_design-systems/<name>/` mirrors match Design byte-for-byte and a second pull writes nothing; no deck glob matches `_design-systems/`.

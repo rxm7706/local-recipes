@@ -819,6 +819,13 @@ surface after a pull is Story 21.3 plus currency CAP-6; the one new requirement 
 literal with the value it replaced — is now an acceptance criterion on 21.3. CAP-4 in the Spec is
 narrowed to that delta.
 
+> **Re-keyed 2026-09-17** (`rekey-2026-09-17.md`): the four surviving stories were renumbered
+> 23.5→23.3, 23.6→23.4, 23.7→23.5, 23.8→23.6 so the feed keys are contiguous. The fold notes above
+> and the epic's *Order* line keep their pre-rekey numbers as historical prose; every `Deps:` field
+> and in-story pointer below was repointed to the live numbers on 2026-09-18 (the stale `S-23.5`
+> self-dependency on 23.5 and the phantom `S-23.7` on 23.6 had made both stories permanently
+> not-ready to `marshal factory drain`'s dependency graph).
+
 ### Story 23.3: The `.potx` path — template-filled PowerPoints, and every derived file stamped
 **Type:** feature • **Effort:** M • **Deps:** S-21.5 • **FR/AD:** `spec-design-sync-loop` CAP-5 • binds `spec-deck-family-lockstep` CAP-3 (the Marp path)
 **Surface:** each deck README's registry section (a declared `.potx`, the chosen path), the derive stage calling `pptx-spec`/`pptx-fill` (Story 15.1) for a `.potx` deck and `deck-export` otherwise, derived-file stamps (tree + etag) on every trio/export artifact, tests.
@@ -826,19 +833,19 @@ narrowed to that delta.
 **And** a host without Chrome reports `derive-skipped: no chrome` for the Marp-PPTX step and the run continues
 
 ### Story 23.4: PowerPoints push back, and every push proves itself
-**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-6 • closes Story 5.1's deferred binary-push follow-up
+**Type:** feature • **Effort:** M • **Deps:** S-23.3 • **FR/AD:** `spec-design-sync-loop` CAP-6 • closes Story 5.1's deferred binary-push follow-up
 **Surface:** `.../herald/deck_pipeline.py` (`push_exports` gains the PPTX pair once a binary `write_files` shape is proven live; a `--prove` read-back), `.../herald/state.py`, each deck README's ledger section (etag row), tests.
 **Given** `herald deck push` already pushes the standalone poster changed-only by content hash and etag-guarded per file, but skips both PPTX because no binary `write_files` wire shape has ever been proven (Story 5.1's recorded deferral), and the read-back proof the 2026-09-14 sweep used is a curl-and-strip recipe an agent runs by hand **When** a binary push is proven live on one PPTX and adopted for the pair, and the push verb reads every pushed file back through the serve URL with the harness stripped **Then** read-back is byte-identical for 100% of pushed files, the etag is recorded in the README ledger and bridge state, and a second push pushes nothing
 **And** a read-back mismatch is a refusal that names the file, never a warning
 
 ### Story 23.5: The family is browsable and downloadable on Pages
-**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-7 • `spec-pyforge-pages` CAP-1/CAP-2 (bound, not re-minted)
+**Type:** feature • **Effort:** M • **Deps:** S-23.3 • **FR/AD:** `spec-design-sync-loop` CAP-7 • `spec-pyforge-pages` CAP-1/CAP-2 (bound, not re-minted)
 **Surface:** `docsite/build.py`, `docsite/templates/**` (family page + index), `docsite/content/**` (deck family config), `docs/dashboard/**` (render), tests / `site-check`.
 **Given** `docsite/build.py` publishes the standalone infographics into a gallery and nothing else — no PPTX, Marp, executive summary or per-deck page is published or downloadable **When** the site gains one family page per registered deck and an index **Then** each family page shows the poster, the Infographic Deck and the Executive Summary in view, offers the PPTX(s) and Marp sources as downloads, stamps each with its etag and tree, and `site-check` passes
 **And** `dashboard.yml` is still the only `deploy-pages` caller and Kedro-Viz is still at `/kedro-viz/`
 
 ### Story 23.6: One command, idempotent, reported
-**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-21.5, S-23.1, S-23.2, S-23.5, S-23.6, S-23.7 • **FR/AD:** `spec-design-sync-loop` CAP-8, CAP-3 (the sweep half)
+**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-21.5, S-23.1, S-23.2, S-23.3, S-23.4, S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-8, CAP-3 (the sweep half)
 **Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/specs/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
-**Given** every stage exists as its own verb — `status` (23.1), the adopt path (23.2), `pull`/`watch` (kernel), `deck-facts --refresh` over every surface (21.3), `deck-trio` (21.1/21.2), `deck-export`/`pptx-fill` (21.5/23.5), `push` with proof (23.6), the family page (23.7) — and an agent runs them from memory **When** `herald deck sync-all` runs them in that order for every registered deck (or one `--slug`): enumerate → pull every twin whose etag moved → refresh → derive → push → prove → publish, and prints a per-deck report — pulled / **overwrote-local** (a repo-side edit Design had not seen, named) / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
+**Given** every stage exists as its own verb — `status` (23.1), the adopt path (23.2), `pull`/`watch` (kernel), `deck-facts --refresh` over every surface (21.3), `deck-trio` (21.1/21.2), `deck-export`/`pptx-fill` (21.5/23.3), `push` with proof (23.4), the family page (23.5) — and an agent runs them from memory **When** `herald deck sync-all` runs them in that order for every registered deck (or one `--slug`): enumerate → pull every twin whose etag moved → refresh → derive → push → prove → publish, and prints a per-deck report — pulled / **overwrote-local** (a repo-side edit Design had not seen, named) / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
 **And** `--dry-run` prints the same report without writing, and the README/spec runbook points at the command rather than the steps
