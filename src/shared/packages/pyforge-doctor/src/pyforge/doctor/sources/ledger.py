@@ -52,7 +52,10 @@ this is a library function, not a CLI, so it never prints or exits.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
+
+from pyforge.core.landing_evidence import parse_templated_merge_subject
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
@@ -62,6 +65,18 @@ __all__ = ("gather", "gather_direction")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
+#: A station's own policy file, read as TOML for exactly one key
+#: (``merge_subject_template``) -- never through ``pyforge.marshal`` (this
+#: module's own independence rule, see the module docstring). Duplicated in
+#: ``sources/marshal.py`` rather than shared via a cross-import, mirroring
+#: this file's own ``_git``/``_parse_statuses`` precedent of small, per-file
+#: self-contained helpers over sibling-module coupling.
+_MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
+#: AD-24 legacy default template -- carries no station token, so a subject
+#: rendered from it cannot be scoped to any one station (Story 27.1's own
+#: acknowledged residual: "policy declares no template -> legacy default
+#: honoured"). Kept identical to ``sources/marshal.py``'s own constant.
+_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
 #: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
 #: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
 #: -- i.e. shipped by the range under judgement. Once merged it is in both
@@ -113,6 +128,24 @@ def _git(target: Path, *args: str) -> str | None:
         return run_git(target, list(args))
     except (CliBridgeError, UnicodeDecodeError):
         return None
+
+
+def _project_merge_subject_template(target: Path, project_slug: str) -> str:
+    """``project_slug``'s own ``merge_subject_template``, read directly from
+    its tracked ``marshal-policy.toml`` as TOML -- never through
+    ``pyforge.marshal`` (this module's independence rule). Degrades to the
+    legacy repo default when the policy file is absent, unreadable, not
+    valid TOML, or does not declare the key -- "degrades, never crashes,"
+    and Story 27.1's own "policy declares no template -> legacy default
+    honoured" row.
+    """
+    path = target / PROJECTS_PREFIX / project_slug / _MARSHAL_POLICY_SUFFIX
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return _MERGE_SUBJECT_TEMPLATE
+    value = data.get("merge_subject_template")
+    return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -351,6 +384,19 @@ def gather(
     ``head``'s first parent instead — the honest question for a push is
     "what did this change?", not "compare a revision to itself" (which would
     report clean forever).
+
+    Story 27.1: when ``base`` and ``head`` name DIFFERENT commits (the
+    PR-shaped case), the comparison is against ``merge-base(base, head)``,
+    not ``base``'s own tip. ``base`` (typically ``origin/main``) can advance
+    past the point this ``head`` branch forked from — an unrelated commit
+    landing on ``base`` in the meantime (e.g. an unattended dispatch
+    promoting a sibling story to ``done``) then reads as something ``head``
+    "un-finished," even though ``head`` never touched it (herald PR #1465,
+    2026-09-18, 18:17Z). Comparing against the honest common ancestor
+    instead means only what ``head`` itself changed relative to the fork
+    point is judged. A merge-base that fails to resolve (e.g. unrelated
+    histories) degrades to a WARN rather than silently reverting to the
+    bug this exists to fix.
     """
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
         # Both statuses are WARN, but the MESSAGE has to name the real cause:
