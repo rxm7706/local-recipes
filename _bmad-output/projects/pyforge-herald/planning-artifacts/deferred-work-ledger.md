@@ -1102,7 +1102,7 @@ deployment.
 - source_spec: `planning-artifacts/specs/spec-23-6-one-command-idempotent-reported.md`
   summary: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
   evidence: No live Claude Design credentials are available in this or any other automated dispatch environment. If the gap is real it would be medium: a verification-depth gap, not a code defect. It would be settled by running `herald deck sync-all` twice against a deck with live Design credentials and real tracked state.
-  mechanism: The proof command now exists (`HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <slug>`, Story 24.3). Still open -- no operator has run it and recorded the two reports yet; close this entry only when they have, citing the recorded run.
+  note: The proof command now exists (`HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <slug>`, Story 24.3). Still open -- no operator has run it and recorded the two reports yet; close this entry only when they have, citing the recorded run.
   location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
   origin: spec-deferred 9aa35103a2ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)

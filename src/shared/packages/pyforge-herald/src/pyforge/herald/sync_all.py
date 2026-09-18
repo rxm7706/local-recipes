@@ -74,6 +74,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
@@ -241,20 +242,38 @@ def _report_to_dict(report: DeckSyncReport) -> dict[str, object]:
     }
 
 
-def _write_proof(report: DeckSyncReport, *, proof_dir: Path, repo_root: Path) -> None:
-    """Write ``<proof_dir>/<slug>/report-<UTC timestamp>.json`` (mirrors
-    ``stamps.py``'s own ``json.dumps(..., indent=2, sort_keys=True)``
-    formatting exactly) plus its ``stamps.write_stamp`` sidecar -- the
-    durable evidence a live idempotency proof run needs (Story 24.3,
-    ``spec-pyforge-herald`` CAP-50). A sub-second timestamp keeps two runs
-    executed in close succession from colliding on the same filename."""
+def _write_proof(
+    report: DeckSyncReport,
+    *,
+    proof_dir: Path,
+    repo_root: Path,
+    now: Callable[[], datetime],
+) -> None:
+    """Write ``<proof_dir>/<slug>/report-<UTC timestamp>-<random>.json``
+    (mirrors ``stamps.py``'s own ``json.dumps(..., indent=2,
+    sort_keys=True)`` formatting exactly) plus its ``stamps.write_stamp``
+    sidecar -- the durable evidence a live idempotency proof run needs
+    (Story 24.3, ``spec-pyforge-herald`` CAP-50). ``now`` is the same
+    injected seam every other clock read in this module uses, never a
+    direct ``datetime.now`` call. A sub-second timestamp plus a random
+    suffix keeps two runs in the same microsecond from silently
+    overwriting each other's report (``atomic_write_text`` replaces on a
+    filename collision). Raises ``errors.HeraldError`` naming the path
+    that failed, mirroring ``stamps.write_stamp``'s own AD-6 discipline --
+    never a raw ``OSError``/``ValueError`` leak."""
     deck_dir = proof_dir / report.slug
-    deck_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    report_path = deck_dir / f"report-{timestamp}.json"
-    atomic_write_text(
-        report_path, json.dumps(_report_to_dict(report), indent=2, sort_keys=True) + "\n"
-    )
+    timestamp = now().strftime("%Y%m%dT%H%M%S%fZ")
+    report_path = deck_dir / f"report-{timestamp}-{uuid.uuid4().hex[:8]}.json"
+    try:
+        deck_dir.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(
+            report_path,
+            json.dumps(_report_to_dict(report), indent=2, sort_keys=True) + "\n",
+        )
+    except (OSError, ValueError) as exc:
+        raise errors.HeraldError(
+            f"could not write proof report {report_path}: {exc}"
+        ) from exc
     stamps.write_stamp(report_path, repo_root=repo_root, slug=report.slug)
 
 
@@ -740,8 +759,21 @@ def sync_all(
             ]
 
     if proof_dir is not None:
+        # Per-deck isolation, mirroring the main sync loop above (module
+        # docstring): one report's proof-write failure must not discard
+        # every other already-synced deck's own valid report.
+        proof_errors: list[str] = []
         for report in reports:
-            _write_proof(report, proof_dir=proof_dir, repo_root=repo_root)
+            try:
+                _write_proof(
+                    report, proof_dir=proof_dir, repo_root=repo_root, now=resolved_now
+                )
+            except errors.HeraldError as exc:
+                proof_errors.append(str(exc))
+        if proof_errors:
+            raise errors.HeraldError(
+                "could not write proof report(s): " + "; ".join(proof_errors)
+            )
 
     return SyncAllReport(
         decks=tuple(reports), published=published, publish_error=publish_error
