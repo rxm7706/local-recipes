@@ -1922,6 +1922,15 @@ def dispatch_once(
         # journal and LAUNCH the foreign-provider model even though the
         # envelope's own `data["model"]` correctly reported the drop.
         model = None
+        # The escalation triple is read straight from these locals when the
+        # intent entry is built further down (`if escalated: ...`) -- if
+        # only `model` were reset, a run that had escalated before the
+        # mismatch fired would journal `model: null` alongside a stale
+        # `escalated: true`/`from_model`/`to_model`, a self-contradictory
+        # persisted entry.
+        escalated = False
+        from_model = None
+        to_model = None
         data["model"] = None
         data.pop("escalated", None)
         data.pop("from_model", None)
