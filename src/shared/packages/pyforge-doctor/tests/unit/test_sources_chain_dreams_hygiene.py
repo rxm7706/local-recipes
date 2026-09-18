@@ -450,6 +450,9 @@ def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
     _write_spec(tmp_path, "ready-dream", status="ready-for-dev")
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "specified-spec-not-ready" for f in findings)
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same suppression.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
 
 
 def test_specified_spec_absorbed_suppresses_finding(tmp_path: Path) -> None:

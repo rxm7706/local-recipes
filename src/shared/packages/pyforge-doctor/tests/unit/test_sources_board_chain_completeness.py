@@ -276,6 +276,7 @@ def test_absorbed_and_archived_specs_stay_exempt_from_decomposition(
     ``extension-point`` is a standing seam — none owes a story trail."""
     for status in ("absorbed", "archived", "superseded", "extension-point"):
         root = tmp_path / status
+        _write_roster(root)
         pa = _pa(root, "pyforge-testproj")
         _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", status)
 

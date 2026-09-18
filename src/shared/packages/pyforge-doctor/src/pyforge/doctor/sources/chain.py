@@ -954,7 +954,10 @@ def _load_spec_ready_or_beyond(target: Path, findings: list[Finding]) -> frozens
     rel = _GUILD_ROSTER_REL.as_posix()
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        value = frozenset(str(s) for s in data["spec_statuses_ready_or_beyond"])
+        raw_value = data["spec_statuses_ready_or_beyond"]
+        if not isinstance(raw_value, list):
+            raise TypeError("spec_statuses_ready_or_beyond must be a list")
+        value = frozenset(str(s) for s in raw_value)
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
         findings.append(
             Finding(

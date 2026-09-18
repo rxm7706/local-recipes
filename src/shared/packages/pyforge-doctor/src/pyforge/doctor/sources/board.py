@@ -131,9 +131,20 @@ def _spec_status_groups(target: Path) -> tuple[frozenset[str], frozenset[str], d
     rel = _GUILD_ROSTER_REL.as_posix()
     try:
         data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
-        spec_statuses = frozenset(str(s) for s in data["spec_statuses"])
-        terminal = frozenset(str(s) for s in data["spec_statuses_terminal"])
-        ended_acts = frozenset(str(s) for s in data["spec_statuses_ended_acts"])
+        raw_spec_statuses = data["spec_statuses"]
+        raw_terminal = data["spec_statuses_terminal"]
+        raw_ended_acts = data["spec_statuses_ended_acts"]
+        if not all(
+            isinstance(v, list)
+            for v in (raw_spec_statuses, raw_terminal, raw_ended_acts)
+        ):
+            raise TypeError(
+                "spec_statuses/spec_statuses_terminal/spec_statuses_ended_acts "
+                "must be lists"
+            )
+        spec_statuses = frozenset(str(s) for s in raw_spec_statuses)
+        terminal = frozenset(str(s) for s in raw_terminal)
+        ended_acts = frozenset(str(s) for s in raw_ended_acts)
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
         return OPEN_SPEC_STATUSES, DELIVERED_SPEC_STATUSES, {
             "inv": "", "kind": "spec-status-roster-degraded",

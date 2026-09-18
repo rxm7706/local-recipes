@@ -91,12 +91,18 @@ def _load_terminal_statuses(target: Path) -> tuple[frozenset[str], Finding | Non
     """
     try:
         data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
-        terminal = frozenset(str(s) for s in data["spec_statuses_terminal"])
-        ended_acts = frozenset(str(s) for s in data["spec_statuses_ended_acts"])
+        raw_terminal = data["spec_statuses_terminal"]
+        raw_ended_acts = data["spec_statuses_ended_acts"]
+        if not isinstance(raw_terminal, list) or not isinstance(raw_ended_acts, list):
+            raise TypeError(
+                "spec_statuses_terminal/spec_statuses_ended_acts must be lists"
+            )
+        terminal = frozenset(str(s) for s in raw_terminal)
+        ended_acts = frozenset(str(s) for s in raw_ended_acts)
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
         return TERMINAL_STATUSES, Finding(
             source=Source.STATUS_BODY_CONSISTENCY,
-            check="spec-status-roster-degraded",
+            check=_CHECK_ROSTER_DEGRADED,
             status=DoctorStatus.WARN,
             message=(
                 f"{_GUILD_ROSTER_REL} could not be read for the Spec-side of "
@@ -1393,19 +1399,25 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
     )
 
 
+#: Checks that CAP-1..CAP-4 can each independently emit for the same
+#: underlying file/roster problem -- dedupe by (check, path) rather than
+#: letting every caller's copy survive into the combined ``gather()`` output.
+_DEDUPE_BY_PATH_CHECKS = frozenset({_CHECK_UNPARSEABLE, _CHECK_ROSTER_DEGRADED})
+
+
 def _dedupe_unparseable_findings(
     findings: tuple[Finding, ...],
 ) -> tuple[Finding, ...]:
-    seen_paths: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     out: list[Finding] = []
     for finding in findings:
-        if finding.check != _CHECK_UNPARSEABLE:
+        if finding.check not in _DEDUPE_BY_PATH_CHECKS:
             out.append(finding)
             continue
-        path = str(finding.evidence.get("path", ""))
-        if path in seen_paths:
+        key = (finding.check, str(finding.evidence.get("path", "")))
+        if key in seen:
             continue
-        seen_paths.add(path)
+        seen.add(key)
         out.append(finding)
     return tuple(out)
 
