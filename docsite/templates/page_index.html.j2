@@ -28,6 +28,12 @@
       <p>{% if infographics %}{{ infographics | length }} standalone visual{{ '' if infographics | length == 1 else 's' }}, each published as its own page and kept in step with the code they describe.{% else %}Standalone visuals, published as their own pages alongside the dossier.{% endif %}</p>
       <span class="card-go">{% if infographics %}Open the gallery{% else %}Nothing published yet{% endif %} &rarr;</span>
     </a>
+    <a class="card" href="decks/index.html">
+      <span class="card-eyebrow">Family</span>
+      <h3>Decks</h3>
+      <p>{% if families %}{{ families | length }} deck famil{{ 'y' if families | length == 1 else 'ies' }}, each with its poster, Infographic Deck and Executive Summary in view, plus PowerPoint and Marp downloads.{% else %}Deck families, published as their own pages alongside the dossier.{% endif %}</p>
+      <span class="card-go">{% if families %}Open the decks{% else %}Nothing published yet{% endif %} &rarr;</span>
+    </a>
     {%- for n in site.neighbours | default([]) %}
     <a class="card" href="{{ n.href }}">
       <span class="card-eyebrow">{{ n.eyebrow }}</span>

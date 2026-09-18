@@ -263,7 +263,10 @@ def _artifact_stamp(path: Path, commit: str) -> dict:
             data = None
         if isinstance(data, dict) and isinstance(data.get("tree"), str):
             etag = data.get("etag")
-            return {"tree": data["tree"][:12], "etag": etag if isinstance(etag, str) else "unstamped"}
+            return {
+                "tree": data["tree"][:12],
+                "etag": etag[:12] if isinstance(etag, str) else "unstamped",
+            }
     digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
     return {"tree": (commit or "unknown")[:12], "etag": digest}
 
@@ -347,27 +350,30 @@ _FAMILY_VIEW_OUT_NAMES = {
 }
 
 
-def publish_family_views(fam: dict, deck_out: Path) -> None:
+def publish_family_views(fam: dict, deck_out: Path, inject: bool) -> None:
     """Publish the Infographic Deck / Executive Summary ``.dc.html``
-    sources into the family page's own directory, byte-for-byte plus the
-    same small fixed back-bar ``publish_infographic`` injects after
-    ``<body>``. These files carry no build step of their own -- like the
-    poster, they are already resolved static HTML; the ``<x-dc>`` wrapper
-    and its now-unreachable ``./support.js`` are Design-editor-only
-    affordances (a 404 on that one ``<script src>``) that do not affect how
-    the content itself renders. Records the published ``out_name`` onto
-    each view dict so the template can link to it."""
+    sources into the family page's own directory, byte-for-byte plus --
+    when ``inject`` is true, mirroring ``publish_infographic``'s own
+    ``site.infographics.inject_backbar`` gate -- the same small fixed
+    back-bar after ``<body>``. These files carry no build step of their own
+    -- like the poster, they are already resolved static HTML; the
+    ``<x-dc>`` wrapper and its now-unreachable ``./support.js`` are
+    Design-editor-only affordances (a 404 on that one ``<script src>``)
+    that do not affect how the content itself renders. Records the
+    published ``out_name`` onto each view dict so the template can link to
+    it."""
     for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
         item = fam.get(key)
         if item is None:
             continue
         raw = item["path"].read_text(encoding="utf-8", errors="replace")
-        bar = FAMILY_VIEW_BACKBAR.format(
-            deck_title=html.escape(fam["title"], quote=False),
-            title=html.escape(f"{fam['title']} — {item['label']}", quote=False),
-        )
-        m = re.search(r"<body[^>]*>", raw, re.I)
-        raw = (raw[: m.end()] + "\n" + bar + raw[m.end() :]) if m else (bar + raw)
+        if inject:
+            bar = FAMILY_VIEW_BACKBAR.format(
+                deck_title=html.escape(fam["title"], quote=False),
+                title=html.escape(f"{fam['title']} — {item['label']}", quote=False),
+            )
+            m = re.search(r"<body[^>]*>", raw, re.I)
+            raw = (raw[: m.end()] + "\n" + bar + raw[m.end() :]) if m else (bar + raw)
         (deck_out / out_name).write_text(raw, encoding="utf-8")
         item["out_name"] = out_name
 
@@ -527,7 +533,7 @@ def build(out_dir: Path, repo_root: Path) -> dict:
     for fam in families:
         deck_out = out_dir / "decks" / fam["slug"]
         deck_out.mkdir(parents=True, exist_ok=True)
-        publish_family_views(fam, deck_out)
+        publish_family_views(fam, deck_out, inject)
         publish_family_downloads(fam, deck_out)
         (deck_out / "index.html").write_text(
             env.get_template("page_family.html.j2").render(
@@ -613,8 +619,16 @@ def check(out_dir: Path, result: dict) -> int:
     for fam in result["families"]:
         slug = fam["slug"]
         deck_out = out_dir / "decks" / slug
-        if not (deck_out / "index.html").exists():
+        family_page = deck_out / "index.html"
+        if not family_page.exists():
             problems.append(f"deck family page not published: {slug}")
+        else:
+            size = family_page.stat().st_size
+            if size < 500:
+                problems.append(f"suspiciously small: decks/{slug}/index.html ({size}B)")
+            text = family_page.read_text(encoding="utf-8")
+            if "{{" in text or "{%" in text:
+                problems.append(f"unrendered Jinja delimiters in decks/{slug}/index.html")
         if slug not in decks_index:
             problems.append(f"deck missing from the decks index: {slug}")
 
@@ -665,9 +679,15 @@ def main() -> int:
     for item in result["infographics"]:
         print(f"  infographic  {item['out_name']:<46} {item['bytes'] // 1024:>5} KB  {item['source']}")
     for fam in result["families"]:
+        label = "poster"
+        if fam["infographic_deck"]:
+            label += "+ID"
+        if fam["executive_summary"]:
+            label += "+ES"
+        if label == "poster":
+            label = "poster only"
         print(
-            f"  deck family  {fam['slug']:<28} "
-            f"{'poster+ID+ES' if fam['infographic_deck'] and fam['executive_summary'] else 'poster only':<12} "
+            f"  deck family  {fam['slug']:<28} {label:<12} "
             f"{len(fam['pptx']):>2} pptx  {len(fam['marp']):>2} marp"
         )
 
