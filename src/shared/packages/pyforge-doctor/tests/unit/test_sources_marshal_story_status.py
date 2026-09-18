@@ -108,6 +108,19 @@ def _write_state(loop_root: Path, slug: str, run: str, tasks: dict) -> None:
     state.write_text(json.dumps({"tasks": tasks}), encoding="utf-8")
 
 
+def _write_policy(target: Path, slug: str, merge_subject_template: str) -> None:
+    """A minimal ``marshal-policy.toml`` declaring only the one key Story
+    27.1 reads per-project instead of the hardcoded repo default."""
+    policy = (
+        target / "_bmad-output" / "projects" / f"pyforge-{slug}"
+        / "planning-artifacts" / "marshal-policy.toml"
+    )
+    policy.parent.mkdir(parents=True, exist_ok=True)
+    policy.write_text(
+        f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8"
+    )
+
+
 # --- False-green story -------------------------------------------------
 
 
@@ -321,6 +334,63 @@ def test_merge_commit_for_a_different_key_does_not_suppress(tmp_path: Path) -> N
     loop_root = tmp_path / "loop_root"
     _write_state(
         loop_root, "warden", "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "1-1-foo"
+
+
+# --- Story 27.1: templated merge subject, scoped to the project's OWN
+# marshal-policy.toml rather than the hardcoded repo default -------------
+
+
+def test_own_scoped_template_merge_suppresses_the_false_green(tmp_path: Path) -> None:
+    """A station's own ``merge_subject_template`` (read from its tracked
+    policy file) is valid Route 2 landing evidence, exactly like the bare
+    legacy default used to be for every project unconditionally."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "doctor", "Merge pyforge-doctor/{key} into main")
+    _commit(target, "Merge pyforge-doctor/1-1 into main")
+    _write_feed(target, "doctor", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
+    tmp_path: Path,
+) -> None:
+    """The live incident, mirrored on the story-status side: once a station
+    declares its OWN scoped template, a sibling's plain ``Merge <key> into
+    main`` -- rendered from THAT sibling's still-unscoped legacy default --
+    must not be read as this station's landing evidence, even when the
+    numeric key coincides."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "doctor", "Merge pyforge-doctor/{key} into main")
+    # A sibling's own (unscoped) legacy-default merge, same numeric key.
+    _commit(target, "Merge 1-1 into main")
+    _write_feed(target, "doctor", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
         {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
     )
 

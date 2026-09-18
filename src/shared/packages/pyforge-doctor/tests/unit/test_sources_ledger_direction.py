@@ -72,6 +72,19 @@ def _commit(repo: Path, message: str, *, allow_empty: bool = False) -> None:
     _git(repo, *args)
 
 
+def _write_policy(repo: Path, project: str, merge_subject_template: str) -> None:
+    """A minimal ``marshal-policy.toml`` declaring only the one key this
+    module reads -- Story 27.1's per-station template read."""
+    policy_path = (
+        repo / "_bmad-output" / "projects" / project
+        / "planning-artifacts" / "marshal-policy.toml"
+    )
+    policy_path.parent.mkdir(parents=True, exist_ok=True)
+    policy_path.write_text(
+        f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8"
+    )
+
+
 def test_landed_but_unpromoted_is_fail(tmp_path: Path) -> None:
     repo = tmp_path / "r"
     _init_repo(repo)
@@ -249,5 +262,79 @@ def test_bmadloop_merge_subject_scoped_to_project(tmp_path: Path) -> None:
     )
 
     findings = ledger.gather_direction(repo)
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+# --- Story 27.1: a templated merge subject names its station's OWN template
+
+
+def test_sibling_default_template_merge_is_not_attributed_when_station_has_its_own(
+    tmp_path: Path,
+) -> None:
+    """The live incident this fixes: atlas has no custom template of its own
+    historically (bare legacy default, ambiguous), but ONCE it declares its
+    own scoped ``merge_subject_template``, a sibling's plain ``Merge <key>
+    into main`` (rendered from THAT sibling's own bare default) must not be
+    read as atlas's landing."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-atlas", "Merge pyforge-atlas/{key} into main")
+    _write_ledger(repo, "pyforge-atlas", {"13-5-trending-ingest": "backlog"})
+    _commit(repo, "seed")
+    # A sibling station's own (unscoped) legacy-default merge -- coincidentally
+    # the same numeric key, belongs to another station entirely.
+    _commit(repo, "Merge 13-5 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+def test_own_scoped_template_merge_counts_as_landed(tmp_path: Path) -> None:
+    """The other half: atlas's OWN scoped template still counts, so a truly
+    landed-but-unpromoted row is still caught."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-atlas", "Merge pyforge-atlas/{key} into main")
+    _write_ledger(repo, "pyforge-atlas", {"13-5-trending-ingest": "backlog"})
+    _commit(repo, "seed")
+    _commit(repo, "Merge pyforge-atlas/13-5 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "13-5"
+    assert fails[0].evidence["project"] == "pyforge-atlas"
+
+
+def test_no_policy_file_never_attempts_the_bare_default_template(
+    tmp_path: Path,
+) -> None:
+    """A project with no ``marshal-policy.toml`` (or none declaring the key)
+    keeps its EXACT pre-Story-27.1 behavior for the templated shape: no
+    attribution attempt at all, never the ambiguous bare-default match.
+
+    Verified live 2026-09-18: wiring the bare default into this
+    fleet-spanning check unconditionally turned 3 real findings into 306,
+    because most stations still share it -- every one of them would light up
+    on every OTHER station's own bare-templated landing. Scoping this
+    function's templated check to "only when a project's OWN template
+    differs from the bare default" is what keeps a project with no override
+    from becoming a NEW source of noise -- the acknowledged residual this
+    story does not claim to close (Marshal's own spec-pyforge-marshal
+    CAP-247 / Story 50.4 is what makes the repo default itself
+    station-scoped fleet-wide)."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-mason", {"7-2-something": "backlog"})
+    _commit(repo, "seed")
+    _commit(repo, "Merge 7-2 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
     fails = [f for f in findings if f.status == DoctorStatus.FAIL]
     assert fails == []

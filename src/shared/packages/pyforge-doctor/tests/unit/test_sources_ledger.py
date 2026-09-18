@@ -371,7 +371,124 @@ def test_no_substitution_flag_when_base_is_used_as_requested(tmp_path: Path) -> 
 
     assert len(findings) == 1
     assert "base_substituted" not in findings[0].evidence
+    assert "merge_base" not in findings[0].evidence
+    assert "base_requested" not in findings[0].evidence
     assert findings[0].evidence["base"] == "origin/main"
+
+
+# --- Story 27.1: a PR is judged at its merge-base, not base's own tip ------
+
+
+def test_pr1465_shape_stale_head_after_unattended_main_promotion_is_ok(
+    tmp_path: Path,
+) -> None:
+    """Herald PR #1465's exact shape: a story branch forks from ``main``,
+    then ``main`` advances on its own (an unattended dispatch promoting a
+    SIBLING story to `done`) before the PR's own detectors lane runs. Judged
+    against ``base``'s tip, the promoted row reads as something this branch
+    "un-finished," even though the branch never touched it. Judged against
+    ``merge-base(base, head)`` -- the fork point -- there is nothing to see.
+    """
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "herald", {"23-6-landing-fallout": "in-progress"})
+    fork_sha = _commit_all(repo, "fork point")
+
+    # The PR branch: an unrelated change, never touching 23-6.
+    (repo / "pr-change.txt").write_text("noop\n", encoding="utf-8")
+    head_sha = _commit_all(repo, "PR: unrelated change")
+
+    # `main` advances independently from the SAME fork point, promoting the
+    # sibling story to done -- this is the commit the stale PR head never saw.
+    _git(repo, "checkout", "-q", fork_sha)
+    _write_ledger(repo, "herald", {"23-6-landing-fallout": "done"})
+    _commit_all(repo, "marshal: promote 23-6 to done")
+    _git(repo, "branch", "-f", "origin/main", "HEAD")
+    _git(repo, "checkout", "-q", head_sha)
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.OK
+    assert finding.check == "ledger-regression"
+    assert finding.evidence["merge_base"] == fork_sha
+    assert finding.evidence["base_requested"] == "origin/main"
+    assert finding.evidence["base"] == fork_sha
+
+
+def test_genuine_regression_survives_merge_base_substitution(tmp_path: Path) -> None:
+    """The merge-base fix must not mask a regression the PR branch itself
+    introduces -- only the false one caused by `main` moving independently."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    fork_sha = _commit_all(repo, "fork point")
+
+    # The PR branch itself regresses the story.
+    _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
+    head_sha = _commit_all(repo, "PR: regress the story")
+
+    # `main` independently advances with an unrelated change.
+    _git(repo, "checkout", "-q", fork_sha)
+    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
+    _commit_all(repo, "unrelated change on main")
+    _git(repo, "branch", "-f", "origin/main", "HEAD")
+    _git(repo, "checkout", "-q", head_sha)
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.check == "done-key-regressed"
+    assert finding.evidence["merge_base"] == fork_sha
+
+
+def test_merge_base_equal_to_base_tip_is_not_a_substitution(tmp_path: Path) -> None:
+    """An ordinary linear PR (``base`` is already an ancestor of ``head``,
+    the common case) must not be reported as substituted -- the merge-base
+    IS ``base``'s own tip here, so ``effective_base`` stays the literal ref."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _branch_at(repo, "origin/main", base_sha)
+
+    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
+    _commit_all(repo, "PR: unrelated change")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    assert "merge_base" not in findings[0].evidence
+    assert "base_substituted" not in findings[0].evidence
+    assert findings[0].evidence["base"] == "origin/main"
+
+
+def test_no_common_ancestor_reports_warn(tmp_path: Path) -> None:
+    """Unrelated histories: ``git merge-base`` itself cannot resolve. This
+    must degrade to a cannot-evaluate WARN, never silently fall back to
+    comparing against ``base``'s tip (the bug this story fixes)."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    _commit_all(repo, "main history")
+    _git(repo, "branch", "-f", "origin/main", "HEAD")
+
+    _git(repo, "checkout", "-q", "--orphan", "unrelated")
+    _git(repo, "rm", "-rf", "-q", ".")
+    (repo / "other.txt").write_text("x\n", encoding="utf-8")
+    _commit_all(repo, "an entirely unrelated root commit")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.WARN
+    assert finding.check == "ledger-regression"
+    assert "no common ancestor" in finding.message
+    assert set(finding.evidence) == {"base", "head", "target"}
 
 
 # --- Never raises, even on a non-UTF-8 committed blob -----------------------
