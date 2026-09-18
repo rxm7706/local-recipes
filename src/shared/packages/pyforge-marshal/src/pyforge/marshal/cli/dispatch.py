@@ -1839,8 +1839,15 @@ def dispatch_once(
     # every skipped candidate is a structured finding, never silent.
     # Story 28.11 (CAP-12): when the tier map names a harness for dev,
     # that profile leads the walk instead of the flat preference alone.
+    # Story 50.3 (CAP-246): an EXPLICIT `--harness` (the composed
+    # `harness_preference` FLAG layer, never the default/repo/project
+    # layer) outranks that tier-map lead -- the walk starts from the
+    # flag's own profiles and a tier-map harness the flag does not name
+    # contributes nothing to it. Without the flag (layer stays default/
+    # repo_defaults/project) this is unchanged: the tier map still leads.
     preference = tuple(effective_policy.harness_preference.value)
-    if tier_resolution.harness_profile is not None:
+    explicit_harness_flag = effective_policy.harness_preference.layer == policy.PolicyLayer.FLAG
+    if tier_resolution.harness_profile is not None and not explicit_harness_flag:
         preference = (tier_resolution.harness_profile,) + tuple(
             name for name in preference if name != tier_resolution.harness_profile
         )
@@ -1908,6 +1915,22 @@ def dispatch_once(
                 ),
             )
         )
+        # Story 50.3: `model` (not just `data["model"]`) must drop too --
+        # it is what the intent journal entry and the live
+        # `build_harness.dispatch(model=model, ...)` call below actually
+        # use. Leaving the local variable at its mismatched value would
+        # journal and LAUNCH the foreign-provider model even though the
+        # envelope's own `data["model"]` correctly reported the drop.
+        model = None
+        # The escalation triple is read straight from these locals when the
+        # intent entry is built further down (`if escalated: ...`) -- if
+        # only `model` were reset, a run that had escalated before the
+        # mismatch fired would journal `model: null` alongside a stale
+        # `escalated: true`/`from_model`/`to_model`, a self-contradictory
+        # persisted entry.
+        escalated = False
+        from_model = None
+        to_model = None
         data["model"] = None
         data.pop("escalated", None)
         data.pop("from_model", None)
