@@ -70,6 +70,7 @@ from . import (
     pptx_pipeline,
     progress,
     scheduler,
+    sync_all,
 )
 from . import watch as watch_module
 from .claims import CLAIM_STATUSES
