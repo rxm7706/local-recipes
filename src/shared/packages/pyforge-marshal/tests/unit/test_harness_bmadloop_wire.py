@@ -97,3 +97,27 @@ def test_attempt_spin_wire_layer_auto_with_no_resolvable_profile_is_a_clean_skip
 
     assert wire.applied is False
     assert wire.reason is None
+
+
+def test_attempt_spin_wire_layer_auto_with_unresolvable_packaged_profile_is_a_clean_skip(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 46.4: ``PROFILE_BY_BMADLOOP_ADAPTER`` resolves ``adapter_name``
+    to a profile stem, but that stem is absent from
+    ``load_packaged_profiles()`` -- the second, distinct fallback branch
+    ``attempt_spin_wire_layer`` falls through to. ``"auto"`` must resolve
+    the same clean-skip way here as it does when no adapter mapping exists
+    at all."""
+    monkeypatch.setattr(module, "load_packaged_profiles", dict)
+    loop_home = tmp_path / "loop-home"
+    loop_home.mkdir()
+
+    wire = module.attempt_spin_wire_layer(
+        loop_home=loop_home,
+        adapter_name="claude",
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        repo_root=None,
+    )
+
+    assert wire.applied is False
+    assert wire.reason is None
