@@ -58,7 +58,6 @@ from pathlib import Path
 from pyforge.core.landing_evidence import parse_templated_merge_subject
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..known_keys import legacy_bare_merge_key, load_done_story_keys
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import RekeyMap, parse_rekey
 
@@ -621,49 +620,30 @@ def _merged_ids_for_project(
     sibling's ``Merge 13-5 into main`` must not.
 
     The bare legacy default (``Merge {key} into main``, no station token) is
-    DELIBERATELY never UNCONDITIONALLY attempted here, unlike
-    ``sources/marshal.py``'s ``gather_story_status`` (which already carried
-    it, unscoped, before this story — a pre-existing ambiguity this story
-    narrows for the stations that opt in, without adding a NEW one for the
-    stations that don't). This function, by contrast, had NO
-    templated-subject matching at all before Story 27.1; wiring the bare
-    default into it unconditionally does not narrow an existing ambiguity,
-    it CREATES one, spanning every project this check compares in the same
-    run — verified live 2026-09-18: doing so turned 3 findings into 306,
-    because most of the fleet's stations still have no override and
-    therefore share the identical, contentless template. A project with no
-    override keeps exactly its PRE-27.1 behavior for this shape (matches
-    only via GitHub PR-merge / bmad-loop-native subjects) — the acknowledged
-    residual (Marshal's own spec-pyforge-marshal CAP-247 / Story 50.4 is
-    what makes the repo default itself station-scoped fleet-wide).
-
-    Story 27.3 (CAP-80) adds ONE corroborated exception: for a project that
-    HAS its own override, a subject that fails the scoped-template match is
-    tried once more against the bare legacy form -- but only for a key this
-    project's own tracked ledger already marks ``done``
-    (``known_keys.legacy_bare_merge_key``, shared verbatim with
-    ``sources/marshal.py::gather_story_status``). This is what lets a
-    station whose template MOVED still recognize its own pre-move history
-    without reopening the cross-station poison the paragraph above
-    describes: a coincidentally-numbered sibling key that is not (yet) done
-    in THIS project's own ledger still corroborates to nothing (see
-    ``test_sibling_default_template_merge_is_not_attributed_when_station_
-    has_its_own``, which pins exactly that case).
+    DELIBERATELY never attempted here, unlike ``sources/marshal.py``'s
+    ``gather_story_status`` (which already carried it, unscoped, before this
+    story — a pre-existing ambiguity this story narrows for the stations
+    that opt in, without adding a NEW one for the stations that don't). This
+    function, by contrast, had NO templated-subject matching at all before
+    Story 27.1; wiring the bare default into it unconditionally does not
+    narrow an existing ambiguity, it CREATES one, spanning every project this
+    check compares in the same run — verified live 2026-09-18: doing so
+    turned 3 findings into 306, because most of the fleet's stations still
+    have no override and therefore share the identical, contentless
+    template. A project with no override keeps exactly its PRE-27.1 behavior
+    for this shape (matches only via GitHub PR-merge / bmad-loop-native
+    subjects) — the acknowledged residual (Marshal's own
+    spec-pyforge-marshal CAP-247 / Story 50.4 is what makes the repo default
+    itself station-scoped fleet-wide).
     """
     station = project_slug.removeprefix("pyforge-")
     template = _project_merge_subject_template(target, project_slug)
-    has_override = template != _MERGE_SUBJECT_TEMPLATE
-    known_keys = load_done_story_keys(target, project_slug) if has_override else frozenset()
     out: set[str] = set()
     for subject in subjects:
-        if has_override:
+        if template != _MERGE_SUBJECT_TEMPLATE:
             templated = parse_templated_merge_subject(subject, template)
             if templated is not None:
                 out.add(templated.hyphen_form())
-                continue
-            legacy = legacy_bare_merge_key(subject, known_keys=known_keys)
-            if legacy is not None:
-                out.add(legacy.hyphen_form())
                 continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:

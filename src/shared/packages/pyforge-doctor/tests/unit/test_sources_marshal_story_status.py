@@ -24,7 +24,6 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.core.landing_evidence import StoryKeyRef
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import marshal
 
@@ -107,24 +106,6 @@ def _write_state(loop_root: Path, slug: str, run: str, tasks: dict) -> None:
     state = loop_root / f"pyforge-{slug}" / ".bmad-loop" / "runs" / run / "state.json"
     state.parent.mkdir(parents=True, exist_ok=True)
     state.write_text(json.dumps({"tasks": tasks}), encoding="utf-8")
-
-
-def _write_ledger(target: Path, slug: str, statuses: dict[str, str]) -> None:
-    """A minimal tracked ``sprint-status-ledger.yaml`` -- Story 27.3's
-    ``known_keys`` corroboration source, distinct from the gitignored Tier-3
-    feed ``_write_feed`` writes."""
-    ledger = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / f"pyforge-{slug}"
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
-    ledger.parent.mkdir(parents=True, exist_ok=True)
-    lines = ["development_status:"]
-    lines.extend(f"  {key}: {value}" for key, value in statuses.items())
-    ledger.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _write_policy(target: Path, slug: str, merge_subject_template: str) -> None:
@@ -418,125 +399,6 @@ def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
     assert findings[0].evidence["key"] == "1-1-foo"
-
-
-# --- Story 27.3 (CAP-80): a station's legacy-template history stays
-# attributed once its template moves, corroborated by its own tracked
-# ledger's `done` entries -------------------------------------------------
-
-
-def test_own_legacy_merge_suppresses_the_false_green_once_template_moves(
-    tmp_path: Path,
-) -> None:
-    """The live regression this story fixes: marshal landed `34-3` on
-    2026-09-12 as `Merge 34-3 into main` under the then-default template;
-    once marshal's policy moved to a scoped form (PR #1467), that subject
-    must still count as marshal's own landing evidence -- corroborated by
-    the tracked ledger already marking `34-3` `done`."""
-    target = tmp_path / "target"
-    target.mkdir()
-    _init_repo(target)
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
-    _commit(target, "Merge 34-3 into main")
-    _write_feed(target, "marshal", ["34-3-factory-drain"])
-
-    loop_root = tmp_path / "loop_root"
-    _write_state(
-        loop_root, "marshal", "run1",
-        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
-    )
-
-    findings = marshal.gather_story_status(target, loop_root=loop_root)
-
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
-    assert findings[0].evidence == {"audited": 1}
-
-
-def test_keys_from_merge_subjects_attributes_own_legacy_form_once_ledger_confirms_done(
-    tmp_path: Path,
-) -> None:
-    """Unit-level proof at the corroboration boundary itself."""
-    target = tmp_path / "target"
-    target.mkdir()
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
-
-    keys = marshal._keys_from_merge_subjects(
-        target, ("Merge 34-3 into main",), project_slug="pyforge-marshal",
-    )
-
-    assert keys == frozenset({StoryKeyRef(34, 3)})
-
-
-def test_keys_from_merge_subjects_does_not_attribute_a_not_yet_done_key(
-    tmp_path: Path,
-) -> None:
-    """A coincidentally-numbered key present in this station's own ledger
-    but not (yet) `done` must not corroborate -- only a `done` entry does
-    (mirrors the sibling-collision fixture `sources/ledger.py`'s own
-    ``test_sibling_default_template_merge_is_not_attributed_when_station_
-    has_its_own`` pins)."""
-    target = tmp_path / "target"
-    target.mkdir()
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(target, "marshal", {"34-3-factory-drain": "backlog"})
-
-    keys = marshal._keys_from_merge_subjects(
-        target, ("Merge 34-3 into main",), project_slug="pyforge-marshal",
-    )
-
-    assert keys == frozenset()
-
-
-def test_keys_from_merge_subjects_no_tracked_ledger_attributes_nothing(
-    tmp_path: Path,
-) -> None:
-    target = tmp_path / "target"
-    target.mkdir()
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    # deliberately no sprint-status-ledger.yaml at all
-
-    keys = marshal._keys_from_merge_subjects(
-        target, ("Merge 34-3 into main",), project_slug="pyforge-marshal",
-    )
-
-    assert keys == frozenset()
-
-
-def test_keys_from_main_commits_attributes_own_legacy_form_once_ledger_confirms_done(
-    tmp_path: Path,
-) -> None:
-    target = tmp_path / "target"
-    target.mkdir()
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
-
-    keys = marshal._keys_from_main_commits(
-        target,
-        [("deadbeef", "Merge 34-3 into main")],
-        project_slug="pyforge-marshal",
-    )
-
-    assert keys == frozenset({StoryKeyRef(34, 3)})
-
-
-def test_keys_from_main_commits_does_not_attribute_a_not_yet_done_key(
-    tmp_path: Path,
-) -> None:
-    target = tmp_path / "target"
-    target.mkdir()
-    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(target, "marshal", {"34-3-factory-drain": "backlog"})
-
-    keys = marshal._keys_from_main_commits(
-        target,
-        [("deadbeef", "Merge 34-3 into main")],
-        project_slug="pyforge-marshal",
-    )
-
-    assert keys == frozenset()
 
 
 # --- Route 3: hand-landed, named in a commit subject on main ---------------

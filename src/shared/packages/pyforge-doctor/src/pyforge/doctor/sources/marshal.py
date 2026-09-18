@@ -62,7 +62,6 @@ from pyforge.core.landing_evidence import (
 )
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..known_keys import legacy_bare_merge_key, load_done_story_keys
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import load_rekey_maps, reverse_map
 
@@ -209,23 +208,8 @@ def _keys_from_merge_subjects(
     ``merge_subject_template`` (Story 27.1), not the bare repo default --
     see ``_project_merge_subject_template``'s own docstring for why an
     unscoped read misattributes a sibling station's landing.
-
-    Story 27.3 (CAP-80): once ``project_slug`` has moved its OWN template
-    away from the bare legacy default, a subject rendered under that
-    now-retired default (its pre-move history) is tried as a LAST-resort
-    fallback -- but only for a key ``project_slug``'s own tracked ledger
-    already marks ``done`` (``known_keys.legacy_bare_merge_key``'s
-    corroboration). A station that has NOT overridden its template already
-    matches the bare form unconditionally via the FIRST parser below, so
-    the fallback is unreachable dead weight for it -- ``known_keys`` is
-    loaded only when it could possibly matter.
     """
     template = _project_merge_subject_template(target, project_slug)
-    known_keys = (
-        load_done_story_keys(target, project_slug)
-        if template != _MERGE_SUBJECT_TEMPLATE
-        else frozenset()
-    )
     keys: set[StoryKeyRef] = set()
     for subject in subjects:
         for parser in (
@@ -234,7 +218,6 @@ def _keys_from_merge_subjects(
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
             lambda s: _branch_name_fallback_key(s, project_slug),
-            lambda s: legacy_bare_merge_key(s, known_keys=known_keys),
         ):
             key = parser(subject)
             if key is not None:
@@ -250,15 +233,6 @@ def _keys_from_main_commits(
     project_slug: str,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
-    # Story 27.3 (CAP-80): same corroborated legacy-form fallback as
-    # `_keys_from_merge_subjects` above, tried once the strict grammar and
-    # the branch-name fallback both miss -- see that function's own
-    # docstring for the full rationale.
-    known_keys = (
-        load_done_story_keys(target, project_slug)
-        if template != _MERGE_SUBJECT_TEMPLATE
-        else frozenset()
-    )
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         match = classify_commit(
@@ -273,10 +247,6 @@ def _keys_from_main_commits(
         fallback = _branch_name_fallback_key(subject, project_slug)
         if fallback is not None:
             keys.add(fallback)
-            continue
-        legacy = legacy_bare_merge_key(subject, known_keys=known_keys)
-        if legacy is not None:
-            keys.add(legacy)
     return frozenset(keys)
 
 
