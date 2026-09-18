@@ -203,7 +203,7 @@ def _no_active_project_env(monkeypatch):
 def test_promote_copies_and_commits_a_durable_unpromoted_spec(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -230,7 +230,7 @@ def test_promote_skips_an_already_promoted_story(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/3-8 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -249,7 +249,7 @@ def test_promote_reports_a_gap_for_a_merged_story_with_no_tier3_spec(
     (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
         parents=True, exist_ok=True
     )
-    vcs = _FakeVcs(main_subjects=("Merge 4.1 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/4.1 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -266,7 +266,7 @@ def test_promote_reports_a_gap_for_an_invalid_tier3_spec_and_does_not_promote_it
 ):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "2-3", "")  # zero-byte
-    vcs = _FakeVcs(main_subjects=("Merge 2-3 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/2-3 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -288,7 +288,7 @@ def test_promote_never_overwrites_a_good_tracked_copy_with_a_broken_tier3_one(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-5", "")  # zero-byte in Tier-3
     _write_tracked_spec(tmp_path, "acme", "1-5", _VALID_SPEC)  # good tracked copy
-    vcs = _FakeVcs(main_subjects=("Merge 1-5 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-5 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -317,7 +317,7 @@ def test_promote_leaves_a_not_yet_merged_story_untouched(tmp_path, capsys, monke
 def test_promote_falls_back_to_local_main_when_no_origin_remote(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "6-1", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 6-1 into main",), origin_raises=True)
+    vcs = _FakeVcs(main_subjects=("Merge acme/6-1 into main",), origin_raises=True)
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -334,7 +334,7 @@ def test_promote_treats_a_push_only_route_as_durable(tmp_path, capsys, monkeypat
     "pushed to the remote" route."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "7-2", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=(), origin_subjects=("Merge 7-2 into main",))
+    vcs = _FakeVcs(main_subjects=(), origin_subjects=("Merge acme/7-2 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -363,7 +363,7 @@ def test_promote_reports_hard_unevaluable_finding_when_main_read_fails(
 def test_promote_reports_unevaluable_when_commit_paths_fails(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "8-4", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 8-4 into main",), commit_raises=True)
+    vcs = _FakeVcs(main_subjects=("Merge acme/8-4 into main",), commit_raises=True)
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -433,7 +433,7 @@ def test_promote_retries_an_orphaned_uncommitted_tracked_copy(tmp_path, capsys, 
     _write_tier3_spec(tmp_path, "acme", "9-1", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "9-1", _VALID_SPEC)  # orphaned copy, uncommitted
     dest = _tracked_path(tmp_path, "acme", "9-1")
-    vcs = _FakeVcs(main_subjects=("Merge 9-1 into main",), dirty_paths=frozenset({dest}))
+    vcs = _FakeVcs(main_subjects=("Merge acme/9-1 into main",), dirty_paths=frozenset({dest}))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -456,7 +456,7 @@ def test_promote_never_trusts_a_tracked_copy_whose_status_is_unconfirmable(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "9-2", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "9-2", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 9-2 into main",), path_status_raises=True)
+    vcs = _FakeVcs(main_subjects=("Merge acme/9-2 into main",), path_status_raises=True)
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -515,7 +515,7 @@ def test_promote_recognizes_a_real_github_merge_subject(tmp_path, capsys, monkey
 def test_promote_text_format_renders_a_summary(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     exit_code = deploy_module.run_promote(_args(format="text"), vcs=vcs, fs=LocalFs())
 
@@ -537,7 +537,7 @@ def test_promote_writes_an_intent_outcome_pair_around_commit_paths(
 ):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -565,7 +565,7 @@ def test_promote_merge_failure_leaves_an_open_intent_with_no_outcome(
 ):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",), commit_raises=True)
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",), commit_raises=True)
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
 
@@ -623,7 +623,7 @@ def test_promote_reconciles_a_prior_open_intent_when_evidence_confirms(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/3-8 into main",))
     prior_intent = _write_open_intent(
         tmp_path,
         "acme",
@@ -684,7 +684,7 @@ def test_promote_rerun_against_a_converged_system_is_zero_changes(
     itself within its own run), and produces zero changes at exit 0."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     first_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
     capsys.readouterr()
@@ -763,7 +763,7 @@ def test_promote_reports_warn_and_promotes_nothing_when_the_lock_is_contended(
 ):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=_LockRaisingFs())
 
@@ -799,7 +799,7 @@ def test_promote_acquires_and_releases_the_lock_on_specs_dir_around_copy_and_com
 ):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
     fs = _LockTrackingFs()
 
     exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
@@ -835,7 +835,7 @@ def test_promote_hits_the_real_contention_path_when_another_holder_has_the_lock(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(deploy_module, "_PROMOTE_LOCK_TIMEOUT_S", 0.3)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
     specs_dir = _specs_dir(tmp_path, "acme")
 
     holder_fs = LocalFs()
@@ -880,7 +880,7 @@ def test_promote_sequential_runs_for_the_same_project_never_overlap_the_locked_s
     runs' write sections never overlap)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
     fs = _LockTrackingFs()
 
     first_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
@@ -920,9 +920,9 @@ def test_unreachable_promotions_for_slug_names_durable_unpromoted_and_missing_sp
     _write_tier3_spec(tmp_path, "acme", "1-4", "")  # exists but invalid -- included (P3)
     vcs = _FakeVcs(
         main_subjects=(
-            "Merge 1-2 into main",
-            "Merge 1-3 into main",  # no Tier-3 spec at all -- missing
-            "Merge 1-4 into main",
+            "Merge acme/1-2 into main",
+            "Merge acme/1-3 into main",  # no Tier-3 spec at all -- missing
+            "Merge acme/1-4 into main",
         )
     )
 
@@ -937,7 +937,7 @@ def test_unreachable_promotions_for_slug_includes_invalid_spec_keys(tmp_path):
     set -- a corrupt paper trail is not exempted from the refusal gate the
     way a broken-but-unmerged spec is."""
     _write_tier3_spec(tmp_path, "acme", "9-1", "")  # zero-byte -- invalid
-    vcs = _FakeVcs(main_subjects=("Merge 9-1 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/9-1 into main",))
 
     keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
 
@@ -947,7 +947,7 @@ def test_unreachable_promotions_for_slug_includes_invalid_spec_keys(tmp_path):
 def test_unreachable_promotions_for_slug_excludes_already_promoted(tmp_path):
     _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/3-8 into main",))
 
     keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
 
@@ -974,7 +974,7 @@ def test_unreachable_promotions_for_slug_returns_none_when_main_history_unreadab
 def test_unreachable_promotions_for_slug_is_computed_fresh_not_cached(tmp_path):
     """No caching anywhere (the story's own Never bullet): two calls with
     DIFFERENT git state produce different answers."""
-    vcs = _FakeVcs(main_subjects=("Merge 6-1 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/6-1 into main",))
     first = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
     assert set(str(key) for key in first) == {"6.1"}
 
@@ -1209,6 +1209,13 @@ def test_recover_spec_warns_when_acceptance_criteria_comes_back_empty(
 from pyforge.marshal.cli import gate as gate_module  # noqa: E402
 from pyforge.marshal.core.identity import normalize, render_merge_subject  # noqa: E402
 from pyforge.marshal.core.model import Verdict, build_envelope  # noqa: E402
+from pyforge.marshal.core.policy import DEFAULT_POLICY  # noqa: E402
+
+#: Story 50.4/FR-191 CAP-247: the repo default now carries a `{slug}`
+#: placeholder ("Merge {slug}/{key} into main") -- every fixture below that
+#: represents a conforming, already-rendered merge subject for the "acme"
+#: project must include the "acme/" segment to still classify.
+_DEFAULT_MERGE_SUBJECT_TEMPLATE = str(DEFAULT_POLICY["merge_subject_template"])
 
 
 def _land_args(
@@ -1347,7 +1354,7 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha-123",
         merge_branch_sha="merge-sha-456",
-        window_subjects=("Merge 4.3 into main",),
+        window_subjects=("Merge acme/4.3 into main",),
     )
 
     exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
@@ -1355,7 +1362,7 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["verdict"] == "clean"
-    expected_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
+    expected_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert payload["data"]["subject"] == expected_subject
     assert payload["data"]["merge_sha"] == "merge-sha-456"
     assert payload["data"]["non_conforming_merges"] == []
@@ -1404,7 +1411,7 @@ def test_land_story_reports_non_conforming_merges_without_blocking(
     )
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
-        window_subjects=("Merge 4.3 into main", "Merge pull request #42 from acme/feature"),
+        window_subjects=("Merge acme/4.3 into main", "Merge pull request #42 from acme/feature"),
     )
 
     exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
@@ -1573,7 +1580,7 @@ def test_land_story_already_merged_is_a_clean_noop(tmp_path, capsys, monkeypatch
     entry."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
-    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
+    already_landed_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         main_subjects=(already_landed_subject,),
@@ -1660,7 +1667,7 @@ def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(
     over (no fresh merge attempt)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
-    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
+    already_landed_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         main_subjects=(already_landed_subject,),
@@ -1731,7 +1738,7 @@ def test_land_story_rerun_against_a_converged_system_is_zero_changes(
         existing_branches=frozenset({"loop/acme"}),
         merge_base_sha="base-sha-123",
         merge_branch_sha="merge-sha-456",
-        window_subjects=("Merge 4.3 into main",),
+        window_subjects=("Merge acme/4.3 into main",),
     )
     first_exit = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
     capsys.readouterr()
@@ -1740,7 +1747,7 @@ def test_land_story_rerun_against_a_converged_system_is_zero_changes(
     # The second run's own `_FakeVcs.commit_subjects("main", ...)` must now
     # report the story as merged for the already-merged short-circuit to
     # fire -- exactly what a REAL git repo would show after a real merge.
-    landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main", "acme")
+    landed_subject = render_merge_subject(normalize("4.3"), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     vcs.main_subjects = (landed_subject,)
 
     second_exit = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
@@ -2814,7 +2821,7 @@ def test_refresh_feed_reports_git_facts_with_no_journal_available(
     story's own I/O matrix: git's own answer stands alone, no findings."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
 
     exit_code = deploy_module.run_refresh_feed(
         _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_FakeProcess(), harness=_FakeHarness()
@@ -2846,7 +2853,7 @@ def test_refresh_feed_claimed_commit_matching_git_is_consistent(
     _write_prior_run_with_harness_run_id(
         tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
     )
-    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
     snapshot = RunStatusSnapshot(
         paused_stage=None,
         paused_story_key=None,
@@ -3074,7 +3081,7 @@ def test_refresh_feed_is_a_provable_noop_across_two_runs(tmp_path, capsys, monke
     )
 
     def _run_once():
-        vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+        vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
         process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
         harness = _FakeHarness(snapshot=snapshot)
         deploy_module.run_refresh_feed(
@@ -3206,7 +3213,7 @@ def test_refresh_feed_degrades_gracefully_when_run_status_snapshot_raises(
     _write_prior_run_with_harness_run_id(
         tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
     )
-    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
     harness = _FakeHarness(raises=ValueError("simulated state.json corruption"))
 
     exit_code = deploy_module.run_refresh_feed(
@@ -3233,7 +3240,7 @@ def test_refresh_feed_degrades_gracefully_when_fs_exists_raises(
     degrade this gather to "no journal facts available", never crash."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
 
     exit_code = deploy_module.run_refresh_feed(
         _refresh_feed_args(),
@@ -3381,7 +3388,7 @@ def test_refresh_feed_noop_reconciliation_holds_even_with_volatile_resync_output
             return ProcessResult(returncode=0, stdout=f"fetched {counter['n']} objects", stderr="")
 
     def _run_once():
-        vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+        vcs = _FakeVcs(main_subjects=("Merge acme/1.2 into main",))
         harness = _FakeHarness(snapshot=snapshot)
         deploy_module.run_refresh_feed(
             _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_VolatileProcess(), harness=harness
@@ -3548,7 +3555,7 @@ def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
     _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
-    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/3-8 into main",))
 
     confirmed_intent = _write_open_intent(
         tmp_path,
@@ -3807,7 +3814,7 @@ def test_reconcile_completions_excludes_a_marshal_native_landed_key(
     # The default `merge_subject_template` -- "Merge {key} into main" --
     # rendered for 4.3's hyphen form: exactly what `land-story` itself
     # writes.
-    vcs = _FakeVcs(main_subjects=("Merge 4-3 into main",))
+    vcs = _FakeVcs(main_subjects=("Merge acme/4-3 into main",))
     harness = _FakeReconcileHarness(ledger_statuses=(("4-3-title", "backlog"),))
 
     exit_code = deploy_module.run_reconcile_completions(
