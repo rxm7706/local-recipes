@@ -6286,3 +6286,13 @@ status: open
 
   resolved: 2026-09-14 (same day, operator: "do it") — **Story 43.1, the citation detector shows everything it knows** — its own Epic 43. First minted as 32.9 with Epic 32 reopened `done → in-progress`; `ledger-regression`, the Doctor verdict made blocking this morning, red the PR on exactly that key (locally it had been run before the ledger commit, so it saw nothing — run it *after* committing). The fleet has no precedent for a done roll-up carrying a non-done story, so the story moved to a new single-story epic and `epic-32` stays `done`. The sync also exposed a stale local feed that would have dropped Epic 42's four `backlog` rows, restored through the feed before the write. Fix: both slices removed so every NEW row prints under the headline that already carried the count; `_today()` replaces the two literals, and both baselines re-stamped once so `recorded:` is 2026-09-14 (known sets unchanged: 7 / 75). `tests/scripts/test_ad_citation_check.py` proves 13 + 17 synthetic NEW rows all print, stamps carry the stamping date, and a hand-truncated baseline still prints every remaining row; mutation-verified (restoring the slices fails 2 of 3). The "… and N more" alternative was not taken: the NEW set is the action list, and there is no reader for whom fewer rows is the better default.
 
+### DW-FU-50-2: Only Claude and Cursor have quota-marker entries in `_QUOTA_MARKERS_BY_HARNESS`; the other configured harnesses (gemini, copilot, devin, codex, antigravity, opencode) still misclassify their own usage-wall wording as `unknown`/terminal.
+
+- source_spec: `planning-artifacts/specs/spec-50-2-a-harness-s-own-usage-wall-wording-is-a-transient-outcome.md`
+  summary: Only Claude and Cursor have quota-marker entries in `_QUOTA_MARKERS_BY_HARNESS`; the other configured harnesses (gemini, copilot, devin, codex, antigravity, opencode) still misclassify their own usage-wall wording as `unknown`/terminal.
+  evidence: Real latent gap, but pre-existing (every non-Claude/Cursor harness had zero markers before this story too) and not caused by this diff. The Approach explicitly scoped this fix to Cursor's live text from the named 2026-09-18 incident, not to every configured harness. Close the next instance the same way this one was closed: from a real run journal, not a guess at wording.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py:28
+  origin: spec-deferred 983c65899fd1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
