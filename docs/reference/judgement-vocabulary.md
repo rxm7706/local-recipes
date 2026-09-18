@@ -76,6 +76,7 @@ trap, and it has caused at least one real misread:
 | `pyforge-warden` | `{0, 1, 2, 130}` | error |
 | `pyforge-marshal` | `{0, 1, 2, 3, 4, 130}` | scope-violation (`3` is gate-failed) |
 | argparse, on any of them | `2` | invalid arguments |
+| script-based detectors (`governance_currency_check.py` and friends) | `{0, 1}` | n/a — this domain has no `2` at all |
 
 Doctor's subset of warden's domain is deliberate and documented (`doctor/verdict.py:4-7`: it
 omits warden's policy rung `1` because Doctor reports operability, not policy). The collision

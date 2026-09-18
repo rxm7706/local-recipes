@@ -29,7 +29,7 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 
 4. **Before pushing ANY non-recipe branch → `pixi run -e pyforge-guild pr-preflight`.** One command covering the four lanes that actually red a PR: `detectors-ci`, `test-ci` (the CFE regression suite — this lane owns the spec-surface meta-test), `pyforge-station-tests` (all 8 stations), and `pyforge-station-coverage-gates` (touched-module coverage floors). Added 2026-09-14 after PR #1355 went red on two lanes with **no local equivalent at all**: a stale spec-surface baseline (a scoped `--write-baseline` was taken, then a governed file was edited *again*, silently invalidating it — a stamp is only valid until the next edit of any file in that spec's surface), and a coverage floor that only measures modules a branch *touches*, so `board.py` sat at 70.1% for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`. Not covered by it: container/guild-container (needs Docker/podman), atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres (`scribe-pg-up` first).
 
-**Reading a detector's result: never through a pipe.** `cmd | grep x | head -5` then `echo $?` reports **`head`'s** exit status, not the detector's — and `head` truncates findings out of view. This produced a false green on 2026-09-14 that CI then caught. Redirect to a file, check the exit code directly, then read the whole finding list. Note also that `2` inverts between surfaces (see § Health / status below).
+**Reading a detector's result: never through a pipe** — see `docs/reference/judgement-vocabulary.md` § *Severity and exit codes*. This produced a false green on 2026-09-14 that CI then caught.
 
 Recipe-only PRs (touching only `recipes/**`) need neither.
 
@@ -53,7 +53,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 
 **Health / status:**
 - All detectors: `pixi run -e pyforge-guild detectors` (CI subset: `detectors-ci`); exit 0 = pass, 1 = findings, 2 = could-not-run (never a false green).
-  **That domain is the AGGREGATOR's only.** A single doctor-sourced task — `bmad-drift-check`, `story-status-check`, `spec-surface-check`, `capability-effect-check` and the rest of `python -m pyforge.doctor.sources <name>` — projects through `pyforge.doctor.verdict.exit_code_for`, whose frozen domain is `{0, 2, 130}`: **`2` means FAIL (findings), there is no `1`, and `warn` never changes the exit code.** So `2` from the aggregator means "could not run" while `2` from an individual detector means "a real failure" — read the wrong one and a genuine red looks like a skipped check. The script-based detectors (`governance_currency_check.py` and friends) are a third shape again, returning plain `0`/`1`. Doctor's subset is deliberate (`doctor/verdict.py:4-7`: it omits warden's policy rung `1` because Doctor reports operability, not policy); the collision with the aggregator's `2` is not.
+  A single doctor-sourced task — `bmad-drift-check`, `story-status-check`, `spec-surface-check`, `capability-effect-check` and the rest of `python -m pyforge.doctor.sources <name>` — projects through `pyforge.doctor.verdict.exit_code_for`, a **different** exit-code domain than the aggregator above. See `docs/reference/judgement-vocabulary.md` § *Severity and exit codes* for the full domain table and the `2`-inversion trap.
 - Fleet progress: `pixi run -e pyforge-guild fleet-picture` — read-only, never gating; paste its stdout verbatim, not reformatted.
 
 ## BMAD Method Documentation

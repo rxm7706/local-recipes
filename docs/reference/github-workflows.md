@@ -59,15 +59,13 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 ## The two always-on gates (`scripts/linter.py`)
 
-CLAUDE.md's PR rules are not convention — they are these code paths:
+CLAUDE.md's PR rules are not convention — they are these code paths; see CLAUDE.md
+§ *Critical Rule — PR CI gates* for the actionable commands.
 
-1. **Check #1** — *"Do not edit files outside of the `recipes/` directory."*
-   **Suppressed by the `maintenance` label.** Any PR touching docs, `.github/`,
-   `pixi.toml`, dashboards, etc. needs:
-   `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`
-2. **Check #3** — `environment.yaml` must equal
-   `pixi project export conda-environment -e build`. **The `maintenance` label does
-   NOT suppress this one.** Change `pixi.toml` → regenerate `environment.yaml`.
+1. **Check #1** — *"Do not edit files outside of the `recipes/` directory."* Maps to
+   CLAUDE.md rule 1 (the `maintenance` label).
+2. **Check #3** — verifies `environment.yaml` matches a fresh regeneration. Maps to
+   CLAUDE.md rule 2. The `maintenance` label does NOT suppress this one.
 
 Check #2 validates recipe placement (`recipes/<name>/<recipe>.yaml`, not
 `recipes/<name>.yaml`).
