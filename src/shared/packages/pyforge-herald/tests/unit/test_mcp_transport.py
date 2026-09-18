@@ -30,6 +30,7 @@ from pyforge.herald.transport import (
     DesignCredential,
     ListedFile,
     McpTransport,
+    ProjectSummary,
     ToolResult,
     resolve_design_credential,
 )
@@ -489,6 +490,64 @@ def test_list_files_refuses_a_non_object_entry(fake_caller):
     transport, _ = _transport(fake_caller, {"list_files": payload})
     with pytest.raises(TransportCallError, match="non-object file entry"):
         transport.list_files(project_id="p-1")
+
+
+# --- list_projects (Story 23.1, CAP-1) --------------------------------------
+
+
+def test_list_projects_returns_project_summaries(fake_caller):
+    payload = json.dumps(
+        [
+            {
+                "id": "p-1",
+                "name": "PyForge Warden deck",
+                "url": "https://claude.ai/design/p/p-1",
+            },
+            {
+                "id": "p-2",
+                "name": "Modernist",
+                "url": "https://claude.ai/design/p/p-2",
+            },
+        ]
+    )
+    transport, caller = _transport(fake_caller, {"list_projects": payload})
+    projects = transport.list_projects()
+    assert projects == [
+        ProjectSummary(
+            project_id="p-1",
+            name="PyForge Warden deck",
+            url="https://claude.ai/design/p/p-1",
+        ),
+        ProjectSummary(
+            project_id="p-2", name="Modernist", url="https://claude.ai/design/p/p-2"
+        ),
+    ]
+    assert caller.arguments_for("list_projects") == {}
+
+
+def test_list_projects_returns_empty_for_an_empty_account(fake_caller):
+    transport, _ = _transport(fake_caller, {"list_projects": json.dumps([])})
+    assert transport.list_projects() == []
+
+
+def test_list_projects_refuses_a_non_list_answer(fake_caller):
+    payload = json.dumps({"projects": []})
+    transport, _ = _transport(fake_caller, {"list_projects": payload})
+    with pytest.raises(TransportCallError, match="expected a list"):
+        transport.list_projects()
+
+
+def test_list_projects_refuses_a_non_object_entry(fake_caller):
+    payload = json.dumps(["not-an-object"])
+    transport, _ = _transport(fake_caller, {"list_projects": payload})
+    with pytest.raises(TransportCallError, match="non-object project entry"):
+        transport.list_projects()
+
+
+def test_list_projects_refuses_unparseable_json(fake_caller):
+    transport, _ = _transport(fake_caller, {"list_projects": "not json"})
+    with pytest.raises(TransportCallError, match="unparseable answer"):
+        transport.list_projects()
 
 
 # --- fetch_rendered_bytes (Story 23.4, CAP-6) -------------------------------

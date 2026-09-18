@@ -19,7 +19,12 @@ from pyforge.herald.errors import (
     TransportUnreachableError,
     UnconditionalWriteError,
 )
-from pyforge.herald.transport import AgentSdkTransport, DesignTransport, ListedFile
+from pyforge.herald.transport import (
+    AgentSdkTransport,
+    DesignTransport,
+    ListedFile,
+    ProjectSummary,
+)
 from pyforge.herald.transport.agent_sdk_transport import (
     ALLOWED_TOOL_PREFIX,
     GET_DESIGN_PROMPT_TOOL,
@@ -329,6 +334,41 @@ def test_list_files_refuses_a_non_list_files_value(fake_launcher):
     transport, _ = _transport(fake_launcher, {"list_files": _ok('{"files": "nope"}')})
     with pytest.raises(TransportCallError, match="expected a list"):
         transport.list_files(project_id="p")
+
+
+# --- list_projects (Story 23.1, CAP-1) --------------------------------------
+
+
+def test_list_projects_returns_project_summaries(fake_launcher):
+    transport, launcher = _transport(
+        fake_launcher,
+        {
+            "list_projects": _ok(
+                '[{"id": "p-1", "name": "PyForge Warden deck", '
+                '"url": "https://claude.ai/design/p/p-1"}]'
+            )
+        },
+    )
+    projects = transport.list_projects()
+    assert projects == [
+        ProjectSummary(
+            project_id="p-1",
+            name="PyForge Warden deck",
+            url="https://claude.ai/design/p/p-1",
+        )
+    ]
+    assert launcher.tool_calls() == ["list_projects"]
+
+
+def test_list_projects_returns_empty_for_an_empty_account(fake_launcher):
+    transport, _ = _transport(fake_launcher, {"list_projects": _ok("[]")})
+    assert transport.list_projects() == []
+
+
+def test_list_projects_refuses_a_non_list_answer(fake_launcher):
+    transport, _ = _transport(fake_launcher, {"list_projects": _ok('{"projects": []}')})
+    with pytest.raises(TransportCallError, match="expected a list"):
+        transport.list_projects()
 
 
 # --- the relay protocol itself ----------------------------------------------
