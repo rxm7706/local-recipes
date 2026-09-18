@@ -149,7 +149,18 @@ def _classify_merge_subject(
     match is trusted only if its key is a member -- the caller's own
     tracked ledger is the corroborating, project-scoped signal git text
     cannot provide. ``None`` (the default) preserves today's unscoped
-    behavior for callers that have not yet been updated to supply it."""
+    behavior for callers that have not yet been updated to supply it.
+
+    Story 50.4/FR-191 CAP-247: the repo default ``merge_subject_template``
+    now carries an optional ``{slug}`` placeholder (``"Merge {slug}/{key}
+    into main"``), which self-scopes the templated shape at the grammar
+    layer -- a subject rendered under a foreign slug fails to match at all,
+    so ``classify_merge_subject`` already returns ``None`` for it before
+    this function ever sees a key to check against ``known_keys``. A
+    slug-less template (grandfathered live history, or a station's own
+    override that predates this story) still relies on ``known_keys`` here
+    exactly as before -- the two mechanisms are complementary, not
+    redundant."""
     match = classify_merge_subject(subject, template=template, project_slug=project_slug)
     if match is not None:
         key = _story_key_from_ref(match.key)

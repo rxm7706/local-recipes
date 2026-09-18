@@ -194,48 +194,72 @@ _TEMPLATES = [
     "Merge {key} into main",
     "{key}",
     "bmad-loop/run-42/{key}-story-title into main",
+    "Merge {slug}/{key} into main",
 ]
+
+_PROJECT_SLUG = "pyforge-marshal"
 
 
 @pytest.mark.parametrize("key", _KEY_SHAPES, ids=str)
 @pytest.mark.parametrize("template", _TEMPLATES)
 def test_merge_subject_round_trip(key, template):
-    subject = render_merge_subject(key, template)
-    assert parse_merge_subject(subject, template) == key
+    subject = render_merge_subject(key, template, _PROJECT_SLUG)
+    assert parse_merge_subject(subject, template, _PROJECT_SLUG) == key
 
 
 def test_render_merge_subject_substitutes_the_hyphen_form():
     subject = render_merge_subject(
-        StoryKey(epic=6, seq=1, suffix="a"), "Merge {key} into main"
+        StoryKey(epic=6, seq=1, suffix="a"), "Merge {key} into main", _PROJECT_SLUG
     )
     assert subject == "Merge 6-1a into main"
 
 
+def test_render_merge_subject_fills_the_optional_slug_placeholder():
+    subject = render_merge_subject(
+        StoryKey(epic=6, seq=1, suffix="a"),
+        "Merge {slug}/{key} into main",
+        _PROJECT_SLUG,
+    )
+    assert subject == "Merge pyforge-marshal/6-1a into main"
+
+
+def test_parse_merge_subject_rejects_a_foreign_slug():
+    subject = "Merge pyforge-mason/6-1a into main"
+    with pytest.raises(MergeSubjectConformanceError):
+        parse_merge_subject(subject, "Merge {slug}/{key} into main", _PROJECT_SLUG)
+
+
 def test_render_merge_subject_rejects_a_template_without_the_placeholder():
     with pytest.raises(ValueError):
-        render_merge_subject(StoryKey(epic=1, seq=2), "Merge into main")
+        render_merge_subject(StoryKey(epic=1, seq=2), "Merge into main", _PROJECT_SLUG)
 
 
 def test_render_merge_subject_rejects_a_template_with_two_placeholders():
     with pytest.raises(ValueError):
-        render_merge_subject(StoryKey(epic=1, seq=2), "{key} then {key}")
+        render_merge_subject(
+            StoryKey(epic=1, seq=2), "{key} then {key}", _PROJECT_SLUG
+        )
 
 
 def test_parse_merge_subject_rejects_non_conforming_subject():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject("totally different text", "Merge {key} into main")
+        parse_merge_subject(
+            "totally different text", "Merge {key} into main", _PROJECT_SLUG
+        )
 
 
 def test_parse_merge_subject_rejects_a_malformed_extracted_key():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject("Merge not-a-key into main", "Merge {key} into main")
+        parse_merge_subject(
+            "Merge not-a-key into main", "Merge {key} into main", _PROJECT_SLUG
+        )
 
 
 def test_parse_merge_subject_rejects_a_malformed_template_too():
     """Wrapped the same way as every other failure mode -- a caller of
     ``parse_merge_subject`` never needs to catch a second exception type."""
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject("Merge 1-2 into main", "no placeholder here")
+        parse_merge_subject("Merge 1-2 into main", "no placeholder here", _PROJECT_SLUG)
 
 
 def test_merge_subject_conformance_error_is_a_value_error():
@@ -244,7 +268,9 @@ def test_merge_subject_conformance_error_is_a_value_error():
 
 def test_merge_subject_conformance_error_chains_the_original_failure():
     with pytest.raises(MergeSubjectConformanceError) as excinfo:
-        parse_merge_subject("totally different text", "Merge {key} into main")
+        parse_merge_subject(
+            "totally different text", "Merge {key} into main", _PROJECT_SLUG
+        )
     assert excinfo.value.__cause__ is not None
 
 
@@ -254,7 +280,9 @@ def test_merge_subject_conformance_error_carries_a_real_mrs_ident_002_finding():
     claim. A caller extracts ``.finding`` the same way ``resolve_feed``'s
     ``.findings`` tuple is used."""
     with pytest.raises(MergeSubjectConformanceError) as excinfo:
-        parse_merge_subject("totally different text", "Merge {key} into main")
+        parse_merge_subject(
+            "totally different text", "Merge {key} into main", _PROJECT_SLUG
+        )
     finding = excinfo.value.finding
     assert finding.code == "MRS-IDENT-002"
     assert verdict.compute_verdict([finding]) == Verdict.UNEVALUABLE
@@ -262,17 +290,17 @@ def test_merge_subject_conformance_error_carries_a_real_mrs_ident_002_finding():
 
 def test_parse_merge_subject_rejects_non_str_subject():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject(123, "Merge {key} into main")  # type: ignore[arg-type]
+        parse_merge_subject(123, "Merge {key} into main", _PROJECT_SLUG)  # type: ignore[arg-type]
 
 
 def test_render_merge_subject_rejects_non_str_template():
     with pytest.raises(ValueError):
-        render_merge_subject(StoryKey(epic=1, seq=2), 123)  # type: ignore[arg-type]
+        render_merge_subject(StoryKey(epic=1, seq=2), 123, _PROJECT_SLUG)  # type: ignore[arg-type]
 
 
 def test_parse_merge_subject_rejects_non_str_template():
     with pytest.raises(MergeSubjectConformanceError):
-        parse_merge_subject("Merge 1-2 into main", 123)  # type: ignore[arg-type]
+        parse_merge_subject("Merge 1-2 into main", 123, _PROJECT_SLUG)  # type: ignore[arg-type]
 
 
 # --- resolve_feed(): AD-38 completeness --------------------------------------
