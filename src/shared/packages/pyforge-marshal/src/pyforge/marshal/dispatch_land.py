@@ -321,7 +321,7 @@ def execute_dispatch_land(
     except ForgeCommandError:
         pass
 
-    subject = identity.render_merge_subject(key, template)
+    subject = identity.render_merge_subject(key, template, project_slug)
     data["subject"] = subject
     if not merge_subject_is_marshal_native(subject, template, project_slug):
         findings.append(

@@ -11,14 +11,21 @@ from any ``pyforge.<station>`` package, so doctor never imports
 Shapes recognized (merge subjects, branch names, recovery convention):
 
 * **Templated merge subject** (AD-24 / FR-187): caller-supplied
-  ``merge_subject_template`` with exactly one ``{key}`` placeholder.
+  ``merge_subject_template`` with exactly one ``{key}`` placeholder and an
+  optional ``{slug}`` placeholder filled with the caller's own
+  ``project_slug`` before the ``{key}`` split ever runs -- a subject rendered
+  under a foreign slug carries a different literal prefix/suffix and simply
+  fails to match (Story 50.4/FR-191 CAP-247).
 * **GitHub PR merge subject**: ``Merge pull request #N from <owner>/<branch>``.
 * **bmad-loop merge subject**: ``Merge bmad-loop/<run>/<key>-<desc> into
   loop/<project> (bmad-loop)``.
 * **Recovery commit subject**: ``recover <station> <epic>-<seq> …`` (the
   documented forward convention for manual recoveries).
 * **Story direct commit subject**: ``Story <epic>.<seq>: …`` (pre-convention
-  era; project-scoped by ``project_slug`` when the station prefix is absent).
+  era; requires a station-scoped ``branch`` -- via ``_branch_belongs_to_project``
+  -- to corroborate ``project_slug``, since the subject itself carries no
+  station token; refuses when ``branch`` is unavailable or foreign, Story
+  50.4/FR-191 CAP-247).
 * **Branch grammars**: ``land/<station>-<epic>-<seq>…``,
   ``bmad-loop/<run>/<key>-<desc>``, ``<station>/<key>-<desc>`` (GitHub PR
   branch convention), and ``dispatch/<project_slug>/<key>`` (marshal Story
@@ -38,6 +45,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 _KEY_PLACEHOLDER = "{key}"
+
+#: The optional second placeholder (Story 50.4, FR-191 CAP-247): a template
+#: may carry at most one ``{slug}``, filled/matched against the caller's own
+#: ``project_slug`` BEFORE ``{key}`` splitting even looks at the template --
+#: a template with no ``{slug}`` at all (every pre-existing per-station
+#: override) is unaffected. This mirrors ``pyforge.marshal.core.identity``'s
+#: own ``_instantiate_slug`` (the two packages independently own their
+#: render/parse pair per this story's Binding, but share the same
+#: placeholder-fill semantics).
+_SLUG_PLACEHOLDER = "{slug}"
 
 #: The ONE spelling of marshal's station-scoped dispatch branch prefix
 #: (Story 22.9). It lives here rather than in ``pyforge.marshal`` because
@@ -189,6 +206,25 @@ def _parse_key_token(raw: str) -> StoryKeyRef | None:
     )
 
 
+def _instantiate_slug(template: str, project_slug: str) -> str | None:
+    """Fill ``template``'s optional ``{slug}`` with ``project_slug``.
+
+    A ``template`` with no ``{slug}`` passes through unchanged. Returns
+    ``None`` (never raises -- this module's parsers are failure-tolerant by
+    design) when ``template`` carries more than one ``{slug}``, or when
+    ``{slug}`` is present but ``project_slug`` isn't a non-empty ``str``.
+    """
+    if not isinstance(template, str):
+        return None
+    if _SLUG_PLACEHOLDER not in template:
+        return template
+    if template.count(_SLUG_PLACEHOLDER) != 1:
+        return None
+    if not isinstance(project_slug, str) or project_slug == "":
+        return None
+    return template.replace(_SLUG_PLACEHOLDER, project_slug)
+
+
 def _split_template(template: str) -> tuple[str, str] | None:
     if not isinstance(template, str) or template.count(_KEY_PLACEHOLDER) != 1:
         return None
@@ -196,9 +232,20 @@ def _split_template(template: str) -> tuple[str, str] | None:
     return prefix, suffix
 
 
-def parse_templated_merge_subject(subject: str, template: str) -> StoryKeyRef | None:
-    """AD-24 templated merge subject: exact prefix/suffix slice around ``{key}``."""
-    parts = _split_template(template)
+def parse_templated_merge_subject(
+    subject: str, template: str, project_slug: str
+) -> StoryKeyRef | None:
+    """AD-24 templated merge subject: exact prefix/suffix slice around ``{key}``.
+
+    ``template``'s optional ``{slug}`` is filled with ``project_slug`` first
+    (Story 50.4) -- a subject rendered under a foreign slug then carries a
+    different literal prefix/suffix and fails the ``startswith``/``endswith``
+    check below, self-scoping the shape with no separate comparison step.
+    """
+    instantiated = _instantiate_slug(template, project_slug)
+    if instantiated is None:
+        return None
+    parts = _split_template(instantiated)
     if parts is None or not isinstance(subject, str):
         return None
     prefix, suffix = parts
@@ -256,19 +303,28 @@ def parse_recovery_commit_subject(subject: str, project_slug: str) -> StoryKeyRe
     )
 
 
-def parse_story_direct_commit_subject(subject: str, project_slug: str) -> StoryKeyRef | None:
+def parse_story_direct_commit_subject(
+    subject: str, project_slug: str, *, branch: str | None = None
+) -> StoryKeyRef | None:
     """``Story <epic>.<seq>: …`` direct commit (pre-convention era).
 
-    Scoped to ``project_slug`` only when the subject carries no station
-    prefix -- cross-project collision is the consumer's problem for
-    ambiguous cases; the three live false positives are covered by the SHA
-    allowlist and recovery-subject patterns in 20.9 wiring.
+    The subject itself carries no station token, so it can never
+    self-disambiguate a cross-station key collision (Story 50.4: steward's
+    ``Story 48.2:``/``Story 48.4:`` subjects were poisoning marshal's own
+    48.2/48.4). ``branch`` must corroborate ``project_slug`` via
+    ``_branch_belongs_to_project`` -- defaulting to ``None`` refuses by
+    default when a caller has no branch data (e.g. a subject-only
+    ``git log --format=%s`` scan), which is safe for
+    ``merged_story_keys``: every real direct-commit landing in this repo's
+    history also has an independently-scoped companion merge commit reachable
+    in the same history, so the aggregate result is unaffected even though
+    the direct commit no longer classifies in isolation.
     """
     match = _STORY_DIRECT_COMMIT_SUBJECT_RE.match(subject)
     if match is None:
         return None
-    # Story-direct commits in marshal's history lack a station token in the
-    # subject; callers pass ``project_slug`` for station-scoped feeds.
+    if not _branch_belongs_to_project(branch, project_slug):
+        return None
     return StoryKeyRef(
         epic=int(match.group("epic")),
         seq=int(match.group("seq")),

@@ -979,7 +979,7 @@ def run_land(
     # this story's own Design Notes for why a single key, not all wave
     # keys) -- never hand-typed, never a separate pre-merge PR-title-edit
     # call.
-    subject = identity.render_merge_subject(wave_keys[0], template)
+    subject = identity.render_merge_subject(wave_keys[0], template, slug)
     data["subject"] = subject
 
     merge_intent_id = deploy_run.write(

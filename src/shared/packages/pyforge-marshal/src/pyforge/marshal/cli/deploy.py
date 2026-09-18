@@ -103,7 +103,7 @@ green before anything else runs.
 
 **The subject is always rendered, never hand-typed (AD-24).** ``land-story``
 resolves the project's ``merge_subject_template`` policy field and calls
-``core.identity.render_merge_subject(key, template)`` -- the SAME
+``core.identity.render_merge_subject(key, template, slug)`` -- the SAME
 render/parse pair the conformance audit below uses in its parse direction.
 No f-string/format literal in this module's own new code ever assembles a
 merge subject.
@@ -2142,7 +2142,7 @@ def run_land_story(
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
 
     # 7. Render the merge subject (AD-24) -- never hand-typed.
-    subject = identity.render_merge_subject(story_key, template)
+    subject = identity.render_merge_subject(story_key, template, slug)
     data["subject"] = subject
 
     # 8. Pin `branch`'s own tip immediately after the gate evaluated it
@@ -2291,7 +2291,7 @@ def run_land_story(
         non_conforming: list[str] = []
         for window_subject in window_subjects:
             try:
-                identity.parse_merge_subject(window_subject, template)
+                identity.parse_merge_subject(window_subject, template, slug)
             except identity.MergeSubjectConformanceError:
                 # Reported only -- never fed into `findings`: doing so
                 # would reclassify this already-successful landing's own
