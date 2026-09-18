@@ -15,25 +15,38 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pyforge.herald import state
-from pyforge.herald.deck_pipeline import DeckStatus, _is_stale_mirror, status
+from pyforge.herald import registry, state
+from pyforge.herald.deck_pipeline import (
+    AccountProjectStatus,
+    DeckStatus,
+    _is_stale_mirror,
+    account_status,
+    status,
+)
 from pyforge.herald.errors import HeraldError, TransportCallError
-from pyforge.herald.transport.base import FileRead, ListedFile
+from pyforge.herald.transport.base import FileRead, ListedFile, ProjectSummary
 
 
 class FakeStatusTransport:
     """A hand-written ``DesignTransport`` double exercising only
-    ``read_file``/``list_files`` -- every other method raises, since
-    ``status`` must never call a write-side transport method (FR-13)."""
+    ``read_file``/``list_files``/``list_projects`` -- every other method
+    raises, since ``status``/``account_status`` must never call a
+    write-side transport method (FR-13)."""
 
     def __init__(
-        self, *, read_answers=None, list_files_answer=None, list_files_fails=None
+        self,
+        *,
+        read_answers=None,
+        list_files_answer=None,
+        list_files_fails=None,
+        list_projects_answer=None,
     ):
         self.calls: list[tuple[str, dict]] = []
         # path -> FileRead | Exception | list of either, consumed per call.
         self._read_answers: dict = dict(read_answers or {})
         self._list_files_answer = list(list_files_answer or [])
         self._list_files_fails = list_files_fails
+        self._list_projects_answer = list_projects_answer
 
     def read_file(self, **kwargs) -> FileRead:
         self.calls.append(("read_file", kwargs))
@@ -76,6 +89,12 @@ class FakeStatusTransport:
 
     def render_preview(self, **kwargs):
         raise NotImplementedError("status never calls render_preview")
+
+    def list_projects(self):
+        self.calls.append(("list_projects", {}))
+        if self._list_projects_answer is None:
+            raise NotImplementedError("status never calls list_projects")
+        return self._list_projects_answer
 
     def names(self) -> list[str]:
         return [name for name, _kwargs in self.calls]
