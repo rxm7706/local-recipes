@@ -293,10 +293,20 @@ class PixiDeckDeriver:
     duplicated. ``changed`` is true when ``deck-trio`` reported writing a
     file (its own ``": wrote "`` convention) or the discovered export set's
     filename/hash fingerprint moved. Never invoked by this package's own
-    tests (every ``sync_all`` test injects a fake)."""
+    tests (every ``sync_all`` test injects a fake, including for
+    ``exporter_factory`` -- a bare monkeypatch of this module's own
+    ``subprocess`` would not reach ``select_exporter(...).export(...)``'s
+    OWN subprocess call, which lives in ``deck_pipeline``'s module
+    namespace, not this one)."""
 
-    def __init__(self, *, timeout: float = _SUBPROCESS_TIMEOUT) -> None:
+    def __init__(
+        self,
+        *,
+        timeout: float = _SUBPROCESS_TIMEOUT,
+        exporter_factory: Callable[[str, Path], object] | None = None,
+    ) -> None:
         self._timeout = timeout
+        self._exporter_factory = exporter_factory or select_exporter
 
     def derive(self, *, slug: str, repo_root: Path) -> bool:
         deck_dir = repo_root / "presentations" / slug
@@ -315,7 +325,7 @@ class PixiDeckDeriver:
                 what="deck-trio",
             )
             trio_changed = _WROTE_MARKER in completed.stdout
-        select_exporter(slug, repo_root).export(slug=slug, repo_root=repo_root)
+        self._exporter_factory(slug, repo_root).export(slug=slug, repo_root=repo_root)
         after = self._export_fingerprint(deck_dir, slug)
         return trio_changed or before != after
 

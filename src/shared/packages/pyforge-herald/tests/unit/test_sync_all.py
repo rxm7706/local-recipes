@@ -370,8 +370,6 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
             order.append("derive")
             return super().derive(slug=slug, repo_root=repo_root)
 
-    transport = FakeSyncTransport()
-
     class OrderedTransport(FakeSyncTransport):
         def write_files(self, **kwargs):
             order.append("push")
@@ -379,12 +377,12 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
 
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     (deck_dir / "src" / "marp").mkdir(parents=True)
-    (deck_dir / "src" / "marp" / "pyforge-warden-infographic-standalone-2026-09-18.html").write_text(
-        "<html>v1</html>", encoding="utf-8"
-    )
+    filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
+    (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
 
     sync_all(
-        OrderedTransport(), slug="pyforge-warden", repo_root=tmp_path,
+        OrderedTransport(rendered_bytes={filename: b"<html>v1</html>"}),
+        slug="pyforge-warden", repo_root=tmp_path,
         **_seams(facts_refresher=OrderedRefresher(), deriver=OrderedDeriver()),
     )
 
@@ -430,7 +428,8 @@ def test_sync_all_pushes_a_new_export_file_and_reports_it(tmp_path: Path):
     (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
 
     report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams()
+        FakeSyncTransport(rendered_bytes={filename: b"<html>v1</html>"}),
+        slug="pyforge-warden", repo_root=tmp_path, **_seams()
     )
 
     deck = report.decks[0]
