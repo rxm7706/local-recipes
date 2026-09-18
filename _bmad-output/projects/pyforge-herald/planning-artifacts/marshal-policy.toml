@@ -34,6 +34,24 @@ gate_mode = "none"
 harness_preference = ["cursor"]
 
 
+# merge_subject_template (AD-24): station-scoped, NOT the repo default
+# "Merge {key} into main". The default form carries no station token, and
+# Story 35.1's known_keys corroboration only rejects a templated match whose
+# key this ledger does NOT know -- so pyforge-atlas's seven 2026-09-01 merges
+# ("Merge 23-1 into main" .. "Merge 23-7 into main") read as THIS station's
+# 23.1/23.2/23.5/23.6 already merged. Found live 2026-09-18: every doctor 23.x
+# dispatch that morning completed in one second (`story_merged_on_main: true`)
+# and detached from a session that was still running, and `dispatch land`
+# would have answered `already_landed` for the same keys. Verified with
+# promotion.merged_story_keys against origin/main: the default template
+# marks all four backlog keys merged; this form marks none. Rendered
+# subjects ("Merge pyforge-herald/23-1 into main") still classify
+# marshal-native. The gate-side fix (a station token in the templated
+# shape itself) is marshal's to spec; this override is the per-station lever
+# policy already provides.
+merge_subject_template = "Merge pyforge-herald/{key} into main"
+
+
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
