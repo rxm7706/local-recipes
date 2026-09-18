@@ -235,12 +235,18 @@ def test_merged_story_keys_land_slug_branch_shape_recognized_for_owning_station(
 
 
 def test_merged_story_keys_recognizes_recovery_and_story_direct_subjects():
+    """Story 50.4/FR-191 CAP-247: ``merged_story_keys`` scans plain commit
+    subjects with no branch info available to corroborate -- the recovery
+    shape carries its own station token in the text and still classifies,
+    but the bare ``Story 8.2: ...`` direct-commit subject alone no longer
+    does (this is the exact shape steward's real ``Story 48.2:``/
+    ``Story 48.4:`` subjects used to poison marshal's own ledger with)."""
     subjects = (
         "recover marshal 10-1 (Copier engine wrapper — the single seam)",
         "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
     )
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
-        {StoryKey(10, 1), StoryKey(8, 2)}
+        {StoryKey(10, 1)}
     )
 
 

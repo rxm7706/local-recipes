@@ -4217,8 +4217,8 @@ class TestRunDetail:
 _DEFAULT_MERGE_TEMPLATE = str(DEFAULT_POLICY["merge_subject_template"])
 
 
-def _merged_subject(key: str) -> str:
-    return render_merge_subject(normalize(key), _DEFAULT_MERGE_TEMPLATE, "acme")
+def _merged_subject(key: str, *, project_slug: str = "acme") -> str:
+    return render_merge_subject(normalize(key), _DEFAULT_MERGE_TEMPLATE, project_slug)
 
 
 class TestReconcileLedgerCli:
@@ -4982,7 +4982,7 @@ class TestFailedPatches:
         )
         vcs = _FakeVcs(
             worktrees=(WorktreeEntry(path=home, branch="loop/atlas"),),
-            commit_subjects_value=(_merged_subject("12.1"),),
+            commit_subjects_value=(_merged_subject("12.1", project_slug="atlas"),),
         )
 
         exit_code = status_cli.run_status(
