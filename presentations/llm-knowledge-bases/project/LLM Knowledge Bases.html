@@ -1,0 +1,2159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LLM Knowledge Bases</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0c0b;
+    --bg-2: #111312;
+    --ink: #e8e6df;
+    --ink-dim: #9b9a93;
+    --ink-faint: #5a5a55;
+    --rule: #262826;
+    --accent: oklch(0.78 0.14 155);
+    --accent-dim: oklch(0.55 0.09 155);
+    --warn: oklch(0.78 0.12 55);
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-serif: "Fraunces", Georgia, serif;
+    --font-sans: "Inter", -apple-system, Helvetica, sans-serif;
+  }
+
+  html, body { margin: 0; background: #000; color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+  deck-stage { background: #000 !important; }
+
+  /* Every slide shares this base */
+  .slide {
+    background: var(--bg);
+    color: var(--ink);
+    padding: 100px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle scanline/noise vibe — very light */
+  .slide::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.008) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .slide > * { position: relative; z-index: 1; }
+
+  /* Top + bottom chrome — terminal bar */
+  .chrome-top, .chrome-bot {
+    position: absolute; left: 100px; right: 100px;
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 2;
+  }
+  .chrome-top { top: 44px; }
+  .chrome-bot { bottom: 44px; }
+  .chrome-bot .dot { color: var(--accent); }
+
+  /* Caret blink */
+  .caret {
+    display: inline-block; width: 0.55em; height: 1em;
+    background: var(--accent); margin-left: 0.18em;
+    transform: translateY(0.14em);
+    animation: blink 1.05s steps(2, start) infinite;
+  }
+  @keyframes blink { to { background: transparent; } }
+
+  /* Shared type */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 140px;
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .title em { font-style: italic; color: var(--accent); font-weight: 300; }
+  .subtitle {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 48px;
+    line-height: 1.2;
+    color: var(--ink-dim);
+    margin: 36px 0 0 0;
+    max-width: 1400px;
+    text-wrap: pretty;
+  }
+  .h-sec {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 96px;
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .body {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 36px;
+    line-height: 1.35;
+    color: var(--ink);
+    max-width: 1400px;
+    text-wrap: pretty;
+  }
+  .small-mono {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--ink-dim);
+    letter-spacing: 0.01em;
+  }
+
+  /* Generic helpers */
+  .rule { height: 1px; background: var(--rule); width: 100%; }
+  .spacer-grow { flex: 1; }
+
+  /* ── Slide 1: Cover ─────────────────────────────────── */
+  .s-cover { justify-content: center; }
+  .s-cover .eyebrow { font-size: 28px; }
+  .s-cover .title { font-size: 200px; max-width: 1200px; }
+  .s-cover .byline {
+    margin-top: 64px;
+    font-family: var(--font-mono);
+    font-size: 26px;
+    color: var(--ink-dim);
+    display: flex; gap: 40px;
+  }
+  .s-cover .byline span { color: var(--ink); }
+  .s-cover .glyph {
+    position: absolute;
+    right: 100px; bottom: 160px;
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+    white-space: pre;
+    text-align: right;
+  }
+
+  /* ── Slide 2: The Shift — two columns with big arrow ── */
+  .s-shift .cols {
+    display: grid; grid-template-columns: 1fr 120px 1fr; gap: 0;
+    align-items: stretch; margin-top: 72px; flex: 1;
+  }
+  .shift-col {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 40px 0;
+  }
+  .shift-col .label {
+    font-family: var(--font-mono); font-size: 26px;
+    color: var(--ink-faint); letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .shift-col .big {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 110px; line-height: 0.98; letter-spacing: -0.02em;
+  }
+  .shift-col .big.dim { color: var(--ink-faint); }
+  .shift-col .big em { font-style: italic; color: var(--accent); }
+  .shift-col .caption {
+    margin-top: 32px; font-family: var(--font-serif); font-weight: 300;
+    font-size: 32px; color: var(--ink-dim); line-height: 1.3; max-width: 620px;
+  }
+  .shift-arrow {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 80px; color: var(--accent-dim);
+  }
+
+  /* ── Slide 3: The Loop (diagram) ──────────────────── */
+  .s-loop .loop-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin-top: 40px;
+  }
+  .loop-svg { width: 100%; max-width: 1600px; height: auto; }
+
+  .s-stack { padding: 80px 80px 80px 80px; }
+  .s-stack .chrome-top { top: 32px; }
+  .s-stack .eyebrow { margin-bottom: 16px; margin-top: 32px; }
+  .s-stack .h-sec { font-size: 60px; margin-bottom: 20px; line-height: 1.05; }
+  .s-stack .stack {
+    flex: 1; display: flex; flex-direction: column;
+    gap: 8px; min-height: 0;
+  }
+  .layer {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    border: 1px solid var(--rule);
+    background: var(--bg-2);
+    border-radius: 6px;
+    padding: 12px 20px;
+    align-items: center;
+    min-height: 0;
+  }
+  .layer .meta { display: flex; flex-direction: column; gap: 2px; line-height: 1.1; }
+  .layer .num {
+    font-family: var(--font-mono); font-size: 24px;
+    color: var(--accent); letter-spacing: 0.14em;
+  }
+  .layer .name {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 32px; line-height: 1.0; letter-spacing: -0.01em;
+  }
+  .layer .role {
+    font-family: var(--font-mono); font-size: 0;
+    display: none;
+  }
+  .layer .row {
+    display: flex; gap: 10px; flex-wrap: nowrap;
+    font-family: var(--font-mono); font-size: 24px;
+    overflow: hidden;
+  }
+  .chip {
+    padding: 8px 12px; border: 1px solid var(--rule);
+    border-radius: 4px; background: var(--bg);
+    color: var(--ink); display: inline-flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+  }
+  .chip .key { color: var(--ink-faint); }
+  .chip .ok { color: var(--accent); }
+  .chip.strong { border-color: var(--accent-dim); color: var(--ink); }
+  .chip.dim { color: var(--ink-dim); }
+  .s-stack .chrome-bot { bottom: 44px; }
+  .flow-legend {
+    display: flex; gap: 32px;
+    font-family: var(--font-mono); font-size: 24px;
+    color: var(--ink-dim); margin-top: 16px;
+    margin-bottom: 24px;
+  }
+  .flow-legend .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .fl-ingest .dot { background: oklch(0.68 0.14 240); }
+  .fl-qa .dot { background: var(--accent); }
+  .fl-maint .dot { background: oklch(0.78 0.13 55); }
+
+  /* ── Slide 5: Three Flows ──────────────────────── */
+  .s-flows .flows-grid {
+    flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+    margin-top: 40px; min-height: 0;
+  }
+  .flow-card {
+    border: 1px solid var(--rule);
+    background: var(--bg-2);
+    border-radius: 6px;
+    padding: 36px 36px 28px;
+    display: flex; flex-direction: column;
+    border-top: 3px solid var(--rule);
+  }
+  .fc-ingest { border-top-color: oklch(0.68 0.14 240); }
+  .fc-audit  { border-top-color: oklch(0.78 0.13 55); }
+  .fc-qa     { border-top-color: var(--accent); }
+  .flow-hdr { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .flow-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .fc-ingest .flow-dot { background: oklch(0.68 0.14 240); }
+  .fc-audit  .flow-dot { background: oklch(0.78 0.13 55); }
+  .fc-qa     .flow-dot { background: var(--accent); }
+  .flow-num { font-family: var(--font-mono); font-size: 24px; color: var(--ink-faint); letter-spacing: 0.14em; }
+  .flow-name { font-family: var(--font-serif); font-weight: 300; font-size: 44px; letter-spacing: -0.01em; margin-left: auto; }
+  .flow-trigger { font-family: var(--font-mono); font-size: 24px; color: var(--ink-dim); padding-bottom: 20px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .flow-steps { list-style: decimal; padding-left: 28px; margin: 0; font-family: var(--font-mono); font-size: 26px; line-height: 1.7; color: var(--ink); }
+  .flow-steps li::marker { color: var(--ink-faint); }
+  .flow-steps .k { color: var(--accent); margin-right: 8px; }
+  .fc-ingest .flow-steps .k { color: oklch(0.72 0.13 240); }
+  .fc-audit  .flow-steps .k { color: oklch(0.82 0.13 55); }
+  .fc-qa     .flow-steps .k { color: var(--accent); }
+
+  /* ── Slide 4: Raw — file listing ─────────────────── */
+  .s-raw .content { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; margin-top: 60px; flex: 1; }
+  .file-list {
+    font-family: var(--font-mono); font-size: 28px;
+    background: var(--bg-2); border: 1px solid var(--rule);
+    padding: 36px 44px; border-radius: 4px;
+    color: var(--ink-dim); line-height: 1.8;
+    align-self: start;
+  }
+  .file-list .hdr {
+    color: var(--ink-faint); padding-bottom: 14px; margin-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between;
+  }
+  .file-list .row { display: flex; justify-content: space-between; gap: 40px; }
+  .file-list .ext { color: var(--accent); }
+  .file-list .name { color: var(--ink); }
+
+  .raw-notes .body { font-size: 40px; }
+  .raw-notes .aside {
+    margin-top: 48px;
+    font-family: var(--font-mono); font-size: 24px;
+    color: var(--ink-faint); line-height: 1.7;
+    padding: 20px 0 0 0; border-top: 1px solid var(--rule);
+  }
+
+  /* ── Slide 5: Compiled — wiki tree ────────────────── */
+  .s-compiled .content { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; margin-top: 60px; flex: 1; }
+  .tree {
+    font-family: var(--font-mono); font-size: 24px;
+    color: var(--ink); line-height: 1.7; letter-spacing: 0.01em;
+    margin: 0;
+  }
+  .tree .dir { color: var(--accent); }
+  .tree .muted { color: var(--ink-faint); }
+  .tree .link { color: var(--ink-dim); }
+  .tree .bracket { color: var(--ink-faint); }
+
+  /* ── Slide 6: The IDE — obsidian-style window ─────── */
+  .s-ide .window {
+    flex: 1;
+    margin-top: 40px;
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    display: grid; grid-template-columns: 360px 1fr 340px;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 24px;
+  }
+  .s-ide .win-head {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 22px; border-bottom: 1px solid var(--rule);
+    background: #090a09;
+    color: var(--ink-faint);
+    font-size: 24px;
+  }
+  .s-ide .win-dots { display: flex; gap: 8px; }
+  .s-ide .win-dots i { width: 12px; height: 12px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+  .s-ide .win-path { margin-left: 18px; color: var(--ink-dim); }
+  .s-ide .pane { padding: 28px 26px; line-height: 1.7; border-right: 1px solid var(--rule); }
+  .s-ide .pane.right { border-right: 0; border-left: 1px solid var(--rule); }
+  .s-ide .pane .label { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-size: 24px; margin-bottom: 18px; }
+  .s-ide .pane .item { color: var(--ink-dim); }
+  .s-ide .pane .item.active { color: var(--ink); }
+  .s-ide .pane .item::before { content: "— "; color: var(--ink-faint); }
+  .s-ide .main { padding: 48px 56px; background: var(--bg); }
+  .s-ide .main h1 { font-family: var(--font-serif); font-weight: 300; font-size: 56px; margin: 0 0 18px 0; letter-spacing: -0.01em; }
+  .s-ide .main .meta { color: var(--ink-faint); font-size: 24px; margin-bottom: 32px; }
+  .s-ide .main p { font-family: var(--font-serif); font-size: 28px; line-height: 1.45; color: var(--ink); margin: 0 0 14px; max-width: 760px; font-weight: 300; }
+  .s-ide .main .link { color: var(--accent); }
+  .s-ide .main .tag { color: var(--accent-dim); }
+
+  /* ── Slide 7: Q&A — question + process ──────────── */
+  .s-qa .q {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 88px; line-height: 1.04; letter-spacing: -0.015em;
+    margin: 48px 0 0; max-width: 1500px;
+  }
+  .s-qa .q em { font-style: italic; color: var(--accent); }
+  .s-qa .trace {
+    margin-top: 72px;
+    font-family: var(--font-mono); font-size: 26px;
+    color: var(--ink-dim); line-height: 2.1;
+    max-width: 1400px;
+  }
+  .s-qa .trace .step { display: flex; gap: 24px; }
+  .s-qa .trace .k { color: var(--accent); width: 44px; flex-shrink: 0; }
+  .s-qa .trace .v { color: var(--ink); }
+  .s-qa .trace .c { color: var(--ink-faint); }
+
+  /* ── Slide 8: Rendered Outputs — grid of formats ── */
+  .s-outputs .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+    margin-top: 64px; flex: 1;
+  }
+  .out-card {
+    background: var(--bg-2); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 36px;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+  }
+  .out-card .kind {
+    font-family: var(--font-mono); font-size: 24px; color: var(--accent);
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 20px;
+  }
+  .out-card .name {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 44px; line-height: 1.05; letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+  .out-card .desc {
+    font-family: var(--font-serif); font-size: 26px; line-height: 1.4;
+    color: var(--ink-dim); font-weight: 300;
+  }
+  .out-card .viz {
+    margin-top: auto; padding-top: 32px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono); font-size: 24px;
+    line-height: 1.7;
+  }
+
+  /* ── Slide 9: Linting — diff-style ─────────────── */
+  .s-lint .diff {
+    flex: 1; margin-top: 40px;
+    font-family: var(--font-mono); font-size: 28px;
+    line-height: 1.9;
+    background: var(--bg-2); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 36px 44px;
+  }
+  .s-lint .diff .minus { color: #d35a5a; }
+  .s-lint .diff .plus { color: var(--accent); }
+  .s-lint .diff .note { color: var(--ink-faint); }
+  .s-lint .diff .hdr { color: var(--ink-faint); margin-bottom: 16px; }
+  .s-lint .diff .row { display: grid; grid-template-columns: 60px 1fr; gap: 24px; }
+
+  /* ── Slide 10: Tooling ─────────────────────────── */
+  .s-tools .cards {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;
+    margin-top: 48px; flex: 1;
+    min-height: 0;
+  }
+  .tool-card {
+    border: 1px solid var(--rule);
+    padding: 36px 40px;
+    border-radius: 6px;
+    display: flex; flex-direction: column;
+    background: var(--bg-2);
+    min-height: 0;
+  }
+  .tool-card .num {
+    font-family: var(--font-mono); font-size: 24px; color: var(--accent);
+    letter-spacing: 0.14em; margin-bottom: 24px;
+  }
+  .tool-card .name {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 48px; line-height: 1.02; letter-spacing: -0.015em;
+    margin-bottom: 16px;
+  }
+  .tool-card .desc {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 300;
+    line-height: 1.35; color: var(--ink-dim);
+  }
+  .tool-card .snippet {
+    margin-top: auto; padding-top: 24px; border-top: 1px solid var(--rule);
+    font-family: var(--font-mono); font-size: 24px; color: var(--ink-faint);
+  }
+
+  /* ── Slide 11: Synthetic Weights ──────────────── */
+  .s-weights { justify-content: center; }
+  .s-weights .big-q {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 130px; line-height: 1.0; letter-spacing: -0.02em;
+    max-width: 1600px; text-wrap: balance; margin: 0;
+  }
+  .s-weights .big-q em { font-style: italic; color: var(--accent); }
+  .s-weights .small {
+    margin-top: 56px;
+    font-family: var(--font-mono); font-size: 24px;
+    color: var(--ink-faint); letter-spacing: 0.04em;
+    max-width: 1300px; line-height: 1.7;
+  }
+
+  /* ── Slide 12: Closing ─────────────────────── */
+  .s-close { justify-content: center; }
+  .s-close .kicker {
+    font-family: var(--font-mono); font-size: 26px;
+    color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+  .s-close .stmt {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 100px; line-height: 1.04; letter-spacing: -0.02em;
+    margin: 0; max-width: 1700px; text-wrap: balance;
+  }
+  .s-close .stmt em { font-style: italic; color: var(--accent); }
+  .s-close .signoff {
+    margin-top: 80px; display: flex; gap: 48px;
+    font-family: var(--font-mono); font-size: 24px; color: var(--ink-dim);
+  }
+  .s-close .signoff span { color: var(--ink); }
+
+  /* ═══════════════════════════════════════════
+     PART II — PRODUCTIZED
+     ═══════════════════════════════════════════ */
+
+  /* Shared palette for Part II */
+  :root {
+    --flow-ingest: oklch(0.72 0.13 240);
+    --flow-audit:  oklch(0.80 0.13 55);
+    --flow-query:  oklch(0.78 0.14 155);
+    --flow-compile: oklch(0.72 0.12 280);
+  }
+  .d-ingest { background: var(--flow-ingest); }
+  .d-audit  { background: var(--flow-audit); }
+  .d-query  { background: var(--flow-query); }
+  .d-compile { background: var(--flow-compile); }
+
+  /* ── 15 Part II divider ─────────────────────── */
+  .s-partii { justify-content: center; padding: 140px 100px 120px; }
+  .s-partii .partii-inner { max-width: 1600px; margin-top: 0; }
+  .s-partii .eyebrow { font-size: 28px; margin-bottom: 28px; margin-top: 0; }
+  .s-partii .eyebrow { font-size: 28px; margin-bottom: 28px; }
+  .s-partii .partii-title {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 140px; line-height: 0.95; letter-spacing: -0.03em;
+    margin: 0 0 44px; text-wrap: balance;
+  }
+  .s-partii .partii-sub {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 38px; line-height: 1.25; color: var(--ink-dim);
+    max-width: 1200px; margin-bottom: 56px;
+  }
+  .s-partii .partii-meta {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
+    padding-top: 32px; border-top: 1px solid var(--rule);
+    font-family: var(--font-mono); font-size: 28px; color: var(--ink);
+  }
+  .s-partii .partii-meta .k {
+    display: block; font-size: 24px; letter-spacing: 0.12em;
+    color: var(--ink-faint); margin-bottom: 10px; text-transform: uppercase;
+  }
+
+  /* ── 16 Architecture ─────────────────────── */
+  .s-arch { padding: 60px 70px 70px; }
+  .s-arch .chrome-top { top: 24px; }
+  .s-arch .eyebrow { margin-top: 24px; margin-bottom: 8px; }
+  .s-arch .h-sec { font-size: 44px; margin-bottom: 14px; line-height: 1.05; }
+  .s-arch .chrome-bot { bottom: 24px; }
+  .arch-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; position: relative; padding-bottom: 36px; }
+  .arch-legend {
+    position: static;
+    display: flex; gap: 28px;
+    margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 20px; letter-spacing: 0.1em;
+    color: var(--ink-dim);
+  }
+  .lg-item { display: flex; align-items: center; gap: 8px; }
+  .lg-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .arch-row { display: flex; gap: 14px; align-items: stretch; }
+  .arch-tag {
+    width: 40px; flex-shrink: 0;
+    font-family: var(--font-mono); font-size: 20px; color: var(--ink-faint);
+    letter-spacing: 0.14em;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px dashed var(--rule);
+  }
+  .arch-box {
+    flex: 1; border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--bg-2); padding: 12px 18px;
+    display: flex; align-items: center; gap: 24px;
+    border-left: 3px solid var(--rule);
+  }
+  .arch-box.l1 { border-left-color: var(--flow-ingest); }
+  .arch-box.l2 { border-left-color: var(--flow-audit); }
+  .arch-box.l3 { border-left-color: var(--accent-dim); }
+  .arch-box.l4 { border-left-color: var(--flow-compile); }
+  .arch-box.l5 { border-left-color: var(--ink-faint); }
+  .arch-head { display: flex; flex-direction: column; gap: 2px; min-width: 200px; flex-shrink: 0; }
+  .arch-name { font-family: var(--font-serif); font-weight: 300; font-size: 28px; letter-spacing: -0.01em; line-height: 1.05; }
+  .arch-role { font-family: var(--font-mono); font-size: 15px; color: var(--ink-faint); letter-spacing: 0.08em; text-transform: lowercase; }
+  .arch-body { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
+  .arch-body .pill {
+    font-family: var(--font-mono); font-size: 16px;
+    padding: 4px 10px; border: 1px solid var(--rule); border-radius: 2px;
+    color: var(--ink); display: inline-flex; align-items: center; gap: 6px;
+  }
+  .arch-body .pill.dim { color: var(--ink-dim); border-color: transparent; }
+  .arch-body .pill .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .arch-gap {
+    display: flex; justify-content: center; gap: 28px;
+    padding: 2px 0;
+    font-family: var(--font-mono); font-size: 15px; color: var(--ink-faint);
+  }
+  .arch-gap .a-ingest { color: var(--flow-ingest); }
+  .arch-gap .a-query { color: var(--flow-query); }
+  .arch-split {
+    display: flex; gap: 14px;
+  }
+  .arch-split .arch-col { display: flex; gap: 14px; }
+  .arch-split .arch-col.wide { flex: 2; }
+  .arch-split .arch-col.narrow { flex: 1.1; }
+  .arch-split .arch-box { flex-direction: column; align-items: stretch; gap: 8px; }
+  .arch-split .arch-head { min-width: 0; }
+  .agent-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 2px;
+  }
+  .agent {
+    border: 1px solid var(--rule); border-top: 2px solid var(--rule);
+    padding: 8px 10px; display: flex; flex-direction: column; gap: 2px;
+    background: var(--bg);
+  }
+  .agent .ag-role { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; color: var(--ink-faint); text-transform: uppercase; }
+  .agent .ag-name { font-family: var(--font-serif); font-size: 20px; font-weight: 400; line-height: 1.1; }
+  .agent.ag-blue   { border-top-color: var(--flow-ingest); }
+  .agent.ag-blue .ag-role { color: var(--flow-ingest); }
+  .agent.ag-orange { border-top-color: var(--flow-audit); }
+  .agent.ag-orange .ag-role { color: var(--flow-audit); }
+  .agent.ag-green  { border-top-color: var(--flow-query); }
+  .agent.ag-green .ag-role { color: var(--flow-query); }
+  .tool-list { display: flex; flex-direction: column; gap: 4px; }
+  .tool {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 10px; border: 1px solid var(--rule); border-radius: 2px;
+    font-family: var(--font-mono); font-size: 15px;
+  }
+  .tool .t-name { color: var(--ink); }
+  .tool .t-badge { color: var(--accent); font-size: 13px; letter-spacing: 0.08em; }
+  .arch-body.mem { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+  .mem-dir {
+    border: 1px solid var(--rule); padding: 10px 12px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+    position: relative; padding-top: 14px;
+  }
+  .mem-dir .md-top { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .mem-dir .md-path { font-family: var(--font-mono); font-size: 20px; color: var(--ink); }
+  .mem-dir .md-desc { font-family: var(--font-mono); font-size: 14px; color: var(--ink-dim); }
+
+  /* ── 17 Agent Personas ─────────────────────── */
+  .s-agents { padding: 80px; }
+  .s-agents .chrome-top { top: 32px; }
+  .s-agents .eyebrow { margin-top: 32px; margin-bottom: 16px; }
+  .s-agents .h-sec { font-size: 56px; margin-bottom: 40px; line-height: 1.05; }
+  .persona-grid {
+    flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; min-height: 0;
+  }
+  .persona {
+    border: 1px solid var(--rule); border-top: 3px solid var(--rule);
+    background: var(--bg-2); padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .persona .p-role { font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  .persona .p-name { font-family: var(--font-serif); font-weight: 300; font-size: 52px; letter-spacing: -0.01em; line-height: 1; }
+  .persona .p-desc { font-family: var(--font-serif); font-weight: 300; font-size: 20px; line-height: 1.4; color: var(--ink); }
+  .persona .p-desc code { font-family: var(--font-mono); font-size: 18px; color: var(--accent-dim); }
+  .persona .p-trigger { margin-top: auto; font-family: var(--font-mono); font-size: 18px; color: var(--ink-dim); padding-top: 16px; border-top: 1px solid var(--rule); }
+  .persona .p-trigger .k { display: block; color: var(--ink-faint); font-size: 15px; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .persona .p-trigger code { font-family: var(--font-mono); font-size: 18px; color: var(--accent); }
+  .persona.p-blue   { border-top-color: var(--flow-ingest); }
+  .persona.p-blue   .p-role { color: var(--flow-ingest); }
+  .persona.p-orange { border-top-color: var(--flow-audit); }
+  .persona.p-orange .p-role { color: var(--flow-audit); }
+  .persona.p-green  { border-top-color: var(--flow-query); }
+  .persona.p-green  .p-role { color: var(--flow-query); }
+
+  /* ── 18 Contracts ─────────────────────── */
+  .s-contracts { padding: 80px; }
+  .s-contracts .chrome-top { top: 32px; }
+  .s-contracts .eyebrow { margin-top: 32px; margin-bottom: 16px; }
+  .s-contracts .h-sec { font-size: 60px; margin-bottom: 40px; line-height: 1.05; }
+  .contracts-intro {
+    display: grid; grid-template-columns: 1fr 60px 1fr; gap: 24px; align-items: start;
+    padding: 24px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .ci-col .ci-label { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .ci-col .ci-body { font-family: var(--font-serif); font-size: 26px; line-height: 1.4; font-weight: 300; color: var(--ink); max-width: 700px; }
+  .ci-plus { font-family: var(--font-serif); font-size: 80px; font-weight: 300; text-align: center; color: var(--ink-faint); line-height: 1; }
+  .contract-list {
+    flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  }
+  .ctr {
+    display: grid; grid-template-columns: 2fr 1.5fr 2fr; align-items: center; gap: 24px;
+    padding: 18px 28px; border: 1px solid var(--rule); border-radius: 2px;
+    font-family: var(--font-mono);
+  }
+  .ctr-name { font-size: 26px; color: var(--ink); display: flex; align-items: center; gap: 14px; }
+  .ctr-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .ctr-spec { font-size: 20px; color: var(--ink-dim); }
+  .ctr-desc { font-size: 20px; color: var(--ink-dim); }
+  .ctr-desc code { color: var(--accent-dim); }
+
+  /* ── 19 Workflows ─────────────────────── */
+  .s-workflows { padding: 80px; }
+  .s-workflows .chrome-top { top: 32px; }
+  .s-workflows .eyebrow { margin-top: 32px; margin-bottom: 16px; }
+  .s-workflows .h-sec { font-size: 60px; margin-bottom: 40px; line-height: 1.05; }
+  .wf-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; min-height: 0; }
+  .wf {
+    border: 1px solid var(--rule); border-top: 3px solid var(--rule);
+    background: var(--bg-2); padding: 32px;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .wf-a { border-top-color: var(--flow-ingest); }
+  .wf-b { border-top-color: var(--flow-audit); }
+  .wf-c { border-top-color: var(--flow-query); }
+  .wf-hdr { display: flex; align-items: baseline; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
+  .wf-letter { font-family: var(--font-serif); font-weight: 300; font-size: 80px; line-height: 0.9; letter-spacing: -0.02em; }
+  .wf-a .wf-letter { color: var(--flow-ingest); }
+  .wf-b .wf-letter { color: var(--flow-audit); }
+  .wf-c .wf-letter { color: var(--flow-query); }
+  .wf-kind { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0.1em; color: var(--ink-dim); text-transform: uppercase; }
+  .wf-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; font-family: var(--font-mono); font-size: 22px; color: var(--ink); counter-reset: wf; }
+  .wf-steps li { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 14px; counter-increment: wf; }
+  .wf-steps li::before { content: counter(wf, decimal-leading-zero); color: var(--ink-faint); font-size: 18px; }
+  .wf-layer {
+    font-size: 15px; letter-spacing: 0.1em; color: var(--accent);
+    border: 1px solid var(--rule); padding: 3px 8px; border-radius: 2px;
+    text-align: center; display: inline-block; min-width: 56px;
+  }
+  .wf-steps li { grid-template-columns: 18px 58px 1fr; }
+  .wf-steps code { color: var(--accent-dim); font-size: 20px; }
+
+  /* ── 20 Phases ─────────────────────── */
+  .s-phases { padding: 80px; }
+  .s-phases .chrome-top { top: 32px; }
+  .s-phases .eyebrow { margin-top: 32px; margin-bottom: 16px; }
+  .s-phases .h-sec { font-size: 56px; margin-bottom: 40px; line-height: 1.05; }
+  .phase-list { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .phase {
+    display: grid; grid-template-columns: 100px 1fr 260px; align-items: center; gap: 32px;
+    padding: 24px 32px; border: 1px solid var(--rule); border-radius: 2px;
+    background: var(--bg-2);
+  }
+  .ph-num { font-family: var(--font-serif); font-weight: 300; font-size: 80px; line-height: 1; color: var(--accent); letter-spacing: -0.02em; }
+  .ph-title { font-family: var(--font-serif); font-weight: 400; font-size: 36px; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .ph-desc { font-family: var(--font-mono); font-size: 20px; color: var(--ink-dim); line-height: 1.5; }
+  .ph-desc code { color: var(--accent-dim); }
+  .ph-out { font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.08em; color: var(--accent); text-align: right; text-transform: uppercase; }
+
+  /* ── 21 AI Software Factory (dense infographic poster) ───── */
+  .s-factory { padding: 48px 56px 56px; }
+  .s-factory .chrome-top { top: 22px; left: 56px; right: 56px; font-size: 18px; }
+  .s-factory .chrome-bot { bottom: 22px; left: 56px; right: 56px; font-size: 18px; }
+  .fac-title {
+    font-family: var(--font-serif); font-weight: 300;
+    font-size: 42px; line-height: 1.08; letter-spacing: -0.015em;
+    margin: 24px 0 22px; color: var(--ink); max-width: 1700px;
+  }
+  .fac-title em { font-style: italic; color: var(--accent); font-weight: 300; }
+
+  .fac-grid {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 250px 1fr 340px;
+    gap: 18px;
+    position: relative;
+  }
+  .fac-flows {
+    position: absolute; inset: 0 340px 0 250px; width: auto;
+    pointer-events: none; z-index: 5;
+  }
+  .fac-flows path { fill: none; stroke-width: 2; }
+  .fac-flows .fl-blue   { stroke: oklch(0.68 0.16 240); }
+  .fac-flows .fl-green  { stroke: oklch(0.75 0.17 150); }
+  .fac-flows .fl-orange { stroke: oklch(0.78 0.14 55); stroke-dasharray: 5 4; }
+
+  /* Left labels column */
+  .fac-labels {
+    display: grid;
+    grid-template-rows: 128px 108px 232px 1fr;
+    gap: 14px;
+  }
+  .fac-lab { padding: 10px 14px; border-left: 3px solid var(--rule); }
+  .fac-lab.lab1 { border-left-color: oklch(0.68 0.12 205); }
+  .fac-lab.lab2 { border-left-color: oklch(0.78 0.14 55); }
+  .fac-lab.lab3 { border-left-color: oklch(0.75 0.15 150); }
+  .fac-lab.lab5 { border-left-color: oklch(0.62 0.06 240); }
+  .lab-num { font-family: var(--font-mono); font-size: 13px; color: var(--ink-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+  .lab-name { font-family: var(--font-sans); font-weight: 800; font-size: 20px; color: var(--ink); margin-top: 4px; letter-spacing: 0.02em; }
+  .lab-role { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .lab-gloss { margin-top: 14px; font-family: var(--font-mono); font-size: 11px; line-height: 1.55; color: var(--ink-faint); }
+  .lab-gloss .g-k { color: var(--ink-dim); font-weight: 700; margin-right: 6px; }
+  .lab-db { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .db-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 2px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); background: var(--bg-2); width: fit-content; }
+  .db-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Center main */
+  .fac-main {
+    display: grid;
+    grid-template-rows: 128px 108px 232px 1fr;
+    gap: 14px;
+    min-width: 0;
+  }
+  .fac-row {
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 10px 14px;
+    min-width: 0;
+    position: relative;
+  }
+
+  /* L1 La Suite window */
+  .row1 { background: oklch(0.22 0.03 215); border-color: oklch(0.34 0.04 215); padding: 0; overflow: hidden; }
+  .la-win { display: flex; flex-direction: column; height: 100%; }
+  .la-chrome { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: oklch(0.32 0.04 215); border-bottom: 1px solid oklch(0.4 0.04 215); }
+  .la-dots { display: flex; gap: 6px; }
+  .la-dots i { width: 10px; height: 10px; border-radius: 50%; background: oklch(0.55 0.06 215); display: inline-block; }
+  .la-title { font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: #fff; }
+  .la-gear { margin-left: auto; color: oklch(0.7 0.04 215); }
+  .la-body { flex: 1; display: grid; grid-template-columns: 1.2fr 1.4fr 1.3fr; gap: 14px; padding: 12px 16px; align-items: center; }
+  .la-left { display: flex; align-items: center; gap: 10px; }
+  .la-doc-ico { width: 44px; height: 44px; border-radius: 4px; background: #fff; display: grid; place-items: center; font-size: 22px; }
+  .la-h { font-size: 14px; font-weight: 700; color: #fff; }
+  .la-sub { font-size: 11px; color: oklch(0.75 0.03 215); margin-top: 2px; }
+  .la-collab { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .la-avatars { display: flex; }
+  .av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 11px; color: #fff; margin-left: -8px; border: 2px solid oklch(0.22 0.03 215); }
+  .av:first-child { margin-left: 0; }
+  .av-1 { background: oklch(0.7 0.15 25); }
+  .av-2 { background: oklch(0.7 0.15 85); }
+  .av-3 { background: oklch(0.7 0.16 155); }
+  .av-4 { background: oklch(0.7 0.15 280); }
+  .la-collab-lbl { font-size: 11px; color: oklch(0.75 0.03 215); }
+  .la-search-col { display: flex; flex-direction: column; gap: 6px; }
+  .la-search { padding: 8px 12px; background: oklch(0.35 0.03 215); border: 1px solid oklch(0.45 0.04 215); border-radius: 4px; font-size: 12px; color: oklch(0.8 0.03 215); }
+  .la-search-lbl { font-size: 11px; color: oklch(0.75 0.03 215); }
+  .rest-lbl {
+    position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: 11px; color: oklch(0.72 0.14 240);
+    background: var(--bg); padding: 2px 10px; white-space: nowrap; z-index: 10;
+  }
+
+  /* L2 Dagster */
+  .row2 { padding: 12px 16px; }
+  .dag-node { display: grid; grid-template-columns: 130px 130px 1fr 140px; gap: 20px; align-items: center; height: 100%; }
+  .dag-clock, .dag-sensor {
+    border: 1px solid var(--rule); border-radius: 4px; padding: 8px;
+    display: flex; align-items: center; gap: 10px; background: var(--bg);
+  }
+  .dag-sensor { border-color: oklch(0.5 0.1 240); }
+  .dag-ico { font-size: 22px; }
+  .dag-cap { font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); line-height: 1.35; }
+  .dag-cap span { color: var(--ink-faint); font-size: 10px; }
+  .dag-brand { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; }
+  .dag-logo { font-family: var(--font-mono); font-weight: 800; font-size: 18px; letter-spacing: 0.18em; color: oklch(0.82 0.14 55); white-space: nowrap; }
+  .dag-bar { width: 120px; height: 6px; border-radius: 3px; background: var(--bg); border: 1px solid var(--rule); overflow: hidden; }
+  .dag-bar-fill { height: 100%; width: 55%; background: oklch(0.78 0.14 55); }
+  .dag-dag { display: flex; align-items: center; gap: 6px; }
+  .dag-svg { width: 100px; height: 60px; }
+  .dag-svg .nd { fill: oklch(0.75 0.17 150); stroke: oklch(0.55 0.12 150); stroke-width: 1.5; }
+  .dag-svg .n-a { fill: oklch(0.7 0.14 240); }
+  .dag-svg .n-e { fill: oklch(0.85 0.15 85); }
+  .dag-svg .ln { stroke: oklch(0.55 0.1 150); stroke-width: 1.5; fill: none; }
+  .dag-cap-r { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+
+  /* L3 agent workforce */
+  .row3 { display: grid; grid-template-columns: 2fr 0.9fr 0.9fr 0.9fr; gap: 10px; padding: 14px; }
+  .grp {
+    border: 2px solid; border-radius: 8px; padding: 18px 10px 10px;
+    position: relative;
+    display: flex; gap: 10px; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.01);
+  }
+  .grp-lbl {
+    position: absolute; top: -11px; left: 14px;
+    padding: 2px 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em;
+    background: var(--bg-2);
+  }
+  .grp-ingest { border-color: oklch(0.55 0.14 240); }
+  .grp-ingest .grp-lbl { color: oklch(0.72 0.14 240); border: 1px solid oklch(0.55 0.14 240); }
+  .grp-impl { border-color: oklch(0.55 0.14 150); }
+  .grp-impl .grp-lbl { color: oklch(0.75 0.17 150); border: 1px solid oklch(0.55 0.14 150); }
+  .grp-review { border-color: oklch(0.6 0.14 55); }
+  .grp-review .grp-lbl { color: oklch(0.82 0.14 55); border: 1px solid oklch(0.6 0.14 55); }
+  .grp-strat { border-color: oklch(0.55 0.14 150); }
+  .grp-strat .grp-lbl { color: oklch(0.75 0.17 150); border: 1px solid oklch(0.55 0.14 150); }
+
+  .agent-card {
+    flex: 1; min-width: 0;
+    background: var(--bg); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 140px;
+  }
+  .ag-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .ag-ico { font-size: 26px; }
+  .ag-tag { font-family: var(--font-mono); font-size: 8px; padding: 2px 5px; background: oklch(0.3 0.06 155); color: oklch(0.85 0.1 155); border-radius: 2px; letter-spacing: 0.06em; }
+  .ag-name { font-family: var(--font-sans); font-weight: 800; font-size: 14px; margin-top: 6px; color: var(--ink); letter-spacing: 0.04em; }
+  .ag-role { font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); }
+  .ag-ingester { border-top: 3px solid oklch(0.68 0.16 240); }
+  .ag-compiler { border-top: 3px solid oklch(0.68 0.16 240); }
+  .ag-linker   { border-top: 3px solid oklch(0.75 0.17 150); }
+  .ag-linter   { border-top: 3px solid oklch(0.82 0.14 55); }
+  .ag-oracle   { border-top: 3px solid oklch(0.75 0.17 150); }
+
+  /* L5 Karpathy Wiki storage */
+  .row5 { display: grid; grid-template-columns: 110px 1fr 1fr 1fr; gap: 18px; align-items: center; padding: 14px 18px; }
+  .db-cyl { position: relative; width: 90px; height: 100px; }
+  .cyl-top, .cyl-bot { position: absolute; left: 0; width: 90px; height: 18px; border-radius: 50%; background: oklch(0.35 0.05 215); border: 1px solid oklch(0.5 0.06 215); }
+  .cyl-top { top: 0; }
+  .cyl-bot { bottom: 0; background: oklch(0.3 0.05 215); }
+  .cyl-mid { position: absolute; top: 9px; left: 0; width: 90px; height: 82px; background: oklch(0.32 0.05 215); border-left: 1px solid oklch(0.5 0.06 215); border-right: 1px solid oklch(0.5 0.06 215); }
+  .cyl-mid::before, .cyl-mid::after { content: ""; position: absolute; left: 0; width: 90px; height: 14px; border-radius: 50%; border: 1px solid oklch(0.5 0.06 215); }
+  .cyl-mid::before { top: 18px; }
+  .cyl-mid::after { top: 48px; }
+  .wiki-dir {
+    background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 12px 14px; display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+    min-height: 84px;
+  }
+  .dir-raw { border-top: 3px solid oklch(0.68 0.16 240); }
+  .dir-compiled { border-top: 3px solid oklch(0.68 0.14 280); }
+  .dir-outputs { border-top: 3px solid oklch(0.75 0.17 150); }
+  .dir-ico { grid-row: 1 / 3; font-size: 28px; }
+  .dir-path { font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--ink); }
+  .dir-desc { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+
+  /* Right side panel */
+  .fac-side {
+    display: grid;
+    grid-template-rows: 128px 338px 1fr auto;
+    gap: 14px;
+    min-width: 0;
+  }
+  .side-corpbrain {
+    border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px;
+    background: var(--bg-2);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .cb-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; color: var(--ink-faint); }
+  .cb-graph { width: 100%; height: 86px; margin-top: 6px; }
+  .cb-graph .cb-edges path { stroke: var(--ink-faint); stroke-width: 1; fill: none; opacity: 0.55; }
+  .cb-graph .cb-nodes circle { fill: var(--ink-dim); }
+
+  .side-speckit {
+    border: 2px solid oklch(0.55 0.14 150); border-radius: 8px;
+    padding: 12px; background: oklch(0.18 0.02 150 / 0.4);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .sk-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); margin-bottom: 10px; flex-wrap: wrap; }
+  .sk-shield { color: oklch(0.75 0.17 150); font-size: 16px; }
+  .sk-title { font-family: var(--font-sans); font-weight: 800; font-size: 14px; color: var(--ink); letter-spacing: 0.02em; }
+  .sk-sub { font-family: var(--font-mono); font-size: 10px; color: var(--ink-dim); width: 100%; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sk-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; }
+  .sk-tool { background: var(--bg); border: 1px solid var(--rule); border-radius: 3px; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .sk-name { font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.08em; color: var(--ink); }
+  .sk-files { display: flex; flex-direction: column; gap: 3px; }
+  .sk-f { font-family: var(--font-mono); font-size: 10px; padding: 3px 6px; border-radius: 2px; color: var(--ink-dim); }
+  .sk-json { background: oklch(0.25 0.04 150); color: oklch(0.85 0.1 150); }
+  .sk-py   { background: oklch(0.25 0.05 85); color: oklch(0.85 0.12 85); }
+
+  .side-legend {
+    border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--bg-2);
+  }
+  .lg-row { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; line-height: 1.35; white-space: nowrap; }
+  .lg-row b { color: var(--ink); font-weight: 700; }
+  .lg-line { width: 18px; height: 2px; display: inline-block; flex-shrink: 0; }
+  .lg-blue   { background: oklch(0.68 0.16 240); }
+  .lg-green  { background: oklch(0.75 0.17 150); }
+  .lg-gm     { background: oklch(0.75 0.17 150); opacity: 0.5; }
+  .lg-orange { background: oklch(0.78 0.14 55); }
+
+  .side-cli {
+    border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 4px; background: var(--bg-2);
+  }
+  .cli-row { font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); }
+  .cli-k { color: var(--accent); font-weight: 700; }
+  .cli-v { color: var(--ink); }
+
+  /* ── Tweaks panel ─────────────────────────── */
+  #tweaks {
+    position: fixed; right: 20px; bottom: 72px;
+    width: 280px; padding: 18px 20px;
+    background: #0a0b0a; color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 10px;
+    font-family: var(--font-mono); font-size: 13px;
+    z-index: 2147483500;
+    display: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  #tweaks[data-open] { display: block; }
+  #tweaks h3 { margin: 0 0 14px; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 500; font-family: var(--font-mono); }
+  #tweaks .row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; gap: 10px; }
+  #tweaks label { color: var(--ink-dim); }
+  #tweaks .swatches { display: flex; gap: 8px; }
+  #tweaks .sw { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule); cursor: pointer; }
+  #tweaks .sw[data-active] { box-shadow: 0 0 0 2px var(--ink); }
+  #tweaks select, #tweaks input {
+    background: #000; color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 4px 8px; font-family: var(--font-mono); font-size: 12px;
+  }
+</style>
+
+<script type="application/json" id="speaker-notes">
+[
+"Alright, so — something I've been doing more and more of lately that I actually find really useful: I'm using LLMs to build personal knowledge bases for whatever I happen to be researching. And what's wild is that a huge chunk of my token usage has quietly shifted — it used to all go into manipulating code, and now a lot of it goes into manipulating knowledge instead. Markdown files, images, notes. And the latest models are genuinely good at this. So I wanted to walk you through how I do it, because I think it points at something bigger.",
+
+"I want to start by naming the shift, because I think it's worth noticing. We've spent the last couple of years thinking of LLMs mostly as code assistants — you give them a task, they write functions. But the same exact capabilities — reading, summarizing, linking, organizing — are just as useful when you point them at knowledge. Articles, papers, your own notes. And once I started doing this, I realized a large fraction of my throughput was no longer code. It was knowledge. That's a real change in what these things are for.",
+
+"Here's the whole loop in one picture, and I'll refer back to this a few times. You've got raw data coming in on one side — papers, articles, screenshots, repos. An LLM compiles it into a wiki of markdown files. You ask the wiki questions, and the answers come back as rendered artifacts — more markdown, slides, plots. And the crucial part is that arrow on the bottom: those outputs get filed back into the wiki. So every query you make makes the knowledge base a little bit better. It's a compounding system.",
+
+"Now — I want to pause on this slide because it's where a lot of people's thinking is going. Take the same five-stage loop, but imagine it industrialized. Layer one is a real docs UI — collaborative, searchable. Layer two is an orchestrator like Dagster that watches the raw folder and runs things on a schedule. Layer three is a team of named agents — an ingester, a compiler, a linker, a linter, an oracle — each with a role. Layer four is their toolbox: small, contract-validated skills they can call. Layer five is the wiki itself, backed by real storage. The key point is: it's the same loop. Just governed, scheduled, and auditable. The hacky scripts I showed you earlier and this stack are the same idea at two different scales.",
+
+"Zoom in on that stack and you actually see three distinct flows running through it. The blue one is ingestion — a new file lands, the sensor fires, the ingester and compiler turn it into a wiki page, the linker wires the backlinks. The orange one is audit — once a week, the linter sweeps the whole wiki looking for drift, sends fix requests back upstream. And the green one is query — you or a teammate asks a question, the oracle searches, drafts, and the compiler files the answer back in as a new page. Same agents, same storage — different triggers. That's what makes this a system and not just a pile of scripts.",
+
+"Let's walk through each piece. The first is the raw layer — this is just a folder of source material. Papers, articles, datasets, repos, images. I use the Obsidian Web Clipper extension to turn web articles into markdown, and I've got a hotkey that pulls down the related images to local so the LLM can actually see them when it's reading. It is deliberately messy. Raw is not meant to be browsable — it's the input pile.",
+
+"Then there's the compiled layer — the wiki itself. This is where the LLM does real work. It reads the raw pile, writes summaries, identifies concepts, creates articles for them, and links everything together with backlinks. The key thing I want you to take away is this: I almost never touch these files directly. The LLM writes and maintains the wiki. My job is to curate the raw inputs and ask good questions. Theirs is to keep the knowledge graph clean.",
+
+"For the IDE — for viewing everything — I use Obsidian. I'm not evangelizing it specifically; any markdown editor works. What matters is that I can see the raw data, the compiled wiki, and any derived visualizations all in one place. I've played with plugins that render things differently — Marp for slides, dataview-style stuff — but the core is just: a folder of markdown, browsable with backlinks.",
+
+"Now here's where it gets interesting. Once the wiki is big enough — mine on one recent research topic is around 100 articles, something like 400,000 words — you can start asking genuinely complex questions. And what I expected was that I'd need fancy RAG — embeddings, vector stores, all that. I didn't. At this scale the LLM is fine. It maintains its own index files, keeps short summaries of each document around, and when you ask a question it just reads the relevant material. It's surprisingly capable.",
+
+"The output format matters a lot, and this was a shift for me. I stopped accepting answers as text in a terminal. Instead I ask for rendered artifacts — a markdown file, a Marp slide deck, a matplotlib plot. Things I can actually view in Obsidian. And then — this is the important part — those outputs usually get filed back into the wiki. So my queries aren't just consumed and forgotten. They accrete. Every exploration makes the knowledge base richer.",
+
+"One thing that surprised me is how useful it is to run the LLM over the wiki itself, as a kind of linter. Ask it to find inconsistencies between articles. Ask it to fill in missing data, with web search. Ask it where the interesting gaps are — what articles should exist that don't yet. The models are really good at surfacing open questions and suggesting where to dig next. It's like having a research assistant whose full-time job is keeping the knowledge base coherent.",
+
+"Around the core, I've ended up building small tools. The one I use most is a little search engine over the wiki — I vibe-coded it in an afternoon. I use it directly through a web UI sometimes, but honestly, more often I hand it to the LLM as a CLI tool during bigger queries. That pattern, of building tiny bespoke tools and then handing them back to the agent, has been really productive.",
+
+"And then there's the natural next step, which I've only started poking at. As the repo grows, the obvious question is: can you bake this knowledge into the model itself? Synthetic data generation, fine-tuning, so the LLM actually knows the content instead of having to re-read it every time. I don't have answers here yet, but it feels like the right direction for personal knowledge that you revisit often.",
+
+"To wrap up — the thing I want to leave you with is that this whole setup is, right now, a hacky collection of scripts. Obsidian plus clipper plus a homemade search tool plus prompts I've refined over months. It works. But sitting inside all of this is what feels to me like a real product. A proper tool where raw data comes in, a wiki self-assembles, and you query it and watch it grow. I think someone's going to build that, and I think it'll be a big deal. So — part two of this deck is exactly that: the product framing. Let me walk through it.",
+
+"This is the Unity Knowledge Stack. It's the same loop you just saw, but industrialized: a self-maintaining corporate brain. The method is BMAD — Breakthrough Method for Agile AI-Driven Development. The workforce is five CrewAI agents with strict persona definitions. The tools are spec-kit JSON schemas plus Python agent-skills. The memory is a Karpathy-style wiki backed by real storage. That's the whole thing. Everything that follows is just detail.",
+
+"This is the architecture in one slide. Five layers, top to bottom. Layer one is La Suite Docs — the human-facing Django plus Next.js app deployed to OpenShift via Helm. Layer two is Dagster — it watches directories with sensors and runs cron jobs. Layer three is the agent team under CrewAI plus BMAD. Layer four is the toolbelt: spec-kit contracts plus agent-skills Python. Layer five is the wiki itself, with three canonical folders: raw, compiled, and outputs. Three flows run through this stack — ingestion in blue, audit in orange, query in green. Same agents, same storage, different triggers.",
+
+"Here are the five agents as BMAD personas. Ingester is the analyst — it parses raw files. Compiler is the architect — it writes structured markdown. Linker is the developer — it wires up backlinks with BM25. Linter is QA — it runs weekly and finds drift. Oracle is the product owner — it answers human questions and drafts new articles. Each has a clear role, a clear trigger, and a clear hand-off to the next agent.",
+
+"A note on tools. Every tool an agent can call has two parts: a spec-kit JSON schema that defines the exact input and output shape, and an agent-skills Python function that does the work. The agent cannot invent arguments — the schema won't let it. This is how we kill tool hallucination in production. Four tools is enough to run the whole system: read_file, write_wiki_markdown, search_wiki, and lasuite_api_push.",
+
+"The three workflows mapped concretely. A is ingestion: a human drops a PDF, the sensor fires, the crew assembles, and the article ships to La Suite. B is audit: cron fires Monday at nine, the linter sweeps, and either drops a report or auto-patches. C is the flywheel: someone runs pixi run wiki-ask, the oracle drafts, a human approves, and the answer becomes a permanent wiki page. Three jobs. One substrate.",
+
+"And the rollout. Four phases, each ships something usable on its own. Phase one is foundation — deps, Helm deploy, directories, core schemas. Phase two is the agent logic — BMAD personas and the Python skills, assemble the compilation crew. Three is automation — Dagster sensors and schedules. Four is polish — the Oracle as a CLI, plus Langfuse and OpenTelemetry for token and workflow observability.",
+
+"And this is the whole thing on one page — the AI Software Factory as a unified agentic development ecosystem. Top row is La Suite Docs, the human UI, talking to the stack via REST. Dagster watches the inbox. The agent workforce sits in the middle, grouped by what they actually do — ingestion on the left, implementation, review, and strategy. On the right is the toolbelt: every tool is a pair — a spec-kit JSON schema and an agent-skills Python file. Below is the wiki on disk, backed by Minio and Postgres. The colored arrows are the flows: blue is the validated contract, green is the improvement loop and Q&A, orange is drift detection. It's a lot, but it's really just one diagram once you see the shape."
+]
+</script>
+
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- 01 Cover -->
+  <section class="slide s-cover" data-label="Cover">
+    <div class="chrome-top"><span>~/knowledge-base</span><span>FIELD NOTES · 2026</span></div>
+    <div class="eyebrow">// field note</div>
+    <h1 class="title">LLM<br>Knowledge<br>Bases<span class="caret"></span></h1>
+    <div class="byline">
+      <div><span>A loop</span> where raw data becomes a living wiki,</div>
+      <div>and every query makes it <span>richer</span>.</div>
+    </div>
+    <pre class="glyph">┌─ raw/
+│  └─ *.md *.png
+├─ wiki/
+│  ├─ index.md
+│  ├─ concepts/
+│  └─ articles/
+└─ tools/
+   └─ search.py</pre>
+    <div class="chrome-bot"><span>01 / 21</span><span><span class="dot">●</span> compiling…</span></div>
+  </section>
+
+  <!-- 02 The Shift -->
+  <section class="slide s-shift" data-label="The Shift">
+    <div class="chrome-top"><span>02 · the shift</span><span>tokens / purpose</span></div>
+    <div class="eyebrow">// what changed</div>
+    <h2 class="h-sec">A large fraction of my tokens no<br>longer manipulates code.</h2>
+    <div class="cols">
+      <div class="shift-col">
+        <div class="label">Before</div>
+        <div class="big dim">code</div>
+        <div class="caption">Write the function. Fix the bug. Ship the diff. The LLM as a pair programmer.</div>
+      </div>
+      <div class="shift-arrow">→</div>
+      <div class="shift-col">
+        <div class="label">Now</div>
+        <div class="big"><em>knowledge</em></div>
+        <div class="caption">Read the paper. Link the concept. Maintain the wiki. The LLM as a research partner.</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>02 / 21</span><span>same capability · different artifact</span></div>
+  </section>
+
+  <!-- 03 The Loop -->
+  <section class="slide s-loop" data-label="The Loop">
+    <div class="chrome-top"><span>03 · the loop</span><span>raw → wiki → q&a → outputs → wiki</span></div>
+    <div class="eyebrow">// the pipeline</div>
+    <h2 class="h-sec">One loop. Five stages. Everything<br>you ask is filed back in.</h2>
+    <div class="loop-wrap">
+      <svg class="loop-svg" viewBox="0 0 1600 540" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#7bbf8e"/>
+          </marker>
+          <marker id="arrowDim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+          </marker>
+        </defs>
+
+        <!-- 5 nodes in a row -->
+        <g font-family="JetBrains Mono, monospace" font-size="22" fill="#e8e6df">
+          <!-- RAW -->
+          <rect x="20"    y="160" width="240" height="200" rx="6" fill="#111312" stroke="#262826"/>
+          <text x="140" y="200" text-anchor="middle" fill="#7bbf8e" font-size="24" letter-spacing="3">RAW</text>
+          <text x="140" y="250" text-anchor="middle" font-size="24">papers</text>
+          <text x="140" y="294" text-anchor="middle" font-size="24">articles</text>
+          <text x="140" y="338" text-anchor="middle" font-size="24">images</text>
+
+          <!-- WIKI -->
+          <rect x="360"   y="160" width="240" height="200" rx="6" fill="#111312" stroke="#262826"/>
+          <text x="480" y="200" text-anchor="middle" fill="#7bbf8e" font-size="24" letter-spacing="3">WIKI</text>
+          <text x="480" y="250" text-anchor="middle" font-size="24">summaries</text>
+          <text x="480" y="294" text-anchor="middle" font-size="24">concepts</text>
+          <text x="480" y="338" text-anchor="middle" font-size="24">backlinks</text>
+
+          <!-- Q&A -->
+          <rect x="700"   y="160" width="240" height="200" rx="6" fill="#111312" stroke="#262826"/>
+          <text x="820" y="200" text-anchor="middle" fill="#7bbf8e" font-size="24" letter-spacing="3">Q &amp; A</text>
+          <text x="820" y="268" text-anchor="middle" font-size="32" font-style="italic" font-family="Fraunces, serif">ask</text>
+          <text x="820" y="320" text-anchor="middle" font-size="24" fill="#9b9a93">complex · cross-cut</text>
+
+          <!-- OUTPUTS -->
+          <rect x="1040"  y="160" width="240" height="200" rx="6" fill="#111312" stroke="#262826"/>
+          <text x="1160" y="200" text-anchor="middle" fill="#7bbf8e" font-size="24" letter-spacing="3">OUTPUTS</text>
+          <text x="1160" y="250" text-anchor="middle" font-size="24">.md</text>
+          <text x="1160" y="294" text-anchor="middle" font-size="24">slides</text>
+          <text x="1160" y="338" text-anchor="middle" font-size="24">plots</text>
+
+          <!-- VIEW -->
+          <rect x="1380"  y="160" width="200" height="200" rx="6" fill="#111312" stroke="#262826"/>
+          <text x="1480" y="200" text-anchor="middle" fill="#7bbf8e" font-size="24" letter-spacing="3">IDE</text>
+          <text x="1480" y="268" text-anchor="middle" font-size="32" font-style="italic" font-family="Fraunces, serif">view</text>
+          <text x="1480" y="320" text-anchor="middle" font-size="24" fill="#9b9a93">obsidian</text>
+
+          <!-- forward arrows -->
+          <line x1="262" y1="260" x2="356" y2="260" stroke="#7bbf8e" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="602" y1="260" x2="696" y2="260" stroke="#7bbf8e" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="942" y1="260" x2="1036" y2="260" stroke="#7bbf8e" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="1282" y1="260" x2="1378" y2="260" stroke="#7bbf8e" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- feedback loop from OUTPUTS back to WIKI -->
+          <path d="M 1160 365 Q 1160 470 820 470 Q 480 470 480 365"
+                fill="none" stroke="#5a5a55" stroke-width="1.5" stroke-dasharray="6 6" marker-end="url(#arrowDim)"/>
+          <text x="820" y="505" text-anchor="middle" fill="#9b9a93" font-size="24" font-style="italic" font-family="Fraunces, serif">
+            outputs get filed back
+          </text>
+
+          <!-- source labels above -->
+          <text x="140"  y="135" text-anchor="middle" fill="#5a5a55" font-size="24" letter-spacing="2">01 INGEST</text>
+          <text x="480"  y="135" text-anchor="middle" fill="#5a5a55" font-size="24" letter-spacing="2">02 COMPILE</text>
+          <text x="820"  y="135" text-anchor="middle" fill="#5a5a55" font-size="24" letter-spacing="2">03 QUERY</text>
+          <text x="1160" y="135" text-anchor="middle" fill="#5a5a55" font-size="24" letter-spacing="2">04 RENDER</text>
+          <text x="1480" y="135" text-anchor="middle" fill="#5a5a55" font-size="24" letter-spacing="2">05 VIEW</text>
+        </g>
+      </svg>
+    </div>
+    <div class="chrome-bot"><span>03 / 21</span><span>the dashed arrow is the whole point</span></div>
+  </section>
+
+  <!-- 04 Industrialized Stack -->
+  <section class="slide s-stack" data-label="Industrialized">
+    <div class="chrome-top"><span>04 · the stack</span><span>what the hacky version wants to grow into</span></div>
+    <div class="eyebrow">// same loop · five layers</div>
+    <h2 class="h-sec">If the loop were a product, it<br>would look like this.</h2>
+    <div class="stack">
+
+      <div class="layer">
+        <div class="meta">
+          <div class="num">L1 · PRESENTATION</div>
+          <div class="name">Docs UI</div>
+          <div class="role">the human frontend</div>
+        </div>
+        <div class="row">
+          <div class="chip strong">wiki viewer</div>
+          <div class="chip">real-time collab</div>
+          <div class="chip">search bar</div>
+          <div class="chip dim"><span class="key">REST</span> read / write</div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="meta">
+          <div class="num">L2 · ORCHESTRATION</div>
+          <div class="name">Dagster</div>
+          <div class="role">the trigger engine</div>
+        </div>
+        <div class="row">
+          <div class="chip"><span class="key">sensor</span> new raw file</div>
+          <div class="chip"><span class="key">schedule</span> weekly lint</div>
+          <div class="chip strong">DAG runner</div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="meta">
+          <div class="num">L3 · GOVERNANCE</div>
+          <div class="name">Agent team</div>
+          <div class="role">CrewAI + BMAD</div>
+        </div>
+        <div class="row">
+          <div class="chip strong">ingester</div>
+          <div class="chip strong">compiler</div>
+          <div class="chip strong">linker</div>
+          <div class="chip strong">linter</div>
+          <div class="chip strong">oracle</div>
+          <div class="chip dim">5 roles · sequential</div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="meta">
+          <div class="num">L4 · EXECUTION</div>
+          <div class="name">Skills</div>
+          <div class="role">spec-kit + agent-skills</div>
+        </div>
+        <div class="row">
+          <div class="chip">pdf-parser <span class="ok">✓</span></div>
+          <div class="chip">md-writer <span class="ok">✓</span></div>
+          <div class="chip">api-push <span class="ok">✓</span></div>
+          <div class="chip">wiki-search <span class="ok">✓</span></div>
+          <div class="chip dim"><span class="key">contract</span> .json <span class="key">·</span> <span class="key">script</span> .py</div>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="meta">
+          <div class="num">L5 · MEMORY</div>
+          <div class="name">The wiki</div>
+          <div class="role">minio · postgres</div>
+        </div>
+        <div class="row">
+          <div class="chip">wiki/raw/</div>
+          <div class="chip">wiki/compiled/</div>
+          <div class="chip">wiki/outputs/</div>
+          <div class="chip dim"><span class="key">backed by</span> S3 + pg</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="flow-legend">
+      <span class="fl-ingest"><span class="dot"></span>ingest → compile → wiki</span>
+      <span class="fl-qa"><span class="dot"></span>ask → oracle → answer</span>
+      <span class="fl-maint"><span class="dot"></span>schedule → lint → repair</span>
+    </div>
+    <div class="chrome-bot"><span>04 / 21</span><span>same five stages · governed · scheduled · audited</span></div>
+  </section>
+
+  <!-- 05 Three Flows -->
+  <section class="slide s-flows" data-label="Flows">
+    <div class="chrome-top"><span>05 · data flows</span><span>three loops through the same stack</span></div>
+    <div class="eyebrow">// color = intent</div>
+    <h2 class="h-sec">Three flows. One<br>shared substrate.</h2>
+    <div class="flows-grid">
+
+      <div class="flow-card fc-ingest">
+        <div class="flow-hdr">
+          <span class="flow-dot"></span>
+          <span class="flow-num">FLOW 01</span>
+          <span class="flow-name">Ingestion</span>
+        </div>
+        <div class="flow-trigger">triggered by · new file in wiki/raw/</div>
+        <ol class="flow-steps">
+          <li><span class="k">sensor</span> detects raw file</li>
+          <li><span class="k">ingester</span> parses + normalizes</li>
+          <li><span class="k">compiler</span> writes wiki/compiled/</li>
+          <li><span class="k">linker</span> wires backlinks</li>
+          <li><span class="k">push</span> to Docs UI via REST</li>
+        </ol>
+      </div>
+
+      <div class="flow-card fc-audit">
+        <div class="flow-hdr">
+          <span class="flow-dot"></span>
+          <span class="flow-num">FLOW 02</span>
+          <span class="flow-name">Audit</span>
+        </div>
+        <div class="flow-trigger">triggered by · weekly schedule</div>
+        <ol class="flow-steps">
+          <li><span class="k">schedule</span> fires lint run</li>
+          <li><span class="k">linter</span> scans wiki/compiled/</li>
+          <li><span class="k">report</span> → wiki/outputs/</li>
+          <li><span class="k">fix request</span> → compiler</li>
+          <li><span class="k">repair</span> merges upstream</li>
+        </ol>
+      </div>
+
+      <div class="flow-card fc-qa">
+        <div class="flow-hdr">
+          <span class="flow-dot"></span>
+          <span class="flow-num">FLOW 03</span>
+          <span class="flow-name">Query</span>
+        </div>
+        <div class="flow-trigger">triggered by · human question · CLI or UI</div>
+        <ol class="flow-steps">
+          <li><span class="k">ask</span> routed to oracle</li>
+          <li><span class="k">oracle</span> runs wiki-search</li>
+          <li><span class="k">draft</span> → wiki/outputs/</li>
+          <li><span class="k">handoff</span> to compiler</li>
+          <li><span class="k">filed</span> as new wiki page</li>
+        </ol>
+      </div>
+
+    </div>
+    <div class="chrome-bot"><span>05 / 21</span><span>different triggers · same agents · same wiki</span></div>
+  </section>
+
+  <!-- 04 Raw -->
+  <section class="slide s-raw" data-label="Raw">
+    <div class="chrome-top"><span>06 · raw/</span><span>ingest layer</span></div>
+    <div class="eyebrow">// 01 ingest</div>
+    <h2 class="h-sec">The input pile. Deliberately<br>messy. Never browsed.</h2>
+    <div class="content">
+      <div class="file-list">
+        <div class="hdr"><span>~/kb/raw</span><span>$ ls -1</span></div>
+        <div class="row"><span class="name">attention-is-all-you-need</span><span class="ext">.pdf</span></div>
+        <div class="row"><span class="name">anthropic-circuits-tracer</span><span class="ext">.md</span></div>
+        <div class="row"><span class="name">karpathy-thread-2026-04</span><span class="ext">.md</span></div>
+        <div class="row"><span class="name">whiteboard-sketch-042</span><span class="ext">.png</span></div>
+        <div class="row"><span class="name">rlhf-survey-notes</span><span class="ext">.md</span></div>
+        <div class="row"><span class="name">synthetic-data-pipeline</span><span class="ext">.py</span></div>
+        <div class="row"><span class="name">obsidian-export-batch-08</span><span class="ext">.md</span></div>
+        <div class="row"><span class="name">dataset-sample-0412</span><span class="ext">.jsonl</span></div>
+      </div>
+      <div class="raw-notes">
+        <p class="body">Papers, articles, repos, datasets, screenshots. Web pages clipped to markdown via a browser extension. Images pulled down by hotkey so the model can see them.</p>
+        <div class="aside">
+          // the rule: raw/ is write-only for me.<br>
+          // the LLM reads it. I don't.
+        </div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>06 / 21</span><span>curate inputs · not outputs</span></div>
+  </section>
+
+  <!-- 05 Compiled -->
+  <section class="slide s-compiled" data-label="Compiled">
+    <div class="chrome-top"><span>07 · wiki/</span><span>compile layer</span></div>
+    <div class="eyebrow">// 02 compile</div>
+    <h2 class="h-sec">The LLM writes the wiki.<br>I almost never touch it.</h2>
+    <div class="content">
+      <pre class="tree"><span class="dir">wiki/</span>
+├─ <span class="muted">index.md</span>         <span class="bracket">// auto ToC</span>
+├─ <span class="dir">concepts/</span>
+│  ├─ <span class="link">attention.md</span>
+│  ├─ <span class="link">residual-stream.md</span>
+│  └─ <span class="link">superposition.md</span>
+├─ <span class="dir">articles/</span>
+│  ├─ <span class="link">circuits-tracer.md</span>
+│  └─ <span class="link">rlhf-vs-dpo.md</span>
+└─ <span class="muted">_index.json</span>      <span class="bracket">// summaries</span></pre>
+      <div class="raw-notes">
+        <p class="body">Summaries, linked concepts, short per-doc indexes. The model writes, backlinks, and refactors as the pile grows.</p>
+        <div class="aside">
+          // my job: curate raw/, ask good questions.<br>
+          // its job: keep the graph coherent.
+        </div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>07 / 21</span><span>human curates · model writes</span></div>
+  </section>
+
+  <!-- 06 The IDE -->
+  <section class="slide s-ide" data-label="The IDE">
+    <div class="chrome-top"><span>08 · the ide</span><span>one pane for raw, wiki, outputs</span></div>
+    <div class="eyebrow">// 05 view</div>
+    <h2 class="h-sec">A markdown editor is the<br>whole frontend.</h2>
+    <div class="window">
+      <div class="win-head">
+        <span class="win-dots"><i></i><i></i><i></i></span>
+        <span class="win-path">kb · wiki/concepts/attention.md</span>
+      </div>
+      <div class="pane left">
+        <div class="label">Vault</div>
+        <div class="item">raw/</div>
+        <div class="item">wiki/</div>
+        <div class="item">&nbsp;&nbsp;index.md</div>
+        <div class="item">&nbsp;&nbsp;concepts/</div>
+        <div class="item active">&nbsp;&nbsp;&nbsp;&nbsp;attention.md</div>
+        <div class="item">&nbsp;&nbsp;&nbsp;&nbsp;residual-stream.md</div>
+        <div class="item">&nbsp;&nbsp;articles/</div>
+        <div class="item">outputs/</div>
+      </div>
+      <div class="main">
+        <h1>Attention</h1>
+        <div class="meta">wiki/concepts/attention.md · 4 backlinks</div>
+        <p>A mechanism by which a token attends to others in its context via query–key matching.</p>
+        <p>First popularized for sequence modeling in <span class="link">[[attention-is-all-you-need]]</span>.</p>
+        <p>Later reinterpreted as <span class="link">[[residual-stream]]</span> reads and writes.</p>
+        <p>See also <span class="link">[[induction-heads]]</span>, <span class="link">[[superposition]]</span>.</p>
+        <p><span class="tag">#concept</span> &nbsp; <span class="tag">#transformers</span> &nbsp; <span class="tag">#mechinterp</span></p>
+      </div>
+      <div class="pane right">
+        <div class="label">Backlinks</div>
+        <div class="item">circuits-tracer-review.md</div>
+        <div class="item">induction-heads.md</div>
+        <div class="item">rlhf-vs-dpo.md</div>
+        <div class="item">scaling-law-summary.md</div>
+        <div class="label" style="margin-top:28px">Plugins</div>
+        <div class="item">marp</div>
+        <div class="item">dataview</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>08 / 21</span><span>obsidian · any md editor works</span></div>
+  </section>
+
+  <!-- 07 Q&A at Scale -->
+  <section class="slide s-qa" data-label="Q&amp;A">
+    <div class="chrome-top"><span>09 · q &amp; a</span><span>~100 articles · ~400k words</span></div>
+    <div class="eyebrow">// 03 query</div>
+    <p class="q">“Across every article I've read on <em>mech-interp</em>, where<br>do the authors disagree about what a feature <em>is</em>?”</p>
+    <div class="trace">
+      <div class="step"><span class="k">›</span><span class="v">read _index.json</span> <span class="c">// brief summaries per doc</span></div>
+      <div class="step"><span class="k">›</span><span class="v">rg "feature" wiki/ --md</span> <span class="c">// pull every relevant passage</span></div>
+      <div class="step"><span class="k">›</span><span class="v">open 11 articles</span> <span class="c">// fully, not chunks</span></div>
+      <div class="step"><span class="k">›</span><span class="v">synthesize → outputs/disagreements.md</span></div>
+      <div class="step"><span class="k">›</span><span class="v">file back into wiki/articles/</span></div>
+    </div>
+    <div class="chrome-bot"><span>09 / 21</span><span>no fancy rag · the model is enough at this scale</span></div>
+  </section>
+
+  <!-- 08 Rendered Outputs -->
+  <section class="slide s-outputs" data-label="Outputs">
+    <div class="chrome-top"><span>10 · outputs/</span><span>04 render</span></div>
+    <div class="eyebrow">// answers are artifacts</div>
+    <h2 class="h-sec">Not a reply. A file.</h2>
+    <div class="grid">
+      <div class="out-card">
+        <div class="kind">.md</div>
+        <div class="name">Markdown articles</div>
+        <div class="desc">New wiki entries. Summaries. Comparisons. Filed back into the graph.</div>
+        <div class="viz"># heading<br>- bullet<br>[[backlink]]</div>
+      </div>
+      <div class="out-card">
+        <div class="kind">.marp</div>
+        <div class="name">Slide decks</div>
+        <div class="desc">Marp-flavored markdown. Useful for walking a collaborator through a topic.</div>
+        <div class="viz">---<br>marp: true<br>---<br># slide 1</div>
+      </div>
+      <div class="out-card">
+        <div class="kind">.png</div>
+        <div class="name">Plots &amp; diagrams</div>
+        <div class="desc">Matplotlib, mermaid, or a quick SVG. Visual answers for visual questions.</div>
+        <div class="viz">plt.plot(x, y)<br>plt.savefig(…)</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>10 / 21</span><span>every output is a candidate wiki page</span></div>
+  </section>
+
+  <!-- 09 Linting -->
+  <section class="slide s-lint" data-label="Linting">
+    <div class="chrome-top"><span>11 · lint</span><span>health checks over the wiki</span></div>
+    <div class="eyebrow">// health check</div>
+    <h2 class="h-sec">Point the model at its<br>own wiki. Ask it to nag.</h2>
+    <div class="diff">
+      <div class="hdr">$ kb lint wiki/ --suggest</div>
+      <div class="row"><span class="note">~</span><span><span class="minus">rlhf-vs-dpo.md</span> and <span class="minus">scaling-law-summary.md</span> cite different β values for the same paper</span></div>
+      <div class="row"><span class="note">~</span><span><span class="minus">induction-heads.md</span>: date missing → <span class="plus">web search → Olsson et al. 2022</span></span></div>
+      <div class="row"><span class="note">+</span><span class="plus">candidate article: "feature universality" — 7 backlinks, no page</span></div>
+      <div class="row"><span class="note">+</span><span class="plus">merge suggestion: superposition.md + polysemanticity.md</span></div>
+      <div class="row"><span class="note">?</span><span class="note">open question: do "circuits" and "features" mean the same thing in these 3 articles?</span></div>
+    </div>
+    <div class="chrome-bot"><span>11 / 21</span><span>consistency · completeness · connections</span></div>
+  </section>
+
+  <!-- 10 Tooling -->
+  <section class="slide s-tools" data-label="Tooling">
+    <div class="chrome-top"><span>12 · tools/</span><span>small sharp edges</span></div>
+    <div class="eyebrow">// around the edges</div>
+    <h2 class="h-sec">Tiny homemade tools,<br>handed back to the agent.</h2>
+    <div class="cards">
+      <div class="tool-card">
+        <div class="num">01</div>
+        <div class="name">Wiki search</div>
+        <div class="desc">Naive BM25 over the markdown tree. A web UI for me; a CLI for the agent.</div>
+        <div class="snippet">$ kb search "induction heads" --json</div>
+      </div>
+      <div class="tool-card">
+        <div class="num">02</div>
+        <div class="name">Image puller</div>
+        <div class="desc">Hotkey that downloads every image referenced by a clipped article so the model can see them.</div>
+        <div class="snippet">$ kb pull-images raw/&lt;article&gt;.md</div>
+      </div>
+      <div class="tool-card">
+        <div class="num">03</div>
+        <div class="name">Index refresh</div>
+        <div class="desc">Re-generates per-doc summaries into _index.json. Run after every ingest batch.</div>
+        <div class="snippet">$ kb reindex wiki/</div>
+      </div>
+      <div class="tool-card">
+        <div class="num">04</div>
+        <div class="name">Backlink graph</div>
+        <div class="desc">Emits a mermaid graph of the wiki's article network for a visual sanity check.</div>
+        <div class="snippet">$ kb graph &gt; outputs/graph.mmd</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>12 / 21</span><span>vibe-coded in an afternoon</span></div>
+  </section>
+
+  <!-- 11 Synthetic Weights -->
+  <section class="slide s-weights" data-label="Synthetic Weights">
+    <div class="chrome-top"><span>13 · ahead</span><span>from context to weights</span></div>
+    <div class="eyebrow">// further exploration</div>
+    <p class="big-q">What if the wiki didn't<br>live in the context window,<br>but in the <em>weights?</em></p>
+    <div class="small">
+      synthetic data generation → fine-tuning → a model that <em>knows</em> your knowledge base,<br>
+      instead of one that has to re-read it every time you ask.
+    </div>
+    <div class="chrome-bot"><span>13 / 21</span><span>natural next step</span></div>
+  </section>
+
+  <!-- 12 Room for a Product -->
+  <section class="slide s-close" data-label="Close">
+    <div class="chrome-top"><span>14 · end of part 1</span><span>hacky → product</span></div>
+    <div class="kicker">// tldr</div>
+    <p class="stmt">Right now this is a hacky set of scripts. Inside it is a <em>real product</em>.</p>
+    <div class="signoff">
+      <div>raw → <span>wiki</span> → q&amp;a → outputs → wiki</div>
+      <div>the loop compounds</div>
+      <div><span>part II → the real thing</span></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PART II — PRODUCTIZED: Unity Knowledge Stack
+       ═══════════════════════════════════════════════════════ -->
+
+  <!-- 15 Part II divider -->
+  <section class="slide s-partii" data-label="Part II">
+    <div class="chrome-top"><span>15 · part II</span><span>the real thing</span></div>
+    <div class="partii-inner">
+      <div class="eyebrow">// part II</div>
+      <h2 class="partii-title">Unity Knowledge Stack.</h2>
+      <div class="partii-sub">A self-maintaining corporate brain. Same loop — governed, scheduled, auditable, deployable.</div>
+      <div class="partii-meta">
+        <div><span class="k">method</span>BMAD</div>
+        <div><span class="k">agents</span>CrewAI × 5</div>
+        <div><span class="k">tools</span>spec-kit + agent-skills</div>
+        <div><span class="k">memory</span>Karpathy wiki</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>15 / 21</span><span>the product framing</span></div>
+  </section>
+
+  <!-- 16 Architecture diagram -->
+  <section class="slide s-arch" data-label="Architecture">
+    <div class="chrome-top"><span>16 · architecture</span><span>5 layers · 3 flows</span></div>
+    <div class="eyebrow">// the blueprint</div>
+    <h2 class="h-sec">One diagram. Five layers.<br>Three flows through the stack.</h2>
+
+    <div class="arch-wrap">
+      <!-- Legend -->
+      <div class="arch-legend">
+        <div class="lg-item"><span class="lg-dot d-ingest"></span>INGESTION</div>
+        <div class="lg-item"><span class="lg-dot d-audit"></span>AUDIT</div>
+        <div class="lg-item"><span class="lg-dot d-query"></span>QUERY</div>
+      </div>
+
+      <!-- L1 -->
+      <div class="arch-row">
+        <div class="arch-tag">L1</div>
+        <div class="arch-box l1">
+          <div class="arch-head"><span class="arch-name">La Suite Docs</span><span class="arch-role">presentation · human UI</span></div>
+          <div class="arch-body">
+            <span class="pill">Django REST</span>
+            <span class="pill">Next.js</span>
+            <span class="pill">Helm → OpenShift</span>
+            <span class="pill dim">read · write · search · collab</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch-gap"><span class="arrow">▼</span></div>
+
+      <!-- L2 -->
+      <div class="arch-row">
+        <div class="arch-tag">L2</div>
+        <div class="arch-box l2">
+          <div class="arch-head"><span class="arch-name">Dagster</span><span class="arch-role">orchestration · trigger engine</span></div>
+          <div class="arch-body">
+            <span class="pill"><span class="dot d-ingest"></span>sensor · new file</span>
+            <span class="pill"><span class="dot d-audit"></span>schedule · weekly lint</span>
+            <span class="pill dim">DAG runner</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch-gap"><span class="arrow">▼</span></div>
+
+      <!-- L3 + L4 side by side -->
+      <div class="arch-row arch-split">
+        <div class="arch-col wide">
+          <div class="arch-tag">L3</div>
+          <div class="arch-box l3">
+            <div class="arch-head"><span class="arch-name">CrewAI + BMAD</span><span class="arch-role">governance · five agents</span></div>
+            <div class="agent-grid">
+              <div class="agent ag-blue"><span class="ag-role">analyst</span><span class="ag-name">Ingester</span></div>
+              <div class="agent ag-blue"><span class="ag-role">architect</span><span class="ag-name">Compiler</span></div>
+              <div class="agent ag-blue"><span class="ag-role">developer</span><span class="ag-name">Linker</span></div>
+              <div class="agent ag-orange"><span class="ag-role">qa</span><span class="ag-name">Linter</span></div>
+              <div class="agent ag-green"><span class="ag-role">product owner</span><span class="ag-name">Oracle</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="arch-col narrow">
+          <div class="arch-tag">L4</div>
+          <div class="arch-box l4">
+            <div class="arch-head"><span class="arch-name">Toolbelt</span><span class="arch-role">spec-kit + agent-skills</span></div>
+            <div class="tool-list">
+              <div class="tool"><span class="t-name">read_file</span><span class="t-badge">✓ spec</span></div>
+              <div class="tool"><span class="t-name">write_wiki_markdown</span><span class="t-badge">✓ spec</span></div>
+              <div class="tool"><span class="t-name">search_wiki</span><span class="t-badge">✓ spec</span></div>
+              <div class="tool"><span class="t-name">lasuite_api_push</span><span class="t-badge">✓ spec</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-gap"><span class="arrow">▼</span></div>
+
+      <!-- L5 -->
+      <div class="arch-row">
+        <div class="arch-tag">L5</div>
+        <div class="arch-box l5">
+          <div class="arch-head"><span class="arch-name">Karpathy Wiki</span><span class="arch-role">memory · minio + postgres</span></div>
+          <div class="arch-body mem">
+            <div class="mem-dir"><span class="md-top d-ingest"></span><span class="md-path">wiki/raw/</span><span class="md-desc">drop zone</span></div>
+            <div class="mem-dir"><span class="md-top d-compile"></span><span class="md-path">wiki/compiled/</span><span class="md-desc">the linked wiki</span></div>
+            <div class="mem-dir"><span class="md-top d-query"></span><span class="md-path">wiki/outputs/</span><span class="md-desc">reports · answers</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot"><span>16 / 21</span><span>same loop · five layers · three flows</span></div>
+  </section>
+
+  <!-- 17 Agent Personas -->
+  <section class="slide s-agents" data-label="Agents">
+    <div class="chrome-top"><span>17 · agents</span><span>BMAD personas</span></div>
+    <div class="eyebrow">// the workforce</div>
+    <h2 class="h-sec">Five agents. Five roles.<br>One agile team.</h2>
+    <div class="persona-grid">
+      <div class="persona p-blue">
+        <div class="p-role">analyst</div>
+        <div class="p-name">Ingester</div>
+        <div class="p-desc">Watches <code>wiki/raw/</code>. Parses PDFs, HTML, markdown. Extracts topics &amp; entities.</div>
+        <div class="p-trigger"><span class="k">triggered by</span>file sensor</div>
+      </div>
+      <div class="persona p-blue">
+        <div class="p-role">architect</div>
+        <div class="p-name">Compiler</div>
+        <div class="p-desc">Writes structured markdown into <code>wiki/compiled/</code>. Enforces format &amp; summary rules.</div>
+        <div class="p-trigger"><span class="k">triggered by</span>ingester handoff</div>
+      </div>
+      <div class="persona p-blue">
+        <div class="p-role">developer</div>
+        <div class="p-name">Linker</div>
+        <div class="p-desc">BM25 over the wiki. Adds bidirectional <code>[[backlinks]]</code>. Keeps the graph connected.</div>
+        <div class="p-trigger"><span class="k">triggered by</span>new article</div>
+      </div>
+      <div class="persona p-orange">
+        <div class="p-role">qa</div>
+        <div class="p-name">Linter</div>
+        <div class="p-desc">Weekly sweep. Finds broken links, orphan pages, missing metadata. Drafts fix requests.</div>
+        <div class="p-trigger"><span class="k">triggered by</span>cron · Mon 09:00</div>
+      </div>
+      <div class="persona p-green">
+        <div class="p-role">product owner</div>
+        <div class="p-name">Oracle</div>
+        <div class="p-desc">Answers human questions via RAG over <code>wiki/compiled/</code>. Drafts to <code>wiki/outputs/</code>.</div>
+        <div class="p-trigger"><span class="k">triggered by</span>CLI · <code>wiki-ask</code></div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>17 / 21</span><span>one team · sequential handoffs</span></div>
+  </section>
+
+  <!-- 18 Tool Contracts -->
+  <section class="slide s-contracts" data-label="Contracts">
+    <div class="chrome-top"><span>18 · contracts</span><span>spec-kit + agent-skills</span></div>
+    <div class="eyebrow">// verified tools only</div>
+    <h2 class="h-sec">Every tool is a contract<br>plus a skill.</h2>
+
+    <div class="contracts-intro">
+      <div class="ci-col">
+        <div class="ci-label">spec-kit</div>
+        <div class="ci-body">JSON schema defining the tool's inputs, outputs, and failure modes. Agents cannot call unvalidated shapes. No hallucinated args.</div>
+      </div>
+      <div class="ci-plus">+</div>
+      <div class="ci-col">
+        <div class="ci-label">agent-skills</div>
+        <div class="ci-body">The Python runtime. Pure function. Deterministic. File I/O, HTTP, parsing. Logged via OpenTelemetry.</div>
+      </div>
+    </div>
+
+    <div class="contract-list">
+      <div class="ctr"><div class="ctr-name"><span class="ctr-dot"></span>read_file</div><div class="ctr-spec">read-file.json</div><div class="ctr-desc">extract text from local docs · pdf, html, md</div></div>
+      <div class="ctr"><div class="ctr-name"><span class="ctr-dot"></span>write_wiki_markdown</div><div class="ctr-spec">write-wiki-markdown.json</div><div class="ctr-desc">append or update <code>wiki/compiled/</code> page</div></div>
+      <div class="ctr"><div class="ctr-name"><span class="ctr-dot"></span>search_wiki</div><div class="ctr-spec">search_wiki.json</div><div class="ctr-desc">BM25 across the wiki · returns ranked snippets</div></div>
+      <div class="ctr"><div class="ctr-name"><span class="ctr-dot"></span>lasuite_api_push</div><div class="ctr-spec">lasuite_push_schema.json</div><div class="ctr-desc">POST / PATCH markdown to La Suite Docs</div></div>
+    </div>
+    <div class="chrome-bot"><span>18 / 21</span><span>contracts prevent hallucinated tool calls</span></div>
+  </section>
+
+  <!-- 19 Workflows -->
+  <section class="slide s-workflows" data-label="Workflows">
+    <div class="chrome-top"><span>19 · workflows</span><span>A · B · C</span></div>
+    <div class="eyebrow">// three jobs, same stack</div>
+    <h2 class="h-sec">A: Ingest · B: Audit · C: Flywheel.</h2>
+    <div class="wf-grid">
+      <div class="wf wf-a">
+        <div class="wf-hdr"><span class="wf-letter">A</span><span class="wf-kind">Ingestion Pipeline</span></div>
+        <ol class="wf-steps">
+          <li><span class="wf-layer">L5</span>human drops PDF into <code>raw/</code></li>
+          <li><span class="wf-layer">L2</span>sensor → <code>compilation_crew.py</code></li>
+          <li><span class="wf-layer">L3</span>Ingester → Compiler → Linker</li>
+          <li><span class="wf-layer">L4</span><code>lasuite_api_push</code></li>
+          <li><span class="wf-layer">L1</span>live in La Suite Docs</li>
+        </ol>
+      </div>
+      <div class="wf wf-b">
+        <div class="wf-hdr"><span class="wf-letter">B</span><span class="wf-kind">Continuous Audit</span></div>
+        <ol class="wf-steps">
+          <li><span class="wf-layer">L2</span>cron fires · Mon 09:00</li>
+          <li><span class="wf-layer">L3</span>Linter sweeps <code>compiled/</code></li>
+          <li><span class="wf-layer">L5</span>anomaly report → <code>outputs/</code></li>
+          <li><span class="wf-layer">L3</span>fix requests → Compiler</li>
+          <li><span class="wf-layer">L5</span>minor breaks auto-patched</li>
+        </ol>
+      </div>
+      <div class="wf wf-c">
+        <div class="wf-hdr"><span class="wf-letter">C</span><span class="wf-kind">Knowledge Flywheel</span></div>
+        <ol class="wf-steps">
+          <li><span class="wf-layer">CLI</span><code>pixi run wiki-ask "…"</code></li>
+          <li><span class="wf-layer">L3</span>Oracle queries + drafts</li>
+          <li><span class="wf-layer">L5</span>draft → <code>outputs/</code></li>
+          <li><span class="wf-layer">human</span>approve</li>
+          <li><span class="wf-layer">L3</span>Compiler files as wiki page</li>
+        </ol>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>19 / 21</span><span>three flows · one substrate</span></div>
+  </section>
+
+  <!-- 20 Phases / Roadmap -->
+  <section class="slide s-phases" data-label="Phases">
+    <div class="chrome-top"><span>20 · implementation</span><span>4 phases</span></div>
+    <div class="eyebrow">// from zero to flywheel</div>
+    <h2 class="h-sec">Four phases.<br>Each one ships something usable.</h2>
+    <div class="phase-list">
+      <div class="phase">
+        <div class="ph-num">01</div>
+        <div class="ph-body">
+          <div class="ph-title">Foundation</div>
+          <div class="ph-desc"><code>pixi.toml</code> deps · La Suite Docs via Helm · directory skeleton · core spec-kit schemas</div>
+        </div>
+        <div class="ph-out">ships · deployable shell</div>
+      </div>
+      <div class="phase">
+        <div class="ph-num">02</div>
+        <div class="ph-body">
+          <div class="ph-title">Agent Logic</div>
+          <div class="ph-desc">5 BMAD persona markdowns · agent-skills for file I/O &amp; API push · assemble <code>compilation_crew.py</code></div>
+        </div>
+        <div class="ph-out">ships · manual ingestion</div>
+      </div>
+      <div class="phase">
+        <div class="ph-num">03</div>
+        <div class="ph-body">
+          <div class="ph-title">Automation</div>
+          <div class="ph-desc">Dagster <code>sensors.py</code> watches <code>raw/</code> · <code>schedules.py</code> runs linter weekly</div>
+        </div>
+        <div class="ph-out">ships · fully automatic loop</div>
+      </div>
+      <div class="phase">
+        <div class="ph-num">04</div>
+        <div class="ph-body">
+          <div class="ph-title">Interface &amp; Polish</div>
+          <div class="ph-desc">Oracle as Typer CLI · Langfuse + OpenTelemetry · token tracking · workflow observability</div>
+        </div>
+        <div class="ph-out">ships · production-grade</div>
+      </div>
+    </div>
+    <div class="chrome-bot"><span>20 / 21</span><span>roadmap · four ships</span></div>
+  </section>
+
+  <!-- 21 The AI Software Factory — dense infographic poster -->
+  <section class="slide s-factory" data-label="AI Software Factory" data-screen-label="21 AI Software Factory">
+    <div class="chrome-top"><span>21 · the poster</span><span>one diagram · whole ecosystem</span></div>
+
+    <h1 class="fac-title">The <em>AI Software Factory</em>.<br/>Unified agentic development ecosystem.</h1>
+
+    <div class="fac-grid">
+      <!-- Left column: layer labels -->
+      <div class="fac-labels">
+        <div class="fac-lab lab1">
+          <div class="lab-num">Layer 1</div>
+          <div class="lab-name">LA SUITE DOCS</div>
+          <div class="lab-role">presentation · the human UI</div>
+        </div>
+        <div class="fac-lab lab2">
+          <div class="lab-num">Layer 2</div>
+          <div class="lab-name">DAGSTER</div>
+          <div class="lab-role">orchestration · trigger engine</div>
+        </div>
+        <div class="fac-lab lab3">
+          <div class="lab-num">Layer 3</div>
+          <div class="lab-name">CrewAI + BMAD</div>
+          <div class="lab-role">governance · the workforce</div>
+          <div class="lab-gloss">
+            <div><span class="g-k">MCP</span> decentralised analysis of notes &amp; code</div>
+            <div><span class="g-k">Agile</span> formalised assessments · review-first</div>
+            <div><span class="g-k">REST</span> versioned, non-approximating contract</div>
+          </div>
+        </div>
+        <div class="fac-lab lab5">
+          <div class="lab-num">Layer 5</div>
+          <div class="lab-name">KARPATHY WIKI</div>
+          <div class="lab-role">memory · the brain's storage</div>
+          <div class="lab-db">
+            <div class="db-chip"><span class="db-dot" style="background:oklch(0.65 0.18 25)"></span>Minio (S3)</div>
+            <div class="db-chip"><span class="db-dot" style="background:oklch(0.65 0.16 240)"></span>PostgreSQL</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center column: nodes -->
+      <div class="fac-main">
+        <!-- L1: La Suite Docs window -->
+        <div class="fac-row row1">
+          <div class="la-win">
+            <div class="la-chrome">
+              <span class="la-dots"><i></i><i></i><i></i></span>
+              <span class="la-title">LA SUITE DOCS</span>
+              <span class="la-gear">⚙</span>
+            </div>
+            <div class="la-body">
+              <div class="la-left">
+                <div class="la-doc-ico">📄</div>
+                <div>
+                  <div class="la-h">Main Wiki</div>
+                  <div class="la-sub">Article Area</div>
+                </div>
+              </div>
+              <div class="la-collab">
+                <div class="la-avatars">
+                  <span class="av av-1">A</span>
+                  <span class="av av-2">B</span>
+                  <span class="av av-3">C</span>
+                  <span class="av av-4">D</span>
+                </div>
+                <div class="la-collab-lbl">Real-time Collaboration</div>
+              </div>
+              <div class="la-search-col">
+                <div class="la-search">🔍 &nbsp;Search the Team Brain…</div>
+                <div class="la-search-lbl">Search Bar</div>
+              </div>
+            </div>
+          </div>
+          <div class="rest-lbl">REST API (Read/Write)</div>
+        </div>
+
+        <!-- L2: Dagster -->
+        <div class="fac-row row2">
+          <div class="dag-node">
+            <div class="dag-clock">
+              <div class="dag-ico">🕐</div>
+              <div class="dag-cap">Weekly Schedule<br/><span>(Linting)</span></div>
+            </div>
+            <div class="dag-sensor">
+              <div class="dag-ico">⊙</div>
+              <div class="dag-cap">Sensor<br/><span>New Raw File</span></div>
+            </div>
+            <div class="dag-brand">
+              <div class="dag-logo">◐ DAGSTER</div>
+              <div class="dag-bar"><div class="dag-bar-fill"></div></div>
+            </div>
+            <div class="dag-dag">
+              <svg viewBox="0 0 140 80" class="dag-svg">
+                <circle cx="20" cy="40" r="7" class="nd n-a"/>
+                <circle cx="60" cy="18" r="7" class="nd n-b"/>
+                <circle cx="60" cy="62" r="7" class="nd n-c"/>
+                <circle cx="100" cy="40" r="7" class="nd n-d"/>
+                <circle cx="132" cy="40" r="5" class="nd n-e"/>
+                <path d="M27 40 L53 22" class="ln"/>
+                <path d="M27 40 L53 58" class="ln"/>
+                <path d="M67 22 L93 38" class="ln"/>
+                <path d="M67 58 L93 42" class="ln"/>
+                <path d="M107 40 L128 40" class="ln"/>
+              </svg>
+              <div class="dag-cap dag-cap-r">DAG</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- L3: Agent workforce with colored groupings -->
+        <div class="fac-row row3">
+          <!-- INGESTION group (deep blue) -->
+          <div class="grp grp-ingest">
+            <div class="grp-lbl">INGESTION</div>
+            <div class="agent-card ag-ingester">
+              <div class="ag-top">
+                <span class="ag-ico">📋</span>
+                <span class="ag-tag">PERSONA.md</span>
+              </div>
+              <div class="ag-name">INGESTER</div>
+              <div class="ag-role">(Analyst)</div>
+            </div>
+            <div class="agent-card ag-compiler">
+              <div class="ag-top">
+                <span class="ag-ico">▦</span>
+                <span class="ag-tag">PERSONA.md</span>
+              </div>
+              <div class="ag-name">COMPILER</div>
+              <div class="ag-role">(Architect)</div>
+            </div>
+          </div>
+
+          <!-- IMPLEMENTATION group (green) -->
+          <div class="grp grp-impl">
+            <div class="grp-lbl">IMPLEMENTATION</div>
+            <div class="agent-card ag-linker">
+              <div class="ag-top">
+                <span class="ag-ico">🔗</span>
+                <span class="ag-tag">PERSONA.md</span>
+              </div>
+              <div class="ag-name">LINKER</div>
+              <div class="ag-role">(Developer)</div>
+            </div>
+          </div>
+
+          <!-- REVIEW group (orange) -->
+          <div class="grp grp-review">
+            <div class="grp-lbl">REVIEW</div>
+            <div class="agent-card ag-linter">
+              <div class="ag-top">
+                <span class="ag-ico">🔍</span>
+                <span class="ag-tag">PERSONA.md</span>
+              </div>
+              <div class="ag-name">LINTER</div>
+              <div class="ag-role">(QA / Reviewer)</div>
+            </div>
+          </div>
+
+          <!-- STRATEGY group (green) -->
+          <div class="grp grp-strat">
+            <div class="grp-lbl">STRATEGY</div>
+            <div class="agent-card ag-oracle">
+              <div class="ag-top">
+                <span class="ag-ico">🦉</span>
+                <span class="ag-tag">PERSONA.md</span>
+              </div>
+              <div class="ag-name">ORACLE</div>
+              <div class="ag-role">(Product Owner)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- L5: Karpathy Wiki storage -->
+        <div class="fac-row row5">
+          <div class="db-cyl">
+            <div class="cyl-top"></div>
+            <div class="cyl-mid"></div>
+            <div class="cyl-bot"></div>
+          </div>
+          <div class="wiki-dir dir-raw">
+            <div class="dir-ico">📂</div>
+            <div class="dir-path">wiki/raw/</div>
+            <div class="dir-desc">source drops</div>
+          </div>
+          <div class="wiki-dir dir-compiled">
+            <div class="dir-ico">📚</div>
+            <div class="dir-path">wiki/compiled/</div>
+            <div class="dir-desc">Concepts · Linked files · DRs</div>
+          </div>
+          <div class="wiki-dir dir-outputs">
+            <div class="dir-ico">📊</div>
+            <div class="dir-path">wiki/outputs/</div>
+            <div class="dir-desc">Report · Answer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: spec-kit panel + legend -->
+      <div class="fac-side">
+        <div class="side-corpbrain">
+          <div class="cb-title">CORPORATE BRAIN</div>
+          <svg viewBox="0 0 260 100" class="cb-graph" aria-hidden="true">
+            <g class="cb-edges">
+              <path d="M30 60 L80 30"/><path d="M80 30 L140 50"/>
+              <path d="M140 50 L200 30"/><path d="M200 30 L240 70"/>
+              <path d="M30 60 L140 50"/><path d="M80 30 L140 80"/>
+              <path d="M140 80 L200 30"/><path d="M200 30 L240 40"/>
+            </g>
+            <g class="cb-nodes">
+              <circle cx="30" cy="60" r="4"/>
+              <circle cx="80" cy="30" r="4"/>
+              <circle cx="140" cy="50" r="5"/>
+              <circle cx="140" cy="80" r="3"/>
+              <circle cx="200" cy="30" r="4"/>
+              <circle cx="240" cy="40" r="3"/>
+              <circle cx="240" cy="70" r="3"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="side-speckit">
+          <div class="sk-head">
+            <span class="sk-shield">🛡</span>
+            <span class="sk-title">spec-kit + agent-skills</span>
+            <span class="sk-sub">execution · the physical tools</span>
+          </div>
+          <div class="sk-tools">
+            <div class="sk-tool">
+              <div class="sk-name">PDF PARSER</div>
+              <div class="sk-files">
+                <span class="sk-f sk-json">📄 read-file.json ✓</span>
+                <span class="sk-f sk-py">🐍 pdf_parser.py ✓</span>
+              </div>
+            </div>
+            <div class="sk-tool">
+              <div class="sk-name">MARKDOWN WRITER</div>
+              <div class="sk-files">
+                <span class="sk-f sk-json">📄 write-wiki-markdown.json ✓</span>
+                <span class="sk-f sk-py">🐍 markdown_generator.py ✓</span>
+              </div>
+            </div>
+            <div class="sk-tool">
+              <div class="sk-name">LA SUITE API PUSH</div>
+              <div class="sk-files">
+                <span class="sk-f sk-json">📄 lasuite_push_schema.json ✓</span>
+                <span class="sk-f sk-py">🐍 lasuite_client.py ✓</span>
+              </div>
+            </div>
+            <div class="sk-tool">
+              <div class="sk-name">WIKI SEARCH</div>
+              <div class="sk-files">
+                <span class="sk-f sk-json">📄 search_wiki.json ✓</span>
+                <span class="sk-f sk-py">🐍 search_ops.py ✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-legend">
+          <div class="lg-row"><span class="lg-line lg-blue"></span><b>Deep Blue</b> — validated contract</div>
+          <div class="lg-row"><span class="lg-line lg-green"></span><b>Vibrant Green</b> — improvement / Q&amp;A</div>
+          <div class="lg-row"><span class="lg-line lg-gm"></span>Maintenance loop</div>
+          <div class="lg-row"><span class="lg-line lg-orange"></span>Flag broken links</div>
+        </div>
+
+        <div class="side-cli">
+          <div class="cli-row"><span class="cli-k">CLI Ask</span> → Oracle Agent → <span class="cli-v">Output Answer</span></div>
+          <div class="cli-row"><span class="cli-k">CLI Ask</span> → Oracle Agent → <span class="cli-v">Search Tools</span></div>
+          <div class="cli-row"><span class="cli-k">Schedule</span> → Linter Agent → <span class="cli-v">Walk Wiki</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chrome-bot"><span>21 / 21</span><span>the whole thing, on one page</span></div>
+  </section>
+
+</deck-stage>
+
+<!-- ── Tweaks ────────────────────────── -->
+<div id="tweaks" aria-hidden="true">
+  <h3>Tweaks</h3>
+  <div class="row">
+    <label>Accent</label>
+    <div class="swatches" id="tw-swatches">
+      <div class="sw" data-hue="155" style="background: oklch(0.78 0.14 155)"></div>
+      <div class="sw" data-hue="205" style="background: oklch(0.78 0.12 205)"></div>
+      <div class="sw" data-hue="55"  style="background: oklch(0.82 0.13 55)"></div>
+      <div class="sw" data-hue="25"  style="background: oklch(0.72 0.14 25)"></div>
+      <div class="sw" data-hue="300" style="background: oklch(0.72 0.12 300)"></div>
+    </div>
+  </div>
+  <div class="row">
+    <label>Serif</label>
+    <select id="tw-serif">
+      <option value="Fraunces">Fraunces</option>
+      <option value="Georgia">Georgia</option>
+      <option value="Iowan Old Style">Iowan</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Background</label>
+    <select id="tw-bg">
+      <option value="#0b0c0b">near-black</option>
+      <option value="#000000">true black</option>
+      <option value="#0d1512">ink green</option>
+      <option value="#14110c">ink warm</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Scanlines</label>
+    <input type="checkbox" id="tw-scan" checked>
+  </div>
+</div>
+
+<script src="deck-stage.js"></script>
+<script>
+(() => {
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "accentHue": 205,
+    "serif": "Fraunces",
+    "bg": "#000000",
+    "scanlines": true
+  }/*EDITMODE-END*/;
+
+  const state = { ...TWEAK_DEFAULTS };
+
+  const root = document.documentElement;
+  const applyAll = () => {
+    root.style.setProperty('--accent', `oklch(0.78 0.14 ${state.accentHue})`);
+    root.style.setProperty('--accent-dim', `oklch(0.55 0.09 ${state.accentHue})`);
+    root.style.setProperty('--font-serif', `"${state.serif}", Georgia, serif`);
+    root.style.setProperty('--bg', state.bg);
+    document.querySelectorAll('.slide').forEach(s => {
+      s.style.setProperty('--_scan', state.scanlines ? '1' : '0');
+    });
+    // accent markers in the SVG rebuild
+    const svgAccents = document.querySelectorAll('#deck-svg-accent');
+    svgAccents.forEach(el => el.setAttribute('stroke', `oklch(0.78 0.14 ${state.accentHue})`));
+  };
+  // scanlines toggle via CSS var
+  const scanStyle = document.createElement('style');
+  scanStyle.textContent = `.slide::before { opacity: var(--_scan, 1); }`;
+  document.head.appendChild(scanStyle);
+
+  applyAll();
+
+  // Wire controls
+  const panel = document.getElementById('tweaks');
+  document.getElementById('tw-swatches').querySelectorAll('.sw').forEach(sw => {
+    if (+sw.dataset.hue === state.accentHue) sw.setAttribute('data-active', '');
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('#tw-swatches .sw').forEach(x => x.removeAttribute('data-active'));
+      sw.setAttribute('data-active', '');
+      state.accentHue = +sw.dataset.hue;
+      applyAll();
+      persist();
+    });
+  });
+  const serifSel = document.getElementById('tw-serif');
+  serifSel.value = state.serif;
+  serifSel.addEventListener('change', () => { state.serif = serifSel.value; applyAll(); persist(); });
+  const bgSel = document.getElementById('tw-bg');
+  bgSel.value = state.bg;
+  bgSel.addEventListener('change', () => { state.bg = bgSel.value; applyAll(); persist(); });
+  const scanCb = document.getElementById('tw-scan');
+  scanCb.checked = state.scanlines;
+  scanCb.addEventListener('change', () => { state.scanlines = scanCb.checked; applyAll(); persist(); });
+
+  function persist() {
+    try {
+      window.parent.postMessage({type: '__edit_mode_set_keys', edits: {
+        accentHue: state.accentHue, serif: state.serif, bg: state.bg, scanlines: state.scanlines
+      }}, '*');
+    } catch(e) {}
+  }
+
+  // Edit mode protocol — register listener FIRST
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.type === '__activate_edit_mode') { panel.setAttribute('data-open',''); panel.setAttribute('aria-hidden','false'); }
+    else if (d.type === '__deactivate_edit_mode') { panel.removeAttribute('data-open'); panel.setAttribute('aria-hidden','true'); }
+  });
+  window.parent.postMessage({type: '__edit_mode_available'}, '*');
+})();
+</script>
+</body>
+</html>

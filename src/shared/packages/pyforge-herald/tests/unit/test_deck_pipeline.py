@@ -2494,6 +2494,37 @@ def test_windowed_read_single_call_when_the_server_answers_whole():
     assert len(transport.calls) == 1
 
 
+def test_windowed_read_self_short_circuits_when_the_server_ignores_if_none_match():
+    """Live-verified 2026-09-18: the server never answers its own
+    ``{unchanged: true}`` short-circuit once a file needs windowing --
+    an ``if_none_match`` that exactly matches the current etag still
+    comes back as an ordinary truncated first window. Without this
+    function's own etag check, a large unchanged file would be
+    re-downloaded (and re-written) on every single run, breaking CAP-30's
+    idempotency requirement for exactly the artifact that motivated
+    ``_windowed_read`` in the first place -- caught live pulling
+    ``six-quarter-roadmap``'s 320 KB prototype a second time."""
+    transport = FakePullTransport(
+        answers=[
+            FileRead(
+                path="x",
+                etag="E1",
+                body="line1\nline2773",
+                unchanged=False,  # the server itself never sets this here
+                first_line=1,
+                last_line=2773,
+                total_lines=3377,
+            )
+        ]
+    )
+    result = _windowed_read(
+        transport, project_id="p-1", path="big.dc.html", if_none_match="E1"
+    )
+    assert result.unchanged is True
+    assert result.etag == "E1"
+    assert len(transport.calls) == 1  # never asked for a second window
+
+
 def test_windowed_read_reassembles_across_multiple_windows():
     """Mirrors the live-verified 2026-09-18 evidence: a 3377-line file
     answered as two windows (``1-2773``/``total_lines=3377``, then
@@ -2532,6 +2563,45 @@ def test_windowed_read_reassembles_across_multiple_windows():
         "path": "big.dc.html",
         "offset": 2774,
     }
+
+
+def test_windowed_read_strips_the_truncation_trailer_from_a_non_final_window():
+    """Live-verified 2026-09-18 (see ``_TRUNCATION_TRAILER_RE``'s own
+    docstring): a truncated window's raw ``body`` carries two bogus extra
+    lines -- a blank separator, then a resumption hint -- beyond its own
+    declared ``lines="A-B"`` span. Left unstripped, the reconstructed file
+    gains two lines that were never in the original (caught live pulling
+    ``six-quarter-roadmap``'s 320 KB prototype: 3379 lines landed locally
+    against a real ``total_lines=3377``)."""
+    transport = FakePullTransport(
+        answers=[
+            FileRead(
+                path="x",
+                etag="E6",
+                body=(
+                    "line1\nline2773\n\n…[+58491 bytes truncated at "
+                    "read_file's 256 KiB cap — the body ends at a complete "
+                    "line; continue with offset=2774]"
+                ),
+                unchanged=False,
+                first_line=1,
+                last_line=2773,
+                total_lines=3377,
+            ),
+            FileRead(
+                path="x",
+                etag="E6",
+                body="line2774\nline3377",
+                unchanged=False,
+                first_line=2774,
+                last_line=3377,
+                total_lines=3377,
+            ),
+        ]
+    )
+    result = _windowed_read(transport, project_id="p-1", path="big.dc.html")
+    assert result.body == "line1\nline2773\nline2774\nline3377"
+    assert result.body.count("\n") == 3  # 4 real lines, no bogus ones
 
 
 def test_windowed_read_refuses_a_changed_answer_with_no_body():

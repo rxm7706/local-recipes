@@ -1083,6 +1083,27 @@ class AdoptResult:
     artifacts: tuple[AdoptedArtifact, ...]
 
 
+_TRUNCATION_TRAILER_RE = re.compile(
+    r"\n\n…\[\+\d+ bytes truncated at read_file's 256 KiB cap — the body "
+    r"ends at a complete line; continue with offset=\d+\]\Z"
+)
+"""A truncated (non-final) window's ``body`` carries TWO extra lines beyond
+its own declared ``lines="A-B"`` span: a blank separator, then a
+human-readable resumption hint (e.g. ``…[+58491 bytes truncated at
+read_file's 256 KiB cap -- the body ends at a complete line; continue with
+offset=2774]``) -- both inside the wrapper, so `parse_read_response`
+(which only strips the wrapper's own framing newline) passes them straight
+through as if they were file content. Verified live 2026-09-18 pulling
+`six-quarter-roadmap`'s 3377-line prototype: window 1's declared
+``lines="1-2773"`` is accurate for the real file, but its raw `body` came
+back 2775 lines long -- 2773 real lines plus this exact two-line tail. A
+window that reaches end-of-file (this repo's own probe: no further call
+needed) carries no such tail, so this is stripped unconditionally rather
+than only on a still-truncated window -- the pattern cannot occur in real
+file content (its own literal text names the mechanism), so a no-op
+non-match is the correct outcome everywhere else."""
+
+
 def _windowed_read(
     transport: DesignTransport,
     *,
@@ -1101,9 +1122,17 @@ def _windowed_read(
     answered whole (no window metadata at all), after exactly one call.
     ``if_none_match`` is honoured only on the FIRST call: an etag
     precondition is checked against the file's current whole state, never
-    any one window of it, and every later transport in this repo that
-    windows a read (`FileRead.truncated`'s own docstring) treats a
-    declared window the same way.
+    any one window of it. Verified live 2026-09-18: the server does NOT
+    answer its own ``{unchanged: true}`` short-circuit once a file needs
+    windowing at all -- an ``if_none_match`` that exactly matches the
+    current etag still comes back as an ordinary (truncated) first
+    window, never the short-circuit form `_pull_and_land` relies on for
+    every artifact under the cap. This function therefore checks the
+    FIRST window's own ``etag`` against ``if_none_match`` itself, right
+    after that one call and before requesting any further window --
+    without this, a file requiring windowing could never report
+    "unchanged" at all, breaking CAP-30's own idempotency requirement for
+    exactly the one artifact that needs this helper in the first place.
 
     Windows are joined on their shared line boundary (``"\\n".join``):
     ``parse_read_response`` already strips exactly the wrapper's own
@@ -1111,7 +1140,10 @@ def _windowed_read(
     separated a window's last line from the next window's first line in
     the original file survives only if this join re-adds it -- never
     doubled (the framing one was already stripped) and never lost (two
-    real lines were always either side of it).
+    real lines were always either side of it). Each window's body is
+    first passed through ``_TRUNCATION_TRAILER_RE`` (see its own
+    docstring) to drop the server's resumption-hint tail before the join
+    -- otherwise it would be joined into the file as two bogus lines.
 
     Raises ``errors.HeraldError`` naming ``path`` when a window reports a
     change but returns no body, or reports itself as partial with no
@@ -1133,6 +1165,12 @@ def _windowed_read(
     )
     if first.unchanged:
         return first
+    if if_none_match is not None and first.etag == if_none_match:
+        # The server's own short-circuit never fires once a file needs
+        # windowing (see this function's own docstring) -- this is that
+        # short-circuit's replacement, checked before any further window
+        # is requested.
+        return FileRead(path=path, etag=first.etag, body=None, unchanged=True)
     parts: list[str] = []
     etag = first.etag
     window: FileRead = first
@@ -1142,9 +1180,14 @@ def _windowed_read(
                 f"cannot read {path!r}: read_file reported a change but "
                 f"returned no body"
             )
-        parts.append(window.body)
+        parts.append(_TRUNCATION_TRAILER_RE.sub("", window.body))
         etag = window.etag
-        if window.total_lines is None and window.last_line is None:
+        no_window_declared = (
+            window.first_line is None
+            and window.last_line is None
+            and window.total_lines is None
+        )
+        if no_window_declared:
             break  # the whole file arrived in this one call
         if window.last_line is None or window.total_lines is None:
             raise errors.HeraldError(
