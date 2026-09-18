@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.4 added later the same day (CAP-79/CAP-80; 27.4 supersedes 27.3's landed-empty intent gap). Prior 2026-09-17
+updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2325,7 +2325,13 @@ substitution happened, and the detector's exit-code domain (`{0, 2, 130}`) is un
 **Given** Story 27.1 made Doctor read each station's *current* `merge_subject_template`, and marshal landed `34-3` on 2026-09-12 as `Merge 34-3 into main` under the then-default template — so the moment marshal's policy moved to `Merge pyforge-marshal/{key} into main` (PR #1467), `story-status` on `main` reports `marshal/34-3: reads done in the sprint feed, but the harness says 'deferred' with no commit and no merge commit anywhere`, a `done` story orphaned by its own station's template move **When** a bare legacy-form subject is attributed to a station only when that station's tracked ledger knows the key **Then** marshal `34-3` reads as merged and `story-status` on `main` reports no finding for it, a fixture where the bare subject names a key the querying station's ledger does not know still attributes nothing, the scoped form still attributes, and CAP-78's PR #1465 replay stays `ok`
 **And** the rule is one function used by both sources, never two readings of "legacy"; the exit-code domain `{0, 2, 130}` is untouched
 
-### Story 27.4: A bare-form merge is attributed by the paths its diff touches
+**Story 27.4 — reserved hole (2026-09-18; do not reuse).** Its mint PR (#1477) was pushed from a branch named
+`doctor/27-4-mint`, and `Merge pull request #1477 from rxm7706/doctor/27-4-mint` parses under the station-branch
+landing grammar as *doctor 27.4 landed* — so the first dispatch of 27.4 (`pyforge-doctor-20260918T222825190Z`)
+short-circuited `story_merged_on_main` in one second and detached. Same poison class as a `Story N.M:` commit
+subject; the rule is renumber, never exclude. The story is 27.5 below, unchanged in content.
+
+### Story 27.5: A bare-form merge is attributed by the paths its diff touches
 
 **Type:** fix • **Effort:** S • **Deps:** S-27.3 • **FR/AD:** spec-pyforge-doctor CAP-80 (amended Approach) • supersedes Story 27.3 (landed empty on an intent gap)
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` and `.../sources/ledger.py` (one shared helper: for a bare legacy-form templated subject, `git diff --name-only <merge>^1 <merge>` classified into station slugs by `_bmad-output/projects/<slug>/` and `src/shared/packages/<slug>/` prefixes, cached per sha; a bare-form merge attributes to the querying station iff its paths appear AND the station's ledger knows the key; the scoped form and every other shape unchanged), `tests/unit/test_sources_marshal_story_status.py`, `tests/unit/test_sources_ledger_direction.py`; the reverted 27.3 patch in the 27.3 dispatch worktree (`spec-27-3-attempted-patch-2026-09-18.patch`) is prior art for the plumbing, not the rule.

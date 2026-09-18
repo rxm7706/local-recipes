@@ -90,7 +90,7 @@ development_status:
   27-1-a-pr-is-judged-at-its-merge-base-and-a-merge-subject-names-its-station: done
   27-2-ledger-direction-reads-the-stations-rekey-map: done
   27-3-a-stations-legacy-template-history-stays-attributed: done
-  27-4-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: backlog
+  27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: backlog
   3-1-partition-findings-by-actionability-fr-6-ad-4: done
   3-2-rank-the-actionable-partition-fr-7-ad-4: done
   3-3-root-cause-naming-fr-8: done
