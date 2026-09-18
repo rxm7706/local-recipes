@@ -2,7 +2,8 @@
 title: '27.2: `ledger-direction` reads the station''s rekey map'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '9a89b3ec873957676b8c76accd159bc0be21d5d9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
