@@ -36,7 +36,7 @@ import os
 import re
 import secrets
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -94,7 +94,12 @@ from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..dispatch_verify import evaluate_dispatch_verification
-from ..core.identity import StoryKey, normalize, render_feed_key
+from ..core.identity import (
+    MalformedStoryKeyError,
+    StoryKey,
+    normalize,
+    render_feed_key,
+)
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -1081,6 +1086,84 @@ def _live_dispatch_story_keys(
     return tuple(live)
 
 
+def station_finalize_pending_story(
+    *,
+    fs: FsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    backlog: Sequence[str],
+    effective_policy: policy.EffectivePolicy,
+) -> tuple[str, str] | None:
+    """``(story, evidence)`` when this station's head is mid-finalize (50.1).
+
+    Part A's impure half: walk the MOST RECENT dispatch run, read the four
+    facts the journal already carries (``story_key``, ``supervisor_pid``,
+    ``completion_verdict``, ``landing_verdict``), and hand them plus the
+    tracked-ledger fact to the pure ``is_finalize_pending``.
+
+    This is deliberately NOT a second completion judgment:
+    ``resolve_dispatch_session_verdict`` / ``judge_dispatch_completion``
+    are untouched, and nothing here reads the session's own self-report.
+    ``spin``'s in-flight probe has treated a live ``supervisor_pid`` as in
+    flight since Story 34.1; the dispatch path simply never learned it.
+    """
+    # The verdict stays on journal + process facts (Epic 50 HARD boundary);
+    # the policy is accepted for call-site symmetry with every other
+    # station-level probe, never consulted.
+    del effective_policy
+    from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
+
+    run_dir = latest_dispatch_run_dir(repo_root, slug)
+    if run_dir is None:
+        return None
+    journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    if journal.story_key is None:
+        return None
+    on_backlog: str | None = None
+    for raw in backlog:
+        try:
+            if render_feed_key(normalize(raw)) == journal.story_key:
+                on_backlog = raw
+                break
+        except MalformedStoryKeyError:
+            continue
+    supervisor_alive = journal.supervisor_pid is not None and process.is_alive(
+        journal.supervisor_pid
+    )
+    landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
+    session_alive = journal.session_pid is not None and process.is_alive(
+        journal.session_pid
+    )
+    if session_alive and not landing_complete:
+        # A session still running is plain in-flight, not finalize-pending:
+        # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
+        # reports it. Clause (a) is about the window AFTER the session exits,
+        # so it must never pre-empt that already-correct path.
+        return None
+    if not dispatch_fleet.is_finalize_pending(
+        supervisor_alive=supervisor_alive,
+        completion_journaled=journal.completion_verdict is not None,
+        landing_complete=landing_complete,
+        story_on_backlog=on_backlog is not None,
+    ):
+        return None
+    assert on_backlog is not None
+    if landing_complete:
+        evidence = (
+            f"run {run_dir.name!r} journaled dispatch-land "
+            f"{journal.landing_verdict!r} and the tracked ledger still says "
+            "backlog -- finalize (ledger sync + spec promotion) is mid-flight"
+        )
+    else:
+        evidence = (
+            f"run {run_dir.name!r} has a live supervisor "
+            f"(pid {journal.supervisor_pid}) and no dispatch-completion "
+            "entry -- the landing path has not finished"
+        )
+    return on_backlog, evidence
+
+
 def station_in_flight_conflict(
     *,
     fs: FsPort,
@@ -1423,6 +1506,27 @@ def station_story_block_facts(
                     changed_path_count = len(git_facts.changed_paths)
                 except (VcsCommandError, ValueError):
                     git_progress_unknown = True
+            # Story 50.1 Part B: ahead of the transient/terminal split, so
+            # an already-landed head is never re-dispatched (TRANSIENT) NOR
+            # halts the station (TERMINAL) -- it advances, exactly the way
+            # MRS-DISP-040 does. ``git_progress_unknown`` means the campaign
+            # could not observe the changed paths at all, and an unobserved
+            # zero is never treated as an observed one.
+            if not git_progress_unknown and dispatch_fleet.is_already_landed_self_refusal(
+                changed_path_count=changed_path_count,
+                session_log=session_log,
+            ):
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=(
+                        f"{dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX}: the "
+                        f"last dispatch of {feed_story!r} (run "
+                        f"{run_dir.name!r}) refused itself with zero changed "
+                        "paths and merged evidence in its session log -- the "
+                        "work is already landed, so the station advances "
+                        "instead of relaunching it"
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -3287,6 +3391,41 @@ def execute_fleet_cycle(
         )
         effective_policy = _compose_policy(slug, flags=policy_flags)
         station_skips = configured_skips.get(slug, {})
+        # Story 50.1 Part A: the ~45 s window between session exit and ledger
+        # promotion. Reported IN_FLIGHT (deliberately absent from
+        # TERMINAL_STATION_STATUSES), so this station provisions nothing this
+        # cycle and the campaign chains its next ready story on the following
+        # one instead of re-dispatching or blocking on the story it just landed.
+        finalize_pending = station_finalize_pending_story(
+            fs=fs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            backlog=backlog,
+            effective_policy=effective_policy,
+        )
+        if finalize_pending is not None:
+            pending_story, pending_evidence = finalize_pending
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
+                    remaining=len(backlog),
+                    story=pending_story,
+                    detail=pending_evidence,
+                )
+            )
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-006",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: no dispatch this cycle -- story "
+                        f"{pending_story!r} is finalizing: {pending_evidence}"
+                    ),
+                )
+            )
+            continue
         blocked, block_classes = _station_blocked_map(
             fs=fs,
             vcs=vcs,
@@ -3309,20 +3448,22 @@ def execute_fleet_cycle(
             declared_skips=station_skips,
         )
         for story, reason in plan.skipped:
-            basis = (
-                "declared skip policy"
-                if story in station_skips
-                else (
+            if story in station_skips:
+                basis = "declared skip policy"
+            elif dispatch_fleet.is_harness_done_advance_reason(reason):
+                basis = (
                     "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
-                    if dispatch_fleet.is_harness_done_advance_reason(reason)
-                    else (
-                        "environment-classified block"
-                        if block_classes.get(story)
-                        is dispatch_fleet.FleetBlockClass.ENVIRONMENT
-                        else f"blocked, and {mode.value} skips past it"
-                    )
                 )
-            )
+            elif reason.startswith(dispatch_fleet.ALREADY_LANDED_ADVANCE_PREFIX):
+                # Story 50.1 Part B: named for what it is -- an advance past
+                # work that already landed -- never mislabelled "blocked".
+                basis = "already landed (Story 50.1); remaining backlog continues"
+            elif (
+                block_classes.get(story) is dispatch_fleet.FleetBlockClass.ENVIRONMENT
+            ):
+                basis = "environment-classified block"
+            else:
+                basis = f"blocked, and {mode.value} skips past it"
             findings.append(
                 Finding(
                     code="MRS-DRAIN-004",
