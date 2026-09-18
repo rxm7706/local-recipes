@@ -253,8 +253,8 @@ def main() -> None:
 
     facts = load_fact_values(deck_dir / "facts.yaml")
     day = rebuild_day()
-    stamp_summary = args.fmt in (None, "all", "summary")
-    stamp_marp = args.fmt in (None, "all", "pptx", "html") or bool(targets)
+    stamp_summary = args.fmt in ("all", "summary")
+    stamp_marp = args.fmt in ("all", "pptx", "html")
 
     if stamp_summary:
         exec_path = find_exec_summary(deck_dir)
