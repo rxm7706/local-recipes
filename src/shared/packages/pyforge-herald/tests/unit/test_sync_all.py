@@ -302,6 +302,16 @@ def test_sync_all_reports_nothing_pulled_when_the_etag_did_not_move(tmp_path: Pa
 # --- proof_dir (Story 24.3, spec-pyforge-herald CAP-50) --------------------
 
 
+def _proof_report_files(deck_proof_dir: Path) -> list[Path]:
+    """``report-*.json``, excluding the ``.stamp.json`` sidecars -- a bare
+    ``glob("report-*.json")`` also matches ``report-<ts>.json.stamp.json``
+    (its filename still ends in ``.json``)."""
+    return sorted(
+        p for p in deck_proof_dir.glob("report-*.json")
+        if not p.name.endswith(".stamp.json")
+    )
+
+
 def test_sync_all_writes_a_proof_report_and_stamp_when_a_deck_changed(
     tmp_path: Path,
 ):
@@ -321,7 +331,7 @@ def test_sync_all_writes_a_proof_report_and_stamp_when_a_deck_changed(
     )
 
     deck = report.decks[0]
-    report_files = sorted((proof_dir / "pyforge-warden").glob("report-*.json"))
+    report_files = _proof_report_files(proof_dir / "pyforge-warden")
     assert len(report_files) == 1
     payload = json.loads(report_files[0].read_text(encoding="utf-8"))
     assert payload["slug"] == "pyforge-warden"
@@ -348,7 +358,7 @@ def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
         transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
         **_seams(),
     )
-    first_files = sorted((proof_dir / "pyforge-warden").glob("report-*.json"))
+    first_files = _proof_report_files(proof_dir / "pyforge-warden")
     assert len(first_files) == 1
     first_contents = first_files[0].read_text(encoding="utf-8")
 
@@ -359,7 +369,7 @@ def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
 
     assert first.decks[0].labels() == ("unchanged",)
     assert second.decks[0].labels() == ("unchanged",)
-    second_files = sorted((proof_dir / "pyforge-warden").glob("report-*.json"))
+    second_files = _proof_report_files(proof_dir / "pyforge-warden")
     assert len(second_files) == 2
     assert first_files[0].is_file()
     assert first_files[0].read_text(encoding="utf-8") == first_contents
@@ -398,7 +408,7 @@ def test_sync_all_dry_run_with_proof_dir_still_writes_a_proof_report(tmp_path: P
     deck = report.decks[0]
     assert deck.dry_run is True
     assert deck.labels() == ("unchanged",)
-    report_files = sorted((proof_dir / "pyforge-warden").glob("report-*.json"))
+    report_files = _proof_report_files(proof_dir / "pyforge-warden")
     assert len(report_files) == 1
     payload = json.loads(report_files[0].read_text(encoding="utf-8"))
     assert payload["dry_run"] is True
