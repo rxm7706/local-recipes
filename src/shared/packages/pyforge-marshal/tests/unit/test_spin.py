@@ -2282,6 +2282,7 @@ def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monke
     assert envelope["data"]["wire"]["applied"] is True
     assert envelope["data"]["wire"]["reason"] is None
     assert envelope["data"]["wire"]["aggressiveness"] == "medium"
+    assert envelope["data"]["wire"]["store_dir"] is not None
     assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
 
 

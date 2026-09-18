@@ -353,6 +353,13 @@ def test_absent_or_partial_context_mapping_reads_as_off(home):
     assert kit_findings(kit_checks(home, None)) == ()
 
 
+def test_unresolved_auto_reads_as_off(home):
+    """Story 46.4: this probe has no harness-profile seam to resolve the
+    repo-default ``"auto"`` tri-state against, so it must not fall into
+    ``bool("auto") is True`` and probe wire for every harness."""
+    assert layer_enabled({"wire": {"enabled": "auto"}}, "wire") is False
+
+
 # --- AC 1: three distinct checks -------------------------------------------
 
 
