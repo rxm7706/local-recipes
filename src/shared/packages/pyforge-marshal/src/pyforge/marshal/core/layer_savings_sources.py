@@ -381,7 +381,24 @@ def read_rollup_by_harness(
             },
         )
         harness_bucket["runs"] = harness_bucket["runs"] + 1  # type: ignore[operator]
-        for layer_key, value in last_layer_savings.items():
+
+        # `supervisor/__main__.py::_layer_savings_payload` writes
+        # `graph_hits_vs_file_reads` two different ways on the wire: as a
+        # single `graph_hits_vs_file_reads` string key, or -- when the
+        # source value is the (hits, reads) tuple, the normal case -- split
+        # into separate `graph_hits`/`file_reads` keys. Neither
+        # `SILENT_LAYER_KEYS` nor `CONFIGURED_LAYER_KEYS` recognizes the
+        # split names, so they must be recombined under the canonical key
+        # before classification, or a real run's tuple-shaped payload makes
+        # `classify_layer_kind` raise on live data instead of a genuine
+        # schema-drift key.
+        normalized_layer_savings = dict(last_layer_savings)
+        graph_hits = normalized_layer_savings.pop("graph_hits", None)
+        file_reads = normalized_layer_savings.pop("file_reads", None)
+        if graph_hits is not None or file_reads is not None:
+            normalized_layer_savings["graph_hits_vs_file_reads"] = (graph_hits, file_reads)
+
+        for layer_key, value in normalized_layer_savings.items():
             layer_kind = classify_layer_kind(layer_key)
             layer_kind_bucket = harness_bucket[layer_kind]
             layer_kind_bucket.setdefault(layer_key, []).append(value)  # type: ignore[union-attr]

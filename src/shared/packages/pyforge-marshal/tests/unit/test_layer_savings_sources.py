@@ -362,6 +362,30 @@ def test_read_rollup_by_harness_skips_run_missing_launch_or_usage(
     assert report == {"status": "no-savings-samples", "harnesses": {}}
 
 
+def test_read_rollup_by_harness_recombines_split_graph_hits_wire_shape(
+    tmp_path: Path,
+) -> None:
+    # `supervisor/__main__.py::_layer_savings_payload` writes a tuple-valued
+    # `graph_hits_vs_file_reads` (the normal case) as two separate on-wire
+    # keys, `graph_hits`/`file_reads` -- neither of which is a recognized
+    # `SILENT_LAYER_KEYS`/`CONFIGURED_LAYER_KEYS` name on its own. The rollup
+    # must recombine them under the canonical key rather than raising.
+    runs_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    _write_run_journal(
+        runs_dir,
+        "run-claude",
+        harness_profile="claude",
+        layer_savings_entries=[{"graph_hits": 12, "file_reads": 3}],
+    )
+    report = sources.read_rollup_by_harness(tmp_path)
+    assert report["harnesses"]["claude"]["silent"] == {
+        "graph_hits_vs_file_reads": [(12, 3)]
+    }
+
+
 def test_read_rollup_by_harness_tolerates_malformed_and_non_dict(tmp_path: Path) -> None:
     runs_dir = (
         tmp_path
