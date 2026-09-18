@@ -3315,8 +3315,8 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py": "1c6b5f7a47e2bafeea67ea455662ce75f752ad58",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/general_docs_consistency.py": "1aff1a1124d5c691609b37c24bbd36d1851afb61",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "3bba72cf83e3d2bae966ef7001007974c4924939",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "8ef6b19436c1ae8b0cecd4766050a74365efa706",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "d9eef4cebc341f4138ae0932fc2b2814047b5f37",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "1bf5fbd958e9d0eff86d79c5d030230aa0be7690",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "4b075b7e0a3d95535d983c2d0c46bc9726827012",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py": "fa23a4e3b3d1c1e61cf84b6886fd3cc21593819c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py": "3d9ed6aa45688f2bde4757dc95ec6ecdf9860613",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/platform_policy.py": "7dcf6aa67967f984ce3a37250e9dfc5308730f21",
@@ -3411,7 +3411,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py": "04c4c8d32acb87ab75182f4b32626ccc965628e0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py": "89074ce092a6ddaa785f232875599b1b0d79e8f2",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py": "bd953a8fc628d4334912138c845a30606ddc7cf8",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py": "4c41220cf05420b5e131c6572007e2535da7f611",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py": "6782fac21019ce16027556b3e41f1d6ac2aa11e0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/identity.py": "0f7d3a8df689f4b1833b97ad7916b47948df6c8a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/journal.py": "13bba3f717138d729cf63a42de70fb6726a776b8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/landing.py": "3af268de561b5fe06412084e66e8083146e5a829",
@@ -3661,7 +3661,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "5279b331f012165a962987f655fb11de60b2e93f"
+  "memlog": "31c7fbc18b364f37ab1d57789da8b9485de8101f"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
