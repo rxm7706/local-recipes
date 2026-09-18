@@ -2,7 +2,7 @@
 title: '27.3: A station''s legacy-template history stays attributed after its template changes'
 type: 'fix'
 created: '2026-09-18'
-status: 'blocked'
+status: 'done'
 baseline_revision: '76905db53a99c882398a4412ffa0548984760b46'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -69,6 +69,16 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
   - `[low]` `[patch]` The "one function, both sources" invariant (this spec's own Boundaries, and the `known_keys.py` module docstring) has no automated enforcement, unlike this repo's own established precedent for exactly this class of cross-module invariant (`test_sources_marshal_independence.py`, `test_no_warden_import.py` — both cited by this same docstring) (blind-hunter finding) — nothing would fail CI if a future change reimplemented the bare-legacy-corroboration logic directly inside `marshal.py` or `ledger.py` instead of calling `known_keys.legacy_bare_merge_key`. Not applied this pass — moot since all code reverts; worth adding alongside the redesigned mechanism.
 
 Attempted patch (reverted): `_bmad-output/implementation-artifacts/spec-27-3-attempted-patch-2026-09-18.patch`.
+
+> **Landed empty — superseded by Story 27.4 (2026-09-18).** The dispatched session found a genuine intent gap in this
+> spec's Approach (a station's ledger "knowing" a key cannot disambiguate a bare `Merge N-M into main` when several
+> stations know the same key — the common case under one shared integer grammar), reverted to `baseline_revision`,
+> saved `spec-27-3-attempted-patch-2026-09-18.patch`, and set `blocked`. `marshal factory dispatch` then verified and
+> landed the reverted branch (PR #1476) and promoted `27-3 → done` regardless — a marshal gap recorded on
+> `docs/dreams/pyforge-marshal.md` (a `blocked`/intent-gap outcome must never land). The ledger row stays `done`
+> because `ledger-regression` (blocking in CI) forbids moving it back; this note is the truth of what shipped: nothing.
+> The operator-delegated ruling that closes the gap — attribute a bare-form merge by the station paths its diff
+> touches (git is the sole authority for merged facts) — is CAP-80's amended Approach and Story 27.4.
 
 ## Auto Run Result
 
