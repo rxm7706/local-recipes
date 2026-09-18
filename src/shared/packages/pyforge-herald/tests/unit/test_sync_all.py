@@ -400,10 +400,16 @@ def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
     _seed_state(
         tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"}
     )
+    filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
     transport = FakeSyncTransport(
         read_file_answers=FileRead(
             path="x", etag="E2", body="<html>design edit</html>", unchanged=False
-        )
+        ),
+        # The pulled bundle lands at the same path push's own export
+        # discovery matches -- prove=True always runs, so its read-back
+        # must agree or push_exports raises ReadBackMismatchError instead
+        # of letting this test isolate the overwrote-local behavior alone.
+        rendered_bytes={filename: b"<html>design edit</html>"},
     )
 
     report = sync_all(
@@ -412,6 +418,7 @@ def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
     )
 
     deck = report.decks[0]
+    assert deck.error is None
     assert deck.overwrote_local == (STANDALONE_BUNDLE_ARTIFACT_KEY,)
     assert "overwrote-local" in deck.labels()
 

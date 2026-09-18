@@ -104,6 +104,22 @@ def test_deck_sync_all_prints_one_line_per_deck_with_its_labels(monkeypatch, cap
     assert "pyforge-doctor: unchanged" in out
 
 
+def test_deck_sync_all_prints_a_message_when_no_decks_are_found(monkeypatch, capsys):
+    """Review fix: an empty ``SyncAllReport`` (e.g. ``--repo-root``/cwd has
+    no ``presentations/`` dir) must not print nothing at exit 0 --
+    indistinguishable from "everything already synced"."""
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+        return SyncAllReport(decks=(), published=False)
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+
+    exit_code = cli.main(["deck", "sync-all"])
+
+    assert exit_code == 0
+    assert capsys.readouterr().out.strip() == "no registered decks found"
+
+
 def test_deck_sync_all_prints_the_error_line_for_a_failed_deck(monkeypatch, capsys):
     def _fake_sync_all(transport, *, slug, repo_root, dry_run):
         return SyncAllReport(
@@ -150,6 +166,26 @@ def test_deck_sync_all_no_published_line_when_nothing_changed(monkeypatch, capsy
 
     out = capsys.readouterr().out
     assert "published" not in out
+
+
+def test_deck_sync_all_prints_the_publish_error_when_publish_failed(
+    monkeypatch, capsys
+):
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run):
+        return SyncAllReport(
+            decks=(DeckSyncReport(slug="pyforge-warden", pushed=("a.html",)),),
+            published=False,
+            publish_error="site publish failed: template error",
+        )
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+
+    exit_code = cli.main(["deck", "sync-all"])
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "publish failed: site publish failed: template error" in out
+    assert "published: dossier site rebuilt" not in out
 
 
 def test_deck_sync_all_herald_error_propagates_through_dispatch(monkeypatch, capsys):
