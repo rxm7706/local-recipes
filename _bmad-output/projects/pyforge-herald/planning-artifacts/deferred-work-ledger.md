@@ -1012,3 +1012,14 @@ deployment.
   status: open
 
   closed: 2026-09-14 — Closed with three tests that run a **real** `pytest --collect-only -q` over a throwaway package and parse its actual stdout, rather than the synthetic strings the suite had been asserting against: the plain `N tests collected` form, the `N/M tests collected` deselected form (pinning that `(?:/\d+)?` captures the SELECTED count, not the total), and the reversed-line scan, which matters because real stdout lists every node id before the summary and a forward scan could match a digit in an id. Deliberately NOT routed through `tests_command()`'s `pixi run -e pyforge-<station>`: that needs a provisioned station env and would make the tests skip on most machines — which is the same "only the plumbing is verified" hole this entry names. Mutation-verified rather than assumed: swapping the regex to `(\d+) items? collected` fails all three, and restoring passes all three, so they bite on the thing they claim to. `scripts/deck_facts.py` is byte-unchanged; this is pure verification of shipped behaviour, which is why it needed no Dream. Suite 45 -> 48 passed.
+
+### DW-FU-21-10: presentations/presenton-pixi-image/README.md carries a garbled, truncated sentence fragment under its Provenance section, pre-existing and unrelated to the registry fix.
+
+- source_spec: `planning-artifacts/specs/spec-21-10-the-registry-sees-all-fourteen-decks.md`
+  summary: presentations/presenton-pixi-image/README.md carries a garbled, truncated sentence fragment under its Provenance section, pre-existing and unrelated to the registry fix.
+  evidence: The line reads "**seeded 2026-07-25 via DesignSync (byte-exact localPath upload).dc.html`, `Infographic standalone.html`, - Infographic Deck.dc.html`). The `DesignSync` tool was not exposed..." -- a mangled sentence, present before this story touched the file and preserved verbatim under `### Provenance` per this story's own out-of-scope note (registry.read() never parses this span, so it does not block the registry fix). Confirmed unchanged by diffing against the pre-story revision.
+  location: presentations/presenton-pixi-image/README.md:71
+  origin: spec-deferred 2d5a465da45e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

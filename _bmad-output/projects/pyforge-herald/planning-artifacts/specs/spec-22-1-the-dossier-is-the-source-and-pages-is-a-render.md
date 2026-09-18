@@ -9,11 +9,6 @@ followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md'
   - '{project-root}/docs/dreams/pyforge-herald.md'
-deferred:
-  - summary: 'Sprint ledger key `22-1-the-dossier-is-the-source-and-pages-is-a-render` still reads `backlog` although the capability it tracks (spec-pyforge-pages CAP-1..5) was verified shipped on `main` via PR #1341/#1351, merged before this Story was minted.'
-    evidence: '`pyforge.core.landing_evidence`''s recognized grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject, `Story N.M:` commit subject, `land/<station>-<epic>-<seq>` branch) do not match branch `pyforge-pages`, so automatic landing detection never promoted the key past `backlog` in either the tracked ledger or the Tier-3 feed.'
-    location: '_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml'
-    severity: low
 declared_low_risk: false
 ---
 <intent-contract>
@@ -152,4 +147,6 @@ here.
 
 **Verification performed:** Pass 1's checks — `pixi run -e site site-check` (exit 0, 6 required outputs + 10 infographics), `pixi project export conda-environment -e build > environment.yaml` (byte-identical), `grep -rln deploy-pages .github/workflows/` (only `dashboard.yml`), Dream/Spec status, sprint-ledger key presence, `docsite/build.py` cleanup logic, `verify_claims.py` absence from `detectors-ci`, PR #1341/#1351 label confirmation — were independently re-confirmed live by the orchestrating session at step-03's Verify stage and remain valid; no application code changed since. Pass 2 additionally verified: commit `9afa3614`'s timestamp (`git log --format=%ad --date=iso-strict`) against PR #1341's `mergedAt` (`gh pr view --json mergedAt`); `story-status-check` and `status-body-consistency-check` both re-run live (exit 0, no mention of this story); frontmatter re-parsed with `yaml.safe_load` after each patch; the `<intent-contract>` block confirmed byte-identical across all patches; `sprint-status-ledger.yaml` and the Tier-3 feed confirmed reverted to their pre-dispatch `backlog` values.
 
-**Residual risks:** none remaining for this Story's own scope beyond the named follow-up risk above. Out-of-scope, pre-existing and unrelated: the herald Tier-3 feed (`implementation-artifacts/sprint-status.yaml`, gitignored) is stale on other keys unrelated to this story. The sprint-status ledger key for `22-1-...` remains `backlog` (orchestrator-owned; explicitly out of this workflow's writable scope) — tracked via the `deferred:` frontmatter entry, not hand-edited.
+**Residual risks:** none remaining for this Story's own scope beyond the named follow-up risk above. Out-of-scope, pre-existing and unrelated: the herald Tier-3 feed (`implementation-artifacts/sprint-status.yaml`, gitignored) is stale on other keys unrelated to this story.
+
+**Resolved at manual landing (2026-09-18):** the run that produced this dispatch was hard-stopped after its underlying session finished but before the orchestrator's own handoff/merge fired. Landing this story manually (mirroring the orchestrator's own would-be action) included flipping the `22-1-...` sprint-status-ledger.yaml key from `backlog` to `done` alongside Story 21.10's — completing exactly the step this story's now-removed `deferred:` frontmatter entry was tracking as blocked. The frontmatter entry was removed rather than promoted into the tracked deferred-work ledger, since the condition it described no longer exists.
