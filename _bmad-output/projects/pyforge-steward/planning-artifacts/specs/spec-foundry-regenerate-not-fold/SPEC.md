@@ -3,7 +3,7 @@ fold-exemption: different-lifecycle
 spec: foundry-regenerate-not-fold
 status: ready
 created: "2026-09-13"
-updated: "2026-09-13"
+updated: "2026-09-17"
 owner-dream: docs/dreams/foundry-regenerate-not-fold.md
 extends: spec-python-foundry-cutover
 surface: []
@@ -14,12 +14,14 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Derived 2026-09-13 from
+> **Canonical contract.** Derived from
 > `docs/dreams/foundry-regenerate-not-fold.md` and `.memlog.md`. Extends
 > `spec-python-foundry-cutover`; cite this file's ids as `fnr:CAP-1..5`.
 > Decomposed as steward **Epic 54**. Does not flip any Epic 44 `blocked`
 > key. Does not dispatch 44.4, 44.5, or 44.6. Companion `ab-sync.md` is
-> the dual-root protocol.
+> the dual-root protocol. CAP-5 starting five-fields on B are the eight
+> folded station Specs named in this memlog (marshal and steward 2026-09-16/17;
+> atlas, doctor, herald, mason, scribe, warden 2026-09-17).
 
 # SPEC — Foundry regenerate, not fold
 
@@ -69,6 +71,11 @@ Historical PRD / arch / epics / comments stay on A.
   - **success:** `ab-sync.md` is in `companions:`; B (after 54.5) has a
     pin file and a case-list stub; writer lock holds (one Dream author);
     `diverge` blocks `verified-in-foundry`; no `_bmad-output` rsync.
+    B's starting station five-fields are `spec-pyforge-marshal`,
+    `spec-pyforge-steward`, `spec-pyforge-atlas`, `spec-pyforge-doctor`,
+    `spec-pyforge-herald`, `spec-pyforge-mason`, `spec-pyforge-scribe`,
+    and `spec-pyforge-warden` (one-chain CAP-7). Do not fold those
+    Specs again on B — regenerate.
 
 ## Constraints
 
@@ -76,6 +83,12 @@ Historical PRD / arch / epics / comments stay on A.
   Specs. A mirrors by SHA pin. Until then this Spec on A is the seed.
 - Factory / CFE / recipes stay invented on A until a foundry CFE exists.
   Kernel package commits only on B.
+- The eight folded station Specs on A are B's starting contracts
+  (`spec-pyforge-atlas`, `spec-pyforge-doctor`, `spec-pyforge-herald`,
+  `spec-pyforge-mason`, `spec-pyforge-scribe`, `spec-pyforge-warden`,
+  plus marshal and steward). B also inherits Dream-append-first, the
+  fold-exemption list, the seam rule, FR ← CAP, and companions-as-record.
+  Regenerate on B; do not fold again.
 - Public CLI verbs stay (`pyforge steward`, `pyforge marshal`, `warden scan`).
 - `steward cutover apply --phase 1a` is not how packages appear.
 - `pyforge.cutover_root` stays `local-recipes` until the kernel passes

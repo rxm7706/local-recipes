@@ -34,14 +34,15 @@ open_questions: []
   #     and is fully applied by the Charter memlog + Dream log entries in the same PR.
 ---
 
-> **Canonical contract.** Derived from `.memlog.md` (59 entries, the
-> decision-of-record) and the Dream in `sources:`. Every question is ruled;
-> the precedence order (standard > history > implementation), the rebase
-> rule (renumber everything, sequentially, all four BMAD phases) and the
-> sequence (marshal → steward → herald → the rest in parallel) are operator
-> constraints. CAP-10 is the portable lock / mop / exemption rerun.
-> Downstream may bind. Do not hand-edit — append the memlog and
-> re-derive.
+> **Canonical contract.** Derived from `.memlog.md` (the decision-of-record)
+> and the Dream in `sources:`. Every question is ruled; the precedence
+> order (standard > history > implementation), the rebase rule (renumber
+> everything, sequentially, all four BMAD phases) and the sequence
+> (marshal → steward → herald → the remaining six in parallel) are
+> operator constraints. CAP-10 is the portable lock / mop / exemption
+> rerun. The 2026-09-17 parallel fold (atlas, doctor, herald, mason,
+> scribe, warden) is recorded as dated memlog notes 29–44. Downstream
+> may bind. Do not hand-edit — append the memlog and re-derive.
 
 # SPEC — One Dream, one Spec, one PRD, one architecture, one epic chain — per station
 
@@ -136,8 +137,13 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     starting contract across two git roots") **and names this standard** —
     Dream-append-first, the exemption list, the seam rule, FR ← CAP — as
     B's starting discipline, so the shape is evergreen across both roots.
-  - **success:** The entry exists before the second station fold (steward)
-    lands.
+  - **success:** The first entry existed before the second station fold
+    (steward) landed. The leftover 2026-09-17 CAP-7 memlog line on
+    `spec-foundry-regenerate-not-fold` names the six parallel-fold Specs
+    (`spec-pyforge-atlas`, `spec-pyforge-doctor`, `spec-pyforge-herald`,
+    `spec-pyforge-mason`, `spec-pyforge-scribe`, `spec-pyforge-warden`);
+    marshal and steward were already named. All eight starting five-fields
+    are on that memlog.
 - **CAP-8 — The marshal pilot.**
   - **intent:** CAP-3 executed on pyforge-marshal: 58 Spec folders → 1,
     55 Dreams → 1 (eight already folded 2026-08-08), CAP-4 sharding live,
@@ -203,12 +209,14 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
   local-recipes now, pyforge-foundry on cutover. B inherits Dream-append-
   first, the exemption vocabulary, the seam rule, and FR ← CAP as its
   starting discipline (CAP-7 records the standard, not just the eight Specs).
-- **Sequence (operator, 2026-09-16).** Marshal (CAP-8, the pilot) → steward
-  (second; the eventual-consistency proof) → herald (third) → scribe · doctor
-  · atlas · warden **in parallel** (four worktrees, one agent each, physical
-  paths, no `bmad-switch`). Mason is already one Spec and takes only the
-  living-tier flip (CAP-6). CAP-1/2 land before marshal's fold so it does not
-  refill while underway.
+- **Sequence (operator, 2026-09-16; mason correction 2026-09-17).**
+  Marshal (CAP-8, the pilot) → steward (second; the eventual-consistency
+  proof) → herald (third) → scribe · doctor · atlas · warden · mason **in
+  parallel** (one worktree each, physical paths, no `bmad-switch`). The
+  earlier claim that mason was already one Spec is stale (lesson 30): mason
+  had twelve Spec folders and took a full CAP-3 rebase (`spec-pyforge-mason`
+  CAP-1..27; PR #1411). CAP-1/2 landed before marshal's fold so it did not
+  refill while underway. The six-station wave landed as PRs #1409–#1414.
 - **Re-key, never regress.** `ledger-regression-check` and `story-status-check`
   must stay green through a renumbering; the re-key map is what makes that
   true. Merged-story proof stays `git merge-base`, never the key.
