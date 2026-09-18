@@ -130,6 +130,24 @@ a.shot:hover { border-color: var(--amber); transform: translateY(-2px); }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left;
 }
 
+/* ---- deck family pages ---- */
+.stamp-line {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.68rem;
+  color: var(--rail); margin-top: 2px;
+}
+.downloads { margin: 40px 0 0; }
+.downloads h2 { font-size: 1.3rem; margin: 28px 0 10px; }
+.downloads h2:first-child { margin-top: 0; }
+.download-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.download-list li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
+  background: var(--paper-raised);
+}
+.download-list a { color: var(--ink); font-weight: 600; text-decoration: none; word-break: break-all; }
+.download-list a:hover { color: var(--amber); }
+.dl-meta { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: var(--rail); }
+
 .empty-state {
   border: 1px dashed var(--border); border-radius: 6px; padding: 30px 26px;
   margin: 28px 0; background: var(--paper-raised); max-width: 70ch;

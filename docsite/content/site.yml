@@ -21,6 +21,9 @@ nav:
   - key: gallery
     label: Infographics
     href: infographics/index.html
+  - key: decks
+    label: Decks
+    href: decks/index.html
 
 # Things that live in the same publish root but are produced by something else.
 # This site is built into docs/dashboard/, which also carries the Kedro-Viz

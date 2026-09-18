@@ -1,0 +1,41 @@
+{% extends "shell_page.html.j2" %}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>Deck family</div>
+    <h1>Decks</h1>
+    <p class="blurb">One page per registered deck &mdash; the poster, the Infographic Deck and the Executive Summary in view, its PowerPoint and Marp sources as downloads.</p>
+  </div>
+
+  {% if families %}
+  <div class="gallery">
+    {%- for fam in families %}
+    <a class="shot" href="{{ fam.slug }}/index.html">
+      <div class="shot-frame" data-preview="../infographics/{{ fam.poster.out_name }}">
+        <span class="shot-placeholder" aria-hidden="true">{{ fam.title }}</span>
+      </div>
+      <div class="shot-meta">
+        <h3>{{ fam.title }}</h3>
+        {%- if fam.description %}
+        <p>{{ fam.description }}</p>
+        {%- endif %}
+        <span class="shot-file">{{ fam.pptx | length }} PPTX &middot; {{ fam.marp | length }} Marp source{{ '' if fam.marp | length == 1 else 's' }}</span>
+      </div>
+    </a>
+    {%- endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No decks registered yet</h3>
+    <p>A deck family page is derived from each published infographic in <code>infographics.include</code> (<code>site/content/site.yml</code>); none matched.</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    <span>Built from each deck's own standard export set (<code>presentations/&lt;slug&gt;/</code>) &mdash; nothing here is hand-maintained.</span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+{% endblock %}

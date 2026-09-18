@@ -641,7 +641,10 @@ def check(out_dir: Path, result: dict) -> int:
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         return 1
-    print(f"checks passed — {len(required)} required outputs, {len(result['infographics'])} infographics")
+    print(
+        f"checks passed — {len(required)} required outputs, {len(result['infographics'])} infographics, "
+        f"{len(result['families'])} deck families"
+    )
     return 0
 
 
@@ -661,6 +664,12 @@ def main() -> int:
     print(f"built {out_dir}  ({total} files, commit {result['commit'] or 'n/a'}, {result['built_at']})")
     for item in result["infographics"]:
         print(f"  infographic  {item['out_name']:<46} {item['bytes'] // 1024:>5} KB  {item['source']}")
+    for fam in result["families"]:
+        print(
+            f"  deck family  {fam['slug']:<28} "
+            f"{'poster+ID+ES' if fam['infographic_deck'] and fam['executive_summary'] else 'poster only':<12} "
+            f"{len(fam['pptx']):>2} pptx  {len(fam['marp']):>2} marp"
+        )
 
     return check(out_dir, result) if args.check else 0
 
