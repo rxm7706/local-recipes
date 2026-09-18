@@ -353,7 +353,7 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
     tmp_path: Path,
 ):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     order: list[str] = []
 
     class OrderedRefresher(FakeFactsRefresher):
@@ -377,7 +377,10 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
     (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
 
     sync_all(
-        OrderedTransport(rendered_bytes={filename: b"<html>v1</html>"}),
+        OrderedTransport(
+            read_file_answers=_UNCHANGED_PROTOTYPE,
+            rendered_bytes={filename: b"<html>v1</html>"},
+        ),
         slug="pyforge-warden", repo_root=tmp_path,
         **_seams(facts_refresher=OrderedRefresher(), deriver=OrderedDeriver()),
     )
@@ -387,10 +390,11 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
 
 def test_sync_all_reports_overrode_count_from_the_refresher(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
 
     report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path,
+        FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
+        slug="pyforge-warden", repo_root=tmp_path,
         **_seams(facts_refresher=FakeFactsRefresher(overrode=3)),
     )
 
@@ -402,10 +406,11 @@ def test_sync_all_reports_overrode_count_from_the_refresher(tmp_path: Path):
 
 def test_sync_all_reports_derived_from_the_deriver(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
 
     report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path,
+        FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
+        slug="pyforge-warden", repo_root=tmp_path,
         **_seams(deriver=FakeDeriver(changed=True)),
     )
 
@@ -417,14 +422,17 @@ def test_sync_all_reports_derived_from_the_deriver(tmp_path: Path):
 
 def test_sync_all_pushes_a_new_export_file_and_reports_it(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     (deck_dir / "src" / "marp").mkdir(parents=True)
     filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
     (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
 
     report = sync_all(
-        FakeSyncTransport(rendered_bytes={filename: b"<html>v1</html>"}),
+        FakeSyncTransport(
+            read_file_answers=_UNCHANGED_PROTOTYPE,
+            rendered_bytes={filename: b"<html>v1</html>"},
+        ),
         slug="pyforge-warden", repo_root=tmp_path, **_seams()
     )
 
@@ -435,12 +443,15 @@ def test_sync_all_pushes_a_new_export_file_and_reports_it(tmp_path: Path):
 
 def test_sync_all_prove_proves_a_pushed_file(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     (deck_dir / "src" / "marp").mkdir(parents=True)
     filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
     (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
-    transport = FakeSyncTransport(rendered_bytes={filename: b"<html>v1</html>"})
+    transport = FakeSyncTransport(
+        read_file_answers=_UNCHANGED_PROTOTYPE,
+        rendered_bytes={filename: b"<html>v1</html>"},
+    )
 
     report = sync_all(
         transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
@@ -458,11 +469,12 @@ def test_sync_all_publishes_once_when_a_deck_changed_and_marks_it_published(
     tmp_path: Path,
 ):
     _make_deck_dir(tmp_path, "pyforge-warden")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     publisher = FakeSitePublisher()
 
     report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path,
+        FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
+        slug="pyforge-warden", repo_root=tmp_path,
         **_seams(deriver=FakeDeriver(changed=True), site_publisher=publisher),
     )
 
@@ -491,7 +503,7 @@ def test_sync_all_does_not_publish_when_nothing_changed(tmp_path: Path):
 def test_sync_all_publishes_once_for_multiple_decks(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _make_deck_dir(tmp_path, "pyforge-doctor")
-    _seed_state(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     _seed_state(tmp_path, "pyforge-doctor", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
     publisher = FakeSitePublisher()
