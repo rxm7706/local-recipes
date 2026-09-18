@@ -63,8 +63,9 @@ the file, not just the owned span.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from pyforge.core.atomic_write import atomic_write_text
 
@@ -107,14 +108,17 @@ def _canonical_body(project_name: str, project_id: str, file_url: str) -> list[s
     return [line1, file_url]
 
 
-def _find_heading(lines: list[str]) -> int | None:
-    """The index of the section heading line, or ``None`` when absent.
+def _find_heading(lines: list[str], heading: str) -> int | None:
+    """The index of ``heading``'s line, or ``None`` when absent.
 
-    Only the first occurrence is considered -- ``register`` never produces
-    more than one, so a second one can only come from a hand-edit, which is
-    outside this module's parsing contract (see the module docstring)."""
+    Only the first occurrence is considered -- ``register``/
+    ``register_potx_template`` never produce more than one of their own
+    heading, so a second one can only come from a hand-edit, which is
+    outside this module's parsing contract (see the module docstring).
+    Generalized (Story 23.3) so both the § *Design project* heading and the
+    separate § *PowerPoint template* heading share one lookup."""
     for index, line in enumerate(lines):
-        if line == _SECTION_HEADING:
+        if line == heading:
             return index
     return None
 
@@ -217,7 +221,7 @@ def register(
 
     lines = text.splitlines()
     section = [_SECTION_HEADING, *body]
-    heading_index = _find_heading(lines)
+    heading_index = _find_heading(lines, _SECTION_HEADING)
     if heading_index is None:
         prefix = list(lines)
         while prefix and prefix[-1] == "":
@@ -266,7 +270,7 @@ def read(readme_path: Path) -> DesignProject | None:
         ) from exc
 
     lines = text.splitlines()
-    heading_index = _find_heading(lines)
+    heading_index = _find_heading(lines, _SECTION_HEADING)
     if heading_index is None:
         return None
     span_end = _section_span_end(lines, heading_index)
@@ -295,3 +299,242 @@ def read(readme_path: Path) -> DesignProject | None:
         project_id=match.group("project_id"),
         file_url=body[1],
     )
+
+
+# --- Story 23.3: § *PowerPoint template* (the .potx path) -------------------
+#
+# A separate, additive registry section -- never a third line on § *Design
+# project* (Design Notes: "New section, not a 3rd line on Design project"):
+# that section's docstring frames itself narrowly around the Design bridge
+# and hard-invariants a 2-line body; the .potx path is a repo-local build
+# concern, unrelated to "the bridge's far end". `register`/`read` above are
+# untouched by everything below -- only `_find_heading`'s new `heading`
+# parameter (shared by both sections) touches their call sites.
+
+_POTX_SECTION_HEADING = "## PowerPoint template (the .potx path)"
+"""The fixed heading text this pair of functions owns -- matched as a
+whole line, exactly like ``_SECTION_HEADING``. Single-line body: the
+repo-root-relative POSIX path to the deck's ``.potx``/``.pptx`` template."""
+
+
+def register_potx_template(readme_path: Path, template_path: str) -> None:
+    """Append or replace the § *PowerPoint template* section in
+    ``readme_path``, declaring the repo-root-relative POSIX path to a
+    deck's ``.potx`` template (Story 23.3, deck_pipeline.py's
+    ``select_exporter`` reads it back). Append-vs-replace and atomic-write
+    shape mirror ``register`` exactly, over this section's own heading and
+    a one-line body instead of ``register``'s two.
+
+    Raises ``errors.HeraldError`` naming ``readme_path`` when
+    ``template_path`` is not a non-empty, single-line, UTF-8-encodable
+    string, when it starts with ``#`` (would read back as the heading that
+    ends the section), when the file does not exist, or when the
+    filesystem otherwise refuses the read or the write."""
+    could_not = f"potx template could not be registered in {readme_path}"
+    if (
+        not isinstance(template_path, str)
+        or not template_path
+        or template_path.splitlines() != [template_path]
+    ):
+        raise errors.HeraldError(
+            f"{could_not}: template_path must be a non-empty, single-line "
+            f"string, got {template_path!r}"
+        )
+    try:
+        template_path.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise errors.HeraldError(
+            f"{could_not}: template_path is not encodable as UTF-8 ({exc})"
+        ) from exc
+    if template_path.startswith("#"):
+        raise errors.HeraldError(
+            f"{could_not}: template_path must not start with '#' -- it sits "
+            f"on a line of its own, and a '#'-prefixed line would read back "
+            f"as the heading that ends the section"
+        )
+    posix_path = PurePosixPath(template_path)
+    if posix_path.is_absolute() or ".." in posix_path.parts:
+        raise errors.HeraldError(
+            f"{could_not}: template_path must be a repo-root-relative POSIX "
+            f"path with no '..' segments, got {template_path!r} -- "
+            f"deck_pipeline.py's PptxTemplateExporter joins it onto "
+            f"repo_root, and an absolute path silently discards repo_root "
+            f"entirely"
+        )
+
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+        original_mode = readme_path.stat().st_mode
+    except FileNotFoundError as exc:
+        raise errors.HeraldError(f"{could_not}: file does not exist") from exc
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+
+    lines = text.splitlines()
+    section = [_POTX_SECTION_HEADING, template_path]
+    heading_index = _find_heading(lines, _POTX_SECTION_HEADING)
+    if heading_index is None:
+        prefix = list(lines)
+        while prefix and prefix[-1] == "":
+            prefix.pop()
+        new_lines = [*prefix, "", *section] if prefix else section
+    else:
+        span_end = _section_span_end(lines, heading_index)
+        following = lines[span_end:]
+        separator = [""] if following else []
+        new_lines = [*lines[:heading_index], *section, *separator, *following]
+    new_text = "\n".join(new_lines) + "\n"
+
+    try:
+        atomic_write_text(readme_path, new_text, mode=original_mode & 0o7777)
+    except (OSError, ValueError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+
+
+def read_potx_template(readme_path: Path) -> str | None:
+    """The § *PowerPoint template* section's declared path, or ``None``
+    when ``readme_path`` does not exist or carries no such section (both
+    are "no template declared", never an error -- the routing default).
+
+    Raises ``errors.HeraldError`` naming ``readme_path`` when the heading
+    is present but its body is not exactly one line (a hand-edit broke
+    it), when that line is an absolute or ``..``-containing path (the same
+    guard ``register_potx_template`` applies on write -- re-applied here
+    because this section can be hand-edited directly, bypassing that
+    write-time check entirely), or when the filesystem otherwise refuses
+    the read."""
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(
+            f"potx template could not be read from {readme_path}: {exc}"
+        ) from exc
+
+    lines = text.splitlines()
+    heading_index = _find_heading(lines, _POTX_SECTION_HEADING)
+    if heading_index is None:
+        return None
+    span_end = _section_span_end(lines, heading_index)
+    body = lines[heading_index + 1 : span_end]
+    while body and body[-1] == "":
+        body.pop()
+
+    if len(body) != 1:
+        raise errors.HeraldError(
+            f"potx template section in {readme_path} is malformed: expected "
+            f"exactly one body line, found {len(body)}"
+        )
+    template_path = body[0]
+    posix_path = PurePosixPath(template_path)
+    if posix_path.is_absolute() or ".." in posix_path.parts:
+        raise errors.HeraldError(
+            f"potx template section in {readme_path} is malformed: "
+            f"template_path must be a repo-root-relative POSIX path with "
+            f"no '..' segments, got {template_path!r} -- "
+            f"deck_pipeline.py's PptxTemplateExporter joins it onto "
+            f"repo_root, and an absolute path silently discards repo_root "
+            f"entirely"
+        )
+    return template_path
+
+
+# --- Story 23.4: § *Ledger* push-and-prove rows ------------------------------
+#
+# Unlike `register`/`register_potx_template` above -- each owning one fixed
+# heading, replaced in place -- every real `## Ledger — <date> ...` section
+# in a deck README (e.g. `presentations/pyforge-herald/README.md`) behaves
+# like a dated changelog entry: appended once per sweep, never touched again
+# by a LATER sweep. `append_push_ledger_row` follows that second, already-
+# established convention instead of `register`'s replace-in-place one.
+
+_LEDGER_TABLE_HEADER = "| Artifact | Bytes | Read-back |"
+_LEDGER_TABLE_SEPARATOR = "|---|---|---|"
+
+
+def _push_ledger_heading(date: str) -> str:
+    """Today's own dated heading -- distinct from any other day's, so a
+    second push-and-prove run on a LATER date appends a new section rather
+    than folding into an old one (mirroring every hand-written dated Ledger
+    section already in this repo)."""
+    return f"## Ledger — {date} push-and-prove (spec-design-sync-loop CAP-6)"
+
+
+def _format_ledger_row(filename: str, size: int) -> str:
+    return f"| {filename} | {size:,} | identical ✓ |"
+
+
+def append_push_ledger_row(
+    readme_path: Path, *, date: str, rows: Sequence[tuple[str, int]]
+) -> None:
+    """Append one Ledger row per ``(filename, size)`` in ``rows`` to
+    ``readme_path``'s dated ``## Ledger — {date} push-and-prove
+    (spec-design-sync-loop CAP-6)`` section (Story 23.4's ``herald deck push
+    --prove``) -- one row per file that was both pushed and read back
+    byte-identical this run (``deck_pipeline.push_exports`` never calls this
+    for a skipped, conflicted, or mismatched file).
+
+    Unlike ``register``/``register_potx_template``, this never replaces a
+    section: a README with no heading for ``date`` yet gets a brand new one
+    appended at the end (with its own table header + separator); a README
+    that already carries today's heading (a second push-and-prove run the
+    same day) gets ``rows`` appended to that same section's existing table,
+    below whatever rows are already there -- the heading is written exactly
+    once per date, never duplicated.
+
+    Raises ``errors.HeraldError`` naming ``readme_path`` when ``rows`` is
+    empty (an empty append is a caller bug, not "nothing to record" -- the
+    caller only invokes this when it already knows at least one file
+    proved), when the file does not exist (this module never fabricates a
+    whole README), or when the filesystem otherwise refuses the read or the
+    write."""
+    could_not = f"push ledger row could not be appended to {readme_path}"
+    if not rows:
+        raise errors.HeraldError(f"{could_not}: no rows given")
+
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+        original_mode = readme_path.stat().st_mode
+    except FileNotFoundError as exc:
+        raise errors.HeraldError(f"{could_not}: file does not exist") from exc
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+
+    lines = text.splitlines()
+    heading = _push_ledger_heading(date)
+    new_row_lines = [_format_ledger_row(filename, size) for filename, size in rows]
+    heading_index = _find_heading(lines, heading)
+    if heading_index is None:
+        prefix = list(lines)
+        while prefix and prefix[-1] == "":
+            prefix.pop()
+        section = [
+            heading,
+            "",
+            _LEDGER_TABLE_HEADER,
+            _LEDGER_TABLE_SEPARATOR,
+            *new_row_lines,
+        ]
+        new_lines = [*prefix, "", *section] if prefix else section
+    else:
+        span_end = _section_span_end(lines, heading_index)
+        body = lines[heading_index + 1 : span_end]
+        while body and body[-1] == "":
+            body.pop()
+        following = lines[span_end:]
+        separator = [""] if following else []
+        new_lines = [
+            *lines[:heading_index],
+            heading,
+            *body,
+            *new_row_lines,
+            *separator,
+            *following,
+        ]
+    new_text = "\n".join(new_lines) + "\n"
+
+    try:
+        atomic_write_text(readme_path, new_text, mode=original_mode & 0o7777)
+    except (OSError, ValueError) as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc

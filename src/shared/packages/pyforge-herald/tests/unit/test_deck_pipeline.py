@@ -9,34 +9,43 @@ network, no adapter); every local-prove call is against a hand-written
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pptx import Presentation
 from pyforge.herald import deck_pipeline as deck_pipeline_module
-from pyforge.herald import state
+from pyforge.herald import registry, stamps, state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
     ExportPushResult,
     NpmLocalProver,
+    PixiDeckExporter,
+    PptxTemplateExporter,
     PullResult,
     SeedResult,
     SubprocessGitCommitter,
     _persona_from_slug,
+    _PixiPartialDeckExporter,
     pull_marp_source,
     pull_prototype,
     pull_standalone_bundle,
     push_exports,
     seed,
+    select_exporter,
 )
 from pyforge.herald.errors import (
     AuthError,
     ExportConflictError,
     HeraldError,
+    PptxTemplateError,
+    ReadBackMismatchError,
     SeedConflictError,
     TransportCallError,
 )
@@ -1279,27 +1288,36 @@ def test_subprocess_git_committer_commits_with_a_relative_repo_root(
 
 
 class FakePushTransport:
-    """A hand-written ``DesignTransport`` double exercising only
-    ``finalize_plan``/``write_files`` -- every other method raises, since
-    ``push_exports`` never calls them.
+    """A hand-written ``DesignTransport`` double exercising
+    ``finalize_plan``/``write_files`` and (Story 23.4) ``fetch_rendered_bytes``
+    -- every other method raises, since ``push_exports`` never calls them.
 
     ``write_fails`` maps a filename to the exception ``write_files`` should
     raise for that entry -- how Story 5.2's per-file conflict is simulated
     (the real wire shape for a conditional-write rejection is unproven, per
     DW-1-2-5; ``errors.TransportError`` is what a real rejection would
     surface through ``McpTransport``'s ``_call_json``/``require_conditional``
-    failure path)."""
+    failure path). ``rendered_bytes`` maps a filename to the bytes
+    ``fetch_rendered_bytes`` answers with for ``--prove``'s read-back (a
+    filename absent from the map answers ``b""``, deliberately a mismatch
+    unless a test means for it to be); ``fetch_fails`` mirrors
+    ``write_fails`` for that same call."""
 
     def __init__(
         self,
         *,
         plan: PlanHandle | None = None,
         write_fails: dict[str, Exception] | None = None,
+        rendered_bytes: dict[str, bytes] | None = None,
+        fetch_fails: dict[str, Exception] | None = None,
     ):
         self.finalize_plan_calls: list[dict] = []
         self.write_files_calls: list[dict] = []
+        self.fetch_rendered_bytes_calls: list[dict] = []
         self._plan = plan or PlanHandle(plan_token="tok", base_etags={})
         self._write_fails = dict(write_fails or {})
+        self._rendered_bytes = dict(rendered_bytes or {})
+        self._fetch_fails = dict(fetch_fails or {})
 
     def finalize_plan(self, **kwargs):
         self.finalize_plan_calls.append(kwargs)
@@ -1311,6 +1329,12 @@ class FakePushTransport:
         if path in self._write_fails:
             raise self._write_fails[path]
         return {}
+
+    def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
+        self.fetch_rendered_bytes_calls.append({"project_id": project_id, "path": path})
+        if path in self._fetch_fails:
+            raise self._fetch_fails[path]
+        return self._rendered_bytes.get(path, b"")
 
     def get_design_prompt(self, **kwargs):
         raise NotImplementedError("push_exports never calls get_design_prompt")
@@ -1330,12 +1354,34 @@ class FakePushTransport:
     def render_preview(self, **kwargs):
         raise NotImplementedError("push_exports never calls render_preview")
 
+    def list_files(self, **kwargs):
+        raise NotImplementedError("push_exports never calls list_files")
+
 
 def _write_export_html(tmp_path: Path, slug: str, date: str, body: str) -> Path:
     marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
     marp_dir.mkdir(parents=True, exist_ok=True)
     path = marp_dir / f"{slug}-infographic-standalone-{date}.html"
     path.write_text(body, encoding="utf-8")
+    return path
+
+
+def _write_export_pptx(
+    tmp_path: Path, slug: str, kind: str, date: str, raw_bytes: bytes
+) -> Path:
+    """``kind`` is ``"deck"`` or ``"infographic"`` -- the two PPTX filename
+    shapes ``scripts/deck_export.py`` produces (Story 23.4). The content is
+    arbitrary bytes, never a real ``.pptx`` zip: nothing in
+    ``_discover_export_files``/``push_exports`` parses PPTX structure, only
+    reads and hashes raw bytes."""
+    pptx_dir = tmp_path / "presentations" / slug / "src" / "pptx"
+    pptx_dir.mkdir(parents=True, exist_ok=True)
+    name = {
+        "deck": f"{slug}-deck-{date}.pptx",
+        "infographic": f"{slug}_infographic_deck-{date}.pptx",
+    }[kind]
+    path = pptx_dir / name
+    path.write_bytes(raw_bytes)
     return path
 
 
@@ -1604,3 +1650,814 @@ def test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_confli
 
     with pytest.raises(AuthError):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+
+# --- Story 23.4: PPTX discovery + binary write shape -------------------------
+
+
+def test_discover_export_files_discovers_html_and_both_pptx_kinds(tmp_path: Path):
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    deck_bytes = b"DECK-BYTES"
+    infographic_bytes = b"INFOGRAPHIC-BYTES"
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
+    _write_export_pptx(
+        tmp_path, "pyforge-warden", "infographic", "2026-08-07", infographic_bytes
+    )
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    by_name = {c.filename: c for c in candidates}
+    assert set(by_name) == {
+        "pyforge-warden-infographic-standalone-2026-08-07.html",
+        "pyforge-warden-deck-2026-08-07.pptx",
+        "pyforge-warden_infographic_deck-2026-08-07.pptx",
+    }
+    assert by_name["pyforge-warden-infographic-standalone-2026-08-07.html"].binary is False
+    assert by_name["pyforge-warden-deck-2026-08-07.pptx"].binary is True
+    assert by_name["pyforge-warden_infographic_deck-2026-08-07.pptx"].binary is True
+
+
+def test_discover_export_files_pptx_only_when_no_html_exists_yet(tmp_path: Path):
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", b"DECK")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].filename == "pyforge-warden-deck-2026-08-07.pptx"
+
+
+def test_discover_export_files_picks_the_newest_pptx_of_each_kind(tmp_path: Path):
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-01", b"OLD")
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", b"NEW")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert base64.b64decode(candidates[0].data) == b"NEW"
+
+
+def test_discover_export_files_pptx_candidate_is_base64_encoded_and_hashed_over_raw_bytes(
+    tmp_path: Path,
+):
+    raw = b"RAW-PPTX-BYTES"
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", raw)
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert base64.b64decode(candidate.data) == raw
+    assert candidate.local_hash == hashlib.sha256(raw).hexdigest()
+
+
+def test_discover_export_files_raises_herald_error_when_html_cannot_be_read(
+    tmp_path: Path,
+):
+    marp_dir = tmp_path / "presentations" / "pyforge-warden" / "src" / "marp"
+    marp_dir.mkdir(parents=True)
+    # A directory where a file is expected: `read_text` raises `OSError`
+    # (`IsADirectoryError`), exercising the same catch a genuinely
+    # unreadable file would hit.
+    (marp_dir / "pyforge-warden-infographic-standalone-2026-08-07.html").mkdir()
+
+    with pytest.raises(HeraldError, match="could not read"):
+        deck_pipeline_module._discover_export_files(
+            tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+        )
+
+
+def test_discover_export_files_raises_herald_error_when_pptx_cannot_be_read(
+    tmp_path: Path,
+):
+    pptx_dir = tmp_path / "presentations" / "pyforge-warden" / "src" / "pptx"
+    pptx_dir.mkdir(parents=True)
+    (pptx_dir / "pyforge-warden-deck-2026-08-07.pptx").mkdir()
+
+    with pytest.raises(HeraldError, match="could not read"):
+        deck_pipeline_module._discover_export_files(
+            tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+        )
+
+
+def test_push_exports_pptx_write_uses_base64_encoding(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    raw = b"\x50\x4b\x03\x04FAKE-PPTX-BYTES"
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", raw)
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    filename = "pyforge-warden-deck-2026-08-07.pptx"
+    assert result.pushed == (filename,)
+    write_call = transport.write_files_calls[0]
+    assert write_call["files"][0]["path"] == filename
+    assert write_call["files"][0]["encoding"] == "base64"
+    assert base64.b64decode(write_call["files"][0]["data"]) == raw
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[f"export:{filename}"] == hashlib.sha256(raw).hexdigest()
+
+
+def test_push_exports_html_write_still_carries_no_encoding_key(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport()
+
+    push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    write_call = transport.write_files_calls[0]
+    assert "encoding" not in write_call["files"][0]
+
+
+def test_push_exports_pushes_all_three_artifact_kinds_together(tmp_path: Path):
+    """AC1: a seeded deck with both PPTX files and the poster present and
+    previously unpushed -- all three are written (the PPTX pair via the
+    base64/``encoding`` shape) and ``state.py`` records an ``export:``
+    content-hash entry for each."""
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    deck_bytes = b"DECK-BYTES"
+    info_bytes = b"INFOGRAPHIC-BYTES"
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
+    _write_export_pptx(
+        tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes
+    )
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    html_filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    deck_filename = "pyforge-warden-deck-2026-08-07.pptx"
+    info_filename = "pyforge-warden_infographic_deck-2026-08-07.pptx"
+    assert set(result.pushed) == {html_filename, deck_filename, info_filename}
+    assert result.skipped == ()
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[f"export:{html_filename}"] == hashlib.sha256(
+        b"<html>v1</html>"
+    ).hexdigest()
+    assert recorded.etags[f"export:{deck_filename}"] == hashlib.sha256(
+        deck_bytes
+    ).hexdigest()
+    assert recorded.etags[f"export:{info_filename}"] == hashlib.sha256(
+        info_bytes
+    ).hexdigest()
+
+    by_path = {c["files"][0]["path"]: c["files"][0] for c in transport.write_files_calls}
+    assert "encoding" not in by_path[html_filename]
+    assert by_path[deck_filename]["encoding"] == "base64"
+    assert by_path[info_filename]["encoding"] == "base64"
+
+
+def test_push_exports_second_push_with_no_changes_skips_all_three_kinds(
+    tmp_path: Path,
+):
+    """AC2: the same deck pushed again immediately with no local changes --
+    nothing is pushed and no ``write_files`` call is made, across all three
+    artifact kinds at once."""
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    deck_bytes = b"DECK-BYTES"
+    info_bytes = b"INFOGRAPHIC-BYTES"
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
+    _write_export_pptx(
+        tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes
+    )
+    html_filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    deck_filename = "pyforge-warden-deck-2026-08-07.pptx"
+    info_filename = "pyforge-warden_infographic_deck-2026-08-07.pptx"
+    _seed_state(
+        tmp_path,
+        "pyforge-warden",
+        etags={
+            f"export:{html_filename}": hashlib.sha256(b"<html>v1</html>").hexdigest(),
+            f"export:{deck_filename}": hashlib.sha256(deck_bytes).hexdigest(),
+            f"export:{info_filename}": hashlib.sha256(info_bytes).hexdigest(),
+        },
+    )
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result.pushed == ()
+    assert set(result.skipped) == {html_filename, deck_filename, info_filename}
+    assert transport.finalize_plan_calls == []
+    assert transport.write_files_calls == []
+
+
+# --- Story 23.4: --prove ------------------------------------------------------
+
+
+def test_push_exports_prove_false_makes_no_fetch_call_and_leaves_readme_untouched(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result.proven == ()
+    assert transport.fetch_rendered_bytes_calls == []
+    assert readme_path.read_text(encoding="utf-8") == "# Deck\n"
+
+
+def test_push_exports_prove_true_nothing_to_push_makes_no_fetch_call(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePushTransport()
+
+    result = push_exports(
+        transport, slug="pyforge-warden", repo_root=tmp_path, prove=True
+    )
+
+    assert result == ExportPushResult(
+        slug="pyforge-warden", pushed=(), skipped=(), proven=()
+    )
+    assert transport.fetch_rendered_bytes_calls == []
+
+
+def test_push_exports_prove_true_skips_an_unchanged_file(tmp_path: Path):
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    stored_hash = hashlib.sha256(b"<html>v1</html>").hexdigest()
+    _seed_state(tmp_path, "pyforge-warden", etags={f"export:{filename}": stored_hash})
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport()
+
+    result = push_exports(
+        transport, slug="pyforge-warden", repo_root=tmp_path, prove=True
+    )
+
+    assert result == ExportPushResult(
+        slug="pyforge-warden", pushed=(), skipped=(filename,), proven=()
+    )
+    assert transport.fetch_rendered_bytes_calls == []
+
+
+def test_push_exports_prove_true_all_match_marks_proven_and_appends_ledger_row(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(rendered_bytes={filename: b"<html>v1</html>"})
+
+    result = push_exports(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prove=True,
+        now=lambda: datetime(2026, 9, 16, tzinfo=timezone.utc),
+    )
+
+    assert result.proven == (filename,)
+    assert transport.fetch_rendered_bytes_calls == [
+        {"project_id": "p-1", "path": filename}
+    ]
+    readme_text = readme_path.read_text(encoding="utf-8")
+    assert (
+        "## Ledger — 2026-09-16 push-and-prove (spec-design-sync-loop CAP-6)"
+        in readme_text
+    )
+    assert filename in readme_text
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[f"export:{filename}"] == hashlib.sha256(
+        b"<html>v1</html>"
+    ).hexdigest()
+
+
+def test_push_exports_prove_true_mismatch_raises_and_does_not_update_state_or_ledger(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(rendered_bytes={filename: b"<html>DIFFERENT</html>"})
+
+    with pytest.raises(ReadBackMismatchError, match=filename):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert f"export:{filename}" not in recorded.etags
+    assert readme_path.read_text(encoding="utf-8") == "# Deck\n"
+
+
+def test_push_exports_prove_true_mismatch_reverts_a_previously_recorded_etag(
+    tmp_path: Path,
+):
+    """A mismatch on a file that *had* a prior record must restore that
+    prior value, not merely drop the key -- the file was genuinely pushed
+    with new bytes (the hash comparison already proved it changed), so
+    leaving the old hash in place is what makes a retry see it as
+    still-changed rather than falsely "up to date with the bad push"."""
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    _seed_state(tmp_path, "pyforge-warden", etags={f"export:{filename}": "stale-hash"})
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v2</html>")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    transport = FakePushTransport(
+        plan=PlanHandle(plan_token="tok", base_etags={filename: "E9"}),
+        rendered_bytes={filename: b"<html>WRONG</html>"},
+    )
+
+    with pytest.raises(ReadBackMismatchError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[f"export:{filename}"] == "stale-hash"
+
+
+def test_push_exports_prove_true_one_mismatch_does_not_block_another_files_ledger_row(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", b"GOOD")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    html_filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    pptx_filename = "pyforge-warden-deck-2026-08-07.pptx"
+    transport = FakePushTransport(
+        rendered_bytes={
+            html_filename: b"<html>WRONG</html>",  # mismatch
+            pptx_filename: b"GOOD",  # matches
+        }
+    )
+
+    with pytest.raises(ReadBackMismatchError, match=html_filename):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert f"export:{html_filename}" not in recorded.etags
+    assert f"export:{pptx_filename}" in recorded.etags
+    readme_text = readme_path.read_text(encoding="utf-8")
+    assert pptx_filename in readme_text
+    assert html_filename not in readme_text
+    # The Ledger row's byte count must be the candidate's true raw byte
+    # count (`len(b"GOOD")` == 4), never the base64-encoded wire string's
+    # length (8 chars) -- guards `ledger_rows.append` staying keyed off
+    # `_candidate_raw_bytes`, not `candidate.data`.
+    assert f"| {pptx_filename} | 4 | identical" in readme_text
+
+
+def test_push_exports_prove_does_not_call_fetch_for_a_conflicted_file(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(
+        write_fails={filename: TransportCallError("etag mismatch")}
+    )
+
+    with pytest.raises(ExportConflictError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    assert transport.fetch_rendered_bytes_calls == []
+
+
+def test_push_exports_prove_true_fetch_failure_is_treated_like_a_mismatch(
+    tmp_path: Path,
+):
+    """A transient `fetch_rendered_bytes` failure (network/HTTP during the
+    GET, not a byte mismatch) must not propagate raw or abort the batch: the
+    write already landed, so it is folded into `mismatches` exactly like a
+    genuine byte mismatch -- reverted `export:` entry, no Ledger row,
+    surfaced via the batched `ReadBackMismatchError`."""
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(
+        fetch_fails={filename: TransportCallError("network blip")}
+    )
+
+    with pytest.raises(ReadBackMismatchError, match=filename):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert f"export:{filename}" not in recorded.etags
+    assert readme_path.read_text(encoding="utf-8") == "# Deck\n"
+
+
+def test_push_exports_prove_true_conflict_on_one_file_does_not_suppress_another_files_ledger_row(
+    tmp_path: Path, monkeypatch
+):
+    """A same-batch conflict on one file must never suppress a different
+    file's already-earned Ledger row or state record: the conflicted file
+    never reaches the prove loop at all (it is never added to `pushed`), so
+    the clean file's proof and Ledger append proceed independently."""
+    _seed_state(tmp_path, "pyforge-warden")
+    bad_candidate = deck_pipeline_module._ExportCandidate(
+        filename="bad.pptx",
+        local_path=tmp_path / "bad.pptx",
+        data=base64.b64encode(b"BAD").decode("ascii"),
+        local_hash="hash-bad",
+        binary=True,
+    )
+    ok_candidate = deck_pipeline_module._ExportCandidate(
+        filename="ok.pptx",
+        local_path=tmp_path / "ok.pptx",
+        data=base64.b64encode(b"GOOD").decode("ascii"),
+        local_hash="hash-ok",
+        binary=True,
+    )
+    monkeypatch.setattr(
+        deck_pipeline_module,
+        "_discover_export_files",
+        lambda *args, **kwargs: [bad_candidate, ok_candidate],
+    )
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    readme_path = deck_dir / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    transport = FakePushTransport(
+        write_fails={"bad.pptx": TransportCallError("etag mismatch")},
+        rendered_bytes={"ok.pptx": b"GOOD"},
+    )
+
+    with pytest.raises(ExportConflictError, match="bad.pptx"):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    readme_text = readme_path.read_text(encoding="utf-8")
+    assert "ok.pptx" in readme_text
+    assert "bad.pptx" not in readme_text
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags == {"export:ok.pptx": "hash-ok"}
+
+
+# --- Story 23.4: _strip_serve_harness -----------------------------------------
+
+
+def test_strip_serve_harness_removes_a_single_injected_style_tag():
+    content = (
+        b"<html><head><style data-omelette-injected>body{color:red}</style>"
+        b"<title>x</title></head><body>hi</body></html>"
+    )
+
+    stripped = deck_pipeline_module._strip_serve_harness(content, path="poster.html")
+
+    assert b"data-omelette-injected" not in stripped
+    assert (
+        stripped
+        == b"<html><head>\n<title>x</title></head><body>hi</body></html>"
+    )
+
+
+def test_strip_serve_harness_removes_multiple_contiguous_tags():
+    content = (
+        b"<head><style data-omelette-injected>a</style>"
+        b"<script data-omelette-injected>b</script><title>t</title></head>"
+    )
+
+    stripped = deck_pipeline_module._strip_serve_harness(content, path="x.html")
+
+    assert stripped == b"<head>\n<title>t</title></head>"
+
+
+def test_strip_serve_harness_tolerates_whitespace_between_tags():
+    content = (
+        b"<head>\n  <style data-omelette-injected>a</style>\n\n"
+        b"<script data-omelette-injected>b</script>\n<title>t</title></head>"
+    )
+
+    stripped = deck_pipeline_module._strip_serve_harness(content, path="x.html")
+
+    assert b"data-omelette-injected" not in stripped
+    assert stripped.startswith(b"<head>\n")
+    assert stripped.endswith(b"<title>t</title></head>")
+
+
+def test_strip_serve_harness_passthrough_for_a_non_html_path():
+    content = b"\x50\x4b\x03\x04-fake-pptx-bytes-data-omelette-injected"
+
+    assert deck_pipeline_module._strip_serve_harness(content, path="a.pptx") == content
+
+
+def test_strip_serve_harness_no_head_tag_returns_content_unchanged():
+    content = b"<html><body>no head here</body></html>"
+
+    assert deck_pipeline_module._strip_serve_harness(content, path="x.html") == content
+
+
+def test_strip_serve_harness_head_with_nothing_injected_returns_content_unchanged():
+    content = b"<head><title>t</title></head>"
+
+    assert deck_pipeline_module._strip_serve_harness(content, path="x.html") == content
+
+
+def test_strip_serve_harness_ignores_a_style_tag_without_the_marker():
+    content = b"<head><style>ordinary</style><title>t</title></head>"
+
+    assert deck_pipeline_module._strip_serve_harness(content, path="x.html") == content
+
+
+# --- Story 23.3: PptxTemplateExporter / select_exporter ----------------------
+
+
+def _init_git_repo(root: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=root, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+    (root / "README.md").write_text("scratch repo\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=root, check=True)
+
+
+def _make_potx_deck(tmp_path: Path, slug: str, *, template_rel: str) -> Path:
+    """A deck directory with a real (blank) ``.pptx`` template at
+    ``template_rel``, a README declaring it via ``register_potx_template``,
+    and a minimal valid ``content_plan.json`` -- the shape
+    ``PptxTemplateExporter``/``select_exporter`` need to run for real,
+    without mocking ``pptx_pipeline`` itself (it is already covered by
+    ``test_pptx_pipeline.py``)."""
+    deck_dir = tmp_path / "presentations" / slug
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text(f"# {slug}\n\nBody.\n", encoding="utf-8")
+    template_path = tmp_path / template_rel
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    Presentation().save(str(template_path))
+    registry.register_potx_template(deck_dir / "README.md", template_rel)
+    (deck_dir / "src").mkdir(parents=True, exist_ok=True)
+    (deck_dir / "src" / "content_plan.json").write_text(
+        json.dumps({"slides": [{"layout": 0, "placeholders": {}}]}), encoding="utf-8"
+    )
+    return deck_dir
+
+
+def test_select_exporter_returns_pixi_exporter_when_no_potx_declared(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+
+    exporter = select_exporter(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert isinstance(exporter, PixiDeckExporter)
+
+
+def test_select_exporter_returns_pptx_template_exporter_when_potx_declared(
+    tmp_path: Path,
+):
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+
+    exporter = select_exporter(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert isinstance(exporter, PptxTemplateExporter)
+
+
+def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap: with no injected
+    ``exporter=``, ``pull_prototype`` must resolve via ``select_exporter``
+    (and therefore honor a declared ``.potx`` template) rather than always
+    defaulting straight to ``PixiDeckExporter``."""
+    deck_dir = _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "old"})
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="PyForge Warden.dc.html", etag="new", body="<html>v2</html>", unchanged=False
+        )
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+    )
+
+    assert calls == ["pyforge-warden"]
+    assert (deck_dir / "project" / "PyForge Warden.dc.html").read_text(
+        encoding="utf-8"
+    ) == "<html>v2</html>"
+
+
+def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap (mirrors
+    ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
+    with no injected ``exporter=``, ``pull_marp_source`` must resolve via
+    ``select_exporter`` (and therefore honor a declared ``.potx`` template)
+    rather than always defaulting straight to ``PixiDeckExporter``. Without
+    this test, a future revert of just this call site back to a hardcoded
+    ``PixiDeckExporter()`` would pass every existing test."""
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="new", body="# Deck", unchanged=False)
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert calls == ["pyforge-warden"]
+
+
+def test_pull_standalone_bundle_with_no_explicit_exporter_routes_through_select_exporter(
+    tmp_path: Path, monkeypatch
+):
+    """Regression proof for the 3 call-site swap (mirrors
+    ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
+    with no injected ``exporter=``, ``pull_standalone_bundle`` must resolve
+    via ``select_exporter`` (and therefore honor a declared ``.potx``
+    template) rather than always defaulting straight to
+    ``PixiDeckExporter``. Without this test, a future revert of just this
+    call site back to a hardcoded ``PixiDeckExporter()`` would pass every
+    existing test."""
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="new", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(
+        PptxTemplateExporter,
+        "export",
+        lambda self, *, slug, repo_root: calls.append(slug),
+    )
+
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert calls == ["pyforge-warden"]
+
+
+def test_pptx_template_exporter_fills_the_template_and_stamps_the_pptx(
+    tmp_path: Path,
+):
+    deck_dir = _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    _init_git_repo(tmp_path)
+    html_exporter = FakeExporter()
+
+    PptxTemplateExporter(
+        html_exporter=html_exporter, now=lambda: datetime(2026, 9, 16, tzinfo=timezone.utc)
+    ).export(slug="pyforge-warden", repo_root=tmp_path)
+
+    out_path = deck_dir / "src" / "pptx" / "pyforge-warden-deck-2026-09-16.pptx"
+    assert out_path.is_file()
+    # A real, filled presentation -- not a Marp render.
+    prs = Presentation(str(out_path))
+    assert len(prs.slides) == 1
+    # html/infographic-pptx still produced via deck-export, explicit
+    # targets excluding deck-pptx.
+    assert html_exporter.calls == [("pyforge-warden", tmp_path)]
+    # The filled PPTX is stamped; deck-export's own subprocess is
+    # responsible for stamping html/infographic-pptx (out of this class's
+    # scope).
+    assert stamps.read_stamp(out_path) is not None
+
+
+def test_pptx_template_exporter_raises_when_no_potx_registered(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+
+    with pytest.raises(HeraldError, match="no PowerPoint template registered"):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_raises_naming_the_missing_content_plan(tmp_path: Path):
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+    template_path = deck_dir / "project" / "deck.pptx"
+    template_path.parent.mkdir(parents=True)
+    Presentation().save(str(template_path))
+    registry.register_potx_template(
+        deck_dir / "README.md", "presentations/pyforge-warden/project/deck.pptx"
+    )
+
+    content_plan_path = deck_dir / "src" / "content_plan.json"
+    with pytest.raises(HeraldError, match=str(content_plan_path)):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_propagates_a_missing_template_as_pptx_template_error(
+    tmp_path: Path,
+):
+    """The template-file-missing case propagates unchanged from
+    ``pptx_pipeline.run_fill`` (unlike the content-plan case above, which
+    this class pre-checks itself)."""
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    deck_dir.mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
+    registry.register_potx_template(
+        deck_dir / "README.md", "presentations/pyforge-warden/project/missing.pptx"
+    )
+    (deck_dir / "src").mkdir(parents=True)
+    (deck_dir / "src" / "content_plan.json").write_text(
+        json.dumps({"slides": []}), encoding="utf-8"
+    )
+
+    with pytest.raises(PptxTemplateError):
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pptx_template_exporter_propagates_an_html_exporter_failure(tmp_path: Path):
+    _make_potx_deck(
+        tmp_path,
+        "pyforge-warden",
+        template_rel="presentations/pyforge-warden/project/deck.pptx",
+    )
+    html_exporter = FakeExporter(fails=HeraldError("deck-export failed"))
+
+    with pytest.raises(HeraldError, match="deck-export failed"):
+        PptxTemplateExporter(html_exporter=html_exporter).export(
+            slug="pyforge-warden", repo_root=tmp_path
+        )
+
+
+def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_command(
+    monkeypatch, tmp_path: Path
+):
+    """The one hardcoded invariant this class exists for: its shelled
+    ``deck-export`` targets must be exactly ``html``/``infographic-pptx``,
+    never ``deck-pptx`` -- that target is what ``PptxTemplateExporter``
+    fills itself. A regression here would silently overwrite a just-filled
+    ``.potx``-based PowerPoint with a Marp render (Story 23.3 follow-up
+    review)."""
+    calls: list[list[str]] = []
+
+    class _Completed:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def _run(cmd, **kwargs):
+        calls.append(cmd)
+        return _Completed()
+
+    monkeypatch.setattr(subprocess, "run", _run)
+    _PixiPartialDeckExporter().export(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert calls == [
+        ["pixi", "run", "-e", "local-recipes", "deck-export", "pyforge-warden",
+         "html", "infographic-pptx"]
+    ]
+    assert "deck-pptx" not in calls[0]

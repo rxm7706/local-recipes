@@ -86,8 +86,25 @@ def _transport(fake_launcher_factory, responses=None):
 # --- protocol conformance ---------------------------------------------------
 
 
-def test_agent_sdk_transport_conforms_to_the_design_transport_protocol():
-    assert isinstance(AgentSdkTransport(), DesignTransport)
+def test_agent_sdk_transport_conforms_to_the_design_transport_protocol_except_prove():
+    """``AgentSdkTransport`` implements every port method except
+    ``fetch_rendered_bytes`` (Story 23.4, CAP-6's own ``--prove``
+    primitive): that story's spec draws a hard boundary against touching
+    this fallback adapter at all ("Never: do not touch AgentSdkTransport"),
+    so full ``isinstance(AgentSdkTransport(), DesignTransport)`` conformance
+    no longer holds -- a ``runtime_checkable`` ``Protocol``'s ``isinstance``
+    check requires every member present, with no partial-conformance escape
+    hatch. ``push_exports``'s ``--prove`` step is only ever driven by
+    ``McpTransport`` (V1's shipped default, per ``cli._run_deck_push``), so
+    this adapter's missing method is a documented, deliberate gap -- not a
+    regression -- covered here so the next ``DesignTransport`` widening
+    finds this test already up to date rather than silently stale."""
+    transport = AgentSdkTransport()
+    covered = set(DesignTransport.__protocol_attrs__) - {"fetch_rendered_bytes"}
+    for name in covered:
+        assert hasattr(transport, name), f"AgentSdkTransport is missing {name!r}"
+    assert not hasattr(transport, "fetch_rendered_bytes")
+    assert not isinstance(transport, DesignTransport)
 
 
 def test_constructing_the_transport_spawns_no_process(monkeypatch):

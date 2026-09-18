@@ -32,6 +32,7 @@ from pyforge.herald import (
     progress,
     registry,
     scheduler,
+    stamps,
     state,
     watch,
     webhook,
@@ -96,6 +97,9 @@ class FakeTransport:
     def list_files(self, *, project_id):
         return [ListedFile(path="x", etag="E1")]
 
+    def fetch_rendered_bytes(self, *, project_id, path) -> bytes:
+        return b""
+
 
 def test_fake_transport_conforms_to_the_design_transport_protocol():
     """``runtime_checkable`` ``isinstance`` proves method *presence* only --
@@ -153,6 +157,7 @@ _BRIDGE_CORE_MODULES = (
     webhook_host,
     deck_qa,
     exporters,
+    stamps,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -209,6 +214,11 @@ registers Marp/PPTX/``.dc.html`` export plugins on the shared
 ``pyforge.core.hooks`` contract, importing nothing but ``pyforge.core.hooks``
 itself -- no transport call, no inference SDK, no argv parsing, and (unlike
 ``pptx_pipeline.py`` below) no ``importlib.resources`` reach either.
+``stamps.py`` (Story 23.3) joins for the same reason again: it shells
+``git`` (the same class of bounded subprocess call ``deck_pipeline.py``'s
+own ``NpmLocalProver``/``PixiDeckExporter``/``SubprocessGitCommitter``
+already make) and reads ``state.py`` to record a derived artifact's
+provenance -- no transport call, no inference SDK, no argv parsing.
 
 ``pptx_pipeline.py`` (Story 15.1) does NOT join here -- unlike every module
 above, it is not part of the Design<->Code bridge at all: the spec's own Why

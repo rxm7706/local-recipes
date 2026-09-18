@@ -328,6 +328,14 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
+    push.add_argument(
+        "--prove",
+        action="store_true",
+        help=(
+            "read every file pushed this run back through Design and assert "
+            "byte-identity, appending a Ledger row per proven file (CAP-6)"
+        ),
+    )
     qa = deck_subparsers.add_parser(
         "qa",
         help="run visual-QA gates against a deck and print the report, JSON (Story 14.1)",
@@ -957,7 +965,12 @@ def _run_deck_push(args: argparse.Namespace) -> int:
     story conditional on ``deck push``'s too. Keeping them as separate
     subcommands mirrors ``deck seed``/``deck pull``'s own separation and
     lets an operator re-run just the push after fixing a conflict without
-    re-pulling anything."""
+    re-pulling anything.
+
+    ``--prove`` (Story 23.4, CAP-6) passes straight through to
+    ``push_exports``'s own ``prove`` parameter; a proven file gets its own
+    printed line, and a ``ReadBackMismatchError`` reaches ``dispatch``
+    exactly like any other ``HeraldError`` -- no special handling here."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
@@ -965,7 +978,7 @@ def _run_deck_push(args: argparse.Namespace) -> int:
         result = bridge.run(
             transport,
             lambda t: deck_pipeline.push_exports(
-                t, slug=args.slug, repo_root=repo_root
+                t, slug=args.slug, repo_root=repo_root, prove=args.prove
             ),
         )
         if not result.pushed and not result.skipped:
@@ -975,6 +988,8 @@ def _run_deck_push(args: argparse.Namespace) -> int:
                 f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, "
                 f"{len(result.skipped)} unchanged"
             )
+        for filename in result.proven:
+            print(f"proved {args.slug}: {filename} read back byte-identical")
 
     return dispatch(operation)
 

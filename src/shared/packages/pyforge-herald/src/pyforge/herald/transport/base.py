@@ -1,13 +1,16 @@
 """The ``DesignTransport`` port and the invariants every adapter upholds
-(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2 -- see below).
+(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2, and to a 10th port
+method -- not a 10th remote tool -- by Story 23.4; see below).
 
 ``DesignTransport`` is the whole surface Herald is allowed to use against
 the ``claude-design`` server: the 8 tools the proven bridge loop needs
 (``bridge-protocol.md``) plus ``list_files``, added for CAP-3 (``herald
-deck status``). It is a ``@runtime_checkable typing.Protocol`` -- never an
-ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
-structurally and are substituted by injection, so a test can pass a
-hand-written fake with no inheritance and no network.
+deck status``), plus ``fetch_rendered_bytes`` (Story 23.4), a port-only
+method that calls no new remote tool -- see below. It is a
+``@runtime_checkable typing.Protocol`` -- never an ABC -- mirroring
+``pyforge.warden.interfaces``: adapters conform structurally and are
+substituted by injection, so a test can pass a hand-written fake with no
+inheritance and no network.
 
 **Spine amendment (Story 1.2's own review, finding F10).** AD-3 originally
 fixed the port at exactly 8 tools, and widening it was explicitly out of
@@ -20,6 +23,15 @@ entirely, so no local record (``state.py``'s etags, the README registry)
 ever names its files. Story 3.1/3.2 is that "before Epic 3" amendment:
 ``list_files`` is the 9th port method, added here (the spine) rather than
 as an adapter-local addition, per F10's own recommendation.
+
+**A 10th port method with no 10th remote tool (Story 23.4, CAP-6).**
+``fetch_rendered_bytes`` exists to mechanize ``herald deck push --prove``'s
+read-back check. It calls the *same* remote tool ``render_preview`` already
+calls -- the port is widened because ``render_preview``'s own answer
+(``PreviewRef``) is structurally incapable of carrying the ``serve_url`` a
+byte-for-byte read-back needs (NFR-04; see this method's own docstring and
+the story spec's Design Notes for why widening the port beats widening
+``render_preview``), not because the server grew a new capability.
 
 Port method names are Herald's, not the server's. They coincide with the
 MCP tool names everywhere except one: the port's ``get_design_prompt`` maps
@@ -37,7 +49,12 @@ Three invariants live here rather than in any one adapter, because Story
   drops any ``serve_url`` key at any depth and replaces any string value
   containing the tokenized host with ``REDACTED``. The whole string is
   replaced, not the matching substring -- fail closed, and loudly, rather
-  than emit a plausible-looking half-scrubbed URL.
+  than emit a plausible-looking half-scrubbed URL. The port's own
+  ``render_preview`` method still never surfaces one -- ``fetch_rendered_bytes``
+  (Story 23.4) is the sole, narrow exception: it reads the raw answer
+  ``render_preview`` itself never sees (bypassing the ``_call_json`` step
+  that strips ``serve_url`` first), and uses the URL for exactly one GET
+  inside its own method body -- never returning, logging, or persisting it.
 * ``parse_read_response`` -- the ``read_file`` wire format. The server
   wraps the body in an ``untrusted-project-content`` tag carrying ``path``
   and ``etag`` attributes, HTML-entity-escapes the body so it cannot close
@@ -293,6 +310,20 @@ class DesignTransport(Protocol):
         docstring). CAP-3's stale-mirror heuristic (``deck_pipeline.py``)
         reads the returned shape; no other capability in this port needs
         it yet."""
+        ...
+
+    def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
+        """The currently-rendered bytes of ``path``, fetched via
+        ``render_preview``'s ``serve_url`` (Story 23.4's 10th port method --
+        see the module docstring's "10th port method, not a 10th remote
+        tool" note). The sanctioned, narrow exception to NFR-04: an adapter
+        reads ``serve_url`` from ``render_preview``'s raw answer (never from
+        the port's own ``render_preview`` method, whose ``PreviewRef`` has
+        no field for one) and uses it for exactly one GET inside this
+        method's own implementation -- the URL itself must never be
+        returned, logged, or persisted anywhere else. Used only by
+        ``deck_pipeline.push_exports``'s ``--prove`` read-back (CAP-6);
+        no other capability in this port needs it."""
         ...
 
 

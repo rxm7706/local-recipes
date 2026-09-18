@@ -60,7 +60,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+
+import httpx2
 
 from ..errors import (
     AuthError,
@@ -120,6 +122,23 @@ _PLAN_SCOPES = ("paths", "project")
 # named constant so the divergence is greppable rather than a literal
 # buried in one method body.
 GET_DESIGN_PROMPT_TOOL = "get_claude_design_prompt"
+
+_FETCH_TIMEOUT_SECONDS = 30.0
+"""``fetch_rendered_bytes``'s bounded-GET timeout (Story 23.4, CAP-6) --
+generous enough for the largest export (an infographic-deck PPTX) without
+hanging indefinitely on a stalled connection."""
+
+
+@runtime_checkable
+class _RenderedBytesFetcher(Protocol):
+    """The injectable low-level GET seam for ``fetch_rendered_bytes`` --
+    mirrors ``evidence.py``'s ``_HttpClient`` convention (duck-typed, not an
+    ABC) so a test never has to reach the network: the package's own
+    ``deny_network`` autouse fixture would fail any test that forgot to
+    inject one. The real default is the ``httpx2`` module itself, which
+    already exposes a module-level ``get`` with this exact shape."""
+
+    def get(self, url: str, *, timeout: float, follow_redirects: bool) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -283,7 +302,11 @@ class McpTransport:
     ``caller`` is the injectable low-level seam -- omit it for the real SDK
     session, pass a fake to exercise marshalling with no network.
     ``credential`` is resolved lazily on first real call, so constructing a
-    transport never touches the filesystem."""
+    transport never touches the filesystem. ``http_client`` (Story 23.4) is
+    the same injectable-seam convention applied to
+    ``fetch_rendered_bytes``'s one bounded GET -- omit it for the real
+    ``httpx2`` module, pass a fake to exercise that method with no
+    network."""
 
     def __init__(
         self,
@@ -291,6 +314,7 @@ class McpTransport:
         caller: ToolCaller | None = None,
         credential: DesignCredential | None = None,
         url: str = DESIGN_MCP_URL,
+        http_client: _RenderedBytesFetcher | None = None,
     ) -> None:
         # The endpoint is the one place the bearer token leaves this
         # process, so it may not be downgraded to cleartext by a caller
@@ -305,8 +329,9 @@ class McpTransport:
         self._caller = caller
         self._credential = credential
         self._url = url
+        self._http_client = http_client
 
-    # --- the 9 port methods -------------------------------------------
+    # --- the 10 port methods --------------------------------------------
 
     def get_design_prompt(
         self, *, design_system_id: str | None = None, project_id: str | None = None
@@ -516,6 +541,57 @@ class McpTransport:
                 )
             )
         return files
+
+    def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
+        """Story 23.4's narrow NFR-04 exception: parse ``render_preview``'s
+        raw answer directly (via ``_raw_text``, never ``_call_json``, which
+        already strips ``serve_url`` before ``render_preview``'s own body
+        ever sees it), issue exactly one bounded GET against the URL it
+        names, and return the fetched bytes unmodified -- the URL itself
+        never leaves this method's own frame.
+
+        Raises ``TransportCallError`` naming ``path`` -- but never the URL
+        -- on an unparseable ``render_preview`` answer, a missing
+        ``serve_url``, or a failed GET (mirrors ``_raw_text``'s sanitized
+        error path)."""
+        text = self._raw_text(
+            "render_preview", {"project_id": project_id, "path": path}
+        )
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError(
+                "claude-design render_preview returned an unparseable "
+                "answer for its raw read-back"
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise TransportCallError(
+                f"claude-design render_preview returned "
+                f"{type(payload).__name__}, expected an object"
+            )
+        serve_url = payload.get("serve_url")
+        if not isinstance(serve_url, str) or not serve_url:
+            raise TransportCallError(
+                f"claude-design render_preview returned no serve_url to "
+                f"read back {path!r}"
+            )
+        client = self._http_client if self._http_client is not None else httpx2
+        try:
+            response = client.get(
+                serve_url, timeout=_FETCH_TIMEOUT_SECONDS, follow_redirects=True
+            )
+            response.raise_for_status()
+            return response.content
+        except Exception as exc:  # any GET failure maps here
+            # `from None` (not `from exc`): the original exception's own
+            # message typically embeds the request URL (an httpx-style
+            # error), and keeping it as __cause__ would let a full
+            # traceback or `logger.exception` surface the serve_url despite
+            # this method's own "never logged ... anywhere else" guarantee.
+            raise TransportCallError(
+                f"could not fetch rendered bytes for {path!r} "
+                f"({type(exc).__name__})"
+            ) from None
 
     # --- the call pipeline ---------------------------------------------
 

@@ -95,6 +95,20 @@ class ExportConflictError(HeraldError):
     ``SeedConflictError``."""
 
 
+class ReadBackMismatchError(HeraldError):
+    """``herald deck push --prove`` (Story 23.4, CAP-6) found a pushed
+    file whose read-back, after ``deck_pipeline._strip_serve_harness``,
+    does not match the bytes actually sent.
+
+    A direct ``HeraldError`` sibling, not an ``ExportConflictError``: the
+    write itself succeeded (Design accepted it), so this is not the
+    per-file conflict FR-20/NFR-02 handles -- it is a verification failure
+    over an already-accepted write, this story's own interpretation of a
+    read-back that does not round-trip. Names every mismatched file at
+    once (batched, never a bare warning); falls through to the default
+    exit code (``1``)."""
+
+
 class OperatorAuthorizationError(HeraldError):
     """A write subcommand (``herald success publish``, ``herald notice
     author``, ...) was attempted without a verified ``operator`` role, or
