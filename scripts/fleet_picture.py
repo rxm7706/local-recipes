@@ -30,7 +30,10 @@ harness count), not marshal's raw ``running`` count.
 
 UNSUPERVISED rows (no Marshal supervisor sidecar) are supervision state, not
 engine liveness — the ATTENTION block names the CAP-2 follow-up before any
-re-spin (`reference/fleet-landing-pass-liveness.md`).
+restart (`reference/fleet-landing-pass-liveness.md`). Preferred restart is
+``marshal factory dispatch`` (bmad-build-auto), not ``factory spin``. Live
+run ops belong on ``marshal watch --fleet`` / ``marshal watch --project``;
+this report stays the ledger board.
 """
 from __future__ import annotations
 
@@ -56,7 +59,7 @@ STALE_BEHIND_THRESHOLD = 20
 AWAITING_OPERATOR_LABEL = "awaiting-operator (run bmad-loop confirm)"
 
 # UNSUPERVISED follow-up (marshal Story 24.3, FR-195 CAP-3): the one-command
-# engine-liveness check before assuming a re-spin — same primary check as
+# engine-liveness check before assuming a restart — same primary check as
 # fleet landing-pass STEP 2 (`.claude/memory/reference/fleet-landing-pass-liveness.md`).
 UNSUPERVISED_LIVENESS_FOLLOWUP = (
     "`bmad-loop status <run_id> --json` + `bmad-loop list --json` "
@@ -302,8 +305,8 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     A `hstate == "awaiting-operator"` station (bmad-loop 0.11: >=1 story
     parked for external human-only actions, nothing else active) is NAMED
     with the confirm remedy -- never folded into the stopped/unsupervised
-    "needs re-spin" bucket: the parked story's work is already committed,
-    so `bmad-loop confirm` is the next action, not a re-spin."""
+    "needs dispatch" bucket: the parked story's work is already committed,
+    so `bmad-loop confirm` is the next action, not a restart."""
     if running:
         # `dispatch_verification_verdict` is dispatch-specific state that
         # persists on the row until the NEXT dispatch run overwrites it --
@@ -342,7 +345,7 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     if hstate == "paused-on-escalation":
         return "PAUSED - needs you (escalation)"
     if hstate in ("stopped", "unsupervised", "unknown") and backlog:
-        return f"{hstate.upper()} - {backlog} left, needs re-spin"
+        return f"{hstate.upper()} - {backlog} left, needs dispatch"
     if done == total:
         return "complete"
     if backlog:
@@ -949,6 +952,11 @@ def main() -> int:
         f"LEFT AFTER:   {tot['tot'] - tot['proj']} stories, "
         f"{tot['ep'] - tot['epp']} epics  ({tot['blkd']} blocked)"
     )
+    print(
+        "LIVE OPS:     `marshal watch --fleet` "
+        "(or `marshal watch --project pyforge-<slug>`); "
+        "restart prefer `marshal factory dispatch` (bmad-build-auto)"
+    )
 
     # --- ATTENTION: what, if anything, is waiting on a human ----------------
     # Deterministic causes only. A pause Claude itself took (an epic boundary,
@@ -998,15 +1006,19 @@ def main() -> int:
             needs.append(
                 f"{slug}: UNSUPERVISED with {back} story(ies) left -- "
                 f"verify engine liveness first ({UNSUPERVISED_LIVENESS_FOLLOWUP}); "
-                f"re-spin only if dead (`marshal factory spin pyforge-{slug}` "
-                f"or `marshal factory resume {slug}`)"
+                f"if dead, prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto); `marshal factory resume {slug}` only for a "
+                f"still-active loop home"
             )
         elif hstate == "stopped" and back:
-            needs.append(f"{slug}: run stopped with {back} story(ies) left -- "
-                         f"needs `marshal factory spin pyforge-{slug}`")
+            needs.append(
+                f"{slug}: run stopped with {back} story(ies) left -- "
+                f"prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto); live ops: `marshal watch --project pyforge-{slug}`"
+            )
         elif hstate == "unknown":
             watch.append(f"{slug}: status unreadable (stale journal) -- cosmetic "
-                         f"unless it persists after a spin")
+                         f"unless it persists after a dispatch")
         elif hstate == "awaiting-operator":
             live_row = live.get(slug, {}) or {}
             spec_glob = live_row.get("missing_spec_escalation_glob")
@@ -1021,8 +1033,8 @@ def main() -> int:
         elif not run and back and done != n:
             watch.append(
                 f"{slug}: {back} story(ies) backlog — idle (not draining); "
-                f"start with `marshal factory drain --station pyforge-{slug}` "
-                f"when ready"
+                f"prefer `marshal factory dispatch pyforge-{slug}` "
+                f"(bmad-build-auto) when ready"
             )
         # bmad-loop 0.11 (marshal Story 25.5): stories parked at
         # `awaiting-operator` in the TRACKED ledger -- the durable board
