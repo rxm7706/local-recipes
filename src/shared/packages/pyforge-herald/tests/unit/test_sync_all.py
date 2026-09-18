@@ -16,11 +16,7 @@ from pathlib import Path
 import pytest
 from pyforge.herald import sync_all as sync_all_module
 from pyforge.herald import state
-from pyforge.herald.deck_pipeline import (
-    PROTOTYPE_ARTIFACT_KEY,
-    STANDALONE_BUNDLE_ARTIFACT_KEY,
-    _persona_from_slug,
-)
+from pyforge.herald.deck_pipeline import PROTOTYPE_ARTIFACT_KEY
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.sync_all import (
     DeckSyncReport,
@@ -638,9 +634,12 @@ def test_deck_sync_report_labels_combine_additively():
     )
 
 
-def test_deck_sync_report_error_label_takes_priority_over_skipped():
+def test_deck_sync_report_skipped_label_takes_priority_over_error():
+    """Not a reachable combination in practice (``_sync_one_deck`` returns
+    ``skipped_reason`` before it could ever also set ``.error``) -- pins
+    ``labels()``'s own declared precedence for the hypothetical case."""
     report = DeckSyncReport(slug="x", skipped_reason="not seeded", error="boom")
-    assert report.labels() == ("failed",)
+    assert report.labels() == ("skipped",)
 
 
 # --- _run_bounded (shared subprocess wrapper) ---------------------------------
@@ -766,6 +765,18 @@ def test_pixi_facts_refresher_raises_on_a_nonzero_exit(monkeypatch):
         PixiFactsRefresher().refresh(slug="pyforge-warden", repo_root=Path("."))
 
 
+class _NoopExporter:
+    """A ``DeckExporter`` double that touches nothing -- injected via
+    ``PixiDeckDeriver(exporter_factory=...)`` so these tests never reach
+    ``select_exporter``'s own real ``PixiDeckExporter``/``PptxTemplateExporter``,
+    which would shell a REAL ``pixi``/subprocess call in ``deck_pipeline``'s
+    own module namespace (a separate ``subprocess`` binding this file's
+    ``sync_all_module.subprocess`` monkeypatch cannot reach)."""
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        return None
+
+
 def test_pixi_deck_deriver_skips_deck_trio_when_no_poster_is_present(
     monkeypatch, tmp_path: Path
 ):
@@ -777,7 +788,9 @@ def test_pixi_deck_deriver_skips_deck_trio_when_no_poster_is_present(
 
     monkeypatch.setattr(sync_all_module.subprocess, "run", fake_run)
 
-    changed = PixiDeckDeriver().derive(slug="pyforge-warden", repo_root=tmp_path)
+    changed = PixiDeckDeriver(exporter_factory=lambda slug, repo_root: _NoopExporter()).derive(
+        slug="pyforge-warden", repo_root=tmp_path
+    )
 
     assert changed is False
     assert all("deck-trio" not in c for c in calls)
@@ -799,28 +812,28 @@ def test_pixi_deck_deriver_calls_deck_trio_when_a_poster_is_present(
 
     monkeypatch.setattr(sync_all_module.subprocess, "run", fake_run)
 
-    changed = PixiDeckDeriver().derive(slug="pyforge-warden", repo_root=tmp_path)
+    changed = PixiDeckDeriver(exporter_factory=lambda slug, repo_root: _NoopExporter()).derive(
+        slug="pyforge-warden", repo_root=tmp_path
+    )
 
     assert changed is True
     assert any("deck-trio" in c for c in calls)
 
 
-def test_pixi_deck_deriver_detects_a_changed_export_fingerprint(
-    monkeypatch, tmp_path: Path
-):
+def test_pixi_deck_deriver_detects_a_changed_export_fingerprint(tmp_path: Path):
     marp_dir = tmp_path / "presentations" / "pyforge-warden" / "src" / "marp"
     marp_dir.mkdir(parents=True)
     export_path = marp_dir / "pyforge-warden-infographic-standalone-2026-09-18.html"
-
-    def fake_run(cmd, **kwargs):
-        # Simulate `deck-export` rewriting the export file mid-call.
-        export_path.write_text("<html>v2</html>", encoding="utf-8")
-        return _FakeCompleted(stdout="")
-
-    monkeypatch.setattr(sync_all_module.subprocess, "run", fake_run)
     export_path.write_text("<html>v1</html>", encoding="utf-8")
 
-    changed = PixiDeckDeriver().derive(slug="pyforge-warden", repo_root=tmp_path)
+    class _RewritingExporter:
+        def export(self, *, slug: str, repo_root: Path) -> None:
+            # Simulate `deck-export` rewriting the export file.
+            export_path.write_text("<html>v2</html>", encoding="utf-8")
+
+    changed = PixiDeckDeriver(
+        exporter_factory=lambda slug, repo_root: _RewritingExporter()
+    ).derive(slug="pyforge-warden", repo_root=tmp_path)
 
     assert changed is True
 
