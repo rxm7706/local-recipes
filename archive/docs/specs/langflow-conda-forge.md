@@ -410,7 +410,7 @@ These are conda-forge **feedstock pin-convergence** problems: each conflicting s
 > `aiosqlite >=0.19.0,<0.20` (a `langchain==1.2.0` extended-testing-deps cap, absent from upstream) that
 > collides with langflow-base's upstream-accurate hard `aiosqlite >=0.20.0`. This lives in `constrains`, not
 > `depends`, and the narrow `langchain + langchain-classic` dry-run above never pulled aiosqlite, so it missed
-> it (CFE [G67](../../.claude/skills/conda-forge-expert/SKILL.md)). **This one DOES need a langchain-feedstock
+> it (CFE [G67](../../../.claude/skills/conda-forge-expert/SKILL.md)). **This one DOES need a langchain-feedstock
 > PR** (re-sync the stale `aiosqlite` cap to langchain 1.3.11's `extended_testing_deps.txt` → `>=0.19.0,<0.23`, NOT a guessed `<1.0`) — fixed in `recipes/langchain/` (commit d1c6b20c7a) and pushed as **`conda-forge/langchain-feedstock` [#276](https://github.com/conda-forge/langchain-feedstock/pull/276), MERGED 2026-06-27** ("V2 recipe, fix run constraints — anthropic, aiosqlite, remove defusedxml"; the closed #275 was a superseded duplicate). **✅ VERIFIED LIVE 2026-07-01 (G66 discharged): the rebuild HAS propagated** — cf's newest build `langchain-1.3.11-pyhcf101f3_1` (build_number 1) carries the fixed `aiosqlite >=0.19.0,<0.23` in `constrains` (older 1.3.x builds still serve the stale `<0.20`, but the solver picks the newest). **The suite now resolves langchain entirely from conda-forge — no workaround langchain needed**
 > (purge any local copy per G68).
 

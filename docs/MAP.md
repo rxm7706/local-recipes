@@ -23,7 +23,7 @@ general documentation:
 | Layer | Paths | Why excluded |
 |-------|-------|--------------|
 | Dreams (Tier 0) | `docs/dreams/` | Raw aspirations; Herald/BMAD intake |
-| Legacy intake specs (Tier 1) | `docs/specs/` | Superseded hand-authored specs |
+| Legacy intake specs (Tier 1) | `docs/specs/` | Superseded hand-authored specs; `shipped`/`superseded` ones now live under `archive/docs/specs/` (Story 23.3) |
 | BMAD planning (Tier 2) | `_bmad-output/projects/*/planning-artifacts/` | Active specs, epics, architecture |
 | BMAD execution (Tier 3) | `_bmad-output/projects/*/implementation-artifacts/` | Gitignored runtime scratch |
 | Tool entry points | `README.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/` | Agent/human front doors — Story 22.6 corrects pointers into this map, not relocates them |
@@ -51,6 +51,14 @@ Dispatch of already-minted stories stays in [`how-to/driving-a-pyforge-station-b
 | `docs/reference/antigravity-developer-startup.md` | [`docs/how-to/antigravity-developer-startup.md`](how-to/antigravity-developer-startup.md) | Redirect stub at old path |
 | `docs/reference/manticore-studio.md` | [`docs/how-to/manticore-studio.md`](how-to/manticore-studio.md) | Redirect stub at old path |
 | `docs/explanation/enterprise-deployment.md` §1 procedural steps | [`docs/how-to/air-gapped-mirror-setup.md`](how-to/air-gapped-mirror-setup.md) | Explanation doc retains architecture rationale |
+
+## Relocated in Story 23.3
+
+| Former location | New home | Notes |
+|-----------------|----------|-------|
+| `docs/specs/feedstock-failure-remediation.md` | [`docs/how-to/feedstock-failure-remediation.md`](how-to/feedstock-failure-remediation.md) | Redirect stub at old path |
+| `docs/specs/feedstock-platform-expansion.md` | [`docs/how-to/feedstock-platform-expansion.md`](how-to/feedstock-platform-expansion.md) | Redirect stub at old path |
+| `docs/specs/presentation-deck.md` | [`docs/how-to/presentation-deck.md`](how-to/presentation-deck.md) | Redirect stub at old path |
 
 ## Per-file classification: `docs/reference/` (Story 22.4)
 
