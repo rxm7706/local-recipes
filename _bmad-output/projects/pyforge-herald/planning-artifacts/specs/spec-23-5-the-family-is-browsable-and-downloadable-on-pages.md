@@ -2,7 +2,8 @@
 title: '23.5: The family is browsable and downloadable on Pages'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '36ccbfa9f9d2c1b06a2a5ff7a0c2561a8a10778b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
