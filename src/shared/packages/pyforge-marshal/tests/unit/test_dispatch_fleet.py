@@ -2934,3 +2934,533 @@ def test_execute_fleet_cycle_forms_two_member_wave_with_dispatch_max_parallel(
     journal = (wave_dirs[0] / "journal.jsonl").read_text(encoding="utf-8")
     assert dispatch_core.KIND_DISPATCH_WAVE in journal
     assert story_a in journal and story_b in journal
+
+
+# --------------------------------------------------------------------------
+# Story 50.1 (CAP-244) -- a landing never re-dispatches the story it landed
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("story_on_backlog", [True, False])
+@pytest.mark.parametrize("landing_complete", [True, False])
+@pytest.mark.parametrize("completion_journaled", [True, False])
+@pytest.mark.parametrize("supervisor_alive", [True, False])
+def test_is_finalize_pending_matrix(
+    supervisor_alive: bool,
+    completion_journaled: bool,
+    landing_complete: bool,
+    story_on_backlog: bool,
+) -> None:
+    """Every cell of Part A's own I/O matrix, exhaustively."""
+    expected = story_on_backlog and (
+        landing_complete or (supervisor_alive and not completion_journaled)
+    )
+    assert (
+        is_finalize_pending(
+            supervisor_alive=supervisor_alive,
+            completion_journaled=completion_journaled,
+            landing_complete=landing_complete,
+            story_on_backlog=story_on_backlog,
+        )
+        is expected
+    )
+
+
+def test_is_finalize_pending_is_self_limiting_once_the_ledger_promotes() -> None:
+    """A promoted story ends the condition no matter how alive the run looks."""
+    assert (
+        is_finalize_pending(
+            supervisor_alive=True,
+            completion_journaled=False,
+            landing_complete=True,
+            story_on_backlog=False,
+        )
+        is False
+    )
+
+
+@pytest.mark.parametrize(
+    ("session_log", "expected"),
+    [
+        ("the branch is already merged into main", True),
+        ("work already landed; nothing to do", True),
+        ("land verdict: already_landed", True),
+        ("HALT: status done, follow-up not recommended", True),
+        ("merged as https://github.com/rxm7706/local-recipes/pull/1467", True),
+        ("this PR #1467 was merged upstream", True),
+        ("ALREADY MERGED (uppercase still counts)", True),
+        # A PR reference with no "merged" on that line is not evidence.
+        ("opened https://github.com/rxm7706/local-recipes/pull/1467\nstill open", False),
+        ("#1467 is the tracking issue", False),
+        ("quota exceeded; the session aborted", False),
+        ("", False),
+        (None, False),
+    ],
+)
+def test_is_already_landed_self_refusal_evidence(
+    session_log: str | None, expected: bool
+) -> None:
+    assert (
+        is_already_landed_self_refusal(
+            changed_path_count=0, session_log=session_log
+        )
+        is expected
+    )
+
+
+@pytest.mark.parametrize("changed_path_count", [1, 7])
+def test_is_already_landed_self_refusal_needs_zero_changed_paths(
+    changed_path_count: int,
+) -> None:
+    """Merged wording alone never advances a session that changed files."""
+    assert (
+        is_already_landed_self_refusal(
+            changed_path_count=changed_path_count,
+            session_log="the branch is already merged into main",
+        )
+        is False
+    )
+
+
+def test_is_advance_reason_covers_both_families() -> None:
+    assert is_advance_reason(f"{HARNESS_DONE_ADVANCE_CODE}: awaiting-operator")
+    assert is_advance_reason(f"{ALREADY_LANDED_ADVANCE_PREFIX}: run 'x' refused itself")
+    assert not is_advance_reason(
+        "the last dispatch of '23.6' (run 'r') ended 'failed' by git and process facts"
+    )
+    assert not is_advance_reason("")
+
+
+def test_already_landed_reason_skips_under_every_mode() -> None:
+    """Part B's one widened test at ``plan_station_queue``'s skip branch."""
+    for mode in FleetCampaignMode:
+        plan = plan_station_queue(
+            slug="pyforge-herald",
+            backlog=("23-6-landed", "23-7-next"),
+            mode=mode,
+            leave_remaining=0,
+            blocked={"23-6-landed": f"{ALREADY_LANDED_ADVANCE_PREFIX}: already landed"},
+        )
+        assert plan.outcome is StationQueueOutcome.DISPATCH, mode
+        assert plan.next_story == "23-7-next", mode
+        assert plan.skipped[0][0] == "23-6-landed", mode
+
+
+def _seed_finalize_pending_journal(
+    tmp_path: Path,
+    *,
+    slug: str,
+    run_id: str,
+    story_key: str,
+    session_pid: int = 42,
+    supervisor_pid: int | None = 99,
+    landing_verdict: str | None = None,
+    completion_verdict: str | None = None,
+    baseline_head_sha: str = "baseline1234",
+) -> Path:
+    """Seed the 2026-09-18 window: session exited, finalize still running.
+
+    ``baseline_head_sha`` defaults to ``FakeVcs.head_sha`` so a dead session
+    reads FAILED by CAP-2's own facts -- the shape that blocked the station
+    before Part A. ``landing_verdict='landed'`` instead makes
+    ``resolve_dispatch_session_verdict`` say COMPLETED, which is the shape
+    that RE-DISPATCHED the story. Part A must read both as in flight.
+    """
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    launch_outcome_payload: dict[str, object] = {"session_pid": session_pid}
+    if supervisor_pid is not None:
+        launch_outcome_payload["supervisor_pid"] = supervisor_pid
+    lines = [
+        prepare_for_write(
+            build_entry(
+                id=JournalEntryId("w", 0),
+                ts="2026-09-18T16:19:45.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+                phase=Phase.INTENT,
+                payload={
+                    "story_key": story_key,
+                    "worktree_path": str(
+                        tmp_path / ".worktrees" / f"dispatch-{slug}"
+                    ),
+                    "baseline_head_sha": baseline_head_sha,
+                },
+            )
+        ).line,
+        prepare_for_write(
+            build_entry(
+                id=JournalEntryId("w", 1),
+                ts="2026-09-18T16:19:46.000Z",
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+                phase=Phase.OUTCOME,
+                intent_id=JournalEntryId("w", 0),
+                payload=launch_outcome_payload,
+            )
+        ).line,
+    ]
+    if landing_verdict is not None:
+        lines.append(
+            prepare_for_write(
+                build_entry(
+                    id=JournalEntryId("w", 2),
+                    ts="2026-09-18T16:20:45.000Z",
+                    run_id=run_id,
+                    kind=dispatch_core.KIND_DISPATCH_LAND,
+                    phase=Phase.INTENT,
+                    payload={},
+                )
+            ).line
+        )
+        lines.append(
+            prepare_for_write(
+                build_entry(
+                    id=JournalEntryId("w", 3),
+                    ts="2026-09-18T16:20:46.000Z",
+                    run_id=run_id,
+                    kind=dispatch_core.KIND_DISPATCH_LAND,
+                    phase=Phase.OUTCOME,
+                    intent_id=JournalEntryId("w", 2),
+                    payload={"ok": True, "verdict": landing_verdict},
+                )
+            ).line
+        )
+    if completion_verdict is not None:
+        lines.append(
+            prepare_for_write(
+                build_entry(
+                    id=JournalEntryId("w", 4),
+                    ts="2026-09-18T16:21:45.000Z",
+                    run_id=run_id,
+                    kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+                    phase=Phase.INTENT,
+                    payload={},
+                )
+            ).line
+        )
+        lines.append(
+            prepare_for_write(
+                build_entry(
+                    id=JournalEntryId("w", 5),
+                    ts="2026-09-18T16:21:46.000Z",
+                    run_id=run_id,
+                    kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+                    phase=Phase.OUTCOME,
+                    intent_id=JournalEntryId("w", 4),
+                    payload={"ok": True, "verdict": completion_verdict},
+                )
+            ).line
+        )
+    (run_dir / "journal.jsonl").write_text(
+        "".join(line + "\n" for line in lines), encoding="utf-8"
+    )
+    return run_dir
+
+
+_ALREADY_LANDED_LOG = (
+    "resolving story 23.6...\n"
+    "the spec's work is already merged as "
+    "https://github.com/rxm7706/local-recipes/pull/1466\n"
+    "HALT: nothing to implement\n"
+)
+
+
+def _seed_already_landed_self_refusal(
+    tmp_path: Path,
+    *,
+    slug: str,
+    run_id: str,
+    story_key: str,
+    session_log: str = _ALREADY_LANDED_LOG,
+) -> Path:
+    """A dead session with zero git progress that refused itself as merged."""
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path,
+        slug=slug,
+        run_id=run_id,
+        story_key=story_key,
+        baseline_head_sha="baseline1234",
+    )
+    (run_dir / "session.log").write_text(session_log, encoding="utf-8")
+    return run_dir
+
+
+def test_landed_but_unpromoted_head_reports_in_flight_not_re_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: dispatch-land 'landed' + ledger still backlog → in-flight."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=None,
+        landing_verdict="landed",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.IN_FLIGHT
+    assert report.complete is False
+    waiting = next(f for f in report.findings if f.code == "MRS-DRAIN-006")
+    assert head in waiting.message
+    assert not any(f.code == "MRS-DRAIN-005" for f in report.findings)
+
+
+def test_live_supervisor_without_completion_reports_in_flight_not_blocked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2: live supervisor + dead session + no completion + no git progress."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        session_pid=42,
+        supervisor_pid=99,
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        process=FakeProcess(alive_pids=frozenset({99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.IN_FLIGHT
+    assert report.complete is False
+    assert not any(f.code == "MRS-DRAIN-005" for f in report.findings)
+
+
+def test_a_dead_supervisor_without_completion_still_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Part A cannot wedge a station: clause (a) requires a LIVE supervisor."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    _seed_fleet(tmp_path, stories={slug: [head]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=99,
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"),)},
+        process=FakeProcess(alive_pids=frozenset()),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.BLOCKED
+
+
+def test_once_the_ledger_promotes_the_next_story_dispatches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC3: promotion ends finalize-pending on the very next cycle."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "done"), (nxt, "backlog"))},
+        process=FakeProcess(alive_pids=frozenset({99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == [(slug, "23.7")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert report.complete is False
+
+
+def test_herald_2026_09_18_three_cycle_replay_ends_with_the_next_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC4: the campaign ends with the NEXT story dispatched, never the same
+    story blocked (``fleet-drain-runs/…151925342Z-82ce96c8``)."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    run_id = f"{slug}-20260918T161945000Z-82ce96c8"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    monkeypatch.chdir(tmp_path)
+    process = FakeProcess(alive_pids=frozenset({99}))
+    harness = FakeBuildHarness()
+    findings_by_cycle: list[list[str]] = []
+
+    def _run(ledger: tuple[tuple[str, str], ...]):
+        report = _cycle(
+            tmp_path,
+            mode=FleetCampaignMode.DRAIN_TO_ZERO,
+            ledgers={slug: ledger},
+            process=process,
+            build_harness=harness,
+            station=slug,
+        )
+        findings_by_cycle.append([f.code for f in report.findings])
+        return report
+
+    backlog_ledger = ((head, "backlog"), (nxt, "backlog"))
+
+    # 16:19:45Z -- session exited, supervisor still landing.
+    _seed_finalize_pending_journal(
+        tmp_path, slug=slug, run_id=run_id, story_key="23.6", supervisor_pid=99
+    )
+    first = _run(backlog_ledger)
+    assert _status_by_station(first)[slug] is StationCycleStatus.IN_FLIGHT
+
+    # 16:20:47Z -- the cycle that used to RE-DISPATCH: land journaled,
+    # ledger not yet promoted.
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=run_id,
+        story_key="23.6",
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    second = _run(backlog_ledger)
+    assert _status_by_station(second)[slug] is StationCycleStatus.IN_FLIGHT
+
+    # 16:21:47Z -- the cycle that used to BLOCK. Finalize has promoted.
+    third = _run(((head, "done"), (nxt, "backlog")))
+    assert _status_by_station(third)[slug] is StationCycleStatus.DISPATCHED
+    assert third.complete is False
+
+    assert harness.dispatched == [(slug, "23.7")]
+    assert all("MRS-DRAIN-005" not in codes for codes in findings_by_cycle)
+
+
+def test_already_landed_self_refusal_advances_to_the_next_story(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Part B: the re-dispatched session's self-refusal advances, never blocks."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=slug, run_id="run-already-landed", story_key="23.6"
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == [(slug, "23.7")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert report.complete is False
+    assert not any(f.code == "MRS-DRAIN-005" for f in report.findings)
+    skip = next(f for f in report.findings if f.code == "MRS-DRAIN-004")
+    assert "already landed" in skip.message
+    assert head in skip.message
+
+
+def test_a_failed_dispatch_without_merged_evidence_still_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC5a: a genuine failure with zero changed paths blocks exactly as today."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_already_landed_self_refusal(
+        tmp_path,
+        slug=slug,
+        run_id="run-genuine-failure",
+        story_key="23.6",
+        session_log="starting story 23.6...\nthe harness crashed mid-implement\n",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.BLOCKED
+    assert any(f.code == "MRS-DRAIN-005" for f in report.findings)
+
+
+def test_mutation_stubbing_already_landed_false_re_blocks_the_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC5b: remove the advance classification and the fixture re-blocks."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_already_landed_self_refusal(
+        tmp_path, slug=slug, run_id="run-already-landed", story_key="23.6"
+    )
+    monkeypatch.setattr(
+        dispatch_fleet, "is_already_landed_self_refusal", lambda **_kwargs: False
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.BLOCKED
+    assert any(f.code == "MRS-DRAIN-005" for f in report.findings)
