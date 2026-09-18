@@ -52,7 +52,10 @@ this is a library function, not a CLI, so it never prints or exits.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
+
+from pyforge.core.landing_evidence import parse_templated_merge_subject
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
@@ -62,6 +65,18 @@ __all__ = ("gather", "gather_direction")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
+#: A station's own policy file, read as TOML for exactly one key
+#: (``merge_subject_template``) -- never through ``pyforge.marshal`` (this
+#: module's own independence rule, see the module docstring). Duplicated in
+#: ``sources/marshal.py`` rather than shared via a cross-import, mirroring
+#: this file's own ``_git``/``_parse_statuses`` precedent of small, per-file
+#: self-contained helpers over sibling-module coupling.
+_MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
+#: AD-24 legacy default template -- carries no station token, so a subject
+#: rendered from it cannot be scoped to any one station (Story 27.1's own
+#: acknowledged residual: "policy declares no template -> legacy default
+#: honoured"). Kept identical to ``sources/marshal.py``'s own constant.
+_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
 #: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
 #: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
 #: -- i.e. shipped by the range under judgement. Once merged it is in both
@@ -113,6 +128,24 @@ def _git(target: Path, *args: str) -> str | None:
         return run_git(target, list(args))
     except (CliBridgeError, UnicodeDecodeError):
         return None
+
+
+def _project_merge_subject_template(target: Path, project_slug: str) -> str:
+    """``project_slug``'s own ``merge_subject_template``, read directly from
+    its tracked ``marshal-policy.toml`` as TOML -- never through
+    ``pyforge.marshal`` (this module's independence rule). Degrades to the
+    legacy repo default when the policy file is absent, unreadable, not
+    valid TOML, or does not declare the key -- "degrades, never crashes,"
+    and Story 27.1's own "policy declares no template -> legacy default
+    honoured" row.
+    """
+    path = target / PROJECTS_PREFIX / project_slug / _MARSHAL_POLICY_SUFFIX
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return _MERGE_SUBJECT_TEMPLATE
+    value = data.get("merge_subject_template")
+    return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -351,6 +384,19 @@ def gather(
     ``head``'s first parent instead — the honest question for a push is
     "what did this change?", not "compare a revision to itself" (which would
     report clean forever).
+
+    Story 27.1: when ``base`` and ``head`` name DIFFERENT commits (the
+    PR-shaped case), the comparison is against ``merge-base(base, head)``,
+    not ``base``'s own tip. ``base`` (typically ``origin/main``) can advance
+    past the point this ``head`` branch forked from — an unrelated commit
+    landing on ``base`` in the meantime (e.g. an unattended dispatch
+    promoting a sibling story to ``done``) then reads as something ``head``
+    "un-finished," even though ``head`` never touched it (herald PR #1465,
+    2026-09-18, 18:17Z). Comparing against the honest common ancestor
+    instead means only what ``head`` itself changed relative to the fork
+    point is judged. A merge-base that fails to resolve (e.g. unrelated
+    histories) degrades to a WARN rather than silently reverting to the
+    bug this exists to fix.
     """
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
         # Both statuses are WARN, but the MESSAGE has to name the real cause:
@@ -381,6 +427,7 @@ def gather(
     base_sha = (_git(target, "rev-parse", base) or "").strip()
     head_sha = (_git(target, "rev-parse", head) or "").strip()
     effective_base = base
+    merge_base_sha: str | None = None
     if base_sha and base_sha == head_sha:
         parent = (
             _git(target, "rev-parse", "--verify", "--quiet", f"{head}^") or ""
@@ -403,17 +450,49 @@ def gather(
                 ),
             )
         effective_base = parent
+    elif base_sha and head_sha:
+        # PR-shaped: `base` and `head` name different commits. The honest
+        # comparison point is their common ancestor, not `base`'s own
+        # (possibly since-advanced) tip -- see the docstring's Story 27.1
+        # paragraph. A repo with no common ancestor between the two (e.g.
+        # unrelated histories) cannot be judged; that degrades to a WARN
+        # like every other cannot-evaluate branch in this function, rather
+        # than silently comparing against `base`'s tip (the bug this exists
+        # to fix).
+        merge_base_sha = (_git(target, "merge-base", base, head) or "").strip()
+        if not merge_base_sha:
+            return (
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check="ledger-regression",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"no common ancestor between {base!r} and {head!r} — "
+                        f"ledger regression cannot be evaluated"
+                    ),
+                    evidence={"base": base, "head": head, "target": str(target)},
+                ),
+            )
+        if merge_base_sha != base_sha:
+            effective_base = merge_base_sha
 
     # The original script PRINTED a "comparing against {head}^ instead" note
     # when it substituted. A library has no stdout to say that on, so the
     # substitution is carried in evidence instead: without it a `--json`
     # consumer that asked for base="origin/main" gets a 40-char sha back with
     # no way to tell "you asked for this" from "we quietly swapped it."
+    # `merge_base` names the PR-shaped substitution specifically (Story
+    # 27.1); `base_substituted` still names the pre-existing same-commit
+    # push fallback above -- two different reasons a substitution happened,
+    # two distinct evidence shapes, so a consumer can tell which one fired.
     substituted = effective_base != base
     range_evidence: dict[str, object] = {"base": effective_base, "head": head}
     if substituted:
         range_evidence["base_requested"] = base
-        range_evidence["base_substituted"] = True
+        if merge_base_sha is not None and effective_base == merge_base_sha:
+            range_evidence["merge_base"] = merge_base_sha
+        else:
+            range_evidence["base_substituted"] = True
 
     raw_findings, ledgers_compared = _check(target, effective_base, head)
     range_evidence["ledgers_compared"] = ledgers_compared
@@ -497,7 +576,10 @@ def gather(
 # Standalone check: tracked ledger vs. git merge history, WITH DIRECTION.
 # Never reads the Tier-3 sprint-status.yaml feed (FR-138). Independence:
 # never imports ``pyforge.marshal`` — merge-subject patterns are restated
-# here so Doctor keeps judging Marshal without Marshal's own code.
+# here so Doctor keeps judging Marshal without Marshal's own code. Story
+# 27.1 adds the templated-merge-subject shape, station-scoped via each
+# project's own tracked ``marshal-policy.toml`` (read as TOML by
+# ``_project_merge_subject_template``, never through ``pyforge.marshal``).
 
 _GITHUB_MERGE_SUBJECT_RE = re.compile(
     r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
@@ -524,16 +606,45 @@ def _story_id(token: str) -> str | None:
     return None
 
 
-def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
+def _merged_ids_for_project(
+    target: Path, subjects: list[str], project_slug: str
+) -> set[str]:
     """Story ids durably named in ``subjects`` for ``project_slug``.
 
-    Covers GitHub PR-merge and bmad-loop native subjects, scoped to the
-    station short name / ``loop/<slug>`` target — the same two shapes that
-    catch the live landed-but-unpromoted incidents FR-137 exists for.
+    Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
+    The first two are scoped to the station short name / ``loop/<slug>``
+    target. The templated shape (AD-24) is attempted ONLY when this project
+    declares its OWN ``merge_subject_template`` that differs from the bare
+    repo default (Story 27.1) — the live incident this exists for:
+    ``Merge pyforge-atlas/13-5 into main`` must count for atlas, while a
+    sibling's ``Merge 13-5 into main`` must not.
+
+    The bare legacy default (``Merge {key} into main``, no station token) is
+    DELIBERATELY never attempted here, unlike ``sources/marshal.py``'s
+    ``gather_story_status`` (which already carried it, unscoped, before this
+    story — a pre-existing ambiguity this story narrows for the stations
+    that opt in, without adding a NEW one for the stations that don't). This
+    function, by contrast, had NO templated-subject matching at all before
+    Story 27.1; wiring the bare default into it unconditionally does not
+    narrow an existing ambiguity, it CREATES one, spanning every project this
+    check compares in the same run — verified live 2026-09-18: doing so
+    turned 3 findings into 306, because most of the fleet's stations still
+    have no override and therefore share the identical, contentless
+    template. A project with no override keeps exactly its PRE-27.1 behavior
+    for this shape (matches only via GitHub PR-merge / bmad-loop-native
+    subjects) — the acknowledged residual (Marshal's own
+    spec-pyforge-marshal CAP-247 / Story 50.4 is what makes the repo default
+    itself station-scoped fleet-wide).
     """
     station = project_slug.removeprefix("pyforge-")
+    template = _project_merge_subject_template(target, project_slug)
     out: set[str] = set()
     for subject in subjects:
+        if template != _MERGE_SUBJECT_TEMPLATE:
+            templated = parse_templated_merge_subject(subject, template)
+            if templated is not None:
+                out.add(templated.hyphen_form())
+                continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
             branch = gh.group("branch")
@@ -684,7 +795,7 @@ def gather_direction(
             if status in TERMINAL:
                 done_ids.add(sid)
 
-        merged_ids = _merged_ids_for_project(subjects, project)
+        merged_ids = _merged_ids_for_project(target, subjects, project)
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not
