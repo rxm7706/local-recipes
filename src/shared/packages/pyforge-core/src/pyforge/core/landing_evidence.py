@@ -390,14 +390,20 @@ def classify_merge_subject(
     *,
     template: str,
     project_slug: str,
+    branch: str | None = None,
 ) -> LandingEvidenceMatch | None:
-    """Try every merge-subject shape in precedence order."""
+    """Try every merge-subject shape in precedence order.
+
+    ``branch`` (optional, Story 50.4) corroborates the story-direct-commit
+    shape only -- every other shape is already self-scoping via
+    ``project_slug`` alone.
+    """
     for parser, shape in (
-        (lambda s: parse_templated_merge_subject(s, template), LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT),
+        (lambda s: parse_templated_merge_subject(s, template, project_slug), LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT),
         (lambda s: parse_github_pr_merge_subject(s, project_slug), LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT),
         (lambda s: parse_bmadloop_merge_subject(s, project_slug), LandingEvidenceShape.BMAD_LOOP_MERGE_SUBJECT),
         (lambda s: parse_recovery_commit_subject(s, project_slug), LandingEvidenceShape.RECOVERY_COMMIT_SUBJECT),
-        (lambda s: parse_story_direct_commit_subject(s, project_slug), LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT),
+        (lambda s: parse_story_direct_commit_subject(s, project_slug, branch=branch), LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT),
     ):
         key = parser(subject)
         if key is not None:
@@ -429,6 +435,7 @@ def classify_commit(
     *,
     template: str,
     project_slug: str,
+    branch: str | None = None,
 ) -> LandingEvidenceMatch | None:
     """Classify one commit: allowlist first, then merge-subject shapes."""
     key = parse_recovery_commit_sha(commit_sha)
@@ -437,7 +444,9 @@ def classify_commit(
             key=key,
             shape=LandingEvidenceShape.RECOVERY_COMMIT_ALLOWLIST,
         )
-    return classify_merge_subject(subject, template=template, project_slug=project_slug)
+    return classify_merge_subject(
+        subject, template=template, project_slug=project_slug, branch=branch
+    )
 
 
 def merged_story_keys(
@@ -518,8 +527,31 @@ def conformance_fixtures() -> tuple[dict[str, object], ...]:
             "project_slug": "pyforge-marshal",
             "template": template,
             "subject": "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
+            "branch": "marshal/8-2-region-parser",
             "expected_key": StoryKeyRef(8, 2),
             "expected_shape": LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT,
+        },
+        {
+            # Story 50.4: a going-forward story-direct commit only classifies
+            # with a station-scoped `branch` corroborating `project_slug`.
+            "label": "story_direct_commit_branch_corroborated",
+            "project_slug": "pyforge-marshal",
+            "template": template,
+            "subject": "Story 30.2: reversion of an intake-spec pin-loosening rule",
+            "branch": "dispatch/pyforge-marshal/30.2",
+            "expected_key": StoryKeyRef(30, 2),
+            "expected_shape": LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT,
+        },
+        {
+            # Story 50.4/FR-191 CAP-247: the `{slug}`-scoped default template
+            # (the new repo-wide default, `policy.DEFAULT_POLICY`) renders and
+            # parses like any other templated subject.
+            "label": "templated_merge_subject_slug_scoped",
+            "project_slug": "pyforge-marshal",
+            "template": "Merge {slug}/{key} into main",
+            "subject": "Merge pyforge-marshal/48-4 into main",
+            "expected_key": StoryKeyRef(48, 4),
+            "expected_shape": LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT,
         },
         {
             "label": "land_branch_marshal_10_1",
