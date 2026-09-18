@@ -713,6 +713,44 @@ and harness (Claude Code) while owning context, workflows, checks, and
 evidence — the split the paper says matters most, stated here so CAP-1
 does not assume it.
 
+### The Spec ladder — eight states, three ended acts *(amended 2026-09-18)*
+
+Eight Spec statuses are live in the estate, and until now only one —
+`extension-point` — was defined anywhere: in prose, in
+`docs/dreams/README.md`. The other seven existed only as a hardcoded set
+inside `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
+`DELIVERED_SPEC_STATUSES`), so a reader had to open that module's source to
+learn what `shipped` or `absorbed` even meant.
+
+All eight — `draft · ready · in-progress · shipped · archived · absorbed ·
+superseded · extension-point` — are now declared in one machine-readable
+place:
+[`docs/governance/guild-roster.json`](../governance/guild-roster.json)'s
+`spec_statuses`, with a definition for each value.
+
+Four rulings apply:
+
+1. **The three ended acts stay distinct.** `archived`, `absorbed`, and
+   `superseded` all mean a Spec stopped without shipping, but they answer
+   different questions — abandoned outright, folded into a sibling chain, or
+   replaced by a successor — so they are never collapsed into one value.
+2. **`shipped` remains Spec-terminal**, grouped with the three ended acts as
+   terminal but distinct from them — the one terminal value that delivered
+   rather than ended. It is a Spec-only fact, distinct from story `done` and
+   Dream `realized`; the full cross-walk between those three is Charter
+   CAP-3, not restated here.
+3. **`in-progress` is grandfathered.** No new Spec may be minted at it;
+   existing files stay open until next edited. See
+   `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` §4 for what
+   finally retires it.
+4. **The enum is recommended, not required.** An unregistered status value is
+   preserved exactly as written and produces a warning — never silently
+   reset to a value in this list.
+
+The coupling to the Dream ladder is unchanged and stays in
+[`docs/dreams/README.md`](README.md), which this section cites, not
+restates.
+
 ---
 
 ## Satellite: The Seed — the operating model, installed anywhere
@@ -1124,3 +1162,28 @@ herald broadcast slack,email --channel engineering-updates
   enforced, until it lands. Artifacts moved in the same commit:
   `guild-roster.json`, README row, this entry, the Spec memlog. `SPEC.md`
   not hand-edited; re-derive on the next amendment (09-14 precedent).
+
+- **2026-09-18 (amendment, declaration)** — **The Spec ladder's eight statuses
+  are declared in one machine-readable place**, closing the gap where only
+  `extension-point` was defined (in prose, `docs/dreams/README.md`) and the
+  other seven lived only as a hardcoded set inside
+  `pyforge.doctor.sources.board` (`OPEN_SPEC_STATUSES` /
+  `DELIVERED_SPEC_STATUSES`). `docs/governance/guild-roster.json` gains a new
+  `spec_statuses` block (mirroring the existing `dream_statuses` block) plus
+  `spec_statuses_ended_acts`, `spec_statuses_terminal`, and
+  `spec_statuses_grandfathered`, each with a `$comment_spec_statuses` prose
+  definition per value. Four rulings, stated in the new § The Lexicon
+  subsection above and mirrored in the declaration's own comment: the three
+  ended acts (`archived`, `absorbed`, `superseded`) stay distinct, never
+  collapsed; `shipped` remains Spec-terminal, grouped with the ended acts as
+  terminal but explicitly not one of them; `in-progress` stays the sole
+  grandfathered value (CHAIN-STANDARD.md §4 retires it); the enum is
+  recommended, not required — an unregistered value is preserved and
+  warned, never silently reset. `docs/dreams/README.md` was **not** touched;
+  it stays the Dream ladder's home, coupled but separate. Pinned by
+  `tests/scripts/test_spec_ladder_is_declared.py`. **Deferred, out of
+  scope here:** wiring `board.py` / `chain.py` / `status_body_consistency.py`
+  to *consume* this declaration (rather than hardcode their own copies) is
+  Story 59.2, not yet landed; the BMAD↔Lexicon cross-walk content (Spec
+  `shipped` ≠ story `done` ≠ Dream `realized`) is Story 59.3 / Charter CAP-3,
+  referenced above but not written out here.

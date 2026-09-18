@@ -117,5 +117,77 @@
     "`practice` marks a perpetual concern -- tended, never finished. They sit",
     "OUTSIDE the lifecycle: excluded from backlog (nobody can close them) and",
     "from realized (never done)."
+  ],
+
+  "spec_statuses": [
+    "draft",
+    "ready",
+    "in-progress",
+    "shipped",
+    "archived",
+    "absorbed",
+    "superseded",
+    "extension-point"
+  ],
+  "$comment_spec_statuses": [
+    "The Spec lifecycle -- all eight live values, one definition each. Until",
+    "this declaration (steward Story 59.1), only `extension-point` was defined",
+    "in prose (docs/dreams/README.md); the rest existed only as a hardcoded set",
+    "inside pyforge.doctor.sources.board (OPEN_SPEC_STATUSES /",
+    "DELIVERED_SPEC_STATUSES).",
+    "",
+    "`draft`: the contract's open questions are unanswered; nothing downstream",
+    "can bind to it yet.",
+    "`ready`: the contract binds, forever -- CAPs carry `(Met <date>)` as they",
+    "land.",
+    "`in-progress`: GRANDFATHERED -- see spec_statuses_grandfathered below.",
+    "Never written to a new Spec; existing files stay open until next edited.",
+    "`shipped`: every CAP delivered. Spec-terminal -- see spec_statuses_terminal",
+    "below -- and a Spec-only fact, distinct from story `done` and Dream",
+    "`realized` (the full cross-walk lives in the Charter's Lexicon, not here).",
+    "`archived`: abandoned outright, not delivered.",
+    "`absorbed`: folded into another chain; its CAPs live in the absorbing",
+    "chain's own epic.",
+    "`superseded`: replaced by a later Spec; abandoned, not delivered.",
+    "`extension-point`: a recognised parked-Spec state -- the chain exists and",
+    "the contract is deliberately left open, a seam a later effort extends. It",
+    "does NOT satisfy a Dream's `specified` (docs/dreams/README.md) -- the",
+    "Spec-side sibling of a Dream's `dreamt`.",
+    "",
+    "THE THREE ENDED ACTS. `archived`, `absorbed`, and `superseded` all mean",
+    "the Spec stopped without shipping, but they answer different questions --",
+    "abandoned outright, folded into a sibling chain, or replaced by a",
+    "successor -- so they stay three distinct values and are never collapsed",
+    "into one (spec_statuses_ended_acts).",
+    "",
+    "SHIPPED IS TERMINAL, NOT AN ENDED ACT. `shipped` is grouped as",
+    "Spec-terminal (spec_statuses_terminal = the three ended acts plus",
+    "`shipped`) precisely because it is NOT one of the three ended acts -- it",
+    "is the one terminal value that delivered rather than ended.",
+    "",
+    "GRANDFATHERED. `in-progress` is the sole grandfathered value",
+    "(spec_statuses_grandfathered): no new Spec may be minted at it, and",
+    "existing Specs stay open until next edited. See",
+    "docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md §4 for what",
+    "finally retires it.",
+    "",
+    "RECOMMENDED, NOT REQUIRED. This enum is recommended, not required. A",
+    "Spec carrying an unregistered status value is preserved exactly as",
+    "written and produces a warning -- it is never silently reset to a value",
+    "in this list."
+  ],
+  "spec_statuses_ended_acts": [
+    "archived",
+    "absorbed",
+    "superseded"
+  ],
+  "spec_statuses_terminal": [
+    "shipped",
+    "archived",
+    "absorbed",
+    "superseded"
+  ],
+  "spec_statuses_grandfathered": [
+    "in-progress"
   ]
 }
