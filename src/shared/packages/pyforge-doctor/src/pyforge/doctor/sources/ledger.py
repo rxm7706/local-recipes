@@ -697,6 +697,106 @@ def _base_done_ids(target: Path, rel_path: str, base_ref: str) -> set[str] | Non
     return out
 
 
+def _rekey_sid_maps(
+    target: Path, rev: str
+) -> tuple[dict[str, dict[str, str]], list[Finding]]:
+    """Per-project ``{old_story_id: new_story_id}`` from every re-key map
+    tracked at ``rev`` (Story 27.2 / spec-27-2-ledger-direction-reads-the-
+    stations-rekey-map).
+
+    ``gather_direction`` compares at the ``<epic>-<seq>`` grain (``_story_id``
+    ), never the full ledger key — a templated merge subject's ``{key}``
+    placeholder captures no slug at all (see
+    ``pyforge.core.landing_evidence.parse_templated_merge_subject``), so this
+    reduces each map line's OLD and NEW side to that same grain rather than
+    matching full keys. This is what lets a merge that names a station's OLD
+    number (e.g. atlas's ``13-5`` before ``rekey-2026-09-17.md`` renumbered it
+    to ``12-5``) still resolve to the CURRENT ledger's key before the
+    landed-vs-done comparison, instead of reading as a phantom
+    ``landed-but-unpromoted`` row forever.
+
+    Reuses ``_rekey_paths``/``parse_rekey`` — the same discovery and grammar
+    ``gather()`` already has — rather than re-implementing either. Unlike
+    ``gather()``'s own ``_new_rekey_maps``, there is no base/head range here
+    (``gather_direction`` has only one ref): every map CURRENTLY tracked at
+    ``rev`` is in scope, not merely one freshly shipped by a range.
+
+    An unreadable or malformed map degrades to a WARN ``Finding`` naming the
+    file — never a silent pass, never a crash — under one check name,
+    ``rekey-map-unreadable``, covering both "the blob would not read" and
+    "the blob read but its grammar is broken." ``gather()``'s sibling
+    reports the malformed case as a FAIL instead; here there is no landed
+    range to hold accountable for it, only a degraded input to a comparison
+    that has other evidence (a merge subject, or the base-ref ledger) to
+    fall back on.
+    """
+    maps: dict[str, dict[str, str]] = {}
+    problems: list[Finding] = []
+    for path in _rekey_paths(target, rev):
+        # `_rekey_paths` already filtered every entry through `_REKEY_RE`,
+        # so the match can never be None here.
+        project = _REKEY_RE.match(path).group(1)
+        text = _git(target, "show", f"{rev}:{path}")
+        if text is None:
+            problems.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="rekey-map-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: re-key map {path} is tracked at {rev} "
+                        "but unreadable — landed-key translation for this "
+                        "project may be incomplete"
+                    ),
+                    evidence={"project": project, "path": path},
+                )
+            )
+            continue
+        parsed: RekeyMap = parse_rekey(text)
+        if not parsed.clean:
+            bad = [f"line {no}: {txt.strip()!r}" for no, txt in parsed.malformed]
+            bad += [
+                f"line {no}: duplicate old key {old!r}"
+                for no, old in parsed.duplicates
+            ]
+            bad += [f"collision on new key {k!r}" for k in parsed.collisions]
+            problems.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="rekey-map-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: re-key map {path} has {len(bad)} "
+                        f"unusable line(s): {'; '.join(bad[:5])} — "
+                        "landed-key translation for this project may be "
+                        "incomplete"
+                    ),
+                    evidence={"project": project, "path": path, "count": len(bad)},
+                )
+            )
+        project_map = maps.setdefault(project, {})
+        for old, new in parsed.mapping.items():
+            old_sid = _story_id(old)
+            new_sid = _story_id(new)
+            if old_sid and new_sid:
+                project_map[old_sid] = new_sid
+
+    # A station can ship a SECOND rekey map that renumbers an already
+    # renumbered sid (13-5 -> 12-5 in one file, 12-5 -> 11-5 in a later
+    # one). Resolve every entry to its fixed point through its own map --
+    # same hop-walk, same cap, as ``rekey.reverse_map`` -- so a merge naming
+    # the OLDEST spelling still lands on the CURRENT one, not an
+    # intermediate one that itself moved on.
+    for project_map in maps.values():
+        for old_sid in project_map:
+            cur, hops = project_map[old_sid], 0
+            while cur in project_map and hops < 64:
+                cur = project_map[cur]
+                hops += 1
+            project_map[old_sid] = cur
+    return maps, problems
+
+
 def gather_direction(
     target: Path, *, base_ref: str = "main"
 ) -> tuple[Finding, ...]:
@@ -715,6 +815,13 @@ def gather_direction(
 
     Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
     to WARN when git is unavailable; OK when every twin agrees with git.
+
+    Story 27.2: before the ``landed-but-unpromoted``/``done-but-unmerged``
+    comparison, every merge-derived story id is translated through the
+    station's own ``rekey-*.md`` map(s), if any (``_rekey_sid_maps``) — the
+    same reader ``gather()`` already applies. Without it, a station that
+    renumbered its stories (a fold PR) reads its own merges, which still
+    name the pre-fold number, as ``landed-but-unpromoted`` forever.
     """
     if _git(target, "rev-parse", "--git-dir") is None:
         return (
@@ -751,8 +858,10 @@ def gather_direction(
         for p in target.glob(f"{PROJECTS_PREFIX}*/{LEDGER_SUFFIX}")
         if p.is_file()
     )
+    rekey_maps, rekey_problems = _rekey_sid_maps(target, base_ref)
     if not ledger_paths:
         return (
+            *rekey_problems,
             Finding(
                 source=Source.LEDGER_DIRECTION,
                 check="ledger-direction",
@@ -764,6 +873,7 @@ def gather_direction(
 
     findings: list[Finding] = []
     audited = 0
+    findings.extend(rekey_problems)
     for path in ledger_paths:
         project = path.relative_to(target).parts[2]
         try:
@@ -796,6 +906,15 @@ def gather_direction(
                 done_ids.add(sid)
 
         merged_ids = _merged_ids_for_project(target, subjects, project)
+        # Story 27.2: a merge subject names the OLD story id when the
+        # station has since renumbered (a fold PR's rekey-*.md). Translate
+        # through the station's own map before comparing, so a merge that
+        # still names the pre-fold number resolves to what the CURRENT
+        # ledger actually calls it, instead of reading as a phantom
+        # landed-but-unpromoted row forever.
+        sid_map = rekey_maps.get(project)
+        if sid_map:
+            merged_ids = {sid_map.get(sid, sid) for sid in merged_ids}
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not
