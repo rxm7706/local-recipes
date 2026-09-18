@@ -58,7 +58,7 @@ def test_merge_subject_is_marshal_native_with_policy_template() -> None:
     story_key = normalize(
         "22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native"
     )
-    subject = render_merge_subject(story_key, template)
+    subject = render_merge_subject(story_key, template, "pyforge-marshal")
     assert merge_subject_is_marshal_native(subject, template, "pyforge-marshal")
     native = promotion.marshal_native_merged_keys(
         (subject,), template, "pyforge-marshal"
@@ -96,7 +96,7 @@ class FakeVcs:
             )
             key = normalize("22-4-example")
             subject = render_merge_subject(
-                key, effective.merge_subject_template.value
+                key, effective.merge_subject_template.value, "pyforge-marshal"
             )
             return (subject,)
         return ()
