@@ -3811,9 +3811,9 @@ def test_reconcile_completions_excludes_a_marshal_native_landed_key(
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "4-3-title", _VALID_SPEC)
     _write_ledger(tmp_path, "acme", _ledger_text(("4-3-title", "backlog")))
-    # The default `merge_subject_template` -- "Merge {key} into main" --
-    # rendered for 4.3's hyphen form: exactly what `land-story` itself
-    # writes.
+    # The default `merge_subject_template` (Story 50.4/FR-191 CAP-247:
+    # "Merge {slug}/{key} into main") rendered for 4.3's hyphen form:
+    # exactly what `land-story` itself writes.
     vcs = _FakeVcs(main_subjects=("Merge acme/4-3 into main",))
     harness = _FakeReconcileHarness(ledger_statuses=(("4-3-title", "backlog"),))
 
