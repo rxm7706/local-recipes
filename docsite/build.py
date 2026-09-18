@@ -8,6 +8,8 @@ Reads the content model in docsite/content/ and renders:
     dist/dossier/index.html          the full dossier
     dist/infographics/index.html     gallery of the standalone infographics
     dist/infographics/<slug>.html    each infographic, published unmodified
+    dist/decks/index.html            index of every deck family page
+    dist/decks/<slug>/index.html     one family page per registered deck
     dist/assets/site.css             shared stylesheet
     dist/artifact/dossier.html       single-file build for the Artifact tool
     dist/.nojekyll                   stop GitHub Pages running Jekyll over it
@@ -23,7 +25,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import html
+import json
 import os
 import re
 import shutil
@@ -48,6 +52,7 @@ OWNED_OUTPUTS = (
     "assets",
     "dossier",
     "infographics",
+    "decks",
     "artifact",
 )
 CONTENT = SITE / "content"
