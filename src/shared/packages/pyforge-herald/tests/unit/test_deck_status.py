@@ -674,3 +674,59 @@ def test_account_status_on_no_local_presentations_dir_reports_untwinned(
     [result] = account_status(transport, repo_root=tmp_path)
 
     assert result.status == "untwinned"
+
+
+def _register_malformed_twin(tmp_path: Path, slug: str) -> Path:
+    """A local deck whose README's own § *Design project* section has the
+    wrong body-line count (one line, not the canonical two) -- the shape
+    ``registry.read`` raises ``errors.HeraldError`` on."""
+    deck_dir = _make_deck_dir(tmp_path, slug)
+    (deck_dir / "README.md").write_text(
+        f"# {slug}\n\n"
+        "## Design project (the bridge's far end)\n"
+        "only one line, not the canonical two\n",
+        encoding="utf-8",
+    )
+    return deck_dir
+
+
+def test_account_status_isolates_one_slugs_malformed_registry_section(
+    tmp_path: Path,
+):
+    """Regression: a single malformed local README (``registry.read``
+    raises) must not crash the whole ``--account`` report -- mirrors
+    ``status()``'s own proven guarantee
+    (``test_status_multi_deck_isolates_one_slugs_malformed_entry``)."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    _register_malformed_twin(tmp_path, "pyforge-bad")
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "linked"
+    assert result.slug == "pyforge-warden"
+
+
+def test_account_status_raises_on_duplicate_registered_project_id(tmp_path: Path):
+    """Two local decks registered against the same Design project id must
+    not silently let the later-sorted slug win -- that would misattribute
+    ``AccountProjectStatus.slug`` with no error."""
+    _register_local_twin(tmp_path, "pyforge-aaa", "p-dup")
+    _register_local_twin(tmp_path, "pyforge-bbb", "p-dup")
+    transport = FakeStatusTransport(list_projects_answer=[])
+
+    with pytest.raises(HeraldError) as exc_info:
+        account_status(transport, repo_root=tmp_path)
+
+    message = str(exc_info.value)
+    assert "pyforge-aaa" in message
+    assert "pyforge-bbb" in message
+    assert "p-dup" in message

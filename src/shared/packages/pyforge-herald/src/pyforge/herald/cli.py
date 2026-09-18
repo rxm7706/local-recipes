@@ -298,7 +298,7 @@ def _build_parser() -> _HeraldArgumentParser:
             "report every Design project the signed-in account can see, "
             "reconciled against the registry (linked/mirrored/excluded/"
             "untwinned) instead of one or all known decks' bridge state "
-            "(CAP-1); takes no slug"
+            "(CAP-1); cannot be combined with a slug argument"
         ),
     )
     watch = deck_subparsers.add_parser(

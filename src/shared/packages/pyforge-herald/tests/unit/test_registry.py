@@ -889,3 +889,17 @@ def test_read_exclusions_wraps_an_unreadable_file(tmp_path: Path):
 
     with pytest.raises(HeraldError, match=str(readme_path)):
         read_exclusions(readme_path)
+
+
+def test_read_exclusions_raises_on_a_duplicate_project_row(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        f"{_EXCLUDED_HEADING}\n\n"
+        "| Project | Reason |\n"
+        "|---|---|\n"
+        "| Retired Project | first reason |\n"
+        "| Retired Project | second reason |\n"
+    )
+
+    with pytest.raises(HeraldError, match="Retired Project.*more than once"):
+        read_exclusions(readme_path)
