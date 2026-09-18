@@ -86,6 +86,31 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-18 (later)** — **Proposed: a PR is judged at its merge-base, and a
+  merge subject is attributed to the station it names.** Twice today Doctor's
+  merge-history sources reported a regression that was not one. (1) `ledger-
+  regression` ran on herald PR #1465's `detectors` lane at 18:17Z — two minutes
+  *after* `marshal factory dispatch` had merged the PR unattended and promoted
+  `23-6 → done` on `main` — and compared `origin/main..HEAD`: the PR head still
+  said `backlog`, main now said `done`, so the blocking step reported
+  `done-key-regressed: pyforge-herald: 1 story key(s) moved out of done` and
+  redded the lane on a PR whose branch never touched that row. The question a
+  PR check must answer is "what does this branch change?", which is the ledger
+  at `merge-base(origin/main, HEAD)` vs `HEAD` — the tip of `main` is the wrong
+  base whenever main moves first, and under unattended landing it always moves
+  first. (2) `ledger-direction` has reported `pyforge-atlas/13-5`, `14-4` and
+  `15-3` as *landed-but-unpromoted* all day: `sources/marshal.py:87` hardcodes
+  `_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"`, so another station's
+  `Merge 13-5 into main` reads as atlas's 13.5 landed — the same un-scoped
+  templated shape marshal's own supervisor tripped on this morning (herald
+  23.x via atlas's `Merge 23-N into main`; marshal is closing its side as
+  `spec-pyforge-marshal:CAP-247` and station policies now render
+  `Merge <slug>/{key} into main`). Doctor's sources must read each station's
+  own `merge_subject_template` from its `marshal-policy.toml` — a TOML read,
+  never a marshal import — and accept only a subject whose slug is that
+  station's. Seeded as CAP-78, decomposed the same day as Epic 27 / Story 27.1;
+  advisory posture unchanged, and `ledger-regression` stays the one blocking
+  Doctor step in CI (ruling 2026-09-14) — this makes its verdict true, not softer.
 - **2026-09-18** — **Proposed: the map of what no agent can verify without a
   live proof.** Bugs cluster where agents cannot see them — not because the
   code is hard, but because verifying it correct needs a real round-trip

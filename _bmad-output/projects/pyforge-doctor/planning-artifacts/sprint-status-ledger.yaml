@@ -87,6 +87,7 @@ development_status:
   25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done
   25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done
   26-1-a-touched-live-proof-only-surface-gets-an-advisory-doctor-finding-naming-it: backlog
+  27-1-a-pr-is-judged-at-its-merge-base-and-a-merge-subject-names-its-station: backlog
   3-1-partition-findings-by-actionability-fr-6-ad-4: done
   3-2-rank-the-actionable-partition-fr-7-ad-4: done
   3-3-root-cause-naming-fr-8: done
@@ -161,6 +162,8 @@ development_status:
   epic-25-retrospective: optional
   epic-26: backlog
   epic-26-retrospective: optional
+  epic-27: backlog
+  epic-27-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

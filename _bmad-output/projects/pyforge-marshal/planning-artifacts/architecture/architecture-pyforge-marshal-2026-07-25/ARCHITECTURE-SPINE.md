@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-14"
+updated: "2026-09-18"
+# 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
 # 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
 # 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
@@ -237,7 +238,7 @@ graph TD
 
 - **Binds:** FR-27, FR-32, FR-33
 - **Prevents:** an exact string that a downstream dashboard's status detection depends on being duplicated across the code that writes it and the code that verifies it.
-- **Rule:** the merge-subject template lives in policy; one module renders it and the same module parses it. Deploy verifies conformance using the parser, not a second regex.
+- **Rule:** the merge-subject template lives in policy; one module renders it and the same module parses it. Deploy verifies conformance using the parser, not a second regex. *(Amended 2026-09-18, FR-199 / CAP-247:)* the **default** form is `Merge {slug}/{key} into main` — a subject names its station, because eight ledgers share one integer story grammar and a station-less subject classifies for every station whose ledger knows the key; live history stays attributed through the SHA/recovery allowlist, never re-parsed.
 
 ### AD-25 — Marshal owns run identity
 
@@ -1640,3 +1641,48 @@ existing ADs; none reopened.
 
 **No content change required beyond this note.** `updated:` bumped to record that the
 cascade ran.
+
+## Currency reconciliation — 2026-09-18
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-18 after registering FR-196..FR-200
+from `spec-pyforge-marshal` CAP-244..248 (Epic 50 — the landing self-drives), which fires the
+`prd→arch` edge. This section is the as-built check against the five FRs.*
+
+**One AD is amended in place; four FRs land on existing decisions.**
+
+- **AD-24 amended (FR-199 / CAP-247).** The rule stands — the merge-subject form is
+  configuration with one owner, rendered and parsed by the same module — but its *default
+  form* changes: `Merge {slug}/{key} into main`, with `{slug}` a second validated
+  placeholder beside `{key}`. Measured reason: the bare `Merge {key} into main` carries no
+  station token, so on 2026-09-18 atlas's seven `Merge 23-N into main` merges classified as
+  herald's 23.1/23.2/23.5/23.6 already merged (three doctor dispatches completed in one
+  second that morning), and Story 35.1's `known_keys` corroboration cannot help when the
+  key exists in both ledgers — eight stations share one integer story grammar by
+  construction. The un-scoped `Story N.M:` direct-commit shape in `pyforge.core.
+  landing_evidence` is likewise demoted to *needs branch or station corroboration*
+  (steward's `Story 48.2:` poisons marshal 48.2 today; Epic 50 skipped 48 and 49 for it).
+  AD-33 (truth partitioned by domain) is untouched: git stays the sole authority for
+  merged facts; the parser stops inventing a station for a subject that names none, and
+  live history is grandfathered through the SHA/recovery allowlist, never re-attributed.
+  Herald's PR #1458 station override (`Merge pyforge-herald/{key} into main`) is the new
+  default's first live instance.
+- **FR-196 (CAP-244) lands on AD-5/AD-26/AD-28 (the journal is run truth; single producer;
+  addressable entries).** The campaign supervisor's "in flight" question is answered from
+  the dispatch supervisor's own journal — `dispatch-completion` not yet written — never
+  from a wall-clock grace; the external witness the Invariants already require. A
+  self-refusal of the already-merged kind is an *advance* reason in the campaign's own
+  classification table, beside the harness-done reason that already exists.
+- **FR-197 (CAP-245) lands on the harness seam (AD-9 family).** `_QUOTA_MARKERS` becomes a
+  per-harness table in `core/harness_session.py` — still the one module that interprets a
+  harness's own text; no second reader.
+- **FR-198 (CAP-246) lands on AD-16 (fixed precedence: defaults → project policy →
+  invocation flags, last wins).** Story 28.11's "tier-map harness leads the walk" was a
+  policy-layer rule silently outranking a flag-layer one — an inversion of AD-16, not a
+  decision of its own. The flag leads; the tier map contributes the model only for the
+  harness actually chosen; without a flag the walk is byte-identical.
+- **FR-200 (CAP-248) lands on AD-13 (promote before teardown) as a parser tolerance.**
+  `is_valid_spec_text` / `parse_declared_surface` skip a leading `<!-- … -->` block; the
+  durability predicate is unchanged.
+
+**Content changed:** AD-24's default form (amended in place above, dated). `updated:`
+bumped. No AD added or removed.

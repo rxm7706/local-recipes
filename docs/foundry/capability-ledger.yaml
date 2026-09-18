@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-17"
+updated: "2026-09-18"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -2981,6 +2981,37 @@ capabilities:
     heading: "from spec-surface-overlap-tolerance"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-09-18 landing-self-drives (docs/dreams/pyforge-marshal.md, Epic 50)
+  - id: pyforge-marshal:CAP-244
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a landing never re-dispatches the story it just landed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-245
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a harness's own usage-wall wording is a transient outcome"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-246
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`--harness` outranks a dead tier-map harness"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-247
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "landing evidence carries the station in every shape"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-248
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the promoter reads a spec through its banner"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-17 steward one-chain fold remints
   - id: pyforge-steward:CAP-1
     spec: pyforge-steward
@@ -4984,6 +5015,13 @@ capabilities:
     heading: "the map of what no agent can verify without a live proof"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  # 2026-09-18 merge-base / station-attributed subjects (docs/dreams/pyforge-doctor.md, Epic 27)
+  - id: pyforge-doctor:CAP-78
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a PR is judged at its merge-base, and a merge subject is attributed to the station it names"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
@@ -5265,5 +5303,24 @@ capabilities:
     spec: pyforge-herald
     station: pyforge-herald
     heading: "from spec-pyforge-pages"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  # 2026-09-18 Epic 23 residue (docs/dreams/pyforge-herald.md, Epic 24)
+  - id: pyforge-herald:CAP-48
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the windowed Design read never loops on a stalled window"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-49
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the docsite has a PR gate"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-50
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the second `sync-all` run is proven unchanged on a real deck"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

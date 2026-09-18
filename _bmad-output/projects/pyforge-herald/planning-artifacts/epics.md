@@ -10,7 +10,7 @@ project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-17"   # one-chain herald fold; Fold provenance names CAP-1..47
+updated: "2026-09-18"   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -849,3 +849,32 @@ narrowed to that delta.
 **Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/specs/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
 **Given** every stage exists as its own verb — `status` (23.1), the adopt path (23.2), `pull`/`watch` (kernel), `deck-facts --refresh` over every surface (21.3), `deck-trio` (21.1/21.2), `deck-export`/`pptx-fill` (21.5/23.3), `push` with proof (23.4), the family page (23.5) — and an agent runs them from memory **When** `herald deck sync-all` runs them in that order for every registered deck (or one `--slug`): enumerate → pull every twin whose etag moved → refresh → derive → push → prove → publish, and prints a per-deck report — pulled / **overwrote-local** (a repo-side edit Design had not seen, named) / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
 **And** `--dry-run` prints the same report without writing, and the README/spec runbook points at the command rather than the steps
+
+## Epic 24: What Epic 23's four landings deferred (spec-pyforge-herald CAP-48..50)
+
+Minted 2026-09-18 from the station Dream's same-day Realization-log entry (Dream-append-first). Epic 23
+drained to zero today — 23.1 (#1459), 23.2 (#1461), 23.5 (#1463), 23.6 (#1465), all landed by
+`marshal factory dispatch` on the Claude harness — and each dispatched session deferred exactly one thing
+it could not settle from inside its worktree, twinned as DW-FU-23-2 / DW-FU-23-5 / DW-FU-23-6 in
+`deferred-work-ledger.md`. One story per deferral; each closes its DW row with named evidence. **HARD
+boundaries:** binds-never-re-mints (24.1 guards a verb that exists, 24.2 gates a build that exists, 24.3
+proves a command that exists); one Pages deployment; a live proof is opt-in and operator-run, never a
+default gate and never a second PR gate.
+
+### Story 24.1: The windowed Design read never loops on a stalled window
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-herald` CAP-48 • closes DW-FU-23-2
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` (`_windowed_read`), a typed error in the pipeline's error module, `tests/unit/test_deck_pipeline.py`, `planning-artifacts/deferred-work-ledger.md` (DW-FU-23-2 → done with the test as evidence).
+**Given** `_windowed_read` breaks only when `window.last_line >= window.total_lines` and never checks that `last_line` advanced between calls, so a server that repeatedly returns the same window loops forever (Story 23.2's Edge Case Hunter finding; every live call paged forward, so reachability is unproven) **When** a window whose `last_line` did not advance past the previous window's raises a typed pagination error naming the file and the stalled line **Then** a fake transport returning the same `(last_line, total_lines)` pair twice raises that error on the second window, and every existing live-shaped fixture (the 3377-line and 136,293-byte pulls) still pages to completion byte-exact
+**And** the error is a refusal that names the file, never a warning or a silent truncation
+
+### Story 24.2: The docsite has a PR gate
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pyforge-herald` CAP-49 • closes DW-FU-23-5 • `spec-pyforge-pages` CAP-1 (bound, not re-minted)
+**Surface:** `.github/workflows/` (one new `pull_request` lane, path-filtered to `docsite/**`, `docs/dashboard/**` render inputs and the workflow itself, running `docsite/build.py --check` and `site-check`), `pixi.toml` (`pr-preflight` gains the same leg; `site-check` task reused, not re-minted), `docs/how-to/presentation-deck.md` § verify checklist (names the lane), `planning-artifacts/deferred-work-ledger.md` (DW-FU-23-5 → done citing the lane's first green run).
+**Given** no `pull_request`-triggered workflow and no `pr-preflight` leg references `docsite` or `site-check` (verified 2026-09-18: `dashboard.yml` runs the build on `push: branches: [main]` only, and `pyforge-herald-test` has zero coverage of `docsite/`), so 23.5's 296-line family-page change merged with every gate green **When** a PR that touches the docsite runs `build.py --check` + `site-check` before merge, locally and in CI **Then** a fixture regression (a family-page template with an unrendered Jinja tag) reds the lane and `main` is green, `pr-preflight` predicts the lane, and `dashboard.yml` is still the only `deploy-pages` caller
+**And** the lane is path-filtered so a `recipes/`-only or station-only PR never runs it, and Kedro-Viz stays at `/kedro-viz/`
+
+### Story 24.3: The second `sync-all` run is proven unchanged on a real deck
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-herald` CAP-50 • closes DW-FU-23-6 • listed in `spec-pyforge-doctor:CAP-77`'s `live-proof-surfaces.md` (bound, not re-minted)
+**Surface:** `pixi.toml` (an opt-in `deck-sync-proof` task gated on `HERALD_LIVE_SYNC_PROOF=1`), `src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py` (a `--proof-dir` that writes both reports and the etag/tree stamps; no new stage), `.herald/sync-proof/<slug>/` (gitignored runtime output; the operator commits the two reports as the story's evidence under `planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-1x.md`), `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md` (one new row: herald `sync-all` idempotency), `planning-artifacts/deferred-work-ledger.md` (DW-FU-23-6 → done citing the run).
+**Given** 23.6's idempotency AC is proven over hand-written fakes and one live smoke that exercised only the skipped path, because no dispatch environment has live Claude Design credentials — the proof needs a person **When** one opt-in command runs `sync-all --slug <seeded deck>` twice against live Design and writes both per-deck reports plus the stamps to a proof dir **Then** the second report is all-`unchanged` with zero git writes and zero Design writes, the artifacts are recorded, and the surface is catalogued as live-proof-only so a static pass never claims it
+**And** the task is never in the default gate or any CI lane, and the operator-run half is stated as such in the story's completion note — this story is `done` when the recorded run exists, not when the task does

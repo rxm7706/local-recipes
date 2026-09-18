@@ -41,7 +41,21 @@ gate_mode = "none"
 
 # harness_preference (Story 22.8, FR-193 CAP-8): cursor-only while Claude Code
 # is spend-limited (2026-09-01 Epic 28 + atlas drain on composer-2.5-fast).
-harness_preference = ["cursor"]
+# 2026-09-18 (operator ruling: Cursor is out of usage for the week) -- claude-only,
+# mirroring pyforge-herald PR #1458. `--harness claude` alone cannot move a
+# station whose tier map names an inline `{ harness = "cursor", ... }` dev entry
+# (Story 28.11 leads the walk with it; spec-pyforge-marshal CAP-246 / Story 50.3
+# is the fix). Flip this line and the tier map together when Cursor returns.
+harness_preference = ["claude"]
+
+# merge_subject_template (AD-24): station-scoped, NOT the repo default
+# "Merge {key} into main" -- the default carries no station token and Story
+# 35.1's known_keys corroboration only rejects keys this ledger does NOT know,
+# so another station's "Merge N-M into main" merge reads as this station's N.M
+# already merged (herald PR #1457's finding; spec-pyforge-marshal CAP-247 /
+# Story 50.4 makes this the repo default). Rendered subjects still classify
+# marshal-native.
+merge_subject_template = "Merge pyforge-marshal/{key} into main"
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
@@ -361,20 +375,22 @@ max_parallel = 2
 # dispatched via `marshal factory dispatch` would silently inherit the FIRST entry
 # (heavy -> opus dev) instead of the baseline. Spin is unaffected (unmapped -> no
 # override there); this makes the two paths agree.
-# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
-# ladder as explicit {harness, model} tables so a Cursor id cannot land
-# on claude --model (fails-safe CAP-1). Unattended drain stays off until
-# 28.29 is separately proven. This IDE drives the wave.
+# 2026-09-18: back on Claude Code (see harness_preference above) -- the same
+# sonnet-dev / opus-review pairing the plain [adapter]/[adapter.review]
+# baseline uses, kept as explicit {harness, model} tables in the fails-safe
+# shape Story 33.15 established (spec-cursor-native-tier-map CAP-1). The
+# 2026-09-13 Cursor Ultra ladder (composer-2.5-fast / grok-4.6 / composer-2.5)
+# is in git history for the week Cursor usage returns.
 [model_tier_map.heavy]
-dev = { harness = "cursor", model = "composer-2.5-fast" }
-review = { harness = "cursor", model = "composer-2.5-fast" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.6" }
-review = { harness = "cursor", model = "grok-4.6" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.easy]
-dev = { harness = "cursor", model = "composer-2.5" }
+dev = { harness = "claude", model = "sonnet" }
 
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
