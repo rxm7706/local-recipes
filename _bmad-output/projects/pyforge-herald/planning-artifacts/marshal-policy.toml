@@ -23,15 +23,22 @@
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
-# harness_preference (Story 22.8, FR-193 CAP-8): cursor-only while Claude Code
-# is spend-limited (2026-09-01 Epic 28 + atlas drain on composer-2.5-fast).
-# Mirrors pyforge-marshal's/-atlas's/-warden's/-steward's own override -- this
-# station never got it, so its dispatches inherited the repo-default
-# `harness_preference` (claude-first) while still resolving `model_tier_map`'s
-# composer-2.5-fast (a Cursor-only model name), a pairing Claude Code's CLI
-# refuses outright. Found live 2026-09-10 when the drain-to-zero dispatch
-# failed identically at launch.
-harness_preference = ["cursor"]
+# harness_preference (Story 22.8, FR-193 CAP-8): claude-only from 2026-09-18
+# (operator ruling: Cursor is out of usage for the week). It was cursor-only
+# from 2026-09-01 while Claude Code was spend-limited (Epic 28 + atlas drain on
+# composer-2.5-fast; this station got the override 2026-09-10 after a
+# drain-to-zero dispatch failed at launch on the claude-first repo default
+# paired with a Cursor-only model name). Why a policy edit and not
+# `--harness claude`: the tier map below is what actually leads the harness
+# walk (Story 28.11) -- an inline `{ harness = "cursor", ... }` dev entry put
+# cursor first regardless of the flag, and cursor's authcheck passes while
+# its session dies on "You're out of usage" (herald 23.1 run
+# pyforge-herald-20260918T132400673Z, launched with --harness claude, still
+# ran cursor/grok-4.6 and failed in three seconds). The doctor/marshal claude
+# dispatches earlier that day only happened because two prior cursor
+# failures tripped the transient-exclusion. Flip both this line and the
+# tier map together when Cursor comes back.
+harness_preference = ["claude"]
 
 
 # merge_subject_template (AD-24): station-scoped, NOT the repo default
@@ -280,18 +287,22 @@ enabled = true
 [context.output]
 enabled = true
 
-# 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
-# ladder as explicit {harness, model} tables so a Cursor id cannot land
-# on claude --model (fails-safe CAP-1). Unattended drain stays off until
-# 28.29 is separately proven. This IDE drives the wave.
+# 2026-09-18: back on Claude Code (see harness_preference above) -- the same
+# sonnet-dev / opus-review pairing the plain [adapter]/[adapter.review]
+# baseline uses and this station ran until 2026-09-13, kept as explicit
+# {harness, model} tables in the fails-safe shape Story 33.15 established
+# (spec-cursor-native-tier-map CAP-1) so a claude alias can never land on
+# `cursor --model` either. The 2026-09-13 Cursor Ultra ladder
+# (composer-2.5-fast / grok-4.6 / composer-2.5) is in git history for the
+# week Cursor usage returns.
 [model_tier_map.heavy]
-dev = { harness = "cursor", model = "composer-2.5-fast" }
-review = { harness = "cursor", model = "composer-2.5-fast" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.6" }
-review = { harness = "cursor", model = "grok-4.6" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.easy]
-dev = { harness = "cursor", model = "composer-2.5" }
+dev = { harness = "claude", model = "sonnet" }
 
