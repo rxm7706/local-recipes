@@ -71,6 +71,100 @@ def is_harness_done_advance_reason(reason: str) -> bool:
     return reason.startswith(HARNESS_DONE_ADVANCE_CODE)
 
 
+#: Story 50.1 (CAP-244) Part B: a most-recent run that refused ITSELF because
+#: the work was already merged. A plain sentinel, never an ``MRS-`` finding
+#: code: nothing is refused here and no new code is registered -- the skip
+#: still surfaces as ``MRS-DRAIN-004`` exactly the way harness-done does.
+ALREADY_LANDED_ADVANCE_PREFIX = "already-landed"
+
+#: Advance, never block: both families mean "this head cannot be worked, and
+#: the station's remaining backlog must still dispatch".
+ADVANCE_REASON_PREFIXES: tuple[str, ...] = (
+    HARNESS_DONE_ADVANCE_CODE,
+    ALREADY_LANDED_ADVANCE_PREFIX,
+)
+
+
+def is_advance_reason(reason: str) -> bool:
+    """True when a campaign-block reason is an ADVANCE reason (Story 50.1).
+
+    One test for both families so ``plan_station_queue`` keeps exactly one
+    skip-under-every-mode branch rather than growing one per family.
+    """
+    return any(reason.startswith(prefix) for prefix in ADVANCE_REASON_PREFIXES)
+
+
+def is_finalize_pending(
+    *,
+    supervisor_alive: bool,
+    completion_journaled: bool,
+    landing_complete: bool,
+    story_on_backlog: bool,
+) -> bool:
+    """Is this station's most recent run still finalizing? (Story 50.1 Part A).
+
+    The ~45 s window between a dispatch session exiting and
+    ``dispatch_land_finalize`` promoting the tracked ledger is neither
+    "live" (``resolve_dispatch_session_verdict`` reads ``session_pid``
+    only) nor "done" (the ledger still says ``backlog``). Read as either,
+    the campaign re-dispatches the story it just landed or blocks the
+    station on a ``failed`` verdict. Read as IN FLIGHT, it simply chains the
+    next ready story on the following cycle.
+
+    Both clauses require ``story_on_backlog``, and clause (a) requires a
+    LIVE supervisor, so this is self-limiting by construction: a supervisor
+    that dies without journaling completion is not pending, and ledger
+    promotion ends the condition on the very next cycle.
+    """
+    if not story_on_backlog:
+        return False
+    if landing_complete:
+        # (b) dispatch-land journaled a successful CAP-4 outcome, but the
+        # tracked ledger has not moved yet -- finalize is mid-flight.
+        return True
+    # (a) the supervisor is alive and has not journaled dispatch-completion.
+    return supervisor_alive and not completion_journaled
+
+
+#: Merged-evidence phrases a self-refusing session leaves in its own log.
+_MERGED_EVIDENCE_PHRASES: tuple[str, ...] = (
+    "already merged",
+    "already landed",
+    "already_landed",
+    # bmad-build-auto's HALT wording when it finds the spec already done.
+    "follow-up not recommended",
+)
+
+#: ``/pull/<n>`` or ``#<n>`` -- only counted on a line that also says "merged".
+_PR_REFERENCE_RE = re.compile(r"/pull/\d+|#\d+")
+
+
+def is_already_landed_self_refusal(
+    *, changed_path_count: int, session_log: str | None
+) -> bool:
+    """Did this failed dispatch refuse itself over already-merged work? (50.1).
+
+    Two independent facts must agree: the campaign's OWN git observation
+    that the session changed nothing (``changed_path_count == 0``), and
+    merged evidence in the session log. The session is never believed about
+    whether it *succeeded* -- git remains the sole authority for merged
+    facts (Epic 50 HARD boundary). This only decides whether the CAMPAIGN
+    halts a station or steps past a head it has independent reason to think
+    is already landed.
+    """
+    if changed_path_count != 0:
+        return False
+    if not session_log:
+        return False
+    lowered = session_log.lower()
+    if any(phrase in lowered for phrase in _MERGED_EVIDENCE_PHRASES):
+        return True
+    return any(
+        "merged" in line and _PR_REFERENCE_RE.search(line)
+        for line in lowered.splitlines()
+    )
+
+
 class FleetCampaignMode(StrEnum):
     """The three named campaign modes (CAP-7 / fleet-drain-playbook.md)."""
 
@@ -672,6 +766,12 @@ def plan_station_queue(
       skipped under every mode the way a declared skip is: remaining
       implementable backlog must still dispatch. A real derived block
       (missing spec, CAP-2 failed) still stops ``drain_to_zero``.
+    * ``ALREADY_LANDED_ADVANCE_PREFIX`` (Story 50.1 Part B) is the same
+      shape one layer down: the head's most recent dispatch refused ITSELF
+      over already-merged work (zero changed paths + merged evidence in its
+      session log). Neither transient (re-dispatching it is the loop this
+      story closes) nor terminal (the work is done) -- so it advances,
+      through the same ``is_advance_reason`` test as ``MRS-DISP-040``.
 
     Neither kind is ever removed from the backlog or auto-retried -- both
     stay queued, reported by name, for a human.
@@ -701,7 +801,7 @@ def plan_station_queue(
                 next_story=story,
                 skipped=tuple(skipped),
             )
-        if is_harness_done_advance_reason(reason):
+        if is_advance_reason(reason):
             skipped.append((story, reason))
             continue
         block_class = classes.get(story, FleetBlockClass.STORY)
