@@ -47,14 +47,16 @@ crashed sidecar). That label is **supervision** state, not engine liveness — t
 engine may still be working (2026-08-15: a raw `bmad-loop run` with no sidecar
 was correctly UNSUPERVISED while the engine was alive).
 
-**Before** assuming a re-spin is needed, run the **Primary check** above in that
+**Before** assuming a restart is needed, run the **Primary check** above in that
 station's loop home. Outcomes:
 
 - `list --json` shows `running` → engine is alive; use `marshal factory resume
   <slug>` to re-attach supervision (not bare `bmad-loop resume` — see
   [[bmad-loop-escalation-and-landing-traps]] trap 5).
-- `stopped` → engine is dead; `marshal factory spin pyforge-<slug>` (or resume
-  if the run directory is still the active one).
+- `stopped` → engine is dead; prefer `marshal factory dispatch pyforge-<slug>`
+  (bmad-build-auto). Use `marshal factory resume` only when the loop-home run
+  directory is still the active one you intend to continue; live ops via
+  `marshal watch --project pyforge-<slug>`.
 - `unknown` → do not coerce; treat as unverified.
 
 Marshal code may use the same answer via `HarnessPort.engine_liveness(project,
