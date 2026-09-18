@@ -68,6 +68,7 @@ from .base import (
     PlanHandle,
     PreviewRef,
     ProjectRef,
+    ProjectSummary,
     ToolResult,
     as_optional_text,
     as_text,
@@ -468,6 +469,40 @@ class AgentSdkTransport:
                 )
             )
         return files
+
+    def list_projects(self) -> Sequence[ProjectSummary]:
+        """Story 23.1's 11th port method (CAP-1) -- mirrors
+        ``McpTransport.list_projects`` exactly: the tool answers with a
+        bare JSON array, never the object-wrapped shape ``_call_json``
+        expects, so this parses the relay's raw text directly."""
+        text = self._raw_text("list_projects", {})
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError(
+                "claude-design list_projects returned an unparseable answer"
+            ) from exc
+        payload = sanitize_payload(payload)
+        if not isinstance(payload, Sequence) or isinstance(payload, (str, bytes)):
+            raise TransportCallError(
+                f"claude-design list_projects returned {type(payload).__name__}, "
+                f"expected a list"
+            )
+        projects: list[ProjectSummary] = []
+        for entry in payload:
+            if not isinstance(entry, Mapping):
+                raise TransportCallError(
+                    f"claude-design list_projects returned a non-object "
+                    f"project entry ({type(entry).__name__})"
+                )
+            projects.append(
+                ProjectSummary(
+                    project_id=as_text(entry.get("id")),
+                    name=as_text(entry.get("name")),
+                    url=as_text(entry.get("url")),
+                )
+            )
+        return projects
 
     # --- the relay pipeline ---------------------------------------------
 

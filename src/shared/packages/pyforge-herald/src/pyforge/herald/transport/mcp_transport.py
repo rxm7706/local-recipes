@@ -76,6 +76,7 @@ from .base import (
     PlanHandle,
     PreviewRef,
     ProjectRef,
+    ProjectSummary,
     ToolCaller,
     ToolResult,
     as_optional_text,
@@ -541,6 +542,43 @@ class McpTransport:
                 )
             )
         return files
+
+    def list_projects(self) -> Sequence[ProjectSummary]:
+        """Story 23.1's 11th port method (CAP-1). Verified live 2026-09-18:
+        the deployed tool takes no arguments and answers with a plain JSON
+        array, never the ``{"key": [...]}`` wrapper ``list_files`` uses --
+        so this cannot go through ``_call_json`` (it requires a ``Mapping``
+        top level, which a bare array is not). ``sanitize_payload`` still
+        runs over the parsed answer, the same defence in depth every other
+        JSON-shaped answer in this class gets."""
+        text = self._raw_text("list_projects", {})
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError(
+                "claude-design list_projects returned an unparseable answer"
+            ) from exc
+        payload = sanitize_payload(payload)
+        if not isinstance(payload, Sequence) or isinstance(payload, (str, bytes)):
+            raise TransportCallError(
+                f"claude-design list_projects returned {type(payload).__name__}, "
+                f"expected a list"
+            )
+        projects: list[ProjectSummary] = []
+        for entry in payload:
+            if not isinstance(entry, Mapping):
+                raise TransportCallError(
+                    f"claude-design list_projects returned a non-object "
+                    f"project entry ({type(entry).__name__})"
+                )
+            projects.append(
+                ProjectSummary(
+                    project_id=as_text(entry.get("id")),
+                    name=as_text(entry.get("name")),
+                    url=as_text(entry.get("url")),
+                )
+            )
+        return projects
 
     def fetch_rendered_bytes(self, *, project_id: str, path: str) -> bytes:
         """Story 23.4's narrow NFR-04 exception: parse ``render_preview``'s
