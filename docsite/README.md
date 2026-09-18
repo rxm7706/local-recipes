@@ -35,6 +35,10 @@ pixi run site-verify   # check the dossier's numbers against the source tree
 pixi run site-serve    # build and serve at http://localhost:8000
 ```
 
+A PR touching `docsite/**`, `docs/dashboard/**`, `presentations/**` or `pixi.toml` also runs
+`docsite/build.py --check` + `site-check` in CI before merge (`.github/workflows/docsite-check.yml`);
+`pixi run -e pyforge-guild pr-preflight` predicts it locally.
+
 Or without pixi:
 
 ```bash
