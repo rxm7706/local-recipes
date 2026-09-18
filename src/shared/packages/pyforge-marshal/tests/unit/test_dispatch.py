@@ -1812,6 +1812,142 @@ def test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provide
     assert mismatch_findings[0].severity is Severity.WARN
 
 
+def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.3 (CAP-246): the 2026-09-18 incident. herald's tier map names
+    an inline `{harness = "cursor", model = "grok-4.6"}` dev entry; an
+    EXPLICIT `--harness claude` must still win the walk -- Story 28.11's
+    tier-map-leads rule may not override a flag the operator actually typed.
+    The tier map names no model for `claude`, so the pre-existing
+    MRS-DISP-043 fails-safe (2026-09-12) fires and drops the override
+    (never a foreign `grok-4.6` handed to the `claude` CLI) -- but it must
+    ALSO clear the LOCAL `model` used by the intent journal entry and the
+    live `build_harness.dispatch(model=..., ...)` call, not just the
+    envelope's `data["model"]`, or the drop is cosmetic and the launch still
+    ships the foreign model id."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "50-3-explicit-harness-flag"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "grok-4.6"}},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "grok-4.6": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={"harness_preference": ("claude",)},
+    )
+    assert effective.harness_preference.layer is policy.PolicyLayer.FLAG
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    build_harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    # The walk itself never let cursor lead: `--harness claude` alone was
+    # handed to `binary_present`, unchanged by the tier map's cursor entry.
+    assert build_harness.preference_seen == ("claude",)
+    assert attempt.data.get("model") is None
+    mismatch_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(mismatch_findings) == 1
+    assert mismatch_findings[0].severity is Severity.WARN
+    # The live launch call -- not just the envelope -- must never receive
+    # the foreign `grok-4.6` model id.
+    assert build_harness.calls[-1]["model"] is None
+
+
+def test_dispatch_tier_map_leads_without_an_explicit_harness_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 50.3 (CAP-246): the flip side -- with no `--harness` flag at
+    all, resolution stays byte-identical to Story 28.11's existing
+    behavior: the tier map's declared harness still leads the walk, and its
+    matching model still applies cleanly."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "50-3-tier-map-still-leads"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "grok-4.6"}},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "cursor": {
+                        "models": {
+                            "grok-4.6": {
+                                "input_per_million": 3.0,
+                                "output_per_million": 15.0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        flags={},
+    )
+    assert effective.harness_preference.layer is not policy.PolicyLayer.FLAG
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    build_harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "cursor"
+    assert build_harness.preference_seen is not None
+    assert build_harness.preference_seen[0] == "cursor"
+    assert attempt.data.get("model") == "grok-4.6"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert build_harness.calls[-1]["model"] == "grok-4.6"
+
+
 def test_dispatch_failure_count_resets_after_completed_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
