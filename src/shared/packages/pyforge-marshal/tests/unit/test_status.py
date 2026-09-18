@@ -32,6 +32,7 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.model import Severity
+from pyforge.marshal.core.policy import DEFAULT_POLICY
 from pyforge.marshal.ports.harness import (
     DeferredStory,
     HarnessRunTerminalVerdict,
@@ -4209,7 +4210,11 @@ class TestRunDetail:
 # `core/status.py`'s own module docstring precedent in `_scan_promotions`).
 # =============================================================================
 
-_DEFAULT_MERGE_TEMPLATE = "Merge {key} into main"
+#: Story 50.4/FR-191 CAP-247: the repo default now carries a `{slug}`
+#: placeholder -- pulled from `DEFAULT_POLICY` (not hardcoded) so this
+#: helper always matches whatever `run_status`'s own effective policy
+#: template actually is.
+_DEFAULT_MERGE_TEMPLATE = str(DEFAULT_POLICY["merge_subject_template"])
 
 
 def _merged_subject(key: str) -> str:
