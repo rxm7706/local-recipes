@@ -316,27 +316,33 @@ def test_own_scoped_template_merge_counts_as_landed(tmp_path: Path) -> None:
 # ledger's `done` entries -------------------------------------------------
 
 
-def test_own_legacy_default_merge_counts_once_ledger_marks_it_done(
+def test_own_legacy_default_merge_suppresses_done_but_unmerged_once_ledger_confirms_it(
     tmp_path: Path,
 ) -> None:
     """Once a station's own template has moved to a scoped form, its own
-    PRE-move history (rendered under the bare legacy default) still counts
-    -- corroborated by the tracked ledger already marking the key `done`.
-    Mirrors the real marshal `34-3` regression this story fixes (PR #1471),
-    at the ``gather_direction`` level."""
+    PRE-move history (rendered under the now-retired bare legacy default)
+    still counts as landing evidence -- corroborated by the tracked ledger
+    already marking the key `done`. Mirrors the real marshal `34-3`
+    regression this story fixes (PR #1471): without the corroborated
+    fallback, this exact fixture reports `done-but-unmerged` WARN, since
+    `base_done_ids` alone (the ledger AT `main`) does not yet show it done
+    either."""
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_policy(repo, "pyforge-marshal", "Merge pyforge-marshal/{key} into main")
-    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
-    _commit(repo, "seed")
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "in-progress"})
+    _commit(repo, "seed ledger on main")
     # This station's own pre-move history, rendered under the now-retired
     # bare legacy default.
     _commit(repo, "Merge 34-3 into main", allow_empty=True)
+    _git(repo, "checkout", "-q", "-b", "work")
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "flip to done on the branch")
 
     findings = ledger.gather_direction(repo)
 
-    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
-    assert fails == []
+    assert [f for f in findings if f.status == DoctorStatus.WARN] == []
+    assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
     assert findings[0].status == DoctorStatus.OK
 
 
