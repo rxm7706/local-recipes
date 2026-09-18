@@ -26,7 +26,9 @@ SKIP_DISTRIBUTIONS = frozenset({"pyforge-core", "pyforge-testing-kit"})
 # spec stems under each owning station's planning-artifacts/specs/. A station
 # with neither verbs nor an entry here is a silent skip -- CI must fail.
 PREPARATORY_UNINTROSPECTABLE: dict[str, str] = {
-    "atlas": "spec-25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate",
+    # Atlas story 24.3 (ledger key 24-3-…); was mistyped as 25-3 and broke
+    # pip-install's parity-matrix gate when the prep-spec path 404'd.
+    "atlas": "spec-24-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate",
 }
 
 

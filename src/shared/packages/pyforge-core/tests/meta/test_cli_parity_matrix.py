@@ -100,7 +100,7 @@ def introspect_verbs(station_dir: Path) -> set[str]:
 def _preparatory_spec_path(stem: str) -> Path:
     """Resolve a preparatory story spec to its owning BMAD project tree."""
     repo = PACKAGES_ROOT.parents[2] / "_bmad-output" / "projects"
-    if stem.startswith("spec-25-3-atlas"):
+    if stem.startswith("spec-24-3-atlas") or stem.startswith("spec-25-3-atlas"):
         project = "pyforge-atlas"
     else:
         project = "pyforge-steward"
