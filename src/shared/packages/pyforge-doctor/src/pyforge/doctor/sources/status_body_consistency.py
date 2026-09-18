@@ -994,7 +994,9 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]]) -> None:
+def _append_spec_if_terminal(
+    spec_md: Path, docs: list[tuple[Path, str]], terminal_statuses: frozenset[str]
+) -> None:
     try:
         text = spec_md.read_text(encoding="utf-8")
     except OSError:
@@ -1004,7 +1006,7 @@ def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]]) -> Non
         docs.append((spec_md, ""))
         return
     status = _normalize_status(fm.get("status"))
-    if status in TERMINAL_STATUSES:
+    if status in terminal_statuses:
         docs.append((spec_md, status))
 
 
@@ -1028,7 +1030,11 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
     silent = 0
     fired = 0
 
-    for path, status in iter_terminal_tier_documents(target):
+    terminal_statuses, roster_warning = _load_terminal_statuses(target)
+    if roster_warning is not None:
+        findings.append(roster_warning)
+
+    for path, status in iter_terminal_tier_documents(target, terminal_statuses):
         rel = _rel_path(path, target)
         try:
             text = path.read_text(encoding="utf-8")
@@ -1061,7 +1067,7 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
             continue
 
         resolved_status = status or _normalize_status(fm.get("status"))
-        if resolved_status not in TERMINAL_STATUSES:
+        if resolved_status not in terminal_statuses:
             continue
 
         scanned_terminal += 1
@@ -1286,7 +1292,11 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
     silent = 0
     fired = 0
 
-    for path, status in iter_terminal_tier_documents(target):
+    terminal_statuses, roster_warning = _load_terminal_statuses(target)
+    if roster_warning is not None:
+        findings.append(roster_warning)
+
+    for path, status in iter_terminal_tier_documents(target, terminal_statuses):
         rel = _rel_path(path, target)
         try:
             text = path.read_text(encoding="utf-8")
@@ -1319,7 +1329,7 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
             continue
 
         resolved_status = status or _normalize_status(fm.get("status"))
-        if resolved_status not in TERMINAL_STATUSES:
+        if resolved_status not in terminal_statuses:
             continue
 
         scanned_terminal += 1

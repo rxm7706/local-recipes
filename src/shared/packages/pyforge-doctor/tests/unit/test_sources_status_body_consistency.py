@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,8 +13,31 @@ from pyforge.doctor.sources import status_body_consistency as sbc
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
 
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared terminal/ended-acts values
+    derive the same ``{"shipped"}`` Spec-side member ``TERMINAL_STATUSES``
+    already carries -- Story 59.2 sources it from this file, read fresh per
+    call rather than a hardcoded module constant."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses_terminal": [
+                    "shipped", "archived", "absorbed", "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived", "absorbed", "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _mini_repo(tmp_path: Path) -> Path:
     """Fixture tree: one firing Dream, one firing Spec, one silent Dream."""
+    _write_roster(tmp_path)
     dreams = tmp_path / "docs" / "dreams"
     dreams.mkdir(parents=True)
     shutil.copy(_FIXTURES / "pyforge-scribe-dream.md", dreams / "pyforge-scribe.md")
