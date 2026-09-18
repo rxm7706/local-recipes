@@ -2,7 +2,7 @@
 title: '50.2: A harness''s own usage-wall wording is a transient outcome'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'e484f16ce071f650e59ece2fb2efc3219322f16b'
 review_loop_iteration: 0
 followup_review_recommended: false
