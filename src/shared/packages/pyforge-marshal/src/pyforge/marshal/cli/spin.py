@@ -1234,7 +1234,9 @@ def _spawn_supervisor_sidecar(
             wire_payload = wire.journal_payload()
         else:
             wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-            enabled = bool(wire_layer["enabled"])
+            enabled = harness_profile.resolve_wire_enabled(
+                wire_layer["enabled"], wrapper_declared=False
+            )
             wire_payload = harness_profile.WireWrap(
                 applied=False,
                 reason=(
