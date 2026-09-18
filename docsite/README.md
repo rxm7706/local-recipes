@@ -49,6 +49,8 @@ Outputs land in `dist/` (gitignored):
 | `dossier/index.html` | The full dossier |
 | `infographics/index.html` | Gallery, with lazy-loaded live previews |
 | `infographics/<slug>.html` | Each infographic, published unmodified |
+| `decks/index.html` | Index of every deck family page, with lazy-loaded live previews |
+| `decks/<slug>/index.html` | One family page per registered deck: poster, Infographic Deck and Executive Summary in view; PPTX(s) and Marp sources as downloads |
 | `artifact/dossier.html` | Single-file build for the Claude Artifact tool |
 | `assets/site.css` | Shared stylesheet |
 

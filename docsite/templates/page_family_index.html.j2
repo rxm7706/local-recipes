@@ -12,7 +12,7 @@
   <div class="gallery">
     {%- for fam in families %}
     <a class="shot" href="{{ fam.slug }}/index.html">
-      <div class="shot-frame" data-preview="../infographics/{{ fam.poster.out_name }}">
+      <div class="shot-frame" data-preview="{{ rel }}infographics/{{ fam.poster.out_name }}">
         <span class="shot-placeholder" aria-hidden="true">{{ fam.title }}</span>
       </div>
       <div class="shot-meta">

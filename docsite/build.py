@@ -232,18 +232,29 @@ def _single_file(dir_path: Path, suffix: str) -> Path | None:
     return matches[0] if matches else None
 
 
+_DATE_SUFFIX_RE = re.compile(r"-\d{4}-\d{2}-\d{2}$")
+
+
 def _listed_files(dir_path: Path, suffix: str) -> list[Path]:
-    """Every file directly under ``dir_path`` ending in ``suffix``, newest
-    filename first (the export set's own ``<slug>-...-YYYY-MM-DD`` naming
-    sorts chronologically as a plain string, so a reverse name sort is a
-    reverse date sort without parsing one)."""
+    """The current file per product directly under ``dir_path`` ending in
+    ``suffix``, newest-dated first. The export set's own
+    ``<product>-YYYY-MM-DD`` naming leaves every superseded export on disk
+    (verified live: pyforge-atlas alone carries 3 dated copies each of its
+    ``-deck-`` and ``_infographic_deck-`` PPTX) -- grouping by the filename
+    with its trailing date suffix stripped and keeping only the
+    newest-dated file per group surfaces the current export(s), not the
+    full history."""
     if not dir_path.is_dir():
         return []
-    return sorted(
-        (p for p in dir_path.iterdir() if p.is_file() and p.name.endswith(suffix)),
-        key=lambda p: p.name,
-        reverse=True,
-    )
+    newest_per_product: dict[str, Path] = {}
+    for p in dir_path.iterdir():
+        if not (p.is_file() and p.name.endswith(suffix)):
+            continue
+        product = _DATE_SUFFIX_RE.sub("", p.stem)
+        current = newest_per_product.get(product)
+        if current is None or p.name > current.name:
+            newest_per_product[product] = p
+    return sorted(newest_per_product.values(), key=lambda p: p.name, reverse=True)
 
 
 def _artifact_stamp(path: Path, commit: str) -> dict:
