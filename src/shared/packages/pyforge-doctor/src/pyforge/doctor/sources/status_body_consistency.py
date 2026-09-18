@@ -114,6 +114,7 @@ _CHECK_PROMISSORY = "status-body-promissory-language"
 _CHECK_STATUS_COMMENT = "status-body-status-comment"
 _CHECK_STATUS_COMMENT_UNRESOLVABLE = "status-body-status-comment-unresolvable"
 _CHECK_UNPARSEABLE = "status-body-unparseable"
+_CHECK_ROSTER_DEGRADED = "spec-status-roster-degraded"
 
 _LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
 _LEDGER_STATUS_WORDS = (

@@ -205,7 +205,7 @@
   "$comment_spec_statuses_ready_or_beyond": [
     "Backs docs/dreams/README.md:71's rule: a Dream at `specified` needs a covering",
     "Spec at `ready` or beyond (pyforge.doctor.sources.chain::_SPEC_READY_FOR_SPECIFIED's",
-    "own CAP-1-vocabulary subset -- four Story/ledger/Dream words outside CAP-1's enum",
+    "own CAP-1-vocabulary subset -- five Story/ledger/Dream words outside CAP-1's enum",
     "stay literal in that module and are never sourced from here).",
     "",
     "`archived`/`superseded` are deliberately excluded -- an ended-without-delivering",
