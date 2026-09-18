@@ -492,6 +492,46 @@ def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
     assert findings[0].evidence["key"] == "34-3-factory-drain"
 
 
+def test_bare_form_merge_touching_two_stations_with_the_same_key_attributes_to_neither(
+    tmp_path: Path,
+) -> None:
+    """The compound collision Blind Hunter caught in review: a genuinely
+    cross-cutting commit touches BOTH marshal's and a sibling's own paths,
+    and BOTH stations' ledgers independently track the same numeric key
+    (the module's own docstring calls that "the common case, not the
+    exception"). `project_slug in slugs` alone would attribute this to
+    marshal too, exactly the "fleet-wide mop commit... attributed to every
+    station it touches" collision the spec's Never bullet forbids -- the
+    diff must touch marshal's paths EXCLUSIVELY to attribute."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    (target / "src/shared/packages/pyforge-marshal/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-marshal/core/a.py").write_text(
+        "x\n", encoding="utf-8",
+    )
+    (target / "src/shared/packages/pyforge-steward/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-steward/core/b.py").write_text(
+        "x\n", encoding="utf-8",
+    )
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
 def test_bare_form_merge_touching_no_station_path_does_not_attribute(
     tmp_path: Path,
 ) -> None:
