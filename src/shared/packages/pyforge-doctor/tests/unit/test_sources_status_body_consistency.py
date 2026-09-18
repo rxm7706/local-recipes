@@ -155,11 +155,27 @@ def test_gather_fires_on_fixture_dream_and_spec_and_records_silent_count(tmp_pat
 def test_gather_ok_when_no_terminal_docs(tmp_path: Path):
     repo = tmp_path / "empty"
     repo.mkdir()
+    _write_roster(repo)
     (repo / "docs" / "dreams").mkdir(parents=True)
     findings = sbc.gather_progress_phrase(repo)
     assert len(findings) == 1
     assert findings[0].status == DoctorStatus.OK
     assert findings[0].evidence["scanned_terminal"] == 0
+
+
+def test_gather_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path):
+    """No ``docs/governance/guild-roster.json`` at all still classifies
+    terminal statuses correctly -- via ``TERMINAL_STATUSES``, the module's own
+    fallback -- and surfaces a ``spec-status-roster-degraded`` WARN rather
+    than crashing or degrading silently (Story 59.2)."""
+    repo = tmp_path / "no-roster"
+    repo.mkdir()
+    (repo / "docs" / "dreams").mkdir(parents=True)
+    findings = sbc.gather_progress_phrase(repo)
+    assert len(findings) == 1
+    assert findings[0].check == "spec-status-roster-degraded"
+    assert findings[0].status == DoctorStatus.WARN
+    assert findings[0].source == Source.STATUS_BODY_CONSISTENCY
 
 
 def test_gather_live_dream_and_spec_progress_phrases():
