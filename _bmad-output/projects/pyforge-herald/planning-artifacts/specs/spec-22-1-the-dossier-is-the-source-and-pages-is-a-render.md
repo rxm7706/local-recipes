@@ -5,15 +5,11 @@ created: '2026-09-13'
 status: done
 baseline_revision: 907c1cc233106973948c48976e9438d6c2d85917
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md'
   - '{project-root}/docs/dreams/pyforge-herald.md'
-deferred:
-  - summary: 'Sprint ledger key `22-1-the-dossier-is-the-source-and-pages-is-a-render` still reads `backlog` although the capability it tracks (spec-pyforge-pages CAP-1..5) was verified shipped on `main` via PR #1341/#1351, merged before this Story was minted.'
-    evidence: '`pyforge.core.landing_evidence`''s recognized grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject, `Story N.M:` commit subject, `land/<station>-<epic>-<seq>` branch) do not match branch `pyforge-pages`, so automatic landing detection never promoted the key past `backlog` in either the tracked ledger or the Tier-3 feed.'
-    location: '_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml'
-    severity: low
+deferred: []
 declared_low_risk: false
 ---
 <intent-contract>
@@ -90,17 +86,27 @@ scope. No code changes were needed or made. Re-ran every Acceptance Criterion fr
   (the `detectors-ci` task) — its only repo references are `dashboard.yml` (CI, advisory,
   `continue-on-error: true`) and the `site-verify` pixi task.
 
-**Residual/risk (not fixed here, flagging for the operator):** the sprint-status ledger's
-`22-1-the-dossier-is-the-source-and-pages-is-a-render` key still reads `backlog` in both the
-tracked ledger and the Tier-3 feed. `sprint-status-ledger.yaml` is a GENERATED file
-("do not hand-edit"; regenerate via `sprint-ledger-sync`, which promotes from the Tier-3 feed —
-it does not recompute status from git). The likely reason automatic landing-evidence detection
-(`pyforge.core.landing_evidence`) never marked it done: PR #1341/#1351 merged from branch
-`pyforge-pages`, which predates this Story's key and matches none of that module's recognized
-grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject, `Story N.M:` commit
-subject, `land/<station>-<epic>-<seq>` branch). This is a landing-evidence gap for
-pre-convention work, not a defect in this Story's own deliverable; left for the operator/doctor
-`story-status-check` pass to reconcile rather than hand-edited here.
+**Residual/risk, closed out 2026-09-18 (operator-directed session, not the constrained
+bmad-build-auto review loop):** the sprint-status ledger's
+`22-1-the-dossier-is-the-source-and-pages-is-a-render` key read `backlog` in both the tracked
+ledger and the Tier-3 feed despite the capability being shipped. The likely reason automatic
+landing-evidence detection (`pyforge.core.landing_evidence`) never marked it done: PR #1341/#1351
+merged from branch `pyforge-pages`, which predates this Story's key and matches none of that
+module's recognized grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject,
+`Story N.M:` commit subject, `land/<station>-<epic>-<seq>` branch) — a landing-evidence gap for
+pre-convention work, not a defect in this Story's own deliverable.
+
+`pixi run -e pyforge-guild sprint-ledger-sync` (the documented promotion path from the Tier-3
+feed) was tried first and **refused**: the herald Tier-3 feed is behind the tracked twin on 23
+unrelated keys (pre-existing drift, e.g. `21-6..21-9` and `23-3`/`23-4`, nothing to do with this
+Story), and the script's monotonic guard correctly blocks a promotion that would regress those.
+Reconciling that broader drift is out of this Story's scope. Following the same precedent as
+commit `61c687e5a8` ("chore(ledger): mark doctor 23.1 and steward 59.1 done"), both
+`22-1-the-dossier-is-the-source-and-pages-is-a-render` and `epic-22` were hand-flipped to `done`
+in the TRACKED `planning-artifacts/sprint-status-ledger.yaml` (Epic 22 has exactly one story), and
+in the Tier-3 `implementation-artifacts/sprint-status.yaml` feed for parity. `story-status-check`
+(`pyforge.doctor.sources.story_status`) was re-run after the flip and reports clean: `ok -- no
+`done` story contradicts its landing evidence`.
 
 ## Review Triage Log
 
@@ -118,15 +124,33 @@ pre-convention work, not a defect in this Story's own deliverable; left for the 
 
 **Summary:** Story 22.1's target capability (`spec-pyforge-pages` CAP-1..5, folded into `spec-pyforge-herald` CAP-43..47) was already fully implemented and merged to `origin/main` — PR #1341 and PR #1351, both `maintenance`-labeled — before this Story's Dream/Spec/Story were minted (an "express mode" bundle import per `spec-pyforge-pages/.memlog.md`). This dispatch made no code changes; it independently re-verified every Acceptance Criterion and Boundary/Constraint against the live worktree, recorded that verification, and closed out the Story's own paper trail.
 
-**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-22-1-the-dossier-is-the-source-and-pages-is-a-render.md` only (frontmatter status/baseline tracking, an added `## Verification` section, an added `## Review Triage Log`, this section) — no application code, config, or workflow files.
+**Files changed:** this spec (frontmatter status/baseline tracking, `## Verification`, `## Review
+Triage Log`, this section); `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`
+and `_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml` (ledger
+closeout, 2026-09-18 addendum) — no application code, config, or workflow files.
 
 **Review findings breakdown (6 findings, 1 review pass):**
 - Patched (3): stale `deferred:` frontmatter (added an entry so the residual ledger-key drift is machine-discoverable); stale `context:` pointers (repointed from the disposed `spec-pyforge-pages`/`pyforge-pages.md` stubs to the live `spec-pyforge-herald`/`pyforge-herald.md` successors); inaccurate "Epic 21 deck-registry work" characterization of unrelated worktree divergence (reworded to a general, accurate statement).
 - Rejected as false (2): `followup_review_recommended` should be `true` to fix the ledger — false, that flag re-runs this same review loop, which cannot write the orchestrator-owned `sprint-status-ledger.yaml`. This Story's own PR should be checked for the `maintenance` label — false, no PR exists yet for this diff; labeling happens later in the external landing flow.
 - Rejected as low/not-worth-fixing (1): the spec doesn't narrate its own prior self-correction (moving content out of the sealed `<intent-contract>` block) — git history already documents this; not worth the added narrative.
 
-**Follow-up review recommendation: `true`.** Two `medium` entries were patched this pass (the threshold for a first-pass follow-up). Named unverified risk: the new `deferred:` frontmatter entry was confirmed *discoverable* by directly calling `pyforge.doctor.sources.chain.discover_spec_frontmatter_deferrals()`, but the end-to-end `deferred_work_intake.py` sweep (which promotes discovered entries into the tracked `deferred-work-ledger.md`) was not actually run against this spec — so whether it round-trips into the ledger as expected is unverified.
+**Follow-up review recommendation: `false`.** The prior pass's named unverified risk (whether the
+`deferred:` frontmatter entry round-trips through `deferred_work_intake.py` into the tracked
+`deferred-work-ledger.md`) is now moot — the underlying finding it tracked (the stale ledger key)
+was resolved directly this session rather than routed through that pipeline, so the frontmatter
+`deferred:` list is empty again and there is nothing left for a follow-up pass to chase.
 
 **Verification performed:** `pixi run -e site site-check` (exit 0, 6 required outputs + 10 infographics green); `pixi project export conda-environment -e build > environment.yaml` (byte-identical, confirmed via `diff`); `grep -rln deploy-pages .github/workflows/` (only `dashboard.yml`); Dream (`docs/dreams/pyforge-herald.md`, `status: specified`) and Spec (`spec-pyforge-herald/SPEC.md`, `status: ready`, CAP-43..47 mapped from `spec-pyforge-pages` CAP-1..5) read directly; sprint-ledger key presence confirmed in both the tracked ledger and Tier-3 feed; `docsite/build.py` cleanup logic read directly (explicit allow-list, no blanket `rmtree`); `verify_claims.py` confirmed absent from `detectors-ci` and marked `continue-on-error: true` in `dashboard.yml`; PR #1341/#1351 labels confirmed live via `gh pr view --json labels`. After patching: frontmatter re-parsed with `yaml.safe_load` (clean), both new `context:` paths confirmed to exist and resolve to the live documents, and the `<intent-contract>` block confirmed byte-identical to its pre-patch state via whole-line-anchored diff.
 
-**Residual risks:** the sprint-status ledger key remains `backlog` (orchestrator-owned; explicitly out of this workflow's writable scope per this run's own invocation instructions) — now captured in the `deferred:` field for the operator/doctor `story-status-check` pass to reconcile. The `deferred_work_intake.py` end-to-end round-trip is unverified (see follow-up recommendation above).
+**2026-09-18 closeout addendum (operator-directed session):** `sprint-ledger-sync` was attempted
+and refused (23 unrelated keys pre-existing drift in the herald Tier-3 feed — see `## Verification`
+above); `22-1-the-dossier-is-the-source-and-pages-is-a-render` and `epic-22` were hand-flipped to
+`done` in both `planning-artifacts/sprint-status-ledger.yaml` and the Tier-3
+`implementation-artifacts/sprint-status.yaml`, precedented by commit `61c687e5a8`.
+`story-status-check` re-run clean afterward. `deferred:` frontmatter cleared to `[]` since the
+finding it recorded is now fixed, not merely tracked.
+
+**Residual risks:** none remaining for this Story's own scope. Out-of-scope, pre-existing and
+unrelated: the herald Tier-3 feed (`implementation-artifacts/sprint-status.yaml`, gitignored) is
+stale on 23 other keys (`sprint-ledger-sync` reported them); reconciling that feed wholesale is a
+separate effort, not this Story's.
