@@ -199,3 +199,18 @@ Regenerating a board view is optional confirmation, not the measure.
      field are all behaviour or schema changes. Under Dream-first they enter through
      `docs/dreams/<slug>.md` → `bmad-spec` → a Story; a currency sweep records them and
      stops.
+
+- **Run 2026-09-18 — 1 finding cleared, single station.** Entry state: pyforge-atlas
+  `chain-audit-checkpoint-staleness` fail (two paired findings: `prd→arch` feeds, PRD
+  re-cut 2026-09-17 by the atlas-fold rekey landing ahead of the arch spine's
+  2026-09-07 stamp; and `behind-code`, the spine trailing the 2026-09-10 Story 24.4
+  live-Artifactory-transport commit). Exit state: `chain-layers-audit-check --project
+  pyforge-atlas` verdict `ok`, all four checkpoints pass. Remedy: the PRD's fold was
+  citation-only (CAP provenance tags, no FR semantics changed) plus the Epic 12–25 →
+  11–24 rekey, so the arch spine's AD-3 *(Amended 2026-08-26 …)* parenthetical — a
+  live rule, not dated narrative — was corrected in place from old Epic 13/15 to
+  post-rekey Epic 12/14; the 2026-08-26 dated section's own Epic citations were left
+  as written per the historical-prose convention. A new `## Currency reconciliation —
+  2026-09-18` section documents both the fold and Story 24.4's
+  `tools/live_artifactory_transport.py` (as-built confirmation of the already-charted
+  `artifactory_downloads` pipeline, no new AD). `updated:`/`currency_review:` bumped.
