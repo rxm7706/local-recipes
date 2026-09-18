@@ -407,9 +407,16 @@ def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
 def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
     tmp_path: Path,
 ) -> None:
-    """Route 3: a commit SUBJECT reachable from ``main`` naming both the slug
-    and ``Story <epic>.<seq>``. This is the most intricate rule in the port
-    and the one with no coverage before now."""
+    """Story 50.4/FR-191 CAP-247: a bare ``Story <epic>.<seq>: …`` commit
+    subject carries no station token, so on its own (no branch, no
+    co-occurring station name) Route 3 can no longer treat it as this
+    station's landing evidence -- exactly the shape that let one station's
+    bare direct commit poison a same-numbered key on another station's
+    ledger (the steward ``Story 48.2:``/``Story 48.4:`` incident that
+    poisoned marshal's own 48.2/48.4). A real hand-landed commit still
+    suppresses via Route 4's loose station+key co-occurrence (see the
+    ``test_loose_co_occurrence_*`` tests below) once the station name is
+    part of the subject."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
@@ -425,7 +432,7 @@ def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
     assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].status is DoctorStatus.FAIL
 
 
 def test_route3_requires_matching_story_ref_not_a_neighbour(tmp_path: Path) -> None:
