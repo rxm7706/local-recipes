@@ -31,6 +31,7 @@ from pyforge.herald.deck_pipeline import (
     SeedResult,
     SubprocessGitCommitter,
     _persona_from_slug,
+    _PixiPartialDeckExporter,
     pull_marp_source,
     pull_prototype,
     pull_standalone_bundle,
@@ -1612,7 +1613,7 @@ def test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_confli
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
 
 
-# --- Story 23.5: PptxTemplateExporter / select_exporter ----------------------
+# --- Story 23.3: PptxTemplateExporter / select_exporter ----------------------
 
 
 def _init_git_repo(root: Path) -> None:
@@ -1881,3 +1882,33 @@ def test_pptx_template_exporter_propagates_an_html_exporter_failure(tmp_path: Pa
         PptxTemplateExporter(html_exporter=html_exporter).export(
             slug="pyforge-warden", repo_root=tmp_path
         )
+
+
+def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_command(
+    monkeypatch, tmp_path: Path
+):
+    """The one hardcoded invariant this class exists for: its shelled
+    ``deck-export`` targets must be exactly ``html``/``infographic-pptx``,
+    never ``deck-pptx`` -- that target is what ``PptxTemplateExporter``
+    fills itself. A regression here would silently overwrite a just-filled
+    ``.potx``-based PowerPoint with a Marp render (Story 23.3 follow-up
+    review)."""
+    calls: list[list[str]] = []
+
+    class _Completed:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def _run(cmd, **kwargs):
+        calls.append(cmd)
+        return _Completed()
+
+    monkeypatch.setattr(subprocess, "run", _run)
+    _PixiPartialDeckExporter().export(slug="pyforge-warden", repo_root=tmp_path)
+
+    assert calls == [
+        ["pixi", "run", "-e", "local-recipes", "deck-export", "pyforge-warden",
+         "html", "infographic-pptx"]
+    ]
+    assert "deck-pptx" not in calls[0]

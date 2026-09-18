@@ -85,14 +85,18 @@ def chrome_available() -> bool:
     Checks the hardcoded ``CHROME`` path, a handful of common binary names
     on ``PATH``, and an already-set ``CHROME_PATH`` env var (``marp``'s own
     override, per its docs) -- a machine with a real but differently
-    named/located Chrome must not silently report "no chrome"."""
+    named/located Chrome must not silently report "no chrome". A stale or
+    mistyped ``CHROME_PATH`` must not report "available" either (Story
+    23.5 follow-up review) -- it is only trusted when it actually points
+    at a file."""
+    chrome_path_env = os.environ.get("CHROME_PATH")
     return bool(
         os.path.exists(CHROME)
         or shutil.which("chromium")
         or shutil.which("chromium-browser")
         or shutil.which("google-chrome")
         or shutil.which("google-chrome-stable")
-        or os.environ.get("CHROME_PATH")
+        or (chrome_path_env and os.path.exists(chrome_path_env))
     )
 
 

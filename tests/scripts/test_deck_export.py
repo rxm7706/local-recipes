@@ -412,11 +412,25 @@ def test_chrome_available_true_when_google_chrome_stable_is_on_path(monkeypatch)
 def test_chrome_available_true_when_chrome_path_env_var_is_already_set(monkeypatch):
     """A machine with Chrome installed under a path this module does not
     hardcode, and not named anything ``shutil.which`` above checks for, can
-    still declare it via ``CHROME_PATH`` (``marp``'s own override)."""
-    monkeypatch.setattr(deck_export.os.path, "exists", lambda p: False)
+    still declare it via ``CHROME_PATH`` (``marp``'s own override) --
+    provided the path it names actually exists."""
+    monkeypatch.setattr(
+        deck_export.os.path, "exists", lambda p: p == "/opt/chrome/chrome"
+    )
     monkeypatch.setattr(deck_export.shutil, "which", lambda name: None)
     monkeypatch.setenv("CHROME_PATH", "/opt/chrome/chrome")
     assert deck_export.chrome_available() is True
+
+
+def test_chrome_available_false_when_chrome_path_env_var_is_stale(monkeypatch):
+    """A ``CHROME_PATH`` left over from a machine/image where it no longer
+    points at a real binary must not be trusted -- reporting "available"
+    here means the guard this story adds never fires and ``marp --pptx``
+    crashes instead of skipping (Story 23.5 follow-up review)."""
+    monkeypatch.setattr(deck_export.os.path, "exists", lambda p: False)
+    monkeypatch.setattr(deck_export.shutil, "which", lambda name: None)
+    monkeypatch.setenv("CHROME_PATH", "/opt/chrome/chrome-that-no-longer-exists")
+    assert deck_export.chrome_available() is False
 
 
 def test_chrome_available_false_when_nothing_is_found(monkeypatch):

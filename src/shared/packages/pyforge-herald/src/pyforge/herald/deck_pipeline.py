@@ -581,7 +581,7 @@ class _PixiPartialDeckExporter:
 
 
 class PptxTemplateExporter:
-    """CAP-1's ``.potx`` template-fill path (Story 23.5): routed to in
+    """CAP-1's ``.potx`` template-fill path (Story 23.3): routed to in
     place of ``PixiDeckExporter`` only for a deck whose README declares a
     ``.potx`` template (``select_exporter``, below). Replaces ONLY the
     "deck" PPTX target -- the one target whose content shape (a linear
@@ -628,7 +628,7 @@ class PptxTemplateExporter:
 
 
 def select_exporter(slug: str, repo_root: Path) -> DeckExporter:
-    """Routes a deck's derive path (Story 23.5): ``PptxTemplateExporter``
+    """Routes a deck's derive path (Story 23.3): ``PptxTemplateExporter``
     when the deck's README declares a ``.potx`` template
     (``registry.read_potx_template``), else the existing
     ``PixiDeckExporter`` -- routing strictly on that one declaration

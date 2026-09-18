@@ -378,7 +378,7 @@ def test_read_counts_a_blank_line_under_the_heading_as_a_body_line(
         read(readme_path)
 
 
-# --- Story 23.5: § *PowerPoint template* (the .potx path) -------------------
+# --- Story 23.3: § *PowerPoint template* (the .potx path) -------------------
 
 
 def test_read_potx_template_of_a_readme_with_no_section_returns_none(tmp_path: Path):
@@ -533,6 +533,28 @@ def test_register_potx_template_refuses_an_absolute_or_dot_dot_path(
     with pytest.raises(HeraldError, match="repo-root-relative"):
         register_potx_template(readme_path, template_path)
     assert read_potx_template(readme_path) is None
+
+
+@pytest.mark.parametrize(
+    "template_path",
+    ["/etc/passwd", "../../escape.potx", "presentations/pyforge-demo/../../escape.potx"],
+)
+def test_read_potx_template_refuses_an_absolute_or_dot_dot_path(
+    tmp_path: Path, template_path
+):
+    """``register_potx_template`` guards this at write time, but the
+    section can also be hand-edited directly (Story 23.3's own Auto Run
+    Result: it has no production caller today) -- bypassing that guard
+    entirely. ``read_potx_template`` must re-apply it, since
+    ``deck_pipeline.py``'s ``PptxTemplateExporter.export`` joins whatever
+    it returns straight onto ``repo_root`` unguarded."""
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        f"# My Deck\n\n## PowerPoint template (the .potx path)\n{template_path}\n"
+    )
+
+    with pytest.raises(HeraldError, match="repo-root-relative"):
+        read_potx_template(readme_path)
 
 
 def test_read_potx_template_of_a_section_with_two_body_lines_raises_herald_error(

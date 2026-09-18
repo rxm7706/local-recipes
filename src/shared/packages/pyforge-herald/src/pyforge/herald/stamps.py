@@ -1,4 +1,4 @@
-"""Provenance sidecars for every derived deck artifact (Story 23.5).
+"""Provenance sidecars for every derived deck artifact (Story 23.3).
 
 Neither the trio derive path (``scripts/deck_trio.py``) nor the export
 derive path (``scripts/deck_export.py``/``deck_pipeline.py``'s ``pull_*``
@@ -48,6 +48,11 @@ _PROTOTYPE_ARTIFACT_KEY = "prototype"
 """Mirrors ``deck_pipeline.PROTOTYPE_ARTIFACT_KEY`` -- duplicated, not
 imported (see module docstring)."""
 
+_GIT_TIMEOUT_SECONDS = 30.0
+"""Bounds ``_git`` the same way ``deck_pipeline._PixiPartialDeckExporter``
+bounds its own subprocess call -- a hung ``git`` (lock contention, a
+network-mounted ``.git``) must not block a stamp write forever."""
+
 
 @dataclass(frozen=True)
 class Stamp:
@@ -75,7 +80,13 @@ def _git(repo_root: Path, *args: str) -> str:
             capture_output=True,
             text=True,
             check=True,
+            timeout=_GIT_TIMEOUT_SECONDS,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise errors.HeraldError(
+            f"could not write stamp: 'git {' '.join(args)}' in {repo_root} "
+            f"exceeded {_GIT_TIMEOUT_SECONDS}s ({exc})"
+        ) from exc
     except (OSError, subprocess.CalledProcessError) as exc:
         raise errors.HeraldError(
             f"could not write stamp: 'git {' '.join(args)}' failed in "
@@ -132,10 +143,12 @@ def read_stamp(artifact_path: Path) -> Stamp | None:
     """``artifact_path``'s stamp, or ``None`` when no sidecar exists yet.
 
     Raises ``errors.HeraldError`` naming the stamp path when it exists but
-    is not valid JSON, does not hold a JSON object, is missing one of
-    ``tree``/``etag``/``derived_at``, or carries the wrong type for one of
-    them (``tree``/``derived_at`` must be a string, ``etag`` a string or
-    null) -- a present-but-corrupt stamp is corruption, not "no stamp
+    is not valid JSON, does not hold a JSON object, is missing or carries
+    an extra field beyond ``tree``/``etag``/``derived_at`` (mirrors
+    ``state.py``'s own unknown-field discipline), or carries the wrong
+    type for one of them (``tree``/``derived_at`` must be a string,
+    ``etag`` a string or null) -- a present-but-corrupt stamp is
+    corruption, not "no stamp
     yet"."""
     stamp_path = _stamp_path(Path(artifact_path))
     try:
@@ -152,10 +165,17 @@ def read_stamp(artifact_path: Path) -> Stamp | None:
         raise errors.HeraldError(
             f"stamp {stamp_path} does not hold a JSON object at its top level"
         )
-    missing = sorted({"tree", "etag", "derived_at"} - set(document))
+    known = {"tree", "etag", "derived_at"}
+    missing = sorted(known - set(document))
     if missing:
         raise errors.HeraldError(
             f"stamp {stamp_path} is missing field(s) {', '.join(missing)}"
+        )
+    unknown = sorted(set(document) - known)
+    if unknown:
+        raise errors.HeraldError(
+            f"stamp {stamp_path} carries unknown field(s) "
+            f"{', '.join(map(repr, unknown))}"
         )
     tree = document["tree"]
     etag = document["etag"]

@@ -114,7 +114,7 @@ def _find_heading(lines: list[str], heading: str) -> int | None:
     ``register_potx_template`` never produce more than one of their own
     heading, so a second one can only come from a hand-edit, which is
     outside this module's parsing contract (see the module docstring).
-    Generalized (Story 23.5) so both the § *Design project* heading and the
+    Generalized (Story 23.3) so both the § *Design project* heading and the
     separate § *PowerPoint template* heading share one lookup."""
     for index, line in enumerate(lines):
         if line == heading:
@@ -300,7 +300,7 @@ def read(readme_path: Path) -> DesignProject | None:
     )
 
 
-# --- Story 23.5: § *PowerPoint template* (the .potx path) -------------------
+# --- Story 23.3: § *PowerPoint template* (the .potx path) -------------------
 #
 # A separate, additive registry section -- never a third line on § *Design
 # project* (Design Notes: "New section, not a 3rd line on Design project"):
@@ -319,7 +319,7 @@ repo-root-relative POSIX path to the deck's ``.potx``/``.pptx`` template."""
 def register_potx_template(readme_path: Path, template_path: str) -> None:
     """Append or replace the § *PowerPoint template* section in
     ``readme_path``, declaring the repo-root-relative POSIX path to a
-    deck's ``.potx`` template (Story 23.5, deck_pipeline.py's
+    deck's ``.potx`` template (Story 23.3, deck_pipeline.py's
     ``select_exporter`` reads it back). Append-vs-replace and atomic-write
     shape mirror ``register`` exactly, over this section's own heading and
     a one-line body instead of ``register``'s two.
@@ -397,7 +397,11 @@ def read_potx_template(readme_path: Path) -> str | None:
 
     Raises ``errors.HeraldError`` naming ``readme_path`` when the heading
     is present but its body is not exactly one line (a hand-edit broke
-    it), or when the filesystem otherwise refuses the read."""
+    it), when that line is an absolute or ``..``-containing path (the same
+    guard ``register_potx_template`` applies on write -- re-applied here
+    because this section can be hand-edited directly, bypassing that
+    write-time check entirely), or when the filesystem otherwise refuses
+    the read."""
     try:
         text = readme_path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -421,4 +425,15 @@ def read_potx_template(readme_path: Path) -> str | None:
             f"potx template section in {readme_path} is malformed: expected "
             f"exactly one body line, found {len(body)}"
         )
-    return body[0]
+    template_path = body[0]
+    posix_path = PurePosixPath(template_path)
+    if posix_path.is_absolute() or ".." in posix_path.parts:
+        raise errors.HeraldError(
+            f"potx template section in {readme_path} is malformed: "
+            f"template_path must be a repo-root-relative POSIX path with "
+            f"no '..' segments, got {template_path!r} -- "
+            f"deck_pipeline.py's PptxTemplateExporter joins it onto "
+            f"repo_root, and an absolute path silently discards repo_root "
+            f"entirely"
+        )
+    return template_path

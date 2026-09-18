@@ -1,5 +1,5 @@
 """``stamps.py``'s write/read round-trip over a derived artifact's
-``<artifact-path>.stamp.json`` sidecar (Story 23.5).
+``<artifact-path>.stamp.json`` sidecar (Story 23.3).
 
 Every case runs against a real, throwaway git repo under ``tmp_path``
 (mirrors ``test_deck_pipeline.py``'s own ``_init_git_repo`` helper) --
@@ -161,6 +161,25 @@ def test_read_stamp_of_a_sidecar_missing_a_field_raises_herald_error(tmp_path: P
         read_stamp(artifact)
 
 
+def test_read_stamp_of_a_sidecar_with_an_unknown_field_raises_herald_error(
+    tmp_path: Path,
+):
+    """Mirrors ``state.py``'s own unknown-field discipline: an unrecognized
+    field is corruption to flag, not to silently ignore (a rename of one
+    of the three known fields without updating ``read_stamp`` would
+    otherwise pass every value straight through as "unknown", never
+    surfacing as a bug)."""
+    artifact = tmp_path / "out.pptx"
+    (tmp_path / "out.pptx.stamp.json").write_text(
+        '{"tree": "abc", "etag": null, "derived_at": "2026-01-01T00:00:00+00:00", '
+        '"extra": "surprise"}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(HeraldError, match="unknown field"):
+        read_stamp(artifact)
+
+
 def test_write_stamp_wraps_a_failed_replace_as_herald_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -213,3 +232,22 @@ def test_prototype_artifact_key_mirrors_deck_pipelines_constant():
     silently look up the wrong key and every future stamp would record
     ``etag: null`` with no failing test to catch it."""
     assert stamps._PROTOTYPE_ARTIFACT_KEY == deck_pipeline.PROTOTYPE_ARTIFACT_KEY
+
+
+def test_write_stamp_wraps_a_hung_git_call_as_herald_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """``_git`` must not block forever on lock contention or a
+    network-mounted ``.git`` -- mirrors the bounded-subprocess pattern
+    ``deck_pipeline._PixiPartialDeckExporter`` already applies to its own
+    subprocess call."""
+    _init_git_repo(tmp_path)
+    artifact = tmp_path / "out.pptx"
+    artifact.write_bytes(b"binary")
+
+    def _hang(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=cmd, timeout=kwargs.get("timeout"))
+
+    monkeypatch.setattr(subprocess, "run", _hang)
+    with pytest.raises(HeraldError, match="exceeded"):
+        write_stamp(artifact, repo_root=tmp_path, slug="pyforge-demo")

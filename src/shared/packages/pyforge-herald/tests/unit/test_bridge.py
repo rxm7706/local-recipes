@@ -211,7 +211,7 @@ registers Marp/PPTX/``.dc.html`` export plugins on the shared
 ``pyforge.core.hooks`` contract, importing nothing but ``pyforge.core.hooks``
 itself -- no transport call, no inference SDK, no argv parsing, and (unlike
 ``pptx_pipeline.py`` below) no ``importlib.resources`` reach either.
-``stamps.py`` (Story 23.5) joins for the same reason again: it shells
+``stamps.py`` (Story 23.3) joins for the same reason again: it shells
 ``git`` (the same class of bounded subprocess call ``deck_pipeline.py``'s
 own ``NpmLocalProver``/``PixiDeckExporter``/``SubprocessGitCommitter``
 already make) and reads ``state.py`` to record a derived artifact's
