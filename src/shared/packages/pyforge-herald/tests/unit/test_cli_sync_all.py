@@ -52,6 +52,78 @@ def test_deck_sync_all_forwards_slug_repo_root_and_dry_run(monkeypatch, tmp_path
     assert seen["dry_run"] is True
 
 
+def test_deck_sync_all_forwards_proof_dir_when_the_gate_is_satisfied(
+    monkeypatch, tmp_path
+):
+    """Story 24.3: with ``HERALD_LIVE_SYNC_PROOF=1`` set, ``--proof-dir`` is
+    forwarded straight through to ``sync_all.sync_all`` as a keyword."""
+    seen = {}
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
+        seen["proof_dir"] = proof_dir
+        return SyncAllReport(decks=(), published=False)
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+    monkeypatch.setenv("HERALD_LIVE_SYNC_PROOF", "1")
+    proof_dir = tmp_path / "proof"
+
+    exit_code = cli.main(["deck", "sync-all", "--proof-dir", str(proof_dir)])
+
+    assert exit_code == 0
+    assert seen["proof_dir"] == proof_dir
+
+
+def test_deck_sync_all_proof_dir_refused_without_the_gate_env_var(monkeypatch, capsys):
+    """Story 24.3: ``--proof-dir`` with the gate env var unset is refused
+    before any transport/Design call is made -- ``sync_all`` must never be
+    reached."""
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
+        raise AssertionError("sync_all must not be called when the gate refuses")
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+    monkeypatch.delenv("HERALD_LIVE_SYNC_PROOF", raising=False)
+
+    exit_code = cli.main(["deck", "sync-all", "--proof-dir", "/tmp/proof"])
+
+    assert exit_code == 1
+    assert "HERALD_LIVE_SYNC_PROOF" in capsys.readouterr().err
+
+
+def test_deck_sync_all_proof_dir_refused_when_the_gate_env_var_is_not_1(
+    monkeypatch, capsys
+):
+    """Story 24.3: the gate checks for the exact string ``"1"`` -- any other
+    value (e.g. left over from an unrelated ``0``/``true``) still refuses."""
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
+        raise AssertionError("sync_all must not be called when the gate refuses")
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+    monkeypatch.setenv("HERALD_LIVE_SYNC_PROOF", "true")
+
+    exit_code = cli.main(["deck", "sync-all", "--proof-dir", "/tmp/proof"])
+
+    assert exit_code == 1
+    assert "HERALD_LIVE_SYNC_PROOF" in capsys.readouterr().err
+
+
+def test_deck_sync_all_without_proof_dir_never_requires_the_gate(monkeypatch):
+    """Regression guard: omitting ``--proof-dir`` entirely must behave
+    identically to before this story, gate env var or not."""
+
+    def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
+        assert proof_dir is None
+        return SyncAllReport(decks=(), published=False)
+
+    monkeypatch.setattr(sync_all_module, "sync_all", _fake_sync_all)
+    monkeypatch.delenv("HERALD_LIVE_SYNC_PROOF", raising=False)
+
+    exit_code = cli.main(["deck", "sync-all"])
+
+    assert exit_code == 0
+
+
 def test_deck_sync_all_default_slug_is_none_and_dry_run_is_false(monkeypatch, tmp_path):
     seen = {}
 
