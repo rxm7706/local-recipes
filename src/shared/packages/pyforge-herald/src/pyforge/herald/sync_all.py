@@ -54,10 +54,24 @@ report, the runbook -- never ``scripts/deck_facts.py`` et al). So
 live run would find that deck ``unchanged`` or would have something to
 pull -- a deliberately narrower preview than a live run's full report, not
 a simulation of every step.
+
+**``proof_dir`` (Story 24.3, ``spec-pyforge-herald`` CAP-50).** An opt-in
+seam: when given, every deck's ``DeckSyncReport`` from this run is also
+serialized to ``<proof_dir>/<slug>/report-<timestamp>.json`` plus a
+``stamps.write_stamp`` sidecar naming the current tree ref and Design
+prototype etag -- the durable evidence a live idempotency proof (run
+``sync-all`` twice against a real seeded deck) needs to point at. This
+module stays env-var-free by design (every other optional seam here is
+injected, never gated on an environment variable): the ``HERALD_LIVE_SYNC_
+PROOF=1`` gate that makes ``--proof-dir`` opt-in lives in ``cli.py``
+instead, consistent with the existing split between "what the library
+does" and "what the CLI permits" (see ``_run_deck_status``'s own
+``--account`` refusal for the precedent).
 """
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from collections.abc import Callable
@@ -66,7 +80,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from . import errors, state
+from pyforge.core.atomic_write import atomic_write_text
+
+from . import errors, state, stamps
 from .deck_pipeline import (
     _EXPORT_ARTIFACT_PREFIX,
     PROTOTYPE_ARTIFACT_KEY,
@@ -199,6 +215,47 @@ class SyncAllReport:
     decks: tuple[DeckSyncReport, ...]
     published: bool
     publish_error: str | None = None
+
+
+def _report_to_dict(report: DeckSyncReport) -> dict[str, object]:
+    """Plain field-by-field dict of one deck's report, JSON keys matching
+    ``DeckSyncReport``'s own field names so a human or a future script can
+    read the report without a decoder ring. Includes the derived
+    ``labels``/``unchanged`` values ``dataclasses.asdict`` would not
+    compute."""
+    return {
+        "slug": report.slug,
+        "labels": list(report.labels()),
+        "unchanged": report.unchanged,
+        "dry_run": report.dry_run,
+        "pulled": list(report.pulled),
+        "overwrote_local": list(report.overwrote_local),
+        "overrode": report.overrode,
+        "derived": report.derived,
+        "pushed": list(report.pushed),
+        "proven": list(report.proven),
+        "published": report.published,
+        "would_sync": report.would_sync,
+        "skipped_reason": report.skipped_reason,
+        "error": report.error,
+    }
+
+
+def _write_proof(report: DeckSyncReport, *, proof_dir: Path, repo_root: Path) -> None:
+    """Write ``<proof_dir>/<slug>/report-<UTC timestamp>.json`` (mirrors
+    ``stamps.py``'s own ``json.dumps(..., indent=2, sort_keys=True)``
+    formatting exactly) plus its ``stamps.write_stamp`` sidecar -- the
+    durable evidence a live idempotency proof run needs (Story 24.3,
+    ``spec-pyforge-herald`` CAP-50). A sub-second timestamp keeps two runs
+    executed in close succession from colliding on the same filename."""
+    deck_dir = proof_dir / report.slug
+    deck_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    report_path = deck_dir / f"report-{timestamp}.json"
+    atomic_write_text(
+        report_path, json.dumps(_report_to_dict(report), indent=2, sort_keys=True) + "\n"
+    )
+    stamps.write_stamp(report_path, repo_root=repo_root, slug=report.slug)
 
 
 # --- injectable seams (mirroring DeckExporter/GitCommitter) -------------
@@ -600,6 +657,7 @@ def sync_all(
     deriver: DeckDeriver | None = None,
     site_publisher: SitePublisher | None = None,
     edit_detector: LocalEditDetector | None = None,
+    proof_dir: Path | None = None,
     prover: LocalProver | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> SyncAllReport:
