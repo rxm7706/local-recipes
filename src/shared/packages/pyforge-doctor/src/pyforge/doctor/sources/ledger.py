@@ -57,6 +57,7 @@ from pathlib import Path
 
 from pyforge.core.landing_evidence import parse_templated_merge_subject
 
+from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import RekeyMap, parse_rekey
@@ -607,9 +608,14 @@ def _story_id(token: str) -> str | None:
 
 
 def _merged_ids_for_project(
-    target: Path, subjects: list[str], project_slug: str
+    target: Path,
+    commits: list[tuple[str, str]],
+    project_slug: str,
+    *,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[str] | None = None,
 ) -> set[str]:
-    """Story ids durably named in ``subjects`` for ``project_slug``.
+    """Story ids durably named in ``commits`` for ``project_slug``.
 
     Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
     The first two are scoped to the station short name / ``loop/<slug>``
@@ -620,26 +626,37 @@ def _merged_ids_for_project(
     sibling's ``Merge 13-5 into main`` must not.
 
     The bare legacy default (``Merge {key} into main``, no station token) is
-    DELIBERATELY never attempted here, unlike ``sources/marshal.py``'s
-    ``gather_story_status`` (which already carried it, unscoped, before this
-    story — a pre-existing ambiguity this story narrows for the stations
-    that opt in, without adding a NEW one for the stations that don't). This
-    function, by contrast, had NO templated-subject matching at all before
-    Story 27.1; wiring the bare default into it unconditionally does not
-    narrow an existing ambiguity, it CREATES one, spanning every project this
-    check compares in the same run — verified live 2026-09-18: doing so
-    turned 3 findings into 306, because most of the fleet's stations still
-    have no override and therefore share the identical, contentless
-    template. A project with no override keeps exactly its PRE-27.1 behavior
-    for this shape (matches only via GitHub PR-merge / bmad-loop-native
-    subjects) — the acknowledged residual (Marshal's own
-    spec-pyforge-marshal CAP-247 / Story 50.4 is what makes the repo default
-    itself station-scoped fleet-wide).
+    never matched UNCONDITIONALLY here, unlike ``sources/marshal.py``'s
+    ``gather_story_status`` (which already carried it, unscoped, before
+    Story 27.1). This function, by contrast, had NO templated-subject
+    matching at all before Story 27.1; wiring the bare default in
+    unconditionally does not narrow an existing ambiguity, it CREATES one,
+    spanning every project this check compares in the same run — verified
+    live 2026-09-18: doing so turned 3 findings into 306, because most of
+    the fleet's stations still have no override and therefore share the
+    identical, contentless template.
+
+    Story 27.5 (CAP-80 amended): once the scoped template, GitHub PR-merge,
+    and bmad-loop shapes above all miss, the bare legacy form is tried once
+    more — attributed to ``project_slug`` only when ``sha``'s first-parent
+    diff touches this station's own paths AND this station's own tracked
+    ledger already knows the extracted key
+    (``bare_merge.attribute_bare_merge``, shared verbatim with
+    ``sources/marshal.py``'s ``_keys_from_merge_subjects``/``_keys_from_
+    main_commits``). Replaces Story 27.3's reverted ledger-membership-alone
+    gate, which reopened the cross-station collision whenever two stations
+    share a numeric key — the common case under one shared grammar. This is
+    what lets a project with NO override still recognize its own genuine
+    bare-form history (git-diff-corroborated) without reopening the
+    306-finding ambiguity the paragraph above describes: a sibling's own
+    bare-form merge touches only the SIBLING's paths, so it still attributes
+    to nothing here.
     """
     station = project_slug.removeprefix("pyforge-")
     template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     out: set[str] = set()
-    for subject in subjects:
+    for sha, subject in commits:
         if template != _MERGE_SUBJECT_TEMPLATE:
             templated = parse_templated_merge_subject(subject, template)
             if templated is not None:
@@ -659,6 +676,19 @@ def _merged_ids_for_project(
             sid = _story_id(bl.group("key_slug"))
             if sid:
                 out.add(sid)
+            continue
+        attribution = attribute_bare_merge(
+            subject, sha,
+            target=target, project_slug=project_slug,
+            known_keys=known_keys, cache=diff_cache,
+        )
+        if attribution.key is not None:
+            out.add(attribution.key.hyphen_form())
+        elif (
+            attribution.diff_unreadable_sha is not None
+            and unreadable_diff_shas is not None
+        ):
+            unreadable_diff_shas.append(attribution.diff_unreadable_sha)
     return out
 
 
