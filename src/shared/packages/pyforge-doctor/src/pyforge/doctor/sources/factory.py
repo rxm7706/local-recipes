@@ -233,13 +233,6 @@ STALE_RULE_PATTERNS: list[tuple[str, str]] = [
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
 
-# An AI-tool editor backup file left beside the file it is editing (e.g.
-# Cursor's own `<name>.bak-cursor-<date>` sibling), found live 2026-09-18
-# sitting in three projects' `planning-artifacts/` while a concurrent session
-# was open. `Path.suffix` only ever returns the LAST dot segment, so a fixed
-# entry in `STRAY_SUFFIXES` (`.bak-cursor-20260918`) would cover today's date
-# and nothing else -- the pattern, not a literal suffix, is what has to match.
-_BAK_CURSOR_RE = re.compile(r"\.bak-cursor-\d+$")
 NONTERMINAL_STATUS = re.compile(r"\b(in[-\s]?flight|in[-\s]?progress|wip|pending|draft)\b", re.I)
 TERMINAL_STATUS = re.compile(r"\b(done|shipped|complete|completed|cancelled|canceled|merged)\b", re.I)
 
@@ -960,13 +953,6 @@ def classify(path: Path, target: Path) -> str:
     rel = _rel(path, target)
     if any(part in IGNORE_PARTS for part in path.parts):
         return "ignored"
-    if _BAK_CURSOR_RE.search(path.name):
-        # A tool-generated editor backup, not authored content anywhere in the
-        # project -- classified so it does not trip `uncovered`, without
-        # asserting it is tracked, hand-authored content of any kind. A file
-        # this rule matches can still surface separately (untracked, stray) --
-        # this rule only owns the classification-gap half of that story.
-        return "stray:editor-backup"
     if rel in CONFIG_FILES:
         return "config"
     if rel == ".sync-baseline.json":
