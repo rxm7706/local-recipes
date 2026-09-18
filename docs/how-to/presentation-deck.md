@@ -605,6 +605,11 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
       derived artifact regenerates from its `.md` source (no hand edits).
 - [ ] The React app, static bundle, and exports are the same deck (content lives
       only in the prototype → fragments; no divergent hand edits).
+- [ ] For a deck published to the family pages under `docsite/`: a PR touching
+      `docsite/**` or `docs/dashboard/**` runs the `Docsite check` `pull_request`
+      lane (`.github/workflows/docsite-check.yml`) — `docsite/build.py --check`
+      + `site-check` — before merge, not just `dashboard.yml`'s push-to-main
+      build; `pixi run -e pyforge-guild pr-preflight` predicts it locally.
 
 ---
 
