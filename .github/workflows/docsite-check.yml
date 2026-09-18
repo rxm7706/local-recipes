@@ -15,8 +15,11 @@ name: Docsite check
 # Two independent checks, deliberately not collapsed into one:
 #   1. `docsite/build.py --check` with the exact same pip-installed deps
 #      dashboard.yml itself uses (not the pixi `site` feature -- see that
-#      workflow's "own python/deps" comment), so a PR predicts precisely what
-#      the real deploy step would do. Builds into the default `./dist/`,
+#      workflow's "own python/deps" comment), so a PR predicts whether that
+#      build + check step would pass. It does NOT run dashboard.yml's
+#      separate `verify_claims.py` (`site-verify`) step -- that step is
+#      already `continue-on-error` there (advisory, never blocks a deploy),
+#      so it stays out of this gate too. Builds into the default `./dist/`,
 #      never `docs/dashboard/` -- a PR job must never write into that
 #      tracked, shared Pages-publish root.
 #   2. `pixi run -e site site-check` -- the pixi `site` feature's own task,
@@ -29,12 +32,16 @@ on:
     paths:
       - 'docsite/**'
       - 'docs/dashboard/**'
+      - 'presentations/**'
+      - 'pixi.toml'
       - '.github/workflows/docsite-check.yml'
   push:
     branches: [main]
     paths:
       - 'docsite/**'
       - 'docs/dashboard/**'
+      - 'presentations/**'
+      - 'pixi.toml'
       - '.github/workflows/docsite-check.yml'
   workflow_dispatch:
 
@@ -43,7 +50,10 @@ permissions:
 
 concurrency:
   group: docsite-check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Only cancel superseded PR runs -- never a push:main run, so main always
+  # keeps one full, uncancelled CI result per commit to bisect against
+  # (same convention as platform-ci.yml).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
