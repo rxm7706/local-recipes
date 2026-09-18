@@ -142,3 +142,7 @@ React app stays in sync — the slide content lives in one place.
 - **The "See it in action" slide** (40) has three placeholder panels. Drop real
   screenshots into `public/assets/` and reference them in
   `src/slides/fragments/40-in-action.html` to fill them in.
+
+## Design project (the bridge's far end)
+Prototype lives in Claude Design project **"Agentic AI SLDC deck"** (`f58c0f17-087b-417e-9cfa-c410de6169dc`):
+https://claude.ai/design/p/f58c0f17-087b-417e-9cfa-c410de6169dc

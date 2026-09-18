@@ -2247,12 +2247,19 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
 # the 6-artifact family standard, per docs/specs/presentation-deck.md
 _PITCH_CHECK = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
+# spec-design-sync-loop CAP-2 (Story 23.2): presentations/_design-systems/ is
+# a library home (Modernist/Broadsheet/Nocturne, mirrored not authored), not
+# a deck; six-quarter-roadmap/ and llm-knowledge-bases/ are local twins that
+# do not follow the deck-family build pipeline either (each one's own README
+# says so) -- scoring any of the three against the 6-artifact standard would
+# report a permanent, meaningless partial "deck".
+_NOT_A_DECK = frozenset({"_design-systems", "six-quarter-roadmap", "llm-knowledge-bases"})
 
 
 def scan_pitch() -> list[dict]:
     cards: list[dict] = []
     for deck_dir in sorted((REPO_ROOT / "presentations").iterdir()):
-        if not deck_dir.is_dir():
+        if not deck_dir.is_dir() or deck_dir.name in _NOT_A_DECK:
             continue
         slug = deck_dir.name
         proj, marp, pptx = deck_dir / "project", deck_dir / "src" / "marp", deck_dir / "src" / "pptx"
