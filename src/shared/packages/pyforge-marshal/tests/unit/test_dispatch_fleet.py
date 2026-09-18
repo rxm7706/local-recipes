@@ -27,6 +27,8 @@ from pyforge.marshal.cli.dispatch import (
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_fleet
 from pyforge.marshal.core.dispatch_fleet import (
+    ALREADY_LANDED_ADVANCE_PREFIX,
+    HARNESS_DONE_ADVANCE_CODE,
     FleetBlockClass,
     FleetCampaignMode,
     InvalidCampaignModeError,
@@ -38,6 +40,9 @@ from pyforge.marshal.core.dispatch_fleet import (
     dependency_ordered_backlog,
     explicit_story_backlog,
     has_review_verify_cycle_evidence,
+    is_advance_reason,
+    is_already_landed_self_refusal,
+    is_finalize_pending,
     parse_campaign_mode,
     parse_epics_dependencies,
     plan_station_queue,
@@ -488,12 +493,21 @@ class FakeBuildHarness:
 
 
 class FakeProcess:
-    def __init__(self, *, alive: bool = True) -> None:
+    def __init__(
+        self, *, alive: bool = True, alive_pids: frozenset[int] | None = None
+    ) -> None:
         self.alive = alive
+        # Story 50.1: per-pid liveness. ``None`` keeps the flat ``alive``
+        # behaviour every pre-existing fixture relies on byte-identical --
+        # Part A is the first probe that needs a live supervisor pid
+        # alongside a dead session pid in the SAME run.
+        self.alive_pids = alive_pids
         self.spawned: list[list[str]] = []
 
-    def is_alive(self, _pid: int) -> bool:
-        return self.alive
+    def is_alive(self, pid: int) -> bool:
+        if self.alive_pids is None:
+            return self.alive
+        return pid in self.alive_pids
 
     def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
         self.spawned.append(list(argv))
