@@ -220,6 +220,7 @@ from ..core.harness_profile import (
     WireWrap,
     bmadloop_adapter_for_preference,
     load_packaged_profiles,
+    resolve_wire_enabled,
     resolve_wire_wrap,
     substitute_wire_port,
 )
@@ -949,7 +950,9 @@ def attempt_spin_wire_layer(
     """
     profile_stem = PROFILE_BY_BMADLOOP_ADAPTER.get(adapter_name)
     if profile_stem is None:
-        enabled = bool((wire_layer or {}).get("enabled", False))
+        enabled = resolve_wire_enabled(
+            (wire_layer or {}).get("enabled", False), wrapper_declared=False
+        )
         if not enabled:
             return WireWrap(applied=False)
         return WireWrap(
@@ -968,7 +971,9 @@ def attempt_spin_wire_layer(
     marshal_profiles = load_packaged_profiles()
     profile = marshal_profiles.get(profile_stem)
     if profile is None:
-        enabled = bool((wire_layer or {}).get("enabled", False))
+        enabled = resolve_wire_enabled(
+            (wire_layer or {}).get("enabled", False), wrapper_declared=False
+        )
         if not enabled:
             return WireWrap(applied=False)
         return WireWrap(

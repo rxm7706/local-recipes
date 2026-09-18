@@ -730,6 +730,16 @@ def wire_env_for_aggressiveness(
     return merged
 
 
+def resolve_wire_enabled(raw: object, *, wrapper_declared: bool) -> bool:
+    """Tri-state wire-layer enable resolution (Story 46.4): the literal
+    ``"auto"`` resolves against whether the harness profile declares a
+    ``[wrapper]``; any other declared value is a force-override, coerced
+    to ``bool`` exactly as before."""
+    if raw == "auto":
+        return wrapper_declared
+    return bool(raw)
+
+
 def resolve_wire_wrap(
     profile: HarnessProfile,
     *,
@@ -744,10 +754,13 @@ def resolve_wire_wrap(
     creating the store directory is the adapter's business.
 
     ``wire_layer`` is one entry of ``policy.resolve_context_layers``'s own
-    output -- ``{"enabled": bool, "aggressiveness": str}`` -- so both
-    engines read the same composition site rather than each re-deriving
-    "layer absent = off". ``None`` (no layer resolved at all) reads as
-    disabled.
+    output -- ``{"enabled": bool | "auto", "aggressiveness": str}`` -- so
+    both engines read the same composition site rather than each
+    re-deriving "layer absent = off". ``None`` (no layer resolved at all)
+    reads as disabled. Story 46.4: ``enabled`` may be the literal string
+    ``"auto"``, resolved here (the point the concrete ``profile`` is known)
+    via ``resolve_wire_enabled`` against whether ``profile`` declares a
+    ``[wrapper]``.
 
     ``home`` is the loop home the CCR store is scoped to. For factory
     dispatch that is the story's own dispatch worktree, which is what makes
@@ -758,14 +771,17 @@ def resolve_wire_wrap(
     the layer disabling itself is always visible (``MRS-DISP-033``), never
     a silent no-op. A DISABLED layer returns no reason -- there is nothing
     to report about a layer nobody asked for."""
-    enabled = bool((wire_layer or {}).get("enabled", False))
+    wrapper = profile.wrapper
+    enabled = resolve_wire_enabled(
+        (wire_layer or {}).get("enabled", False),
+        wrapper_declared=wrapper is not None,
+    )
     if not enabled:
         return WireWrap(applied=False)
 
     aggressiveness = (wire_layer or {}).get("aggressiveness")
     aggressiveness = aggressiveness if isinstance(aggressiveness, str) else None
 
-    wrapper = profile.wrapper
     if wrapper is None:
         # Story 28.29 (CAP-2, documented incompatibility, live-verified
         # 2026-09-10): `cursor`'s absent [wrapper] is not an oversight --
