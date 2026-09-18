@@ -2,7 +2,8 @@
 title: '24.2: The docsite has a PR gate'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'f9f95c6036dd23eb53f0cc93ef4241343a397070'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
