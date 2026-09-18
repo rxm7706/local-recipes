@@ -2876,6 +2876,13 @@
   "files": {},
   "memlog": "62cecff1296147371c0dae1f19959b4f90f8846e"
  },
+ "pyforge-marshal/spec-marshal-recall-in-the-loop": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "d5dc5d73864b3cc42689590d0e37efa0fa0917b3",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "8b10919cecffd47021d0d3b7a0edf4cd0c65028f"
+  },
+  "memlog": "834ed5da150ad519f6b2f13df884c209639d8942"
+ },
  "pyforge-marshal/spec-marshal-run-watch": {
   "files": {},
   "memlog": "afc3378a007bc60eafab028c08ffdea8a5f0f0c5"
