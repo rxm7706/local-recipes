@@ -237,7 +237,7 @@ rename, becomes visible instead of silently drifting.
 When the session has the **`claude-design` MCP server** connected (`/design-login` in Claude
 Code), visual artifacts round-trip by **tools, not downloads** — never ask the user to manually
 export/copy a Design file. Dream: `docs/dreams/pyforge-herald.md` (absorbed `design-code-bridge` 2026-08-08); full procedure:
-`docs/specs/presentation-deck.md` § *The MCP bridge*. In short:
+`docs/how-to/presentation-deck.md` § *The MCP bridge*. In short:
 
 - **Seed:** prove the prototype locally (`extract` + `build`), then `create_project` (bind the
   **Modernist** design system for PyForge persona decks), `finalize_plan`, `create_support_js`,

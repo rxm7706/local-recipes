@@ -7681,7 +7681,7 @@ succession.
 ## Reference
 
 - Per-feedstock workflow: [`docs/specs/feedstock-platform-expansion.md`](feedstock-platform-expansion.md)
-- Workflow guide (procedural detail): [`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`](../../.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md)
+- Workflow guide (procedural detail): [`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`](../../../.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md)
 - Canonical PR diff to copy: `https://github.com/conda-forge/tree-sitter-javascript-feedstock/pull/1`
 - Maintainer-add issue template: `https://github.com/conda-forge/tree-sitter-javascript-feedstock/issues/2`
 - CFE `SKILL.md` § Critical Constraints, § Build Failure Protocol

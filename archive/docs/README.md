@@ -13,3 +13,7 @@ in `archive/docs/specs/gists/` entries below or in `docs/intake/gists/INDEX.md`.
   lists (feedstocks Nov-2025), absorbed review transcripts, the v1 health
   report (v2 = v1 + §6), a byte-duplicate marp deck, and one dormant design
   doc (django-sloccount) retrievable if ever revived as a Dream.
+- `specs/*.md` (14 files, added 2026-09-18) — shipped/superseded Tier-1 intake
+  specs sunset per their own frontmatter `status:` (Story 23.3); `docs/specs/`
+  itself keeps the two `in-progress` specs plus the three `workflow` stubs
+  (bodies moved to `docs/how-to/`).
