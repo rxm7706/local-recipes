@@ -537,13 +537,27 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     ``PosixProcess.spawn_detached``. The identical omission repeated one
     story later -- this scenario passed no ``process=``, so the real adapter
     ran and the new write went entirely unguarded while the count assertion
-    above kept passing. See ``_RecordingProcess``'s own docstring."""
+    above kept passing. See ``_RecordingProcess``'s own docstring.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and -- when it resolves -- write a fifth,
+    unaccounted-for ``FsPort`` write, ``compression-ladder.json``, breaking
+    this guard's own fixed count) -- incidental to this test's own intent,
+    which is purely about write containment, not wire disposition."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     tier3_local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
     tier3_canonical = (
         tmp_path / "repo" / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        "[context.wire]\nenabled = false\naggressiveness = \"high\"\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda _slug: policy_path
     )
 
     fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
