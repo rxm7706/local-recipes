@@ -1,0 +1,78 @@
+{% extends "shell_page.html.j2" %}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>Deck family</div>
+    <h1>{{ family.title }}</h1>
+    {%- if family.description %}
+    <p class="blurb">{{ family.description }}</p>
+    {%- endif %}
+  </div>
+
+  <div class="gallery">
+    <a class="shot" href="{{ rel }}infographics/{{ family.poster.out_name }}">
+      <div class="shot-frame" data-preview="{{ rel }}infographics/{{ family.poster.out_name }}">
+        <span class="shot-placeholder" aria-hidden="true">Poster</span>
+      </div>
+      <div class="shot-meta">
+        <h3>Poster</h3>
+        <span class="shot-file">{{ family.poster.source }}</span>
+        <span class="stamp-line">tree {{ family.poster.stamp.tree }} &middot; etag {{ family.poster.stamp.etag }}</span>
+      </div>
+    </a>
+    {%- if family.infographic_deck %}
+    <a class="shot" href="{{ family.infographic_deck.out_name }}">
+      <div class="shot-frame" data-preview="{{ family.infographic_deck.out_name }}">
+        <span class="shot-placeholder" aria-hidden="true">Infographic Deck</span>
+      </div>
+      <div class="shot-meta">
+        <h3>Infographic Deck</h3>
+        <span class="stamp-line">tree {{ family.infographic_deck.stamp.tree }} &middot; etag {{ family.infographic_deck.stamp.etag }}</span>
+      </div>
+    </a>
+    {%- endif %}
+    {%- if family.executive_summary %}
+    <a class="shot" href="{{ family.executive_summary.out_name }}">
+      <div class="shot-frame" data-preview="{{ family.executive_summary.out_name }}">
+        <span class="shot-placeholder" aria-hidden="true">Executive Summary</span>
+      </div>
+      <div class="shot-meta">
+        <h3>Executive Summary</h3>
+        <span class="stamp-line">tree {{ family.executive_summary.stamp.tree }} &middot; etag {{ family.executive_summary.stamp.etag }}</span>
+      </div>
+    </a>
+    {%- endif %}
+  </div>
+
+  <div class="downloads">
+    <h2>PowerPoint</h2>
+    {%- if family.pptx %}
+    <ul class="download-list">
+      {%- for d in family.pptx %}
+      <li><a href="downloads/{{ d.name }}" download>{{ d.name }}</a><span class="dl-meta">{{ d.bytes // 1024 }} KB &middot; tree {{ d.stamp.tree }} &middot; etag {{ d.stamp.etag }}</span></li>
+      {%- endfor %}
+    </ul>
+    {%- else %}
+    <p class="soft-note">No PowerPoint exported yet.</p>
+    {%- endif %}
+
+    <h2>Marp sources</h2>
+    {%- if family.marp %}
+    <ul class="download-list">
+      {%- for d in family.marp %}
+      <li><a href="downloads/{{ d.name }}" download>{{ d.name }}</a><span class="dl-meta">{{ d.bytes // 1024 }} KB &middot; tree {{ d.stamp.tree }} &middot; etag {{ d.stamp.etag }}</span></li>
+      {%- endfor %}
+    </ul>
+    {%- else %}
+    <p class="soft-note">No Marp sources exported yet.</p>
+    {%- endif %}
+  </div>
+
+  <footer>
+    <span><a href="{{ rel }}decks/index.html">&larr; All decks</a></span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+{% endblock %}

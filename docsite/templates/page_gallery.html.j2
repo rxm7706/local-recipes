@@ -39,38 +39,4 @@
   </footer>
 
 </div>
-
-<script>
-// Each infographic is 110-290KB of self-contained HTML. Mounting ten of them
-// as eager iframes costs ~1.5MB and locks the page up before first paint, so
-// a preview is only attached once its card is near the viewport — and never
-// at all where IntersectionObserver is missing, which leaves a titled
-// placeholder rather than a broken frame.
-(function () {
-  var frames = Array.prototype.slice.call(document.querySelectorAll('.shot-frame[data-preview]'));
-  if (!frames.length || typeof IntersectionObserver === 'undefined') return;
-
-  function mount(frame) {
-    if (frame.dataset.mounted) return;
-    frame.dataset.mounted = '1';
-    var f = document.createElement('iframe');
-    f.setAttribute('title', '');
-    f.setAttribute('aria-hidden', 'true');
-    f.setAttribute('tabindex', '-1');
-    f.setAttribute('scrolling', 'no');
-    f.setAttribute('loading', 'lazy');
-    f.addEventListener('load', function () { frame.classList.add('is-loaded'); });
-    f.src = frame.dataset.preview;
-    frame.appendChild(f);
-  }
-
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (e.isIntersecting) { mount(e.target); io.unobserve(e.target); }
-    });
-  }, { rootMargin: '300px 0px' });
-
-  frames.forEach(function (f) { io.observe(f); });
-})();
-</script>
 {% endblock %}

@@ -8,6 +8,8 @@ Reads the content model in docsite/content/ and renders:
     dist/dossier/index.html          the full dossier
     dist/infographics/index.html     gallery of the standalone infographics
     dist/infographics/<slug>.html    each infographic, published unmodified
+    dist/decks/index.html            index of every deck family page
+    dist/decks/<slug>/index.html     one family page per registered deck
     dist/assets/site.css             shared stylesheet
     dist/artifact/dossier.html       single-file build for the Artifact tool
     dist/.nojekyll                   stop GitHub Pages running Jekyll over it
@@ -23,7 +25,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import html
+import json
 import os
 import re
 import shutil
@@ -48,6 +52,7 @@ OWNED_OUTPUTS = (
     "assets",
     "dossier",
     "infographics",
+    "decks",
     "artifact",
 )
 CONTENT = SITE / "content"
@@ -201,6 +206,200 @@ def publish_infographic(item: dict, out_dir: Path, inject: bool) -> None:
     (out_dir / item["out_name"]).write_text(raw, encoding="utf-8")
 
 
+# ------------------------------------------------------------------ deck families
+#
+# CAP-35 (spec-design-sync-loop CAP-7 / herald Story 23.5): one family page
+# per registered deck. "Registered" is never a second hand-maintained list --
+# it is exactly the set already published in the infographics gallery (the
+# ten pyforge-* posters `infographics.include` names), since every one of
+# those lives under presentations/<slug>/ alongside the rest of its standard
+# export set (docs/how-to/presentation-deck.md § Standard export set). The
+# family page reads that directory straight off the filesystem, the same
+# network-free, side-effect-free way collect_infographics() already does.
+
+
+def _single_file(dir_path: Path, suffix: str) -> Path | None:
+    """The one file directly under ``dir_path`` whose name ends in
+    ``suffix``, or ``None`` when there isn't one. A deck's Infographic Deck
+    / Executive Summary each exist as exactly one
+    ``project/*<suffix>`` file (true across all ten registered decks at the
+    time of writing); more than one is a hand-authoring mistake this build
+    does not try to adjudicate, so the alphabetically-first wins rather
+    than raising."""
+    if not dir_path.is_dir():
+        return None
+    matches = sorted(p for p in dir_path.iterdir() if p.is_file() and p.name.endswith(suffix))
+    return matches[0] if matches else None
+
+
+_DATE_SUFFIX_RE = re.compile(r"-\d{4}-\d{2}-\d{2}$")
+
+
+def _listed_files(dir_path: Path, suffix: str) -> list[Path]:
+    """The current file per product directly under ``dir_path`` ending in
+    ``suffix``, newest-dated first. The export set's own
+    ``<product>-YYYY-MM-DD`` naming leaves every superseded export on disk
+    (verified live: pyforge-atlas alone carries 3 dated copies each of its
+    ``-deck-`` and ``_infographic_deck-`` PPTX) -- grouping by the filename
+    with its trailing date suffix stripped and keeping only the
+    newest-dated file per group surfaces the current export(s), not the
+    full history."""
+    if not dir_path.is_dir():
+        return []
+    newest_per_product: dict[str, Path] = {}
+    for p in dir_path.iterdir():
+        if not (p.is_file() and p.name.endswith(suffix)):
+            continue
+        product = _DATE_SUFFIX_RE.sub("", p.stem)
+        current = newest_per_product.get(product)
+        if current is None or p.name > current.name:
+            newest_per_product[product] = p
+    return sorted(newest_per_product.values(), key=lambda p: p.name, reverse=True)
+
+
+def _artifact_stamp(path: Path, commit: str) -> dict:
+    """This artifact's provenance stamp: a ``<path>.stamp.json`` sidecar
+    (``pyforge.herald.stamps.write_stamp``'s contract -- ``tree``/``etag``/
+    ``derived_at``) when the derive pipeline has already written one for
+    it, else a locally computed fallback -- the site build's own commit as
+    the tree, and a short content hash as the etag. Never a network call
+    (this module stays offline, per its own docstring): a real Design
+    prototype etag is only ever available through the sidecar, never
+    fetched here."""
+    sidecar = path.with_name(path.name + ".stamp.json")
+    if sidecar.is_file():
+        try:
+            data = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            data = None
+        if isinstance(data, dict) and isinstance(data.get("tree"), str):
+            etag = data.get("etag")
+            return {
+                "tree": data["tree"][:12],
+                "etag": etag[:12] if isinstance(etag, str) else "unstamped",
+            }
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    return {"tree": (commit or "unknown")[:12], "etag": digest}
+
+
+def _view_artifact(path: Path | None, label: str, commit: str) -> dict | None:
+    """An "in view" family-page artifact (Infographic Deck / Executive
+    Summary), or ``None`` when this deck has not authored one yet. Its
+    ``out_name`` is filled in by ``publish_family_views`` once the file has
+    actually been written."""
+    if path is None:
+        return None
+    return {"path": path, "label": label, "bytes": path.stat().st_size, "stamp": _artifact_stamp(path, commit)}
+
+
+def _download_artifact(path: Path, commit: str) -> dict:
+    """A downloadable family-page artifact (a PPTX or a Marp source)."""
+    return {"path": path, "name": path.name, "bytes": path.stat().st_size, "stamp": _artifact_stamp(path, commit)}
+
+
+def collect_families(infographics: list[dict], repo_root: Path, commit: str) -> list[dict]:
+    """One entry per registered deck, derived from ``infographics`` itself
+    -- never a second hand-maintained slug list, so the family pages cannot
+    drift from the gallery they extend. Each infographic's ``source`` is a
+    ``presentations/<slug>/...`` repo-relative path; that same ``<slug>``
+    directory carries the rest of the deck's standard export set."""
+    families: list[dict] = []
+    seen: set[str] = set()
+    for ig in infographics:
+        parts = ig["source"].split("/")
+        if len(parts) < 2 or parts[0] != "presentations":
+            continue
+        slug = parts[1]
+        if slug in seen:
+            continue
+        seen.add(slug)
+
+        deck_dir = repo_root / "presentations" / slug
+        infographic_deck = _single_file(deck_dir / "project", " - Infographic Deck.dc.html")
+        executive_summary = _single_file(deck_dir / "project", " - Executive Summary.dc.html")
+        pptx_files = _listed_files(deck_dir / "src" / "pptx", ".pptx")
+        marp_files = _listed_files(deck_dir / "src" / "marp", ".md")
+
+        families.append(
+            {
+                "slug": slug,
+                "title": ig["title"],
+                "description": ig.get("description", ""),
+                "poster": {**ig, "stamp": _artifact_stamp(ig["path"], commit)},
+                "infographic_deck": _view_artifact(infographic_deck, "Infographic Deck", commit),
+                "executive_summary": _view_artifact(executive_summary, "Executive Summary", commit),
+                "pptx": [_download_artifact(p, commit) for p in pptx_files],
+                "marp": [_download_artifact(p, commit) for p in marp_files],
+            }
+        )
+    return families
+
+
+FAMILY_VIEW_BACKBAR = """<div class="ig-backbar">
+  <a href="index.html">&larr; {deck_title} family</a>
+  <a href="../../index.html">Overview</a>
+  <a href="../../dossier/index.html">Dossier</a>
+  <span class="ig-title">{title}</span>
+</div>
+<style>
+.ig-backbar{{position:fixed;top:0;left:0;right:0;z-index:2147483000;background:rgba(18,22,26,.86);
+-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:"IBM Plex Mono",ui-monospace,
+SFMono-Regular,Menlo,monospace;font-size:12px;padding:7px 16px;display:flex;align-items:center;gap:14px;
+color:#e7ebe6;box-sizing:border-box}}
+.ig-backbar a{{color:#e7ebe6;text-decoration:none;border-bottom:1px solid rgba(231,235,230,.4)}}
+.ig-backbar a:hover{{border-bottom-color:#dd9a3f;color:#dd9a3f}}
+.ig-backbar .ig-title{{color:rgba(231,235,230,.62);margin-left:auto;text-align:right;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+body{{padding-top:32px!important}}
+@media print{{.ig-backbar{{display:none!important}}body{{padding-top:0!important}}}}
+</style>
+"""
+
+_FAMILY_VIEW_OUT_NAMES = {
+    "infographic_deck": "infographic-deck.html",
+    "executive_summary": "executive-summary.html",
+}
+
+
+def publish_family_views(fam: dict, deck_out: Path, inject: bool) -> None:
+    """Publish the Infographic Deck / Executive Summary ``.dc.html``
+    sources into the family page's own directory, byte-for-byte plus --
+    when ``inject`` is true, mirroring ``publish_infographic``'s own
+    ``site.infographics.inject_backbar`` gate -- the same small fixed
+    back-bar after ``<body>``. These files carry no build step of their own
+    -- like the poster, they are already resolved static HTML; the
+    ``<x-dc>`` wrapper and its now-unreachable ``./support.js`` are
+    Design-editor-only affordances (a 404 on that one ``<script src>``)
+    that do not affect how the content itself renders. Records the
+    published ``out_name`` onto each view dict so the template can link to
+    it."""
+    for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
+        item = fam.get(key)
+        if item is None:
+            continue
+        raw = item["path"].read_text(encoding="utf-8", errors="replace")
+        if inject:
+            bar = FAMILY_VIEW_BACKBAR.format(
+                deck_title=html.escape(fam["title"], quote=False),
+                title=html.escape(f"{fam['title']} — {item['label']}", quote=False),
+            )
+            m = re.search(r"<body[^>]*>", raw, re.I)
+            raw = (raw[: m.end()] + "\n" + bar + raw[m.end() :]) if m else (bar + raw)
+        (deck_out / out_name).write_text(raw, encoding="utf-8")
+        item["out_name"] = out_name
+
+
+def publish_family_downloads(fam: dict, deck_out: Path) -> None:
+    """Copy every PPTX / Marp source in this deck's standard export set
+    into the family page's ``downloads/`` directory, unmodified -- binaries
+    included, so ``shutil.copy2`` rather than a text read/write."""
+    downloads = deck_out / "downloads"
+    downloads.mkdir(parents=True, exist_ok=True)
+    for group in ("pptx", "marp"):
+        for d in fam[group]:
+            shutil.copy2(d["path"], downloads / d["name"])
+
+
 # ------------------------------------------------------------------ build
 
 
@@ -273,10 +472,13 @@ def build(out_dir: Path, repo_root: Path) -> dict:
     built_at = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     commit = git_commit(repo_root)
 
+    families = collect_families(infographics, repo_root, commit)
+
     shared = {
         "site": site_cfg,
         "doc": doc,
         "infographics": infographics,
+        "families": families,
         "built_at": built_at,
         "commit": commit,
     }
@@ -294,6 +496,7 @@ def build(out_dir: Path, repo_root: Path) -> dict:
     (out_dir / "assets").mkdir(parents=True, exist_ok=True)
     (out_dir / "dossier").mkdir(parents=True, exist_ok=True)
     (out_dir / "infographics").mkdir(parents=True, exist_ok=True)
+    (out_dir / "decks").mkdir(parents=True, exist_ok=True)
     (out_dir / "artifact").mkdir(parents=True, exist_ok=True)
 
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")
@@ -338,6 +541,37 @@ def build(out_dir: Path, repo_root: Path) -> dict:
     for item in infographics:
         publish_infographic(item, out_dir / "infographics", inject)
 
+    for fam in families:
+        deck_out = out_dir / "decks" / fam["slug"]
+        deck_out.mkdir(parents=True, exist_ok=True)
+        publish_family_views(fam, deck_out, inject)
+        publish_family_downloads(fam, deck_out)
+        (deck_out / "index.html").write_text(
+            env.get_template("page_family.html.j2").render(
+                page_title=f"{fam['title']} — {site_cfg['name']}",
+                page_description=fam["description"]
+                or f"The {fam['title']} deck family: poster, Infographic Deck, Executive "
+                f"Summary, PowerPoint and Marp sources.",
+                page_key="decks",
+                rel="../../",
+                family=fam,
+                **shared,
+            ),
+            encoding="utf-8",
+        )
+
+    (out_dir / "decks" / "index.html").write_text(
+        env.get_template("page_family_index.html.j2").render(
+            page_title=f"Decks — {site_cfg['name']}",
+            page_description=f"{len(families)} deck famil{'y' if len(families) == 1 else 'ies'} "
+            f"published from the repository.",
+            page_key="decks",
+            rel="../",
+            **shared,
+        ),
+        encoding="utf-8",
+    )
+
     (out_dir / "artifact" / "dossier.html").write_text(
         env.get_template("shell_artifact.html.j2").render(
             page_title=doc["title"], css=css, rel="", **shared
@@ -345,7 +579,13 @@ def build(out_dir: Path, repo_root: Path) -> dict:
         encoding="utf-8",
     )
 
-    return {"infographics": infographics, "out": out_dir, "commit": commit, "built_at": built_at}
+    return {
+        "infographics": infographics,
+        "families": families,
+        "out": out_dir,
+        "commit": commit,
+        "built_at": built_at,
+    }
 
 
 # ------------------------------------------------------------------ checks
@@ -356,7 +596,7 @@ def check(out_dir: Path, result: dict) -> int:
 
     required = [
         "index.html", ".nojekyll", "assets/site.css",
-        "dossier/index.html", "infographics/index.html", "artifact/dossier.html",
+        "dossier/index.html", "infographics/index.html", "decks/index.html", "artifact/dossier.html",
     ]
     for r in required:
         p = out_dir / r
@@ -386,12 +626,50 @@ def check(out_dir: Path, result: dict) -> int:
         if item["out_name"] not in gallery:
             problems.append(f"infographic missing from gallery: {item['out_name']}")
 
+    decks_index = (out_dir / "decks" / "index.html").read_text(encoding="utf-8")
+    for fam in result["families"]:
+        slug = fam["slug"]
+        deck_out = out_dir / "decks" / slug
+        family_page = deck_out / "index.html"
+        if not family_page.exists():
+            problems.append(f"deck family page not published: {slug}")
+        else:
+            size = family_page.stat().st_size
+            if size < 500:
+                problems.append(f"suspiciously small: decks/{slug}/index.html ({size}B)")
+            text = family_page.read_text(encoding="utf-8")
+            if "{{" in text or "{%" in text:
+                problems.append(f"unrendered Jinja delimiters in decks/{slug}/index.html")
+        if slug not in decks_index:
+            problems.append(f"deck missing from the decks index: {slug}")
+
+        for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
+            item = fam.get(key)
+            if item is None:
+                continue
+            vp = deck_out / out_name
+            if not vp.exists():
+                problems.append(f"{slug}: {key} not published")
+            elif vp.stat().st_size < item["bytes"]:
+                problems.append(f"{slug}: {key} shrank on publish")
+
+        for group in ("pptx", "marp"):
+            for d in fam[group]:
+                dp = deck_out / "downloads" / d["name"]
+                if not dp.exists():
+                    problems.append(f"{slug}: download not published: {d['name']}")
+                elif dp.stat().st_size != d["bytes"]:
+                    problems.append(f"{slug}: download size mismatch: {d['name']}")
+
     if problems:
         print("\nFAILED:", file=sys.stderr)
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         return 1
-    print(f"checks passed — {len(required)} required outputs, {len(result['infographics'])} infographics")
+    print(
+        f"checks passed — {len(required)} required outputs, {len(result['infographics'])} infographics, "
+        f"{len(result['families'])} deck families"
+    )
     return 0
 
 
@@ -411,6 +689,18 @@ def main() -> int:
     print(f"built {out_dir}  ({total} files, commit {result['commit'] or 'n/a'}, {result['built_at']})")
     for item in result["infographics"]:
         print(f"  infographic  {item['out_name']:<46} {item['bytes'] // 1024:>5} KB  {item['source']}")
+    for fam in result["families"]:
+        label = "poster"
+        if fam["infographic_deck"]:
+            label += "+ID"
+        if fam["executive_summary"]:
+            label += "+ES"
+        if label == "poster":
+            label = "poster only"
+        print(
+            f"  deck family  {fam['slug']:<28} {label:<12} "
+            f"{len(fam['pptx']):>2} pptx  {len(fam['marp']):>2} marp"
+        )
 
     return check(out_dir, result) if args.check else 0
 
