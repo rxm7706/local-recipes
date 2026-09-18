@@ -2,7 +2,7 @@
 title: '27.2: `ledger-direction` reads the station''s rekey map'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9a89b3ec873957676b8c76accd159bc0be21d5d9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -70,3 +70,24 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
   - `[false]` `[reject]` (edge-case-hunter) `ledger.py:899-901`: claims a merge naming a post-fold sid could collide with an unrelated story's still-live pre-fold sid. Refuted: for any sid that is not a rekey-map key, `sid_map.get(sid, sid)` is a no-op — bit-for-bit the same lookup path `gather_direction` had before this story, so this diff cannot introduce or worsen such a collision. Also checked concretely against the real atlas map: old epic 12 only ever had stories `12-1..12-3`, so there is no un-translated old `12-5` merge that could collide with the new (translated) `12-5` the reviewer's terse JSON gestured at.
   - `[false]` `[reject]` (edge-case-hunter) `ledger.py:776-781`: claims a syntactically valid rekey line that doesn't reduce to the `<epic>-<seq>` grain (a "legacy alias id") gets silently dropped from translation. Refuted on two counts: (1) checked all 8 live `rekey-*.md` files in this repo — the only lines that fail to reduce are paired `epic-N -> epic-M` lines (both sides fail together, e.g. atlas's own map), never an asymmetric line where one side is a real story id and the other isn't; those epic-level lines are a documented separate use of the same grammar (epic-doc renaming), not story-id translation. (2) Even if it happened, the fallback is `sid_map.get(sid, sid)` leaving the id untranslated — identical to the already-accepted "no map" baseline behavior in this spec's own I/O matrix, not a new or worse outcome.
   - `[low]` `[patch]` (edge-case-hunter) `ledger.py:846-860`: when a target has zero tracked `sprint-status-ledger.yaml` files anywhere, `gather_direction` returns early (`if not ledger_paths: return (...)`, line 845) *before* `_rekey_sid_maps` is ever called (line 856) — a malformed or unreadable rekey map in that repo never surfaces its WARN, contradicting the spec's "never a silent pass" boundary in that narrow window. Fix: compute `rekey_maps, rekey_problems` before the `ledger_paths` early return and include `rekey_problems` in that return's findings (direct, trivial reordering). **Applied:** `_rekey_sid_maps` is now called before the `ledger_paths` check, and `rekey_problems` are spliced into the early-return tuple.
+
+## Auto Run Result
+
+**Summary:** `gather_direction` now translates every merge-history-derived story id through the station's own `rekey-*.md` map(s) (via the existing `parse_rekey`/`_rekey_paths`) before the `landed-but-unpromoted`/`done-but-unmerged` comparison, and resolves multi-hop rename chains to their fixed point. An unreadable or malformed map degrades to a WARN naming the file, surfaced unconditionally (even when the target has zero tracked ledgers).
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` — new `_rekey_sid_maps` helper (with fixpoint hop-walk for chained renames); wired into `gather_direction` ahead of both the early-return and the per-project comparison loop.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py` — 5 new tests: renumbered-station translation, the no-map mutation companion, malformed-map WARN, undecodable-blob WARN, and chained (two-hop) rename resolution.
+
+**Review findings breakdown** (11 findings, 1 pass, no loopback needed):
+- Patched (3 entries): (1) single-hop rekey resolution didn't chase a chained rename across two `rekey-*.md` files — fixed with a fixpoint hop-walk mirroring `rekey.reverse_map`, pinned by a new test [medium; also raised independently by blind-hunter, edge-case-hunter, and verification-gap as the same root cause]; (2) dead unreachable fallback branch in the project-slug extraction — deleted [low]; (3) the zero-tracked-ledgers early return skipped rekey-map WARNs entirely — reordered so `_rekey_sid_maps` runs first [low].
+- Rejected (4 entries, low/false, no code change): a hypothetical grain-reduction collision (unlikely given per-story id minting; fix would be non-trivial); duplicated code with `_new_rekey_maps` (a real but non-trivial refactor, correct today); a documentation-only note about `base_ref`-vs-working-tree that turned out to match pre-existing, correct convention (refuted); an edge-case-hunter claim about post-fold/pre-fold sid collision (refuted — untranslated ids are a no-op, unchanged from pre-diff behavior, and not reachable against atlas's real map); an edge-case-hunter claim about a "legacy alias" line silently failing to reduce (refuted — no such asymmetric line exists in any of the repo's 8 live rekey maps, and the fallback behavior matches the already-accepted "no map" baseline).
+
+**Follow-up review recommendation:** `false`. Only one `medium`-verdict entry was patched this pass (not two or more), and no `high` was patched.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1727 passed, 1 skipped (was 1726/1 before the patch's added test).
+- `pixi run -e pyforge-doctor pyforge-doctor-coverage-gate` — OK, `ledger.py` well above the 80% floor.
+- `pixi run -e pyforge-guild ledger-direction-check` on this working tree — no `pyforge-atlas/13-5`, `14-4`, or `15-3` row (the spec's manual-check criterion); read directly (never through a pipe) per this repo's judgement-vocabulary convention.
+
+**Residual risk:** none from this diff. `ledger-direction-check` currently also reports `pyforge-doctor/27-4` and `pyforge-marshal/50-3-harness-outranks-a-dead-tier-map-harness` as `landed-but-unpromoted` — both are unrelated stories that merged into `main` from concurrent fleet activity after this branch forked (confirmed via `git merge-base --is-ancestor`) and whose sprint-status ledgers simply haven't been promoted yet; neither involves a rekey map or this diff's surface, and both are expected to clear on their own once their respective promotion commits land.
