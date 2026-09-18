@@ -9,7 +9,7 @@ baseline_revision: '69192cd1b967436ed5cca1f628910f6ff866cb48'
 context:
   - spec-bmad-suite-lifecycle/release-cadence.md
   - spec-14-10-the-next-rehearsal-exercises-cap-6-s-fallback-and-cap-8-s-conflict-path-report-only.md
-  - spec-14-9-the-apply-retires-deprecation-shims-on-purpose.md
+  - spec-14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims.md
   - spec-bmad-method-core-upgrade/.memlog.md
 warnings: []
 deferred: []
