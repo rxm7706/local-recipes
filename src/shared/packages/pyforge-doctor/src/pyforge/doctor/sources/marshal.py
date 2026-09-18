@@ -61,6 +61,7 @@ from pyforge.core.landing_evidence import (
     parse_templated_merge_subject,
 )
 
+from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import load_rekey_maps, reverse_map
@@ -198,9 +199,11 @@ def _branch_name_fallback_key(subject: str, project_slug: str) -> StoryKeyRef | 
 
 def _keys_from_merge_subjects(
     target: Path,
-    subjects: tuple[str, ...],
+    commits: tuple[tuple[str, str], ...],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[str] | None = None,
 ) -> frozenset[StoryKeyRef]:
     """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
 
@@ -208,10 +211,24 @@ def _keys_from_merge_subjects(
     ``merge_subject_template`` (Story 27.1), not the bare repo default --
     see ``_project_merge_subject_template``'s own docstring for why an
     unscoped read misattributes a sibling station's landing.
+
+    Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
+    AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
+    attributed to ``project_slug`` only when ``sha``'s first-parent diff
+    touches this station's own paths AND this station's own tracked ledger
+    already knows the extracted key (``bare_merge.attribute_bare_merge``,
+    shared verbatim with ``sources/ledger.py::_merged_ids_for_project``).
+    Replaces Story 27.3's reverted ledger-membership-alone gate, which
+    reopened the cross-station collision whenever two stations share a
+    numeric key -- the common case under one shared grammar. ``commits``
+    therefore carries the sha alongside each subject (routed from ``git log
+    --format=%H%x00%s``), unlike this function's pre-27.5 subject-only
+    shape.
     """
     template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
-    for subject in subjects:
+    for sha, subject in commits:
         for parser in (
             lambda s: parse_templated_merge_subject(s, template),
             lambda s: parse_github_pr_merge_subject(s, project_slug),
@@ -223,6 +240,19 @@ def _keys_from_merge_subjects(
             if key is not None:
                 keys.add(key)
                 break
+        else:
+            attribution = attribute_bare_merge(
+                subject, sha,
+                target=target, project_slug=project_slug,
+                known_keys=known_keys, cache=diff_cache,
+            )
+            if attribution.key is not None:
+                keys.add(attribution.key)
+            elif (
+                attribution.diff_unreadable_sha is not None
+                and unreadable_diff_shas is not None
+            ):
+                unreadable_diff_shas.append(attribution.diff_unreadable_sha)
     return frozenset(keys)
 
 
@@ -231,8 +261,11 @@ def _keys_from_main_commits(
     commits: list[tuple[str, str]],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[str] | None = None,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         match = classify_commit(
@@ -247,6 +280,23 @@ def _keys_from_main_commits(
         fallback = _branch_name_fallback_key(subject, project_slug)
         if fallback is not None:
             keys.add(fallback)
+            continue
+        # Story 27.5 (CAP-80 amended): same corroborated bare-form fallback
+        # as `_keys_from_merge_subjects` above, tried once the strict
+        # grammar and the branch-name fallback both miss -- see that
+        # function's own docstring for the full rationale.
+        attribution = attribute_bare_merge(
+            subject, sha,
+            target=target, project_slug=project_slug,
+            known_keys=known_keys, cache=diff_cache,
+        )
+        if attribution.key is not None:
+            keys.add(attribution.key)
+        elif (
+            attribution.diff_unreadable_sha is not None
+            and unreadable_diff_shas is not None
+        ):
+            unreadable_diff_shas.append(attribution.diff_unreadable_sha)
     return frozenset(keys)
 
 
