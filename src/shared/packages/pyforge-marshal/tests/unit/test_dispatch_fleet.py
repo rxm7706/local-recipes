@@ -3283,6 +3283,43 @@ def test_a_dead_supervisor_without_completion_still_blocks(
     assert _status_by_station(report)[slug] is StationCycleStatus.BLOCKED
 
 
+def test_a_still_live_session_is_not_finalize_pending(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Part A never pre-empts CAP-2's own liveness path.
+
+    A session still running is plain in-flight: ``MRS-DISP-011`` relayed
+    through ``MRS-DRAIN-006`` is the already-correct report, and clause (a)
+    is about the window AFTER the session exits.
+    """
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    _seed_fleet(tmp_path, stories={slug: [head]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        session_pid=42,
+        supervisor_pid=99,
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((head, "backlog"),)},
+        process=FakeProcess(alive_pids=frozenset({42, 99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    relays = {f.message for f in report.findings if f.code == "MRS-DRAIN-006"}
+    assert any("MRS-DISP-011" in message for message in relays)
+    assert not any("finalizing" in message for message in relays)
+
+
 def test_once_the_ledger_promotes_the_next_story_dispatches(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
