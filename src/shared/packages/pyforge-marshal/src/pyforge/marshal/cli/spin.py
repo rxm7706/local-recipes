@@ -1274,19 +1274,15 @@ def _spawn_supervisor_sidecar(
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
-    # Story 46.4: no harness profile is in scope at this composition-time
-    # read (the same shape as the no-adapter-resolved fallback above), so
-    # ``"auto"`` must resolve via ``resolve_wire_enabled`` (wrapper_declared
-    # False) rather than a blind ``bool(...)`` -- ``bool("auto")`` is always
-    # ``True``, which would write this sidecar unconditionally under the new
-    # repo-default tri-state. An explicit declared ``true``/``false`` keeps
-    # gating the write exactly as before this story -- only ``"auto"``'s
-    # resolution changes here.
-    context_layers = policy.resolve_context_layers(effective_policy)
-    wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-    if harness_profile.resolve_wire_enabled(
-        wire_layer["enabled"], wrapper_declared=False
-    ):
+    # Story 46.4: gate on ``wire_payload["applied"]``, the disposition
+    # already resolved above against the REAL harness profile, instead of
+    # re-deriving from the raw policy value with no profile in scope. A
+    # prior version of this gate hardcoded ``wrapper_declared=False`` here,
+    # which silently stopped writing this sidecar for every launch where
+    # wire resolves ``"auto"`` -> applied under a real wrapper -- the new
+    # repo-default's common case, since this story also removes
+    # pyforge-marshal's own explicit override.
+    if wire_payload.get("applied"):
         compression_sidecar = {
             "escalation_threshold": policy.resolve_compression_escalation_threshold(
                 effective_policy
