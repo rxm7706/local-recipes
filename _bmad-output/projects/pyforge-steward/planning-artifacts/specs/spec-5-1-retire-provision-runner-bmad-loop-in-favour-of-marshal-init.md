@@ -60,7 +60,7 @@ a legacy script.
 **Why.** Steward's **own AD-5** already calls this "Marshal-owned machinery", and
 `provision --runner bmad-loop` shells to the *legacy* `scripts/bmad-loop-worktree` while
 `marshal init` (Epic 1, 10 shipped stories) is a strict superset — worktree plus the
-marker↔symlink agreement invariant, the AD-11 never-write proof, and an idempotent
+marker↔symlink agreement invariant, the marshal:AD-11 never-write proof, and an idempotent
 `done | skipped | failed` step report.
 
 **Acceptance Criteria:**
