@@ -2,7 +2,7 @@
 title: The dossier is the source and Pages is a render
 type: feature
 created: '2026-09-13'
-status: done
+status: in-review
 baseline_revision: 907c1cc233106973948c48976e9438d6c2d85917
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -60,9 +60,11 @@ declared_low_risk: false
 
 **Verified (2026-09-18, this worktree, baseline `907c1cc233`):** the target capability
 (spec-pyforge-pages CAP-1..5, folded into `spec-pyforge-herald` CAP-43..47) was **already fully
-realized and merged to `main` before this Story was minted** — PR #1341 "Publish the PyForge
-dossier as the Pages landing page" (merged 2026-09-13T19:24:33Z) and PR #1351 "Drop the Fleet
-scorecards from the PyForge dossier" (merged 2026-09-14T01:02:40Z), both from branch
+realized and merged to `main` before this dispatch began** — PR #1341 "Publish the PyForge
+dossier as the Pages landing page" (merged 2026-09-13T19:24:33Z, ~2m23s *after* this Story's
+Dream/Spec/Story were minted at 2026-09-13T19:22:10Z via commit `9afa3614` — not before it,
+correcting an earlier draft of this note) and PR #1351 "Drop the Fleet scorecards from the
+PyForge dossier" (merged 2026-09-14T01:02:40Z, genuinely after both), both from branch
 `pyforge-pages` (the rebased bundle) and both carrying the `maintenance` label. `docsite/`,
 `pixi.toml`'s `feature.site`, and `.github/workflows/dashboard.yml`'s build step in this worktree
 are byte-identical to `origin/main` (`git diff origin/main HEAD -- docsite/ pixi.toml
@@ -99,8 +101,16 @@ it does not recompute status from git). The likely reason automatic landing-evid
 `pyforge-pages`, which predates this Story's key and matches none of that module's recognized
 grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject, `Story N.M:` commit
 subject, `land/<station>-<epic>-<seq>` branch). This is a landing-evidence gap for
-pre-convention work, not a defect in this Story's own deliverable; left for the operator/doctor
-`story-status-check` pass to reconcile rather than hand-edited here.
+pre-convention work, not a defect in this Story's own deliverable. No current detector covers
+this exact gap shape: `story-status-check` (`pyforge.doctor.sources.story_status`) only audits
+ledger rows already at `done` for landing evidence and never visits rows still at `backlog`, and
+`status-body-consistency-check` only fires on a spec whose `status:` frontmatter line carries a
+trailing `#` comment, which this file's `status:` line does not — verified live, both
+`pixi run -e pyforge-guild story-status-check` and `pixi run -e pyforge-guild
+status-body-consistency-check` exit 0 with no mention of this story or ledger key. The
+`deferred:` frontmatter entry above is the tracked record of this gap pending a future
+reconciliation (an orchestrator `sprint-ledger-sync` pass, or a new detector) — not hand-edited
+here.
 
 ## Review Triage Log
 
@@ -108,7 +118,7 @@ pre-convention work, not a defect in this Story's own deliverable; left for the 
 - verdicts: 6 findings — high 0, medium 2, low 2, false 2, maybe-false 0
 - findings:
   - `[medium]` `[patch]` Residual ledger-key drift (ledger `backlog` vs. verified-shipped) is documented only as prose in `## Verification`, not in the structured `deferred:` frontmatter field, so `deferred_work_intake.py`'s sweep never surfaces it — confirmed `deferred-work-ledger.md` has no `22-1` entry. Action: add a `deferred:` entry recording the stale ledger key.
-  - `[false]` `[reject]` `followup_review_recommended` should be `true` so a follow-up pass reconciles the stale ledger key. Refutation: that flag re-engages this same bmad-build-auto review loop over the same frozen intent-contract; it cannot write `sprint-status-ledger.yaml` (orchestrator-owned, explicitly off-limits to this workflow per this run's own invocation), so a follow-up pass would not resolve the named risk.
+  - `[false]` `[reject]` `followup_review_recommended` should be `true` so a follow-up pass reconciles the stale ledger key. Refutation: that flag re-engages this same bmad-build-auto review loop over the same frozen intent-contract; it cannot write `sprint-status-ledger.yaml` (orchestrator-owned, explicitly off-limits to this workflow per this run's own invocation), so a follow-up pass would not resolve the named risk. (Frontmatter ends up `followup_review_recommended: true` anyway, but for an unrelated, mechanical reason — this pass patched two `medium` findings, the standard first-pass-follow-up threshold, independent of this rejected argument; see `## Auto Run Result`.)
   - `[medium]` `[patch]` Frontmatter `context:` still points at `spec-pyforge-pages/SPEC.md` and `docs/dreams/pyforge-pages.md`, both folded 2026-09-17 into `spec-pyforge-herald`/`docs/dreams/pyforge-herald.md`; confirmed `spec-pyforge-pages/SPEC.md` is now a disposed redirect stub ("Derived SPEC body disposed"). A future context reload for this spec would load the stub instead of the live governing spec. Action: repoint `context:` to the live files.
   - `[low]` `[patch]` The Verification prose's "unrelated Epic 21 deck-registry work" characterization of the worktree's divergence from `origin/main` is incomplete — confirmed `git diff origin/main HEAD --stat` also shows unrelated doctor/marshal spec removals, `docs/governance/guild-roster.json`, `docs/dreams/pyforge-charter.md`, `scripts/fleet_picture.py`, and spec-surface baseline/allowlist changes. Action: generalize the wording so it doesn't misstate scope.
   - `[false]` `[reject]` This Story's own upcoming PR should be checked for the `maintenance` label. Refutation: no PR exists yet for this diff — step-04 does not push or open a PR (that happens later in the external bmad-loop landing flow), so there is no labeling outcome this diff could get wrong.
@@ -129,4 +139,4 @@ pre-convention work, not a defect in this Story's own deliverable; left for the 
 
 **Verification performed:** `pixi run -e site site-check` (exit 0, 6 required outputs + 10 infographics green); `pixi project export conda-environment -e build > environment.yaml` (byte-identical, confirmed via `diff`); `grep -rln deploy-pages .github/workflows/` (only `dashboard.yml`); Dream (`docs/dreams/pyforge-herald.md`, `status: specified`) and Spec (`spec-pyforge-herald/SPEC.md`, `status: ready`, CAP-43..47 mapped from `spec-pyforge-pages` CAP-1..5) read directly; sprint-ledger key presence confirmed in both the tracked ledger and Tier-3 feed; `docsite/build.py` cleanup logic read directly (explicit allow-list, no blanket `rmtree`); `verify_claims.py` confirmed absent from `detectors-ci` and marked `continue-on-error: true` in `dashboard.yml`; PR #1341/#1351 labels confirmed live via `gh pr view --json labels`. After patching: frontmatter re-parsed with `yaml.safe_load` (clean), both new `context:` paths confirmed to exist and resolve to the live documents, and the `<intent-contract>` block confirmed byte-identical to its pre-patch state via whole-line-anchored diff.
 
-**Residual risks:** the sprint-status ledger key remains `backlog` (orchestrator-owned; explicitly out of this workflow's writable scope per this run's own invocation instructions) — now captured in the `deferred:` field for the operator/doctor `story-status-check` pass to reconcile. The `deferred_work_intake.py` end-to-end round-trip is unverified (see follow-up recommendation above).
+**Residual risks:** the sprint-status ledger key remains `backlog` (orchestrator-owned; explicitly out of this workflow's writable scope per this run's own invocation instructions) — now captured in the `deferred:` field pending a future reconciliation (an orchestrator `sprint-ledger-sync` pass, or a new detector; no existing detector covers this gap shape — see `## Verification`). The `deferred_work_intake.py` end-to-end round-trip is unverified (see follow-up recommendation above).
