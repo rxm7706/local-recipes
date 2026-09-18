@@ -197,15 +197,23 @@ def _branch_name_fallback_key(subject: str, project_slug: str) -> StoryKeyRef | 
 
 
 def _keys_from_merge_subjects(
+    target: Path,
     subjects: tuple[str, ...],
     *,
     project_slug: str,
 ) -> frozenset[StoryKeyRef]:
-    """Merge-shaped subjects on any ref (route 2) -- excludes story-direct."""
+    """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
+
+    The templated shape (tried first) uses ``project_slug``'s OWN
+    ``merge_subject_template`` (Story 27.1), not the bare repo default --
+    see ``_project_merge_subject_template``'s own docstring for why an
+    unscoped read misattributes a sibling station's landing.
+    """
+    template = _project_merge_subject_template(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for subject in subjects:
         for parser in (
-            lambda s: parse_templated_merge_subject(s, _MERGE_SUBJECT_TEMPLATE),
+            lambda s: parse_templated_merge_subject(s, template),
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
@@ -219,16 +227,18 @@ def _keys_from_merge_subjects(
 
 
 def _keys_from_main_commits(
+    target: Path,
     commits: list[tuple[str, str]],
     *,
     project_slug: str,
 ) -> frozenset[StoryKeyRef]:
+    template = _project_merge_subject_template(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         match = classify_commit(
             sha,
             subject,
-            template=_MERGE_SUBJECT_TEMPLATE,
+            template=template,
             project_slug=project_slug,
         )
         if match is not None:
@@ -696,7 +706,7 @@ def gather_story_status(
                 continue
             if key_refs and all_ref_subjects is not None:
                 merged_keys = _keys_from_merge_subjects(
-                    all_ref_subjects, project_slug=project_slug
+                    target, all_ref_subjects, project_slug=project_slug
                 )
                 if any(r in merged_keys for r in key_refs):
                     continue  # merge evidence found (under any spelling)
@@ -724,7 +734,7 @@ def gather_story_status(
                     continue
                 if main_commits is not None:
                     main_keys = _keys_from_main_commits(
-                        main_commits, project_slug=project_slug
+                        target, main_commits, project_slug=project_slug
                     )
                     if any(r in main_keys for r in key_refs):
                         continue  # hand-landed or recovery; grammar recognized
