@@ -53,7 +53,7 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 ## Auto Run Result
 
-Status: implemented, verified locally; PR not yet opened/merged (see Residual risks)
+Status: implemented, verified locally and in CI; PR #1472 open and green, not yet merged (see Residual risks)
 
 **Summary:** A new `pull_request`-triggered workflow, `.github/workflows/docsite-check.yml`, path-filtered to `docsite/**`, `docs/dashboard/**` and its own workflow file, runs two checks before merge: `docsite/build.py --check` with the same pip-installed deps `dashboard.yml` itself uses (predicting exactly what the real deploy step would do, building into the default `./dist/`, never the tracked `docs/dashboard/`), and `pixi run -e site site-check` (the existing task, reused not re-minted). `pixi.toml`'s `pr-preflight` gained a sixth leg, `{ task = "site-check", environment = "site" }`, so a local run predicts the lane. `dashboard.yml` is unchanged and stays the only `deploy-pages` caller.
 
@@ -62,6 +62,7 @@ Status: implemented, verified locally; PR not yet opened/merged (see Residual ri
 - `pixi.toml` — `pr-preflight`'s `depends-on` gained `{ task = "site-check", environment = "site" }`; its `description` gained a "Sixth leg" paragraph matching the existing per-leg-addition convention.
 - `docs/how-to/presentation-deck.md` — Acceptance criteria checklist gained a bullet naming the new lane and that `pr-preflight` predicts it.
 - `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md` — DW-FU-23-5 marked `status: done 2026-09-18` with a `verified:` note.
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md` — CAP-49's catalog tag bumped `ready` -> `in-progress`.
 
 **Cross-cutting fix required to unblock verification (found live, not this story's own drift):** `pixi run -e local-recipes test-ci` and `pixi run -e pyforge-guild detectors-ci` both initially reported a real, blocking `spec-surface` FAIL — `pyforge-marshal/spec-pyforge-core: src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py changed but the spec's memlog did not move`. Traced to this branch (`baseline_revision: f9f95c6036`) predating PR #1470 ("marshal: co-governor memlog note for herald 24.1's deck_pipeline change; scoped re-stamp", merged 2026-09-18T19:52:17Z, commit `301d4c19b5`), which already reconciles exactly this drift on `origin/main`. Fixed by merging `origin/main` into this branch (merge commit, `ort` strategy, zero conflicts — none of origin/main's new commits touched this story's four changed files); `test_spec_surface_check_green` and the `spec-surface` detector both went from FAIL/1-gating-finding to clean afterward. Not a code change to this story's own surface.
 
