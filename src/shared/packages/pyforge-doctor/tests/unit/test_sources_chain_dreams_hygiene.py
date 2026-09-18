@@ -452,6 +452,50 @@ def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
     assert not any(f.check == "specified-spec-not-ready" for f in findings)
 
 
+def test_specified_spec_absorbed_suppresses_finding(tmp_path: Path) -> None:
+    """Story 59.2: ``absorbed`` is in ``spec_statuses_ready_or_beyond`` (and
+    in ``guild-roster.json``'s ``spec_statuses_terminal``) -- a covering Spec
+    at ``absorbed`` must suppress ``specified-spec-not-ready``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "absorbed-dream",
+        status="specified",
+        title="Absorbed Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("absorbed-dream.md", "specified")])
+    _write_spec(tmp_path, "absorbed-dream", status="absorbed")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "specified-spec-not-ready" for f in findings)
+
+
+def test_specified_spec_archived_reports_not_ready(tmp_path: Path) -> None:
+    """Story 59.2: ``archived`` is in ``guild-roster.json``'s
+    ``spec_statuses_terminal`` but NOT in ``spec_statuses_ready_or_beyond`` --
+    a covering Spec at ``archived`` must still raise
+    ``specified-spec-not-ready``, the one non-obvious invariant that
+    motivated the new declared key over reusing ``spec_statuses_terminal``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "archived-dream",
+        status="specified",
+        title="Archived Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("archived-dream.md", "specified")])
+    _write_spec(tmp_path, "archived-dream", status="archived")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    hit = [f for f in findings if f.check == "specified-spec-not-ready"]
+    assert len(hit) == 1
+    assert hit[0].status is DoctorStatus.WARN
+    assert hit[0].evidence["subject"] == "archived-dream"
+    assert hit[0].evidence["spec_statuses"] == ["archived"]
+
+
 def test_missing_spec_statuses_ready_or_beyond_degrades_to_fallback(
     tmp_path: Path,
 ) -> None:
