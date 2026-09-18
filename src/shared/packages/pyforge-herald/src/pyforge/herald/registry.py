@@ -538,3 +538,96 @@ def append_push_ledger_row(
         atomic_write_text(readme_path, new_text, mode=original_mode & 0o7777)
     except (OSError, ValueError) as exc:
         raise errors.HeraldError(f"{could_not}: {exc}") from exc
+
+
+# --- Story 23.1: account-wide reconciliation (CAP-1) -------------------------
+#
+# CAP-1's account enumeration (`deck_pipeline.account_status`) classifies
+# every Design project `list_projects` returns as a presentation (with or
+# without a local twin -- resolved against every deck's own § *Design
+# project* section, `read`, above), a design system (a bound library, never
+# a deck), or excluded (by name, with a recorded reason). Both non-
+# presentation classifications are exact-identity lookups against a small,
+# explicit list -- never a heuristic (the story's own Never boundary): a
+# project named e.g. "REMOVED-PyForge Unifying Strategy Deck" (one word
+# added) reads as an ordinary, untwinned presentation rather than silently
+# matching the retired "REMOVED-PyForge Unifying Strategy" by prefix or
+# substring.
+
+DESIGN_SYSTEM_PROJECT_NAMES = frozenset({"Modernist", "Broadsheet", "Nocturne"})
+"""Every Design project that is a bound design-system library, not a deck
+(the operator's Q1 scope ruling, `docs/dreams/design-sync-loop.md`): mirrored
+as libraries (Story 23.2), never given a deck twin, ledger or Pages page.
+Matched by exact `list_projects` `name` -- the same "excluded by name, never
+a heuristic" discipline `read_exclusions` below applies. Modernist is also
+the deck family's own `MODERNIST_DESIGN_SYSTEM_ID` (`transport/base.py`);
+recorded here by name, like its two siblings, since classification only ever
+sees a live project's name, never its id, until `account_status` has already
+resolved which local twin (if any) an id belongs to."""
+
+_EXCLUDED_SECTION_HEADING = "## Excluded projects (never twinned)"
+"""The fixed heading text this pair of functions owns, in
+`presentations/README.md` -- the family-level registry, distinct from a
+single deck's own README (which never carries this section)."""
+
+_EXCLUDED_TABLE_HEADER = "| Project | Reason |"
+_EXCLUDED_TABLE_SEPARATOR = "|---|---|"
+
+
+def read_exclusions(readme_path: Path) -> dict[str, str]:
+    """Every Design project name intentionally excluded from the twin-per-
+    deck loop, mapped to its recorded reason (Story 23.1, CAP-1) --
+    `presentations/README.md`'s own `_EXCLUDED_SECTION_HEADING` table.
+
+    Returns `{}` when `readme_path` does not exist or carries no such
+    section (both are "nothing excluded yet"). A live account project is
+    excluded by an *exact* match against this table's `Project` column --
+    never a name heuristic (the story's own Never boundary): the two
+    projects the story names, `REMOVED-PyForge Unifying Strategy` and
+    `Local recipes repository connection`, are recorded here verbatim with
+    their reasons, rather than inferred from a `REMOVED-` prefix or a
+    `repository connection` substring.
+
+    Raises `errors.HeraldError` naming `readme_path` when the heading is
+    present but a row under it does not match the table's two-cell
+    `| Project | Reason |` shape, when a `Project` value repeats (a
+    duplicate row would otherwise silently discard the earlier row's
+    `reason` with no error), or when the filesystem otherwise refuses the
+    read."""
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(
+            f"excluded-projects list could not be read from {readme_path}: {exc}"
+        ) from exc
+
+    lines = text.splitlines()
+    heading_index = _find_heading(lines, _EXCLUDED_SECTION_HEADING)
+    if heading_index is None:
+        return {}
+    span_end = _section_span_end(lines, heading_index)
+    body = lines[heading_index + 1 : span_end]
+
+    exclusions: dict[str, str] = {}
+    for line in body:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if stripped in (_EXCLUDED_TABLE_HEADER, _EXCLUDED_TABLE_SEPARATOR):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) != 2 or not cells[0]:
+            raise errors.HeraldError(
+                f"excluded-projects list in {readme_path} is malformed: row "
+                f"{line!r} is not a two-cell '| Project | Reason |' row"
+            )
+        project, reason = cells
+        if project in exclusions:
+            raise errors.HeraldError(
+                f"excluded-projects list in {readme_path} is malformed: "
+                f"project {project!r} appears more than once"
+            )
+        exclusions[project] = reason
+    return exclusions

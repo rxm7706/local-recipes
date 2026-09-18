@@ -141,6 +141,109 @@ def test_deck_status_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
     assert "bridge state file could not be read" in err
 
 
+def _fake_account_status(**overrides):
+    defaults = {
+        "project_id": "p-1",
+        "name": "PyForge Warden deck",
+        "url": "https://claude.ai/design/p/p-1",
+        "status": "linked",
+        "slug": "pyforge-warden",
+        "reason": None,
+    }
+    defaults.update(overrides)
+    return deck_pipeline.AccountProjectStatus(**defaults)
+
+
+# --- Story 23.1: `--account` -------------------------------------------------
+
+
+def test_deck_status_account_forwards_repo_root_and_prints_a_json_array(
+    monkeypatch, capsys, tmp_path: Path
+):
+    seen = {}
+
+    def _fake(transport, *, repo_root):
+        seen["repo_root"] = repo_root
+        seen["transport"] = transport
+        return [
+            _fake_account_status(),
+            _fake_account_status(
+                project_id="p-2",
+                name="REMOVED-PyForge Unifying Strategy",
+                url="https://claude.ai/design/p/p-2",
+                status="excluded",
+                slug=None,
+                reason="ad-hoc duplicate, retired",
+            ),
+        ]
+
+    monkeypatch.setattr(deck_pipeline, "account_status", _fake)
+
+    exit_code = cli.main(
+        ["deck", "status", "--account", "--repo-root", str(tmp_path)]
+    )
+
+    assert exit_code == 0
+    assert seen["repo_root"] == tmp_path
+    out = json.loads(capsys.readouterr().out)
+    assert [entry["name"] for entry in out] == [
+        "PyForge Warden deck",
+        "REMOVED-PyForge Unifying Strategy",
+    ]
+    assert out[0] == {
+        "name": "PyForge Warden deck",
+        "project_id": "p-1",
+        "url": "https://claude.ai/design/p/p-1",
+        "status": "linked",
+        "slug": "pyforge-warden",
+        "reason": None,
+    }
+    assert out[1]["status"] == "excluded"
+    assert out[1]["reason"] == "ad-hoc duplicate, retired"
+
+
+def test_deck_status_account_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
+    seen = {}
+
+    def _fake(transport, *, repo_root):
+        seen["repo_root"] = repo_root
+        return []
+
+    monkeypatch.setattr(deck_pipeline, "account_status", _fake)
+    monkeypatch.chdir(tmp_path)
+
+    cli.main(["deck", "status", "--account"])
+
+    assert seen["repo_root"] == tmp_path
+
+
+def test_deck_status_account_with_a_slug_is_a_herald_error(monkeypatch, capsys):
+    def _fake(transport, *, repo_root):
+        raise AssertionError("account_status must not be called")
+
+    monkeypatch.setattr(deck_pipeline, "account_status", _fake)
+
+    exit_code = cli.main(["deck", "status", "--account", "pyforge-warden"])
+
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "--account" in err
+    assert "pyforge-warden" in err
+
+
+def test_deck_status_account_herald_error_reaches_dispatch(monkeypatch, capsys):
+    def _fake(transport, *, repo_root):
+        raise HeraldError("could not reach claude-design")
+
+    monkeypatch.setattr(deck_pipeline, "account_status", _fake)
+
+    exit_code = cli.main(["deck", "status", "--account"])
+
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "could not reach claude-design" in err
+
+
 def test_deck_status_never_writes_to_bridge_state(monkeypatch, tmp_path: Path):
     """No test here can prove the transport made no write call (that's
     ``deck_pipeline.status`` itself, monkeypatched away) -- what the CLI

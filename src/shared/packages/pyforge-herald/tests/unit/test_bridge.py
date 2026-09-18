@@ -70,6 +70,9 @@ class FakeTransport:
     ) -> ProjectRef:
         return ProjectRef(project_id="p-1", url="https://claude.ai/design/p/p-1")
 
+    def list_projects(self):
+        return []
+
     def finalize_plan(
         self, *, project_id, writes=(), deletes=(), scope="paths"
     ) -> PlanHandle:

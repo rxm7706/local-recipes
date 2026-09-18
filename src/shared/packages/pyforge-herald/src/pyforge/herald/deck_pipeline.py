@@ -1255,6 +1255,153 @@ def _status_or_conflict(
         )
 
 
+# --- Story 23.1: account-wide reconciliation (CAP-1) -------------------------
+#
+# `herald deck status` above (CAP-3) only ever reports on a deck this repo
+# already knows about -- a slug with a `presentations/<slug>/` directory or a
+# `state.py` entry. It has no way to see a Design project that exists in the
+# signed-in account but has no local twin at all: `docs/dreams/
+# design-sync-loop.md`'s own measured evidence is `PyForge six-quarter
+# roadmap` and `LLM Knowledge Bases` (no twin, ever) and `Agentic AI SLDC
+# deck` (a twin exists, unregistered). `account_status` closes that gap:
+# `transport.list_projects()` enumerates the whole account, and every
+# project is reconciled against the registry -- `registry.read_exclusions`
+# (the family-level exclusion list) and `registry.DESIGN_SYSTEM_PROJECT_NAMES`
+# (the known design-system libraries) first, by exact name; every remaining
+# project is a presentation, "linked" when some local deck's own § *Design
+# project* section (`registry.read`, never `state.py`'s gitignored,
+# per-clone cache) names this exact project id, "untwinned" otherwise. Like
+# CAP-3's `status`, this is read-only end to end: it never calls a
+# write-side transport method and never touches `state.py`.
+
+
+@dataclass(frozen=True)
+class AccountProjectStatus:
+    """One Design project's account-wide reconciliation report (Story
+    23.1, CAP-1): every project ``transport.list_projects()`` returns,
+    classified against the registry so ``herald deck status --account``
+    can report on all of them -- no project absent (CAP-1's own success
+    signal) -- not just the ones a local README registry section already
+    names.
+
+    ``status`` is one of ``"linked"`` (a presentation with a local twin --
+    ``slug`` names it), ``"untwinned"`` (a presentation with no local twin
+    yet), ``"mirrored"`` (a known design system -- a bound library, never a
+    deck), or ``"excluded"`` (recorded by name in ``presentations/
+    README.md`` -- ``reason`` names why)."""
+
+    project_id: str
+    name: str
+    url: str
+    status: str
+    slug: str | None = None
+    reason: str | None = None
+
+
+def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
+    """Every local ``presentations/<slug>/`` deck's own registered Design
+    project id, mapped back to its slug -- read from each deck's own README
+    § *Design project* section (``registry.read``), the durable, git-tracked
+    record CAP-1 reconciles against (never ``state.py``'s gitignored,
+    per-clone operational cache, which a fresh clone starts without --
+    mirrors Story 20.13's identical "no second registry" ruling). A README
+    with no such section, or that fails to parse, contributes nothing for
+    that slug rather than aborting the whole reconciliation -- one
+    malformed deck must not hide every other project's real status.
+
+    Raises ``errors.HeraldError`` naming both slugs and the project id when
+    two local decks are registered against the same Design project id --
+    silently letting the later-sorted slug win would misattribute
+    ``AccountProjectStatus.slug`` with no error, unlike this module's
+    fail-loud handling of every other malformed-registry shape."""
+    presentations_dir = repo_root / "presentations"
+    by_project_id: dict[str, str] = {}
+    if not presentations_dir.is_dir():
+        return by_project_id
+    for entry in sorted(presentations_dir.iterdir()):
+        if not entry.is_dir():
+            continue
+        try:
+            design_project = registry.read(entry / "README.md")
+        except errors.HeraldError:
+            continue
+        if design_project is None:
+            continue
+        project_id = design_project.project_id
+        if project_id in by_project_id:
+            raise errors.HeraldError(
+                f"cannot reconcile the account: {by_project_id[project_id]!r} "
+                f"and {entry.name!r} are both registered against the same "
+                f"Design project id {project_id!r}"
+            )
+        by_project_id[project_id] = entry.name
+    return by_project_id
+
+
+def account_status(
+    transport: DesignTransport, *, repo_root: Path
+) -> list[AccountProjectStatus]:
+    """CAP-1 (Story 23.1): enumerate every Design project the signed-in
+    account can see and reconcile it against the registry, so
+    ``herald deck status --account`` reports on all of it -- unlike CAP-3's
+    ``status`` above, which only ever reports on a slug this repo already
+    knows about.
+
+    Classification order (never a name heuristic, the story's own Never
+    boundary): an *exact* name match against ``registry.read_exclusions``
+    wins first, then an exact name match against
+    ``registry.DESIGN_SYSTEM_PROJECT_NAMES``, then a presentation --
+    "linked" when some local deck's own registry section names this exact
+    project id, "untwinned" otherwise.
+
+    Read-only, like CAP-3's ``status``: calls only
+    ``transport.list_projects``, never a write-side transport method, and
+    never touches ``state.py``."""
+    exclusions = registry.read_exclusions(repo_root / "presentations" / "README.md")
+    twinned = _twinned_project_ids(repo_root)
+    results: list[AccountProjectStatus] = []
+    for project in transport.list_projects():
+        if project.name in exclusions:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="excluded",
+                    reason=exclusions[project.name],
+                )
+            )
+        elif project.name in registry.DESIGN_SYSTEM_PROJECT_NAMES:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="mirrored",
+                )
+            )
+        elif project.project_id in twinned:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="linked",
+                    slug=twinned[project.project_id],
+                )
+            )
+        else:
+            results.append(
+                AccountProjectStatus(
+                    project_id=project.project_id,
+                    name=project.name,
+                    url=project.url,
+                    status="untwinned",
+                )
+            )
+    return results
+
+
 # --- CAP-5: export push-back, Epic 5 -----------------------------------------
 #
 # `bridge-protocol.md` § *Export push-back*: after `deck-export` regenerates the

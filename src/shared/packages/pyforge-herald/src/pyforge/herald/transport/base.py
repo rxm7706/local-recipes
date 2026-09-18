@@ -1,16 +1,32 @@
 """The ``DesignTransport`` port and the invariants every adapter upholds
-(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2, and to a 10th port
-method -- not a 10th remote tool -- by Story 23.4; see below).
+(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2, to a 10th port
+method -- not a 10th remote tool -- by Story 23.4, and to an 11th tool,
+``list_projects``, by Story 23.1; see below).
 
 ``DesignTransport`` is the whole surface Herald is allowed to use against
 the ``claude-design`` server: the 8 tools the proven bridge loop needs
 (``bridge-protocol.md``) plus ``list_files``, added for CAP-3 (``herald
 deck status``), plus ``fetch_rendered_bytes`` (Story 23.4), a port-only
-method that calls no new remote tool -- see below. It is a
-``@runtime_checkable typing.Protocol`` -- never an ABC -- mirroring
-``pyforge.warden.interfaces``: adapters conform structurally and are
-substituted by injection, so a test can pass a hand-written fake with no
-inheritance and no network.
+method that calls no new remote tool, plus ``list_projects`` (Story 23.1,
+CAP-1) -- see below. It is a ``@runtime_checkable typing.Protocol`` --
+never an ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
+structurally and are substituted by injection, so a test can pass a
+hand-written fake with no inheritance and no network.
+
+**An 11th port method, for a whole-account listing (Story 23.1, CAP-1).**
+``list_projects`` enumerates every Design project the signed-in account can
+see -- nothing in the other 10 methods can do that: ``list_files``
+enumerates one *already-known* project's own files, never the account's
+own project list, and every other method takes a ``project_id`` its caller
+must already have. CAP-1's account-wide reconciliation
+(``deck_pipeline.account_status``) needs the account's whole project set
+before it can classify any of it. Verified live 2026-09-18: the deployed
+tool takes no arguments and answers with a plain JSON array (a 20-project
+account returned all 20 in one call, with no wrapper object and no
+continuation field of any kind) -- so this port method calls it exactly
+once and returns whatever it says, with no artificial slicing of its own.
+If a future server version pages a larger account past some size, that is
+a wire-shape change this port has not yet been asked to handle.
 
 **Spine amendment (Story 1.2's own review, finding F10).** AD-3 originally
 fixed the port at exactly 8 tools, and widening it was explicitly out of
@@ -203,6 +219,24 @@ class ListedFile:
 
 
 @dataclass(frozen=True)
+class ProjectSummary:
+    """One project entry from ``list_projects`` (Story 23.1's 11th port
+    method): its id, display name, and durable ``claude.ai/design`` editor
+    url -- the whole shape CAP-1's account enumeration needs to classify a
+    live Design project and reconcile it against the registry.
+
+    Distinct from ``create_project``'s ``ProjectRef``: that dataclass has
+    no ``name`` field, and reusing it here would silently drop the one
+    field classification depends on -- ``deck_pipeline.account_status``
+    matches a project against the registry's exclusion table and the known
+    design-system names by exact ``name``, never a heuristic."""
+
+    project_id: str
+    name: str
+    url: str
+
+
+@dataclass(frozen=True)
 class PreviewRef:
     """A preview answer with **no ``serve_url`` field at all** (NFR-04).
 
@@ -243,6 +277,14 @@ class DesignTransport(Protocol):
     def create_project(
         self, *, name: str, design_system_id: str | None = None
     ) -> ProjectRef: ...
+
+    def list_projects(self) -> Sequence[ProjectSummary]:
+        """Enumerate every Design project the signed-in account can see
+        (tool ``list_projects``, Story 23.1's 11th port method -- see the
+        module docstring). ``deck_pipeline.account_status`` (CAP-1) is the
+        sole caller; no other capability in this port needs the whole
+        account's project list."""
+        ...
 
     def finalize_plan(
         self,

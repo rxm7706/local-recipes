@@ -14,9 +14,11 @@ from pathlib import Path
 import pytest
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.registry import (
+    DESIGN_SYSTEM_PROJECT_NAMES,
     DesignProject,
     append_push_ledger_row,
     read,
+    read_exclusions,
     read_potx_template,
     register,
     register_potx_template,
@@ -24,6 +26,7 @@ from pyforge.herald.registry import (
 
 _HEADING = "## Design project (the bridge's far end)"
 _POTX_HEADING = "## PowerPoint template (the .potx path)"
+_EXCLUDED_HEADING = "## Excluded projects (never twinned)"
 
 
 def test_register_into_a_readme_with_no_section_appends_it(tmp_path: Path):
@@ -815,3 +818,88 @@ def test_append_push_ledger_row_wraps_a_failed_replace_and_leaks_no_temp_file(
 
     assert readme_path.read_text() == "# My Deck\n"
     assert list(tmp_path.iterdir()) == [readme_path]
+
+
+# --- Story 23.1: read_exclusions / DESIGN_SYSTEM_PROJECT_NAMES (CAP-1) ------
+
+
+def test_design_system_project_names_names_the_three_known_libraries():
+    assert DESIGN_SYSTEM_PROJECT_NAMES == {"Modernist", "Broadsheet", "Nocturne"}
+
+
+def test_read_exclusions_against_a_missing_file_returns_empty(tmp_path: Path):
+    assert read_exclusions(tmp_path / "does-not-exist.md") == {}
+
+
+def test_read_exclusions_against_a_readme_with_no_section_returns_empty(
+    tmp_path: Path,
+):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# presentations/\n\nSome prose.\n")
+    assert read_exclusions(readme_path) == {}
+
+
+def test_read_exclusions_parses_the_two_retired_projects(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# presentations/\n\n"
+        f"{_EXCLUDED_HEADING}\n\n"
+        "| Project | Reason |\n"
+        "|---|---|\n"
+        "| REMOVED-PyForge Unifying Strategy | ad-hoc duplicate, retired |\n"
+        "| Local recipes repository connection | stale hand-mirrored repo copy |\n"
+    )
+
+    assert read_exclusions(readme_path) == {
+        "REMOVED-PyForge Unifying Strategy": "ad-hoc duplicate, retired",
+        "Local recipes repository connection": "stale hand-mirrored repo copy",
+    }
+
+
+def test_read_exclusions_stops_at_the_next_heading(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        f"{_EXCLUDED_HEADING}\n\n"
+        "| Project | Reason |\n"
+        "|---|---|\n"
+        "| Retired Project | some reason |\n\n"
+        "## Something else\n"
+        "| Not-excluded | ignored |\n"
+    )
+
+    assert read_exclusions(readme_path) == {"Retired Project": "some reason"}
+
+
+def test_read_exclusions_raises_on_a_malformed_row(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        f"{_EXCLUDED_HEADING}\n\n"
+        "| Project | Reason |\n"
+        "|---|---|\n"
+        "| Missing the reason cell |\n"
+    )
+
+    with pytest.raises(HeraldError, match="not a two-cell"):
+        read_exclusions(readme_path)
+
+
+def test_read_exclusions_wraps_an_unreadable_file(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.mkdir()  # a directory, not a file -- OSError on read
+
+    with pytest.raises(HeraldError, match=str(readme_path)):
+        read_exclusions(readme_path)
+
+
+def test_read_exclusions_raises_on_a_duplicate_project_row(tmp_path: Path):
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        f"{_EXCLUDED_HEADING}\n\n"
+        "| Project | Reason |\n"
+        "|---|---|\n"
+        "| Retired Project | first reason |\n"
+        "| Retired Project | second reason |\n"
+    )
+
+    with pytest.raises(HeraldError, match="Retired Project.*more than once"):
+        read_exclusions(readme_path)
