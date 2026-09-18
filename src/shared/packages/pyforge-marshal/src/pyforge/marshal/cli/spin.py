@@ -1234,7 +1234,9 @@ def _spawn_supervisor_sidecar(
             wire_payload = wire.journal_payload()
         else:
             wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-            enabled = bool(wire_layer["enabled"])
+            enabled = harness_profile.resolve_wire_enabled(
+                wire_layer["enabled"], wrapper_declared=False
+            )
             wire_payload = harness_profile.WireWrap(
                 applied=False,
                 reason=(
@@ -1272,16 +1274,25 @@ def _spawn_supervisor_sidecar(
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
-    context_layers = policy.resolve_context_layers(effective_policy)
-    wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
-    if bool(wire_layer["enabled"]):
+    # Story 46.4: gate on ``wire_payload["applied"]``, the disposition
+    # already resolved above against the REAL harness profile, instead of
+    # re-deriving from the raw policy value with no profile in scope. A
+    # prior version of this gate hardcoded ``wrapper_declared=False`` here,
+    # which silently stopped writing this sidecar for every launch where
+    # wire resolves ``"auto"`` -> applied under a real wrapper -- the new
+    # repo-default's common case, since this story also removes
+    # pyforge-marshal's own explicit override. ``wire_payload`` (not the
+    # no-longer-locally-bound ``wire_layer``) is also the source for
+    # ``aggressiveness`` below -- it is defined on every path above,
+    # whereas ``wire_layer`` was only ever bound inside one of them.
+    if wire_payload.get("applied"):
         compression_sidecar = {
             "escalation_threshold": policy.resolve_compression_escalation_threshold(
                 effective_policy
             ),
             "wire": {
                 "enabled": True,
-                "aggressiveness": wire_layer["aggressiveness"],
+                "aggressiveness": wire_payload["aggressiveness"],
             },
         }
         try:

@@ -531,6 +531,32 @@ def test_context_rejects_missing_enabled():
     assert findings[0].code == "MRS-POLICY-002"
 
 
+def test_context_accepts_auto_enabled_for_wire_layer():
+    """Story 46.4: the literal string "auto" is valid ``enabled`` only for
+    the ``wire`` layer -- the tri-state resolved later, against the
+    concrete harness profile, by ``harness_profile.resolve_wire_enabled``."""
+    effective, findings = compose(
+        project_slug="acme", project={"context": {"wire": {"enabled": "auto"}}}, flags={}
+    )
+    assert findings == ()
+    assert effective.context.value == {"wire": {"enabled": "auto"}}
+    assert effective.context.layer is PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize(
+    "layer", [name for name in policy.CONTEXT_LAYER_NAMES if name != "wire"]
+)
+def test_context_rejects_auto_enabled_for_non_wire_layers(layer):
+    """The "auto" tri-state is ``wire``-only; the other 4 layers keep the
+    existing strict-``bool``-only posture."""
+    effective, findings = compose(
+        project_slug="acme", project={"context": {layer: {"enabled": "auto"}}}, flags={}
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert effective.context.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+
+
 def test_context_rejects_non_bool_enabled():
     effective, findings = compose(
         project_slug="acme", project={"context": {"wire": {"enabled": "yes"}}}, flags={}
@@ -595,6 +621,42 @@ def test_resolve_context_layers_reflects_a_partial_declaration():
         assert resolved[layer] == {"enabled": False, "aggressiveness": "medium"}
 
 
+def test_resolve_context_layers_passes_wire_auto_through_unresolved():
+    """Story 46.4: this function runs at policy-composition time, before any
+    harness profile is chosen -- ``wire``'s declared ``"auto"`` must pass
+    through as the literal string, never force-coerced to ``bool`` (which
+    would silently destroy the tri-state, since ``bool("auto")`` is
+    ``True``). The other 4 layers still resolve to a real ``bool``."""
+    effective, _ = compose(
+        project_slug="acme",
+        project={
+            "context": {
+                "wire": {"enabled": "auto"},
+                "output": {"enabled": True},
+            }
+        },
+        flags={},
+    )
+    resolved = policy.resolve_context_layers(effective)
+    assert resolved["wire"] == {"enabled": "auto", "aggressiveness": "medium"}
+    assert isinstance(resolved["wire"]["enabled"], str)
+    assert resolved["output"] == {"enabled": True, "aggressiveness": "medium"}
+    assert resolved["output"]["enabled"] is True
+
+
+def test_resolve_context_layers_wire_explicit_bool_still_resolves_to_bool():
+    """A force-override (explicit ``true``/``false``) is unaffected by the
+    tri-state pass-through -- it still resolves to a real ``bool``."""
+    effective, _ = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"enabled": True}}},
+        flags={},
+    )
+    resolved = policy.resolve_context_layers(effective)
+    assert resolved["wire"] == {"enabled": True, "aggressiveness": "medium"}
+    assert resolved["wire"]["enabled"] is True
+
+
 def test_resolve_context_layers_fills_default_aggressiveness_when_omitted():
     effective, _ = compose(
         project_slug="acme", project={"context": {"output": {"enabled": True}}}, flags={}
@@ -637,9 +699,17 @@ def test_dispatch_max_parallel_two_on_real_marshal_policy_does_not_fire_scm_clam
     assert "MRS-POLICY-007" not in codes
 
 
-def test_the_real_pyforge_marshal_policy_declares_all_five_context_layers_enabled():
-    """Story 33.2 regression: the tracked marshal-policy.toml enables every
-    CAP-1 layer on factory dispatch — not a hand-duplicated fixture."""
+def test_the_real_pyforge_marshal_policy_declares_no_context_block():
+    """Story 46.4 regression: the tracked marshal-policy.toml no longer
+    force-declares `[context]` at all -- Story 33.2's five-layer enablement
+    is superseded by the repo-default `_bmad-output/policy-defaults.toml`
+    block (all 5 layers on, `wire` on the `"auto"` tri-state). Per
+    `_merge_field`'s wholesale-per-field (not deep-merge) composition, a
+    station file declaring ANY part of `[context]` would replace the repo
+    default's entire value for that station -- so the station stays
+    force-override-only by declaring nothing here at all. See
+    `test_dispatch.py::test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch`
+    for the fully-composed (repo-defaults + project) resolution."""
     repo_root = Path(__file__).resolve().parents[6]
     policy_path = (
         repo_root
@@ -649,15 +719,7 @@ def test_the_real_pyforge_marshal_policy_declares_all_five_context_layers_enable
         pytest.skip("marshal-policy.toml not present in this checkout")
 
     parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
-    effective, findings = compose(
-        project_slug="pyforge-marshal", project=parsed, flags={}
-    )
-    assert findings == ()
-    resolved = policy.resolve_context_layers(effective)
-    assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
-    for layer in policy.CONTEXT_LAYER_NAMES:
-        assert resolved[layer]["enabled"] is True
-        assert resolved[layer]["aggressiveness"] == "medium"
+    assert "context" not in parsed
 
 
 def test_context_escalation_threshold_defaults_when_absent():

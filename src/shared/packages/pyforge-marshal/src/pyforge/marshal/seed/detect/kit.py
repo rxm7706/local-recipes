@@ -299,13 +299,19 @@ def layer_enabled(context_layers: Mapping[str, Mapping[str, Any]] | None, layer:
     layer, or a non-mapping entry all read as OFF -- the same direction
     ``core.policy.resolve_context_layers`` composes an absent ``[context]``
     block in, so a partial or missing mapping can never turn a layer ON by
-    accident."""
+    accident. Story 46.4: this probe has no harness-profile seam to resolve
+    the repo-default ``"auto"`` tri-state against, so an unresolved
+    ``"auto"`` also reads as OFF here rather than the ``bool("auto")``
+    truthiness accident that would otherwise always read it as ON."""
     if not context_layers:
         return False
     entry = context_layers.get(layer)
     if not isinstance(entry, Mapping):
         return False
-    return bool(entry.get("enabled", False))
+    enabled = entry.get("enabled", False)
+    if isinstance(enabled, str):
+        return False
+    return bool(enabled)
 
 
 def head_commit_timestamp(

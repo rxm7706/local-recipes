@@ -75,3 +75,49 @@ def test_attempt_spin_wire_layer_writes_a_real_deterministic_port(
     overlay_path = loop_home / ".bmad-loop" / "profiles" / "claude.toml"
     text = overlay_path.read_text(encoding="utf-8")
     assert f'"{expected_port}"' in text or f"'{expected_port}'" in text, text
+
+
+def test_attempt_spin_wire_layer_auto_with_no_resolvable_profile_is_a_clean_skip(
+    tmp_path,
+) -> None:
+    """Story 46.4: an adapter with no ``PROFILE_BY_BMADLOOP_ADAPTER`` entry
+    has no marshal harness profile to read a ``[wrapper]`` fact from, so
+    ``"auto"`` resolves to ``False`` via ``resolve_wire_enabled`` -- a clean
+    skip, not the WARN-class degraded reason this branch returns for an
+    explicit ``enabled=True``."""
+    loop_home = tmp_path / "loop-home"
+    loop_home.mkdir()
+
+    wire = module.attempt_spin_wire_layer(
+        loop_home=loop_home,
+        adapter_name="unknown-adapter",
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        repo_root=None,
+    )
+
+    assert wire.applied is False
+    assert wire.reason is None
+
+
+def test_attempt_spin_wire_layer_auto_with_unresolvable_packaged_profile_is_a_clean_skip(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 46.4: ``PROFILE_BY_BMADLOOP_ADAPTER`` resolves ``adapter_name``
+    to a profile stem, but that stem is absent from
+    ``load_packaged_profiles()`` -- the second, distinct fallback branch
+    ``attempt_spin_wire_layer`` falls through to. ``"auto"`` must resolve
+    the same clean-skip way here as it does when no adapter mapping exists
+    at all."""
+    monkeypatch.setattr(module, "load_packaged_profiles", dict)
+    loop_home = tmp_path / "loop-home"
+    loop_home.mkdir()
+
+    wire = module.attempt_spin_wire_layer(
+        loop_home=loop_home,
+        adapter_name="claude",
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        repo_root=None,
+    )
+
+    assert wire.applied is False
+    assert wire.reason is None

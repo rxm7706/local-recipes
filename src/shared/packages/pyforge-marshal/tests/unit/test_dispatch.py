@@ -268,7 +268,14 @@ def test_run_dispatch_surfaces_the_context_payload(
 
 def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -> None:
     """Story 33.2 (CAP-1): factory dispatch reads the tracked marshal-policy.toml
-    and resolves all five context layers enabled via the single composition site."""
+    and resolves all five context layers enabled via the single composition site.
+
+    Story 46.4: pyforge-marshal's own marshal-policy.toml no longer declares a
+    `[context]` block at all -- the 4 harness-agnostic layers now come from
+    the repo-default `_bmad-output/policy-defaults.toml`, and `wire`'s value
+    passes through `resolve_context_layers` as the raw `"auto"` tri-state
+    (unresolved at this composition-time call site -- no harness profile is
+    in scope here yet)."""
     from pyforge.marshal.cli.dispatch import _compose_policy
     from pyforge.marshal.core import policy
 
@@ -284,6 +291,9 @@ def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -
     resolved = policy.resolve_context_layers(effective)
     assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
     for layer in policy.CONTEXT_LAYER_NAMES:
+        if layer == "wire":
+            assert resolved[layer] == {"enabled": "auto", "aggressiveness": "medium"}
+            continue
         assert resolved[layer] == {"enabled": True, "aggressiveness": "medium"}
 
 

@@ -953,7 +953,13 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
     ``bool`` only, the same strict-no-coercion posture ``_valid_bool``
     applies. ``aggressiveness`` is OPTIONAL, drawn from the closed
     ``_CONTEXT_AGGRESSIVENESS`` vocabulary when present -- CAP-8's later
-    graduated ladder escalates it, this story only shapes it."""
+    graduated ladder escalates it, this story only shapes it.
+
+    Story 46.4: the ``wire`` layer alone additionally accepts the literal
+    string ``"auto"`` for ``enabled`` -- a tri-state resolved later, against
+    the concrete harness profile, by ``harness_profile.resolve_wire_enabled``
+    (never here, and never force-coerced to ``bool``). The other 4 layers
+    keep the strict-``bool``-only posture unchanged."""
     if not isinstance(value, Mapping):
         return None
     result: dict[str, object] = {}
@@ -974,7 +980,8 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
             return None
         enabled = settings.get("enabled")
         if not isinstance(enabled, bool):
-            return None
+            if not (layer_name == "wire" and enabled == "auto"):
+                return None
         entry: dict[str, object] = {"enabled": enabled}
         if "aggressiveness" in settings:
             aggressiveness = settings["aggressiveness"]
@@ -1891,15 +1898,26 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
     Both ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
     spin's ``policy.toml`` render) and ``cli/dispatch.py::dispatch_once``
     (factory dispatch's launch data/journal) call this SAME function rather
-    than each re-deriving "layer absent = off" independently."""
+    than each re-deriving "layer absent = off" independently.
+
+    Story 46.4: this function runs at policy-composition time, before any
+    harness profile is chosen, so the ``wire`` layer's declared value is
+    passed through UNRESOLVED -- ``"auto"``, ``True``, or ``False``
+    (defaulting to ``False`` when the layer is absent) -- rather than
+    force-coerced to ``bool``. ``bool("auto")`` would silently destroy the
+    tri-state before it ever reaches ``harness_profile.resolve_wire_enabled``,
+    the profile-aware resolver that finalizes it. The other 4 layers keep the
+    existing ``bool(...)`` coercion -- validation already guarantees a real
+    ``bool`` for them."""
     declared = effective.context.value
     resolved: dict[str, dict[str, object]] = {}
     for layer in CONTEXT_LAYER_NAMES:
         layer_declared = declared.get(layer, {})
         if not isinstance(layer_declared, Mapping):
             layer_declared = {}
+        raw_enabled = layer_declared.get("enabled", False)
         resolved[layer] = {
-            "enabled": bool(layer_declared.get("enabled", False)),
+            "enabled": raw_enabled if layer == "wire" else bool(raw_enabled),
             "aggressiveness": layer_declared.get(
                 "aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS
             ),

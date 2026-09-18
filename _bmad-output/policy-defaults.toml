@@ -52,3 +52,28 @@ max_followup_reviews = 2
 # read this layer (compose()'s repo_defaults); it wins over marshal's code
 # default and loses to a project's marshal-policy.toml / --set flags.
 harness_preference = ["claude", "cursor", "copilot", "gemini", "devin"]
+
+# context (Story 46.4): repo-wide default for the 5-layer [context] block
+# (Story 28.1, CAP-1). The 4 harness-agnostic layers default ON everywhere;
+# `wire` alone defaults to the tri-state "auto" -- resolved per-launch,
+# against the concrete harness profile, to on iff that profile declares a
+# [wrapper] (off for a profile like cursor's that declares none, per Story
+# 28.29). A station's own marshal-policy.toml [context] block, if present,
+# is a force-override only -- per core/policy.py's wholesale-per-field
+# composition, declaring ANY part of [context] there replaces this entire
+# block for that station, so a station file should declare nothing here to
+# inherit this default shape.
+[context.output]
+enabled = true
+
+[context."structure-graph"]
+enabled = true
+
+[context."derived-context"]
+enabled = true
+
+[context."planning-graph"]
+enabled = true
+
+[context.wire]
+enabled = "auto"
