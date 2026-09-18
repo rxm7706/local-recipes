@@ -269,6 +269,48 @@ def _format_bytes(byte_count: int | float) -> str:
         return f"{byte_count / (1024 * 1024 * 1024):.1f}GB"
 
 
+def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
+    """Format ``layer_savings_sources.read_rollup_by_harness``'s envelope
+    into one line per harness (Story 46.5, CAP-193), sibling of
+    ``_format_savings_summary``: each layer key renders as ``key=value``
+    joined by ``", "`` -- never a raw Python ``repr()`` of the per-harness
+    dict -- and each harness's own ``currency`` string is named inline, so
+    no line anywhere sums savings across harnesses (a Cursor-first station's
+    quota-burn number is never folded into a Claude station's USD one).
+
+    Returns ``""`` when there is nothing to show (empty rollup, or a
+    ``"no-dispatch-journals"``/``"no-savings-samples"`` status)."""
+    if not rollup:
+        return ""
+    status = rollup.get("status")
+    if status in ("no-dispatch-journals", "no-savings-samples"):
+        return ""
+    harnesses = rollup.get("harnesses")
+    if not isinstance(harnesses, Mapping) or not harnesses:
+        return ""
+    lines = []
+    for profile_name in sorted(harnesses):
+        harness_bucket = harnesses[profile_name]
+        if not isinstance(harness_bucket, Mapping):
+            continue
+        currency = harness_bucket.get("currency", "unknown")
+        runs = harness_bucket.get("runs", 0)
+        parts = []
+        for layer_kind in ("silent", "configured"):
+            layers = harness_bucket.get(layer_kind)
+            if not isinstance(layers, Mapping) or not layers:
+                continue
+            layer_text = ", ".join(
+                f"{layer_key}={value}" for layer_key, value in layers.items()
+            )
+            parts.append(f"{layer_kind}: {layer_text}")
+        body = "; ".join(parts)
+        lines.append(
+            f"  {profile_name} (currency={currency}, runs={runs}): {body}"
+        )
+    return "\n".join(lines)
+
+
 # Story 5.2 (per-run detail, FR-37/NFR-12): `--run <run_id>` requires
 # `--project <slug>` alongside it -- a run id alone does not name which
 # project's Tier-3 store to look under (run directories nest per-project).
@@ -1936,6 +1978,14 @@ def run_status(
         rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
 
     data["homes"] = rows
+    # Story 46.5 (CAP-193): the per-harness savings rollup -- scoped-project
+    # views only (whole-fleet `--project`-less status does not compute a
+    # cross-project rollup; each project's dispatch-runs are scoped to that
+    # project alone).
+    if args.project is not None:
+        data["savings_rollup_by_harness"] = layer_savings_sources.read_rollup_by_harness(
+            git_repo_root, project_slug=args.project
+        )
     return _emit(args, data, findings)
 
 
@@ -2368,6 +2418,16 @@ def _render_text_status(
             ))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
+
+    # Story 46.5 (CAP-193): the per-harness rollup -- its own line(s),
+    # never folded into any per-home `savings_text` above (no cross-harness
+    # summed total anywhere in this output).
+    rollup = data.get("savings_rollup_by_harness")
+    if isinstance(rollup, Mapping):
+        rollup_text = _format_rollup_by_harness(rollup)
+        if rollup_text:
+            lines.append("savings_rollup_by_harness:")
+            lines.append(rollup_text)
 
     if findings:
         lines.append("findings:")
