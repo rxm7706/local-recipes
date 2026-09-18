@@ -21,6 +21,7 @@ from pyforge.marshal.core.dispatch_supervisor_state import (
     supervisor_should_exit,
 )
 from pyforge.marshal.core.gate import widen_effective_surface_with_paths
+from pyforge.marshal.core import harness_session
 from pyforge.marshal.core.harness_session import (
     HarnessSessionOutcome,
     classify_session_log,
@@ -30,6 +31,57 @@ from pyforge.marshal.core.harness_session import (
 def test_classify_session_log_quota() -> None:
     log = "Error: monthly spend limit reached for this workspace"
     assert classify_session_log(log) is HarnessSessionOutcome.QUOTA_EXCEEDED
+
+
+# Real fixture: pyforge-herald-20260918T132400673Z-194af3a0/session.log
+# (Story 50.2, spec-pyforge-marshal CAP-245). `classify_session_log`
+# returned `unknown` for this exact text until the Cursor markers landed,
+# so the drain refused story 23.1 as terminal until a human re-dispatched it.
+_CURSOR_USAGE_WALL_LOG = (
+    "ActionRequiredError: Increase limits for faster responses "
+    "You're out of usage. Switch to Auto, or ask your admin to increase "
+    "your limit to continue."
+)
+
+
+def test_classify_session_log_quota_cursor_usage_wall() -> None:
+    assert (
+        classify_session_log(_CURSOR_USAGE_WALL_LOG)
+        is HarnessSessionOutcome.QUOTA_EXCEEDED
+    )
+
+
+def test_transient_block_on_cursor_usage_wall_with_no_git_progress() -> None:
+    kind = classify_dispatch_block(
+        session_log=_CURSOR_USAGE_WALL_LOG,
+        failed_gate=None,
+        changed_path_count=0,
+    )
+    assert kind is DispatchBlockKind.TRANSIENT
+
+
+def test_exclude_harness_after_cursor_usage_wall() -> None:
+    preference = ("cursor", "claude", "copilot")
+    result = exclude_harness_profiles_after_transient_failure(
+        preference, _CURSOR_USAGE_WALL_LOG
+    )
+    assert result == ("claude", "copilot")
+
+
+def test_classify_session_log_reterminalizes_without_cursor_markers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mutation test: removing the Cursor markers reproduces the original
+    Story 50.2 defect (the fixture goes back to ``unknown``)."""
+    monkeypatch.setattr(
+        harness_session,
+        "_QUOTA_MARKERS",
+        harness_session._QUOTA_MARKERS_BY_HARNESS["claude"],
+    )
+    assert (
+        classify_session_log(_CURSOR_USAGE_WALL_LOG)
+        is HarnessSessionOutcome.UNKNOWN
+    )
 
 
 def test_classify_session_log_auth() -> None:
