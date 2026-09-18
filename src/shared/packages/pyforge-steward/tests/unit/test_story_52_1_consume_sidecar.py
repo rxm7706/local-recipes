@@ -66,10 +66,22 @@ def test_register_row_13_is_consume_sidecar() -> None:
 
 
 def test_lifecycle_nongoals_name_authoring_tool_and_consume_sidecar() -> None:
-    text = (_repo_root() / LIFECYCLE_SPEC).read_text(encoding="utf-8")
-    assert "authoring tool" in text
-    assert "consume sidecar" in text
-    assert "mybmad-dashboard into the platform" not in text
+    """SPEC.md was absorbed into spec-pyforge-steward (2026-09-17); nongoals
+    live on the absorbing Spec + the adoption-register companion that stayed."""
+    root = _repo_root()
+    stub = (root / LIFECYCLE_SPEC).read_text(encoding="utf-8")
+    assert "status: absorbed" in stub
+    assert "absorbed-into: spec-pyforge-steward" in stub
+    parent = (
+        root
+        / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
+        / "spec-pyforge-steward/SPEC.md"
+    ).read_text(encoding="utf-8")
+    register = (root / REGISTER_RELATIVE).read_text(encoding="utf-8")
+    corpus = parent + "\n" + register
+    assert "authoring tool" in corpus
+    assert "consume sidecar" in corpus
+    assert "mybmad-dashboard into the platform" not in corpus
 
 
 def test_provision_refuses_module_template_as_module(tmp_path, monkeypatch) -> None:
