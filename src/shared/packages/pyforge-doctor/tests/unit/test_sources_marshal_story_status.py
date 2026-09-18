@@ -121,6 +121,32 @@ def _write_policy(target: Path, slug: str, merge_subject_template: str) -> None:
     )
 
 
+def _write_ledger(target: Path, slug: str, statuses: dict[str, str]) -> None:
+    """A minimal tracked ``sprint-status-ledger.yaml`` -- Story 27.5's
+    ``bare_merge.known_story_keys`` corroboration source, distinct from the
+    gitignored Tier-3 feed ``_write_feed`` writes."""
+    ledger = (
+        target / "_bmad-output" / "projects" / f"pyforge-{slug}"
+        / "planning-artifacts" / "sprint-status-ledger.yaml"
+    )
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["development_status:"]
+    lines.extend(f"  {key}: {value}" for key, value in statuses.items())
+    ledger.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _commit_touching(target: Path, subject: str, *, path: str) -> str:
+    """A REAL commit (unlike ``_commit``'s ``--allow-empty``) whose diff
+    touches exactly ``path`` -- Story 27.5's diff-path gate needs an actual
+    file change to classify, not an empty merge."""
+    file_path = target / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text("x\n", encoding="utf-8")
+    _git(target, "add", path)
+    _git(target, "commit", "-q", "-m", subject)
+    return _git(target, "rev-parse", "HEAD").strip()
+
+
 # --- False-green story -------------------------------------------------
 
 
@@ -399,6 +425,131 @@ def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
     assert findings[0].evidence["key"] == "1-1-foo"
+
+
+# --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
+# paths its diff touches, never by ledger membership alone -----------------
+
+
+def test_bare_form_merge_is_attributed_by_the_paths_its_diff_touches(
+    tmp_path: Path,
+) -> None:
+    """The real regression this story fixes: marshal's own `34-3`
+    (`dcda31b8cb Merge 34-3 into main`, 2026-09-12) -- no scoped template
+    override, but its first-parent diff touches ONLY marshal's own paths,
+    and marshal's own tracked ledger already marks the key `done`."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """27.3's own reopened gap: this station's ledger ALSO knows the key
+    (the common case under one shared numbering grammar), but the merge's
+    diff never touches this station's own paths -- ledger membership alone
+    must not be enough."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-steward/core/whatever.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_bare_form_merge_touching_no_station_path_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """A merge touching no ``_bmad-output/projects/*`` or ``src/shared/
+    packages/*`` path at all (docs, root config) attributes to nothing --
+    not even a fleet-wide mop commit gets laundered into landing evidence."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(target, "Merge 34-3 into main", path="docs/some-note.md")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
+def test_bare_form_merge_diff_query_failure_is_named_in_the_ok_caveat(
+    tmp_path: Path,
+) -> None:
+    """A ``git diff`` call that cannot run (here: the merge sha is the
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to
+    "cannot evaluate" rather than crashing or silently attributing -- named
+    by sha in the OK Finding's message rather than convicting the story."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _git(target, "init", "-q", "--initial-branch=main")
+    _git(target, "config", "user.email", "doctor-test@example.com")
+    _git(target, "config", "user.name", "Doctor Test")
+    _git(target, "config", "commit.gpgsign", "false")
+    _git(target, "config", "core.hooksPath", "/dev/null")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    root_sha = _git(target, "rev-parse", "HEAD").strip()
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    # A phase outside NOT_LANDED keeps this key out of the FAIL branch (the
+    # OK-message caveats never ride on a FAIL Finding -- see this module's
+    # own docstring), so the diff-unreadable caveat is actually reachable.
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "in-progress", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert root_sha in findings[0].message
 
 
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
