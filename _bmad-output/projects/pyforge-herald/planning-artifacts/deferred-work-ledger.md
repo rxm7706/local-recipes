@@ -1023,3 +1023,25 @@ deployment.
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-21-2: `deck-trio --deck` refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent-contract expects
+
+- source_spec: `planning-artifacts/specs/spec-21-2-deck-trio-derives-the-infographic-deck-from-the-standalone.md`
+  summary: `deck-trio --deck`, as the intent-contract specifies it, refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent expects.
+  evidence: Verified in the 2026-09-15 follow-up review pass by running the diff's own `_DeckStructure` plus `main()`'s refusal checks (read-only) over every `presentations/pyforge-*/project/*Infographic standalone.html`: doctor, genesis, mason, scribe, steward and warden derive cleanly (6 acts each, 22/27/22/22/22/31 sections, one-div wrapper chain); atlas parses 6 acts / 21 sections but every act label lives in `<span class="n">`/`<span class="t">` (all six `.lbl` empty, exit 2); marshal has 6 acts (`.n`/`.t`) and 0 `<section class="sec">` (its 19 sections are inline-styled); unifying-strategy has 7 acts (`.act-num`/`.act-title`) and 0 `.sec`; herald has 0 `.act` and 0 `.sec`. The refusals are the intent's own specified behavior (I/O rows "No act bands or no numbered sections" and "Empty act/section label" -> exit 2), so this is not a defect of the diff; it is pre-existing poster non-conformance relative to the vocabulary the intent chose. Note the standard's own tension: `infographic-standard.md`'s Authoring template instructs copying the reference markup, but these four posters predate that template's `.act`/`.lbl` convention.
+  location: `scripts/deck_trio.py:_DeckStructure.handle_starttag` (cls == "act" / "sec" / "lbl") and `main()`'s four `--deck` refusals; `presentations/pyforge-{atlas,marshal,unifying-strategy,herald}/project/*Infographic standalone.html`
+  origin: spec-deferred 73b1c596619a — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-4` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
+  severity: medium
+  promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+  status: open
+
+### DW-FU-21-3: `check()`'s discovery-notes stderr print (an ambiguous-suffix-match warning) is only exercised through `--refresh`'s notes-printing loop, never through a plain `--check`-only invocation
+
+- source_spec: `planning-artifacts/specs/spec-21-3-deck-facts-refreshes-every-marked-surface-not-just-the-poster.md`
+  summary: `check()`'s new discovery-notes stderr print (an ambiguous-suffix-match warning) is only exercised through `--refresh`'s own notes-printing loop in `main()`, never through a plain `--check`-only invocation.
+  evidence: Verified by the Verification Gap review pass: replacing the `for note in notes: print(note, file=sys.stderr)` block inside `check()` (`scripts/deck_facts.py`) with `pass` and running the full suite left all 60 tests (at review time) passing — every `--check`-only test captures stdout only (`_check_lines`), never stderr, and no test combines an ambiguous multi-file surface with a `--check`-only invocation. The underlying ambiguity condition (two files matching one suffix glob) does not occur anywhere in the live fleet today, and the note is diagnostic-only (exit code is unaffected either way).
+  location: `scripts/deck_facts.py:check()` (the `for note in notes: print(..., file=sys.stderr)` block) and `tests/scripts/test_deck_facts.py`
+  origin: spec-deferred 7e7e91007646 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-5` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
+  severity: low
+  promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+  status: open
