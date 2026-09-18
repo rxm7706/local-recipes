@@ -8,6 +8,24 @@ Complete guide for deploying conda-forge packages in environments without intern
 
 > **Procedural steps** relocated to [`docs/how-to/air-gapped-mirror-setup.md`](../how-to/air-gapped-mirror-setup.md) (Story 22.5). This section retains architecture context; follow the how-to for copy-paste commands.
 
+### What actually deploys
+
+`local-recipes` is not a running service — it is a packaging factory plus a set of local tools,
+plus (since Story 12.1) a separate Django-based **platform** with its own Helm chart. "Deployment"
+means something different for each surface:
+
+| Thing | Deploys? | Detail |
+|---|---|---|
+| **Guildhall dashboard** (`docs/dashboard/`) | **Yes — the only thing CI deploys** | GitHub Pages, `https://rxm7706.github.io/local-recipes/`, via `.github/workflows/dashboard.yml` |
+| Feedstocks / conda packages | **No** | No feedstock-creation workflow exists in this repo; `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
+| The **platform** Helm chart (`src/platform/deploy/charts/platform/`) | **Yes, but human-triggered** | Deploys the Django platform (web/worker/beat/consumers, Postgres, Redis, optional Keycloak) via manual `helm install` or the `workflow_dispatch`-only `.github/workflows/platform-deploy.yml` against a Warden-verified digest — never automatic on push. See `src/platform/deploy/README.md` and §§ 7-8 below |
+| Other containers (root `Containerfile`, the two `src/platform/compose/*/Containerfile` sidecars) | **No — built and gate-checked in CI only** | The root Guild `Containerfile` and the sidecar Containerfiles are built by `.github/workflows/pyforge-station-tests.yml` / `platform-ci.yml` and run through `scripts/container-gates` (secrets-scan, volumes), but nothing pushes or runs them as a deployed service — CI build-time verification, not deployment |
+| `helm/lasuite-docs/values.yaml` | **No** | A values override with no chart and no apply step — a design/intent artifact, unreferenced by any in-repo code path |
+| `conf/base/knowledge.yml` | **No** | Config for the `sentinel` wiki agent (`src/sentinel/`); unreferenced by any deploy path |
+
+Treat `helm/lasuite-docs/` and `conf/` as design/intent artifacts, not deployable units — nothing
+in this repo applies them automatically.
+
 Air-gapped environments require:
 1. **Package Mirror** - Local copy of required packages
 2. **Build Tools** - Offline-capable build infrastructure
@@ -50,6 +68,29 @@ curl -X PUT \
 
 **Local & Virtual Repositories**
 Follow the same pattern for `conda-internal` (rclass: local) and `conda-all` (rclass: virtual, containing both).
+
+### Which repository types to provision for full air-gap
+
+Beyond the conda-forge Remote/Local/Virtual trio above, a fully air-gapped deployment needs these
+JFrog repository types. The first two cover the default `local-recipes` env; the rest are optional
+depending on which atlas phases and recipe ecosystems you use:
+
+- **conda-forge mirror** — JFrog "Conda Remote Repository" pointing at `https://conda.anaconda.org/conda-forge`
+- **PyPI mirror** — JFrog "PyPI Remote Repository" pointing at `https://pypi.org/simple/`
+- **`files.pythonhosted.org` mirror** (uncommon but required for many sdist URLs) — JFrog "PyPI Remote Repository" pointing at `https://files.pythonhosted.org/` — see § 3 below for why
+- **anaconda.org API mirror** (optional, for the atlas Phase F API path) — JFrog "Generic Remote Repository" pointing at `https://api.anaconda.org/`
+- **S3 parquet mirror** (recommended, for the atlas Phase F S3 path) — JFrog generic repository or internal S3-compatible store seeded from `s3://anaconda-package-data/`
+- **GitHub API mirror** (optional, for self-hosted GHES) — point `GITHUB_API_BASE_URL` at `https://<ghes>/api`
+- **GitLab API mirror** (optional, for self-hosted GitLab) — point `GITLAB_API_BASE_URL` at `https://<your-gitlab>/api/v4`
+- **Codeberg/Gitea API mirror** (optional, for self-hosted Gitea or Forgejo) — point `CODEBERG_API_BASE_URL` at `https://<your-gitea>/api/v1`
+- **Phase L registry mirrors** (optional, one per registry your recipes touch) — a JFrog Remote Repository for each of npm / CRAN / CPAN / LuaRocks / crates / RubyGems / Maven Central / NuGet; most enterprise atlases need at most 2-3
+- **OSV API mirror** (optional, for vulnerability scanning) — point `OSV_API_BASE_URL` at an internal mirror of `https://api.osv.dev`
+- **OSV bulk-feed mirror** (recommended, for CVE database refresh) — point `OSV_VULNS_BUCKET_URL` at a mirror of `https://osv-vulnerabilities.storage.googleapis.com`
+- **CVE feed mirror** (NVD, GHSA, OSV) — internal copy refreshed by your security team
+- **AppThreat vdb mirror** — internal copy of the vdb tarball
+
+`_http.py` auto-routes to each via the corresponding `*_BASE_URL` env var (§ 6) — no code changes
+required.
 
 ### Client Configuration
 
@@ -124,6 +165,14 @@ The skill's HTTP helper at `.claude/skills/conda-forge-expert/scripts/_http.py` 
   ```
 - **Per-shell discipline**: export `JFROG_API_KEY` only in shells that exclusively touch JFrog-mirrored URLs (typically a dedicated terminal pane for `bootstrap-data`, `update-cve-database`, etc., with the corresponding `*_BASE_URL` env vars also set).
 - **Direnv / shell hook**: scope the export to a `.envrc` file in directories that touch JFrog only.
+- **Activation hook (`[feature.<env>.activation.env]`)**: pass `JFROG_API_KEY` through only on a dedicated env that needs it:
+  ```toml
+  # pixi.toml — risky if applied to the default env
+  [feature.atlas-jfrog.activation.env]
+  JFROG_API_KEY = "${JFROG_API_KEY}"  # pass-through from launching shell
+  ```
+  Never add it to `feature.local-recipes.activation.env` (the default env) — that would
+  re-introduce the leak on every command.
 
 **Commands known to hit non-JFrog external hosts** (require unset before invocation when the env var is set):
 

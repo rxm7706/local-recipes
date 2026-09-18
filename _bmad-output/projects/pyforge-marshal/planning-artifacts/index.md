@@ -136,7 +136,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 
 ### Reference docs (`docs/reference/`)
 - [`docs/reference/mcp-server-architecture.md`](../../../../docs/reference/mcp-server-architecture.md) — MCP server design + PyPI name-mapping subsystem
-- [`docs/reference/enterprise-deployment.md`](../../../../docs/reference/enterprise-deployment.md) — air-gap + JFrog operational reference
+- [`docs/explanation/enterprise-deployment.md`](../../../../docs/explanation/enterprise-deployment.md) — air-gap + JFrog operational reference
 - [`docs/reference/developer-guide.md`](../../../../docs/reference/developer-guide.md) — local testing + recipe development
 - [`docs/reference/library-llms-full.md`](../../../../docs/reference/library-llms-full.md) — the agent-facing catalog of every library/CLI in the pixi envs (drift detector: `pixi run -e local-recipes llms-full-check`)
 - [`docs/reference/pixi-config-jfrog.example.toml`](../../../../docs/reference/pixi-config-jfrog.example.toml) — JFrog channel-routing example
@@ -191,7 +191,7 @@ Build order from `project-parts.json`:
 1. Read [deployment-guide.md](./deployment-guide.md) end-to-end — start with § *What actually deploys*
 2. Pay attention to § *The JFROG_API_KEY Cross-Host Leak* — still unresolved in `_http.py`
 3. Use the deployment checklist
-4. Cross-reference [`docs/reference/enterprise-deployment.md`](../../../../docs/reference/enterprise-deployment.md)
+4. Cross-reference [`docs/explanation/enterprise-deployment.md`](../../../../docs/explanation/enterprise-deployment.md)
 
 ### Path F: I'm running the atlas pipeline / cf_atlas queries
 

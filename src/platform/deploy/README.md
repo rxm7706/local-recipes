@@ -45,7 +45,7 @@ not `DR.md`/`restore.md`, for that datastore.
 
 **Secrets profile (Story 48.4 / R-20):** custody, age rotation, and the
 Vault/ESO enterprise path are documented in
-`docs/reference/enterprise-deployment.md` § 7. Example ExternalSecret
+`docs/explanation/enterprise-deployment.md` § 7. Example ExternalSecret
 manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
 `src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
 
@@ -53,7 +53,7 @@ manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
 deploys Keycloak in-cluster (PostgreSQL-backed, realm-as-code ConfigMap).
 Set `oidc.profile=byo` and populate `oidc.byo.*` to use an external IdP
 via the `COMPONENT_OIDC_*` seam. Full profile comparison:
-`docs/reference/enterprise-deployment.md` § 8.
+`docs/explanation/enterprise-deployment.md` § 8.
 
 ## Vanilla Kubernetes
 

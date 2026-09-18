@@ -78,6 +78,10 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 | Task | What it does |
 |------|--------------|
 | `health-check` | Full diagnostic on the dev env (Docker, gh, OSV API, scripts) |
+| `bootstrap-data` | One-time / periodic full atlas refresh + mapping + CVE + vdb (30-45 min cold, 5-10 min warm) |
+| `verify-env` | Confirms the shell is inside the `local-recipes` pixi env and the `# default-env:` directive is intact |
+| `bmad-groundtruth` | Live factory facts as JSON (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) |
+| `bmad-drift-check` | Artifact-vs-live drift report (pins, counts, stale rules, archive hygiene, baseline) |
 | `update-cve-db` | Refresh local OSV CVE database |
 | `update-mapping-cache` | Refresh PyPI ↔ conda name mapping cache |
 | `sync-upstream-conda-forge` | Rebase fork onto `conda-forge/staged-recipes` |
@@ -86,6 +90,9 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 | `test-skill` | Run the conda-forge-expert test suite |
 | `test-all` | Run the full test suite incl. live-network tests |
 | `test-coverage` | Test suite with coverage report |
+
+> **`pixi run bmad-preflight` is broken** — it shells out to `bash scripts/ensure-bmad-preflight.sh`,
+> which does not exist in the repo. Use `verify-env` + `bmad-groundtruth` instead.
 
 ## Enterprise routing
 

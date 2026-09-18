@@ -676,7 +676,7 @@ Counts here are **churny and never gated** — they move with every packaging se
 | Adding a new MCP tool | `.claude/tools/conda_forge_server.py` | matching canonical script in `scripts/` |
 | Adding a new CLI | `.claude/skills/conda-forge-expert/scripts/<new>.py` (canonical) | `.claude/scripts/conda-forge-expert/<new>.py` (wrapper) + `pixi.toml` task + meta-test SCRIPTS list |
 | BMAD planning for a feature | `_bmad-output/PROJECTS.md` | `scripts/bmad-switch --current` → relevant skill |
-| Air-gap / JFrog setup | `docs/reference/enterprise-deployment.md` | `.claude/skills/conda-forge-expert/scripts/_http.py` |
+| Air-gap / JFrog setup | `docs/explanation/enterprise-deployment.md` | `.claude/skills/conda-forge-expert/scripts/_http.py` |
 | CI failure debugging | `.claude/skills/conda-forge-expert/guides/ci-troubleshooting.md` | `build_artifacts/<config>/bld/rattler-build_<name>_<id>/work/conda_build.log` |
 | Starting any new effort | `AGENTS.md` (tiers + Dream-first rule) | `docs/dreams/<slug>.md` → `bmad-spec` → `planning-artifacts/` |
 | Naming / wording anything | `docs/dreams/pyforge-charter.md` § Branding + § The Lexicon | PyForge in prose, `pyforge` in code; the eight Smiths; The Spec; the Guildhall |
