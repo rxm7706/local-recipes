@@ -57,6 +57,9 @@ def _write_roster(target: Path) -> None:
                     "archived",
                 ],
                 "dream_types": ["dream", "practice"],
+                "spec_statuses_ready_or_beyond": [
+                    "ready", "in-progress", "shipped", "absorbed",
+                ],
             }
         ),
         encoding="utf-8",
@@ -438,6 +441,101 @@ def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:
     _write_spec(tmp_path, "ready-dream", status="ready-for-dev")
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "specified-spec-not-ready" for f in findings)
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same suppression.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
+
+
+def test_specified_spec_absorbed_suppresses_finding(tmp_path: Path) -> None:
+    """Story 59.2: ``absorbed`` is in ``spec_statuses_ready_or_beyond`` (and
+    in ``guild-roster.json``'s ``spec_statuses_terminal``) -- a covering Spec
+    at ``absorbed`` must suppress ``specified-spec-not-ready``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "absorbed-dream",
+        status="specified",
+        title="Absorbed Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("absorbed-dream.md", "specified")])
+    _write_spec(tmp_path, "absorbed-dream", status="absorbed")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "specified-spec-not-ready" for f in findings)
+
+
+def test_specified_spec_archived_reports_not_ready(tmp_path: Path) -> None:
+    """Story 59.2: ``archived`` is in ``guild-roster.json``'s
+    ``spec_statuses_terminal`` but NOT in ``spec_statuses_ready_or_beyond`` --
+    a covering Spec at ``archived`` must still raise
+    ``specified-spec-not-ready``, the one non-obvious invariant that
+    motivated the new declared key over reusing ``spec_statuses_terminal``."""
+    _write_roster(tmp_path)
+    _write_dream(
+        tmp_path,
+        "archived-dream",
+        status="specified",
+        title="Archived Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("archived-dream.md", "specified")])
+    _write_spec(tmp_path, "archived-dream", status="archived")
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    hit = [f for f in findings if f.check == "specified-spec-not-ready"]
+    assert len(hit) == 1
+    assert hit[0].status is DoctorStatus.WARN
+    assert hit[0].evidence["subject"] == "archived-dream"
+    assert hit[0].evidence["spec_statuses"] == ["archived"]
+
+
+def test_missing_spec_statuses_ready_or_beyond_degrades_to_fallback(
+    tmp_path: Path,
+) -> None:
+    """A roster present but missing ``spec_statuses_ready_or_beyond`` (Story
+    59.2's new key) falls back to the CAP-1 subset
+    (``ready``/``in-progress``/``shipped``/``absorbed``) rather than crashing
+    or silently accepting nothing -- a covering Spec at ``ready`` still
+    suppresses the finding, and a ``spec-status-roster-degraded`` WARN
+    surfaces the broken declaration rather than swallowing it."""
+    path = tmp_path / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "stations": [
+                    "herald", "marshal", "atlas", "warden", "mason",
+                    "doctor", "scribe", "steward",
+                ],
+                "guild_dreams": ["pyforge-charter"],
+                "dream_statuses": [
+                    "dreamt", "pitched", "specified", "realized", "archived",
+                ],
+                "dream_types": ["dream", "practice"],
+                # spec_statuses_ready_or_beyond deliberately absent.
+            }
+        ),
+        encoding="utf-8",
+    )
+    _write_dream(
+        tmp_path,
+        "ready-dream",
+        status="specified",
+        title="Ready Dream",
+        owner="doctor",
+        realization_log=True,
+    )
+    _write_readme(tmp_path, [("ready-dream.md", "specified")])
+    _write_spec(tmp_path, "ready-dream", status="ready")
+
+    findings = chain.gather_dreams_hygiene(tmp_path)
+
+    assert not any(f.check == "specified-spec-not-ready" for f in findings)
+    degraded = [f for f in findings if f.check == "spec-status-roster-degraded"]
+    assert len(degraded) == 1
+    assert degraded[0].status is DoctorStatus.WARN
+    assert degraded[0].source is Source.DREAMS_HYGIENE
 
 
 def test_specified_spec_not_ready_when_covering_spec_unevaluable(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,8 +13,31 @@ from pyforge.doctor.sources import status_body_consistency as sbc
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
 
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared terminal/ended-acts values
+    derive the same ``{"shipped"}`` Spec-side member ``TERMINAL_STATUSES``
+    already carries -- Story 59.2 sources it from this file, read fresh per
+    call rather than a hardcoded module constant."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses_terminal": [
+                    "shipped", "archived", "absorbed", "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived", "absorbed", "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _mini_repo(tmp_path: Path) -> Path:
     """Fixture tree: one firing Dream, one firing Spec, one silent Dream."""
+    _write_roster(tmp_path)
     dreams = tmp_path / "docs" / "dreams"
     dreams.mkdir(parents=True)
     shutil.copy(_FIXTURES / "pyforge-scribe-dream.md", dreams / "pyforge-scribe.md")
@@ -131,11 +155,30 @@ def test_gather_fires_on_fixture_dream_and_spec_and_records_silent_count(tmp_pat
 def test_gather_ok_when_no_terminal_docs(tmp_path: Path):
     repo = tmp_path / "empty"
     repo.mkdir()
+    _write_roster(repo)
     (repo / "docs" / "dreams").mkdir(parents=True)
     findings = sbc.gather_progress_phrase(repo)
     assert len(findings) == 1
     assert findings[0].status == DoctorStatus.OK
     assert findings[0].evidence["scanned_terminal"] == 0
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same OK result.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
+
+
+def test_gather_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path):
+    """No ``docs/governance/guild-roster.json`` at all still classifies
+    terminal statuses correctly -- via ``TERMINAL_STATUSES``, the module's own
+    fallback -- and surfaces a ``spec-status-roster-degraded`` WARN rather
+    than crashing or degrading silently (Story 59.2)."""
+    repo = tmp_path / "no-roster"
+    repo.mkdir()
+    (repo / "docs" / "dreams").mkdir(parents=True)
+    findings = sbc.gather_progress_phrase(repo)
+    assert len(findings) == 1
+    assert findings[0].check == "spec-status-roster-degraded"
+    assert findings[0].status == DoctorStatus.WARN
+    assert findings[0].source == Source.STATUS_BODY_CONSISTENCY
 
 
 def test_gather_live_dream_and_spec_progress_phrases():

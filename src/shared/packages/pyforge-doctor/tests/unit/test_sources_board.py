@@ -68,6 +68,18 @@ def test_live_tree_reports_zero_spec_status_missing() -> None:
     )
 
 
+def test_live_wiring_matches_module_fallback() -> None:
+    """The live-derived open/delivered Spec-status sets -- read from the
+    real repo's own ``guild-roster.json`` -- equal ``board``'s own fallback
+    constants, proving the wiring actually works and not just the fallback
+    path (Story 59.2)."""
+    repo_root = _require_repo_root()
+    open_statuses, delivered_statuses, degraded = board._spec_status_groups(repo_root)
+    assert degraded is None
+    assert open_statuses == board.OPEN_SPEC_STATUSES
+    assert delivered_statuses == board.DELIVERED_SPEC_STATUSES
+
+
 def test_deferred_specs_story_21_1_reconciliation() -> None:
     """Pin Story 21.1 de-registrations and registrations against silent regression."""
     assert "spec-intelligence-hub" not in board.DEFERRED_SPECS

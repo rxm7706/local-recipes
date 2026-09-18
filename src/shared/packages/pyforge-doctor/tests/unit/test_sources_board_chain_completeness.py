@@ -93,6 +93,74 @@ def _pa(target: Path, project: str) -> Path:
     return target / "_bmad-output" / "projects" / project / "planning-artifacts"
 
 
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared values equal ``board``'s
+    own fallback constants (``OPEN_SPEC_STATUSES``/``DELIVERED_SPEC_STATUSES``)
+    -- Story 59.2 sources INV-A's Spec-status vocabulary from this file, read
+    fresh per call rather than a hardcoded module constant."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses": [
+                    "draft", "ready", "in-progress", "shipped",
+                    "archived", "absorbed", "superseded", "extension-point",
+                ],
+                "spec_statuses_terminal": [
+                    "shipped", "archived", "absorbed", "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived", "absorbed", "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+@pytest.fixture(autouse=True)
+def _seed_guild_roster(tmp_path: Path) -> None:
+    """Every test below exercises ``gather_chain_completeness``, whose INV-A
+    Spec-status vocabulary is sourced from ``guild-roster.json`` (Story 59.2)
+    rather than a hardcoded module constant. Seed a valid roster at
+    ``tmp_path`` automatically so every pre-existing test here keeps
+    exercising the LIVE-DERIVED path -- which yields byte-identical
+    open/delivered sets to ``board``'s own fallback constants -- rather than
+    the degrade-to-fallback path, preserving each test's existing assertions
+    unchanged. A test exercising the degrade path itself writes its own
+    (missing/malformed) roster under a target that is NOT bare ``tmp_path``,
+    or overwrites this file directly."""
+    _write_roster(tmp_path)
+
+
+# --- Story 59.2: guild-roster.json degrade-to-fallback ----------------------
+
+
+def test_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path) -> None:
+    """A target with no ``docs/governance/guild-roster.json`` at all (a
+    subdirectory of the autouse-seeded ``tmp_path``, so the seeded roster
+    above does not leak in) still classifies Spec statuses correctly -- via
+    ``OPEN_SPEC_STATUSES``/``DELIVERED_SPEC_STATUSES``, the module's own
+    fallback -- and surfaces a ``spec-status-roster-degraded`` WARN rather
+    than crashing or degrading silently (Story 59.2)."""
+    root = tmp_path / "no-roster"
+    pa = _pa(root, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")
+
+    findings = board.gather_chain_completeness(root)
+
+    by_check = {f.check: f for f in findings}
+    assert "spec-not-decomposed" in by_check, (
+        f"fallback classification failed: {[f.check for f in findings]}"
+    )
+    assert by_check["spec-not-decomposed"].status is DoctorStatus.FAIL
+    assert "spec-status-roster-degraded" in by_check
+    degraded = by_check["spec-status-roster-degraded"]
+    assert degraded.status is DoctorStatus.WARN
+    assert degraded.evidence["project"] == "pyforge-testproj"
+
+
 # --- INV-A: every open Spec is decomposed ------------------------------------
 
 
@@ -208,6 +276,7 @@ def test_absorbed_and_archived_specs_stay_exempt_from_decomposition(
     ``extension-point`` is a standing seam — none owes a story trail."""
     for status in ("absorbed", "archived", "superseded", "extension-point"):
         root = tmp_path / status
+        _write_roster(root)
         pa = _pa(root, "pyforge-testproj")
         _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", status)
 
