@@ -105,3 +105,19 @@ def test_the_charter_cites_the_declaration():
     text = CHARTER.read_text(encoding="utf-8")
     assert "guild-roster.json" in text
     assert "spec_statuses" in text
+
+
+def test_the_charter_states_all_four_rulings():
+    """Each ruling gets its own substring check, tied to that ruling's
+    substance rather than incidental wording -- a future edit that strips a
+    ruling while leaving the file's other `guild-roster.json`/`spec_statuses`
+    mentions intact must still fail here."""
+    text = CHARTER.read_text(encoding="utf-8")
+    # Ruling 1: the three ended acts stay distinct, never collapsed.
+    assert "never collapsed into one value" in text
+    # Ruling 2: `shipped` stays Spec-terminal, not an ended act.
+    assert "shipped` remains Spec-terminal" in text
+    # Ruling 3: `in-progress` is grandfathered.
+    assert "`in-progress` is grandfathered" in text
+    # Ruling 4: the enum is recommended, not required.
+    assert "The enum is recommended, not required." in text

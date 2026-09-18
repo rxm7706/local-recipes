@@ -178,9 +178,9 @@
     "finally retires it.",
     "",
     "RECOMMENDED, NOT REQUIRED. This enum is recommended, not required. A",
-    "Spec carrying an unregistered status value is preserved exactly as",
-    "written and produces a warning -- it is never silently reset to a value",
-    "in this list."
+    "Spec carrying an unregistered status value must be preserved exactly as",
+    "written and must produce a warning -- it must never be silently reset to",
+    "a value in this list."
   ],
   "spec_statuses_ended_acts": [
     "archived",
