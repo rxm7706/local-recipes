@@ -164,18 +164,6 @@ class PptxTemplateError(HeraldError):
     transport outage."""
 
 
-class PaginationStalledError(HeraldError):
-    """``_windowed_read`` (CAP-2, Story 23.2) asked the server to resume
-    past a window's ``last_line`` and got back a window whose own
-    ``last_line`` did not advance past it (DW-FU-23-2, Story 23.2's Edge
-    Case Hunter finding: the un-guarded loop would otherwise page the same
-    window forever). Names the file and the stalled line rather than
-    looping, warning, or silently truncating. Falls through to the default
-    exit code (``1``) -- a protocol contract violation for the operator to
-    escalate, not a transport outage (the server answered every call; its
-    answers just never advanced)."""
-
-
 class InvalidContentPlanError(HeraldError):
     """``herald deck pptx-fill``'s ``content_plan.json`` is malformed, or
     references a layout or placeholder idx absent from the resolved
@@ -189,6 +177,18 @@ class InvalidContentPlanError(HeraldError):
     ``fill_template``'s ``Presentation`` is written to disk, so no output
     file exists on this error (the I/O matrix's "No file written" rows).
     Falls through to the default exit code (``1``)."""
+
+
+class PaginationStalledError(HeraldError):
+    """``_windowed_read`` (CAP-2 from spec-design-sync-loop, Story 23.2)
+    asked the server to resume past a window's ``last_line`` and got back
+    a window whose own ``last_line`` did not advance past it (DW-FU-23-2,
+    Story 23.2's Edge Case Hunter finding: the un-guarded loop would
+    otherwise page the same window forever). Names the file and the
+    stalled line rather than looping, warning, or silently truncating.
+    Falls through to the default exit code (``1``) -- a protocol contract
+    violation for the operator to escalate, not a transport outage (the
+    server answered every call; its answers just never advanced)."""
 
 
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (
