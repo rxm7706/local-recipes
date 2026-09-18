@@ -358,6 +358,123 @@ def test_no_policy_file_never_attempts_the_bare_default_template(
     assert fails == []
 
 
+# --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
+# paths its diff touches, never by ledger membership alone -----------------
+
+
+def test_bare_form_merge_touching_own_station_paths_surfaces_landed_but_unpromoted(
+    tmp_path: Path,
+) -> None:
+    """The real regression this story fixes (marshal's own `34-3`,
+    `dcda31b8cb Merge 34-3 into main`, 2026-09-12): no scoped template
+    override, but the merge's first-parent diff touches ONLY marshal's own
+    paths, and marshal's own tracked ledger already knows the key -- so it
+    correctly attributes and surfaces the genuine landed-but-unpromoted
+    drift (proving attribution actually happened, not merely "nothing
+    contradicted")."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "34-3"
+    assert fails[0].evidence["project"] == "pyforge-marshal"
+
+
+def test_bare_form_merge_is_attributed_when_ledger_already_says_done(
+    tmp_path: Path,
+) -> None:
+    """The exact real-case shape: marshal's own tracked ledger already
+    marks `34-3` `done`, so once the diff-path gate corroborates the merge
+    as marshal's own, the story reads as landed -- no finding at all."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """27.3's own reopened gap: marshal's ledger ALSO knows the key (the
+    common case under one shared numbering grammar), but the merge's diff
+    never touches marshal's own paths -- ledger membership alone must not
+    be enough to attribute."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    steward_dir = repo / "_bmad-output" / "projects" / "pyforge-steward" / "planning-artifacts"
+    steward_dir.mkdir(parents=True)
+    (steward_dir / "note.md").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+def test_bare_form_merge_touching_no_station_path_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """A merge touching no ``_bmad-output/projects/*`` or ``src/shared/
+    packages/*`` path at all (docs, root config) attributes to nothing --
+    not even a fleet-wide mop commit gets laundered into landing evidence."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    (repo / "docs").mkdir(parents=True)
+    (repo / "docs" / "note.md").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+def test_bare_form_merge_diff_query_failure_warns_naming_the_sha(
+    tmp_path: Path,
+) -> None:
+    """A ``git diff`` call that cannot run (here: the merge sha is the
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to
+    a WARN naming the sha rather than crashing or silently attributing."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    # The ledger write above lands in this SAME commit (git add -A), so this
+    # is genuinely the repository's root commit -- no parent to diff against.
+    _commit(repo, "Merge 34-3 into main")
+    root_sha = _git(repo, "rev-parse", "HEAD").strip()
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "bare-merge-diff-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
+
+
 # --- Story 27.2: gather_direction reads the station's rekey map -----------
 
 
