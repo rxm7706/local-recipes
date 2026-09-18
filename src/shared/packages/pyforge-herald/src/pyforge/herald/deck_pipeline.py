@@ -1150,7 +1150,12 @@ def _windowed_read(
     ``last_line``/``total_lines`` pair to resume from -- the server's own
     contract says a window "ends at a complete line", so a window that
     cannot say where it ended must never be silently treated as the whole
-    file."""
+    file. Raises ``errors.PaginationStalledError`` (DW-FU-23-2, Story
+    23.2's Edge Case Hunter finding) naming ``path`` and the stalled line
+    when a paged-for window's own ``last_line`` does not advance past the
+    previous window's -- unreachable in every live call observed so far
+    (every one paged forward), but a server that repeated a window would
+    otherwise loop here forever."""
     # Lazy, not module-level -- mirrors `seed`'s own `MODERNIST_DESIGN_
     # SYSTEM_ID` import (see its call site's comment): this function
     # constructs a real `FileRead` at call time, unlike every other use of
