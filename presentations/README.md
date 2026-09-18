@@ -25,4 +25,4 @@ against this table's `Project` column, never a name heuristic.
 | Project | Reason |
 |---|---|
 | REMOVED-PyForge Unifying Strategy | ad-hoc duplicate Design project (found live proving Story 21.11's pull loop); superseded by the correctly Modernist-bound "PyForge Unifying Strategy deck", renamed with a `REMOVED-` prefix to mark it retired rather than deleted |
-| Local recipes repository connection | stale hand-mirrored copy of `presentations/pyforge-atlas/`'s own repo tree — the FR-12 `stale_mirror` cautionary fixture (`bridge-protocol.md` § Pilot evidence), never a real bridge project |
+| Local recipes repository connection | stale hand-mirrored copy of `presentations/pyforge-atlas/`'s own repo tree — the CAP-3 `stale_mirror` cautionary fixture (`bridge-protocol.md` § Pilot evidence), never a real bridge project |

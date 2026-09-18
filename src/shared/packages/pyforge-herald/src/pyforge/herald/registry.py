@@ -590,8 +590,10 @@ def read_exclusions(readme_path: Path) -> dict[str, str]:
 
     Raises `errors.HeraldError` naming `readme_path` when the heading is
     present but a row under it does not match the table's two-cell
-    `| Project | Reason |` shape, or when the filesystem otherwise refuses
-    the read."""
+    `| Project | Reason |` shape, when a `Project` value repeats (a
+    duplicate row would otherwise silently discard the earlier row's
+    `reason` with no error), or when the filesystem otherwise refuses the
+    read."""
     try:
         text = readme_path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -622,5 +624,10 @@ def read_exclusions(readme_path: Path) -> dict[str, str]:
                 f"{line!r} is not a two-cell '| Project | Reason |' row"
             )
         project, reason = cells
+        if project in exclusions:
+            raise errors.HeraldError(
+                f"excluded-projects list in {readme_path} is malformed: "
+                f"project {project!r} appears more than once"
+            )
         exclusions[project] = reason
     return exclusions
