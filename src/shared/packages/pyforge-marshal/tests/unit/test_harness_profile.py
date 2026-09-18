@@ -29,6 +29,7 @@ from pyforge.marshal.core.harness_profile import (
     load_profiles,
     parse_profile,
     render_dispatch_argv,
+    resolve_wire_enabled,
     resolve_wire_wrap,
     substitute_wire_port,
     translate_model,
@@ -726,6 +727,110 @@ def test_wire_journal_payload_is_a_fresh_plain_json_safe_dict(tmp_path: Path):
     assert set(payload) == {"applied", "reason", "store_dir", "aggressiveness"}
     payload["applied"] = "mutated"
     assert wire.journal_payload()["applied"] is True  # a fresh dict every call
+
+
+# --- Story 46.4: resolve_wire_enabled + the "auto" tri-state -----------------
+
+
+def test_resolve_wire_enabled_auto_resolves_true_when_wrapper_declared():
+    assert resolve_wire_enabled("auto", wrapper_declared=True) is True
+
+
+def test_resolve_wire_enabled_auto_resolves_false_when_no_wrapper_declared():
+    assert resolve_wire_enabled("auto", wrapper_declared=False) is False
+
+
+def test_resolve_wire_enabled_explicit_true_ignores_wrapper_declared():
+    """A force-override wins over the profile fact -- explicit ``true``
+    stays ``true`` even against a profile with no ``[wrapper]``."""
+    assert resolve_wire_enabled(True, wrapper_declared=False) is True
+
+
+def test_resolve_wire_enabled_explicit_false_ignores_wrapper_declared():
+    assert resolve_wire_enabled(False, wrapper_declared=True) is False
+
+
+def test_resolve_wire_wrap_auto_with_a_declared_wrapper_applies(tmp_path: Path):
+    """Fresh loop home, zero station config, Claude-shaped profile: "auto"
+    resolves on because the profile declares a ``[wrapper]``."""
+    wire = resolve_wire_wrap(
+        _wrapped_profile(),
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path="/opt/bin/wrapcli",
+    )
+    assert wire.applied is True
+    assert wire.reason is None
+
+
+def test_resolve_wire_wrap_auto_without_a_declared_wrapper_is_a_clean_skip(
+    tmp_path: Path,
+):
+    """"auto" against a profile with no ``[wrapper]`` at all resolves off
+    BEFORE the wrapper-is-None degraded path is even reached -- a clean,
+    silent skip (``WireWrap(applied=False, reason=None)``), never a
+    journaled attempt (matching Story 28.29's Cursor precedent)."""
+    wire = resolve_wire_wrap(
+        _profile(),
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path=None,
+    )
+    assert wire.applied is False
+    assert wire.reason is None
+
+
+def test_resolve_wire_wrap_auto_against_cursor_shaped_profile_is_a_clean_skip(
+    tmp_path: Path,
+):
+    """The real, packaged cursor profile (Story 28.29's documented
+    structural incompatibility): "auto" resolves off cleanly, never the
+    Cursor-specific degraded reason text (that text is only reachable via
+    an explicit ``enabled=true`` against cursor)."""
+    cursor = load_packaged_profiles()["cursor"]
+
+    wire = resolve_wire_wrap(
+        cursor,
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path=None,
+    )
+    assert wire.applied is False
+    assert wire.reason is None
+
+
+def test_resolve_wire_wrap_auto_with_wrapper_declared_but_binary_missing_degrades(
+    tmp_path: Path,
+):
+    """A profile that declares ``[wrapper]`` but whose binary does not
+    resolve on PATH stays a WARN-class degraded result under "auto",
+    exactly as it already does under an explicit ``true`` -- unchanged by
+    this story."""
+    wire = resolve_wire_wrap(
+        _wrapped_profile(),
+        wire_layer={"enabled": "auto", "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path=None,
+    )
+    assert wire.applied is False
+    assert wire.reason is not None
+    assert "did not resolve" in wire.reason
+
+
+def test_resolve_wire_wrap_explicit_true_no_wrapper_stays_the_existing_degraded_path(
+    tmp_path: Path,
+):
+    """A station force-override of ``enabled=true`` against a profile with
+    no ``[wrapper]`` is untouched by this story -- the existing degraded/WARN
+    path, not a clean skip (only "auto" reads the absent wrapper as off)."""
+    wire = resolve_wire_wrap(
+        _profile(),
+        wire_layer={"enabled": True, "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path=None,
+    )
+    assert wire.applied is False
+    assert wire.reason is not None
 
 
 # --- Story 28.2: the prefix byte-comparison (the NFR-14 AC) ------------------
