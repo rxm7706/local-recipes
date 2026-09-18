@@ -120,6 +120,23 @@ clobbered; only the **prototype** crosses the bridge — never a mirrored app tr
 (the retired *"Local recipes repository connection"* project is the cautionary
 tale); `get_claude_design_prompt` is mandatory before any `write_files`.
 
+**One command (Story 23.6, CAP-8 + CAP-3's sweep half): `herald deck sync-all`.**
+Steps 2–3 above, plus the refresh/derive/push/prove/publish loop the rest of this
+doc describes verb-by-verb (`deck-facts --refresh`, `deck-trio` + `deck-export`/
+`pptx-fill`, `herald deck push --prove`, the dossier-site publish), now run as one
+command instead of an agent recalling the sequence from memory: `herald deck
+sync-all [--slug <slug>] [--dry-run]` (pixi: `deck-sync-all`) enumerates every
+registered deck (or just `--slug`) and runs enumerate → pull → refresh → derive →
+push → prove → publish for each, in order, printing a per-deck report (`pulled` /
+`overwrote-local` — a repo-side edit Design had not seen, named — / `overrode` /
+`derived` / `pushed` / `proven` / `published` / `unchanged`). Idempotent: a second
+consecutive run reports every deck `unchanged` with zero writes to git or Design;
+`--dry-run` previews the pull step read-only without writing anything. One deck's
+own failure is isolated into that deck's own report line rather than aborting the
+run — advisory, like every other herald report, never a second PR gate. The manual
+loop below stays the reference for what each step does; `sync-all` is the one
+command that replaces running them by hand.
+
 **Large-file uploads (verified 2026-07-24, atlas seed + 8-project family
 pass):** for any disk→Design transfer beyond a few KB, prefer the **`DesignSync`
 tool** (`finalize_plan` with `localDir`, then `write_files` with `localPath`)
