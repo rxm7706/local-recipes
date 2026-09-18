@@ -2,12 +2,15 @@
 title: '46.5: The journal splits silent saves from configured layers, and the rollup speaks per-harness currency'
 type: 'feature'
 created: '2026-09-18'
-status: 'backlog'
+status: 'ready-for-dev'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings: []
 deferred: []
+declared_low_risk: false
 ---
 
 <intent-contract>
