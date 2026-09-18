@@ -1854,14 +1854,20 @@ def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
 # --- review pass 4: the text projection is not a shell for forged output ------
 
 
-def test_render_text_quotes_a_newline_injected_selector(home, capsys):
+def test_render_text_quotes_a_newline_injected_selector(home, capsys, monkeypatch, tmp_path):
     """Review finding (Edge Case Hunter, reproduced live): ``_render_text``
     interpolated every field RAW, so a newline inside one forged whole lines
     of the report. ``--story $'9.9\\nfindings:\\n  MRS-SPIN-001 [error] ...'``
     printed a ``findings:`` block that no ``Finding`` produced, on a run that
     had genuinely LAUNCHED and exited 0. ``cli/gate.py``'s own
     ``_render_text`` already carries exactly this ``!r`` hardening across two
-    of its own review passes; this module shipped without it."""
+    of its own review passes; this module shipped without it.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` here) -- incidental to this test's own intent,
+    which is purely about line-forgery, not wire disposition."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
     forged = "9.9\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
@@ -2248,11 +2254,24 @@ def _declare_wire_layer(monkeypatch, tmp_path: Path, *, enabled: bool) -> None:
     )
 
 
-def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
-    """Story 28.2 (SPEC-marshal-token-economy CAP-2): a spin report always
-    says what the wire-compression layer did, exactly as it always says
-    where ``supervisor.log`` is. Undeclared -> off, and NOTHING is raised:
-    a layer nobody enabled has no degradation to name."""
+def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys, monkeypatch):
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2) / Story 46.4: a spin
+    report always says what the wire-compression layer did, exactly as it
+    always says where ``supervisor.log`` is. Undeclared now means the
+    repo-default tri-state ``"auto"`` (Story 46.4), not off -- the packaged
+    ``claude`` profile declares a ``[wrapper]``, so with its binary
+    resolvable the layer genuinely applies. This is the spec's own I/O
+    matrix row 1: fresh loop home, zero station config, Claude profile.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2260,12 +2279,9 @@ def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
     run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
     envelope = json.loads(capsys.readouterr().out)
-    assert envelope["data"]["wire"] == {
-        "applied": False,
-        "reason": None,
-        "store_dir": None,
-        "aggressiveness": None,
-    }
+    assert envelope["data"]["wire"]["applied"] is True
+    assert envelope["data"]["wire"]["reason"] is None
+    assert envelope["data"]["wire"]["aggressiveness"] == "medium"
     assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
 
 
@@ -2464,7 +2480,7 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     assert [f["code"] for f in envelope["findings"]].count("MRS-SPIN-017") == 0
 
 
-def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
+def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch, tmp_path):
     """Review finding: ``_render_text``'s own comment states that finding
     MESSAGES are deliberately NOT quoted and requires "every message that
     interpolates an untrusted value quotes it at construction instead" --
@@ -2473,7 +2489,14 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
     unvalidated, so a newline in it forged whole lines of the DEFAULT text
     report on a run that genuinely launched -- reintroducing on this
     story's own new finding exactly the defect a prior pass fixed for
-    ``--story`` and raw feed keys."""
+    ``--story`` and raw feed keys.
+
+    Wire declared explicitly off (Story 46.4 made the undeclared default
+    ``"auto"``, which would otherwise attempt a real, non-deterministic PATH
+    lookup for ``headroom`` and add its own genuine ``MRS-SPIN-017``
+    finding) -- incidental to this test's own intent, which is purely about
+    ``MRS-SPIN-007``'s own path-quoting."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
     poisoned_root = (
         str(home.parent) + "\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
     )
