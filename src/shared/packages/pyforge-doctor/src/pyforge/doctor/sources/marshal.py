@@ -143,7 +143,7 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
 
 
 def _loose_subject_key_match(
-    subjects: tuple[str, ...] | list[tuple[str, str]],
+    subjects: tuple[tuple[str, str], ...] | list[tuple[str, str]],
     *,
     station: str,
     key_ref: StoryKeyRef,
@@ -329,6 +329,22 @@ def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
         return run_git(target, list(args), **kwargs)
     except (CliBridgeError, UnicodeDecodeError):
         return None
+
+
+def _parse_sha_subject_lines(raw: str) -> list[tuple[str, str]]:
+    """``git log --format=%H%x00%s`` stdout -> ``(sha, subject)`` pairs.
+
+    Shared by both Route 2's (``--all``) and Route 3's (``main``) fetches --
+    identical NUL-delimited shape, so the split logic lives once.
+    """
+    out: list[tuple[str, str]] = []
+    for line in raw.splitlines():
+        if not line:
+            continue
+        sha, _, subject = line.partition("\0")
+        if sha and subject:
+            out.append((sha, subject))
+    return out
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -686,10 +702,16 @@ def gather_story_status(
     # key in every feed. Computed once, lazily -- a full history walk per
     # candidate key would be O(keys x history) shell-outs against Doctor's
     # NFR-4 wall-clock budget.
-    all_ref_subjects: tuple[str, ...] | None = None
+    all_ref_commits: tuple[tuple[str, str], ...] | None = None
     all_ref_subjects_unavailable = False
     main_commits: list[tuple[str, str]] | None = None
     main_commits_unavailable = False
+    # Story 27.5: the bare-form fallback's `git diff` per merge sha, shared
+    # across EVERY key/route this run audits (a given sha's touched station
+    # paths do not depend on which key or project is asking) -- see
+    # ``bare_merge.DiffCache``'s own docstring.
+    diff_cache: DiffCache = {}
+    unreadable_diff_shas: list[str] = []
 
     false_greens: list[dict] = []
     audited = 0
@@ -743,20 +765,23 @@ def gather_story_status(
 
             # Route 2: commit subjects on any ref, via shared landing-evidence
             # grammar (replaces the private ``/{key} into`` grep dialect).
-            if all_ref_subjects is None and not all_ref_subjects_unavailable:
+            # Story 27.5: carries the sha alongside each subject (was
+            # subject-only pre-27.5) -- the bare-form fallback needs it.
+            if all_ref_commits is None and not all_ref_subjects_unavailable:
                 raw = _git(
-                    target, "log", "--format=%s", "--all", timeout=60.0,
+                    target, "log", "--format=%H%x00%s", "--all", timeout=60.0,
                 )
                 if raw is None:
                     all_ref_subjects_unavailable = True
                 else:
-                    all_ref_subjects = tuple(raw.splitlines())
+                    all_ref_commits = tuple(_parse_sha_subject_lines(raw))
             if all_ref_subjects_unavailable:
                 inconclusive += 1
                 continue
-            if key_refs and all_ref_subjects is not None:
+            if key_refs and all_ref_commits is not None:
                 merged_keys = _keys_from_merge_subjects(
-                    target, all_ref_subjects, project_slug=project_slug
+                    target, all_ref_commits, project_slug=project_slug,
+                    diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
                 )
                 if any(r in merged_keys for r in key_refs):
                     continue  # merge evidence found (under any spelling)
@@ -772,19 +797,14 @@ def gather_story_status(
                     if raw is None:
                         main_commits_unavailable = True
                     else:
-                        main_commits = []
-                        for line in raw.splitlines():
-                            if not line:
-                                continue
-                            sha, _, subject = line.partition("\0")
-                            if sha and subject:
-                                main_commits.append((sha, subject))
+                        main_commits = _parse_sha_subject_lines(raw)
                 if main_commits_unavailable:
                     inconclusive += 1
                     continue
                 if main_commits is not None:
                     main_keys = _keys_from_main_commits(
-                        target, main_commits, project_slug=project_slug
+                        target, main_commits, project_slug=project_slug,
+                        diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
                     )
                     if any(r in main_keys for r in key_refs):
                         continue  # hand-landed or recovery; grammar recognized
@@ -795,8 +815,8 @@ def gather_story_status(
                 # landings). Checked against both subject pools already
                 # fetched above -- no new git call.
                 if any(
-                    (all_ref_subjects is not None and _loose_subject_key_match(
-                        all_ref_subjects, station=slug, key_ref=r,
+                    (all_ref_commits is not None and _loose_subject_key_match(
+                        all_ref_commits, station=slug, key_ref=r,
                     ))
                     or (main_commits is not None and _loose_subject_key_match(
                         main_commits, station=slug, key_ref=r,
@@ -883,6 +903,18 @@ def gather_story_status(
         detail += f", {len(unreadable_run_files)} run record file(s) unreadable"
     if unreadable_feeds:
         detail += f", {unreadable_feeds} sprint feed(s) unreadable"
+    if unreadable_diff_shas:
+        # Story 27.5: a bare-form merge subject's `git diff` could not be
+        # read for these sha(s) -- named here (never crash, never a silent
+        # false green) rather than as a separate WARN Finding, matching this
+        # function's existing pattern for every other per-item cannot-
+        # evaluate caveat above. Deduplicated: the same sha can be revisited
+        # once per audited key sharing its station.
+        unique_shas = sorted(set(unreadable_diff_shas))
+        detail += (
+            f", {len(unique_shas)} bare-form merge diff(s) unreadable "
+            f"({', '.join(unique_shas[:5])})"
+        )
     return (
         Finding(
             source=Source.STORY_STATUS,
