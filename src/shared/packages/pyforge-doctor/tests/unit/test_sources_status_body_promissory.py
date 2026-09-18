@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,7 +13,31 @@ from pyforge.doctor.sources import status_body_consistency as sbc
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
 
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared terminal/ended-acts values
+    derive the same ``{"shipped"}`` Spec-side member ``TERMINAL_STATUSES``
+    already carries (Story 59.2) -- keeps CAP-1's own gather silent here so
+    ``gather()``'s combined branching (which this file's CAP-3 tests rely on)
+    is unaffected by a roster-missing WARN from an unrelated CAP."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses_terminal": [
+                    "shipped", "archived", "absorbed", "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived", "absorbed", "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _promissory_repo(tmp_path: Path) -> Path:
+    _write_roster(tmp_path)
     dreams = tmp_path / "docs" / "dreams"
     dreams.mkdir(parents=True)
     shutil.copy(_FIXTURES / "pyforge-herald-dream.md", dreams / "pyforge-herald.md")
