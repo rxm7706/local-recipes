@@ -1867,10 +1867,11 @@ def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     )
     monkeypatch.chdir(tmp_path)
     build_harness = FakeBuildHarness()
+    fs = FakeFs()
     attempt = dispatch_once(
         slug=slug,
         story=story,
-        fs=FakeFs(),
+        fs=fs,
         vcs=FakeVcs(tmp_path),
         build_harness=build_harness,
         process=FakeProcess(),
@@ -1889,8 +1890,7 @@ def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     # The entry actually PERSISTED to the journal must be equally clean --
     # not just the in-memory `attempt.data` envelope -- or the drop is
     # cosmetic in exactly the disk-durable record an operator would read.
-    launch_lines = [line for _, line, _ in build_harness_journal_fs(fs=None) or [] for _ in ()]  # placeholder never used
-    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]  # type: ignore[name-defined]
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
     assert launch_lines
     journaled_payload = json.loads(launch_lines[0])["payload"]
     assert journaled_payload.get("model") is None
