@@ -70,6 +70,7 @@ from . import (
     pptx_pipeline,
     progress,
     scheduler,
+    sync_all,
 )
 from . import watch as watch_module
 from .claims import CLAIM_STATUSES
@@ -344,6 +345,33 @@ def _build_parser() -> _HeraldArgumentParser:
         help=(
             "read every file pushed this run back through Design and assert "
             "byte-identity, appending a Ledger row per proven file (CAP-6)"
+        ),
+    )
+    sync_all_parser = deck_subparsers.add_parser(
+        "sync-all",
+        help=(
+            "enumerate -> pull -> refresh -> derive -> push -> prove -> "
+            "publish, in order, for every registered deck or one --slug "
+            "(Story 23.6, CAP-8)"
+        ),
+    )
+    sync_all_parser.add_argument(
+        "--slug",
+        default=None,
+        help="sync only this deck, e.g. pyforge-warden (default: every registered deck)",
+    )
+    sync_all_parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    sync_all_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "preview the pull step read-only (per deck: unchanged / "
+            "would-sync) without writing to git, Design, or the dossier site"
         ),
     )
     qa = deck_subparsers.add_parser(
@@ -779,6 +807,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_watch(args)
     if args.command == "deck" and args.deck_command == "push":
         return _run_deck_push(args)
+    if args.command == "deck" and args.deck_command == "sync-all":
+        return _run_deck_sync_all(args)
     if args.command == "deck" and args.deck_command == "qa":
         return _run_deck_qa(args)
     if args.command == "deck" and args.deck_command == "pptx-spec":
@@ -1033,6 +1063,49 @@ def _run_deck_push(args: argparse.Namespace) -> int:
             )
         for filename in result.proven:
             print(f"proved {args.slug}: {filename} read back byte-identical")
+
+    return dispatch(operation)
+
+
+def _run_deck_sync_all(args: argparse.Namespace) -> int:
+    """``herald deck sync-all [--slug SLUG] [--dry-run]`` (Story 23.6, CAP-8
+    + CAP-3's sweep half): composes enumerate -> pull -> refresh -> derive
+    -> push -> prove -> publish, in order, for every registered deck (or
+    just ``--slug``), and prints one report line per deck. Mirrors
+    ``_run_deck_seed``/``_run_deck_pull``'s composition shape exactly:
+    ``McpTransport()`` is constructed inside ``operation``, never before
+    ``dispatch`` is called.
+
+    A single deck's own failure (a broken subprocess call, a push
+    conflict, a read-back mismatch, ...) is isolated into that deck's own
+    report line rather than aborting the run (``sync_all``'s own module
+    docstring) -- this command reports the fleet, it does not gate it,
+    mirroring ``deck status``'s per-deck conflict downgrade and ``scheduler
+    run``'s advisory exit-0 convention. Only a structural problem outside
+    any one deck's own sync (an unknown ``--slug``, an auth failure
+    reaching Design at all) raises and reaches ``dispatch``'s usual
+    non-zero exit."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        report = bridge.run(
+            transport,
+            lambda t: sync_all.sync_all(
+                t, slug=args.slug, repo_root=repo_root, dry_run=args.dry_run
+            ),
+        )
+        if not report.decks:
+            print("no registered decks found")
+            return
+        for deck in report.decks:
+            print(f"{deck.slug}: {', '.join(deck.labels())}")
+            if deck.error is not None:
+                print(f"  error: {deck.error}")
+        if report.published:
+            print("published: dossier site rebuilt")
+        elif report.publish_error is not None:
+            print(f"publish failed: {report.publish_error}")
 
     return dispatch(operation)
 
