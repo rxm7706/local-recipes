@@ -1307,7 +1307,13 @@ def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
     mirrors Story 20.13's identical "no second registry" ruling). A README
     with no such section, or that fails to parse, contributes nothing for
     that slug rather than aborting the whole reconciliation -- one
-    malformed deck must not hide every other project's real status."""
+    malformed deck must not hide every other project's real status.
+
+    Raises ``errors.HeraldError`` naming both slugs and the project id when
+    two local decks are registered against the same Design project id --
+    silently letting the later-sorted slug win would misattribute
+    ``AccountProjectStatus.slug`` with no error, unlike this module's
+    fail-loud handling of every other malformed-registry shape."""
     presentations_dir = repo_root / "presentations"
     by_project_id: dict[str, str] = {}
     if not presentations_dir.is_dir():
@@ -1319,8 +1325,16 @@ def _twinned_project_ids(repo_root: Path) -> dict[str, str]:
             design_project = registry.read(entry / "README.md")
         except errors.HeraldError:
             continue
-        if design_project is not None:
-            by_project_id[design_project.project_id] = entry.name
+        if design_project is None:
+            continue
+        project_id = design_project.project_id
+        if project_id in by_project_id:
+            raise errors.HeraldError(
+                f"cannot reconcile the account: {by_project_id[project_id]!r} "
+                f"and {entry.name!r} are both registered against the same "
+                f"Design project id {project_id!r}"
+            )
+        by_project_id[project_id] = entry.name
     return by_project_id
 
 
