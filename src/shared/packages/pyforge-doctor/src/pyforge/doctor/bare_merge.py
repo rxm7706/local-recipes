@@ -245,12 +245,21 @@ def attribute_bare_merge(
     cache: DiffCache,
 ) -> BareMergeAttribution:
     """Attribute ``subject`` (the bare legacy merge form) to
-    ``project_slug`` iff ``sha``'s first-parent diff touches that station's
-    own paths AND the extracted key is a member of ``known_keys`` — both
-    conditions, never one (see module docstring). ``known_keys`` is the
-    caller-supplied result of :func:`known_story_keys` for ``project_slug``
-    — passed in rather than read here so a caller auditing many subjects for
-    the SAME station reads its ledger once, not once per subject.
+    ``project_slug`` iff ``sha``'s first-parent diff touches ONLY that
+    station's own paths AND the extracted key is a member of ``known_keys``
+    — both conditions, never one (see module docstring). ``known_keys`` is
+    the caller-supplied result of :func:`known_story_keys` for
+    ``project_slug`` — passed in rather than read here so a caller auditing
+    many subjects for the SAME station reads its ledger once, not once per
+    subject.
+
+    Exclusive touch, not mere membership: a diff touching TWO stations' own
+    paths (a fleet-wide mop commit) must attribute to NEITHER when both
+    stations' own ledgers independently know the key (the common case under
+    one shared grammar) — `project_slug in slugs` alone would let such a
+    commit attribute to every station it grazes, one audit at a time,
+    reopening the exact collision the module docstring's "neither alone is
+    safe" paragraph describes.
     """
     key = parse_templated_merge_subject(subject, BARE_MERGE_SUBJECT_TEMPLATE)
     if key is None or key not in known_keys:
@@ -258,6 +267,6 @@ def attribute_bare_merge(
     slugs = station_slugs_touched(target, sha, cache)
     if slugs is None:
         return BareMergeAttribution(key=None, diff_unreadable_sha=sha)
-    if project_slug in slugs:
+    if slugs == frozenset({project_slug}):
         return BareMergeAttribution(key=key)
     return BareMergeAttribution(key=None)
