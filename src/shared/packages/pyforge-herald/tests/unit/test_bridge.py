@@ -34,6 +34,7 @@ from pyforge.herald import (
     scheduler,
     stamps,
     state,
+    sync_all,
     watch,
     webhook,
     webhook_host,
@@ -161,6 +162,7 @@ _BRIDGE_CORE_MODULES = (
     deck_qa,
     exporters,
     stamps,
+    sync_all,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -222,6 +224,13 @@ itself -- no transport call, no inference SDK, no argv parsing, and (unlike
 own ``NpmLocalProver``/``PixiDeckExporter``/``SubprocessGitCommitter``
 already make) and reads ``state.py`` to record a derived artifact's
 provenance -- no transport call, no inference SDK, no argv parsing.
+``sync_all.py`` (Story 23.6) joins for the same reason once more: it
+composes ``deck_pipeline``'s own CAP functions (``pull_*``, ``push_exports``)
+plus bounded subprocess calls to existing pixi tasks (``deck-facts``,
+``deck-trio``, ``pixi run -e site site``, ``git status``) into one ordered
+per-deck loop -- no transport call of its own outside what it passes
+straight through to ``deck_pipeline``, no inference SDK, no argv parsing
+(that stays ``cli.py``'s own ``_run_deck_sync_all``).
 
 ``pptx_pipeline.py`` (Story 15.1) does NOT join here -- unlike every module
 above, it is not part of the Design<->Code bridge at all: the spec's own Why
@@ -453,7 +462,7 @@ def _module_source(module) -> str:
 
 
 @pytest.mark.parametrize(
-    "module", (bridge, deck_pipeline, watch), ids=lambda m: m.__name__
+    "module", (bridge, deck_pipeline, watch, sync_all), ids=lambda m: m.__name__
 )
 def test_bridge_and_deck_pipeline_reach_transport_only_via_transport_base(module):
     """``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) joins ``bridge.py``
@@ -464,7 +473,11 @@ def test_bridge_and_deck_pipeline_reach_transport_only_via_transport_base(module
     the protocol + value-types module, never a concrete adapter. ``watch.py``
     (Epic 4, CAP-4) joins for the same reason as ``bridge.py`` itself: its
     ``watch``/``_poll_deck`` signatures need ``DesignTransport`` only as a
-    ``TYPE_CHECKING`` annotation."""
+    ``TYPE_CHECKING`` annotation. ``sync_all.py`` (Story 23.6) joins for the
+    identical reason: its ``sync_all``/``_sync_one_deck``/``_pull_one``
+    signatures need ``DesignTransport`` only as a ``TYPE_CHECKING``
+    annotation, passed straight through to ``deck_pipeline``'s own CAP
+    functions."""
     assert _transport_import_violations(_module_source(module)) == []
 
 
