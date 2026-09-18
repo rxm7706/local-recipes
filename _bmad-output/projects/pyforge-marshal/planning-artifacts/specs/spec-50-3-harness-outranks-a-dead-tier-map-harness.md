@@ -2,7 +2,7 @@
 title: '50.3: `--harness` outranks a dead tier-map harness'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '2f2f407d94ea9e563113c3d8aee5f1f0ade0fa02'
 review_loop_iteration: 0
 followup_review_recommended: false
