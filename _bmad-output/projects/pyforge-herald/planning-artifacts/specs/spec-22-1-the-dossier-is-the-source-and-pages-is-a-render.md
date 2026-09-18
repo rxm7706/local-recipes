@@ -2,7 +2,7 @@
 title: The dossier is the source and Pages is a render
 type: feature
 created: '2026-09-13'
-status: 'done'
+status: in-progress
 baseline_revision: 907c1cc233106973948c48976e9438d6c2d85917
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -49,6 +49,10 @@ declared_low_risk: false
 - `dashboard.yml` still the sole `deploy-pages` caller; Kedro-Viz path unchanged.
 - Dream `specified`, Spec `ready`, ledger key `22-1-the-dossier-is-the-source-and-pages-is-a-render` present.
 
+</intent-contract>
+
+## Verification
+
 **Verified (2026-09-18, this worktree, baseline `907c1cc233`):** the target capability
 (spec-pyforge-pages CAP-1..5, folded into `spec-pyforge-herald` CAP-43..47) was **already fully
 realized and merged to `main` before this Story was minted** — PR #1341 "Publish the PyForge
@@ -92,5 +96,3 @@ grammars (GitHub PR branch keyed to the story slug, bmad-loop merge subject, `St
 subject, `land/<station>-<epic>-<seq>` branch). This is a landing-evidence gap for
 pre-convention work, not a defect in this Story's own deliverable; left for the operator/doctor
 `story-status-check` pass to reconcile rather than hand-edited here.
-
-</intent-contract>
