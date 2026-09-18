@@ -152,6 +152,7 @@ def _spec_status_groups(target: Path) -> tuple[frozenset[str], frozenset[str], d
         None,
     )
 
+
 #: Specs deliberately NOT decomposed, each with the reason it is exempt --
 #: copied verbatim from scripts/chain_completeness_check.py so a station's
 #: recorded exemption is not silently dropped by the port.

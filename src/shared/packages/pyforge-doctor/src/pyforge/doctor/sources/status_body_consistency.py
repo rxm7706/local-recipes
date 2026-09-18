@@ -90,11 +90,7 @@ def _load_terminal_statuses(target: Path) -> tuple[frozenset[str], Finding | Non
     ``chain.py::_load_constitutive``).
     """
     try:
-        data = json.loads(
-            (target / "docs" / "governance" / "guild-roster.json").read_text(
-                encoding="utf-8"
-            )
-        )
+        data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
         terminal = frozenset(str(s) for s in data["spec_statuses_terminal"])
         ended_acts = frozenset(str(s) for s in data["spec_statuses_ended_acts"])
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
@@ -110,6 +106,7 @@ def _load_terminal_statuses(target: Path) -> tuple[frozenset[str], Finding | Non
             evidence={"path": _GUILD_ROSTER_REL},
         )
     return (terminal - ended_acts) | {"realized", "done"}, None
+
 
 _CHECK_PROGRESS = "status-body-progress-phrase"
 _CHECK_OPEN_QUESTIONS = "status-body-open-questions"
