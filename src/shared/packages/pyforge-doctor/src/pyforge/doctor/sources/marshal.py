@@ -49,9 +49,11 @@ from __future__ import annotations
 import json
 import re
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 from pyforge.core.landing_evidence import (
+    LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
     classify_commit,
@@ -61,6 +63,7 @@ from pyforge.core.landing_evidence import (
     parse_templated_merge_subject,
 )
 
+from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..rekey import load_rekey_maps, reverse_map
@@ -142,7 +145,7 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
 
 
 def _loose_subject_key_match(
-    subjects: tuple[str, ...] | list[tuple[str, str]],
+    subjects: tuple[tuple[str, str], ...] | list[tuple[str, str]],
     *,
     station: str,
     key_ref: StoryKeyRef,
@@ -198,31 +201,72 @@ def _branch_name_fallback_key(subject: str, project_slug: str) -> StoryKeyRef | 
 
 def _keys_from_merge_subjects(
     target: Path,
-    subjects: tuple[str, ...],
+    commits: tuple[tuple[str, str], ...],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
     """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
 
-    The templated shape (tried first) uses ``project_slug``'s OWN
-    ``merge_subject_template`` (Story 27.1), not the bare repo default --
-    see ``_project_merge_subject_template``'s own docstring for why an
-    unscoped read misattributes a sibling station's landing.
+    The templated shape (tried first, ONLY when ``project_slug`` declares
+    its OWN override) uses that override (Story 27.1), not the bare repo
+    default -- see ``_project_merge_subject_template``'s own docstring for
+    why an unscoped read misattributes a sibling station's landing.
+
+    Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
+    AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
+    attributed to ``project_slug`` only when ``sha``'s first-parent diff
+    touches this station's own paths AND this station's own tracked ledger
+    already knows the extracted key (``bare_merge.attribute_bare_merge``,
+    shared verbatim with ``sources/ledger.py::_merged_ids_for_project``).
+    Replaces Story 27.3's reverted ledger-membership-alone gate, which
+    reopened the cross-station collision whenever two stations share a
+    numeric key -- the common case under one shared grammar.
+
+    A project with NO override of its own is exactly the case where
+    ``_project_merge_subject_template`` returns the bare default itself --
+    trying ``parse_templated_merge_subject`` against THAT would match every
+    OTHER station's own unscoped bare-form merge too (this module's own
+    pre-27.5 defect: unconditional and unscoped), so that parser is skipped
+    entirely for such a project and every bare-form subject instead goes
+    through the corroborated fallback below. ``commits`` therefore carries
+    the sha alongside each subject (routed from ``git log
+    --format=%H%x00%s``), unlike this function's pre-27.5 subject-only
+    shape.
     """
     template = _project_merge_subject_template(target, project_slug)
+    has_override = template != _MERGE_SUBJECT_TEMPLATE
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
-    for subject in subjects:
-        for parser in (
-            lambda s: parse_templated_merge_subject(s, template),
+    for sha, subject in commits:
+        parsers: list[Callable[[str], StoryKeyRef | None]] = []
+        if has_override:
+            parsers.append(lambda s: parse_templated_merge_subject(s, template))
+        parsers.extend((
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
             lambda s: _branch_name_fallback_key(s, project_slug),
-        ):
+        ))
+        for parser in parsers:
             key = parser(subject)
             if key is not None:
                 keys.add(key)
                 break
+        else:
+            attribution = attribute_bare_merge(
+                subject, sha,
+                target=target, project_slug=project_slug,
+                known_keys=known_keys, cache=diff_cache,
+            )
+            if attribution.key is not None:
+                keys.add(attribution.key)
+            elif (
+                attribution.diff_unreadable_sha is not None
+                and unreadable_diff_shas is not None
+            ):
+                unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
@@ -231,8 +275,12 @@ def _keys_from_main_commits(
     commits: list[tuple[str, str]],
     *,
     project_slug: str,
+    diff_cache: DiffCache,
+    unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
+    has_override = template != _MERGE_SUBJECT_TEMPLATE
+    known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         match = classify_commit(
@@ -241,12 +289,35 @@ def _keys_from_main_commits(
             template=template,
             project_slug=project_slug,
         )
-        if match is not None:
+        # A project with no override of its own must not accept a match
+        # `classify_commit` only found via the bare default it was handed
+        # (see `_keys_from_merge_subjects`'s own docstring) -- every OTHER
+        # shape `classify_commit` recognizes stays trusted unconditionally.
+        if match is not None and (
+            has_override or match.shape is not LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+        ):
             keys.add(match.key)
             continue
         fallback = _branch_name_fallback_key(subject, project_slug)
         if fallback is not None:
             keys.add(fallback)
+            continue
+        # Story 27.5 (CAP-80 amended): same corroborated bare-form fallback
+        # as `_keys_from_merge_subjects` above, tried once the strict
+        # grammar and the branch-name fallback both miss -- see that
+        # function's own docstring for the full rationale.
+        attribution = attribute_bare_merge(
+            subject, sha,
+            target=target, project_slug=project_slug,
+            known_keys=known_keys, cache=diff_cache,
+        )
+        if attribution.key is not None:
+            keys.add(attribution.key)
+        elif (
+            attribution.diff_unreadable_sha is not None
+            and unreadable_diff_shas is not None
+        ):
+            unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
 
@@ -279,6 +350,22 @@ def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
         return run_git(target, list(args), **kwargs)
     except (CliBridgeError, UnicodeDecodeError):
         return None
+
+
+def _parse_sha_subject_lines(raw: str) -> list[tuple[str, str]]:
+    """``git log --format=%H%x00%s`` stdout -> ``(sha, subject)`` pairs.
+
+    Shared by both Route 2's (``--all``) and Route 3's (``main``) fetches --
+    identical NUL-delimited shape, so the split logic lives once.
+    """
+    out: list[tuple[str, str]] = []
+    for line in raw.splitlines():
+        if not line:
+            continue
+        sha, _, subject = line.partition("\0")
+        if sha and subject:
+            out.append((sha, subject))
+    return out
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
@@ -636,10 +723,19 @@ def gather_story_status(
     # key in every feed. Computed once, lazily -- a full history walk per
     # candidate key would be O(keys x history) shell-outs against Doctor's
     # NFR-4 wall-clock budget.
-    all_ref_subjects: tuple[str, ...] | None = None
+    all_ref_commits: tuple[tuple[str, str], ...] | None = None
     all_ref_subjects_unavailable = False
     main_commits: list[tuple[str, str]] | None = None
     main_commits_unavailable = False
+    # Story 27.5: the bare-form fallback's `git diff` per merge sha, shared
+    # across EVERY key/route this run audits (a given sha's touched station
+    # paths do not depend on which key or project is asking) -- see
+    # ``bare_merge.DiffCache``'s own docstring.
+    diff_cache: DiffCache = {}
+    # (project_slug, sha) pairs -- carries the project so the standalone WARN
+    # Finding below can name it, mirroring ``sources/ledger.py``'s own
+    # per-sha WARN Finding shape.
+    unreadable_diff_shas: list[tuple[str, str]] = []
 
     false_greens: list[dict] = []
     audited = 0
@@ -693,20 +789,23 @@ def gather_story_status(
 
             # Route 2: commit subjects on any ref, via shared landing-evidence
             # grammar (replaces the private ``/{key} into`` grep dialect).
-            if all_ref_subjects is None and not all_ref_subjects_unavailable:
+            # Story 27.5: carries the sha alongside each subject (was
+            # subject-only pre-27.5) -- the bare-form fallback needs it.
+            if all_ref_commits is None and not all_ref_subjects_unavailable:
                 raw = _git(
-                    target, "log", "--format=%s", "--all", timeout=60.0,
+                    target, "log", "--format=%H%x00%s", "--all", timeout=60.0,
                 )
                 if raw is None:
                     all_ref_subjects_unavailable = True
                 else:
-                    all_ref_subjects = tuple(raw.splitlines())
+                    all_ref_commits = tuple(_parse_sha_subject_lines(raw))
             if all_ref_subjects_unavailable:
                 inconclusive += 1
                 continue
-            if key_refs and all_ref_subjects is not None:
+            if key_refs and all_ref_commits is not None:
                 merged_keys = _keys_from_merge_subjects(
-                    target, all_ref_subjects, project_slug=project_slug
+                    target, all_ref_commits, project_slug=project_slug,
+                    diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
                 )
                 if any(r in merged_keys for r in key_refs):
                     continue  # merge evidence found (under any spelling)
@@ -722,19 +821,14 @@ def gather_story_status(
                     if raw is None:
                         main_commits_unavailable = True
                     else:
-                        main_commits = []
-                        for line in raw.splitlines():
-                            if not line:
-                                continue
-                            sha, _, subject = line.partition("\0")
-                            if sha and subject:
-                                main_commits.append((sha, subject))
+                        main_commits = _parse_sha_subject_lines(raw)
                 if main_commits_unavailable:
                     inconclusive += 1
                     continue
                 if main_commits is not None:
                     main_keys = _keys_from_main_commits(
-                        target, main_commits, project_slug=project_slug
+                        target, main_commits, project_slug=project_slug,
+                        diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
                     )
                     if any(r in main_keys for r in key_refs):
                         continue  # hand-landed or recovery; grammar recognized
@@ -745,8 +839,8 @@ def gather_story_status(
                 # landings). Checked against both subject pools already
                 # fetched above -- no new git call.
                 if any(
-                    (all_ref_subjects is not None and _loose_subject_key_match(
-                        all_ref_subjects, station=slug, key_ref=r,
+                    (all_ref_commits is not None and _loose_subject_key_match(
+                        all_ref_commits, station=slug, key_ref=r,
                     ))
                     or (main_commits is not None and _loose_subject_key_match(
                         main_commits, station=slug, key_ref=r,
@@ -782,8 +876,30 @@ def gather_story_status(
     # FAIL is a specific accusation about one named story, not a claim about
     # the audit's completeness, so it needs no qualifier -- and widening the
     # FAIL evidence to carry them would put the same counts in two shapes.
+    #
+    # Story 27.5: a bare-form merge subject's `git diff` query failing is its
+    # OWN standalone WARN Finding (mirrors `sources/ledger.py::gather_
+    # direction`'s per-sha `bare-merge-diff-unreadable` WARN) -- built here,
+    # BEFORE the `false_greens` branch, so it surfaces unconditionally. A
+    # version of this that only rode on the OK-message caveat dropped it
+    # silently whenever the same run also had an unrelated false-green FAIL.
+    diff_warn_findings = tuple(
+        Finding(
+            source=Source.STORY_STATUS,
+            check="bare-merge-diff-unreadable",
+            status=DoctorStatus.WARN,
+            message=(
+                f"{project}: first-parent diff for {sha} could not be read "
+                "— a bare legacy-form merge subject naming a key this "
+                "project's ledger knows could not be attributed"
+            ),
+            evidence={"project": project, "sha": sha},
+        )
+        for project, sha in sorted(set(unreadable_diff_shas))
+    )
+
     if false_greens:
-        return tuple(
+        return diff_warn_findings + tuple(
             Finding(
                 source=Source.STORY_STATUS,
                 check="story-status",
@@ -833,7 +949,10 @@ def gather_story_status(
         detail += f", {len(unreadable_run_files)} run record file(s) unreadable"
     if unreadable_feeds:
         detail += f", {unreadable_feeds} sprint feed(s) unreadable"
-    return (
+    # Story 27.5: `unreadable_diff_shas` is surfaced above as its own
+    # standalone WARN Finding per sha (`diff_warn_findings`), not folded
+    # into this OK message's detail string -- one shape, not two.
+    return diff_warn_findings + (
         Finding(
             source=Source.STORY_STATUS,
             check="story-status",
