@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 691544cc-eaa3-4ed2-a090-8d284a11d0c9.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 3.2 — Auditable expiring waivers'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 691544cc-eaa3-4ed2-a090-8d284a11d0c9.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

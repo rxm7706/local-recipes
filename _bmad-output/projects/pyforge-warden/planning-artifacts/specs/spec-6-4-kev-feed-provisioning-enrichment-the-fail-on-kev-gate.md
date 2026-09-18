@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 5e5ffa32-3b61-4044-aead-0305c30c98ff.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 6.4: KEV feed provisioning, enrichment & the --fail-on-kev gate'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 5e5ffa32-3b61-4044-aead-0305c30c98ff.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

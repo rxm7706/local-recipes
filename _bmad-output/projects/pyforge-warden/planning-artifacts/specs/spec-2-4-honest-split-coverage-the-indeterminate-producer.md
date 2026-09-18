@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript db3290ed-e363-4de4-92c1-d4ab7d5411de.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 2.4: Honest split coverage + the indeterminate producer (C0b)'
 type: 'feature'
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-2-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript db3290ed-e363-4de4-92c1-d4ab7d5411de.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

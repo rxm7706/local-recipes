@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 1b119a63-25ec-4a15-ba2a-ff6756852dd0.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 1.9: Manifest discovery, deterministic selection & the resolved scan set'
 type: 'feature'
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-1-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 1b119a63-25ec-4a15-ba2a-ff6756852dd0.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

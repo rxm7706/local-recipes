@@ -1,8 +1,3 @@
-<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
-     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
-     PR #325, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
-     epics.md (which carries an unusually complete Outcome section for this story) plus its
-     merged-PR Delivery Record, per CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 5-2: Render the verdict through a `doctor` verb"
 type: "feature"
@@ -12,6 +7,12 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-09"
 ---
+
+<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
+     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
+     PR #325, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
+     epics.md (which carries an unusually complete Outcome section for this story) plus its
+     merged-PR Delivery Record, per CLAUDE.md's recovery priority order. -->
 
 ## Intent
 

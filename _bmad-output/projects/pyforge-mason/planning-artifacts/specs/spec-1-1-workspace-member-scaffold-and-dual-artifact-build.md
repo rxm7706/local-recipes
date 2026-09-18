@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-08-04 Tier 3 (epics.md-derived Intent + ACs). Tier 1/2 recovery failed; promote to full narrative after development context known. -->
 ---
 title: "Story 1-1: Workspace member scaffold and dual-artifact build"
 type: "feature"
@@ -8,6 +7,8 @@ recovery_tier: 3
 recovery_source: "epics.md:180-218"
 recovery_date: "2026-08-04"
 ---
+
+<!-- RECOVERED 2026-08-04 Tier 3 (epics.md-derived Intent + ACs). Tier 1/2 recovery failed; promote to full narrative after development context known. -->
 
 ## Intent
 

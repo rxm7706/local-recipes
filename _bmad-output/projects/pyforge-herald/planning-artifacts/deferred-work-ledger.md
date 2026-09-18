@@ -1045,3 +1045,17 @@ deployment.
   severity: low
   promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
   status: open
+
+### DW-FU-23-1: sprint-status-ledger.yaml still reads `backlog` for this story's key even though implementation, verification and review are complete.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-the-account-is-enumerated-and-reconciled-against-the-registry.md`
+  summary: sprint-status-ledger.yaml still reads `backlog` for this story's key even though implementation, verification and review are complete.
+  evidence: This workflow's own step files never touch sprint-status-ledger.yaml -- that sync is owned by dedicated ledger-sync tooling run separately, not a hand-edit inside bmad-build-auto. A stale `backlog` row left against a story whose spec already reads `done` has previously caused indefinite redispatch in this repo (auto-memory: "Merged story + backlog ledger row respawns forever").
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml (key 23-1-the-account-is-enumerated-and-reconciled-against-the-registry)
+  origin: spec-deferred 410df0b002cb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done 2026-09-18
+
+  verified: 2026-09-18 — RESOLVED by the landing itself. `marshal factory dispatch`'s land-finalize promoted the row (`7fd7a6f944 marshal: promote sprint-status ledger for 'pyforge-herald' (1 key(s) -> done)`, on origin/main 44 s after PR #1459 merged as `1dd017bc21 Merge pyforge-herald/23-1 into main`); the tracked ledger reads `done` for `23-1-the-account-is-enumerated-and-reconciled-against-the-registry`. The respawn the deferral feared did fire once inside that 44 s window (run pyforge-herald-20260918T151511146Z-3f6a3426, which correctly refused as already-merged) — a dispatch-supervisor race, not a ledger gap, and no work was duplicated.
+

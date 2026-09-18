@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-6-2-license-axis-producer-gate-flags.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 ---
 title: 'Story 6.2: License axis producer + gate flags (Axis 3)'
 type: 'feature'
@@ -11,6 +10,8 @@ warnings: [oversized]
 baseline_revision: '3de107081ee0a27c82619583b7273d54272aed42'
 final_revision: 'e43b5688f311000133fb06f3dff22d090b09f017'
 ---
+
+<!-- RECOVERED 2026-07-25 from a surviving bmad-loop run worktree (.bmad-loop/runs/20260718-101504-2c07/worktrees/6-2-license-axis-producer-gate-flags/_bmad-output/implementation-artifacts/spec-6-2-license-axis-producer-gate-flags.md); this is the ORIGINAL spec, not an epics.md regeneration. Promoted to tracked planning-artifacts/specs/ for durability. -->
 
 <intent-contract>
 

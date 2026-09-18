@@ -1,8 +1,3 @@
-<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
-     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
-     PR #323, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
-     epics.md (which carries a complete, numbers-bearing Outcome section) plus its merged-PR
-     Delivery Record, per CLAUDE.md's recovery priority order. -->
 ---
 title: "Story 6-1: Profile `doctor check` and bring it inside its budget"
 type: "change"
@@ -12,6 +7,12 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-09"
 ---
+
+<!-- RECOVERED 2026-08-09 Tier 3 (epics.md-derived Intent + ACs). No session transcript,
+     bmad-loop worktree snapshot, or Tier-3 draft survived — this story landed via hand-driven
+     PR #323, not a bmad-loop run, so no spec was ever drafted to promote. Regenerated from
+     epics.md (which carries a complete, numbers-bearing Outcome section) plus its merged-PR
+     Delivery Record, per CLAUDE.md's recovery priority order. -->
 
 ## Intent
 

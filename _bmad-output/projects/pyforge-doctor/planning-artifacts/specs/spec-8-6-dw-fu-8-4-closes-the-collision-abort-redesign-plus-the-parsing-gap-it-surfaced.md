@@ -1,5 +1,3 @@
-<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 8.6). No Tier-3 draft was
-     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 ---
 title: "Story 8.6: DW-FU-8-4 closes — the collision-abort redesign, plus the parsing gap it surfaced"
 type: "bug"
@@ -9,6 +7,9 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-09-18"
 ---
+
+<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 8.6). No Tier-3 draft was
+     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 
 ## Intent
 

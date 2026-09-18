@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: '`doctor check` CLI wiring, `--json`, and the speed budget (FR-9, NFR-4)'
 type: 'feature'
@@ -22,6 +21,8 @@ context: [
 ]
 warnings: ['oversized']
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 
 <intent-contract>
 

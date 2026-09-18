@@ -1,4 +1,3 @@
-<!-- RECOVERED 2026-07-25 from Claude Code session transcript 95b955d8-9b72-48e5-99a1-5af7b95e4035.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 3.1: Configurable policy (the ConfigLoader)'
 type: 'feature'
@@ -12,6 +11,8 @@ context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-3-context.md'
 warnings: [oversized]
 ---
+
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 95b955d8-9b72-48e5-99a1-5af7b95e4035.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 
 <intent-contract>
 

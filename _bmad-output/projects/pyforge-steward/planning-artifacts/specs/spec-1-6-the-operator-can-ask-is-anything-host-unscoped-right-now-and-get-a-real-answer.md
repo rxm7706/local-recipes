@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 ---
 title: 'Story 1.6: The operator can ask "is anything host-unscoped right now?" and get a real answer'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: []
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 
 <intent-contract>
 

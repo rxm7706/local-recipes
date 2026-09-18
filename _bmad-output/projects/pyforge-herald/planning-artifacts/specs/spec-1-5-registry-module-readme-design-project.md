@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Registry module — README § Design project'
 type: 'feature'
@@ -11,6 +10,8 @@ warnings: ['oversized']
 baseline_revision: '8800e0635b0620c2e156f669dd2525736298c105'
 final_revision: '755e9d54b16d5e787e25d08907832a33338d8fc5'
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 
 <intent-contract>
 

@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 ---
 title: 'Story 1.7: Retiring a credential leaves a record, not a silent gap'
 type: 'feature'
@@ -9,6 +8,8 @@ followup_review_recommended: false
 context: []
 warnings: []
 ---
+
+<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-07 -->
 
 <intent-contract>
 

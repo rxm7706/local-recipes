@@ -1,5 +1,3 @@
-<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 12.1). No Tier-3 draft was
-     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 ---
 title: "Story 12.1: The hygiene/verification catalog stays a maintained, current artifact"
 type: "chore"
@@ -9,6 +7,9 @@ recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-09-18"
 ---
+
+<!-- MINTED 2026-09-18 from epics.md Intent + ACs (Story 12.1). No Tier-3 draft was
+     present under planning-artifacts/specs/ as spec-<ledger-key>.md. -->
 
 ## Intent
 
