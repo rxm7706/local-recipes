@@ -168,7 +168,7 @@ sibling ledgers and the detector both use.
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
   summary: Canopy CAP-14 (FR-35/FR-36) graph durability and semantic recall are steward Epic 28's vehicle — not a new scribe Epic 4. The unifying-strategy Dream's BS-1 "dual-driver Scribe engine" (SQLite local vs PostgreSQL production) was written as if already shipped; ground truth is a **single** v1 adapter — `FlatFileGraphStore` (JSON at `.claude/data/pyforge-scribe/graph.json`) behind the `GraphStore` port (Story 2.1 / AD-5). SQLite-over-RWX is explicitly rejected; multi-pod durability is PostgreSQL/pgvector under `scribe_schema` (parent AD-1 / parent AD-5).
-  evidence: Phase 5 correct-course 2026-08-24; steward `epics.md` Epic 28 Stories 28.1–28.2; scribe `spec-2-1-graphstore-port-flat-file-adapter.md` (shipped); `technical-scribe-capture-promotion-graph-2026-08-08.md`. Scribe five-tier gaps (portal, MCP, skill, persona) delegate to steward Epics 19/21/29 — not scribe-local epics.
+  evidence: Phase 5 correct-course 2026-08-24; steward `epics.md` Epic 28 Stories 28.1–28.2; scribe `spec-2-1-graphstore-port-flat-file-v1-adapter.md` (shipped); `technical-scribe-capture-promotion-graph-2026-08-08.md`. Scribe five-tier gaps (portal, MCP, skill, persona) delegate to steward Epics 19/21/29 — not scribe-local epics.
   status: open
   vehicle: `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 28
 

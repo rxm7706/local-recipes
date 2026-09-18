@@ -24,7 +24,7 @@ concrete adapter — **`FlatFileGraphStore`** (deterministic sorted-keys JSON at
 2.1 / AD-5). There is no SQLite driver, no PostgreSQL driver, and no runtime driver selection
 today.
 
-**Evidence:** `spec-2-1-graphstore-port-flat-file-adapter.md` (shipped); live
+**Evidence:** `spec-2-1-graphstore-port-flat-file-v1-adapter.md` (shipped); live
 `graph_store.py::FlatFileGraphStore`; technical research
 (`technical-scribe-capture-promotion-graph-2026-08-08.md`) documents flat-file as the resolved
 v1 choice. Steward Epic 28 Stories 28.1–28.2 now own durable PG/pgvector + semantic recall on
