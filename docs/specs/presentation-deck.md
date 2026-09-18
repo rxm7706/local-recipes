@@ -152,17 +152,26 @@ it. Rebuild it from the READMEs — they are the durable record:
 
 ```python
 from pyforge.herald import registry, state   # repo root as cwd
+from pyforge.herald.errors import HeraldError
 root = pathlib.Path(".").resolve(); sp = root / state.DEFAULT_STATE_PATH
-for readme in sorted(root.glob("presentations/pyforge-*/README.md")):
-    dp = registry.read(readme)
+chain_decks = ["unity-data-stack", "wasm-analytics-stack", "deckcraft", "presenton-pixi-image"]
+readmes = list(root.glob("presentations/pyforge-*/README.md"))
+readmes += [root / "presentations" / slug / "README.md" for slug in chain_decks]
+for readme in sorted(readmes):
+    try:
+        dp = registry.read(readme)
+    except HeraldError:
+        continue  # malformed section: reported unlinked below, not a fatal bootstrap error
     if dp:
         state.write(sp, readme.parent.name,
                     state.DeckState(project_id=dp.project_id, etags={}, last_pull=None))
 ```
 
-`herald deck status --repo-root .` then reports every registered deck `linked`. A deck whose README
-has no section, or a malformed one, is reported unlinked rather than guessed at — the four chain decks
-sit there deliberately.
+`herald deck status --repo-root .` then reports every registered deck `linked` — the ten `pyforge-*`
+decks plus the four chain decks (`unity-data-stack`, `wasm-analytics-stack`, `deckcraft`,
+`presenton-pixi-image`) swept by explicit slug above, since none of them matches the `pyforge-*` glob.
+A deck whose README has no section, or a malformed one, is reported unlinked rather than guessed at —
+`agentic-sdlc` is the only deck still unregistered — Story 23.2 owns that register.
 
 ### Manual handoff (fallback — no MCP bridge in the session)
 

@@ -46,12 +46,13 @@ blocking Story 3.2), and the **moat moved** — `ppt-master` (MIT, 41,032 stars)
 the editability bar, so the air-gap posture carries the differentiation.
 
 ## Design project (the bridge's far end)
-
-Prototype lives in Claude Design project **"Deckcraft deck"** (`59c42e9c-7c90-431d-adae-b0021dd3f727`),
-bound to the **Modernist** design system (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`):
+Prototype lives in Claude Design project **"Deckcraft deck"** (`59c42e9c-7c90-431d-adae-b0021dd3f727`):
 https://claude.ai/design/p/59c42e9c-7c90-431d-adae-b0021dd3f727?file=Deckcraft.dc.html
-Pull it with the MCP bridge ("pull deckcraft") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+### Provenance
+
+Bound to the **Modernist** design system (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with
+the MCP bridge ("pull deckcraft") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (every upload byte-verified against the local file):
 
