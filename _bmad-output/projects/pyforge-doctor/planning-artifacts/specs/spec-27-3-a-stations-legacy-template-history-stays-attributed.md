@@ -2,7 +2,8 @@
 title: '27.3: A station''s legacy-template history stays attributed after its template changes'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '76905db53a99c882398a4412ffa0548984760b46'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
