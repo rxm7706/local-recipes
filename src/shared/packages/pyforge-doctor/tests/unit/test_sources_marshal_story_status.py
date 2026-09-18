@@ -718,12 +718,21 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
     harness verdict and was accused of being a false green.
 
     The repo-level ``rev-parse --git-dir`` probe does not cover this: the repo
-    is perfectly valid, it just has no ``main``."""
+    is perfectly valid, it just has no ``main``.
+
+    The commit subject names the station (Story 50.4/FR-191 CAP-247: a bare
+    ``Story <epic>.<seq>:`` subject alone no longer suppresses via Route 3 --
+    see ``test_hand_landed_commit_subject_on_main_suppresses_the_false_green``
+    -- so the control assertion below relies on Route 4's loose station+key
+    co-occurrence, which reads ``git log --all`` and is unaffected by the
+    later ``main`` rename; the ``main_commits_unavailable`` short-circuit
+    still skips straight to "could not be queried" before Route 4 ever runs,
+    which is exactly the behaviour this test exists to pin)."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
     _write_feed(target, "warden", ["1-1-foo"])
-    _commit(target, "Story 1.1 - foo, landed by hand")
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
 
     loop_root = tmp_path / "loop_root"
     _write_state(
