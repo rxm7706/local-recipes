@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.core.landing_evidence import StoryKeyRef
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import marshal
 
@@ -516,13 +517,15 @@ def test_bare_form_merge_touching_no_station_path_does_not_attribute(
     assert findings[0].status is DoctorStatus.FAIL
 
 
-def test_bare_form_merge_diff_query_failure_is_named_in_the_ok_caveat(
+def test_bare_form_merge_diff_query_failure_warns_even_alongside_a_false_green(
     tmp_path: Path,
 ) -> None:
     """A ``git diff`` call that cannot run (here: the merge sha is the
-    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to
-    "cannot evaluate" rather than crashing or silently attributing -- named
-    by sha in the OK Finding's message rather than convicting the story."""
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to a
+    standalone WARN naming the sha, surfaced even when the SAME run also
+    produces an unrelated false-green FAIL -- a version of this that only
+    rode on the OK Finding's caveat string would have dropped it silently
+    the moment `false_greens` also fired, since that branch returns first."""
     target = tmp_path / "target"
     target.mkdir()
     _git(target, "init", "-q", "--initial-branch=main")
@@ -537,19 +540,21 @@ def test_bare_form_merge_diff_query_failure_is_named_in_the_ok_caveat(
     _write_feed(target, "marshal", ["34-3-factory-drain"])
 
     loop_root = tmp_path / "loop_root"
-    # A phase outside NOT_LANDED keeps this key out of the FAIL branch (the
-    # OK-message caveats never ride on a FAIL Finding -- see this module's
-    # own docstring), so the diff-unreadable caveat is actually reachable.
     _write_state(
         loop_root, "marshal", "run1",
-        {"34-3-factory-drain": {"phase": "in-progress", "commit_sha": None}},
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
     )
 
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
-    assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
-    assert root_sha in findings[0].message
+    warns = [f for f in findings if f.check == "bare-merge-diff-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status is DoctorStatus.WARN
+    assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
+
+    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["key"] == "34-3-factory-drain"
 
 
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
