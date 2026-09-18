@@ -718,11 +718,31 @@ def _ensure_dispatch_worktree(
     )
 
 
+#: Parallel-wave journals live under ``dispatch-runs/waves/<wave-id>/``
+#: (Story 28.16). That container must never be treated as a per-story run
+#: dir: sorted-by-name, ``waves`` sorts after every ``<slug>-<ts>-<hex>``
+#: run id, so ``latest_dispatch_run_dir`` would otherwise return the empty
+#: container and ``marshal status`` / ``fleet-picture`` go blind to a live
+#: headroom/claude session (found 2026-09-18 on pyforge-marshal 46.4).
+_DISPATCH_WAVES_DIRNAME = "waves"
+
+
 def iter_dispatch_run_dirs(repo_root: Path, slug: str) -> tuple[Path, ...]:
     runs_parent = dispatch_core.dispatch_runs_dir(repo_root, slug)
     if not runs_parent.is_dir():
         return ()
-    return tuple(sorted((p for p in runs_parent.iterdir() if p.is_dir()), key=lambda p: p.name))
+    return tuple(
+        sorted(
+            (
+                p
+                for p in runs_parent.iterdir()
+                if p.is_dir()
+                and p.name != _DISPATCH_WAVES_DIRNAME
+                and (p / _JOURNAL_FILENAME).is_file()
+            ),
+            key=lambda p: p.name,
+        )
+    )
 
 
 def latest_dispatch_run_dir(repo_root: Path, slug: str) -> Path | None:
@@ -3121,7 +3141,7 @@ def _journal_dispatch_wave(
         for r in wave.refused
     ]
     wave_run = (
-        dispatch_core.dispatch_runs_dir(repo_root, slug) / "waves" / wave.wave_id
+        dispatch_core.dispatch_runs_dir(repo_root, slug) / _DISPATCH_WAVES_DIRNAME / wave.wave_id
     )
     fs.ensure_dir(wave_run)
     intent = build_entry(
