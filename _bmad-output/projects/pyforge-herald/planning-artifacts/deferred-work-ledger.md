@@ -1069,3 +1069,14 @@ deployment.
   severity: medium (unverified)
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-23-5: No PR-gating CI lane runs docsite/build.py or site-check before merge, and this story's own mandated Verification command (pyforge-herald-test) has zero coverage of docsite/, so a regression in the family-page code (or the pre-existing dossier/gallery/artifact code) can merge to main with every gate green.
+
+- source_spec: `planning-artifacts/specs/spec-23-5-the-family-is-browsable-and-downloadable-on-pages.md`
+  summary: No PR-gating CI lane runs docsite/build.py or site-check before merge, and this story's own mandated Verification command (pyforge-herald-test) has zero coverage of docsite/, so a regression in the family-page code (or the pre-existing dossier/gallery/artifact code) can merge to main with every gate green.
+  evidence: Verified 2026-09-18: grepped every `pull_request`-triggered workflow and `pr-preflight`'s dependency list in pixi.toml — none reference `docsite` or `site-check`. `dashboard.yml`, the only workflow that runs the build, triggers on `push: branches: [main]` only. No `docsite/tests/` directory or any test file anywhere imports `docsite/build.py`. This is pre-existing for the whole docsite pipeline (dossier/gallery/artifact already had zero PR-gating CI and zero unit tests before this story) — not introduced by this diff, so it is out of this story's scope to fix.
+  location: pixi.toml (pr-preflight, feature.site.tasks.site-check), .github/workflows/dashboard.yml
+  origin: spec-deferred 44bbdb936a4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

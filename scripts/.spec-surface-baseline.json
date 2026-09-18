@@ -1531,19 +1531,21 @@
   "files": {
    ".github/workflows/dashboard.yml": "7f82550630faf6ed7cd2e7ba40c692e0632eb2ff",
    "docs/specs/presentation-deck.md": "959065e97c527a902b17d6c0790f6f4e15b8b213",
-   "docsite/README.md": "9d15b7fbc0e98788a85ec8b6ec4958e6d2d0a30a",
+   "docsite/README.md": "08cbaf4b78b6a20409c40b67dd776343bbe7a0eb",
    "docsite/assets/_dossier.css": "04423f3ad5f8b80b61939908a70806b8e0ede466",
-   "docsite/assets/_site-chrome.css": "90bf6651871b363ff27ae4805b014abede49f55e",
-   "docsite/build.py": "187a7d05dcc40abb80d9d3dec3c9580b0d2f90ea",
+   "docsite/assets/_site-chrome.css": "202b6664975429843f739e3e7d15e0ee72348827",
+   "docsite/build.py": "9840a8c6169886a27996365fd4a769e5cdb0bd0d",
    "docsite/content/dossier.yml": "793a45ab7808671e2f467abeafeeb854bf5f72a1",
-   "docsite/content/site.yml": "9b512934a18f3dd78d58d77fd09aed097fa5d5cd",
+   "docsite/content/site.yml": "23aa44b3407f12d4b03e5adbf8721ae3c4cb27ee",
    "docsite/templates/blocks.html.j2": "ff6e813e0c648df53e0372d39afe2cc85c4cf099",
    "docsite/templates/dossier_body.html.j2": "72cc4bf26890af13c93f1b240b61f469a149a73d",
    "docsite/templates/page_dossier.html.j2": "c57f324ef2e4486db6a5d069380a2288169bb699",
-   "docsite/templates/page_gallery.html.j2": "01130ab538ae8815f40f15b571c0c3b4b4e36111",
-   "docsite/templates/page_index.html.j2": "916b4d25db06f0841dce38e6bf5533f0c9b3bde2",
+   "docsite/templates/page_family.html.j2": "b3f133fa85edef845a6317029f9e19841dc429bc",
+   "docsite/templates/page_family_index.html.j2": "6b083dc2e740153b29e1a1a7266626c52d07bd65",
+   "docsite/templates/page_gallery.html.j2": "a8ec1d8f8d1d10a217b92eff4e9b1f5e8d194034",
+   "docsite/templates/page_index.html.j2": "1270366fa280dfaa86ba907f245bc6cc6dd3bf5d",
    "docsite/templates/shell_artifact.html.j2": "a8bbc5d1a2c556603930851660e604aeb4e5de5f",
-   "docsite/templates/shell_page.html.j2": "84f0d7ca5e486ab4bd4e1d37d3f5c6b85d29cde6",
+   "docsite/templates/shell_page.html.j2": "610490fc541ff29c2fa8c47885921303c67d39d9",
    "docsite/tools/import_artifact.py": "d96625adf4918f6707cdabc7e6184409ee154fa9",
    "docsite/tools/verify_claims.py": "32f9f47f6f83f220c66c2890742a4fd1d79980a8",
    "presentations/_design-systems/broadsheet/_adherence.oxlintrc.json": "6401822d99082b089fde68ae22d524be044731c4",
@@ -2580,14 +2582,14 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "a99824bad95b44c796bd5002a8a759e90c37fc21"
+  "memlog": "b80e2b5db3a5ede016cd4499536101b6945c1325"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
-   ".gitignore": "eb1b6256c5defcf4730644492bca59d3148d4802",
-   "pixi.toml": "a1bef1cf59541590f81158100e0f80f46b9c7f86"
+   ".gitignore": "cb3254442c8c4071f535a6b164e162120155417f",
+   "pixi.toml": "56ae08f60e0b7bc75332207199ccc7ff280abe1a"
   },
-  "memlog": "d7070cfaf13c0f0ffc0164c0390b81bffd7c794b"
+  "memlog": "51a2c01088545e8ff3c5e9d5bbe8e0294cf418da"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
