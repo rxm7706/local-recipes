@@ -720,7 +720,6 @@ def test_the_real_pyforge_marshal_policy_declares_no_context_block():
 
     parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
     assert "context" not in parsed
-        assert resolved[layer]["aggressiveness"] == "medium"
 
 
 def test_context_escalation_threshold_defaults_when_absent():
