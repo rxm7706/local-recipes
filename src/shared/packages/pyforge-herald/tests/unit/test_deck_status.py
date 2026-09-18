@@ -466,3 +466,211 @@ def test_status_never_flags_stale_mirror_for_an_unlinked_deck(tmp_path: Path):
     assert result.linked is False
     assert result.stale_mirror is False
     assert transport.calls == []
+
+
+# --- Story 23.1: account_status (CAP-1) --------------------------------------
+
+
+def _register_local_twin(tmp_path: Path, slug: str, project_id: str) -> None:
+    deck_dir = _make_deck_dir(tmp_path, slug)
+    registry.register(
+        deck_dir / "README.md",
+        f"PyForge {slug.title()} deck",
+        project_id,
+        f"https://claude.ai/design/p/{project_id}",
+    )
+
+
+def _write_exclusions(tmp_path: Path, rows: dict[str, str]) -> None:
+    presentations_dir = tmp_path / "presentations"
+    presentations_dir.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# presentations/",
+        "",
+        "## Excluded projects (never twinned)",
+        "",
+        "| Project | Reason |",
+        "|---|---|",
+        *[f"| {name} | {reason} |" for name, reason in rows.items()],
+        "",
+    ]
+    (presentations_dir / "README.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def test_account_status_classifies_a_linked_presentation(tmp_path: Path):
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result == AccountProjectStatus(
+        project_id="p-1",
+        name="PyForge Warden deck",
+        url="https://claude.ai/design/p/p-1",
+        status="linked",
+        slug="pyforge-warden",
+        reason=None,
+    )
+
+
+def test_account_status_classifies_an_untwinned_presentation(tmp_path: Path):
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-9",
+                name="PyForge six-quarter roadmap",
+                url="https://claude.ai/design/p/p-9",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
+    assert result.slug is None
+    assert result.reason is None
+
+
+def test_account_status_classifies_a_known_design_system_as_mirrored(
+    tmp_path: Path,
+):
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-modernist",
+                name="Modernist",
+                url="https://claude.ai/design/p/p-modernist",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "mirrored"
+    assert result.slug is None
+
+
+def test_account_status_classifies_an_excluded_project_with_its_reason(
+    tmp_path: Path,
+):
+    _write_exclusions(
+        tmp_path,
+        {"REMOVED-PyForge Unifying Strategy": "ad-hoc duplicate, retired"},
+    )
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-removed",
+                name="REMOVED-PyForge Unifying Strategy",
+                url="https://claude.ai/design/p/p-removed",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "excluded"
+    assert result.reason == "ad-hoc duplicate, retired"
+    assert result.slug is None
+
+
+def test_account_status_exclusion_is_exact_name_never_a_heuristic(tmp_path: Path):
+    """A name merely resembling an excluded one (a heuristic match) must
+    not be excluded -- only an exact match against the recorded table
+    counts (the story's own Never boundary)."""
+    _write_exclusions(
+        tmp_path,
+        {"REMOVED-PyForge Unifying Strategy": "ad-hoc duplicate, retired"},
+    )
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-similar",
+                name="REMOVED-PyForge Unifying Strategy Deck",
+                url="https://claude.ai/design/p/p-similar",
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
+
+
+def test_account_status_reports_no_project_absent(tmp_path: Path):
+    """CAP-1's own success signal: every project the account returns
+    appears in the report, whatever its classification."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    _write_exclusions(
+        tmp_path, {"Local recipes repository connection": "stale hand-mirrored copy"}
+    )
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1",
+                name="PyForge Warden deck",
+                url="https://claude.ai/design/p/p-1",
+            ),
+            ProjectSummary(
+                project_id="p-2",
+                name="Modernist",
+                url="https://claude.ai/design/p/p-2",
+            ),
+            ProjectSummary(
+                project_id="p-3",
+                name="Local recipes repository connection",
+                url="https://claude.ai/design/p/p-3",
+            ),
+            ProjectSummary(
+                project_id="p-4",
+                name="LLM Knowledge Bases",
+                url="https://claude.ai/design/p/p-4",
+            ),
+        ]
+    )
+
+    results = account_status(transport, repo_root=tmp_path)
+
+    assert [r.status for r in results] == [
+        "linked",
+        "mirrored",
+        "excluded",
+        "untwinned",
+    ]
+    assert {r.project_id for r in results} == {"p-1", "p-2", "p-3", "p-4"}
+
+
+def test_account_status_is_read_only(tmp_path: Path):
+    """Never calls a write-side transport method and never touches
+    ``state.py`` (mirrors CAP-3's identical FR-13/NFR-08 guarantee)."""
+    _register_local_twin(tmp_path, "pyforge-warden", "p-1")
+    transport = FakeStatusTransport(list_projects_answer=[])
+
+    account_status(transport, repo_root=tmp_path)
+
+    assert transport.names() == ["list_projects"]
+    assert not (tmp_path / ".herald").exists()
+
+
+def test_account_status_on_no_local_presentations_dir_reports_untwinned(
+    tmp_path: Path,
+):
+    transport = FakeStatusTransport(
+        list_projects_answer=[
+            ProjectSummary(
+                project_id="p-1", name="Some Deck", url="https://claude.ai/design/p/p-1"
+            )
+        ]
+    )
+
+    [result] = account_status(transport, repo_root=tmp_path)
+
+    assert result.status == "untwinned"
