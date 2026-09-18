@@ -1150,7 +1150,12 @@ def _windowed_read(
     ``last_line``/``total_lines`` pair to resume from -- the server's own
     contract says a window "ends at a complete line", so a window that
     cannot say where it ended must never be silently treated as the whole
-    file."""
+    file. Raises ``errors.PaginationStalledError`` (DW-FU-23-2, Story
+    23.2's Edge Case Hunter finding) naming ``path`` and the stalled line
+    when a paged-for window's own ``last_line`` does not advance past the
+    previous window's -- unreachable in every live call observed so far
+    (every one paged forward), but a server that repeated a window would
+    otherwise loop here forever."""
     # Lazy, not module-level -- mirrors `seed`'s own `MODERNIST_DESIGN_
     # SYSTEM_ID` import (see its call site's comment): this function
     # constructs a real `FileRead` at call time, unlike every other use of
@@ -1174,6 +1179,7 @@ def _windowed_read(
     parts: list[str] = []
     etag = first.etag
     window: FileRead = first
+    previous_last_line: int | None = None
     while True:
         if window.body is None:
             raise errors.HeraldError(
@@ -1194,8 +1200,21 @@ def _windowed_read(
                 f"cannot read {path!r}: server reported a partial window "
                 f"with no last_line/total_lines pair to resume from"
             )
+        if previous_last_line is not None and window.last_line <= previous_last_line:
+            # DW-FU-23-2: a paged-for window whose own last_line did not
+            # advance past the window it was paged FOR (`offset=
+            # previous_last_line + 1`) would otherwise be re-requested at
+            # the same offset forever -- refuse instead of looping.
+            raise errors.PaginationStalledError(
+                f"cannot read {path!r}: read_file returned a window ending "
+                f"at line {window.last_line} of {window.total_lines}, which "
+                f"did not advance past the previous window's line "
+                f"{previous_last_line} -- refusing rather than looping "
+                f"forever on a stalled window"
+            )
         if window.last_line >= window.total_lines:
             break  # this window reached end of file
+        previous_last_line = window.last_line
         window = transport.read_file(
             project_id=project_id, path=path, offset=window.last_line + 1
         )

@@ -48,6 +48,7 @@ from pyforge.herald.errors import (
     AuthError,
     ExportConflictError,
     HeraldError,
+    PaginationStalledError,
     PptxTemplateError,
     ReadBackMismatchError,
     SeedConflictError,
@@ -2630,6 +2631,80 @@ def test_windowed_read_refuses_a_partial_window_with_no_resume_point():
     # BOTH are None).
     with pytest.raises(HeraldError, match="no last_line/total_lines"):
         _windowed_read(transport, project_id="p-1", path="x.dc.html")
+
+
+def test_windowed_read_raises_pagination_stalled_error_on_a_non_advancing_window():
+    """Story 24.1 (DW-FU-23-2): the un-guarded loop broke only on
+    ``last_line >= total_lines`` and never checked that ``last_line``
+    actually advanced between calls, so a server that kept answering the
+    window it was paged FOR with the same ``(last_line, total_lines)``
+    pair would loop forever. A fake transport reproducing exactly that --
+    the second window ends at the same line the first one did -- must
+    raise ``PaginationStalledError`` naming the file and the stalled line,
+    never loop or silently truncate."""
+    transport = FakePullTransport(
+        answers=[
+            FileRead(
+                path="x",
+                etag="E7",
+                body="line1\nline2773",
+                unchanged=False,
+                first_line=1,
+                last_line=2773,
+                total_lines=6000,
+            ),
+            FileRead(
+                path="x",
+                etag="E7",
+                body="line1\nline2773",
+                unchanged=False,
+                first_line=1,
+                last_line=2773,  # stalled -- did not advance past window 1
+                total_lines=6000,
+            ),
+        ]
+    )
+    with pytest.raises(
+        PaginationStalledError, match=r"big\.dc\.html.*line 2773.*line 2773"
+    ):
+        _windowed_read(transport, project_id="p-1", path="big.dc.html")
+    # Refused after exactly the second (stalled) window -- never asked for
+    # a third, and never fell back to looping.
+    assert len(transport.calls) == 2
+
+
+def test_windowed_read_raises_pagination_stalled_error_on_a_regressed_window():
+    """The guard's ``<=`` comparison also refuses a window whose
+    ``last_line`` regresses below the previous window's, not just an exact
+    repeat -- a second, distinct failure shape covered separately from the
+    exact-equality case above."""
+    transport = FakePullTransport(
+        answers=[
+            FileRead(
+                path="x",
+                etag="E8",
+                body="line1\nline2773",
+                unchanged=False,
+                first_line=1,
+                last_line=2773,
+                total_lines=6000,
+            ),
+            FileRead(
+                path="x",
+                etag="E8",
+                body="line1\nline1000",
+                unchanged=False,
+                first_line=1,
+                last_line=1000,  # regressed -- below window 1's last_line
+                total_lines=6000,
+            ),
+        ]
+    )
+    with pytest.raises(
+        PaginationStalledError, match=r"big\.dc\.html.*line 1000.*line 2773"
+    ):
+        _windowed_read(transport, project_id="p-1", path="big.dc.html")
+    assert len(transport.calls) == 2
 
 
 # --- Story 23.2 (CAP-2 from spec-design-sync-loop): adopt --------------------
