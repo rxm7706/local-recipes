@@ -49,12 +49,13 @@ Regenerate the derived three with `pixi run -e local-recipes deck-export wasm-an
 (never hand-edit them).
 
 ## Design project (the bridge's far end)
-
-Prototype lives in Claude Design project **"Wasm Analytics Stack deck"**
-(`45c841c6-e807-4fee-a92a-f8e89cb890b4`), bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`):
+Prototype lives in Claude Design project **"Wasm Analytics Stack deck"** (`45c841c6-e807-4fee-a92a-f8e89cb890b4`):
 https://claude.ai/design/p/45c841c6-e807-4fee-a92a-f8e89cb890b4?file=Wasm+Analytics+Stack.dc.html
-Pull it with the MCP bridge ("pull wasm-analytics-stack") — see
-`docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+### Provenance
+
+Bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with the MCP bridge
+("pull wasm-analytics-stack") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 
