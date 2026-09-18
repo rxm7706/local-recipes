@@ -291,6 +291,16 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
+    status.add_argument(
+        "--account",
+        action="store_true",
+        help=(
+            "report every Design project the signed-in account can see, "
+            "reconciled against the registry (linked/mirrored/excluded/"
+            "untwinned) instead of one or all known decks' bridge state "
+            "(CAP-1); takes no slug"
+        ),
+    )
     watch = deck_subparsers.add_parser(
         "watch",
         help=(
@@ -892,11 +902,44 @@ def _run_deck_status(args: argparse.Namespace) -> int:
     Always prints one JSON array to stdout (FR-11's "machine-readable" AC)
     -- unlike ``seed``/``pull``, there is no separate human-prose success
     line: the report itself is the whole output, for one deck or every
-    known one alike."""
+    known one alike.
+
+    ``--account`` (Story 23.1, CAP-1) reports a different shape entirely --
+    every Design project the signed-in account can see, reconciled against
+    the registry, rather than the per-known-deck bridge state above -- so
+    it is refused together with an explicit ``slug`` (``errors.HeraldError``,
+    AD-6) instead of silently picking one view over the other."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
         transport = McpTransport()
+        if args.account:
+            if args.slug is not None:
+                raise errors.HeraldError(
+                    "deck status --account reports the whole Design account "
+                    "and takes no slug; drop --account or drop the slug "
+                    f"argument ({args.slug!r})"
+                )
+            account_results = bridge.run(
+                transport,
+                lambda t: deck_pipeline.account_status(t, repo_root=repo_root),
+            )
+            print(
+                json.dumps(
+                    [
+                        {
+                            "name": result.name,
+                            "project_id": result.project_id,
+                            "url": result.url,
+                            "status": result.status,
+                            "slug": result.slug,
+                            "reason": result.reason,
+                        }
+                        for result in account_results
+                    ]
+                )
+            )
+            return
         results = bridge.run(
             transport,
             lambda t: deck_pipeline.status(t, slug=args.slug, repo_root=repo_root),
