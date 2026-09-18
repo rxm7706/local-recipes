@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 
 from pyforge.core.landing_evidence import (
@@ -83,9 +84,35 @@ TERMINAL = frozenset({"done"})
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
 DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
-# AD-24 default template; shared with ``pyforge.core.landing_evidence`` conformance.
+# AD-24 legacy default template; shared with ``pyforge.core.landing_evidence``
+# conformance. Carries no station token, so a subject rendered from it cannot
+# be scoped to any one project -- ``_project_merge_subject_template`` below
+# is the per-project override this module reads FIRST (Story 27.1); this
+# constant is only the fallback for a project whose policy declares none.
 _MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+_MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
 _FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
+
+
+def _project_merge_subject_template(target: Path, project_slug: str) -> str:
+    """``project_slug``'s own ``merge_subject_template``, read directly from
+    its tracked ``marshal-policy.toml`` as TOML -- never through
+    ``pyforge.marshal`` (this module's independence rule, see the module
+    docstring). Degrades to the legacy repo default when the policy file is
+    absent, unreadable, not valid TOML, or does not declare the key --
+    "degrades, never crashes," and Story 27.1's own "policy declares no
+    template -> legacy default honoured" row. Duplicated in
+    ``sources/ledger.py`` rather than shared via a cross-import, mirroring
+    this module's own ``_git``/``_parse_statuses`` precedent of small,
+    per-file self-contained helpers over sibling-module coupling.
+    """
+    path = target / PROJECTS_REL / project_slug / _MARSHAL_POLICY_SUFFIX
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return _MERGE_SUBJECT_TEMPLATE
+    value = data.get("merge_subject_template")
+    return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
 
 # GitHub PR-merge subject shape retained only to extract the ``branch`` token
 # for ``land/<station>-<epic>-<seq>`` / ``bmad-loop/<run>/<key>`` recovery

@@ -427,6 +427,7 @@ def gather(
     base_sha = (_git(target, "rev-parse", base) or "").strip()
     head_sha = (_git(target, "rev-parse", head) or "").strip()
     effective_base = base
+    merge_base_sha: str | None = None
     if base_sha and base_sha == head_sha:
         parent = (
             _git(target, "rev-parse", "--verify", "--quiet", f"{head}^") or ""
@@ -449,17 +450,49 @@ def gather(
                 ),
             )
         effective_base = parent
+    elif base_sha and head_sha:
+        # PR-shaped: `base` and `head` name different commits. The honest
+        # comparison point is their common ancestor, not `base`'s own
+        # (possibly since-advanced) tip -- see the docstring's Story 27.1
+        # paragraph. A repo with no common ancestor between the two (e.g.
+        # unrelated histories) cannot be judged; that degrades to a WARN
+        # like every other cannot-evaluate branch in this function, rather
+        # than silently comparing against `base`'s tip (the bug this exists
+        # to fix).
+        merge_base_sha = (_git(target, "merge-base", base, head) or "").strip()
+        if not merge_base_sha:
+            return (
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check="ledger-regression",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"no common ancestor between {base!r} and {head!r} — "
+                        f"ledger regression cannot be evaluated"
+                    ),
+                    evidence={"base": base, "head": head, "target": str(target)},
+                ),
+            )
+        if merge_base_sha != base_sha:
+            effective_base = merge_base_sha
 
     # The original script PRINTED a "comparing against {head}^ instead" note
     # when it substituted. A library has no stdout to say that on, so the
     # substitution is carried in evidence instead: without it a `--json`
     # consumer that asked for base="origin/main" gets a 40-char sha back with
     # no way to tell "you asked for this" from "we quietly swapped it."
+    # `merge_base` names the PR-shaped substitution specifically (Story
+    # 27.1); `base_substituted` still names the pre-existing same-commit
+    # push fallback above -- two different reasons a substitution happened,
+    # two distinct evidence shapes, so a consumer can tell which one fired.
     substituted = effective_base != base
     range_evidence: dict[str, object] = {"base": effective_base, "head": head}
     if substituted:
         range_evidence["base_requested"] = base
-        range_evidence["base_substituted"] = True
+        if merge_base_sha is not None and effective_base == merge_base_sha:
+            range_evidence["merge_base"] = merge_base_sha
+        else:
+            range_evidence["base_substituted"] = True
 
     raw_findings, ledgers_compared = _check(target, effective_base, head)
     range_evidence["ledgers_compared"] = ledgers_compared
@@ -543,7 +576,10 @@ def gather(
 # Standalone check: tracked ledger vs. git merge history, WITH DIRECTION.
 # Never reads the Tier-3 sprint-status.yaml feed (FR-138). Independence:
 # never imports ``pyforge.marshal`` — merge-subject patterns are restated
-# here so Doctor keeps judging Marshal without Marshal's own code.
+# here so Doctor keeps judging Marshal without Marshal's own code. Story
+# 27.1 adds the templated-merge-subject shape, station-scoped via each
+# project's own tracked ``marshal-policy.toml`` (read as TOML by
+# ``_project_merge_subject_template``, never through ``pyforge.marshal``).
 
 _GITHUB_MERGE_SUBJECT_RE = re.compile(
     r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
@@ -570,16 +606,35 @@ def _story_id(token: str) -> str | None:
     return None
 
 
-def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
+def _merged_ids_for_project(
+    target: Path, subjects: list[str], project_slug: str
+) -> set[str]:
     """Story ids durably named in ``subjects`` for ``project_slug``.
 
-    Covers GitHub PR-merge and bmad-loop native subjects, scoped to the
-    station short name / ``loop/<slug>`` target — the same two shapes that
-    catch the live landed-but-unpromoted incidents FR-137 exists for.
+    Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
+    The first two are scoped to the station short name / ``loop/<slug>``
+    target; the templated shape (AD-24) is scoped by construction — it only
+    matches a subject rendered from *this* project's own
+    ``merge_subject_template`` (Story 27.1), read via
+    ``_project_merge_subject_template``. Without that scoping, a sibling
+    station's own templated merge (most stations still share the bare
+    legacy default, which carries no station token) reads as this project's
+    — the live incident this exists for: ``Merge 13-5 into main`` /
+    ``Merge 14-4 into main`` / ``Merge 15-3 into main``, all belonging to
+    other stations, read as ``pyforge-atlas``'s own landed-but-unpromoted
+    stories all day (2026-09-18). A project WITHOUT its own scoped template
+    keeps the prior, unscoped ambiguity — that is the acknowledged residual
+    this story does not claim to close (Marshal's own spec-pyforge-marshal
+    CAP-247 / Story 50.4 is what makes the repo default itself station-scoped).
     """
     station = project_slug.removeprefix("pyforge-")
+    template = _project_merge_subject_template(target, project_slug)
     out: set[str] = set()
     for subject in subjects:
+        templated = parse_templated_merge_subject(subject, template)
+        if templated is not None:
+            out.add(templated.hyphen_form())
+            continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
             branch = gh.group("branch")
@@ -730,7 +785,7 @@ def gather_direction(
             if status in TERMINAL:
                 done_ids.add(sid)
 
-        merged_ids = _merged_ids_for_project(subjects, project)
+        merged_ids = _merged_ids_for_project(target, subjects, project)
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not
