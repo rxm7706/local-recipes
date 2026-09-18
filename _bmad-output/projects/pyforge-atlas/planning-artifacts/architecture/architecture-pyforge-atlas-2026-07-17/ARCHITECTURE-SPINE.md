@@ -7,8 +7,8 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'."
+updated: "2026-09-18"
+currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6 — the binding contract; §-references below point here)'
@@ -91,7 +91,7 @@ graph TD
 
 - **Binds:** FR-2, FR-13, FR-16..21, all node ports
 - **Prevents:** two pipelines writing one dataset; hidden cross-pipeline coupling (the legacy "dependencies in the developer's head")
-- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one. *(Amended 2026-08-26: "fixed" binds the migration surface — the closed seven stay sealed and no migration signal leaves its pipeline. Three additional pipeline packages exist as-built, each added through a governed chain, never ad-hoc: `upstream_discovery` (spec-upstream-discovery / Epic 13), `artifactory_downloads` (spec-artifactory-download-intelligence / Epic 15), and `query_plane_cache` (canopy CAP-19, story 34.2 — the operator-answered "named new pipeline" sitting strictly downstream of the seven, reading their outputs without modifying them). The producer-owns-dataset invariant is unchanged and holds across all ten.)*
+- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one. *(Amended 2026-08-26: "fixed" binds the migration surface — the closed seven stay sealed and no migration signal leaves its pipeline. Three additional pipeline packages exist as-built, each added through a governed chain, never ad-hoc: `upstream_discovery` (spec-upstream-discovery / Epic 12), `artifactory_downloads` (spec-artifactory-download-intelligence / Epic 14), and `query_plane_cache` (canopy CAP-19, story 34.2 — the operator-answered "named new pipeline" sitting strictly downstream of the seven, reading their outputs without modifying them). The producer-owns-dataset invariant is unchanged and holds across all ten. Epic numbers here are post-rekey (`rekey-2026-09-17.md`: old Epic 13 → 12, old Epic 15 → 14) — see the 2026-09-18 reconciliation below.)*
 
 ### AD-4 — Parquet + DuckDB singularity (FR-5)
 
@@ -446,6 +446,40 @@ specs (motion through 2026-08-22), and the pyforge-unifying-strategy pack
   Dagster daemon (`DW-C1-1` — Cluster B's injected fetchers activate only there).
   The production data path remains the legacy orchestrator; AD-4's "after B4
   retires the legacy write path" clause is still in its pre-B4 state.
+
+## Currency reconciliation — 2026-09-18
+
+Reconciled against the atlas fold (`land atlas fold: one chain — 13 Dreams, 10
+Specs, rekey 2026-09-17`, `rekey-2026-09-17.md`) and code motion through
+2026-09-10, per the fleet chain-currency sweep (`CHAIN-CURRENCY-RUNBOOK.md`).
+
+- **PRD re-cut, no FR semantics changed.** The 2026-09-17 fold rebased the PRD
+  onto `spec-pyforge-atlas` CAP-1..CAP-60 and annotated each FR with its
+  originating `← CAP-n` citation (kernel FR-1..FR-22 ← CAP-1..CAP-22, unchanged
+  from this spine's `binds`). No FR text changed; nothing here required a
+  corresponding AD change.
+- **Epic 12–25 rekeyed to 11–24** (closes the missing Epic 11 gap; `24-2` stays
+  blocked). AD-3's *(Amended 2026-08-26: …)* parenthetical cited the old
+  numbers for `upstream_discovery` and `artifactory_downloads` — corrected
+  above to Epic 12 and Epic 14 (post-rekey) since that parenthetical is a live
+  rule, not a dated narrative. The Epic 12–19/18/19/14 citations inside this
+  section's own **2026-08-26** entry above are left as written — they record
+  what was true when that pass ran, before the rekey existed, per this repo's
+  historical-prose convention; read them through `rekey-2026-09-17.md` (old
+  Epic N → new Epic N−1 for N in 12..25) if cross-referencing forward.
+- **Code motion (2026-09-10, post-rekey Story 24.4, `52ebe88a18`): a live
+  `AqlTransport` for the attended operator.** `tools/live_artifactory_transport.py`
+  adds `live_transport()` for `ArtifactoryAqlAdapter` — deliberately outside
+  `src/pyforge/atlas/` (that tree's `tests/unit/catalog/test_no_inline_io.py`
+  IO_DENYLIST bans `requests`/`urllib3`/`httpx` in package code), mirroring the
+  `tools/bootstrap.py` sibling-location precedent for attended-operator
+  scripts. Auth resolution follows the existing JFrog convention
+  (`JFROG_API_KEY` → `X-JFrog-Art-Api`, else `JFROG_USERNAME`/`JFROG_PASSWORD`
+  → HTTP Basic); credentials are read by the caller's run site, never inside
+  the factory. This is as-built confirmation of the `artifactory_downloads`
+  pipeline AD-3 already chartered (2026-08-26) — no new AD, no change to
+  AD-13's offline-degradation discipline (the live transport is
+  attended-operator-invoked, not a boot-time default).
 
 ---
 

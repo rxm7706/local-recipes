@@ -1585,3 +1585,14 @@ status: open
   reason: Settle by running the next scheduled `python scripts/bmad_drift_check.py --write-baseline` sweep, which will pick up 8.90.2 along with any other accumulated drift.
   promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
   status: open
+
+### DW-17-2-1: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push.md`
+  summary: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
+  evidence: Spec verified: line (git `0cf57f3389` SPEC.md) and epics.md Story 17.2 Status: meta-test 6/6 including the cfe-conda-name duplicate-key guard; absence of cfe-* on a live published feedstock rests on SKILL.md step 8b / G60 / G62 and prior worked examples.
+  location: .claude/skills/conda-forge-expert/SKILL.md (step 8b, G60, G62)
+  origin: spec-deferred 458d88df995f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
