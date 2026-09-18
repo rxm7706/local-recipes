@@ -38,6 +38,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
 _HERALD_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-herald" / "src"
 if str(_HERALD_SRC) not in sys.path:
     sys.path.insert(0, str(_HERALD_SRC))
+_CORE_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-core" / "src"
+if str(_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(_CORE_SRC))
 
 import deck_trio  # noqa: E402
 from pyforge.herald import stamps  # noqa: E402
