@@ -4213,7 +4213,7 @@ _DEFAULT_MERGE_TEMPLATE = "Merge {key} into main"
 
 
 def _merged_subject(key: str) -> str:
-    return render_merge_subject(normalize(key), _DEFAULT_MERGE_TEMPLATE)
+    return render_merge_subject(normalize(key), _DEFAULT_MERGE_TEMPLATE, "acme")
 
 
 class TestReconcileLedgerCli:
