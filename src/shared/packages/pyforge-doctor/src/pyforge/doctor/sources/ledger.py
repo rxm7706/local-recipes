@@ -641,7 +641,7 @@ def _merged_ids_for_project(
     out: set[str] = set()
     for subject in subjects:
         if template != _MERGE_SUBJECT_TEMPLATE:
-            templated = parse_templated_merge_subject(subject, template)
+            templated = parse_templated_merge_subject(subject, template, project_slug)
             if templated is not None:
                 out.add(templated.hyphen_form())
                 continue
