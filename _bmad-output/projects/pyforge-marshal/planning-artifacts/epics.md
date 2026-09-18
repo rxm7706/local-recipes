@@ -6142,3 +6142,107 @@ layer — or the profile carries a dated finding and `auto` skips honestly
 **And** gemini's wire cell reads "probed, none" with evidence or gains a target
 **And** Devin stays the deliberate unverified stub (loud absence)
 **Status:** backlog
+
+## Epic 47: The review bot remembers the correction you gave two weeks ago (spec-marshal-recall-in-the-loop CAP-1..4)
+
+Minted 2026-09-18 from `spec-marshal-recall-in-the-loop` (`fold-exemption: cross-station-seam` —
+sits at the marshal loop-orchestration / scribe memory-ownership seam by design, mirroring
+`spec-pyforge-core`'s own precedent; not folded into this station's own `spec-pyforge-marshal`
+chain). Named directly from "Towards Self-Driving Codebases" (blog.detail.dev): "the code review
+bot needs to be aware of the correction you issued to the agent... two weeks ago." Scribe's
+`recall`/`capture` primitive is real and shipped; the gap is propagation, not capture — neither
+`bmad-loop`'s dev pass nor its review pass currently queries it before starting.
+
+**Story-minting resolves three of the Spec's four Open Questions, each named below where it
+applies** (the fourth — reverse-direction auto-capture from a review finding back into scribe —
+stays explicitly out of scope, a separate future capability if pursued, per the Spec's own note).
+
+### Story 47.1: A bmad-loop dev pass automatically receives relevant scribe feedback before it starts
+
+As a fleet operator running an unattended `bmad-loop` story,
+I want the dev pass to automatically query `scribe recall` scoped to the story's touched
+station/surface before it starts working, and fold any relevant feedback entries into its
+starting context,
+So that a correction I gave scribe weeks ago reaches this session without me having to remember
+to paste it in by hand.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-recall-in-the-loop CAP-1
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py`
+(the dev-pass session-launch path gains a pre-launch `scribe recall` subprocess call — CLI only,
+never a direct `pyforge.scribe` import, per the Spec's own "scribe stays sole owner" constraint),
+a small result-formatting helper turning scribe's `RecallAnswer` into a context-injectable block,
+tests.
+**Given** a story about to dispatch names a station and a set of touched-surface globs (from its
+own Spec's `surface:` frontmatter, the same source `spec-surface-check` already reads)
+**When** the dev pass launches
+**Then** it first runs `scribe recall --scope <station-slug>` (this story resolves Open Question 1
+by reusing the `--scope <slug>` mechanism `scribe-marshal-fact-visibility` CAP-1 already proves,
+rather than a narrower per-file-glob scope) and, if the answer is grounded (non-empty), folds it
+into the session's starting context as a clearly-labeled block
+**And** this story resolves Open Question 2 by scoping v1 to `bmad-loop` dev passes only, matching
+the source Dream's own literal text — a `bmad-build-auto` extension is out of scope here, a
+separate future story if pursued
+**Status:** backlog
+
+### Story 47.2: A bmad-loop review pass sees the same scoped feedback the dev pass saw
+
+As a fleet operator trusting an unattended review pass's verdict,
+I want the review pass to receive the same scoped scribe-feedback context Story 47.1's dev pass
+got,
+So that a correction from a prior session is visible to whoever grades the new work, not just the
+agent that wrote it.
+
+**Type:** feature • **Effort:** S • **Deps:** S-47.1 • **FR/AD:** spec-marshal-recall-in-the-loop CAP-2
+**Surface:** `harness_bmadloop.py`'s review-pass session-launch path (reuses Story 47.1's
+recall-query + formatting helper — one query per story dispatch, shared between dev and review
+launch, never a second independent `scribe recall` call).
+**Given** Story 47.1's recall query already ran for this story's dispatch
+**When** the review pass launches
+**Then** it receives the identical formatted context block the dev pass received — same query,
+same scope, no re-query
+**And** a review verdict that contradicts a known, injected correction is a visible discrepancy in
+the review's own output, not a silent miss (the review pass's existing findings-report shape
+carries it as a named entry, no new reporting mechanism)
+**Status:** backlog
+
+### Story 47.3: The recall-injection layer composes with the existing [context] pipeline
+
+As an operator reading a story's token-economy accounting,
+I want Story 47.1/47.2's recall injection to be its own named `[context]` layer in
+`marshal-policy.toml`, alongside the existing `wire`/`output`/`structure-graph`/`derived-context`/
+`planning-graph` layers,
+So that it can be toggled, sized, and measured the same way every other context layer already is
+— not a bolted-on mechanism outside that discipline.
+
+**Type:** feature • **Effort:** S • **Deps:** S-47.1 • **FR/AD:** spec-marshal-recall-in-the-loop CAP-3
+**Surface:** `core/policy.py` (a new `[context.recall]` block — `enabled` / `aggressiveness`,
+same shape as the existing five), `_POLICY_TEMPLATE` in `adapters/harness_bmadloop.py` (the
+rendered `policy.toml` comment block gains the sixth layer's docs), tests.
+**Given** `[context.recall]` is present in policy.toml with `enabled = true`
+**When** a story dispatches
+**Then** Story 47.1/47.2's recall query runs; `enabled = false` skips it entirely, with zero
+effect on the other five layers' own behavior
+**And** this story resolves Open Question 3 by defaulting `aggressiveness = "medium"` — matching
+`derived-context`'s own default, the most similar existing layer (also read-only, also a
+context-injection concern)
+**And** the query and injected-block size are counted toward the story's existing weighted-token
+accounting the same way every other layer's output already is — no separate, uncounted budget
+**Status:** backlog
+
+### Story 47.4: A genuine recall miss injects nothing, never a fabricated confidence claim
+
+As an operator relying on this layer's honesty,
+I want a scoped recall query with no relevant hits to inject nothing into the session's context,
+So that the dev/review pass never sees a synthesized "no relevant corrections found" line
+presented as if it were a checked fact scribe actually confirmed.
+
+**Type:** feature • **Effort:** S • **Deps:** S-47.1 • **FR/AD:** spec-marshal-recall-in-the-loop CAP-4
+**Surface:** Story 47.1's result-formatting helper (the empty-answer branch), tests.
+**Given** `scribe recall --scope <station-slug>` returns a grounded miss (`RecallAnswer` with no
+citable hit — scribe's own "never invents an uncited answer" behavior, unchanged by this Spec)
+**When** the formatting helper processes that result
+**Then** the injected context block is empty/absent entirely — no block, no placeholder sentence,
+no synthesized "nothing found" confidence claim
+**And** a fixture test asserts the empty-hit case produces zero injected text, distinguishing it
+from a non-empty hit's formatted block
+**Status:** backlog

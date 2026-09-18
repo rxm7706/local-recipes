@@ -2232,3 +2232,39 @@ exactly one.
 
 _Status (2026-09-16): all three `backlog`; they gate the marshal pilot (the first fold PR runs
 CHAIN-STANDARD § 7 with these three green)._
+
+## Epic 26: The map of what no agent can verify without a live proof (spec-pyforge-doctor CAP-77)
+
+Minted 2026-09-18 from `spec-pyforge-doctor` CAP-77, seeded the same day in `docs/dreams/pyforge-doctor.md`'s
+Realization log (Dream-append-first; no new Dream file, doctor's canonical chain). Motivating incident:
+herald's mcp SDK transport broke across two silent 2.x renames (`streamablehttp_client` →
+`streamable_http_client` with a different call signature; `CallToolResult.isError` → `.is_error`), caught
+by neither review nor the test suite nor a dev pass's own self-report — only a real live
+push-then-read-back against Claude Design surfaced it. `live-proof-surfaces.md` (the CAP-77 companion,
+already landed) catalogs six known surfaces fleet-wide; this epic wires that catalog into a real,
+advisory Doctor Finding.
+
+### Story 26.1: A touched live-proof-only surface gets an advisory Doctor finding naming it
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-77
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/live_proof_surfaces.py` (new —
+parses `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md`'s
+table into a `(station, surface, path_globs, how_to_prove, cost)` list), `models.py` (`Source` enum gains
+`LIVE_PROOF_SURFACE`, extending the closed taxonomy AD-3 already governs — one new member, never an open
+string), `report-schema.json` (enum extended additively), `__main__.py` (DISPATCH + REGISTRY entry),
+`scripts/detectors.py` (a `detectors-ci` row, matching CAP-77's own constraint that the finding is always
+advisory, never gating), tests.
+**Given** a PR's changed-paths set intersects one or more of the six catalogued surfaces in
+`live-proof-surfaces.md` (herald's Claude Design MCP bridge, herald's live webhook host, herald's PPTX
+Chrome/Chromium check, scribe's Postgres+pgvector cluster, atlas's Chromium/DuckDB/WASM pipeline, warden's
+live OSV/CISA-KEV/EPSS feeds, guild-container docker/podman) **When** `doctor check`/`detectors` runs over
+that PR **Then** a `Finding` fires naming the matched surface, quoting the catalog's own "how to prove it
+live" cell verbatim (never a fabricated or re-derived proof step), and is tagged `status=warn` — never
+`fail`, per CAP-77's own constraint (AD-2's operability-not-policy posture, matching CAP-14/CAP-15's
+existing live-query-finding precedent in this same Spec)
+**And** a surface catalogued with "no single documented live-proof mechanism as of this writing" (the
+atlas Chromium/DuckDB/WASM row, the catalog's own named gap) fires a finding that says exactly that —
+never invents a proof step to fill the gap, per CAP-77's own constraint against fabricating live-proof
+mechanisms
+**And** a PR touching no catalogued surface produces zero `LIVE_PROOF_SURFACE` findings — the check is
+silent by default, matching every other advisory source's own baseline behavior

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,8 +13,31 @@ from pyforge.doctor.sources import status_body_consistency as sbc
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "status_body"
 
 
+def _write_roster(target: Path) -> None:
+    """A valid ``guild-roster.json`` whose declared terminal/ended-acts values
+    derive the same ``{"shipped"}`` Spec-side member ``TERMINAL_STATUSES``
+    already carries -- Story 59.2 sources it from this file, read fresh per
+    call rather than a hardcoded module constant."""
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "spec_statuses_terminal": [
+                    "shipped", "archived", "absorbed", "superseded",
+                ],
+                "spec_statuses_ended_acts": [
+                    "archived", "absorbed", "superseded",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _mini_repo(tmp_path: Path) -> Path:
     """Fixture tree: one firing Dream, one firing Spec, one silent Dream."""
+    _write_roster(tmp_path)
     dreams = tmp_path / "docs" / "dreams"
     dreams.mkdir(parents=True)
     shutil.copy(_FIXTURES / "pyforge-scribe-dream.md", dreams / "pyforge-scribe.md")
@@ -131,36 +155,41 @@ def test_gather_fires_on_fixture_dream_and_spec_and_records_silent_count(tmp_pat
 def test_gather_ok_when_no_terminal_docs(tmp_path: Path):
     repo = tmp_path / "empty"
     repo.mkdir()
+    _write_roster(repo)
     (repo / "docs" / "dreams").mkdir(parents=True)
     findings = sbc.gather_progress_phrase(repo)
     assert len(findings) == 1
     assert findings[0].status == DoctorStatus.OK
     assert findings[0].evidence["scanned_terminal"] == 0
+    # Positive proof the live roster was actually read, not a silent
+    # degrade-to-fallback that happens to produce the same OK result.
+    assert not any(f.check == "spec-status-roster-degraded" for f in findings)
+
+
+def test_gather_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path):
+    """No ``docs/governance/guild-roster.json`` at all still classifies
+    terminal statuses correctly -- via ``TERMINAL_STATUSES``, the module's own
+    fallback -- and surfaces a ``spec-status-roster-degraded`` WARN rather
+    than crashing or degrading silently (Story 59.2)."""
+    repo = tmp_path / "no-roster"
+    repo.mkdir()
+    (repo / "docs" / "dreams").mkdir(parents=True)
+    findings = sbc.gather_progress_phrase(repo)
+    assert len(findings) == 1
+    assert findings[0].check == "spec-status-roster-degraded"
+    assert findings[0].status == DoctorStatus.WARN
+    assert findings[0].source == Source.STATUS_BODY_CONSISTENCY
 
 
 def test_gather_live_dream_and_spec_progress_phrases():
-    """Repointed (2026-09-14) from pyforge-scribe: that station fully shipped
-    (19/19 stories) and its Dream doc's "three of nine stories" claim was
-    rewritten to say so, moving the old phrasing into a historical "was:"
-    quote that this detector correctly no longer matches -- a real fix, not
-    a regression, but it retires pyforge-scribe.md as a live example of the
-    contradiction this test exists to prove the detector still catches.
-    Repointed to pyforge-herald.md, currently live, plus any currently-live
-    Spec-tier finding (no longer required to be herald's own Spec -- the
-    original station-pairing was incidental, not part of this check's
-    contract)."""
+    """Re-measured 2026-09-18: the live fleet no longer carries a
+    progress-phrase contradiction (herald Dream cleaned; scribe already
+    clean). Fixture tests above still prove the detector fires; this live
+    pin only asserts the fleet stays silent."""
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather_progress_phrase(repo_root)
     progress = [f for f in findings if f.check == sbc._CHECK_PROGRESS]
-
-    dream_paths = [
-        f for f in progress if f.evidence["path"] == "docs/dreams/pyforge-herald.md"
-    ]
-    assert dream_paths, "expected live pyforge-herald Dream finding"
-    assert any("4 of 17 stories" in f.evidence["matched"] for f in dream_paths)
-
-    spec_paths = [f for f in progress if f.evidence["path"].endswith("SPEC.md")]
-    assert spec_paths, "expected at least one live Spec-tier finding"
+    assert progress == []
 
 
 def test_gather_degrades_on_exception(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

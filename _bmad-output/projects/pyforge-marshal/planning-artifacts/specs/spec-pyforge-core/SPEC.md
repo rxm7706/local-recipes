@@ -34,6 +34,9 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
 sources:
   - ../../../../../../docs/dreams/pyforge-core.md
   - ../../research/technical-pyforge-unification-2026-08-08.md   # § 7 duplication census — figures superseded, see Assumptions

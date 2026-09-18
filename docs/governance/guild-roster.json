@@ -195,5 +195,25 @@
   ],
   "spec_statuses_grandfathered": [
     "in-progress"
+  ],
+  "spec_statuses_ready_or_beyond": [
+    "ready",
+    "in-progress",
+    "shipped",
+    "absorbed"
+  ],
+  "$comment_spec_statuses_ready_or_beyond": [
+    "Backs docs/dreams/README.md:71's rule: a Dream at `specified` needs a covering",
+    "Spec at `ready` or beyond (pyforge.doctor.sources.chain::_SPEC_READY_FOR_SPECIFIED's",
+    "own CAP-1-vocabulary subset -- five Story/ledger/Dream words outside CAP-1's enum",
+    "stay literal in that module and are never sourced from here).",
+    "",
+    "`archived`/`superseded` are deliberately excluded -- an ended-without-delivering",
+    "Spec does not satisfy the Dream's contract. `absorbed` IS included -- its CAPs",
+    "live on in the absorbing chain, so the contract is still covered, just elsewhere.",
+    "This is a derived grouping of already-declared spec_statuses values (steward",
+    "Story 59.2), the same kind of addition as spec_statuses_terminal/_ended_acts/",
+    "_grandfathered above -- not a Charter Section 5 act (that clause guards",
+    "`stations`/`guild_dreams` specifically, per this file's own top comment)."
   ]
 }

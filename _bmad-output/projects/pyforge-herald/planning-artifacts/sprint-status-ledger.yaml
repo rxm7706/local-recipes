@@ -74,7 +74,7 @@ development_status:
   20-8-pyforge-scribe-poster-rebuilt-to-the-standard-from-its-ledger: done
   20-9-pyforge-steward-poster-rebuilt-to-the-standard-from-its-ledger: done
   21-1-deck-trio-derives-the-infographic-head-from-the-standalone: done
-  21-10-the-registry-sees-all-fourteen-decks: backlog
+  21-10-the-registry-sees-all-fourteen-decks: done
   21-11-one-deck-proves-the-design-loop-end-to-end: done
   21-12-the-transport-speaks-the-mcp-sdk-it-actually-has-pinned: done
   21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: done
@@ -85,7 +85,7 @@ development_status:
   21-7-wasm-analytics-stack-rebuilt-to-the-standard: done
   21-8-deckcraft-rebuilt-to-the-standard: done
   21-9-presenton-pixi-image-rebuilt-to-the-standard: done
-  22-1-the-dossier-is-the-source-and-pages-is-a-render: backlog
+  22-1-the-dossier-is-the-source-and-pages-is-a-render: done
   23-1-the-account-is-enumerated-and-reconciled-against-the-registry: backlog
   23-2-every-presentation-has-a-local-twin-design-systems-are-mirrored-as-libraries: backlog
   23-3-the-potx-path-template-filled-powerpoints-and-every-derived-file-stamped: done

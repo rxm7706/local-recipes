@@ -76,10 +76,15 @@ __all__ = (
 # dead code there (defined, never called by ``check()`` or ``main()``) --
 # porting an unused helper would be speculative, not a verbatim behavior port.
 
-#: Spec statuses that represent work still owed -- identical to the original.
+#: FALLBACK when `guild-roster.json`'s `spec_statuses`/`spec_statuses_terminal`
+#: is unavailable -- today's value, not a parallel source of truth (Story
+#: 59.2; mirrors `chain.py`'s own `_CONSTITUTIVE_FALLBACK`). Live INV-A calls
+#: derive the same value fresh from `guild-roster.json` via
+#: `_spec_status_groups` -- spec statuses that represent work still owed.
 OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 
-#: Terminal statuses that STILL owe a decomposition, and why `shipped` is the
+#: FALLBACK (Story 59.2 -- see `OPEN_SPEC_STATUSES`'s own note) for the
+#: terminal statuses that STILL owe a decomposition, and why `shipped` is the
 #: only one (2026-09-14). INV-A originally skipped every non-OPEN status on the
 #: reasoning that terminal work owes nothing -- true of the work, false of the
 #: story trail. A `shipped` Spec whose CAPs were delivered with no epic and no
@@ -95,8 +100,69 @@ OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 #: not a deliverable. Precedent for the remedy: retroactive Epics 38/39/57.
 DELIVERED_SPEC_STATUSES = frozenset({"shipped"})
 
-#: Every status INV-A inspects: still-owed work plus delivered-but-untracked.
+#: FALLBACK (Story 59.2): every status INV-A inspects when degraded -- still-
+#: owed work plus delivered-but-untracked.
 DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES
+
+#: `guild-roster.json`'s repo-relative path -- the CAP-1 declaration Story
+#: 59.1 landed (mirrors `chain.py::_GUILD_ROSTER_REL`).
+_GUILD_ROSTER_REL = Path("docs") / "governance" / "guild-roster.json"
+
+
+def _spec_status_groups(target: Path) -> tuple[frozenset[str], frozenset[str], dict | None]:
+    """INV-A's live open/delivered Spec-status sets, read fresh from
+    ``guild-roster.json`` at ``target`` -- never cached at import time
+    (``target`` is a runtime parameter; mirrors ``factory.py::_roster`` /
+    ``chain.py::_load_dream_roster``, the house pattern for this package).
+
+    ``open = spec_statuses - spec_statuses_terminal - {"extension-point"}``;
+    ``delivered = spec_statuses_terminal - spec_statuses_ended_acts`` (yields
+    exactly ``{"shipped"}`` for the declared values -- see
+    ``DELIVERED_SPEC_STATUSES``'s own docstring for why only ``shipped``
+    counts).
+
+    On any read/parse/shape failure, degrades to ``OPEN_SPEC_STATUSES`` /
+    ``DELIVERED_SPEC_STATUSES`` (never a crash) and returns a WARN
+    finding-precursor dict -- the same shape ``_check_chain_completeness``'s
+    own per-project degrade already uses -- for the caller to append to its
+    own ``findings`` rather than degrading silently (Story 59.2, mirrors
+    ``chain.py::_load_constitutive``).
+    """
+    rel = _GUILD_ROSTER_REL.as_posix()
+    try:
+        data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
+        raw_spec_statuses = data["spec_statuses"]
+        raw_terminal = data["spec_statuses_terminal"]
+        raw_ended_acts = data["spec_statuses_ended_acts"]
+        if not all(
+            isinstance(v, list)
+            for v in (raw_spec_statuses, raw_terminal, raw_ended_acts)
+        ):
+            raise TypeError(
+                "spec_statuses/spec_statuses_terminal/spec_statuses_ended_acts "
+                "must be lists"
+            )
+        spec_statuses = frozenset(str(s) for s in raw_spec_statuses)
+        terminal = frozenset(str(s) for s in raw_terminal)
+        ended_acts = frozenset(str(s) for s in raw_ended_acts)
+    except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
+        return OPEN_SPEC_STATUSES, DELIVERED_SPEC_STATUSES, {
+            "inv": "", "kind": "spec-status-roster-degraded",
+            "project": "", "subject": rel, "status": "",
+            "detail": (
+                f"{rel} could not be read for INV-A's Spec-status vocabulary "
+                f"({exc.__class__.__name__}: {exc}) — falling back to "
+                f"OPEN_SPEC_STATUSES/DELIVERED_SPEC_STATUSES"
+            ),
+            "remedy": f"restore {rel} so INV-A reads the live declaration",
+            "warn": True,
+        }
+    return (
+        spec_statuses - terminal - {"extension-point"},
+        terminal - ended_acts,
+        None,
+    )
+
 
 #: Specs deliberately NOT decomposed, each with the reason it is exempt --
 #: copied verbatim from scripts/chain_completeness_check.py so a station's
@@ -111,9 +177,9 @@ DECOMPOSITION_OWED_STATUSES = OPEN_SPEC_STATUSES | DELIVERED_SPEC_STATUSES
 # station's epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
 # de-registered 2026-08-10 on explicit operator confirmation of doctor Epic 7).
 DEFERRED_SPECS: dict[str, str] = {
-    "spec-agentic-sdlc-autonomy":
-        "a standing position, explicitly 'not a deliverable' by its own text — "
-        "there is nothing to decompose and an FR would manufacture one",
+    # `spec-agentic-sdlc-autonomy` was registered here as a standing non-deliverable.
+    # De-registered 2026-09-18: Spec status is now `absorbed` (folded); an inert
+    # DEFERRED_SPECS entry fails Story 21.1's live-status reconciliation.
     # `spec-build-league-scorecard` was registered here while Q5 had no numbers.
     # De-registered 2026-09-15: operator published eight already-counted
     # signals with on/off/archived config; Spec `ready`; steward Epic 62
@@ -757,6 +823,24 @@ def _check_project_chain_completeness(
     all_slugs = [p.parent.name for p in spec_paths]
     cited_by_spec = _cited_cap_ids_by_spec(prose, all_slugs)
 
+    # Story 59.2: the live Spec-status vocabulary, read fresh from
+    # `guild-roster.json` -- only when there is at least one Spec to classify
+    # against it (`project_dir.parents[2]` is `target`: project_dir is
+    # `target/_bmad-output/projects/<name>`). Gated on `spec_paths` rather
+    # than called unconditionally so a project with zero Specs (pure
+    # INV-B/C/D input) never pays for -- or risks degrading on -- a roster
+    # read it has no use for.
+    if spec_paths:
+        open_statuses, delivered_statuses, roster_warning = _spec_status_groups(
+            project_dir.parents[2]
+        )
+        if roster_warning is not None:
+            findings.append({**roster_warning, "project": project})
+        decomposition_owed_statuses = open_statuses | delivered_statuses
+    else:
+        delivered_statuses = DELIVERED_SPEC_STATUSES
+        decomposition_owed_statuses = DECOMPOSITION_OWED_STATUSES
+
     for spec_md in spec_paths:
         slug = spec_md.parent.name
         try:
@@ -778,9 +862,9 @@ def _check_project_chain_completeness(
             })
             continue
         status = str(fm.get("status", "")).strip()
-        if status not in DECOMPOSITION_OWED_STATUSES:
+        if status not in decomposition_owed_statuses:
             continue
-        delivered = status in DELIVERED_SPEC_STATUSES
+        delivered = status in delivered_statuses
 
         declared = _parse_declared_cap_ids(spec_text)
         if delivered:

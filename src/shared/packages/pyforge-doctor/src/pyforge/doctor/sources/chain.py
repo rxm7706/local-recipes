@@ -814,6 +814,11 @@ _HISTORICAL_SECTION_MAX_LINES = 20
 _HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
 #: Story 21.6 — ``docs/dreams/README.md:71``: a Dream at ``specified`` needs a
 #: covering Spec at ``ready`` or beyond (not ``draft`` / ``extension-point``).
+#: FALLBACK (Story 59.2) when ``guild-roster.json``'s ``spec_statuses_ready_or_
+#: beyond`` is unavailable -- today's value, not a parallel source of truth
+#: (mirrors ``_CONSTITUTIVE_FALLBACK`` just above). Live calls derive the
+#: CAP-1 subset (``ready``/``in-progress``/``shipped``/``absorbed``) from that
+#: declared key and union it with ``_SPEC_READY_NON_CAP1_LITERAL`` below.
 _SPEC_READY_FOR_SPECIFIED = frozenset(
     {
         "ready",
@@ -827,6 +832,22 @@ _SPEC_READY_FOR_SPECIFIED = frozenset(
         "blocked",
     }
 )
+
+#: The CAP-1 ("ready or beyond") subset of ``_SPEC_READY_FOR_SPECIFIED`` --
+#: sourced live from ``guild-roster.json``'s ``spec_statuses_ready_or_beyond``
+#: (Story 59.2); this is its fallback value only.
+_SPEC_READY_OR_BEYOND_FALLBACK = _SPEC_READY_FOR_SPECIFIED & frozenset(
+    {"ready", "in-progress", "shipped", "absorbed"}
+)
+
+#: Five words ``_SPEC_READY_FOR_SPECIFIED`` accepts that are NOT CAP-1 Spec
+#: vocabulary -- ``ready-for-dev``/``in-review``/``done``/``blocked`` are
+#: Story/ledger vocabulary and ``realized`` is Dream vocabulary. Deliberately
+#: outside ``guild-roster.json``'s ``spec_statuses`` enum, kept literal here,
+#: and never sourced from the roster --
+#: ``test_specified_spec_ready_suppresses_finding`` pins ``ready-for-dev``
+#: specifically as suppressing the ``specified-spec-not-ready`` finding.
+_SPEC_READY_NON_CAP1_LITERAL = _SPEC_READY_FOR_SPECIFIED - _SPEC_READY_OR_BEYOND_FALLBACK
 _KINSHIP_WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 
@@ -916,6 +937,43 @@ def _load_dream_roster(
             "subject": rel,
         }
     return statuses, types, stations, guild_dreams, None
+
+
+def _load_spec_ready_or_beyond(target: Path, findings: list[Finding]) -> frozenset[str]:
+    """The CAP-1 "ready or beyond" Spec-status subset, read fresh from
+    ``guild-roster.json``'s ``spec_statuses_ready_or_beyond`` (Story 59.2).
+
+    On roster read/parse/shape failure, appends one named WARN ``Finding`` to
+    the caller's own ``findings`` and falls back to
+    ``_SPEC_READY_OR_BEYOND_FALLBACK`` rather than an empty set --  mirrors
+    ``_load_constitutive``'s own degrade-and-warn shape, adapted to
+    ``gather_dreams_hygiene``'s ``Finding``-based (not dict-based) findings
+    list.
+    """
+    path = target / _GUILD_ROSTER_REL
+    rel = _GUILD_ROSTER_REL.as_posix()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        raw_value = data["spec_statuses_ready_or_beyond"]
+        if not isinstance(raw_value, list):
+            raise TypeError("spec_statuses_ready_or_beyond must be a list")
+        value = frozenset(str(s) for s in raw_value)
+    except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
+        findings.append(
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="spec-status-roster-degraded",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{rel} could not be read for the 'ready or beyond' "
+                    f"Spec-status vocabulary ({exc.__class__.__name__}: {exc}) "
+                    f"— falling back to {sorted(_SPEC_READY_OR_BEYOND_FALLBACK)}"
+                ),
+                evidence={"subject": rel},
+            )
+        )
+        return _SPEC_READY_OR_BEYOND_FALLBACK
+    return value
 
 
 def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
@@ -1268,6 +1326,17 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
     # Story 21.6 — README:71: ``specified`` requires a Spec at ready or beyond.
     spec_collect_findings: list[dict] = []
     specs = _collect_specs(target, spec_collect_findings)
+    # Story 59.2: the live CAP-1 "ready or beyond" vocabulary, read only when
+    # there is at least one `specified` Dream to check it against -- mirrors
+    # `_load_constitutive`'s own call-site gating (`if guild_owned else
+    # frozenset()`), so a fixture with no `specified` Dream never pays for --
+    # or risks degrading on -- a roster read it has no use for.
+    if any(meta["status"] == "specified" for meta in dream_meta.values()):
+        spec_ready_for_specified = (
+            _load_spec_ready_or_beyond(target, findings) | _SPEC_READY_NON_CAP1_LITERAL
+        )
+    else:
+        spec_ready_for_specified = frozenset()
     for slug, meta in sorted(dream_meta.items()):
         if meta["status"] != "specified":
             continue
@@ -1296,7 +1365,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                 )
             continue
         if any(
-            (s.get("status") or "").strip() in _SPEC_READY_FOR_SPECIFIED
+            (s.get("status") or "").strip() in spec_ready_for_specified
             for s in covering
         ):
             continue

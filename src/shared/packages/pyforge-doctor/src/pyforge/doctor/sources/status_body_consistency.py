@@ -22,6 +22,7 @@ Warn-only, read-only, fail-open.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,7 +61,58 @@ __all__ = (
     "status_comment_text",
 )
 
+#: FALLBACK (Story 59.2) when `guild-roster.json` is unavailable -- today's
+#: value, not a parallel source of truth. Live calls derive the Spec-side
+#: member ("shipped") from `guild-roster.json`'s `spec_statuses_terminal` /
+#: `spec_statuses_ended_acts` (`terminal - ended_acts` yields exactly
+#: `{"shipped"}`) and union it with the literal `"realized"` (Dream
+#: vocabulary) / `"done"` (Story vocabulary, dead for this module's own
+#: inputs -- it only ever scans Dream `*.md` and `SPEC.md` files, never Story
+#: files -- kept for parity with this fallback).
 TERMINAL_STATUSES = frozenset({"realized", "shipped", "done"})
+
+_GUILD_ROSTER_REL = "docs/governance/guild-roster.json"
+
+
+def _load_terminal_statuses(target: Path) -> tuple[frozenset[str], Finding | None]:
+    """The live terminal-status set, read fresh from ``guild-roster.json`` at
+    ``target`` -- never cached at import time (mirrors
+    ``factory.py::_roster`` / ``chain.py::_load_dream_roster``, the house
+    pattern for this package).
+
+    ``(spec_statuses_terminal - spec_statuses_ended_acts) | {"realized",
+    "done"}`` -- the Spec-only-terminal value (``{"shipped"}``) unioned with
+    the two non-CAP-1 literals ``TERMINAL_STATUSES`` always carried.
+
+    On any read/parse/shape failure, degrades to ``TERMINAL_STATUSES`` (never
+    a crash) and returns a WARN ``Finding`` for the caller to append to its
+    own ``findings`` rather than degrading silently (Story 59.2, mirrors
+    ``chain.py::_load_constitutive``).
+    """
+    try:
+        data = json.loads((target / _GUILD_ROSTER_REL).read_text(encoding="utf-8"))
+        raw_terminal = data["spec_statuses_terminal"]
+        raw_ended_acts = data["spec_statuses_ended_acts"]
+        if not isinstance(raw_terminal, list) or not isinstance(raw_ended_acts, list):
+            raise TypeError(
+                "spec_statuses_terminal/spec_statuses_ended_acts must be lists"
+            )
+        terminal = frozenset(str(s) for s in raw_terminal)
+        ended_acts = frozenset(str(s) for s in raw_ended_acts)
+    except Exception as exc:  # noqa: BLE001 -- degrade, never crash (house rule)
+        return TERMINAL_STATUSES, Finding(
+            source=Source.STATUS_BODY_CONSISTENCY,
+            check=_CHECK_ROSTER_DEGRADED,
+            status=DoctorStatus.WARN,
+            message=(
+                f"{_GUILD_ROSTER_REL} could not be read for the Spec-side of "
+                f"TERMINAL_STATUSES ({exc.__class__.__name__}: {exc}) — "
+                f"falling back to {sorted(TERMINAL_STATUSES)}"
+            ),
+            evidence={"path": _GUILD_ROSTER_REL},
+        )
+    return (terminal - ended_acts) | {"realized", "done"}, None
+
 
 _CHECK_PROGRESS = "status-body-progress-phrase"
 _CHECK_OPEN_QUESTIONS = "status-body-open-questions"
@@ -68,6 +120,7 @@ _CHECK_PROMISSORY = "status-body-promissory-language"
 _CHECK_STATUS_COMMENT = "status-body-status-comment"
 _CHECK_STATUS_COMMENT_UNRESOLVABLE = "status-body-status-comment-unresolvable"
 _CHECK_UNPARSEABLE = "status-body-unparseable"
+_CHECK_ROSTER_DEGRADED = "spec-status-roster-degraded"
 
 _LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
 _LEDGER_STATUS_WORDS = (
@@ -312,13 +365,18 @@ def measure_promissory_language_precision(target: Path) -> PromissoryLanguageMea
     scanned_terminal = 0
     herald_fired = 0
     false_positive_documents = 0
+    # No `findings` list owned here (this returns a dataclass, not Findings) --
+    # a degraded roster falls back silently; the WARN itself surfaces via
+    # `gather_promissory_language`'s own top-level load when this is called
+    # from its accepted path (Story 59.2).
+    terminal_statuses, _roster_warning = _load_terminal_statuses(target)
 
-    for path, status in iter_terminal_tier_documents(target):
+    for path, status in iter_terminal_tier_documents(target, terminal_statuses):
         fm, unparseable = _parse_frontmatter(path.read_text(encoding="utf-8"))
         if unparseable:
             continue
         resolved_status = status or _normalize_status(fm.get("status"))
-        if resolved_status not in TERMINAL_STATUSES:
+        if resolved_status not in terminal_statuses:
             continue
 
         scanned_terminal += 1
@@ -349,8 +407,19 @@ def measure_promissory_language_precision(target: Path) -> PromissoryLanguageMea
 PROMISSORY_LANGUAGE_ACCEPTED = True
 
 
-def iter_terminal_tier_documents(target: Path) -> tuple[tuple[Path, str], ...]:
-    """Dream ``*.md`` and ``SPEC.md`` paths whose frontmatter ``status`` is terminal."""
+def iter_terminal_tier_documents(
+    target: Path, terminal_statuses: frozenset[str] | None = None
+) -> tuple[tuple[Path, str], ...]:
+    """Dream ``*.md`` and ``SPEC.md`` paths whose frontmatter ``status`` is terminal.
+
+    ``terminal_statuses`` is the live-derived (or fallback) terminal set --
+    pass it down from a caller that has already resolved it once per call
+    (``measure_promissory_language_precision``, ``gather_progress_phrase``,
+    ``gather_promissory_language``); omit it only when calling this function
+    directly, which falls back to a fresh per-call roster read (Story 59.2).
+    """
+    if terminal_statuses is None:
+        terminal_statuses, _roster_warning = _load_terminal_statuses(target)
     docs: list[tuple[Path, str]] = []
 
     dreams_dir = target / "docs" / "dreams"
@@ -367,7 +436,7 @@ def iter_terminal_tier_documents(target: Path) -> tuple[tuple[Path, str], ...]:
                 docs.append((path, ""))
                 continue
             status = _normalize_status(fm.get("status"))
-            if status in TERMINAL_STATUSES:
+            if status in terminal_statuses:
                 docs.append((path, status))
 
     spec_roots = (
@@ -386,10 +455,10 @@ def iter_terminal_tier_documents(target: Path) -> tuple[tuple[Path, str], ...]:
                     spec_md = spec_dir / "SPEC.md"
                     if not spec_md.is_file():
                         continue
-                    _append_spec_if_terminal(spec_md, docs)
+                    _append_spec_if_terminal(spec_md, docs, terminal_statuses)
         else:
             for spec_md in sorted(root.glob("**/SPEC.md")):
-                _append_spec_if_terminal(spec_md, docs)
+                _append_spec_if_terminal(spec_md, docs, terminal_statuses)
 
     return tuple(docs)
 
@@ -929,7 +998,9 @@ def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
     )
 
 
-def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]]) -> None:
+def _append_spec_if_terminal(
+    spec_md: Path, docs: list[tuple[Path, str]], terminal_statuses: frozenset[str]
+) -> None:
     try:
         text = spec_md.read_text(encoding="utf-8")
     except OSError:
@@ -939,7 +1010,7 @@ def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]]) -> Non
         docs.append((spec_md, ""))
         return
     status = _normalize_status(fm.get("status"))
-    if status in TERMINAL_STATUSES:
+    if status in terminal_statuses:
         docs.append((spec_md, status))
 
 
@@ -963,7 +1034,11 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
     silent = 0
     fired = 0
 
-    for path, status in iter_terminal_tier_documents(target):
+    terminal_statuses, roster_warning = _load_terminal_statuses(target)
+    if roster_warning is not None:
+        findings.append(roster_warning)
+
+    for path, status in iter_terminal_tier_documents(target, terminal_statuses):
         rel = _rel_path(path, target)
         try:
             text = path.read_text(encoding="utf-8")
@@ -996,7 +1071,7 @@ def gather_progress_phrase(target: Path) -> tuple[Finding, ...]:
             continue
 
         resolved_status = status or _normalize_status(fm.get("status"))
-        if resolved_status not in TERMINAL_STATUSES:
+        if resolved_status not in terminal_statuses:
             continue
 
         scanned_terminal += 1
@@ -1221,7 +1296,11 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
     silent = 0
     fired = 0
 
-    for path, status in iter_terminal_tier_documents(target):
+    terminal_statuses, roster_warning = _load_terminal_statuses(target)
+    if roster_warning is not None:
+        findings.append(roster_warning)
+
+    for path, status in iter_terminal_tier_documents(target, terminal_statuses):
         rel = _rel_path(path, target)
         try:
             text = path.read_text(encoding="utf-8")
@@ -1254,7 +1333,7 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
             continue
 
         resolved_status = status or _normalize_status(fm.get("status"))
-        if resolved_status not in TERMINAL_STATUSES:
+        if resolved_status not in terminal_statuses:
             continue
 
         scanned_terminal += 1
@@ -1320,19 +1399,25 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
     )
 
 
+#: Checks that CAP-1..CAP-4 can each independently emit for the same
+#: underlying file/roster problem -- dedupe by (check, path) rather than
+#: letting every caller's copy survive into the combined ``gather()`` output.
+_DEDUPE_BY_PATH_CHECKS = frozenset({_CHECK_UNPARSEABLE, _CHECK_ROSTER_DEGRADED})
+
+
 def _dedupe_unparseable_findings(
     findings: tuple[Finding, ...],
 ) -> tuple[Finding, ...]:
-    seen_paths: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     out: list[Finding] = []
     for finding in findings:
-        if finding.check != _CHECK_UNPARSEABLE:
+        if finding.check not in _DEDUPE_BY_PATH_CHECKS:
             out.append(finding)
             continue
-        path = str(finding.evidence.get("path", ""))
-        if path in seen_paths:
+        key = (finding.check, str(finding.evidence.get("path", "")))
+        if key in seen:
             continue
-        seen_paths.add(path)
+        seen.add(key)
         out.append(finding)
     return tuple(out)
 
