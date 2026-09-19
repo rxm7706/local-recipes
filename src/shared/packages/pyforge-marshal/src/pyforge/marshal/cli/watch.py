@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
@@ -25,6 +26,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..core.context import MarshalContext
+from ..core.dispatch import DispatchJournalFacts
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
@@ -78,6 +80,15 @@ class WatchPorts:
     list_prs: Callable[[str], list[Mapping[str, Any]]]
     discover_projects: Callable[[], list[str]]
     load_queue: Callable[[str], list[str]] | None = None
+    #: Story 51.6 (spec-pyforge-marshal CAP-254): the bmad-loop run's own
+    #: last journal fact (``(slug, run_id) -> ts``), read from its
+    #: ``journal.jsonl`` -- ``None`` when unset (existing callers) or when
+    #: the journal can't be read, never fabricated.
+    loop_last_fact: Callable[[str, str], datetime | None] | None = None
+    #: The dispatch run's own last journal fact (``(slug, dispatch_run_id)
+    #: -> ts``), via ``cli/dispatch.py``'s ``iter_dispatch_run_dirs`` /
+    #: ``gather_dispatch_journal_facts`` -- same absent-is-``None`` contract.
+    dispatch_last_fact: Callable[[str, str], datetime | None] | None = None
 
 
 def seconds_to_next_half_hour(now: datetime) -> int:
@@ -259,6 +270,62 @@ def _paused_or_escalated(status: Mapping[str, Any], overall: str) -> bool:
     if stage in {"escalation", "paused"} or overall in {"paused", "escalated"}:
         return True
     return bool(status.get("paused_reason") or status.get("escalation_reason"))
+
+
+def _dispatch_outranks_loop(
+    *, loop_last_fact: datetime | None, dispatch_last_fact: datetime | None
+) -> bool:
+    """Story 51.6 (spec-pyforge-marshal CAP-254) -- the ONE comparison
+    ``_gather_station`` uses to pick its engine, kept pure and small on
+    purpose so it can be mutation-tested directly: true only when the
+    dispatch run's last journal fact is STRICTLY newer than the loop run's.
+    Either side's fact being unknown never outranks -- an unreadable or
+    absent journal keeps today's loop-wins default rather than guessing."""
+    if loop_last_fact is None or dispatch_last_fact is None:
+        return False
+    return dispatch_last_fact > loop_last_fact
+
+
+def _dispatch_journal_last_fact(facts: DispatchJournalFacts) -> datetime | None:
+    """The dispatch run's own last known journal fact -- the latest of its
+    launch time and its timing entry's recorded start/end. Never a
+    directory ``mtime`` (this module's established precedent against it,
+    see ``cli/status.py::_discover_harness_run_id_by_filesystem``)."""
+    candidates: list[datetime] = []
+    if facts.launched_at is not None:
+        candidates.append(facts.launched_at)
+    for raw in (facts.story_started_at, facts.story_ended_at):
+        if isinstance(raw, str) and raw:
+            try:
+                candidates.append(datetime.fromisoformat(raw.replace("Z", "+00:00")))
+            except ValueError:
+                continue
+    return max(candidates) if candidates else None
+
+
+def _loop_journal_last_fact(text: str) -> datetime | None:
+    """The latest epoch ``ts`` among a bmad-loop ``journal.jsonl``'s lines
+    -- that file's own append-only shape (each line an object with a float
+    ``ts``). A malformed line is skipped, never fatal -- including a
+    non-finite ``ts`` (``NaN``/``Infinity`` parse fine as JSON floats but
+    crash ``datetime.fromtimestamp``). Tracks the true maximum rather than
+    the last-seen line, so an out-of-order journal still reports its real
+    latest fact. An empty or entirely unparseable journal reports ``None``
+    rather than a fabricated time."""
+    max_ts: float | None = None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ts = entry.get("ts") if isinstance(entry, dict) else None
+        if isinstance(ts, (int, float)) and not isinstance(ts, bool) and math.isfinite(ts):
+            if max_ts is None or ts > max_ts:
+                max_ts = float(ts)
+    return datetime.fromtimestamp(max_ts, tz=timezone.utc) if max_ts is not None else None
 
 
 def _filter_prs(rows: Sequence[Mapping[str, Any]], slug: str) -> list[dict[str, Any]]:
@@ -448,6 +515,7 @@ def _user_action(
     overall: str,
     stale_dispatch: str | None,
     home_state: str | None,
+    stale_loop: str | None = None,
 ) -> str:
     parts: list[str] = []
     if status.get("paused_stage") == "escalation" or overall in {"paused", "escalated"}:
@@ -459,6 +527,11 @@ def _user_action(
         parts.append(
             f"stale unrelated dispatch record {stale_dispatch!r} was present and ignored "
             "(per-story detail is from bmad-loop status only)"
+        )
+    if stale_loop:
+        parts.append(
+            f"loop run {stale_loop!r} is paused/escalated but was outranked by a newer "
+            "dispatch run -- operator attention still needed"
         )
     if home_state:
         parts.append(f"supervisor liveness (marshal status homes[0].state): {home_state}")
@@ -596,6 +669,38 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def load_queue(slug: str) -> list[str]:
         return _parse_queue(slug, root)
 
+    def loop_last_fact(slug: str, run_id: str) -> datetime | None:
+        # Story 51.6: bmad-loop's own journal, same home layout as
+        # list_runs/run_status above (<home>/.bmad-loop/runs/<run_id>/).
+        journal_path = Path.home() / ".bmad-loops" / slug / ".bmad-loop" / "runs" / run_id / "journal.jsonl"
+        try:
+            text = journal_path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        return _loop_journal_last_fact(text)
+
+    def dispatch_last_fact(slug: str, dispatch_id: str) -> datetime | None:
+        # Story 51.6: reuse cli/dispatch.py's own run-dir/journal readers --
+        # imported lazily, mirroring cli/status.py::_merge_dispatch_overlay's
+        # identical local-import precedent for the same module.
+        from ..adapters.fs_local import FsError, LocalFs
+        from .dispatch import gather_dispatch_journal_facts, iter_dispatch_run_dirs
+
+        run_dir = next(
+            (p for p in iter_dispatch_run_dirs(root, slug) if p.name == dispatch_id),
+            None,
+        )
+        if run_dir is None:
+            return None
+        try:
+            facts = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+        except FsError:
+            # Same fail-safe contract as loop_last_fact's `except OSError:
+            # return None` above -- an unreadable journal (permission
+            # denied, corrupt encoding) is never fatal to `marshal watch`.
+            return None
+        return _dispatch_journal_last_fact(facts)
+
     return WatchPorts(
         list_runs=list_runs,
         run_status=run_status,
@@ -604,6 +709,8 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         list_prs=list_prs,
         discover_projects=discover_projects,
         load_queue=load_queue,
+        loop_last_fact=loop_last_fact,
+        dispatch_last_fact=dispatch_last_fact,
     )
 
 
@@ -761,10 +868,40 @@ def _gather_station(
 
     pattern: str
     resolved: str | None = run_id
+    #: Story 51.6 (review followup): the winning engine's own last journal
+    #: fact (ISO 8601 string in the return dict, ``None`` when unknown), and
+    #: -- when dispatch outranks a loop row that was itself paused -- that
+    #: loop run's id, so its escalation doesn't silently drop out of the
+    #: fleet's escalated-first sort just because a newer dispatch run won.
+    last_fact_at: datetime | None = None
+    stale_loop_id: str | None = None
     if live is not None:
+        loop_id = str(live.get("id") or live.get("run_id") or "")
         pattern = "bmad-loop"
         if resolved is None:
-            resolved = str(live.get("id") or live.get("run_id") or "")
+            resolved = loop_id
+        # Story 51.6 (spec-pyforge-marshal CAP-254): an auto-detected live
+        # loop row no longer wins unconditionally -- when this station also
+        # has a dispatch run, the engine whose last journal fact is more
+        # recent wins. A pinned ``run_id`` (``run_id is not None``) is the
+        # operator watching THIS run on purpose; the comparison never
+        # overrides a pin.
+        raw_dispatch_id = home.get("dispatch_run_id") if home else None
+        if run_id is None and isinstance(raw_dispatch_id, str) and raw_dispatch_id:
+            loop_last = ports.loop_last_fact(slug, loop_id) if ports.loop_last_fact is not None else None
+            dispatch_last = (
+                ports.dispatch_last_fact(slug, raw_dispatch_id)
+                if ports.dispatch_last_fact is not None
+                else None
+            )
+            if _dispatch_outranks_loop(loop_last_fact=loop_last, dispatch_last_fact=dispatch_last):
+                pattern = "bmad-build-auto"
+                resolved = raw_dispatch_id
+                last_fact_at = dispatch_last
+                if str(live.get("status") or "") == "paused":
+                    stale_loop_id = loop_id
+            else:
+                last_fact_at = loop_last
     elif resolved is not None:
         # Pinned run_id with no live row: still try bmad-loop status first.
         pattern = "bmad-loop"
@@ -846,9 +983,12 @@ def _gather_station(
             "rows": rows,
             "stale_dispatch_ignored": bool(stale),
             "stale_dispatch_run_id": stale,
+            "stale_loop_ignored": False,
+            "stale_loop_run_id": None,
             "actively_progressing": _is_active_rows(rows),
             "paused_or_escalated": _paused_or_escalated(status, overall),
             "finished": overall in _TERMINAL_STATUSES or bool(status.get("finished")),
+            "last_fact_at": last_fact_at.isoformat() if last_fact_at is not None else None,
         }
 
     assert home is not None
@@ -870,6 +1010,7 @@ def _gather_station(
             overall=str(snap.get("status")),
             stale_dispatch=None,
             home_state=str(home.get("state")) if home.get("state") else None,
+            stale_loop=stale_loop_id,
         ),
     }
     active = str(home.get("state") or "") in {"running", "dev-running"} and not snap["finished"]
@@ -882,9 +1023,15 @@ def _gather_station(
         "rows": rows,
         "stale_dispatch_ignored": False,
         "stale_dispatch_run_id": None,
+        "stale_loop_ignored": bool(stale_loop_id),
+        "stale_loop_run_id": stale_loop_id,
         "actively_progressing": active,
-        "paused_or_escalated": bool(home.get("escalation_reason")),
+        # Story 51.6 (review followup): OR in a loop row that was itself
+        # paused and got outranked -- it must not vanish from the fleet's
+        # escalated-first sort just because a newer dispatch run won.
+        "paused_or_escalated": bool(home.get("escalation_reason")) or bool(stale_loop_id),
         "finished": bool(snap.get("finished")),
+        "last_fact_at": last_fact_at.isoformat() if last_fact_at is not None else None,
     }
 
 

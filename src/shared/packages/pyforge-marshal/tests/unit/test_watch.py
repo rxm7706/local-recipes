@@ -71,6 +71,8 @@ def _ports(
     slugs: list[str] | None = None,
     queue: list[str] | None = None,
     per_slug: dict[str, dict] | None = None,
+    loop_last_fact: dict[str, datetime | None] | None = None,
+    dispatch_last_fact: dict[str, datetime | None] | None = None,
 ) -> WatchPorts:
     listed = listed if listed is not None else {"runs": [{"id": "20260914-201759-bd47", "status": "running"}]}
     status = status if status is not None else _loop_status()
@@ -124,6 +126,14 @@ def _ports(
         del slug
         return list(queue)
 
+    def loop_last_fact_fn(slug: str, run_id: str) -> datetime | None:
+        del slug
+        return (loop_last_fact or {}).get(run_id)
+
+    def dispatch_last_fact_fn(slug: str, dispatch_id: str) -> datetime | None:
+        del slug
+        return (dispatch_last_fact or {}).get(dispatch_id)
+
     return WatchPorts(
         list_runs=list_runs,
         run_status=run_status,
@@ -132,6 +142,8 @@ def _ports(
         list_prs=list_prs,
         discover_projects=discover_projects,
         load_queue=load_queue,
+        loop_last_fact=loop_last_fact_fn,
+        dispatch_last_fact=dispatch_last_fact_fn,
     )
 
 
@@ -233,6 +245,277 @@ def test_stale_dispatch_ignored_for_per_story_detail(tmp_path: Path, capsys):
     assert data["stale_dispatch_run_id"] == "herald-OLD-DISPATCH"
     assert data["sections"]["currently_running"]["story"] == "21.5"
     assert "99.9" not in json.dumps(data["sections"])
+
+
+# Story 51.6 (spec-pyforge-marshal CAP-254): the engine choice follows the
+# last journal fact, not "any live bmad-loop row wins."
+
+_AUG_LOOP_RUN_ID = "20260814-090000-aaaa"
+_TODAY_DISPATCH_ID = "herald-20260918T060000000Z-abcd1234"
+
+
+def _stale_loop_live_dispatch_ports(
+    tmp_path: Path,
+    *,
+    loop_last_fact: dict[str, datetime | None] | None,
+    dispatch_last_fact: dict[str, datetime | None] | None,
+) -> WatchPorts:
+    """The Given: a `paused` loop row minted in 2026-08 AND a dispatch run
+    this station's `marshal status` still reports live -- exactly the
+    2026-09-18 incident shape (Story 51.6's `Given`)."""
+    return _ports(
+        tmp_path,
+        listed={"runs": [{"id": _AUG_LOOP_RUN_ID, "status": "paused"}]},
+        status=_loop_status(
+            status="paused",
+            paused_stage="escalation",
+            paused_reason="needs operator",
+        ),
+        home={
+            "state": "running",
+            "dispatch_run_id": _TODAY_DISPATCH_ID,
+            "dispatch_completion_verdict": None,
+            "dispatch_verification_verdict": None,
+            "current_story": "6.1",
+            "escalation_reason": None,
+        },
+        loop_last_fact=loop_last_fact,
+        dispatch_last_fact=dispatch_last_fact,
+    )
+
+
+def test_dispatch_run_outranks_a_stale_paused_loop_row(tmp_path: Path, capsys):
+    """Then: a dispatch run journaled today is reported (harness, key,
+    phase, last fact) instead of the loop row paused in August."""
+    ports = _stale_loop_live_dispatch_ports(
+        tmp_path,
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, 9, 5, 0, tzinfo=timezone.utc)},
+        dispatch_last_fact={_TODAY_DISPATCH_ID: datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)},
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    data = payload["data"]
+    assert data["pattern"] == "bmad-build-auto"  # harness
+    assert data["run_id"] == _TODAY_DISPATCH_ID  # key
+    assert data["sections"]["currently_running"]["story"] == "6.1"
+    assert data["sections"]["currently_running"]["phase"] == "running"  # phase
+    assert data["run_id"] != _AUG_LOOP_RUN_ID
+
+    # last fact: _gather_station's own return dict carries the winning
+    # engine's last journal fact (ISO 8601) -- the value the comparison
+    # actually used to prefer dispatch over the stale loop row.
+    from pyforge.marshal.cli.watch import _gather_station
+
+    gathered = _gather_station(ports=ports, slug="pyforge-herald", run_id=None, findings=[])
+    assert gathered is not None
+    assert gathered["last_fact_at"] == "2026-09-18T06:00:00+00:00"
+
+
+def test_with_no_dispatch_last_fact_the_loop_row_is_chosen_exactly_as_today(tmp_path: Path, capsys):
+    """Then: with no dispatch run (no discoverable journal fact for the
+    `dispatch_run_id` `marshal status` reports) the loop row is chosen
+    exactly as it was before Story 51.6 -- same fixture, minus the
+    dispatch side's last fact."""
+    ports = _stale_loop_live_dispatch_ports(
+        tmp_path,
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, 9, 5, 0, tzinfo=timezone.utc)},
+        dispatch_last_fact=None,
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    data = payload["data"]
+    assert data["pattern"] == "bmad-loop"
+    assert data["run_id"] == _AUG_LOOP_RUN_ID
+    assert data["stale_dispatch_ignored"] is True
+    assert data["stale_dispatch_run_id"] == _TODAY_DISPATCH_ID
+
+
+def test_neither_engine_selection_reports_idle(tmp_path: Path, capsys):
+    """And: neither branch of the Given/When/Then ever reports idle --
+    ``MRS-WATCH-002`` ("no active run found") never fires when either side
+    has a candidate engine."""
+    dispatch_wins = _stale_loop_live_dispatch_ports(
+        tmp_path,
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, tzinfo=timezone.utc)},
+        dispatch_last_fact={_TODAY_DISPATCH_ID: datetime(2026, 9, 18, tzinfo=timezone.utc)},
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald"), dispatch_wins)
+    assert rc == 0
+    assert _payload(capsys)["findings"] == []
+
+    loop_wins = _stale_loop_live_dispatch_ports(tmp_path, loop_last_fact=None, dispatch_last_fact=None)
+    rc = _run(tmp_path, _args(project="pyforge-herald"), loop_wins)
+    assert rc == 0
+    assert _payload(capsys)["findings"] == []
+
+
+def test_a_pinned_run_id_is_never_overridden_by_a_fresher_dispatch_run(tmp_path: Path, capsys):
+    """A pinned ``--run`` is the operator watching THIS run on purpose --
+    the comparison must never override it, even when the dispatch run's
+    last fact is strictly newer."""
+    ports = _stale_loop_live_dispatch_ports(
+        tmp_path,
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, tzinfo=timezone.utc)},
+        dispatch_last_fact={_TODAY_DISPATCH_ID: datetime(2026, 9, 18, tzinfo=timezone.utc)},
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald", run=_AUG_LOOP_RUN_ID), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["data"]["pattern"] == "bmad-loop"
+    assert payload["data"]["run_id"] == _AUG_LOOP_RUN_ID
+
+
+def test_fleet_mode_escalated_loop_row_outranked_by_dispatch_still_sorts_first(tmp_path: Path, capsys):
+    """--fleet: a loop row stuck in escalation must not silently drop out
+    of the escalated-first sort just because a newer dispatch run outranked
+    it for engine selection -- ``paused_or_escalated`` ORs the two in, and
+    the stale loop run's id still surfaces in ``user_action_required``."""
+    ports = _ports(
+        tmp_path,
+        listed={"runs": [{"id": _AUG_LOOP_RUN_ID, "status": "paused"}]},
+        status=_loop_status(status="paused", paused_stage="escalation", paused_reason="needs operator"),
+        home={
+            "state": "running",
+            "dispatch_run_id": _TODAY_DISPATCH_ID,
+            "dispatch_completion_verdict": None,
+            "dispatch_verification_verdict": None,
+            "current_story": "6.1",
+            "escalation_reason": None,
+        },
+        slugs=["pyforge-herald", "aaa-station"],
+        per_slug={
+            "aaa-station": {
+                "listed": {"runs": [{"id": "other-run", "status": "running"}]},
+                "status": _loop_status(
+                    status="in-progress",
+                    stories=[{"key": "1.1", "phase": "dev-running", "commit_sha": "zzz", "attempt": 1}],
+                ),
+                "home": {"state": "running", "dispatch_run_id": None},
+            }
+        },
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, tzinfo=timezone.utc)},
+        dispatch_last_fact={_TODAY_DISPATCH_ID: datetime(2026, 9, 18, tzinfo=timezone.utc)},
+    )
+    rc = _run(tmp_path, _args(fleet=True), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    data = payload["data"]
+    projects = data["projects"]
+    # aaa-station sorts alphabetically before pyforge-herald -- if escalation
+    # weren't OR'd in, that alphabetical order would win instead.
+    assert [p["slug"] for p in projects] == ["pyforge-herald", "aaa-station"]
+    herald = next(p for p in projects if p["slug"] == "pyforge-herald")
+    assert herald["pattern"] == "bmad-build-auto"
+    assert herald["escalated"] is True
+    assert _AUG_LOOP_RUN_ID in data["user_action_required"]
+
+
+def test_dispatch_outranks_loop_is_a_strict_newer_than_comparison():
+    """Story 51.6's mutation-tested choice function, exercised directly:
+    flipping its `>` to `<` or `>=` must each break one of these three
+    assertions (swapping the comparison re-selects the stale row)."""
+    from pyforge.marshal.cli.watch import _dispatch_outranks_loop
+
+    aug = datetime(2026, 8, 14, 9, 5, 0, tzinfo=timezone.utc)
+    today = datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)
+    # dispatch strictly newer -> dispatch wins. A `<` mutant flips this to
+    # False -- it would re-select the stale August loop row.
+    assert _dispatch_outranks_loop(loop_last_fact=aug, dispatch_last_fact=today) is True
+    # dispatch strictly OLDER -> loop wins. A `<` mutant flips this to True
+    # -- it would let a genuinely stale dispatch row outrank a fresher loop.
+    assert _dispatch_outranks_loop(loop_last_fact=today, dispatch_last_fact=aug) is False
+    # tied timestamps -> loop keeps its default. A `>=` mutant flips this to
+    # True -- an unchanged station would spuriously "move" to dispatch.
+    assert _dispatch_outranks_loop(loop_last_fact=today, dispatch_last_fact=today) is False
+    # either side unknown -> never outranks (an unreadable/absent journal
+    # must not be treated as "wins by default").
+    assert _dispatch_outranks_loop(loop_last_fact=None, dispatch_last_fact=today) is False
+    assert _dispatch_outranks_loop(loop_last_fact=aug, dispatch_last_fact=None) is False
+
+
+def test_dispatch_journal_last_fact_takes_the_latest_of_launch_start_end():
+    from pyforge.marshal.core.dispatch import DispatchJournalFacts
+    from pyforge.marshal.cli.watch import _dispatch_journal_last_fact
+
+    launched = datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)
+    facts = DispatchJournalFacts(
+        story_key="6.1",
+        session_pid=None,
+        model=None,
+        launched_at=launched,
+        worktree_path=None,
+        story_started_at="2026-09-18T06:00:05Z",
+        story_ended_at="2026-09-18T07:30:00Z",
+    )
+    assert _dispatch_journal_last_fact(facts) == datetime(2026, 9, 18, 7, 30, 0, tzinfo=timezone.utc)
+    # No timing entries yet -- falls back to launched_at.
+    only_launch = DispatchJournalFacts(
+        story_key="6.1", session_pid=None, model=None, launched_at=launched, worktree_path=None
+    )
+    assert _dispatch_journal_last_fact(only_launch) == launched
+    # Nothing parseable at all -- honest None, never fabricated.
+    empty = DispatchJournalFacts(story_key=None, session_pid=None, model=None, launched_at=None, worktree_path=None)
+    assert _dispatch_journal_last_fact(empty) is None
+    # An unparseable story_ended_at is skipped, not fatal.
+    bad_end = DispatchJournalFacts(
+        story_key=None,
+        session_pid=None,
+        model=None,
+        launched_at=launched,
+        worktree_path=None,
+        story_ended_at="not-a-timestamp",
+    )
+    assert _dispatch_journal_last_fact(bad_end) == launched
+
+
+def test_loop_journal_last_fact_takes_the_last_parseable_ts():
+    from pyforge.marshal.cli.watch import _loop_journal_last_fact
+
+    text = "\n".join(
+        [
+            '{"ts": 1755500000.0, "kind": "story-started"}',
+            "",  # blank lines are skipped
+            "not json",  # malformed lines are skipped
+            '{"ts": 1755500100.5, "kind": "story-done"}',
+            '{"kind": "no-ts-field"}',
+        ]
+    )
+    result = watch_mod._loop_journal_last_fact(text)
+    assert result == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+    assert watch_mod._loop_journal_last_fact("") is None
+    assert watch_mod._loop_journal_last_fact("not json at all") is None
+
+
+def test_loop_journal_last_fact_returns_the_true_max_not_the_last_line():
+    """An out-of-order journal (the last line isn't the newest ``ts``) must
+    still report its real maximum, matching the sibling
+    ``_dispatch_journal_last_fact``'s own ``max(...)`` behavior."""
+    text = "\n".join(
+        [
+            '{"ts": 1755500100.5, "kind": "story-done"}',
+            '{"ts": 1755500000.0, "kind": "story-started"}',
+        ]
+    )
+    assert watch_mod._loop_journal_last_fact(text) == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+
+
+def test_loop_journal_last_fact_skips_non_finite_ts_instead_of_crashing():
+    """``json.loads`` parses ``NaN``/``Infinity`` as floats;
+    ``datetime.fromtimestamp`` then raises on them -- a malformed line must
+    be skipped, not fatal to ``marshal watch``."""
+    text = "\n".join(
+        [
+            '{"ts": NaN, "kind": "bogus"}',
+            '{"ts": Infinity, "kind": "also-bogus"}',
+            '{"ts": -Infinity, "kind": "still-bogus"}',
+            '{"ts": 1755500000.0, "kind": "story-started"}',
+        ]
+    )
+    assert watch_mod._loop_journal_last_fact(text) == datetime.fromtimestamp(1755500000.0, tz=timezone.utc)
+    # Entirely non-finite -- honest None, never a crash.
+    assert watch_mod._loop_journal_last_fact('{"ts": NaN}') is None
 
 
 def test_station_auto_detects_loop_run(tmp_path: Path, capsys):
@@ -925,6 +1208,43 @@ def test_default_ports_discover_projects_and_load_queue_read_the_repo(tmp_path: 
     assert ports.discover_projects() == ["alpha", "zeta"]
     assert ports.load_queue is not None
     assert ports.load_queue("zeta") == ["9.1"]
+
+
+def test_default_ports_loop_last_fact_reads_the_real_journal(tmp_path: Path, monkeypatch):
+    home = _fake_home(monkeypatch, tmp_path, "acme")
+    run_dir = home / ".bmad-loops" / "acme" / ".bmad-loop" / "runs" / "r1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        '{"ts": 1755500000.0, "kind": "story-started"}\n{"ts": 1755500100.5, "kind": "story-done"}\n',
+        encoding="utf-8",
+    )
+    ports = watch_mod._default_ports(_RecordingProcess({}), tmp_path)
+    assert ports.loop_last_fact is not None
+    assert ports.loop_last_fact("acme", "r1") == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+    # No journal at all for this run -- honest None, not an exception.
+    assert ports.loop_last_fact("acme", "no-such-run") is None
+
+
+def test_default_ports_dispatch_last_fact_reads_the_real_journal(tmp_path: Path):
+    from pyforge.marshal.core.dispatch import dispatch_run_dir
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_dir = dispatch_run_dir(tmp_path, "acme", "d1")
+    run_dir.mkdir(parents=True)
+    entry = build_entry(
+        id=JournalEntryId(writer_id="test-writer", counter=1),
+        ts="2026-09-18T06:00:00.000Z",
+        run_id="d1",
+        kind="dispatch-launch",
+        phase=Phase.INTENT,
+        payload={"story_key": "6.1", "model": "m", "worktree_path": "/tmp/wt"},
+    )
+    (run_dir / "journal.jsonl").write_text(prepare_for_write(entry).line + "\n", encoding="utf-8")
+    ports = watch_mod._default_ports(_RecordingProcess({}), tmp_path)
+    assert ports.dispatch_last_fact is not None
+    assert ports.dispatch_last_fact("acme", "d1") == datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)
+    # A dispatch id with no matching run dir -- honest None.
+    assert ports.dispatch_last_fact("acme", "no-such-run") is None
 
 
 # run_watch: argument errors, the default cache dir, context slug, text render
