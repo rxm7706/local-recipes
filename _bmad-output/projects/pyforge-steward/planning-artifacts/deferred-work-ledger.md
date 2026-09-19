@@ -4617,3 +4617,47 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   status: open
   raised: 2026-09-19 — Owner: steward (repo hygiene, scratch-worktree lifecycle). Operator-only for (b).
+
+### DW-FU-60-1: The committed generated manifests bake recipe `version`/`description` (and the frame count) from inputs — `recipes/bmad-{builder,utility-skills,creative-intelligence-suite,method-test-architecture-enterprise}/recipe.yaml` and `docs/foundry/frames/**` — that never trigger the steward CI job, so a recipe-only PR leaves `main` with `manifest-drift` and `steward catalog check` red until the next steward PR runs `steward catalog render` and commits.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The committed generated manifests bake recipe `version`/`description` (and the frame count) from inputs — `recipes/bmad-{builder,utility-skills,creative-intelligence-suite,method-test-architecture-enterprise}/recipe.yaml` and `docs/foundry/frames/**` — that never trigger the steward CI job, so a recipe-only PR leaves `main` with `manifest-drift` and `steward catalog check` red until the next steward PR runs `steward catalog render` and commits.
+  evidence: Verified by execution: with `read_recipe_version` returning `9.9.9` for `bmad-builder`, `CatalogEngine.drift()` on the committed tree goes from `[]` to `[("manifest-drift", ".claude-plugin/marketplace.json")]`; `.github/workflows/pyforge-station-tests.yml` `paths` lists `src/shared/packages/pyforge-*/**`, `pixi.toml`, `pixi.lock` and container files — neither `recipes/**` nor `docs/foundry/frames/**`; those four recipes bumped on 2026-08-21, 09-09, 09-11 and 09-12 as recipe-only PRs. Closure: add the four `recipes/bmad-*/**` paths and `docs/foundry/frames/**` to the steward trigger, or put `steward catalog render --check` into `detectors-ci`/`pr-preflight`; Story 60.3 (ship backends) needs a render gate before it can publish a snapshot anyway. Both edits are outside this story's surface.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (WieldedSuiteSource.listings / CatalogEngine.drift); .github/workflows/pyforge-station-tests.yml
+  origin: spec-deferred 0aa69350d691 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-2: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
+  evidence: `.pixi/envs/pyforge-steward/bin/python -c "import jsonschema"` → `ModuleNotFoundError`; the station suite reports `SKIPPED [1] test_track.py:111: could not import 'jsonschema'`; both `pyforge-station-tests.yml` and `coverage-gates.yml` run steward in that env. Closure: add `jsonschema` to `[feature.pyforge-steward.dependencies]` in `pixi.toml` (shared-surface rule: `environment.yaml` regen + all eight station suites) or drop the `importorskip` — a `pixi.toml` change outside this story.
+  location: src/shared/packages/pyforge-steward/tests/unit/test_track.py:111
+  origin: spec-deferred b7304c5a328d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-3: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` "Registered duties" now trails the CLI by three (`cutover`, `ledger-query`, `catalog`); it is an SKF-managed agent-context file, so the roster is refreshed by an SKF re-export, not a hand edit in a story.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` "Registered duties" now trails the CLI by three (`cutover`, `ledger-query`, `catalog`); it is an SKF-managed agent-context file, so the roster is refreshed by an SKF re-export, not a hand edit in a story.
+  evidence: `SKILL.md:90-94` lists seventeen duties; `cli.py` `DUTIES` has twenty. `tests/meta/test_skf_steward_skill.py` guards the managed-section shape.
+  location: .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md:90
+  origin: spec-deferred 7fd098265974 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-60-1-4: The BMAD installer resolves the catalog directory but installs nothing from it: `bmad-method install --custom-source <catalog>` (6.12.0, `--yes`) reports "Local source resolved" then "Found 0 modules", because discovery mode installs only module trees inside the source (a plugin dir with `module.yaml`) and does not follow a plugin's `github` source; the v1 rows are all github pointers.
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: The BMAD installer resolves the catalog directory but installs nothing from it: `bmad-method install --custom-source <catalog>` (6.12.0, `--yes`) reports "Local source resolved" then "Found 0 modules", because discovery mode installs only module trees inside the source (a plugin dir with `module.yaml`) and does not follow a plugin's `github` source; the v1 rows are all github pointers.
+  evidence: Verified live 2026-09-19 in a scratch directory (`/tmp/bmad-cs-test`): the real catalog → "Found 0 modules", only core installed; a probe marketplace with one `./plugins/probe-mod` (SKILL.md, no `module.yaml`) and one github-object entry → also "Found 0 modules". Claude Code's marketplace resolution (github/url plugin sources) is the documented form and is unaffected. Closure: Story 60.3's snapshot vendors each listed module's tree under the catalog (upstream layout `skills/module.yaml`, e.g. bmad-builder) so discovery finds them; until then `steward catalog pointers` prints the limitation beside the `--custom-source` line and each row's `repository`/`install_hint` is the install path.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (CatalogEngine.pointers → installer_note); src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json
+  origin: spec-deferred 0973772ed109 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
