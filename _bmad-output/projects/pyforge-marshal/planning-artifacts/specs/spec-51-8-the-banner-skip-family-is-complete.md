@@ -2,7 +2,8 @@
 title: '51.8: The banner-skip family is complete'
 type: 'fix'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'cefe85df1d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -34,6 +35,21 @@ declared_low_risk: false
 | the named fixture | the real run/journal/PR named in the Given | the Then holds | n/a |
 
 </intent-contract>
+
+## Code Map
+
+- `core/promotion.py::_skip_leading_banner` and `core/spec_surface.py::_skip_leading_banner` — pre-existing, identical, banner-recognition anchored at literal offset 0 (`text.startswith(_BANNER_PREFIX)`). Fix: `stripped = text.lstrip("\ufeff \t\r\n")`, then test/search on `stripped` instead of `text`. Both call sites (`is_valid_spec_text` in `promotion.py`; `parse_declared_surface` line ~122 in `spec_surface.py`) already route every input through this helper, so no caller change is needed.
+- `core/spec_low_risk.py::parse_declared_low_risk` — had NO banner-skip helper at all; gated directly on `text.splitlines()[0] == "---"`. Fix: add the same `_skip_leading_banner` helper (module-local copy, matching the existing two-copy duplication convention rather than introducing shared code) plus its `_BANNER_PREFIX`/`_BANNER_SUFFIX` constants, and change `lines = text.splitlines()` to `lines = _skip_leading_banner(text).splitlines()`.
+- `spec_difficulty.py` and `dispatch_harness_done.py` — confirmed unreachable from `cli/gate.py::_gather_review_depth` for this fixture family (DW-FU-50-5); left untouched, verified via `git diff --stat` against `baseline_revision` showing zero changes to either file.
+- Reuse point: `cli/gate.py::_find_spec_text` (reads the tracked spec text) → `_gather_review_depth` (line ~681, calls `parse_declared_low_risk(spec_text)`) → `gate.classify_review_tier`. Read-only for this story; not modified.
+
+## Tasks & Acceptance
+
+- [x] `_skip_leading_banner` in `promotion.py` and `spec_surface.py` tolerates a leading BOM, blank line(s), or spaces before `<!--` — covered by `test_is_valid_spec_text_true_for_blank_line_before_banner` / `_true_for_spaces_before_banner` / `_true_for_bom_before_banner` (`test_promotion.py`) and `test_blank_line_before_banner_still_reads_the_surface` / `_spaces_before_banner_still_reads_the_surface` / `_bom_before_banner_still_reads_the_surface` (`test_spec_surface.py`).
+- [x] A spec with genuinely no frontmatter (no banner, no `---`), or an unclosed banner, is still invalid — covered by `test_is_valid_spec_text_false_for_no_frontmatter_still_invalid` and `test_blank_line_with_no_banner_still_returns_none`.
+- [x] `parse_declared_low_risk` gains the same banner-skip tolerance so a banner-topped `declared_low_risk: true` spec resolves through `cli/gate.py::_gather_review_depth` instead of silently reading `False` — covered by `test_blank_line_before_banner_reads_true` / `_spaces_before_banner_reads_true` / `_bom_before_banner_reads_true`, plus `test_banner_below_frontmatter_unaffected` (regression: the 45+ existing banner-below-frontmatter specs) and `test_unclosed_banner_above_frontmatter_reads_false` (`test_spec_low_risk.py`).
+- [x] `spec_difficulty.py` and `dispatch_harness_done.py` remain untouched — verified via `git diff cefe85df1d..HEAD --stat` (6 files changed, neither of those two among them).
+- [x] Full station verification green — see `## Verification` results below.
 
 ## Binding
 
