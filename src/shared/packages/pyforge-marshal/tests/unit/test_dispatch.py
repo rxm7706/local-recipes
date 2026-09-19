@@ -1865,6 +1865,106 @@ def test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provide
     assert mismatch_findings[0].severity is Severity.WARN
 
 
+def test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): `provider_declaring_model` returns `None` both
+    for a genuinely uncatalogued/foreign model id AND, by documented design,
+    for a harness's own default/alias id (`sonnet`/`opus`/`haiku`) -- the
+    catalog is a declared PRICE snapshot, not a model registry. The ORIGINAL
+    guard only fired on a cross-provider mismatch, so a plainly foreign or
+    mistyped model id (here `gpt-9-turbo-nonexistent`, declared by no
+    provider and not one of marshal's own tier ids) silently reached launch
+    unchanged. It must now raise MRS-DISP-043 and have its override dropped,
+    exactly like the cross-provider case above -- before any live launch."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-uncatalogued-model"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "gpt-9-turbo-nonexistent"},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") is None
+    assert "escalated" not in attempt.data
+    assert "resolved_models" not in attempt.data or "dev" not in attempt.data["resolved_models"]
+    uncatalogued_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+    assert len(uncatalogued_findings) == 1
+    assert uncatalogued_findings[0].severity is Severity.WARN
+
+
+def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): the widened MRS-DISP-043 guard must not flag a
+    harness's own default/alias model id. `sonnet` on `claude` (the
+    `FakeBuildHarness` default) is never catalogued by design -- it must
+    stay byte-identical to pre-fix behavior: no MRS-DISP-043 finding at
+    all, and the model override survives unchanged."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-sonnet-byte-identical"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "sonnet"},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") == "sonnet"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+
+
 def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
