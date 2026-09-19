@@ -31,6 +31,7 @@ from pyforge.doctor.sources import (
     capability_effect,
     chain,
     deps,
+    docs_shelf,
     factory,
     frozen_path,
     capability_ledger,
@@ -72,6 +73,9 @@ _EXPECTED_DISPATCH = {
     # Doctor Epic 25 -- both in detectors-ci from day one.
     "chain-sprawl": one_chain.gather_chain_sprawl,
     "fr-without-cap": one_chain.gather_fr_without_cap,
+    # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
+    # occupancy vs the docs/MAP.md allow-list.
+    "docs-shelf-occupancy": docs_shelf.gather,
 }
 
 

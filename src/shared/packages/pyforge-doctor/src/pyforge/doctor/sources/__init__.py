@@ -483,6 +483,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # "steward": A authors the tracked capability ledger; doctor judges it.
     # A DISPATCH member; CAN FAIL (unclassified / undated A-only).
     SourceRegistration(
+        source=Source.DOCS_SHELF_OCCUPANCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 23.7 -- sources/docs_shelf.py. Leftover-shelf path occupancy
+    # vs the docs/MAP.md allow-list (`_bmad-output/` root, air-gap cluster);
+    # fleet subject (the general docs layer, same rationale as
+    # GENERAL_DOCS_CONSISTENCY/PIXI_CURRENCY_LEDGER above), never FAIL.
+    SourceRegistration(
         source=Source.CHAIN_SPRAWL,
         scope="repo",
         subject_station="fleet",

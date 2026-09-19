@@ -309,6 +309,14 @@ class Source(StrEnum):
     # vs station Dream) for quotable identity contradictions. WARN-only,
     # fail-open — never a second PR gate.
     GENERAL_DOCS_CONSISTENCY = "general-docs-consistency"
+    # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): compares live
+    # directory occupancy at two leftover-shelf-prone locations (the
+    # `_bmad-output/` root, the air-gap documentation cluster) against the
+    # allow-list that docs/MAP.md's own "Outside this map" table and Story
+    # 23.2's fold established. Distinct from GENERAL_DOCS_CONSISTENCY above
+    # (identity contradictions, not occupancy). WARN-only, fail-open — never
+    # a second PR gate. See sources/docs_shelf.py.
+    DOCS_SHELF_OCCUPANCY = "docs-shelf-occupancy"
     # Story 55.2 (steward Epic 55 / spec-foundry-capability-ledger fcl:CAP-2):
     # CAP heading + intent/success extract vs docs/foundry/capability-ledger.yaml.
     # HARD on unclassified live CAP-N and A-only without expiry; post-PIN

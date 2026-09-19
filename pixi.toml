@@ -1198,6 +1198,10 @@ cmd = "python -m pyforge.doctor.sources chain-sprawl"
 description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
 cmd = "python -m pyforge.doctor.sources fr-without-cap"
 
+[feature.guild-tasks.tasks.docs-shelf-occupancy-check]
+description = "Detector: leftover-shelf path occupancy vs the docs/MAP.md allow-list (Story 23.7, spec-pyforge-doctor CAP-54). Compares the _bmad-output/ root and the air-gap documentation cluster against MAP.md's own 'Outside this map' table and Story 23.2's fold -- a re-added dated campaign note at _bmad-output/ root, or a second air-gap how-to outside the cluster, is a finding with a quoted path. Distinct from general-docs-consistency-check (identity, not occupancy). Warn-only, read-only, fail-open -- never a second PR gate. Contract: spec-23-7-a-new-doctor-source-flags-leftover-shelf-occupancy."
+cmd = "python -m pyforge.doctor.sources docs-shelf-occupancy"
+
 [feature.guild-tasks.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"

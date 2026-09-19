@@ -257,6 +257,10 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # an unfolded station both pass (eventual consistency).
     ("chain-sprawl", "chain-sprawl-check"),
     ("fr-without-cap", "fr-without-cap-check"),
+    # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): leftover-shelf
+    # occupancy vs the docs/MAP.md allow-list, beside its sibling repo-scope
+    # sources -- offline, deterministic, no budget concerns.
+    ("docs-shelf-occupancy", "docs-shelf-occupancy-check"),
 )
 
 
