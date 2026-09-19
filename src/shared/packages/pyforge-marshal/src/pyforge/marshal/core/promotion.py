@@ -432,7 +432,7 @@ def _skip_leading_banner(text: str) -> str:
     when the marker is never closed -- an unclosed banner is not a banner
     this parser recognizes, so ``is_valid_spec_text`` still requires the
     (absent) frontmatter fence and correctly stays invalid."""
-    stripped = text.lstrip("﻿ \t\r\n")
+    stripped = text.lstrip("\ufeff \t\r\n")
     if not stripped.startswith(_BANNER_PREFIX):
         return text
     end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
