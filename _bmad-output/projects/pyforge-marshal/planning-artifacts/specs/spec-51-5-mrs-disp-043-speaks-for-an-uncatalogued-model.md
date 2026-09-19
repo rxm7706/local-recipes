@@ -2,12 +2,13 @@
 title: '51.5: MRS-DISP-043 speaks for an uncatalogued model'
 type: 'fix'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 deferred: []
 declared_low_risk: false
+baseline_revision: '66463b49860151f0a7ff4d0756cf679be95fe3a0'
 ---
 
 <intent-contract>
