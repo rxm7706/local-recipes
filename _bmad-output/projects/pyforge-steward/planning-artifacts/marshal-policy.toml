@@ -30,7 +30,14 @@ gate_mode = "none"
 # (claude-first) while still resolving `model_tier_map`'s composer-2.5-fast (a
 # Cursor-only model name), a pairing Claude Code's CLI refuses outright. Found
 # live 2026-09-10 when Wave 1's three dispatches all failed identically at launch.
-harness_preference = ["cursor"]
+# 2026-09-19 (operator ruling of 2026-09-18: Cursor is out of usage for the week;
+# marshal/doctor/herald PR #1458 already flipped) -- claude-only. Found live when
+# the third drain's first steward dispatch (60.1) died at launch twice: on
+# `--harness claude` the tier map's grok-4.6 still reached Claude Code
+# (uncatalogued model, MRS-DISP-043 silent -- marshal Story 51.5), and on
+# `--harness cursor` the CLI answered "You're out of usage". Flip this line and
+# the tier map together when Cursor returns.
+harness_preference = ["claude"]
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
@@ -707,15 +714,20 @@ enabled = true
 # 2026-09-13 (spec-cursor-native-tier-map / Story 33.15): Cursor Ultra
 # ladder as explicit {harness, model} tables so a Cursor id cannot land
 # on claude --model (fails-safe CAP-1). Unattended drain stays off until
-# 28.29 is separately proven. This IDE drives the wave.
+# 28.29 is separately proven.
+# 2026-09-19: back on Claude Code (see harness_preference above) -- the same
+# sonnet-dev / opus-review pairing pyforge-marshal and pyforge-doctor carry,
+# in the fails-safe {harness, model} shape. The 2026-09-13 Cursor Ultra
+# ladder (composer-2.5-fast / grok-4.6 / composer-2.5) is in git history for
+# the week Cursor usage returns.
 [model_tier_map.heavy]
-dev = { harness = "cursor", model = "composer-2.5-fast" }
-review = { harness = "cursor", model = "composer-2.5-fast" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.6" }
-review = { harness = "cursor", model = "grok-4.6" }
+dev = { harness = "claude", model = "sonnet" }
+review = { harness = "claude", model = "opus" }
 
 [model_tier_map.easy]
-dev = { harness = "cursor", model = "composer-2.5" }
+dev = { harness = "claude", model = "sonnet" }
 
