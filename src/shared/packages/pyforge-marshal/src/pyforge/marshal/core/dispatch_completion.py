@@ -42,8 +42,35 @@ class DispatchCompletionInput:
     harness_reported_failure: bool = False
 
 
-def has_git_progress(git: DispatchGitFacts) -> bool:
-    """True when git shows work beyond the launch baseline."""
+def is_spec_only_narration(
+    changed_paths: tuple[str, ...], spec_relative_path: str | None
+) -> bool:
+    """True when the ENTIRE diff is the tracked story spec file itself.
+
+    A session that only rewrites its own spec's frontmatter (a status flip,
+    a hand-written Auto Run Result, a revert-to-baseline plus ``blocked:``)
+    has produced narration, not work (Story 51.4, spec-pyforge-marshal
+    CAP-252). ``spec_relative_path`` is the worktree-relative path of the
+    story's tracked spec; ``None`` (spec not resolvable) or an empty diff
+    never counts as narration-only.
+    """
+    if spec_relative_path is None or not changed_paths:
+        return False
+    return set(changed_paths) == {spec_relative_path}
+
+
+def has_git_progress(
+    git: DispatchGitFacts, *, spec_relative_path: str | None = None
+) -> bool:
+    """True when git shows work beyond the launch baseline.
+
+    A revert-to-baseline plus a spec-only status flip is not progress
+    (Story 51.4): when the whole diff collapses to the tracked spec file
+    itself, this returns ``False`` even though the head SHA moved. Existing
+    callers that omit ``spec_relative_path`` keep today's behavior exactly.
+    """
+    if is_spec_only_narration(git.changed_paths, spec_relative_path):
+        return False
     if git.current_head_sha != git.baseline_head_sha:
         return True
     return bool(git.changed_paths)

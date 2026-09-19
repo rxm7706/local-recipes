@@ -16,6 +16,7 @@ class HarnessSessionOutcome(StrEnum):
     QUOTA_EXCEEDED = "quota_exceeded"
     AUTH_FAILURE = "auth_failure"
     HARNESS_MISCONFIG = "harness_misconfig"
+    BACKGROUND_TASK_CEILING = "background_task_ceiling"
     UNKNOWN = "unknown"
 
 
