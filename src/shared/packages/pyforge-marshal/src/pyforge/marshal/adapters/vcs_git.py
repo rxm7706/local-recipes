@@ -527,6 +527,17 @@ class GitVcs:
                 f"git worktree remove failed for {home}: {result.stderr.strip()}"
             )
 
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (Story 51.1's best-effort cleanup
+        fallback, mirroring ``merge_branch``'s own two-stage cleanup)."""
+        result = _run(["git", "-C", str(repo_root), "worktree", "prune"])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree prune failed for {repo_root}: {result.stderr.strip()}"
+            )
+
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """``git branch -d``/``-D``, selected by ``force``. See the port's
         own docstring for why a caller that already ran ``is_branch_merged``
