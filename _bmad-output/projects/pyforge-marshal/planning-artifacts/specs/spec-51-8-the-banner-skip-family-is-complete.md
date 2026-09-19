@@ -2,7 +2,7 @@
 title: '51.8: The banner-skip family is complete'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'cefe85df1d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -66,3 +66,11 @@ Minted 2026-09-19 from `epics.md` so `marshal factory dispatch` (51.x) or a hand
 
 **Manual checks:**
 - The Then/And of Story 51.8 in `epics.md` hold on the named fixture; the mutation or byte-identical check named there is run, not inferred.
+
+**Results (against `baseline_revision`):**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — PASS: 8100 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — PASS: 130 passed, 3 skipped.
+- Manual check: re-scanned every tracked spec repo-wide with a banner-below-frontmatter shape (99 files, superset of the "45" figure named in the intent contract) through both `promotion.is_valid_spec_text` and `spec_surface.parse_declared_surface` — all parse identically to before the fix (zero regressions).
+- Diff since baseline (`git diff cefe85df1d..HEAD --stat`): 6 files changed, 129 insertions(+), 11 deletions(-) — exactly the Binding's declared Surface; `spec_difficulty.py` and `dispatch_harness_done.py` absent from the diff, confirming they stayed untouched.
+
+**Matrix Test Audit:** the intent-contract's I/O & Edge-Case Matrix has one generic row ("the named fixture" → "the Then holds"). Its concrete instances are the fixtures enumerated in the Boundaries & Constraints `Always`/`Never` bullets, each covered by a test that ran and passed above: blank-line/spaces/BOM-before-banner tolerance in both `_skip_leading_banner` copies (`test_is_valid_spec_text_true_for_blank_line_before_banner`, `_true_for_spaces_before_banner`, `_true_for_bom_before_banner`; `test_blank_line_before_banner_still_reads_the_surface`, `_spaces_before_banner_still_reads_the_surface`, `_bom_before_banner_still_reads_the_surface`); the same tolerance in `parse_declared_low_risk` (`test_blank_line_before_banner_reads_true`, `_spaces_before_banner_reads_true`, `_bom_before_banner_reads_true`); no-frontmatter and unclosed-banner still invalid (`test_is_valid_spec_text_false_for_no_frontmatter_still_invalid`, `test_blank_line_with_no_banner_still_returns_none`, `test_unclosed_banner_above_frontmatter_reads_false`); banner-below-frontmatter unaffected (`test_is_valid_spec_text_true_for_banner_below_frontmatter_unaffected`, `test_banner_below_frontmatter_unaffected` in both `spec_surface` and `spec_low_risk` suites). All ran and passed in the verbose run above — audit satisfied, no gaps.
