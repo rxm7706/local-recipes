@@ -40,7 +40,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
-# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill).
+# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill),
+# `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -63,6 +64,7 @@ DUTIES: tuple[str, ...] = (
     "ledger-query",
     "catalog",
     "load",
+    "passport",
 )
 
 _HELP = {
@@ -74,6 +76,10 @@ _HELP = {
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
         "batch sha + waybill; transports declared in corridor.yaml (Story 61.1)"
+    ),
+    "passport": (
+        "vendor work-passport identity -- mints a FRESH UUID per inbound key, "
+        "never merges by Jira key or GitHub number (Story 61.2)"
     ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
