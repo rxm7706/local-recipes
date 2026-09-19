@@ -86,6 +86,24 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-19 (evening)** — **Proposed: the sibling drift check records a per-Dream human
+  acknowledgement, and knows where the sibling went.** The moment a `GH_TOKEN` reached the
+  sibling (the operator's `.bashrc` now exports one from `gh auth token`), CAP-71 reported six
+  Dreams diverging on status / content_hash / title: `django-accelerator-framework`,
+  `enterprise-data-models-and-apis`, `miniforge-installer`, `package-inventory-eligibility`,
+  `pixi-container-image`, `reusable-cicd-workflows`. All six are `archived` here — folded into
+  their station Dreams on 2026-09-17 — while the sibling still holds the pre-fold copies
+  (`status: dreamt`, untouched since 2026-08-13; the whole sibling repo has not been pushed to
+  since 2026-08-24). The Spec's own constraints settle the direction — read-only, never a sync
+  engine, their prose unlicensed, reconciliation human and per-Dream — so the answer is an
+  acknowledgement, not a push. Two gaps: (1) there is no way to *record* that acknowledgement, so
+  the six re-fire on every run and will drown a genuine later change; a `sibling-acknowledged:
+  <sibling content_hash>` line on the local Dream should silence exactly that hash and re-fire on
+  any other, and a locally `archived` Dream without one should say so in the finding. (2) The
+  sibling moved: `OpenTeams-WFT-CDO/mgmt-wf-python-modernization` now 301-redirects to
+  `openteams-ai/mgmt-wf-python-modernization`; `sibling_dreams.py` hard-codes the old owner and
+  works only while GitHub keeps redirecting. Decomposed the same day as **CAP-82 / Epic 29 /
+  Story 29.1** (doctor `DW-OPS-2026-09-19-6` carries the six as the acceptance fixture).
 - **2026-09-18 (night)** — **Proposed: a frontmatter reader that stops at the
   first `---` it sees.** `sources/chain.py::_frontmatter_parse` splits a spec on
   the first `---` *anywhere in the file*, not on a line-anchored fence. Marshal
