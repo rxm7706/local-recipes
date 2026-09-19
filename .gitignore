@@ -742,6 +742,11 @@ data/
 # Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)
 .claude/scheduled_tasks.lock
 
+# headroom MCP wrapper's own per-process env-var ownership state (PID/port, never
+# meaningful across a process restart)
+.claude/.headroom_wrap_marker.json
+.claude/.headroom_wrap_owners.json
+
 # pyforge-marshal: advisory-lock sidecar files (Story 4.9, AD-42) --
 # `marshal deploy promote`'s FsPort.acquire_advisory_lock creates
 # `planning-artifacts/specs.lock` to serialize concurrent promotions;
