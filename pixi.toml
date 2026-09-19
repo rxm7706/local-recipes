@@ -1056,6 +1056,14 @@ cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
+[feature.guild-tasks.tasks.sprint-ledger-query]
+description = "Pluggable estate sprint ledger query CLI duty (Story 63.5). Format options: markdown, json, table, sync-matrix, herald-facts, atlas-dataset, static-dossier, jira-csv, github-json."
+cmd = "steward ledger-query"
+
+[feature.guild-tasks.tasks.sprint-ledger-postgres-sync]
+description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 63.5 / Epic 61)."
+cmd = "steward ledger-query --sync-postgres"
+
 [feature.local-recipes.tasks.tea-playwright-all]
 description = "Story 19.1 / FR-129: regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."
 cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"

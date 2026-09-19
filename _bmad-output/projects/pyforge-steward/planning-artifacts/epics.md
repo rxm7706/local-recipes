@@ -4184,6 +4184,15 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **And** the four entry points call this one command and nothing else for preconditions (vocabulary-one-name-one-job: one mechanism, many surfaces); a cloud clone with no feed can land a ledger flip by following the printed remedy
 **Status:** backlog
 
+### Story 63.5: Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD skill
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-sprint-ledger-query-module CAP-1, CAP-2, CAP-3, CAP-4
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/models.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/views_htmx.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/admin.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `.claude/skills/bmad-sprint-ledger-query/SKILL.md`, `pixi.toml`.
+**Given** estate sprint ledgers are scattered across stations and lack pluggable querying, Work Passport UUID identity, and multi-system output formatters
+**When** this story lands
+**Then** `SprintLedgerQueryEngine` provides a pluggable engine with feature flag evaluation via OpenFeature, Work Passports PostgreSQL sync with minted UUIDs, multi-format output (markdown, json, table, sync-matrix, herald-facts, atlas-dataset, static-dossier, jira-csv, github-json), HTMX dashboard view, Django Admin registration, CLI verb `pyforge steward ledger-query`, Pixi tasks `sprint-ledger-query` and `sprint-ledger-postgres-sync`, and the `bmad-sprint-ledger-query` skill
+**Status:** done
+
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame

@@ -58,9 +58,14 @@ DUTIES: tuple[str, ...] = (
     "track",
     "guards",
     "cutover",
+    "ledger-query",
 )
 
 _HELP = {
+    "ledger-query": (
+        "pluggable estate sprint ledger query & telemetry reporting "
+        "(markdown/json/table/sync-matrix/herald-facts/atlas-dataset/dossier/jira-csv/github-json)"
+    ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
     "deploy": (
         "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
@@ -184,6 +189,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_guards_subparsers(duty_parser)
         elif name == "cutover":
             _add_cutover_subparsers(duty_parser)
+        elif name == "ledger-query":
+            _add_ledger_query_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -349,6 +356,46 @@ def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
     flip = cutover_subs.add_parser("flip", help="set pyforge.cutover_root (refuses if a loop is running)")
     flip.add_argument("--to", required=True, choices=("local-recipes", "foundry"))
     flip.add_argument("--flags", default=None, metavar="PATH")
+
+
+def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
+    """Story 63.5: pluggable estate sprint ledger query parser."""
+    parser.add_argument(
+        "--unimplemented", action="store_true", help="filter to unimplemented stories (backlog, in-progress, blocked)"
+    )
+    parser.add_argument(
+        "--unlinked", action="store_true", help="filter to stories missing Jira key or GitHub item ID"
+    )
+    parser.add_argument(
+        "--station", default=None, metavar="NAME", help="filter by station name (e.g. pyforge-steward)"
+    )
+    parser.add_argument(
+        "--status", default=None, metavar="STATUS", help="comma-separated status filter (e.g. backlog,in-progress)"
+    )
+    parser.add_argument(
+        "--search", default=None, metavar="TERM", help="search term across title, story_id, jira_key"
+    )
+    parser.add_argument(
+        "--format",
+        default="markdown",
+        choices=[
+            "markdown",
+            "summary",
+            "json",
+            "table",
+            "sync-matrix",
+            "herald-facts",
+            "atlas-dataset",
+            "static-dossier",
+            "jira-csv",
+            "github-json",
+        ],
+        help="output format",
+    )
+    parser.add_argument("--output", default=None, metavar="PATH", help="path to write formatted report")
+    parser.add_argument(
+        "--sync-postgres", action="store_true", help="mint Work Passport UUIDs and sync to PostgreSQL / Django ORM"
+    )
 
 
 def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
@@ -1096,6 +1143,10 @@ def resolve_duty(name: str) -> Duty:
         from .cutover import CutoverDuty
 
         return CutoverDuty()
+    if name == "ledger-query":
+        from .sprint_ledger_query import LedgerQueryDuty
+
+        return LedgerQueryDuty()
     return NullDuty(name)
 
 
