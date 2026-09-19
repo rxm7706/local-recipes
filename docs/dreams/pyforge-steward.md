@@ -101,6 +101,30 @@ Drift — orphaned between stations.
   temp dir at the pinned SHA by an opt-in task and never vendored. #28 stands
   at `CHANGES_REQUESTED`, 39 commits, mergeable, no LICENSE on `main` yet; the
   accepted-risk ledger entry stays open with today's date.
+- **2026-09-19 — Proposed and shipped the same day (PR #1507, a parallel session): the
+  estate sprint-ledger query engine.** One engine (`pyforge.steward.sprint_ledger_query`)
+  over every station's TRACKED `sprint-status-ledger.yaml` + `epics.md` — presets and
+  station / epic / status / text filters; registered formatters, sources and hooks; flags
+  from `flags.json` / env / CLI gating every optional export; ten output shapes (people,
+  `bmad-dashboard` JSON with a shipped schema, Herald's facts-ledger shape, an Atlas
+  dataset payload, Jira CSV, GitHub Projects V2 mutations, `get_runnable_backlog()` for
+  Marshal); a `WorkPassport` Django model with a minted UUID and tracker keys as aliases;
+  three front doors (`steward ledger-query`, two pixi tasks, the `bmad-sprint-ledger-query`
+  skill). The session had minted it as a standalone Dream + Spec under
+  `fold-exemption: cross-station-seam`; folded here on review (one-chain-per-station — that
+  token is for the kernel/testing-kit seams every station imports): this entry is the seed,
+  `spec-pyforge-steward` carries CAP-146..149 (the derivation record is a note on its
+  memlog), and the passport slice binds to CAP-140 with Story 61.2 still the story of
+  record (no `vendor_id`, not the existing join store, 61.1's corridor not landed). The
+  standalone `sprint-ledger-query-module.md` + `spec-sprint-ledger-query-module/` pair was
+  removed rather than archived in place — `chain-sprawl` reads no status, so a post-ruling
+  pair is a finding forever; the detector's own remedy is exactly this entry + the CAPs
+  (the sketch survives in git at `c01fdb3f4d`). Story 65.1 (Epic 65; the `63-5` key the
+  session used never reached `main`). The review (three layers) found the runnable-backlog
+  helper ignoring the repo's Deps grammar, all 237 epics reported in-progress, flags never
+  wired, `--sync-postgres` unable to succeed yet reporting ok, unescaped HTML in the HTMX
+  view and dossier, a stock admin on the append-only audit trail, a sync pixi task
+  registered where no env has django — remediated before merge; the rest is DW-FU-65-1..3.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

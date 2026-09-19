@@ -64,7 +64,8 @@ DUTIES: tuple[str, ...] = (
 _HELP = {
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
-        "(markdown/json/table/sync-matrix/herald-facts/atlas-dataset/dossier/jira-csv/github-json)"
+        "(markdown/summary/json/table/sync-matrix/herald-facts/atlas-dataset/"
+        "static-dossier/jira-csv/github-json; exporters flag-gated via --flag)"
     ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
     "deploy": (
@@ -359,9 +360,14 @@ def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
-    """Story 63.5: pluggable estate sprint ledger query parser."""
+    """Story 65.1: pluggable estate sprint ledger query parser.
+
+    `--format` choices come from the formatter registry, never a copied list.
+    """
+    from .sprint_ledger_query import KNOWN_STATUSES, default_formatter_names
+
     parser.add_argument(
-        "--unimplemented", action="store_true", help="filter to unimplemented stories (backlog, in-progress, blocked)"
+        "--unimplemented", action="store_true", help="filter to stories whose status is not done"
     )
     parser.add_argument(
         "--unlinked", action="store_true", help="filter to stories missing Jira key or GitHub item ID"
@@ -370,7 +376,13 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
         "--station", default=None, metavar="NAME", help="filter by station name (e.g. pyforge-steward)"
     )
     parser.add_argument(
-        "--status", default=None, metavar="STATUS", help="comma-separated status filter (e.g. backlog,in-progress)"
+        "--status",
+        default=None,
+        metavar="STATUS",
+        help=f"comma-separated status filter; known: {', '.join(KNOWN_STATUSES)}",
+    )
+    parser.add_argument(
+        "--epic", default=None, metavar="ID", help="filter by epic id within the scanned station(s) (e.g. 65)"
     )
     parser.add_argument(
         "--search", default=None, metavar="TERM", help="search term across title, story_id, jira_key"
@@ -378,23 +390,26 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--format",
         default="markdown",
-        choices=[
-            "markdown",
-            "summary",
-            "json",
-            "table",
-            "sync-matrix",
-            "herald-facts",
-            "atlas-dataset",
-            "static-dossier",
-            "jira-csv",
-            "github-json",
-        ],
-        help="output format",
+        choices=default_formatter_names(),
+        help="output format (sync-matrix/herald-facts/atlas-dataset/static-dossier/jira-csv/github-json are flag-gated)",
     )
-    parser.add_argument("--output", default=None, metavar="PATH", help="path to write formatted report")
     parser.add_argument(
-        "--sync-postgres", action="store_true", help="mint Work Passport UUIDs and sync to PostgreSQL / Django ORM"
+        "--output",
+        default=None,
+        metavar="PATH",
+        help="write the payload ONLY to this file (stdout stays empty; one confirmation line on stderr)",
+    )
+    parser.add_argument(
+        "--sync-postgres",
+        action="store_true",
+        help="mint Work Passport UUIDs and sync to PostgreSQL / Django ORM (needs --flag enable_postgres_sync=true)",
+    )
+    parser.add_argument(
+        "--flag",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="feature-flag override, repeatable (e.g. --flag enable_dossier_export=true); outranks FLAGS_<NAME> and flags.json",
     )
 
 
@@ -1158,7 +1173,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.print_help()
             return EXIT_OK
         result: DutyResult = resolve_duty(ns.duty).run(ns)
-        print(result.summary, file=sys.stderr if not result.ok else sys.stdout)
+        # An empty summary prints nothing: a duty that has already delivered its
+        # payload elsewhere (`ledger-query --output`) must leave stdout EMPTY
+        # for machine consumers, not hand them a lone newline.
+        if result.summary:
+            print(result.summary, file=sys.stderr if not result.ok else sys.stdout)
         # A duty never calls sys.exit() (AD-8) — but it may name a specific
         # documented exit code (e.g. budget.EXIT_BUDGET_NOT_CONFIGURED) via
         # `DutyResult.details["exit_code"]` when the plain ok/not-ok binary

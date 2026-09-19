@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-steward:sprint-ledger-query-schema",
+  "title": "pyforge-steward sprint-ledger-query JSON payload",
+  "description": "The `json` formatter's output of pyforge.steward.sprint_ledger_query (Story 65.1, spec-sprint-ledger-query-module CAP-4). Consumed by bmad-dashboard and any machine reader of `steward ledger-query --format json`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "generated_at",
+    "summary",
+    "matching_stories_count",
+    "stories",
+    "epics",
+    "query_flags",
+    "warnings"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "urn:local-recipes:pyforge-steward:sprint-ledger-query-schema"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO-8601 UTC timestamp of the query."
+    },
+    "summary": {
+      "$ref": "#/$defs/estate_summary"
+    },
+    "matching_stories_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/story"
+      }
+    },
+    "epics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/epic"
+      }
+    },
+    "query_flags": {
+      "type": "object",
+      "description": "The filters dict the query ran with (after every pre_query hook), plus `flag_overrides`."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Diagnostics raised while loading or hooking (also printed to stderr)."
+    }
+  },
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "station_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "station",
+        "total_stories",
+        "done",
+        "in_progress",
+        "backlog",
+        "blocked",
+        "optional",
+        "in_review",
+        "review",
+        "ready_for_dev",
+        "ready",
+        "other",
+        "completion_pct"
+      ],
+      "properties": {
+        "station": {
+          "type": "string"
+        },
+        "total_stories": {
+          "$ref": "#/$defs/count"
+        },
+        "done": {
+          "$ref": "#/$defs/count"
+        },
+        "in_progress": {
+          "$ref": "#/$defs/count"
+        },
+        "backlog": {
+          "$ref": "#/$defs/count"
+        },
+        "blocked": {
+          "$ref": "#/$defs/count"
+        },
+        "optional": {
+          "$ref": "#/$defs/count"
+        },
+        "in_review": {
+          "$ref": "#/$defs/count"
+        },
+        "review": {
+          "$ref": "#/$defs/count"
+        },
+        "ready_for_dev": {
+          "$ref": "#/$defs/count"
+        },
+        "ready": {
+          "$ref": "#/$defs/count"
+        },
+        "other": {
+          "$ref": "#/$defs/count"
+        },
+        "completion_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "estate_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stations",
+        "total_stories",
+        "total_done",
+        "total_in_progress",
+        "total_backlog",
+        "total_blocked",
+        "total_optional",
+        "total_in_review",
+        "total_review",
+        "total_ready_for_dev",
+        "total_ready",
+        "total_other",
+        "overall_completion_pct"
+      ],
+      "properties": {
+        "stations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/station_progress"
+          }
+        },
+        "total_stories": {
+          "$ref": "#/$defs/count"
+        },
+        "total_done": {
+          "$ref": "#/$defs/count"
+        },
+        "total_in_progress": {
+          "$ref": "#/$defs/count"
+        },
+        "total_backlog": {
+          "$ref": "#/$defs/count"
+        },
+        "total_blocked": {
+          "$ref": "#/$defs/count"
+        },
+        "total_optional": {
+          "$ref": "#/$defs/count"
+        },
+        "total_in_review": {
+          "$ref": "#/$defs/count"
+        },
+        "total_review": {
+          "$ref": "#/$defs/count"
+        },
+        "total_ready_for_dev": {
+          "$ref": "#/$defs/count"
+        },
+        "total_ready": {
+          "$ref": "#/$defs/count"
+        },
+        "total_other": {
+          "$ref": "#/$defs/count"
+        },
+        "overall_completion_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passport_id",
+        "story_id",
+        "station",
+        "epic_id",
+        "title",
+        "status",
+        "jira_key",
+        "github_item_id",
+        "effort",
+        "deps",
+        "fr_ad",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "passport_id": {
+          "type": "string",
+          "description": "Minted UUIDv5 identity; outlives renames and re-keys. Tracker keys are aliases, never the identity."
+        },
+        "story_id": {
+          "type": "string"
+        },
+        "station": {
+          "type": "string"
+        },
+        "epic_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "jira_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "github_item_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Canonical `<epic>.<num>` keys, resolved within the story's own station."
+        },
+        "fr_ad": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
+    "epic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epic_id",
+        "station",
+        "title",
+        "status",
+        "story_ids"
+      ],
+      "properties": {
+        "epic_id": {
+          "type": "string"
+        },
+        "station": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "description": "The ledger's `epic-N:` value, or `unknown` when the ledger carries none."
+        },
+        "story_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

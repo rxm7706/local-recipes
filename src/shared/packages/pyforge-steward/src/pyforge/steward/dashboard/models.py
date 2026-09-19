@@ -83,7 +83,8 @@ class AuditEntry(models.Model):
 
 
 class WorkPassport(models.Model):
-    """Work Passport identity model (Epic 61 / Story 61.2).
+    """Work Passport identity model (Story 65.1; spec-pyforge-steward CAP-140, partial —
+    Story 61.2 remains the passport story of record).
 
     Primary identity is a minted UUID (`passport_id`). External system keys
     (Jira key, GitHub item ID) are stored as external aliases.

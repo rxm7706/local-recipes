@@ -108,8 +108,10 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
    Run the station unit, meta, and integration test suite:
    `pixi run -e pyforge-<station> pyforge-<station>-test`
 2. **Detector & Merge Gate Audit**:
-   Run the repository merge gate:
-   `pixi run -e pyforge-guild detectors-ci`
+   Run the full local twin of every lane that reds a PR (CLAUDE.md § PR CI gates, rule 4):
+   `pixi run -e pyforge-guild pr-preflight` — `detectors-ci` alone misses the `test-ci`
+   spec-surface meta-test, the station suites and the touched-module coverage floors. Read
+   every verdict from the exit code, never through a pipe.
 3. **Django Models & Migration Invariants**:
    When creating or modifying Django models in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/models.py`:
    - Generate the corresponding Django migration file (`000x_*.py`).
@@ -118,13 +120,44 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
    - Add unit tests covering model creation, admin registrations (`admin.py`), and HTMX view handlers (`views_htmx.py`).
 4. **Station CLI Duty Count Invariant**:
    When registering a new CLI duty in `cli.py`, update duty count assertions in `tests/unit/test_cli.py` and `tests/unit/test_restore_duty.py`.
-5. **Spec Surface Baseline Stamping**:
-   When adding or updating files under spec governance, stamp scoped baselines after `git add` from a clean tree:
-   `pixi run -e pyforge-guild python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>`
-6. **Architecture & Fold Exemptions**:
+5. **Spec Surface Reconcile, then a scoped stamp — never a stamp alone**:
+   A governed file may only move with its owning Spec's `.memlog.md` naming the path (and the
+   reason) — that entry is what `spec-surface` reads as the reconcile; a stamp without it
+   launders drift, and a bare `--write-baseline` (no `--spec`) accepts every other Spec's
+   pending drift as correct. Sequence, from a clean tree: (a) append the memlog entry to the
+   owning Spec and every co-governor the detector names (`python _bmad/scripts/memlog.py
+   append --workspace <spec-folder> --type event --text "Surface reconcile <date>: <path> …"`);
+   (b) `git add` (the stamp reads `git ls-files`); (c) `python scripts/spec_surface_check.py
+   --write-baseline --spec <project>/<spec>` for exactly those Specs; (d) re-run
+   `pixi run -e pyforge-guild spec-surface-check` and read its exit code. A stamp is only valid
+   until the next edit of any file in that Spec's surface — re-stamp after your last edit.
+   Never re-stamp a Spec your change did not touch.
+6. **One chain per station — a new capability is a Dream APPEND, not a new Dream**:
+   - A station-owned feature (steward's, marshal's, …) enters as a dated entry on that station's
+     Dream (`docs/dreams/pyforge-<station>.md`), then `bmad-spec` mints its `CAP-n` on the
+     station Spec, then a numbered Story in the station's `epics.md` + ledger row, then a tracked
+     story spec under `planning-artifacts/specs/` — before any file outside `docs/dreams/` or the
+     Spec folder changes (CLAUDE.md § Dream-first; `docs/governance/spec-one-chain-per-station/`).
+     "It exports into another station's tree" does not make a capability cross-station: the
+     station that owns the code owns the chain.
+   - A standalone `docs/dreams/<slug>.md` + `spec-<slug>/` pair needs a `fold-exemption:` from the
+     **closed** list (`different-owner` · `different-lifecycle` · `cross-station-seam` ·
+     `governance`); `cross-station-seam` is reserved for kernel / testing-kit seams every station
+     imports (`spec-pyforge-core`, the testing kit), never a convenience for a feature that reads
+     other stations' files. `chain-sprawl-check` reds an unexempted pair.
    - Qualify cross-project architecture citations using `canopy:AD-n` or `pap:AD-n`.
-   - Add `fold-exemption: cross-station-seam` (or appropriate exemption category) to Dream and Spec YAML frontmatter for new cross-station capabilities.
-7. **Dream Registry & Doctor Hygiene Tests**:
+   - Live incident (PR #1507, 2026-09-19): a steward-owned query module arrived as its own
+     Dream + 35-line Spec sketch with `fold-exemption: cross-station-seam`, a Story citing
+     `CAP-1..4` nothing defined, no tracked story spec and no station memlog entry; the review
+     folded it into `spec-pyforge-steward` CAP-146..149 / Epic 65 and archived the extra Dream.
+7. **Non-recipe PR mechanics** (CLAUDE.md § PR CI gates):
+   - Any change outside `recipes/` → `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
+   - `pixi.toml` changed → `pixi project export conda-environment -e build > environment.yaml`
+     (ungated by the label) and run `pixi run -e pyforge-guild pyforge-station-tests` first: the
+     shared-surface rule fires all 8 station suites in CI, not just the station you touched.
+   - Merge with `--merge`, never `--squash`; a hand-landed story merges with
+     `--subject "Merge <slug>/<key> into main"` so `landing_evidence` can read the key.
+8. **Dream Registry & Doctor Hygiene Tests**:
    - When creating a new Tier-0 Dream in `docs/dreams/<slug>.md`, add its table row to `docs/dreams/README.md`.
    - Run `pixi run -e pyforge-doctor pyforge-doctor-test` to ensure `test_live_tree_dream_readme_missing_count` and `dreams-hygiene` pass.
 

@@ -4574,3 +4574,36 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   raised: 2026-09-14 — Owner: steward (fleet CI policy). Operator direction the same day: **track, decide separately** — making Doctor's marshal-row findings blocking would reverse the 2026-07-31 decision fleet-wide, which is too large to ride along with the coverage-gate fix. The narrower option, if it is ever taken, is a scoped carve-out for `marshal-durability` alone, mirroring the `cfe_rebuild_guard_check` exception that already exists.
 
   closed: 2026-09-14 (later) — **Operator took the narrow option: a scoped carve-out, landed.** `detectors.yml` now has a second dedicated blocking step beside `cfe_rebuild_guard_check` — *"Doctor's durability verdict on Marshal (blocking — ruling 2026-09-14)"* — running `python -m pyforge.doctor.sources ledger-regression` after the advisory sweep and letting its exit code stand (Doctor's frozen domain `{0, 2, 130}`: `2` is a real regression, not could-not-run). **One correction to the entry's own wording:** it named `marshal-durability`, but that source compares the *working tree* against `HEAD` — on a runner those are one commit, so it can observe nothing; `ledger-regression` is the same durability verdict (the 2026-08-08 96-`done`-markers incident class) in the committed-range form its own docstring says was designed for CI, made resolvable by the workflow's `fetch-depth: 0`. Verified green before wiring (`exit=0`, "no tracked ledger un-finishes a story between f391d6a43d and HEAD") so the first blocking run cannot red an unrelated PR; the local mirror already existed — `detectors-ci` (hence `pr-preflight`) exits 1 on any finding, stricter than CI. Scope is exactly one row: `ledger-direction` and every other Marshal-row source stay advisory; widening is a further ruling. Recorded in the Charter's Realization log (with the §5 amendment of the same date) and the workflow's header comment ("TWO SCOPED EXCEPTIONS"); the coverage-gate Dream/Spec non-goal now reads "fleet-wide".
+
+### DW-FU-65-1: The HTMX backlog view and the `WorkPassport` admin ship as a library (AD-1 — the pipeline, not the routing): no URLconf under `src/` registers `sprint_backlog_view` and no host `INSTALLED_APPS` lists the dashboard app, so the view and the admin are reachable only from a host project that wires them. First consumer story wires one host or records why none should.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: The HTMX backlog view and the `WorkPassport` admin ship as a library (AD-1 — the pipeline, not the routing): no URLconf under `src/` registers `sprint_backlog_view` and no host `INSTALLED_APPS` lists the dashboard app, so the view and the admin are reachable only from a host project that wires them. First consumer story wires one host or records why none should.
+  evidence: `views.py` ships a view factory only; `routing.py` / `asgi.py` carry websocket patterns; `grep -rn build_navigation_view src/` finds no URLconf reference (implementer report, PR #1507 review 2026-09-19).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views_htmx.py
+  origin: spec-deferred dfdcdcda9e88 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-65-1-2: Every HTMX render re-parses all eight stations' `epics.md` + ledgers (no caching, no mtime check); fine for a handful of operators, a hot loop for a dashboard polling on a timer. A `pre_query` hook or a source-level mtime cache is the shape when it matters.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: Every HTMX render re-parses all eight stations' `epics.md` + ledgers (no caching, no mtime check); fine for a handful of operators, a hot loop for a dashboard polling on a timer. A `pre_query` hook or a source-level mtime cache is the shape when it matters.
+  evidence: `sprint_backlog_view` builds a fresh `SprintLedgerQueryEngine()` per request and `TrackedLedgerSource.load_station` reads the files every call.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views_htmx.py
+  origin: spec-deferred 225ebde45408 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-65-1-3: `LedgerQueryHook`'s three default no-op methods trip ruff `B024`/`B027` (abstract base with no abstract methods); steward has no ruff lane or config, so nothing reds, but the first station-wide lint pass will.
+
+- source_spec: `planning-artifacts/specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md`
+  summary: `LedgerQueryHook`'s three default no-op methods trip ruff `B024`/`B027` (abstract base with no abstract methods); steward has no ruff lane or config, so nothing reds, but the first station-wide lint pass will.
+  evidence: `ruff check --select B024,B027 src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py` reports both; `F`/`E9` are clean.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
+  origin: spec-deferred 7932f56631b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
