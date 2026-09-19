@@ -321,7 +321,7 @@ def test_bom_and_blank_line_before_the_banner_still_parses(tmp_path: Path) -> No
     path = _write(
         tmp_path,
         "bom_blank_banner.md",
-        "﻿\n  <!-- Promoted from implementation-artifacts/ -->\n---\ntitle: x\nstatus: done\n---\n\nBody.\n",
+        "\ufeff\n  <!-- Promoted from implementation-artifacts/ -->\n---\ntitle: x\nstatus: done\n---\n\nBody.\n",
     )
     assert chain._frontmatter_parse(path) == ({"title": "x", "status": "done"}, False)
 
@@ -353,10 +353,10 @@ def test_skip_leading_banner_is_the_marshal_port() -> None:
     assert chain._skip_leading_banner("---\nx: 1\n---\n") == "---\nx: 1\n---\n"
     assert chain._skip_leading_banner("\n ---\nx: 1\n---\n") == "\n ---\nx: 1\n---\n"
     assert chain._skip_leading_banner("<!-- open\n---\nx: 1\n---\n") == "<!-- open\n---\nx: 1\n---\n"
-    assert chain._skip_leading_banner("﻿<!-- open\n---\n") == "﻿<!-- open\n---\n"
+    assert chain._skip_leading_banner("\ufeff<!-- open\n---\n") == "\ufeff<!-- open\n---\n"
     assert chain._skip_leading_banner("<!-- b -->\n\n\n---\nx: 1\n---\n") == "---\nx: 1\n---\n"
     assert chain._skip_leading_banner("<!--\nmulti\n-->---\nx: 1\n---\n") == "---\nx: 1\n---\n"
-    assert chain._skip_leading_banner("﻿\n  <!-- b -->\n---\nx: 1\n---\n") == "---\nx: 1\n---\n"
+    assert chain._skip_leading_banner("\ufeff\n  <!-- b -->\n---\nx: 1\n---\n") == "---\nx: 1\n---\n"
 
 
 # --- Pre-existing shapes this fix must not disturb ---------------------------
@@ -428,6 +428,22 @@ def test_body_after_frontmatter_with_no_leading_fence_is_the_text_unchanged() ->
 
 def test_body_after_frontmatter_with_no_closing_fence_is_empty() -> None:
     assert chain._dream_body_after_frontmatter("---\ntitle: x\nnever closed\n") == ""
+
+
+def test_body_after_frontmatter_with_an_unclosed_banner_is_the_text_unchanged() -> None:
+    """An unclosed ``<!--`` is not a banner, so line 1 is not a fence and the
+    text comes back unchanged -- the same no-frontmatter branch
+    ``_frontmatter_parse`` reports as ``({}, False)`` for this shape."""
+    text = "<!-- never closed\n---\ntitle: x\n---\nBody.\n"
+    assert chain._dream_body_after_frontmatter(text) is text
+
+
+def test_body_after_frontmatter_normalises_crlf_line_endings() -> None:
+    """``splitlines()`` + ``"\\n".join``: CRLF input comes back with ``\\n``
+    endings (documented as not load-bearing -- the caller only regexes
+    ``[[...]]`` out of the result)."""
+    text = "---\r\ntitle: x\r\n---\r\n\r\nBody [[a]].\r\n"
+    assert chain._dream_body_after_frontmatter(text) == "\nBody [[a]].\n"
 
 
 def test_body_after_frontmatter_preserves_the_trailing_newline_state() -> None:
