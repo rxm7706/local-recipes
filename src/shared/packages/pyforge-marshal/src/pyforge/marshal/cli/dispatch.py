@@ -59,6 +59,7 @@ from ..core.dispatch_completion import (
     DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
+    is_spec_only_narration,
     judge_dispatch_completion,
     zombie_redispatch_evidence,
 )
@@ -74,6 +75,7 @@ from ..core.dispatch_harness_done import (
     blocks_harness_relaunch,
     followup_review_recommended,
     land_fail_operator_message,
+    parse_blocking_condition,
     parse_spec_status,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
@@ -2127,6 +2129,26 @@ def dispatch_once(
                     story_key=render_feed_key(story_key),
                     named_target=named_target,
                     land_verdict=land_verdict.value,
+                ),
+            )
+        )
+        return _done()
+
+    # Story 51.4 (spec-pyforge-marshal CAP-252): a worktree spec left
+    # `status: blocked` by its last session (the 27.3 incident) must not be
+    # relaunched without an operator decision -- distinct from the `done`
+    # branch above, this never attempts a CAP-4 land either.
+    if parse_spec_status(live_spec_text) == "blocked":
+        data["harness_blocked_no_relaunch"] = True
+        findings.append(
+            Finding(
+                code="MRS-DISP-045",
+                severity=Severity.ERROR,
+                message=(
+                    f"story {render_feed_key(story_key)!r} worktree spec is "
+                    f"status: blocked — not relaunching bmad-build-auto without "
+                    f"an operator decision (blocking condition: "
+                    f"{parse_blocking_condition(live_spec_text) or 'not stated'})"
                 ),
             )
         )
