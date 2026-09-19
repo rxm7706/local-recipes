@@ -246,7 +246,7 @@ development_status:
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
-  60-1-the-catalog-config-names-backends-and-sources: backlog
+  60-1-the-catalog-config-names-backends-and-sources: done
   60-2-publish-uses-tools-we-wield-steward-records-the-review: backlog
   60-3-ship-backends-conda-channel-default: backlog
   60-4-frame-index-and-a-thin-browse-list: backlog
