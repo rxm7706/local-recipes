@@ -363,15 +363,17 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     `__import__`, `exec` — is invisible to it. Every sibling guard here shares
     the limitation, so it is not treated as a defect; it is written down
     because dynamic import is the idiomatic way to reach an OPTIONAL
-    dependency. Story 65.1 reached for exactly that shape, and it is now the
-    ONE sanctioned base→dashboard reach: `sprint_ledger_query.sync_to_postgres`
+    dependency. Story 65.1 reached for exactly that shape, and it is one of
+    the sanctioned base→dashboard reaches: `sprint_ledger_query.sync_to_postgres`
     calls `importlib.import_module("pyforge.steward.dashboard.passport_sync")`
     inside the function, refusing (never falling back) on `ImportError`, so the
-    base package keeps working without the extra. The second assertion below
-    pins the narrower claim the sanction rests on — `sprint_ledger_query.py`
-    has NO module-level `django` / `channels` / `pyforge.steward.dashboard`
-    import — since `ast.walk` alone cannot tell a lazy reach from a top-level
-    dependency.
+    base package keeps working without the extra. Story 61.1 added a second,
+    identically-shaped reach: `corridor.load_extract` calls
+    `importlib.import_module("pyforge.steward.dashboard.corridor_load")`. The
+    assertions below pin the narrower claim each sanction rests on — neither
+    `sprint_ledger_query.py` nor `corridor.py` has a module-level `django` /
+    `channels` / `pyforge.steward.dashboard` import — since `ast.walk` alone
+    cannot tell a lazy reach from a top-level dependency.
 
     AST-based (imports only), identical rationale to
     `test_no_rotation_scheduler_exists`/

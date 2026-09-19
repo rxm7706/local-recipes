@@ -1260,6 +1260,10 @@ def resolve_duty(name: str) -> Duty:
         from .catalog import CatalogDuty
 
         return CatalogDuty()
+    if name == "load":
+        from .corridor import LoadDuty
+
+        return LoadDuty()
     return NullDuty(name)
 
 
