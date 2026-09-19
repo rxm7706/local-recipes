@@ -115,6 +115,31 @@ def _normalize_title(title: str) -> str:
     return _NORMALIZE_RE.sub("", title.lower()).strip()
 
 
+#: Story 28.1 / CAP-81: a leading HTML-comment provenance banner a promoted
+#: tracked spec may carry ABOVE its frontmatter fence -- mirrors
+#: ``pyforge.marshal.core.promotion``/``core.spec_surface``'s own
+#: ``_BANNER_PREFIX``/``_BANNER_SUFFIX`` (Story 50.5, CAP-248), duplicated
+#: here per that convention rather than shared across packages.
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading ``<!-- ... -->`` banner, possibly spanning multiple
+    lines -- verbatim port of ``pyforge.marshal.core.promotion``'s own
+    helper (Story 50.5, CAP-248). Returns ``text`` unchanged when it does
+    not start with the banner's opening marker, or when the marker is never
+    closed -- an unclosed banner is not a banner this parser recognizes, so
+    the frontmatter-fence check below still requires the (absent) fence and
+    correctly reports no parseable frontmatter."""
+    if not text.startswith(_BANNER_PREFIX):
+        return text
+    end = text.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return text[end + len(_BANNER_SUFFIX):].lstrip()
+
+
 def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     """Parse a ``---``-fenced YAML frontmatter block.
 
@@ -124,22 +149,44 @@ def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     metadata, ``({}, False)``). Story 17-1 / FR-144 residual: the old
     ``except: return {}`` path silently converted unparseable Spec frontmatter
     into "no owner-dream", inflating INV-0.
+
+    Story 28.1 / CAP-81: the frontmatter block is bounded by LINE-ANCHORED
+    fences -- the opening/closing ``---`` must each be a whole line on its
+    own (after stripping surrounding whitespace), found by scanning lines
+    rather than ``str.split("---", 2)`` on the raw text. The old
+    ``split``-based approach truncated at the FIRST literal ``---``
+    substring anywhere in the document -- including one embedded mid-body
+    inside a YAML folded scalar (e.g. a deferred-work ``evidence:`` block
+    quoting code that itself contains ``"---"``) -- silently corrupting a
+    well-formed frontmatter block into a truncated fragment instead of
+    reporting it unparseable. A leading HTML-comment provenance banner is
+    skipped first (``_skip_leading_banner``), matching the promoted-tracked-
+    spec shape ``pyforge.marshal`` already handles (Story 50.5, CAP-248).
+    A prose file with no leading fence is ``({}, False)`` regardless of
+    whether ``---`` appears anywhere else in its body (e.g. a markdown
+    thematic break) -- that is absent metadata, not unparseable frontmatter.
     """
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
         return {}, True
 
-    if not text.startswith("---"):
-        if "---" in text:
-            return {}, True
+    lines = _skip_leading_banner(text).splitlines()
+    if not lines or lines[0].strip() != "---":
         return {}, False
 
+    frontmatter_lines: list[str] = []
+    closed = False
+    for line in lines[1:]:
+        if line.strip() == "---":
+            closed = True
+            break
+        frontmatter_lines.append(line)
+    if not closed:
+        return {}, True
+
     try:
-        parts = text.split("---", 2)
-        if len(parts) < 3:
-            return {}, True
-        data = yaml.safe_load(parts[1])
+        data = yaml.safe_load("\n".join(frontmatter_lines))
     except Exception:
         return {}, True
 
