@@ -1,0 +1,19 @@
+# Estate listings — the reviewed-listings file (Story 60.1; Story 60.2 owns
+# publish + review and is the only path that appends here).
+#
+# Row format: the upstream registry file format,
+#   https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml
+#   modules: [{name, display_name, description, repository, author, license,
+#              type, category, subcategory, trust_tier, ...}]
+#   trust_tier: unverified | community-reviewed | bmad-certified
+#
+# The `source:` rule: this file feeds exactly one declared source. The
+# file-level `source:` and any per-row `source:` must equal `estate-listings`
+# (catalog.yaml `sources.estate-listings`); `steward catalog check` reports
+# `listing-source-mismatch` otherwise. A row never appears here without a
+# steward review record (60.2) unless it is already in the wielded suite —
+# and those rows come from the `wielded-suite` source, never this file.
+#
+# v1 ships with no community modules (operator ruling 4).
+source: estate-listings
+modules: []
