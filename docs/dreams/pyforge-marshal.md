@@ -375,6 +375,30 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   was coverage-neutral — that lane and `pyforge-pip-install.yml` run the same enumerated
   subset, and `tests/meta/*_sole_ownership.py` (added 2026-08-12/13) were never wired
   into any workflow; the suite was red on `main` today at 6 failed / 1855 passed.
+- **2026-09-19 (the third drain, in flight)** — **Proposed: what the Epic 51 drain still
+  needed a human for, measured on the day.** (1) **A hollow landing.** Story 51.3's session
+  was terminated at Claude Code's print-mode ceiling (`Background tasks still running after
+  600s; terminating. Set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 to wait indefinitely`) before
+  its implementation subagent committed anything; the branch's only commit was the tracked
+  spec's `ready → in-progress` flip; `has_git_progress` counted it as progress, verify was
+  green on an unchanged tree, land merged PR #1501 and finalize promoted `done`. CAP-252 is
+  widened to cover the hollow shape and the harness-ceiling wording; the story is re-minted as
+  51.9; the durable fix for the ceiling belongs in the claude harness profile
+  (`data/harness_profiles/claude.toml` sets no such env key — the remaining drain passes it
+  at launch). (2) **Post-land completion reads `stopped_externally` / `external-operator-stop`
+  with zero changed paths** on every successful land (51.8, 51.2, 51.3) — a classifier that
+  judges completion after the merge against a tree that now equals `main`; harmless for a
+  single dispatch, a false block for a campaign. (3) **The dispatched session writes no memlog
+  entry** (CAP-239 is bmad-loop-only), so `spec-surface` is red with `drift` rows on `main`
+  after every merge until the operator names the paths and stamps; and every landing's
+  bookkeeping files (memlog tails, `.spec-surface-baseline.json`, the ledger) conflict with
+  the next PR's, so each hand landing pays a union-merge. (4) **A land refused on a sibling's
+  bookkeeping** (doctor 28.1 after 51.2's fallout) — CAP-249's case, but the conflicting files
+  were memlogs and the baseline, not code; the re-verify-on-merged-tree step should also
+  auto-resolve append-only files. (5) **`followup_review_recommended: true` carries nothing
+  forward** (51.2's record) — it needs a DW entry or a scheduled follow-up dispatch, or the next
+  landing on the same hub files goes unreviewed. Not decomposed today: (1) is folded into
+  CAP-252's amendment (Story 51.4, widened); (2)–(5) are the next `bmad-spec` pass on this chain.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

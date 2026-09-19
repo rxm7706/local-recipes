@@ -107,6 +107,19 @@ forward. That dream is archived; this one is the real record.
   stays a reserved hole); the same helper's second defect — `if "---" in text:
   return {}, True` marks any prose file with a horizontal rule as unparseable
   frontmatter — is in the CAP's success.
+- **2026-09-19 (afternoon)** — **Proposed: a hollow landing is invisible to every Doctor
+  instrument.** Marshal Story 51.3 landed as PR #1501 with a branch diff of one file, +2/−1
+  (its own tracked spec's status flip), and finalize promoted `51-3 → done`; `story-status`
+  reported ok (the merge subject `Merge pyforge-marshal/51-3 into main` exists),
+  `status-body-consistency` never compares a tracked spec's frontmatter `status:` to its
+  ledger row, and `sources/ledger.py` attributes by subject alone. Two readers are missing:
+  a landing-evidence route that checks the merge's first-parent diff touched the story's
+  declared Surface (or any path outside `specs/spec-<key>*.md`), and a tracked-spec-status
+  vs ledger-row cross-check. Both are `spec-pyforge-doctor` surface — the next `bmad-spec`
+  pass. Same day, from 28.1's own review: `status_body_consistency._parse_frontmatter` is a
+  verbatim pre-CAP-81 copy (DW-FU-28-1), `factory.py`'s pin-scope extractor splits the same
+  way (DW-FU-28-1-2), and a docs-only PR that flips a live-repo test never fires the station
+  lane (found on #1493/#1494).
 - **2026-09-18 (later still)** — **Corrected: the atlas rows were a rekey, not a
   sibling.** Story 27.1 landed (PR #1471) with both halves of CAP-78 real —
   `ledger-regression` judges a PR at its merge-base, and the merge-history
