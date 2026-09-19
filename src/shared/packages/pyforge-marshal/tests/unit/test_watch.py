@@ -1232,8 +1232,8 @@ def test_default_ports_dispatch_last_fact_reads_the_real_journal(tmp_path: Path)
     run_dir = dispatch_run_dir(tmp_path, "acme", "d1")
     run_dir.mkdir(parents=True)
     entry = build_entry(
-        id=JournalEntryId(run_id="d1", seq=1),
-        ts="2026-09-18T06:00:00Z",
+        id=JournalEntryId(writer_id="test-writer", counter=1),
+        ts="2026-09-18T06:00:00.000Z",
         run_id="d1",
         kind="dispatch-launch",
         phase=Phase.INTENT,
