@@ -425,17 +425,20 @@ def _skip_leading_banner(text: str) -> str:
     -- a ``<!-- ... -->`` block, possibly spanning multiple lines, that a
     recovered or minted tracked spec may carry ABOVE its frontmatter fence
     instead of below it (herald's pre-#1460 ``spec-1-4``: ``<!-- Promoted
-    from implementation-artifacts/ ... -->`` as line 1). Returns ``text``
-    unchanged when it does not start with the banner's opening marker, or
+    from implementation-artifacts/ ... -->`` as line 1). Tolerates a leading
+    BOM, blank lines, or spaces before the banner's opening marker (Story
+    51.8, CAP-256, DW-FU-50-6) -- the banner need not sit at literal text
+    offset 0. Returns ``text`` unchanged when no banner is found there, or
     when the marker is never closed -- an unclosed banner is not a banner
     this parser recognizes, so ``is_valid_spec_text`` still requires the
     (absent) frontmatter fence and correctly stays invalid."""
-    if not text.startswith(_BANNER_PREFIX):
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
         return text
-    end = text.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
     if end == -1:
         return text
-    return text[end + len(_BANNER_SUFFIX) :].lstrip()
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
 
 
 def is_valid_spec_text(text: str | None) -> bool:

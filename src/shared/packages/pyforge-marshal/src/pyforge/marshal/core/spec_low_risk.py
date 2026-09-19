@@ -17,6 +17,12 @@ A ``declared_low_risk:`` key with no inline value (multi-line YAML block form)
 raises ``LowRiskParseError``, mirroring ``DifficultyParseError`` / AD-27:
 callers must report it, never swallow into ``False``.
 
+Story 51.8 (CAP-256, DW-FU-50-5): a leading HTML-comment provenance banner
+(``_skip_leading_banner``, mirroring ``core/promotion.py`` and
+``core/spec_surface.py``'s identical helper) is skipped before the fence
+check, so a promoted, banner-topped tracked spec's ``declared_low_risk: true``
+is no longer misread as ``False`` by the ``lines[0] == "---"`` check.
+
 This module is pure data: no I/O (AD-4).
 """
 
@@ -30,7 +36,29 @@ from pyforge.core.errors import PyforgeError
 _FRONTMATTER_DELIMITER = "---"
 _LOW_RISK_KEY = "declared_low_risk:"
 
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
 _BARE_BOOL_RE = re.compile(r"^(?i:true|false|yes|no)$")
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading HTML-comment provenance banner (Story 50.5/51.8,
+    CAP-248/CAP-256) -- see ``core.promotion``'s identical helper for the
+    full rationale: a recovered or minted tracked spec may carry a
+    ``<!-- ... -->`` banner ABOVE its frontmatter fence instead of below
+    it, and this parser's ``lines[0] == "---"`` check must not read that
+    as "no frontmatter at all". Tolerates a leading BOM, blank lines, or
+    spaces before the banner's opening marker -- the banner need not sit
+    at literal text offset 0. Returns ``text`` unchanged when no banner is
+    found there, or when the marker is never closed."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
 
 
 def _strip_trailing_comment(raw: str) -> str:
@@ -63,7 +91,7 @@ def parse_declared_low_risk(text: str) -> bool:
     if not isinstance(text, str):
         raise TypeError(f"text must be a str, got {text!r}")
 
-    lines = text.splitlines()
+    lines = _skip_leading_banner(text).splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return False
 

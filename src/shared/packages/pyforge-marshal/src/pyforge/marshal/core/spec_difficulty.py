@@ -54,6 +54,15 @@ bare ``None``.
 
 This module is pure data: no I/O, no subprocess, no network, no clock, no
 ``pyforge.marshal.adapters`` import (AD-4) -- only ``ast``/``re``.
+
+Story 51.8 (CAP-256, review pass 1): a leading HTML-comment provenance
+banner (``_skip_leading_banner``, mirroring ``core/promotion.py``,
+``core/spec_surface.py``, and ``core/spec_low_risk.py``'s identical
+helper) is skipped before the fence check, so a promoted, banner-topped
+Tier-3 story spec's ``difficulty:`` is no longer misread as absent by the
+``lines[0] == "---"`` check -- reached via ``cli/spin.py::
+_story_declared_difficulty``, a real caller reading the same tracked spec
+family this parser's siblings already guard against this bug.
 """
 
 from __future__ import annotations
@@ -65,6 +74,9 @@ from pyforge.core.errors import PyforgeError
 
 _FRONTMATTER_DELIMITER = "---"
 _DIFFICULTY_KEY = "difficulty:"
+
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
 
 # The bare-token charset a difficulty name may use when written unquoted
 # (the ordinary YAML plain-scalar case) -- the same charset this package's
@@ -96,6 +108,25 @@ def _strip_trailing_comment(raw: str) -> str:
             if index == 0 or raw[index - 1].isspace():
                 return raw[:index].rstrip()
     return raw
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading HTML-comment provenance banner (Story 50.5/51.8,
+    CAP-248/CAP-256) -- see ``core.promotion``'s identical helper for the
+    full rationale: a recovered or minted tracked spec may carry a
+    ``<!-- ... -->`` banner ABOVE its frontmatter fence instead of below
+    it, and this parser's ``lines[0] == "---"`` check must not read that
+    as "no frontmatter at all". Tolerates a leading BOM, blank lines, or
+    spaces before the banner's opening marker -- the banner need not sit
+    at literal text offset 0. Returns ``text`` unchanged when no banner is
+    found there, or when the marker is never closed."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
 
 
 class DifficultyParseError(PyforgeError, ValueError):
@@ -136,7 +167,7 @@ def parse_declared_difficulty(text: str) -> str | None:
     if not isinstance(text, str):
         raise TypeError(f"text must be a str, got {text!r}")
 
-    lines = text.splitlines()
+    lines = _skip_leading_banner(text).splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return None
 
