@@ -865,6 +865,69 @@ def _run_and_journal_landing(
     return counter
 
 
+def _land_or_journal_block(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+    verification_verdict: DispatchVerificationVerdict,
+    merge_subject_template: str,
+) -> int:
+    """Land, unless the worktree spec is blocked/narration-only (Story 51.4,
+    spec-pyforge-marshal CAP-252 -- defense in depth).
+
+    ``_run_supervisor_finalize_sequence`` already stops before verification
+    is ever journaled "verified" for a blocked or narration-only spec, so
+    ``verification_verdict`` reaching this function as VERIFIED should never
+    coincide with a block reason in practice. This is a second, independent
+    read of the same worktree facts at the tick loop's own land trigger --
+    the surface the Binding names explicitly -- rather than the sole guard.
+    """
+    block_reason = _spec_land_block_reason(
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        git_facts=git_facts,
+    )
+    if block_reason is not None:
+        return _journal_dispatch_blocked(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            reason=block_reason,
+        )
+    return _run_and_journal_landing(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        verification_verdict=verification_verdict,
+        merge_subject_template=merge_subject_template,
+    )
+
+
 def _session_awaits_verification(
     session_alive: bool, git: DispatchGitFacts
 ) -> bool:
@@ -1169,6 +1232,13 @@ def run_dispatch_supervisor(
     stuck_land_ticks = 0
     last_session_log_snapshot: str | None = None
     last_session_activity_monotonic = time.monotonic()
+    # Story 51.4 (CAP-252): the worktree-relative path of the story's own
+    # tracked spec, resolved once (the worktree path is fixed for the run) --
+    # threaded into every terminal-verdict read so a diff collapsing to just
+    # this file is judged as no progress, not live/stopped-externally work.
+    spec_relative_path, _initial_spec_text = _worktree_story_spec(
+        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+    )
 
     while True:
         tick_count += 1
@@ -1311,7 +1381,7 @@ def run_dispatch_supervisor(
                         stuck_land_ticks=stuck_land_ticks,
                     )
                 ):
-                    counter = _run_and_journal_landing(
+                    counter = _land_or_journal_block(
                         fs=fs,
                         vcs=vcs,
                         process=process,
@@ -1323,6 +1393,7 @@ def run_dispatch_supervisor(
                         slug=slug,
                         story_key=story_key,
                         worktree=worktree,
+                        git_facts=git_facts,
                         verification_verdict=DispatchVerificationVerdict.VERIFIED,
                         merge_subject_template=merge_subject_template,
                     )
@@ -1391,7 +1462,7 @@ def run_dispatch_supervisor(
             landing_journaled=landing_journaled,
             stuck_land_ticks=stuck_land_ticks,
         ):
-            counter = _run_and_journal_landing(
+            counter = _land_or_journal_block(
                 fs=fs,
                 vcs=vcs,
                 process=process,
@@ -1403,6 +1474,7 @@ def run_dispatch_supervisor(
                 slug=slug,
                 story_key=story_key,
                 worktree=worktree,
+                git_facts=git_facts,
                 verification_verdict=DispatchVerificationVerdict.VERIFIED,
                 merge_subject_template=merge_subject_template,
             )
