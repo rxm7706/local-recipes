@@ -6370,3 +6370,14 @@ status: open
   promoted: 2026-09-19 — hand-filed
   status: open
   story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5).
+
+### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
+
+- source_spec: `planning-artifacts/specs/spec-51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3.md`
+  summary: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
+  evidence: Edge Case Hunter (EC2) on the 51.9 review pass. Pre-existing via _promote_sprint_ledger's own two prior deploy_run.write calls in the same function, not introduced by this story; a real fix requires redesigning _DeployRun / finalize_dispatch_land's shared error-severity policy — a distinct, unscoped change. Reshaped 2026-09-19 from the session's bare-string item into the summary/evidence/ location form so `deferred-work` can see it (a bare string is invisible to the twin check).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py::finalize_dispatch_land
+  origin: spec-deferred b3476d0dd8c2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
