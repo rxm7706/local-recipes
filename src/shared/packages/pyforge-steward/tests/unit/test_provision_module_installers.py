@@ -698,6 +698,10 @@ def test_provision_installer_idempotent_reprovision_allows_overwrite(tea_fixture
 
 
 def test_provision_installer_missing_share_raises_before_subprocess(tmp_path, monkeypatch):
+    # Pin the ambient prefix to an empty env: under a fat env (pyforge-guild
+    # ships the tea share tree) the "missing share" this test asserts is not
+    # missing, and the failure reads as a regression it is not.
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "lean-env"))
     calls: list[object] = []
     monkeypatch.setattr(subprocess, "run", lambda cmd, **kwargs: calls.append(cmd))  # noqa: ARG005
 
