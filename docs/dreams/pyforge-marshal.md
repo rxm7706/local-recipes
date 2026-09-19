@@ -320,6 +320,53 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   sixth thing a human did — `ledger-regression` reddening a story PR's `detectors`
   lane *after* the unattended merge, because the PR head is stale against the
   promoted ledger — is doctor's source and is seeded on [[pyforge-doctor]] as `spec-pyforge-doctor:CAP-78`.
+- **2026-09-18 (later)** — **Proposed: what the second drain still needed a human
+  for.** With Epic 50 draining under its own fixes (50.1 ended the race-respawn,
+  50.2 the quota-wording block, 50.3 the tier-map override, 50.4 the un-scoped
+  evidence), doctor 27.1–27.5, herald 24.1–24.3 and marshal 50.1–50.4 all landed
+  themselves the same day — and the next set of human acts is different in kind
+  from the first. Measured on the journals and on `main`: (1) **verification
+  never sees the merge result.** `dispatch verify` runs the station suite on the
+  branch tip; a story whose baseline predates a sibling's landing on the same
+  files reaches `dispatch land` *verified* and is refused there (MRS-DISP-038,
+  PR left open, no re-verify-after-merge step). Marshal 50.4's review pass rewired
+  doctor's `sources/marshal.py` / `sources/ledger.py`; doctor 27.5 had rewired the
+  same files 42 min after 50.4's baseline. Hand-composed (`1a5895317f`) — and the
+  parts git *did* auto-merge would have shipped a runtime `TypeError`
+  (`bare_merge.py`'s 2-arg call against 50.4's 3-arg signature): a green branch
+  suite is not a green merge. (2) **finalize promotes from the primary's Tier-3
+  dir, but the session writes its record into the worktree's.** bmad-build-auto
+  wrote 50.4's Review Triage Log, Auto Run Result, `followup_review_recommended:
+  true` and its one deferral to `<worktree>/implementation-artifacts/spec-50-4-…`
+  (with the tracked spec as `context:`), flipped only `status:` on the tracked
+  copy, and the worktree is neither bind-mounted nor backlinked — so
+  `dispatch_land_finalize` found nothing to promote and the tracked spec landed
+  `done` with none of its record; promoted by hand (#1488), DW-FU-50-4 ingested by
+  hand. Same landing: the journal's `dispatch-land` projection read `pr_number:
+  null, marshal_native: false` for a refusal that happened *after* PR #1487 was
+  opened, labelled and passed the native check. (3) **finalize never refreshes the
+  primary checkout** — the campaign reads the promoted ledger only after an
+  operator `git pull` (herald 23.x, every landing). (4) **a blocked outcome still
+  lands.** Doctor 27.3's session found an intent gap, reverted to baseline and set
+  `blocked`; marshal landed the empty branch (PR #1476) and promoted `27-3 → done`
+  — the truth had to be written above the Auto Run Result by hand and the story
+  re-minted as 27.4→27.5. (5) **MRS-DISP-043 is silent for an uncatalogued model**
+  (DW-FU-50-3, from 50.3's own review). (6) **`marshal watch` infers the pattern
+  from August's paused bmad-loop runs**, so a station now driven by `dispatch`
+  reports the wrong run; the fleet watch read journals directly all day. (7) **a
+  station-prefixed branch name poisons a key**: `doctor/27-4-mint` parsed under
+  the station-branch landing grammar, so merging its PR (#1477) made 27.4 read
+  landed and its first dispatch detached from a live session in one second —
+  landing evidence is station-scoped (50.4) but not intent-scoped. (8) **the
+  pyforge-core suite has no CI lane** since #1086 (2026-09-08) retired
+  `pyforge-core.yml` as redundant: six `spec-pyforge-core` CAP-5/CAP-7
+  conformance violations accumulated unseen between 09-07 and 09-15 (marshal
+  `adapters/oidc_pkce.py`, `cli/watch.py`, `cli/login.py`, `cli/refresh.py`;
+  warden `tea_advisory.py`; testing-kit `branch_diff_guard.py`) and surfaced only
+  because 50.4's hand-merge was verified on that suite — co-governed here, owned
+  by `spec-pyforge-core`. Not decomposed tonight: (1)–(7) are the next
+  `bmad-spec` pass on this chain (Epic 51 onward; 48/49 stay reserved holes),
+  (8) is a `spec-pyforge-core` realization gap.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
