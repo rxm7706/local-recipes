@@ -2952,6 +2952,11 @@ def _station_ledger_statuses(
         rel_path = ledger_path.relative_to(
             dispatch_core.canonical_repo_root(repo_root)
         ).as_posix()
+        # Review pass 2026-09-19 (VG1): refresh the local cache of
+        # `origin/main` first -- without this, a stale cached ref could
+        # silently defeat the fallback in exactly the scenario it exists
+        # to fix. Same swallow-and-fall-back handling as the read itself.
+        vcs.fetch(repo_root, "origin", "main")
         remote_text = vcs.file_text_at_ref(repo_root, "origin/main", rel_path)
     except (VcsCommandError, ValueError):
         remote_text = None

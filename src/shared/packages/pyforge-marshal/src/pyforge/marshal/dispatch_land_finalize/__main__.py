@@ -91,7 +91,16 @@ def finalize_dispatch_land(
     # its own tip -- a dirty or non-`main` checkout is refused exactly as
     # `_resync_home_branch` already refuses one, via its own pre-existing
     # `_MRS_LAND_009` WARN, never a second write path.
-    resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
+    #
+    # Review pass 2026-09-19: `_resync_home_branch` only checks SHA-match,
+    # never dirtiness -- a dirty checkout sitting exactly at local `main`'s
+    # own tip would pass that check unchanged and still get fast-forwarded
+    # with the dirty changes in place. Gate on dirtiness HERE, before even
+    # calling it, rather than modifying that shared primitive.
+    if vcs.has_uncommitted_changes(root):
+        resynced = False
+    else:
+        resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
     deploy_run.write(
         findings,
         kind=_FINALIZE_RESYNC_KIND,
