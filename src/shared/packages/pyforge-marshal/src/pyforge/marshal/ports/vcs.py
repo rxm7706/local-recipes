@@ -259,6 +259,18 @@ class VcsPort(Protocol):
         with no flag. Raises ``VcsCommandError`` on any git failure."""
         ...
 
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (e.g. a raw filesystem delete).
+        Story 51.1's own best-effort cleanup fallback (mirroring
+        ``merge_branch``'s) calls this after a raw ``shutil.rmtree`` when
+        ``remove_worktree`` itself has failed. Raises ``VcsCommandError`` on
+        any git failure -- callers that treat this as best-effort swallow it
+        themselves, matching how ``remove_worktree`` failures are already
+        swallowed."""
+        ...
+
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """Delete ``branch`` (``git branch -d``/``-D``). ``force`` selects
         ``-D``: git's own ``-d`` uses commit-SHA ancestry and would
