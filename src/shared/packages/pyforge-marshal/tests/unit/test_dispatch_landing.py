@@ -591,3 +591,262 @@ def test_execute_dispatch_land_refuses_an_unattributable_preserved_branch(
     assert vcs.pushed == []
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert any(f.code == "MRS-DISP-030" for f in envelope.findings)
+
+
+# --------------------------------------------------------------------------
+# Story 51.1: verification sees the merge result -- `dispatch land` re-runs
+# `verify_commands` against the tree `git merge-tree --write-tree` would
+# actually produce whenever the branch is behind `origin/main`, catching a
+# break the branch's own tree never exposes (the 2026-09-18 50.4/27.5
+# incident: an operator-composed merge commit called `bare_merge.py` with 2
+# args against a rewired 3-arg signature, and no verification pass -- every
+# one of which only ever ran against the branch's own tree -- ever saw it).
+# --------------------------------------------------------------------------
+
+
+class MergeTreePreviewVcs(FakeVcs):
+    """Layers Story 51.1's four merge-tree-preview primitives on top of
+    ``FakeVcs`` -- mirrors ``HealCapableVcs``'s own pattern of adding
+    fixture-specific behavior in a subclass rather than widening the shared
+    ``FakeVcs`` construction every other test in this file already relies
+    on."""
+
+    def __init__(
+        self,
+        *,
+        behind: int = 1,
+        tree_oid: str | None = "preview-tree-oid",
+        fetch_raises: bool = False,
+    ) -> None:
+        super().__init__(merged=False)
+        self.behind = behind
+        self.tree_oid = tree_oid
+        self.fetch_raises = fetch_raises
+        self.fetch_calls: list[tuple[str, str]] = []
+        self.merge_tree_write_calls: list[tuple[str, str]] = []
+        self.add_worktree_for_tree_calls: list[tuple[Path, str, str]] = []
+        self.removed_worktrees: list[Path] = []
+        self.preview_home: Path | None = None
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        self.fetch_calls.append((remote, ref))
+        if self.fetch_raises:
+            raise VcsCommandError("network unreachable")
+
+    def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
+        return self.behind
+
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        self.merge_tree_write_calls.append((base, branch))
+        return self.tree_oid
+
+    def add_worktree_for_tree(
+        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
+    ) -> None:
+        self.add_worktree_for_tree_calls.append((home, tree_oid, parent))
+        self.preview_home = home
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        self.removed_worktrees.append(home)
+
+
+class PreviewAwareProcess(FakeProcess):
+    """A ``ProcessPort`` that fails only when ``cwd`` is the merge-tree
+    preview worktree -- ``vcs.preview_home`` is set by
+    ``add_worktree_for_tree`` before ``run_verify_commands_only`` ever calls
+    ``process.run(..., cwd=preview_home)`` (Story 51.1's execution order),
+    so this reproduces the 50.4/27.5 incident precisely: the branch's own
+    verification (a different ``cwd``) stays green, and only the merge-tree
+    preview's own run breaks."""
+
+    def __init__(self, *, vcs: MergeTreePreviewVcs, stderr: str) -> None:
+        super().__init__()
+        self._vcs = vcs
+        self._stderr = stderr
+
+    def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
+        if self._vcs.preview_home is not None and cwd == self._vcs.preview_home:
+            return ProcessResult(returncode=1, stdout="", stderr=self._stderr)
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_execute_dispatch_land_refuses_when_merge_tree_preview_is_red(
+    tmp_path: Path,
+) -> None:
+    """The 50.4/27.5 fixture: branch verification is already green
+    (``verification_verdict=VERIFIED``) and the merge itself is git-clean,
+    but the tree ``git merge-tree --write-tree origin/main <head>`` would
+    actually produce breaks a verify command with a runtime error no
+    branch-only verification pass ever saw."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=2, tree_oid="preview-tree-oid")
+    process = PreviewAwareProcess(
+        vcs=vcs,
+        stderr="TypeError: bare_merge() takes 2 positional arguments but 3 were given",
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["pixi run pyforge-marshal-test"]},
+        flags={},
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp044 = [f for f in envelope.findings if f.code == "MRS-DISP-044"]
+    assert len(disp044) == 1
+    assert "TypeError: bare_merge()" in disp044[0].message
+    assert "pixi run pyforge-marshal-test" in disp044[0].message
+    assert result.pr_number == 42
+    assert result.marshal_native is True
+    # the throwaway worktree is always removed, even though it refused.
+    assert vcs.removed_worktrees == [vcs.preview_home]
+
+
+def test_execute_dispatch_land_lands_when_merge_tree_preview_is_clean(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid")
+    process = FakeProcess()
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
+    assert len(vcs.add_worktree_for_tree_calls) == 1
+    assert vcs.removed_worktrees == [vcs.preview_home]
+
+
+def test_execute_dispatch_land_skips_merge_tree_check_when_even_with_origin_main(
+    tmp_path: Path,
+) -> None:
+    """``commits_behind == 0`` must verify exactly once, byte-identical to
+    pre-51.1 behavior -- no ``merge_tree_write``/``add_worktree_for_tree``
+    calls at all."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=0)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert vcs.merge_tree_write_calls == []
+    assert vcs.add_worktree_for_tree_calls == []
+    assert vcs.removed_worktrees == []
+    assert vcs.fetch_calls == [("origin", "main")]
+    assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
+
+
+def test_execute_dispatch_land_falls_through_on_a_real_merge_tree_conflict(
+    tmp_path: Path,
+) -> None:
+    """``merge_tree_write`` returning ``None`` is a real git-detected
+    conflict -- already owned by the existing ``MRS-DISP-038``/heal path,
+    not this story's concern. Lands normally here because the forge merge
+    itself succeeds without ever needing to heal anything."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=1, tree_oid=None)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert vcs.add_worktree_for_tree_calls == []
+    assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
+
+
+def test_execute_dispatch_land_refuses_when_behind_check_is_unevaluable(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(fetch_raises=True)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp044 = [f for f in envelope.findings if f.code == "MRS-DISP-044"]
+    assert len(disp044) == 1
+    assert result.pr_number == 42
+    assert result.marshal_native is True
+
+
+def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Mutation test: stubbing the merge-tree-preview check to a no-op makes
+    the 50.4/27.5 fixture land GREEN -- proving THIS check, not some other
+    mechanism, is what refuses it."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=2, tree_oid="preview-tree-oid")
+    process = PreviewAwareProcess(
+        vcs=vcs,
+        stderr="TypeError: bare_merge() takes 2 positional arguments but 3 were given",
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land._refuse_via_merge_tree_preview",
+        lambda **_kwargs: None,
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["pixi run pyforge-marshal-test"]},
+        flags={},
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
