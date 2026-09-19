@@ -6381,3 +6381,14 @@ status: open
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-51-1: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
+
+- source_spec: `planning-artifacts/specs/spec-51-1-verification-sees-the-merge-result.md`
+  summary: The pre-existing "already landed" check in execute_dispatch_land reasons from local main while the new Story 51.1 merge-tree-preview check fetches and diffs against origin/main, leaving two different freshness assumptions about "main" side by side in the same function.
+  evidence: vcs.commit_subjects(git_repo_root, _MERGE_BASE) (_MERGE_BASE = "main", the local branch) is unchanged by this story and never fetches; the new _refuse_via_merge_tree_preview check explicitly fetches origin/main first. If the local main ref is stale, the already-landed check could give a wrong answer. This predates Story 51.1 and is outside its intent (fixing merge-result verification, not the already-landed check), so it was not fixed here.
+  location: src/pyforge/marshal/dispatch_land.py (the commit_subjects/_MERGE_BASE check)
+  origin: spec-deferred 1feedfb59a16 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
