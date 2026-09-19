@@ -1810,3 +1810,24 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-OPS-2026-09-19-6: six folded-and-archived Dreams still live unfolded in the sibling repo — `sibling-dreams-drift` (CAP-71) reports status / content_hash / title divergence once a token reaches it
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: With `GH_TOKEN` exported (2026-09-19; `~/.bashrc` now sets it from `gh auth token`) the check reaches `OpenTeams-WFT-CDO/mgmt-wf-python-modernization` and finds `django-accelerator-framework`, `enterprise-data-models-and-apis`, `miniforge-installer`, `package-inventory-eligibility`, `pixi-container-image`, `reusable-cicd-workflows` diverging on status, content_hash and title. All six are `archived` here — folded into their station Dreams on 2026-09-17 (one-chain-per-station, e.g. `miniforge-installer` → `[[pyforge-mason]]`) — while the sibling still carries the pre-fold copies. Expected fallout of the fold, not a mistake here; needs a cross-repo decision: push the fold to the sibling (archive or repoint the six there), or declare the sibling a frozen snapshot and exempt them from CAP-71. Until decided the six warn on every run.
+  evidence: `GH_TOKEN="$(gh auth token)" .pixi/envs/pyforge-guild/bin/python -m pyforge.doctor.sources sibling-dreams-drift` → six `sibling-dreams-drift: warn` rows, exit 0 (2026-09-19). Without the token the same run reports `sibling-dreams-unreachable` — the check fails open by design.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: doctor (CAP-71); the fold decision is mason's/steward's (the six Dreams' new owners). Operator-only for the sibling-side edit.
+
+### DW-FU-23-5: No automated, repeatable check encodes "no live doc cites the old _bmad-output/ root path for the five archived files" as a re-checkable command anywhere in the repo.
+
+- source_spec: `planning-artifacts/specs/spec-23-5-archive-citations-for-the-five-already-moved-_bmad-output-files.md`
+  summary: No automated, repeatable check encodes "no live doc cites the old _bmad-output/ root path for the five archived files" as a re-checkable command anywhere in the repo.
+  evidence: Confirmed independently by two review layers: grepped pyforge-doctor's hygiene definitions and tests for DREAM-TRIAGE, archive/_bmad-output, stale/dead/broken-link/resolve-citation patterns and found no matching detector or meta-test. This story's own bound Verification command (pyforge-doctor-test) is the station's generic suite and does not exercise this invariant, so a future re-introduction of a stale old-root citation would ship green. Already tracked separately as Story 23.7 ("A new Doctor source flags leftover shelf occupancy"), currently backlog — not this story's problem to build.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/
+  origin: spec-deferred b39d4a218335 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

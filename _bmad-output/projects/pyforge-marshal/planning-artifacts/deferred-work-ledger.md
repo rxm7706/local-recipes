@@ -6306,7 +6306,8 @@ status: open
   origin: spec-deferred 43c57981dccf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  verified: 2026-09-19 — resolved by marshal Story 51.5 (merge 29e4a237df): MRS-DISP-043 fires for an uncatalogued model too (`provider_declaring_model` returning None no longer means silent). Live evidence the same day: steward's cursor-only tier map put grok-4.6 on a `--harness claude` launch and the session died at boot — the exact class 51.5 now flags.
   story: promoted to Story 51.5 (spec-pyforge-marshal CAP-253, Epic 51, minted 2026-09-19); close when 51.5 lands, citing its merge.
 
 ### DW-FU-50-4: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
@@ -6422,7 +6423,8 @@ status: open
   evidence: `pixi run --frozen -e pyforge-guild marshal watch --fleet --format text` from `lr-m50`; `fleet-picture` ATTENTION rows. The escalations' stories have since landed through other routes (e.g. marshal seed copier — Epic 46/47 chain).
   location: ~/.bmad-loops/pyforge-{doctor,herald,marshal,mason,steward}
   severity: low
-  status: open
+  status: done
+  verified: 2026-09-19 — resolved (operator ruling 'run it'). 35 August runs archived with `bmad-loop archive` (compressed, reversible: `.bmad-loop/archive/<run>.tar.gz` in each loop home) — the five named plus 30 more `paused`/`stopped` runs that surfaced behind them, each checked first: not alive, every story `done` on the tracked ledger, dated before September; one deliberately kept (marshal `20260810-192255-dbc6`, stories 7-5/7-6 not done). `marshal retire --execute` → 0 proposals. `marshal refresh` → all 8 loop homes fast-forwarded 455 → `66463b4986`, `loop/<slug>` pushed, `policy.toml` re-rendered. `marshal watch --fleet` now reports `User Action Required: None`; `fleet-picture` has no 'loop home behind' row.
   raised: 2026-09-19 — Owner: marshal (loop-home lifecycle). Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.
 
 ### DW-OPS-2026-09-19-2: the main checkout still carries 14 stashes and eight merged `.worktrees/dispatch-*` worktrees (+ their local/remote `dispatch/*` branches) that a session cannot remove
@@ -6432,7 +6434,8 @@ status: open
   evidence: `git stash list` (14, Aug 12 → Sep 2), `git worktree list` in the main checkout, 2026-09-19.
   location: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees
   severity: low
-  status: open
+  status: done
+  verified: 2026-09-19 — resolved by the operator in-session: `git stash clear` (14 → 0; patches archived), 12 merged `.worktrees/dispatch-*` removed + pruned (only the live lane remains), 19 local `dispatch/*` + the two unmerged branches deleted, 41 merged remote `dispatch/*` deleted (`git branch -r | grep -c origin/dispatch/` → the live lanes only).
   raised: 2026-09-19 — Owner: marshal (dispatch worktree lifecycle; see also steward's resolved worktree-residue entry of 2026-09-08). Asked of the operator in the 2026-09-19 session.
 
 ### DW-OPS-2026-09-19-3: marshal Story 46.5's key is poisoned — PR #1448 (Story 28.24, "supervisor finalize") merged from a branch named `dispatch/pyforge-marshal/46.5`, so `merged_story_keys` reads 46.5 as landed while the ledger row is `backlog`
@@ -6454,3 +6457,14 @@ status: open
   severity: low
   status: open
   raised: 2026-09-19 — Owner: marshal (token-economy kit). Operator-only.
+
+### DW-FU-51-5: The spin-engine sibling guard in `adapters/harness_bmadloop.py::render_policy_toml` was not widened alongside this story's dispatch-engine guard, so a genuinely foreign or mistyped tier-mapped model can still reach a live spin-engine launch unwarned.
+
+- source_spec: `planning-artifacts/specs/spec-51-5-mrs-disp-043-speaks-for-an-uncatalogued-model.md`
+  summary: The spin-engine sibling guard in `adapters/harness_bmadloop.py::render_policy_toml` was not widened alongside this story's dispatch-engine guard, so a genuinely foreign or mistyped tier-mapped model can still reach a live spin-engine launch unwarned.
+  evidence: Both the Edge Case Hunter and the Verification Gap Reviewer independently flagged this in the 2026-09-19 review pass. Confirmed unchanged by this diff (not in Story 51.5's declared Surface: `cli/dispatch.py`, `core/model_cost.py::provider_declaring_model`, `core/findings.py` / `core/verdict.py`, tests). The gap is identical in shape to how the dispatch guard read before this story, so it pre-dates this change rather than being caused by it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py::render_policy_toml
+  origin: spec-deferred 81382d5938a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
