@@ -3435,6 +3435,98 @@ def test_sibling_promoted_ledger_is_read_when_primary_sits_behind(
     assert vcs.fetched == [("origin", "main")]
 
 
+def test_clean_but_diverged_primary_still_reads_the_remote_ledger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Group 4a (review pass 2026-09-19): a primary that is NOT dirty but
+    has simply moved past (or never was) local `main`'s resolved tip must
+    still hit the `origin/main` remote-read path -- `_primary_checkout_is_
+    clean_main` gates on SHA-match too, not only on dirtiness."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    vcs = FakeVcs(tmp_path)
+    # Clean checkout, but its resolved `main` tip has moved on -- never
+    # fast-forwarded or otherwise mutated by this fixture.
+    vcs.dirty = False
+    vcs.main_ref = "diverged-tip-9999"
+    ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+    vcs.remote_ledger_texts[ledger_rel] = (
+        f"development_status:\n  {head}: done\n  {nxt}: backlog\n"
+    )
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        # The LOCAL on-disk twin is deliberately stale, same as the dirty
+        # case -- divergence alone must be enough to distrust it.
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        vcs=vcs,
+        process=FakeProcess(alive_pids=frozenset({99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == [(slug, "23.7")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert vcs.fetched == [("origin", "main")]
+
+
+def test_remote_read_failure_falls_back_to_the_local_ledger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Group 4b (review pass 2026-09-19): when the remote read itself fails
+    (here, `file_text_at_ref` raises `VcsCommandError`), the fallback must
+    still resolve -- to the existing local `HarnessPort` read -- rather than
+    propagating the error or reporting no status at all."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    vcs = FakeVcs(tmp_path)
+    vcs.dirty = True
+
+    def _raise_on_read(repo_root: Path, ref: str, path: str) -> str | None:
+        raise VcsCommandError("origin/main ref temporarily unavailable")
+
+    vcs.file_text_at_ref = _raise_on_read  # type: ignore[method-assign]
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        # The LOCAL ledger already reflects the promotion here -- since the
+        # remote read fails, this is what must be trusted instead.
+        ledgers={slug: ((head, "done"), (nxt, "backlog"))},
+        vcs=vcs,
+        process=FakeProcess(alive_pids=frozenset({99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == [(slug, "23.7")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert vcs.fetched == [("origin", "main")]
+
+
 def test_herald_2026_09_18_three_cycle_replay_ends_with_the_next_story(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
