@@ -392,7 +392,15 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if not heal.healed:
             findings.append(
                 Finding(
@@ -407,7 +415,15 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if heal.landed_via_local_merge:
             data["local_main_advance"] = True
         if heal.retried_forge_merge:
@@ -444,7 +460,15 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
 
     envelope = build_envelope(
         command="dispatch land",
