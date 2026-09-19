@@ -6331,8 +6331,9 @@ status: open
   note: also read as spec-deferred fdd6bce25c09 by doctor's pre-fix `_frontmatter_parse`, which splits on the first `---` anywhere and so truncated this item at the quoted fence in its evidence (location dropped) — hand-rewritten 2026-09-19 in full-parse form; seeded on docs/dreams/pyforge-doctor.md
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done 2026-09-19
   story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.
+  verified: 2026-09-19 — RESOLVED by Story 51.8 (spec-pyforge-marshal CAP-256; PR #1495, `62c09c2e27 Merge pyforge-marshal/51-8 into main`). `core/spec_low_risk.py::parse_declared_low_risk` skips a leading banner; `test_spec_low_risk.py` pins a banner-topped `declared_low_risk: true` resolving through the gate.
 
 ### DW-FU-50-6: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
 
@@ -6343,5 +6344,17 @@ status: open
   origin: spec-deferred 5434eca8c9e5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done 2026-09-19
   story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.
+  verified: 2026-09-19 — RESOLVED by Story 51.8 (spec-pyforge-marshal CAP-256; PR #1495, `62c09c2e27 Merge pyforge-marshal/51-8 into main`). `_skip_leading_banner` in both `core/promotion.py` and `core/spec_surface.py` (and the two siblings 51.8 extended) tolerates a leading BOM, blank lines or spaces before `<!--`; `test_promotion.py` / `test_spec_surface.py` pin the BOM/blank/space prefixes.
+
+### DW-FU-51-8-1: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
+
+- source_spec: `planning-artifacts/specs/spec-51-8-the-banner-skip-family-is-complete.md`
+  summary: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
+  evidence: Verified live by the 51.8 session: `is_valid_spec_text` and `parse_declared_low_risk` both return False on a fixture whose text is a BOM followed immediately by the `---` fence. Pre-existing gap in the base first-line fence check, orthogonal to banner recognition; CAP-256's intent is scoped to banner tolerance (blank line, spaces and a BOM before `<!--`), so the no-banner BOM case is excluded by the intent itself.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text
+  origin: spec-deferred ed1337df1626 — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
+  severity: low
+  promoted: 2026-09-19 — hand-ingested (see origin)
+  status: open
