@@ -716,12 +716,27 @@ def test_satellite_heading_matches_across_punctuation_drift(tmp_path: Path) -> N
     )
 
 
-def test_markdown_without_a_leading_frontmatter_fence_surfaces_unparseable(
+def test_markdown_without_a_leading_frontmatter_fence_is_absent_not_unparseable(
     tmp_path: Path,
 ) -> None:
-    """A ``---`` fence embedded in the body without a leading opener is
-    malformed frontmatter — Story 17-1 / FR-144: must not silently degrade to
-    ``owner: (none)`` on a ``dream-without-spec`` finding."""
+    """A complete ``---``/YAML/``---`` block displaced below prose -- no
+    leading opener -- is absent metadata, not malformed frontmatter
+    (Story 28.1 / CAP-81): ``_frontmatter_parse`` requires the opening
+    fence to be LINE-ANCHORED on the very first line of the document, so
+    prose preceding a ``---``-delimited block is simply a Dream with no
+    recognized frontmatter at all -- same as any other Dream missing it --
+    and reports ``dream-without-spec`` (owner unknown) rather than an
+    elevated ``unparseable-frontmatter`` WARN.
+
+    Story 28.1's Always clause ("a prose file with a ``---`` rule and no
+    leading fence is ``({}, False)``") supersedes the Story 17-1 / FR-144
+    pin this exact fixture used to carry. That story's concern -- a
+    malformed block must not silently masquerade as ``owner: (none)`` --
+    still holds for a block that legitimately OPENS with ``---`` but never
+    closes, and for an attempted-but-unbounded opener such as a glued
+    ``---title:`` (see ``test_sources_chain_frontmatter_parse.py``); it no
+    longer extends to a ``---`` that merely appears somewhere in the body
+    with no leading fence."""
     path = tmp_path / "docs" / "dreams" / "nofence.md"
     path.parent.mkdir(parents=True)
     path.write_text(
@@ -736,11 +751,11 @@ def test_markdown_without_a_leading_frontmatter_fence_surfaces_unparseable(
     findings = chain.gather_dream_chain(tmp_path)
     checks = {f.check for f in findings}
 
-    assert "unparseable-frontmatter" in checks
-    assert "dream-without-spec" not in checks
-    unparsed = next(f for f in findings if f.check == "unparseable-frontmatter")
-    assert unparsed.evidence["subject"] == "nofence"
-    assert unparsed.status is DoctorStatus.WARN
+    assert "unparseable-frontmatter" not in checks
+    assert "dream-without-spec" in checks
+    gap = next(f for f in findings if f.check == "dream-without-spec")
+    assert gap.evidence["subject"] == "nofence"
+    assert gap.evidence["owner"] == "(none)"
 
 
 def test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream(
