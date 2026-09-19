@@ -284,7 +284,7 @@ development_status:
   51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: backlog
   51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: backlog
   51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: backlog
-  51-8-the-banner-skip-family-is-complete: backlog
+  51-8-the-banner-skip-family-is-complete: done
   52-1-the-six-accumulated-violations-are-cleared: backlog
   52-2-the-conformance-suite-is-a-pr-gate: backlog
   5-1-fleet-view: done
