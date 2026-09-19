@@ -86,6 +86,15 @@ def test_leading_blank_line_before_the_fence_is_absent(tmp_path: Path) -> None:
     assert chain._frontmatter_parse(path) == ({}, False)
 
 
+def test_utf8_bom_before_a_bare_fence_is_absent(tmp_path: Path) -> None:
+    """A UTF-8 BOM before a bare ``---`` (no banner): line 1 is ``\\ufeff---``,
+    which is neither a fence nor -- since a BOM is not whitespace to
+    ``str.strip()`` -- an attempted opener, so absent metadata: the Design
+    Notes' chosen verdict (review pass 1, BH6/ECH3: 0 live instances)."""
+    path = _write(tmp_path, "bom.md", "\ufeff---\ntitle: x\nstatus: draft\n---\n\nBody.\n")
+    assert chain._frontmatter_parse(path) == ({}, False)
+
+
 # --- Line-anchored closing fence: unbounded stays refused, never silent -----
 
 
@@ -173,6 +182,23 @@ def test_an_indented_dashes_line_inside_a_block_scalar_is_not_the_closing_fence(
     }
 
 
+def test_a_block_scalar_as_the_last_key_keeps_its_final_newline(tmp_path: Path) -> None:
+    """The YAML handed to ``safe_load`` ends with a newline, as the old
+    ``parts[1]`` slice did (it ran up to the newline before the closing
+    fence): a ``|`` block scalar that is the LAST frontmatter key keeps its
+    final line break, so the value is byte-identical to the old reader's
+    (12 live atlas specs' ``frontmatter_note`` have this shape)."""
+    path = _write(
+        tmp_path,
+        "last-key-block.md",
+        "---\ntitle: x\nfrontmatter_note: |\n  first\n  second\n---\n\nBody.\n",
+    )
+    assert chain._frontmatter_parse(path) == (
+        {"title": "x", "frontmatter_note": "first\nsecond\n"},
+        False,
+    )
+
+
 # --- Opener rule: attempted but unbounded is refused, not degraded -----------
 
 
@@ -211,6 +237,13 @@ def test_opener_with_trailing_comment_is_unparseable(tmp_path: Path) -> None:
         "comment-opener.md",
         "--- # not a fence\ntitle: x\n---\n\nBody.\n",
     )
+    assert chain._frontmatter_parse(path) == ({}, True)
+
+
+def test_four_dash_opener_is_unparseable(tmp_path: Path) -> None:
+    """``----`` on line 1 starts with ``---`` but is not exactly the fence:
+    attempted, unbounded, refused."""
+    path = _write(tmp_path, "four-dashes.md", "----\ntitle: x\n---\n\nBody.\n")
     assert chain._frontmatter_parse(path) == ({}, True)
 
 
@@ -280,15 +313,50 @@ def test_unclosed_banner_is_not_treated_as_a_banner(tmp_path: Path) -> None:
     assert chain._frontmatter_parse(path) == ({}, False)
 
 
+def test_bom_and_blank_line_before_the_banner_still_parses(tmp_path: Path) -> None:
+    """Marshal Story 51.8 / ``spec-pyforge-marshal:CAP-256`` (closing
+    DW-FU-50-6): the banner need not sit at literal text offset 0 -- a UTF-8
+    BOM, blank lines or spaces before ``<!--`` are skipped along with it,
+    so the frontmatter behind such a banner still parses."""
+    path = _write(
+        tmp_path,
+        "bom_blank_banner.md",
+        "﻿\n  <!-- Promoted from implementation-artifacts/ -->\n---\ntitle: x\nstatus: done\n---\n\nBody.\n",
+    )
+    assert chain._frontmatter_parse(path) == ({"title": "x", "status": "done"}, False)
+
+
+def test_indented_fence_behind_a_banner_parses_by_marshal_parity(tmp_path: Path) -> None:
+    """The documented consequence of the verbatim port: ``_skip_leading_
+    banner``'s trailing ``.lstrip()`` strips indentation from the fence
+    line, so the column-0 rule applies to the POST-banner text and a
+    banner-topped file tolerates leading whitespace on its opening fence --
+    while the same ``   ---`` with no banner stays refused
+    (``test_opener_with_leading_whitespace_is_unparseable``). Pinned as a
+    deliberate verdict, kept for parity with marshal's helper."""
+    path = _write(
+        tmp_path,
+        "indented_fence_banner.md",
+        "<!-- b -->\n   ---\ntitle: x\nstatus: done\n---\n\nBody.\n",
+    )
+    assert chain._frontmatter_parse(path) == ({"title": "x", "status": "done"}, False)
+
+
 def test_skip_leading_banner_is_the_marshal_port() -> None:
-    """The helper's three branches, pinned directly: no banner -> unchanged;
-    unclosed banner -> unchanged; closed banner -> the remainder
+    """The helper's branches, pinned directly against marshal's
+    ``promotion.py`` body (Story 50.5 / CAP-248 + Story 51.8 / CAP-256): no
+    banner -> ``text`` unchanged (even with leading whitespace); unclosed
+    banner -> ``text`` unchanged; closed banner -> the remainder
     ``lstrip``-ed (so the fence lands on line 1 whether the banner's ``-->``
-    is followed by one newline or several)."""
+    is followed by one newline or several); BOM/blank/space before the
+    banner -> skipped with it."""
     assert chain._skip_leading_banner("---\nx: 1\n---\n") == "---\nx: 1\n---\n"
+    assert chain._skip_leading_banner("\n ---\nx: 1\n---\n") == "\n ---\nx: 1\n---\n"
     assert chain._skip_leading_banner("<!-- open\n---\nx: 1\n---\n") == "<!-- open\n---\nx: 1\n---\n"
+    assert chain._skip_leading_banner("﻿<!-- open\n---\n") == "﻿<!-- open\n---\n"
     assert chain._skip_leading_banner("<!-- b -->\n\n\n---\nx: 1\n---\n") == "---\nx: 1\n---\n"
     assert chain._skip_leading_banner("<!--\nmulti\n-->---\nx: 1\n---\n") == "---\nx: 1\n---\n"
+    assert chain._skip_leading_banner("﻿\n  <!-- b -->\n---\nx: 1\n---\n") == "---\nx: 1\n---\n"
 
 
 # --- Pre-existing shapes this fix must not disturb ---------------------------

@@ -1151,7 +1151,9 @@ def _dream_body_after_frontmatter(text: str) -> str:
     case). No closing fence: ``""``. Otherwise the lines after the closing
     fence, re-joined with ``\\n`` plus the original's trailing newline if it
     had one -- the caller only regexes ``[[...]]`` out of the result, so the
-    exact leading/trailing whitespace is not load-bearing.
+    exact leading/trailing whitespace is not load-bearing and line endings
+    are normalised (``splitlines()`` + ``"\\n".join``: CRLF input comes back
+    as ``\\n``).
     """
     split = _split_fenced_block(_fenced_lines(text))
     if split is None:
