@@ -6319,6 +6319,7 @@ status: open
   origin: spec-deferred ba205d439d0e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  note: 2026-09-19 (night) — Story 51.7 was minted to close this, then amended after run `…-0b70f736` blocked (intent gap): 51.7 now corroborates dispatch landings by tracked-spec status and leaves the retrospective scan unchanged, so this item is NOT closed by 51.7; stays open, low, its own item.
   status: open
   story: promoted to Story 51.7 (spec-pyforge-marshal CAP-255, Epic 51, minted 2026-09-19); close when 51.7 lands, citing its merge.
 

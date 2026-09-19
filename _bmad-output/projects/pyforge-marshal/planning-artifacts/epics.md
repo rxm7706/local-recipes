@@ -6556,25 +6556,32 @@ any `running`/`paused` `bmad-loop list` row win and consults `dispatch_run_id` o
 ### Story 51.7: Landing evidence is intent-scoped, not just station-scoped
 
 As a station whose planning, mint and fallout branches must be allowed to mention a story key,
-I want only the shapes marshal itself mints for a landing to mark a key merged,
-So that a branch like `doctor/27-4-mint` can never make a story read landed before its first dispatch.
+I want the dispatch consumers to corroborate a station-branch landing by the tracked spec's `status: done` on `origin/main`
+rather than by the branch's name,
+So that a branch like `doctor/27-4-mint` can never make a story read landed before its first dispatch, and no real
+historical landing loses its evidence.
 
-**Type:** fix • **Effort:** M • **Deps:** S-51.8 • **FR/AD:** spec-pyforge-marshal CAP-255 • closes DW-FU-50-4 •
+**Type:** fix • **Effort:** M • **Deps:** S-51.8 • **FR/AD:** spec-pyforge-marshal CAP-255 (refined 2026-09-19 night after run `…-0b70f736` blocked on an intent gap:
+corroborate by content, not name; DW-FU-50-4 no longer claimed) •
 co-governed by spec-landing-evidence-grammar / spec-pyforge-core
-**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` (`parse_station_branch_name`
-requires the landing grammar — `dispatch/<slug>/<key>` or the key as the whole last segment; `parse_github_pr_merge_subject`
-stops accepting a key-prefixed token; `_branch_belongs_to_project` gains its production caller),
-`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::_classify_merge_subject` /
-`merged_story_keys` (passes real branch data, not `branch=None`), tests in both packages; doctor's `sources/marshal.py`
-consumers verified green (`pyforge-doctor-test`, `pyforge-core-test` — outside marshal's `verify_commands`, so run by hand
-before land).
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` (`LandingEvidenceMatch` exposes the
+branch-derived shape a GitHub PR-merge subject matched through; parsers unchanged — no grammar tightening),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py` (new `corroborated_merged_story_keys(subjects, template,
+slug, *, spec_status_for)` beside the unchanged `merged_story_keys`; a banner-tolerant `spec_status_for` reader over
+`origin/main:<planning-artifacts>/specs/spec-<key>-*.md`), the three dispatch consumers `dispatch_supervisor/__main__.py`
+(`story_merged_on_main`), `dispatch_land.py` (already-landed check), `dispatch_land_finalize/__main__.py`; tests in both packages
+incl. the PR #1477 fixture; `cli/status.py`, `cli/deploy.py`, `cli/land.py` and doctor's `sources/marshal.py` untouched — hand-verify
+with `pyforge-core-test` + `pyforge-doctor-test` before land (outside marshal's `verify_commands`).
 **Given** on 2026-09-18 doctor Story 27.4 was minted on `doctor/27-4-mint`; when PR #1477 merged, `story_merged_on_main`
 read true for 27.4 and its first dispatch completed in one second and detached from a live session (story re-keyed to
 27.5, 27.4 a reserved hole)
-**When** a station-prefixed branch counts as a landing only under the landing grammar, and the retrospective scan
-corroborates the un-scoped shape with the branch it actually came from
-**Then** `merged_story_keys` for `pyforge-doctor` against `origin/main` no longer contains 27.4, while every `done` row of
-the eight tracked ledgers with real landing evidence still classifies (the CAP-247 regression fixture extended)
+**When** a station-branch match reached through a GitHub PR-merge subject counts as a landing for the dispatch consumers only
+when the key's tracked story spec on `origin/main` reads `status: done` (a mint/fallout/fix PR merges it `ready`/`backlog`; a
+landing merges the promoted twin), and the retrospective scanners are unchanged
+**Then** on the PR #1477 fixture 27.4 is absent from `promotion.corroborated_merged_story_keys` and present in
+`merged_story_keys`, while every `done` row of the eight tracked ledgers with real landing evidence still classifies
+retrospectively (the CAP-247 regression fixture extended; the 347-key marshal sweep yields 0 regressions), and a landing whose
+tracked spec is not `done` is not corroborated (CAP-252's posture)
 **And** live history is never re-attributed; the MRS-GATE scope advisory for `pyforge-core/**` is expected and recorded,
 not suppressed
 
