@@ -187,6 +187,14 @@ def test_unclosed_banner_above_frontmatter_returns_none():
     assert parse_declared_difficulty(text) is None
 
 
+def test_blank_line_with_no_banner_still_returns_none():
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n" + _frontmatter(_HEADER + "difficulty: heavy\n")
+    assert parse_declared_difficulty(text) is None
+
+
 # --- type contract -------------------------------------------------------------
 
 

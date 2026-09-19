@@ -74,6 +74,14 @@ def test_unclosed_banner_above_frontmatter_returns_none() -> None:
     assert parse_spec_status(text) is None
 
 
+def test_blank_line_with_no_banner_still_returns_none() -> None:
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n---\nstatus: done\n---\n"
+    assert parse_spec_status(text) is None
+
+
 def test_operator_message_names_pr_and_chain() -> None:
     message = land_fail_operator_message(
         story_key="41-2-query-plane",

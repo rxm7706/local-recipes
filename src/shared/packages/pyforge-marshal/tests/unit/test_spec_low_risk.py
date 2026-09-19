@@ -91,3 +91,11 @@ def test_unclosed_banner_above_frontmatter_reads_false():
     declared."""
     text = "<!-- never closed\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
     assert parse_declared_low_risk(text) is False
+
+
+def test_blank_line_with_no_banner_still_returns_false():
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n" + _frontmatter(_HEADER + "declared_low_risk: true\n")
+    assert parse_declared_low_risk(text) is False
