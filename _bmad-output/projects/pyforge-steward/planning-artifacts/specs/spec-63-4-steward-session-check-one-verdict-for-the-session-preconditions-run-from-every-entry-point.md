@@ -47,6 +47,11 @@ Ledger key: `63-4-steward-session-check-one-verdict-for-the-session-precondition
 Ledger status at mint (unchanged): `backlog`.
 Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spec-63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point.md`.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
 ## Epic excerpt
 
 **Type:** feature • **Effort:** M • **Deps:** S-63.1, S-63.3 • **FR/AD:** spec-pyforge-steward CAP-5; AD-8 (`DutyResult` is frozen evidence; duties never `sys.exit`)

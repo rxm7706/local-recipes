@@ -42,3 +42,9 @@ Parent Spec capability: `spec-self-hosted-bmad-marketplace CAP-1`.
 Surface: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-self-hosted-bmad-marketplace/backends-and-sources.md; a config the installer and Claude/Codex extraKnownMarketplaces can point at..
 Ledger key: `60-1-the-catalog-config-names-backends-and-sources`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-60-1-the-catalog-config-names-backends-and-sources.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

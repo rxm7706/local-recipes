@@ -49,6 +49,10 @@ second independent `scribe recall` call.
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+
+**Manual checks:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test -k recall` -- expected: a fixture test asserts
   the review-pass launch path consumes Story 47.1's cached query result rather than issuing its
   own, and that exactly one `scribe recall` subprocess call happens per story dispatch across both

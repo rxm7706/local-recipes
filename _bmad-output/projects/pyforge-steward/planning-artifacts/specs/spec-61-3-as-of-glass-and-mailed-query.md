@@ -46,3 +46,9 @@ Parent Spec capability: `spec-work-passports-dated-extracts CAP-3`.
 Surface: existing app views standup and shipped; optional CSV/markdown export..
 Ledger key: `61-3-as-of-glass-and-mailed-query`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-61-3-as-of-glass-and-mailed-query.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

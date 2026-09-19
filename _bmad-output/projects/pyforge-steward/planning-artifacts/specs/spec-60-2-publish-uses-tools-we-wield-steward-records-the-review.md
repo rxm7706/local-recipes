@@ -42,3 +42,9 @@ Parent Spec capability: `spec-self-hosted-bmad-marketplace CAP-2`.
 Surface: Builder / module-template / SKF publish path; the estate catalog registry YAML..
 Ledger key: `60-2-publish-uses-tools-we-wield-steward-records-the-review`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-60-2-publish-uses-tools-we-wield-steward-records-the-review.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

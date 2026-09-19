@@ -43,3 +43,9 @@ Parent Spec capability: `spec-work-passports-dated-extracts CAP-4`.
 Surface: outbound loader; named outbound-signer role on the existing app..
 Ledger key: `61-4-signed-outbound-slice`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-61-4-signed-outbound-slice.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

@@ -51,3 +51,9 @@ Companion: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-p
 Surface: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/live_proof_surfaces.py` (new), `models.py` (Source enum), `report-schema.json`, `__main__.py` (DISPATCH + REGISTRY), `scripts/detectors.py` (detectors-ci row), doctor unit tests.
 Ledger key: `26-1-a-touched-live-proof-only-surface-gets-an-advisory-doctor-finding-naming-it`.
 Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spec-26-1-a-touched-live-proof-only-surface-gets-an-advisory-doctor-finding-naming-it.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

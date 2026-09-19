@@ -44,3 +44,9 @@ Parent Spec capability: `spec-work-passports-dated-extracts CAP-5`.
 Surface: quarantine shelf on the existing app..
 Ledger key: `61-5-quarantine-mint-then-reject`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-61-5-quarantine-mint-then-reject.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

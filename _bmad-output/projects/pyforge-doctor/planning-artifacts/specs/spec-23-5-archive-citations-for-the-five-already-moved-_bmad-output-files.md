@@ -40,3 +40,9 @@ Parent Spec capability: `spec-docs-shelf-alignment CAP-5`.
 Surface: docs/intake/README.md; station planning-artifacts/specs/README.md files that still cite the old root paths..
 Ledger key: `23-5-archive-citations-for-the-five-already-moved-_bmad-output-files`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-5-archive-citations-for-the-five-already-moved-_bmad-output-files.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

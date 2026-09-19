@@ -45,3 +45,9 @@ Parent Spec capability: `spec-build-league-scorecard CAP-2`.
 Surface: a config the catalog and later consumers read..
 Ledger key: `62-2-add-switch-and-archive-without-a-rewrite`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-62-2-add-switch-and-archive-without-a-rewrite.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

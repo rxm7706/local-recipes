@@ -40,3 +40,9 @@ Parent Spec capability: `spec-docs-shelf-alignment CAP-4`.
 Surface: docs/intake/, archive/docs/intake/, owning Dream companions..
 Ledger key: `23-4-empty-the-intake-inbox-per-its-own-readme`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-4-empty-the-intake-inbox-per-its-own-readme.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
