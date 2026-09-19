@@ -657,6 +657,32 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def load_queue(slug: str) -> list[str]:
         return _parse_queue(slug, root)
 
+    def loop_last_fact(slug: str, run_id: str) -> datetime | None:
+        # Story 51.6: bmad-loop's own journal, same home layout as
+        # list_runs/run_status above (<home>/.bmad-loop/runs/<run_id>/).
+        journal_path = Path.home() / ".bmad-loops" / slug / ".bmad-loop" / "runs" / run_id / "journal.jsonl"
+        try:
+            text = journal_path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        return _loop_journal_last_fact(text)
+
+    def dispatch_last_fact(slug: str, dispatch_id: str) -> datetime | None:
+        # Story 51.6: reuse cli/dispatch.py's own run-dir/journal readers --
+        # imported lazily, mirroring cli/status.py::_merge_dispatch_overlay's
+        # identical local-import precedent for the same module.
+        from ..adapters.fs_local import LocalFs
+        from .dispatch import gather_dispatch_journal_facts, iter_dispatch_run_dirs
+
+        run_dir = next(
+            (p for p in iter_dispatch_run_dirs(root, slug) if p.name == dispatch_id),
+            None,
+        )
+        if run_dir is None:
+            return None
+        facts = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+        return _dispatch_journal_last_fact(facts)
+
     return WatchPorts(
         list_runs=list_runs,
         run_status=run_status,
@@ -665,6 +691,8 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         list_prs=list_prs,
         discover_projects=discover_projects,
         load_queue=load_queue,
+        loop_last_fact=loop_last_fact,
+        dispatch_last_fact=dispatch_last_fact,
     )
 
 
@@ -823,9 +851,27 @@ def _gather_station(
     pattern: str
     resolved: str | None = run_id
     if live is not None:
+        loop_id = str(live.get("id") or live.get("run_id") or "")
         pattern = "bmad-loop"
         if resolved is None:
-            resolved = str(live.get("id") or live.get("run_id") or "")
+            resolved = loop_id
+        # Story 51.6 (spec-pyforge-marshal CAP-254): an auto-detected live
+        # loop row no longer wins unconditionally -- when this station also
+        # has a dispatch run, the engine whose last journal fact is more
+        # recent wins. A pinned ``run_id`` (``run_id is not None``) is the
+        # operator watching THIS run on purpose; the comparison never
+        # overrides a pin.
+        raw_dispatch_id = home.get("dispatch_run_id") if home else None
+        if run_id is None and isinstance(raw_dispatch_id, str) and raw_dispatch_id:
+            loop_last = ports.loop_last_fact(slug, loop_id) if ports.loop_last_fact is not None else None
+            dispatch_last = (
+                ports.dispatch_last_fact(slug, raw_dispatch_id)
+                if ports.dispatch_last_fact is not None
+                else None
+            )
+            if _dispatch_outranks_loop(loop_last_fact=loop_last, dispatch_last_fact=dispatch_last):
+                pattern = "bmad-build-auto"
+                resolved = raw_dispatch_id
     elif resolved is not None:
         # Pinned run_id with no live row: still try bmad-loop status first.
         pattern = "bmad-loop"
