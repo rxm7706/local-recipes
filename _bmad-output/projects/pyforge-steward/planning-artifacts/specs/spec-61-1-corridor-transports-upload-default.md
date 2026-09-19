@@ -2,13 +2,14 @@
 title: '61.1: Corridor transports — upload default'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
 deferred: []
 declared_low_risk: false
+baseline_revision: '1a0857aa9be731c5868e3f1f76bcb2b46d621a43'
 ---
 
 <intent-contract>
@@ -176,6 +177,12 @@ transports:
 - Given `--transport email` or `--transport shared-folder` (both declared `state: off` in `corridor.yaml`), when `steward load inbound|outbound` runs with that transport, then it returns `ok=False` naming the transport as off, and no `CorridorLoad` row is created.
 - Given the bare `steward load` invocation (no verb), when it runs, then it returns `ok=True` and reports all three declared transports and their states, without touching Django/the database at all.
 - Given `pyforge-steward[dashboard]` is not installed (django not importable), when `steward load inbound ...` runs, then `load_extract` returns `status: refused` (never a raised `ImportError` escaping the duty boundary).
+
+## Design Notes
+
+- **`waybill` is caller-supplied, not system-generated.** The Dream (`docs/dreams/work-passports-dated-extracts.md`) defines waybill as "which drop and which clocks," and the companion doc's only hard requirement is "idempotent on batch sha + waybill" (one I/O Matrix row). Nothing in the intent specifies HOW a waybill label is produced, and both a caller-supplied label and a system-auto-incremented sequence satisfy the one tested scenario identically — this is not an intent gap (no observably different outcome hinges on it), so the simpler option is taken: `--waybill LABEL` is a required CLI argument, a free-form string (e.g. `drop-42`, a date stamp), recorded verbatim. Auto-numbering, per-vendor waybill scoping, and the "their clock and our received clock" as-of semantics are CAP-141 / Story 61.3's job ("as-of glass"), not this story's.
+- **No `vendor_id` on `CorridorLoad`.** The Dream's vendor table (`transports-and-vendors.md`) ties `vendor_id` to the passport schema (CAP-140 / Story 61.2), and v1 runs exactly one vendor — adding an unused column here would be speculative. `CorridorLoad` is scoped to the corridor/transport mechanism alone.
+- **`shared-folder` and `email` transports have no runtime behavior in v1** — they exist only as `state: off` rows in `corridor.yaml` so `load_extract` can name them and refuse them by config, matching the companion doc verbatim ("email is an empty slot until enabled," "v1 does not require a mailbox parser"). A file always arrives via `--file PATH` regardless of which transport name is passed; "transport" in v1 is a provenance label + on/off gate, not a distinct ingestion code path.
 
 ## Verification
 
