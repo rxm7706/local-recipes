@@ -6307,3 +6307,14 @@ status: open
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-50-4: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
+
+- source_spec: `planning-artifacts/specs/spec-50-4-landing-evidence-carries-the-station-in-every-shape.md`
+  summary: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
+  evidence: Confirmed via dispatch_landing.py/dispatch_land.py: the only production caller of branch-corroboration-adjacent code (merge_subject_is_marshal_native) is a pre-flight self-consistency check on a templated subject dispatch_land.py is about to render for its own station -- not the bare direct-commit shape's retrospective use case. Every caller of parse_story_direct_commit_subject inside merged_story_keys's own scan passes no branch data, so branch=None always refuses safely by design; the gap is that no caller exists that COULD pass real branch data to let a genuine direct-commit landing corroborate. Pre-existing, not caused by this story -- Story 50.4 added the corroboration requirement, but no story has yet added a caller with branch data for this shape. Blind Hunter findings #4 and #10 (same root cause).
+  location: src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py:178 (_branch_belongs_to_project)
+  origin: spec-deferred ba205d439d0e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
