@@ -94,6 +94,61 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 ## Review Triage Log
 
+### 2026-09-19 — Review pass
+
+- verdicts: 49 findings — high 0, medium 9, low 35, false 5, maybe-false 0 (Blind Hunter 13, Edge Case Hunter 23, Verification Gap 4, Intent Alignment 9; BH12 is one finding logged as two rows, BH12a/BH12b, because its two halves route differently)
+- findings:
+  - `[medium]` `[defer]` BH1 committed manifest bakes recipe `version`/`description`; a recipe-only PR (no steward CI trigger) leaves `main` with `manifest-drift`, surfacing red on the next unrelated steward PR — real (VG2 reproduced it by patching `read_recipe_version` → drift fires); the in-contract closure is CI wiring (`recipes/bmad-*/**` + `docs/foundry/frames/**` on the steward trigger, or `steward catalog render --check` in `detectors-ci`) and a render gate before 60.3 ships a snapshot — both outside this story's surface; recorded in `deferred:`
+  - `[medium]` `[patch]` BH2 duplicate listing names across sources are not a finding → two same-named plugins in the manifest — real (`_collect` never compares names); patched: `listing-duplicate` finding keyed on `(kind, name)` naming both producing sources
+  - `[low]` `[patch]` BH3 `TRUST_TIERS` declared, never enforced; `bmad-certifed` reaches the manifest as a tag — real; patched: `EstateListingsSource` raises `CatalogConfigError` (→ `config-source`) for a tier outside `TRUST_TIERS`
+  - `[medium]` `[patch]` BH4 `_github_owner_repo` accepts `git@github.com:acme/x.git` → invalid `source.repo` — real (verified by execution: returns `git@github.com:acme/x`); patched: exactly two `[A-Za-z0-9_.-]+` segments, everything else → `None`
+  - `[low]` `[patch]` BH5 `path` is catalog-relative for `estate-listings` and repo-relative for `estate-frames`, undocumented — real; patched: anchor stated on both `catalog.yaml` rows and in both plugin docstrings
+  - `[low]` `[patch]` BH6 "empty slot" not representable: `plugin` is mandatory even for `off`/`available` rows — real (`_parse_decls` raises without `plugin`); patched: `plugin` optional when `state` is not `on`, `claude-skill-registry` shipped as `plugin: null` with `skillsctl` named in a comment
+  - `[low]` `[patch]` BH7 misspelled top-level sections load as zero backends/sources; `edit_store.kind: svn` accepted — real; patched: unknown top-level keys and `kind != "git"` are named `CatalogConfigError`s
+  - `[low]` `[patch]` BH8 estate.yaml header advertises upstream fields the loader ignores and omits the keys it reads — real (docs); patched: header documents the accepted row keys and which reach the manifest; pass-through of `author`/`license` to the manifest is an enhancement, not a defect, and was not added
+  - `[low]` `[patch]` BH9 a module listing without a GitHub `owner/repo` is silently dropped from the Claude manifest with no record — real; patched: non-GitHub git URLs render with Claude's documented `{"source":"url","url":…}` plugin-source form, and a module row with no repository is a `listing-no-repository` finding
+  - `[low]` `[patch]` BH10 memlog says "landed" while the story is in review and counts 41 tests vs 43 — real; patched: reworded to "dispatched (in review; lands with its PR)" with the final count, scoped stamp re-taken
+  - `[low]` `[patch]` BH11 estate.yaml header "must equal" vs code "if present" for the file-level `source:` — real inconsistency; patched: header softened to "when present, must equal; absent means `estate-listings`" (rows already default to it, so absence is not a mis-sourced file)
+  - `[low]` `[defer]` BH12a `.claude/skills/pyforge-steward/…/SKILL.md` "Registered duties" roster lacks `catalog` (already lacked `cutover`, `ledger-query`) — real but it is an SKF-managed agent-context file outside this story's surface; recorded in `deferred:`
+  - `[low]` `[patch]` BH12b `--catalog DIR` only works before the verb and nothing says so — real (`steward catalog check --catalog DIR` exits 2, verified); patched with ECH20/21: `--catalog`/`--json` accepted on both parser levels (`default=argparse.SUPPRESS` on the verb level)
+  - `[low]` `[patch]` BH13 a bare `on:` key under `backends:`/`sources:` becomes a declaration named `"True"` — real (YAML 1.1); patched: non-string or empty declaration keys are a named `CatalogConfigError`
+  - `[low]` `[patch]` ECH1 a source raising anything but `CatalogConfigError` aborts the whole check (backends already guard `Exception`) — real (`_collect` catches only `CatalogConfigError`); patched: `Exception` → `config-source` finding, remaining sources still run
+  - `[false]` `[reject]` ECH2 frames listed although preflight "returned early" on a count mismatch — `frames.py:171-235` never returns early: the `count` finding is recorded with `path=root` and every doc is still parsed and validated per-doc, and the catalog skips docs with per-doc findings; the premise is false
+  - `[low]` `[patch]` ECH3 a non-UTF-8 `*.frame.md` raises `UnicodeDecodeError` out of `_collect` — real (`preflight_frames` uses `read_text`); same defect as ECH1, closed by the same `Exception` guard
+  - `[low]` `[reject]` ECH4 a committed manifest that is not valid UTF-8 escapes `drift()`'s `OSError` guard — real but the file is generated by `render` as UTF-8 and committed; nobody meets this in everyday use and the fix adds a guard
+  - `[medium]` `[patch]` ECH5 `render`/`render --check` use `listings()` which discards collect findings: a broken `estate.yaml` renders manifests missing its rows and `render --check` says "in sync" — real (VG3 reproduced with `modules: 3`); patched: collect findings fail `render`/`render --check` with nothing written
+  - `[low]` `[patch]` ECH6 rows with empty/mismatched `source` are still rendered (tag `source:`) — real; same root cause as ECH5, closed by excluding flagged rows from the render
+  - `[medium]` `[patch]` ECH7 `_github_owner_repo` also passes `o/r#readme` — real (verified); same defect as BH4, one regex fix
+  - `[low]` `[patch]` ECH8 `trust_tier` unvalidated — same defect as BH3
+  - `[low]` `[patch]` ECH9 estate `version: 1.10` becomes `"1.1"` — real (`str(1.1)`); patched: mirror `read_recipe_version` (str, non-bool int, else `None`)
+  - `[low]` `[patch]` ECH10 absent file-level `source:` accepted despite the header's "must" — same defect as BH11 (header patched)
+  - `[medium]` `[patch]` ECH11 duplicate listing names — same defect as BH2
+  - `[low]` `[reject]` ECH12 duplicate keys inside `catalog.yaml` silently last-wins — real (PyYAML), but the fix is a `SafeLoader` subclass and a duplicated declaration key is not an everyday edit; the real-tree test pins the exact declared sets, so the shipped file cannot drift this way unnoticed
+  - `[low]` `[patch]` ECH13 non-string declaration key → `"True"` — same defect as BH13
+  - `[low]` `[patch]` ECH14 `dedicated_repo` accepts any non-empty string although the error text promises `owner/repo` — real; patched: rejected unless `_github_owner_repo(value) == value`
+  - `[low]` `[patch]` ECH15 `edit_store.kind` not pinned to `git` — same defect as BH7's second half (patched)
+  - `[low]` `[patch]` ECH16 `display_name: ""` renders Codex `displayName` as `""` — real; patched: empty stripped value falls back to `name`
+  - `[low]` `[patch]` ECH17 an option present as YAML null yields `conda://None/…` or a path named `None` — real (`dict.get` default does not apply to a present null); patched: null treated as absent in the three backends and both source `path` lookups
+  - `[low]` `[patch]` ECH18 printed `--custom-source` / `/plugin marketplace add` commands are not shell-quoted — real; patched: `shlex.quote` on the path
+  - `[low]` `[patch]` ECH19 a crash at the duty boundary emits plain text under `--json` — real; patched: JSON `{"ok": false, "findings": [{"code": "internal", …}]}` when `--json`
+  - `[low]` `[patch]` ECH20 `steward catalog --json` (default verb) exits 2 — real (verified); patched with BH12b/ECH21
+  - `[low]` `[patch]` ECH21 `--catalog` after the verb exits 2 — same defect as BH12b
+  - `[false]` `[reject]` ECH22 `slots` lists bound-but-off backends — by design: this spec's AC 1 names `object-storage` and `git-bundle` as slots, the report carries `bound` per row, and the reading is recorded in the Spec Change Log; a fix would be a spec-wording edit, which triage does not route
+  - `[low]` `[patch]` ECH23 "all `--json`" but the verb-less default path has no `--json` — same defect as ECH20
+  - `[low]` `[defer]` VG1 (gap, filed `defer`) the `test_track.py` `_SCHEMA` fix is never executed in either CI lane — `jsonschema` is not in the `pyforge-steward` env, so `importorskip` skips the test there (verified: `SKIPPED … could not import 'jsonschema'`); closing it means a `pixi.toml` dep change (shared-surface rule) outside this story; recorded in `deferred:`
+  - `[medium]` `[defer]` VG2 (gap, filed `defer`) committed manifests and real-tree pins depend on inputs (`recipes/bmad-*`, `docs/foundry/frames/**`) that never trigger the steward CI job — same root cause as BH1; recorded in `deferred:`
+  - `[medium]` `[patch]` VG3 `render` exits 0 dropping a broken source's rows and `render --check` blesses it — same defect as ECH5
+  - `[medium]` `[patch]` VG4 SSH remote accepted by `_github_owner_repo` — same defect as BH4
+  - `[low]` `[reject]` IA-a "plugin, not a rewrite" is proven at the engine surface; a third-party source still needs a line in `default_sources()` (no discovery hook) — accurate, but the intent's "not a rewrite" is met by an additive class + registration (R3a), this spec's AC 6 names the engine registry as the extension point, and an entry-point/import-path discovery mechanism is new public surface for a consumer that does not exist yet
+  - `[false]` `[reject]` IA-b the I/O row says "Error Handling: n/a" but `slot-unbound` errors — the row's scenario (add a declared source) yields a slot with no error exactly as implemented for `off`/`available`; `slot-unbound` is a different state (`on` naming nothing runnable), defined by this spec's AC 6
+  - `[low]` `[patch]` IA-c "empty slot" cannot be expressed as empty — same defect as BH6
+  - `[false]` `[reject]` IA-d `slots` semantics re-derived by the dev — same refutation as ECH22
+  - `[low]` `[reject]` IA-e operator confirm is recorded (`dedicated_repo: null`, pointers note) rather than surfaced as a decision — an unattended run cannot ask; the pending decision is named under `## Auto Run Result` § Residual risks, which is the surfacing this run has
+  - `[low]` `[patch]` IA-f `kind` not constrained to `git`; trackedness untested — `kind` pin is the same defect as ECH15 (patched); trackedness is evidenced by the spec-surface baseline (built from `git ls-files`) and its coverage detector, so no separate test was added
+  - `[low]` `[patch]` IA-g `pointers` never run on the real tree; the repo-relative `directory` path is unasserted — real test gap; patched: real-tree test asserts `source.path == src/shared/packages/pyforge-steward/catalog` and `dedicated_repo: null`
+  - `[false]` `[reject]` IA-h pre-existing test fixes, the co-governor memlog line, and the AC 7 amendment have no anchor in the contract — descriptive, no bad outcome claimed: the fixes follow team memory (fix-now), the reconcile follows the governed-surface rule, and each is logged in the Spec Change Log
+  - `[low]` `[patch]` IA-i real-tree tests hard-code `13` and `9` — real coupling; patched: derived from `frames.EXPECTED_COUNT` and the module-class `SUITE_PACKAGES` rows so a tenth frame fails in `frames.py` first
+
 ## Design Notes
 
 - **Consumer facts, verified 2026-09-19 (not from memory):** the BMAD 6.12 installer flag is `--custom-source <url|path>` (`--custom-content` in the Spec is a paraphrase); it resolves a source by `.claude-plugin/marketplace.json` (discovery mode). Claude Code `extraKnownMarketplaces.<name>.source` forms: `github{repo}`, `git{url}`, `url{url}`, `file{path}`, `directory{path}` (relative paths resolve against the main checkout, worktree-safe), `settings{name,plugins}`. Codex: `codex plugin marketplace add <owner/repo>` reads `.agents/plugins/marketplace.json`. Upstream registry file format: `registry/registry-schema.yaml` in `bmad-code-org/bmad-plugins-marketplace` (`trust_tier` enum `unverified|community-reviewed|bmad-certified`).

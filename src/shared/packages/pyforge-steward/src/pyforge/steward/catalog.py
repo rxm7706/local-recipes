@@ -37,6 +37,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import shlex
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -80,20 +82,22 @@ class CatalogConfigError(ValueError):
 
 @dataclass(frozen=True)
 class BackendDecl:
-    """One declared ship backend: ``backends.<name>{plugin, state, …}``."""
+    """One declared ship backend: ``backends.<name>{plugin, state, …}``.
+    ``plugin`` is ``None`` for an empty slot (declared, unbound; never ``on``)."""
 
     name: str
-    plugin: str
+    plugin: str | None
     state: str
     options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class SourceDecl:
-    """One declared source: ``sources.<name>{plugin, state, …}``."""
+    """One declared source: ``sources.<name>{plugin, state, …}``.
+    ``plugin`` is ``None`` for an empty slot (declared, unbound; never ``on``)."""
 
     name: str
-    plugin: str
+    plugin: str | None
     state: str
     options: dict[str, Any] = field(default_factory=dict)
 
@@ -181,24 +185,49 @@ def _parse_decls(
         )
     decls = []
     for name, body in section.items():
+        # A bare `on:` / `yes:` key parses to a YAML boolean; it is not a name.
+        if not isinstance(name, str) or not name.strip():
+            raise CatalogConfigError(
+                f"{document_path}: {section_name!r} key {name!r} must be a non-empty string "
+                "(quote it if YAML reads it as a boolean)"
+            )
         where = f"{section_name}.{name}"
         if not isinstance(body, dict):
             raise CatalogConfigError(f"{document_path}: '{where}' must be a mapping")
-        plugin = body.get("plugin")
-        if not isinstance(plugin, str) or not plugin.strip():
-            raise CatalogConfigError(
-                f"{document_path}: '{where}' is missing 'plugin' (the plugin that binds it)"
-            )
         state = _normalize_state(document_path, body.get("state"), where)
+        plugin = body.get("plugin")
+        if plugin is None:
+            # An empty slot: declared, not yet bound. Only legal while it is off.
+            if state == STATE_ON:
+                raise CatalogConfigError(
+                    f"{document_path}: '{where}' is 'on' but names no 'plugin' (the plugin that binds it)"
+                )
+        elif not isinstance(plugin, str) or not plugin.strip():
+            raise CatalogConfigError(
+                f"{document_path}: '{where}.plugin' must be null (an empty slot) or a non-empty string"
+            )
+        else:
+            plugin = plugin.strip()
         options = {k: v for k, v in body.items() if k not in ("plugin", "state")}
-        decls.append(factory(name=str(name), plugin=plugin.strip(), state=state, options=options))
+        decls.append(factory(name=name.strip(), plugin=plugin, state=state, options=options))
     return tuple(decls)
+
+
+_TOP_LEVEL_KEYS: frozenset[str] = frozenset({"catalog", "backends", "sources"})
 
 
 def load_config(path: str | Path) -> CatalogConfig:
     """Load ``catalog.yaml``-shaped YAML from ``path`` (``yaml.safe_load`` only)."""
     document_path = Path(path)
     document = _load_yaml_mapping(document_path, what="catalog config")
+
+    unknown = sorted(str(k) for k in document if k not in _TOP_LEVEL_KEYS)
+    if unknown:
+        raise CatalogConfigError(
+            f"{document_path}: unknown top-level key(s) {unknown!r}; only "
+            f"{sorted(_TOP_LEVEL_KEYS)!r} are recognized (a misspelled section would "
+            "otherwise load as zero backends/sources)"
+        )
 
     catalog = document.get("catalog")
     if not isinstance(catalog, dict):
@@ -211,13 +240,21 @@ def load_config(path: str | Path) -> CatalogConfig:
         raise CatalogConfigError(
             f"{document_path}: 'catalog.edit_store' section missing or not a mapping"
         )
-    dedicated = store.get("dedicated_repo")
-    if dedicated is not None and (not isinstance(dedicated, str) or not dedicated.strip()):
+    kind = _require_str(document_path, store, "kind", "catalog.edit_store")
+    if kind != "git":
         raise CatalogConfigError(
-            f"{document_path}: 'catalog.edit_store.dedicated_repo' must be null or an owner/repo string"
+            f"{document_path}: 'catalog.edit_store.kind' = {kind!r}; git is the edit store"
+        )
+    dedicated = store.get("dedicated_repo")
+    if dedicated is not None and (
+        not isinstance(dedicated, str) or _github_owner_repo(dedicated) != dedicated.strip()
+    ):
+        raise CatalogConfigError(
+            f"{document_path}: 'catalog.edit_store.dedicated_repo' must be null or an "
+            f"owner/repo string, got {dedicated!r}"
         )
     edit_store = EditStore(
-        kind=_require_str(document_path, store, "kind", "catalog.edit_store"),
+        kind=kind,
         repo=_require_str(document_path, store, "repo", "catalog.edit_store"),
         path=_require_str(document_path, store, "path", "catalog.edit_store"),
         dedicated_repo=dedicated.strip() if isinstance(dedicated, str) else None,
@@ -234,7 +271,11 @@ def load_config(path: str | Path) -> CatalogConfig:
         edit_store=edit_store,
         backends=backends,
         sources=sources,
-        display_name=display_name.strip() if isinstance(display_name, str) else name,
+        display_name=(
+            display_name.strip()
+            if isinstance(display_name, str) and display_name.strip()
+            else name
+        ),
         description=description.strip() if isinstance(description, str) else "",
     )
 
@@ -592,8 +633,16 @@ class CatalogReport:
         }
 
 
+_REPO_SEGMENT = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
 def _github_owner_repo(repository: str | None) -> str | None:
-    """``https://github.com/owner/repo[.git][/]`` or bare ``owner/repo`` → ``owner/repo``."""
+    """``https://github.com/owner/repo[.git][/]`` or bare ``owner/repo`` → ``owner/repo``.
+
+    Exactly two ``/``-separated segments of ``[A-Za-z0-9_.-]+`` — the SSH form
+    (``git@github.com:o/r``), fragments/queries (``o/r#readme``), spaces and any
+    other host are ``None``, never emitted verbatim as ``source.repo``.
+    """
     if not repository:
         return None
     text = repository.strip()
@@ -608,7 +657,7 @@ def _github_owner_repo(repository: str | None) -> str | None:
     if text.endswith(".git"):
         text = text[: -len(".git")]
     parts = text.split("/")
-    if len(parts) != 2 or not all(parts):
+    if len(parts) != 2 or not all(_REPO_SEGMENT.match(part) for part in parts):
         return None
     return "/".join(parts)
 
