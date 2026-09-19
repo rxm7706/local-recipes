@@ -2,7 +2,7 @@
 title: '51.6: `marshal watch` follows the engine that is actually driving the station'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
