@@ -22,4 +22,4 @@ Dreams (`spec-unified-container/SPEC.md`, `spec-bmad-module-provisioning/SPEC.md
 `spec-htap-query-plane/SPEC.md` (`archived` / absorbed — retirement record;
 query plane is unifying CAP-19 / Epic 34),
 distinct from the per-story `spec-<epic>-<story>-...md` files above). See
-`_bmad-output/DREAM-TRIAGE-2026-08-08.md`.
+`archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md`.
