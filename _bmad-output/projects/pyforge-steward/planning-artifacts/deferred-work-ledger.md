@@ -4661,3 +4661,25 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-62-1: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
+
+- source_spec: `planning-artifacts/specs/spec-62-1-the-catalog-names-eight-measures-and-their-states.md`
+  summary: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
+  evidence: Real future-maintenance risk once a row's state diverges from "all on", but the heading text is untouched pre-existing content (outside this diff's hunk) and the update mechanism belongs to Story 62.2, which is explicitly out of scope for 62.1's Boundaries & Constraints.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md:7
+  origin: spec-deferred abfa62358d40 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-62-1-2: `spec-pyforge-steward/SPEC.md` CAP-44/45/46 already read "(shipped 2026-09-15)" ahead of Epic 62's actual landing, and their `success` bullets are truncated mid-sentence.
+
+- source_spec: `planning-artifacts/specs/spec-62-1-the-catalog-names-eight-measures-and-their-states.md`
+  summary: `spec-pyforge-steward/SPEC.md` CAP-44/45/46 already read "(shipped 2026-09-15)" ahead of Epic 62's actual landing, and their `success` bullets are truncated mid-sentence.
+  evidence: Confirmed by direct read: CAP-44/45/46 all carry a premature "(shipped 2026-09-15)" annotation and each `success` bullet ends mid-sentence (e.g. CAP-44: "the eight first-cut ids are in `measure-catalog.md` and"). Pre-existing defect in a different file, not caused by this diff; not this story's surface to fix.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md:253-261
+  origin: spec-deferred 192de21a2de3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
