@@ -227,3 +227,46 @@ sibling ledgers and the detector both use.
   reason: Per this dispatch's own instructions, this becomes an operator_actions item at HALT (status: awaiting-operator) rather than a code defect. Only real elapsed time on an operator's own machine, running the installed trigger across four consecutive scheduled firings, can close it.
   promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
   status: open
+
+### DW-FU-19-1: The per-tool pointer files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) are not in `governance-currency`'s `DOCUMENTS`, so a skill, script or path named there can rot unnoticed; only `AGENTS.md` and `CLAUDE.md` are checked. Extending `DOCUMENTS` is a marshal change (`spec-fleet-consistency-standard` CAP-6 owns the script) — Dream item (8).
+
+- source_spec: `planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: The per-tool pointer files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) are not in `governance-currency`'s `DOCUMENTS`, so a skill, script or path named there can rot unnoticed; only `AGENTS.md` and `CLAUDE.md` are checked. Extending `DOCUMENTS` is a marshal change (`spec-fleet-consistency-standard` CAP-6 owns the script) — Dream item (8).
+  evidence: `scripts/governance_currency_check.py` `DOCUMENTS = (_bmad-output/EXEMPLAR-STANDARD.md, AGENTS.md, CLAUDE.md, docs/reference/test-charter.md)`; PR #1513's GEMINI.md carried a wrong coverage-gate command that no detector saw.
+  location: scripts/governance_currency_check.py
+  origin: spec-deferred 34593f74f8b6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-1-2: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
+
+- source_spec: `planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
+  evidence: `wc -l AGENTS.md CLAUDE.md` on the branch; code.claude.com/docs/en/memory 'Size: target under 200 lines per CLAUDE.md file'.
+  location: AGENTS.md
+  origin: spec-deferred 2595e7686b45 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-2: Recall over the station MCP (`/stations/scribe/mcp`) so a harness that cannot run pixi at all (a hosted agent with only HTTP tool access) can still ask team memory — Dream item (7), the second half. The Guild-env half landed here.
+
+- source_spec: `planning-artifacts/specs/spec-19-2-scribe-capture-and-recall-run-from-the-session-default-environment.md`
+  summary: Recall over the station MCP (`/stations/scribe/mcp`) so a harness that cannot run pixi at all (a hosted agent with only HTTP tool access) can still ask team memory — Dream item (7), the second half. The Guild-env half landed here.
+  evidence: Copilot cloud agent sessions have a 59-minute cap and only what `copilot-setup-steps.yml` installs; Devin sessions boot from a machine snapshot. Both can run pixi; a pure-MCP consumer (Claude Design, a hosted reviewer) cannot.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
+  origin: spec-deferred be4d79b9014a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-1-3: the instruction-surface parity (CAP-27) is live-verified on Claude Code only; Gemini, Cursor, Copilot (cloud agent / CLI / VS Code chat) and Devin are docs-only until an operator runs one session each
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: Story 19.1's evidence for "every harness loads `AGENTS.md`" is documentary for every harness but Claude Code (research doc § 5). Needed, one session each, by someone with the seat: Gemini CLI at the repo root → `/memory show` lists `AGENTS.md` then `GEMINI.md`; a Cursor Agent chat that quotes the verified block's attribution bullet; VS Code Copilot chat → the reply's **References** lists `AGENTS.md` (and `/instructions` in the Copilot CLI); a Devin session → "Accessed Knowledge" shows `AGENTS.md`-derived entries, plus the app-side Repo Setup (`pixi install -e pyforge-guild`) and a "land one story" Playbook. Record each result in the research doc's § 5 table and, on any miss, open a story under Epic 19.
+  evidence: `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` § 5 (honesty table); Cursor's account was out of usage on 2026-09-19; no Devin seat in the session.
+  location: planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: scribe. Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.

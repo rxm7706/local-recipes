@@ -46,3 +46,9 @@ Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-5`.
 Surface: presentations/agentic-sdlc/; DW-VOCAB-2026-09-14-3. Herald executes the pull; steward wrote the ruling..
 Ledger key: `59-4-design-teaching-is-named-the-pull-cannot-silently-rot`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-4-design-teaching-is-named-the-pull-cannot-silently-rot.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

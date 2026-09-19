@@ -44,3 +44,9 @@ Parent Spec capability: `spec-docs-shelf-alignment CAP-7`.
 Surface: a new pyforge.doctor.sources module (not general_docs_consistency.py), pixi task, unit fixtures..
 Ledger key: `23-7-a-new-doctor-source-flags-leftover-shelf-occupancy`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-7-a-new-doctor-source-flags-leftover-shelf-occupancy.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

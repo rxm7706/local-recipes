@@ -2,7 +2,7 @@
 id: SPEC-scribe
 spec: pyforge-scribe
 status: ready
-updated: "2026-09-17"
+updated: "2026-09-19"
 owner-dream: docs/dreams/pyforge-scribe.md
 covers-dreams:
   - docs/dreams/pyforge-scribe.md
@@ -29,6 +29,11 @@ surface:
   - scripts/scribe_install_nightly_trigger.py
   - scripts/scribe_graph_freshness_check.py
   - AGENTS.md
+  - GEMINI.md
+  - .gemini/settings.json
+  - .github/copilot-instructions.md
+  - src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py
+  - src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/graphify.py
   - src/shared/packages/pyforge-scribe/tests/unit/test_navigation_owner.py
   - .cursor/rules/scribe-recall.mdc
@@ -141,6 +146,12 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - **CAP-26 — The compiled store remembers when it was built** ← spec-scribe-recall-stale-between-nightlies CAP-1 (ready 2026-09-17)
   - **intent:** The compiled store remembers when it was built. Recall withholds a current node whose git-trackable source has a commit authored after that stamp.
   - **success:** After compile, a new commit touching a cited file makes `answer()` skip that node. Reloading `graph.json` still knows `compiled_at`. Commit and transcript nodes stay eligible. ## Constraints - Persist `compiled_at` on the flat-file artifact. Do not add a GraphStore Protocol method this story. - Missing `compiled_at` degrades to the stored `stale` bit only. - Check at candidate selection, not a pre-pass over every node. - Compile-time CAP-1 rule is unchanged. ## Non-goals - PostgreSQL / plane `compiled_at` columns. - Recompiling the graph on recall. ## Success signal A fixture compiled, then committed again, returns `no grounded answer` for that node's unique tokens until the next compile. ## Assumptions - Nightly default store is `FlatFileGraphStore`.
+- **CAP-27 — The session contract reaches every harness from one file** (minted 2026-09-19 from the Dream entry "Scribe serves every harness"; research: `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md`)
+  - **intent:** `AGENTS.md` is the only place the estate's cross-tool contract (the verified `bmad:context` block, the behavioural guidelines, the team-memory boot line, the pre-PR checklist) is written; every harness the estate runs loads it natively or through a one-line pointer (`CLAUDE.md` `@AGENTS.md` import; `.gemini/settings.json` `context.fileName` with `AGENTS.md` first; `.vscode/settings.json` `chat.useAgentsMdFile`; Cursor / Codex / Copilot cloud agent / Devin / Jules native), and the per-tool files (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/*.mdc`) carry only tool-specific addenda. Team memory reaches every harness through one `AGENTS.md` line (read `.claude/memory/MEMORY.md` at session start; add with `scribe capture`), never through citations of a home-directory auto-memory.
+  - **success:** A scribe meta-test fails when `CLAUDE.md` lacks the `@AGENTS.md` import, when `.gemini/settings.json` does not list `AGENTS.md` first, when `.vscode/settings.json` lacks `chat.useAgentsMdFile`, when a per-tool file repeats an `AGENTS.md` H2 section or exceeds 60 lines, or when a `.claude/memory` path `AGENTS.md` cites does not exist; `governance-currency` stays green on `AGENTS.md` and `CLAUDE.md`.
+- **CAP-28 — `scribe capture` and `scribe recall` run from the session default environment** (minted 2026-09-19; Dream item (7), pixi-env half)
+  - **intent:** The scribe core package (run-deps `typer`, `pydantic`, `pyforge-core`) is a member of the `pyforge-guild` feature, so every harness whose sandbox installs the Guild default (Claude Code remote hook, Cursor Cloud `environment.json`, Copilot `copilot-setup-steps.yml`, Devin repo setup) can `scribe capture` and `scribe recall` without a second environment; the heavy compile extras (`graphifyy`, `cocoindex`, `psycopg`) stay in `-e pyforge-scribe`, where `scribe graph compile` with an extra still runs.
+  - **success:** `pixi run -e pyforge-guild scribe --help` lists `capture` / `recall` / `graph`; a scribe meta-test reads `pixi.toml` and reds when `pyforge-scribe` leaves `[feature.pyforge-guild.dependencies]` or when a governance doc still tells sessions that capture/recall need `-e pyforge-scribe`; `environment.yaml` unchanged; `llms-full-check` green.
 
 ## Constraints
 
@@ -155,6 +166,8 @@ A disease diagnosed twice, now given an owner: the Sentinel Dream (2026-04) foun
 - **AD-9 (wave boundary):** `.claude/memory/` frontmatter (AD-3) is a stable input contract for Wave 2's compile step; Wave 2 reads that format as-is — any additional metadata it needs is additive, never a breaking rewrite of Wave 1's schema.
 - **Manual-only invocation:** no `Stop`/`SessionEnd`/`PreCompact` hook triggers capture in either wave — every invocation is deliberate.
 - **Versioning:** semver; CLI subcommand additions are MINOR, breaking flag/output-format changes are MAJOR.
+- **Managed block and per-tool files (CAP-27):** `AGENTS.md`'s `bmad:context` block stays `bmad-project-context`'s — never hand-edited, refreshed by the skill; CAP-27 edits only the prose outside the markers. No instruction content that belongs in `AGENTS.md` is authored into a per-tool file — the meta-test's duplication guard is the gate, not a review.
+- **Guild-env composition is steward's (CAP-28):** Story 63.1 / `spec-pyforge-steward` CAP-5 owns `pyforge-guild`; CAP-28 adds one path dependency and no extra. A future scribe dependency that is heavy or network-touching goes to `-e pyforge-scribe`, never to the Guild default.
 
 ## Non-goals
 

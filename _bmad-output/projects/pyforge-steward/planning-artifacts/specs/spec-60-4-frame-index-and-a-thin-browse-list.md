@@ -41,3 +41,9 @@ Parent Spec capability: `spec-self-hosted-bmad-marketplace CAP-4 CAP-7`.
 Surface: docs/foundry/frames/; a generated index or existing chrome page..
 Ledger key: `60-4-frame-index-and-a-thin-browse-list`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-60-4-frame-index-and-a-thin-browse-list.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

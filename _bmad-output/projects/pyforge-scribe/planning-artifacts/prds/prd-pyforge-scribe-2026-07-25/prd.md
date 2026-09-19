@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-17"
+updated: "2026-09-19"   # RE-STAMPED 2026-09-19: brief→prd cascade (research 2026-09-19); FR-16/FR-17 ← CAP-27/CAP-28; § Currency reconciliation — 2026-09-19 appended.
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -154,6 +154,19 @@ The compile step runs without interactive input and produces the same graph stat
 
 #### FR-15: Pixi workspace membership ← CAP-4
 Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem, multi-package pattern), with its own `pyproject.toml`/`recipe.yaml` posture consistent with sibling pyforge-* packages (Warden, Herald) once they exist as precedent.
+
+#### FR-16: The session contract reaches every harness from one file ← CAP-27
+`AGENTS.md` is the only place the cross-tool contract is written; Claude Code reaches it through the
+`CLAUDE.md` `@AGENTS.md` import, Gemini through `.gemini/settings.json` `context.fileName`, VS Code
+chat through `chat.useAgentsMdFile`, and Cursor / Codex / the Copilot cloud agent / Devin / Jules
+natively. Per-tool files are addenda; team memory is cited as `.claude/memory/` paths that exist and
+filled with `scribe capture`. A scribe meta-test reds a missing pointer, a duplicated section, an
+oversized per-tool file or a dangling memory path.
+
+#### FR-17: `scribe capture` and `scribe recall` run from the session default environment ← CAP-28
+The scribe core package is a member of the `pyforge-guild` feature (the default every harness's
+sandbox installs); the compile extras stay in `-e pyforge-scribe`. FR-13's "any session, any
+operator" now reads **any harness**.
 
 **Feature-specific NFRs:**
 - **Language/Runtime:** Python, matching this repo's existing pixi environments; no new language introduced.
@@ -372,3 +385,16 @@ regex): **35/35 stories `done` across 18/18 epics.**
 
 **Content changed:** § 8 item 4 (dated answer folded in, with the UJ-1 consequence
 named). No FR added, renumbered or removed.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency cascade: the brief re-stamped 2026-09-19 after the multi-harness research
+(`research/multi-harness-instruction-surface-2026-09-19.md`); this PRD follows in the same commit.*
+
+Two FRs added above from `spec-pyforge-scribe` CAP-27 and CAP-28 (minted 2026-09-19 at the review
+of PR #1513; Epic 19 / Stories 19.1–19.2, both landed in that PR). FR-13 widens from "any session,
+any operator" to "any harness". No existing FR changes; § 5 Non-Goals unchanged (the instruction
+surface is repo-scoped, air-gapped and manual-invocation like everything else here). The seven
+later items on the Dream entry (size discipline, skills path, non-Claude transcript ingestion,
+recall over MCP, pointer files in `governance-currency`, per-spec baselines, Devin / Copilot
+analogues) are not FRs until a `bmad-spec` pass mints their CAPs.

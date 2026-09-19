@@ -43,3 +43,9 @@ Parent Spec capability: `spec-work-passports-dated-extracts CAP-1`.
 Surface: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-work-passports-dated-extracts/transports-and-vendors.md; the existing Postgres app / a steward load duty..
 Ledger key: `61-1-corridor-transports-upload-default`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-61-1-corridor-transports-upload-default.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

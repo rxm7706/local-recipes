@@ -24,8 +24,14 @@ import re
 _FRONTMATTER_DELIMITER = "---"
 _STATUS_KEY = "status:"
 _FOLLOWUP_KEY = "followup_review_recommended:"
+_BLOCKING_CONDITION_KEY = "blocking_condition:"
 _BARE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 _TRUTHY = frozenset({"true", "yes", "1"})
+
+# Story 51.4: the "Blocking condition:" body-line convention is not
+# universal -- some specs only carry the frontmatter scalar above, others
+# only a body line (optionally bold-wrapping the value, never the label).
+_BLOCKING_CONDITION_BODY_RE = re.compile(r"(?im)^blocking condition:\s*(.+)$")
 
 _BANNER_PREFIX = "<!--"
 _BANNER_SUFFIX = "-->"
@@ -122,6 +128,25 @@ def followup_review_recommended(text: str) -> bool:
 def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
     """True when a further ``bmad-build-auto`` must not start."""
     return status == "done" and not followup
+
+
+def parse_blocking_condition(text: str) -> str | None:
+    """The spec's own stated reason for ``status: blocked`` (Story 51.4).
+
+    Checked in two forms, since the convention is not universal: a
+    frontmatter ``blocking_condition:`` scalar first, then a body line
+    reading ``Blocking condition: ...`` (the label is never bold-wrapped,
+    the value sometimes is). ``None`` when neither is present so callers
+    fall back to a generic message rather than inventing one.
+    """
+    value = _frontmatter_scalar(text, _BLOCKING_CONDITION_KEY)
+    if value is not None:
+        return value
+    matches = list(_BLOCKING_CONDITION_BODY_RE.finditer(text))
+    if not matches:
+        return None
+    found = matches[-1].group(1).strip().replace("*", "").strip()
+    return found or None
 
 
 def land_fail_operator_message(

@@ -43,3 +43,9 @@ Parent Spec capability: `spec-build-league-scorecard CAP-1`.
 Surface: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md; docs/dreams/pyforge-unifying-strategy.md Q5 cite..
 Ledger key: `62-1-the-catalog-names-eight-measures-and-their-states`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-62-1-the-catalog-names-eight-measures-and-their-states.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

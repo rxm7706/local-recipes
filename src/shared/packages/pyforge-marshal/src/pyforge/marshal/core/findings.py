@@ -1725,6 +1725,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # immediately before `forge.merge_pr` (the 2026-09-18 50.4/27.5
         # incident this closes).
         "MRS-DISP-044",
+        # Story 51.4 (spec-pyforge-marshal CAP-252): the pre-launch guard's
+        # worktree spec is `status: blocked` -- refuse to relaunch
+        # bmad-build-auto without an operator decision. The sibling of
+        # MRS-DISP-040's `done`-status CAP-4-only refusal above.
+        "MRS-DISP-045",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

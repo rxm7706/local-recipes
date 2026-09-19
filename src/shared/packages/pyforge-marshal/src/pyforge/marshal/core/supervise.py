@@ -709,8 +709,17 @@ def resolve_terminal_session_verdict(
     verification_verdict: str | None,
     detach_reason: str | None = None,
     session_log: str | None = None,
+    spec_relative_path: str | None = None,
 ) -> DispatchSessionVerdict:
-    """Classify session outcome including operator-initiated external stops."""
+    """Classify session outcome including operator-initiated external stops.
+
+    ``spec_relative_path`` (Story 51.4, spec-pyforge-marshal CAP-252) is the
+    worktree-relative path of the story's own tracked spec file -- passed
+    through to ``has_git_progress`` so a diff that collapses to just that
+    file (a status flip, a revert-to-baseline plus ``blocked:``) is judged
+    as no progress rather than live/stopped-externally work. Omitted by
+    every caller not yet updated, which keeps their behavior unchanged.
+    """
     from .dispatch_completion import (
         DispatchCompletionInput,
         DispatchGitFacts,
@@ -728,10 +737,10 @@ def resolve_terminal_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if (
         verification_verdict == DispatchVerificationVerdict.REFUSED.value
-        and has_git_progress(git)
+        and has_git_progress(git, spec_relative_path=spec_relative_path)
     ):
         return DispatchSessionVerdict.FAILED
-    if has_git_progress(git):
+    if has_git_progress(git, spec_relative_path=spec_relative_path):
         if is_marshal_initiated_stop(
             detach_reason=detach_reason, session_log=session_log
         ):
