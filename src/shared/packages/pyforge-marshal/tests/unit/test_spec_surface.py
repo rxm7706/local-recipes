@@ -131,6 +131,40 @@ def test_multiline_block_surface_with_trailing_comment_raises():
         parse_declared_surface(text)
 
 
+# --- leading provenance banner (Story 50.5, CAP-248) --------------------------
+
+
+def test_banner_above_frontmatter_still_reads_the_surface():
+    """Herald's pre-#1460 `spec-1-4` shape: a single-line HTML-comment
+    banner sits above the `---` fence instead of below it."""
+    text = "<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->\n" + (
+        _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    )
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_multiline_banner_above_frontmatter_still_reads_the_surface():
+    text = "<!--\nRECOVERED\nfrom a session transcript\n-->\n" + _frontmatter(
+        _HEADER + 'surface: ["recipes/x/**"]\n'
+    )
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_banner_below_frontmatter_unaffected():
+    """The PR #1460 data-side fix's own shape (banner directly below the
+    closing fence) never starts with `<!--`, so it is untouched by the
+    banner-skip and must keep parsing exactly as before."""
+    text = _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n') + "<!-- Promoted ... -->\n"
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_unclosed_banner_above_frontmatter_returns_none():
+    """An unclosed `<!--` is not a banner this parser recognizes -- the
+    text still doesn't start with `---`, so it stays absent, not declared."""
+    text = "<!-- never closed\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    assert parse_declared_surface(text) is None
+
+
 # --- type contract -------------------------------------------------------------
 
 

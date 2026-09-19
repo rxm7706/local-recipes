@@ -2,7 +2,7 @@
 title: '50.5: The promoter reads a spec through its banner'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
