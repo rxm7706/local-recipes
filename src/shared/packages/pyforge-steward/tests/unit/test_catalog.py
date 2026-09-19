@@ -23,6 +23,7 @@ from pyforge.steward.catalog import (
     STATES,
     TIER_BMAD_CERTIFIED,
     TIER_UNVERIFIED,
+    TRUST_TIERS,
     BackendDecl,
     BackendRegistry,
     CatalogConfigError,
@@ -31,15 +32,18 @@ from pyforge.steward.catalog import (
     CatalogSourcePlugin,
     CondaChannelBackend,
     EstateListingsSource,
+    GitBundleBackend,
     Listing,
+    ObjectStorageBackend,
     ShipBackendPlugin,
     SourceContext,
     SourceRegistry,
+    _github_owner_repo,
     default_catalog_dir,
     load_config,
 )
-from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, build_parser, main, resolve_duty
-from pyforge.steward.frames import preflight_frames
+from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, EXIT_USAGE, build_parser, main, resolve_duty
+from pyforge.steward.frames import EXPECTED_COUNT, preflight_frames
 from pyforge.steward.suite import INSTALL_CLASS_MODULE, SUITE_PACKAGES
 
 # ---------------------------------------------------------------------------
@@ -58,6 +62,8 @@ catalog:
     path: catalog
     dedicated_repo: null
 """
+
+_WIELDED_MODULE_COUNT = sum(1 for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE)
 
 
 def _write_catalog(tmp_path: Path, body: str, *, header: str = _HEADER) -> Path:
@@ -90,6 +96,19 @@ class _CustomSource(CatalogSourcePlugin):
         return list(self._rows)
 
 
+class _RaisingSource(CatalogSourcePlugin):
+    def __init__(self, exc: Exception, plugin_name: str = "boom") -> None:
+        self._exc = exc
+        self._name = plugin_name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def listings(self, ctx: SourceContext) -> list[Listing]:
+        raise self._exc
+
+
 class _CustomBackend(ShipBackendPlugin):
     @property
     def name(self) -> str:
@@ -116,6 +135,10 @@ def _ns(**kwargs) -> argparse.Namespace:
     base = {"catalog_verb": "check", "json": False, "catalog": None, "check": False}
     base.update(kwargs)
     return argparse.Namespace(**base)
+
+
+def _claude(engine: CatalogEngine) -> dict:
+    return json.loads(engine.manifests()[CLAUDE_MANIFEST_RELATIVE.as_posix()])
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +179,7 @@ def test_load_config_unknown_state_is_a_named_failure(tmp_path: Path) -> None:
         load_config(catalog_dir / "catalog.yaml")
 
 
-def test_load_config_missing_plugin_is_a_named_failure(tmp_path: Path) -> None:
+def test_load_config_missing_plugin_on_an_on_row_is_a_named_failure(tmp_path: Path) -> None:
     catalog_dir = _write_catalog(
         tmp_path,
         """
@@ -165,7 +188,62 @@ def test_load_config_missing_plugin_is_a_named_failure(tmp_path: Path) -> None:
             state: "on"
         """,
     )
-    with pytest.raises(CatalogConfigError, match="'backends.b' is missing 'plugin'"):
+    with pytest.raises(CatalogConfigError, match="'backends.b' is 'on' but names no 'plugin'"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+def test_load_config_null_plugin_is_an_empty_slot_only_while_off(tmp_path: Path) -> None:
+    catalog_dir = _write_catalog(
+        tmp_path,
+        """
+        sources:
+          slot: {plugin: null, state: "off"}
+          later: {state: available}
+        """,
+    )
+    config = load_config(catalog_dir / "catalog.yaml")
+    assert [(s.name, s.plugin, s.state) for s in config.sources] == [
+        ("slot", None, "off"),
+        ("later", None, "available"),
+    ]
+    engine = CatalogEngine(tmp_path, config, catalog_dir=catalog_dir)
+    assert engine.render(write=True).ok
+    report = engine.check()
+    assert report.ok
+    assert report.slots == ("slot", "later")
+    assert [(s["plugin"], s["bound"]) for s in report.sources] == [(None, False), (None, False)]
+    catalog_dir = _write_catalog(tmp_path, 'sources:\n  slot: {plugin: "", state: "off"}\n')
+    with pytest.raises(CatalogConfigError, match="'sources.slot.plugin' must be null"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+def test_load_config_rejects_a_boolean_or_empty_declaration_key(tmp_path: Path) -> None:
+    catalog_dir = _write_catalog(tmp_path, 'backends:\n  on: {plugin: p, state: "off"}\n')
+    with pytest.raises(CatalogConfigError, match="'backends' key True must be a non-empty string"):
+        load_config(catalog_dir / "catalog.yaml")
+    catalog_dir = _write_catalog(tmp_path, 'sources:\n  "": {plugin: p, state: "off"}\n')
+    with pytest.raises(CatalogConfigError, match="'sources' key '' must be a non-empty string"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+def test_load_config_rejects_a_misspelled_top_level_section(tmp_path: Path) -> None:
+    catalog_dir = _write_catalog(tmp_path, 'backend:\n  b: {plugin: p, state: "on"}\nsourcez: {}\n')
+    with pytest.raises(CatalogConfigError, match=r"unknown top-level key\(s\) \['backend', 'sourcez'\]"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+def test_load_config_requires_git_as_the_edit_store(tmp_path: Path) -> None:
+    header = _HEADER.replace("kind: git", "kind: svn")
+    catalog_dir = _write_catalog(tmp_path, "", header=header)
+    with pytest.raises(CatalogConfigError, match="'catalog.edit_store.kind' = 'svn'; git is the edit store"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+@pytest.mark.parametrize("value", ["https://github.com/x/y", "git@github.com:x/y", "x", "x/y/z", "x/y#readme"])
+def test_load_config_dedicated_repo_must_be_owner_repo(tmp_path: Path, value: str) -> None:
+    header = _HEADER.replace("dedicated_repo: null", f"dedicated_repo: {value!r}")
+    catalog_dir = _write_catalog(tmp_path, "", header=header)
+    with pytest.raises(CatalogConfigError, match="dedicated_repo' must be null or an owner/repo string"):
         load_config(catalog_dir / "catalog.yaml")
 
 
@@ -208,6 +286,20 @@ def test_load_config_normalizes_bare_yaml_booleans_to_state_words(tmp_path: Path
     assert config.display_name == "Test catalog"
 
 
+def test_load_config_empty_display_name_falls_back_to_name(tmp_path: Path) -> None:
+    for header in (
+        _HEADER.replace("display_name: Test catalog", 'display_name: ""'),
+        _HEADER.replace("display_name: Test catalog", "display_name: 7"),
+        _HEADER.replace("  display_name: Test catalog\n", ""),
+    ):
+        catalog_dir = _write_catalog(tmp_path, "", header=header)
+        config = load_config(catalog_dir / "catalog.yaml")
+        assert config.display_name == "test-catalog"
+        engine = CatalogEngine(tmp_path, config, catalog_dir=catalog_dir)
+        codex = json.loads(engine.manifests()[CODEX_MANIFEST_RELATIVE.as_posix()])
+        assert codex["interface"] == {"displayName": "test-catalog"}
+
+
 # ---------------------------------------------------------------------------
 # registries — a plugin slot, not a rewrite
 # ---------------------------------------------------------------------------
@@ -246,7 +338,7 @@ def test_io_matrix_new_source_is_a_plugin_slot_not_a_rewrite(tmp_path: Path) -> 
           extra: {plugin: x, state: "on"}
         """,
     )
-    engine.render(write=True)  # manifests in sync so binding is the only question
+    assert engine.render(write=True).ok  # manifests in sync so binding is the only question
     report = engine.check()
     assert [f.code for f in report.findings] == ["slot-unbound", "slot-unbound"]
     assert {f.subject for f in report.findings} == {"backends.mine", "sources.extra"}
@@ -254,7 +346,7 @@ def test_io_matrix_new_source_is_a_plugin_slot_not_a_rewrite(tmp_path: Path) -> 
 
     engine.sources.register(_CustomSource([_row("thing", "extra")]))
     engine.backends.register(_CustomBackend())
-    engine.render(write=True)
+    assert engine.render(write=True).ok
     report = engine.check()
     assert report.ok, report.findings
     assert report.listing_count == 1
@@ -273,7 +365,7 @@ def test_declared_off_without_a_plugin_is_a_slot_and_ok(tmp_path: Path) -> None:
           skills: {plugin: skillsctl, state: "off"}
         """,
     )
-    engine.render(write=True)
+    assert engine.render(write=True).ok
     report = engine.check()
     assert report.ok
     assert report.slots == ("later", "skills")
@@ -292,11 +384,52 @@ def test_a_backend_that_raises_never_aborts_check(tmp_path: Path) -> None:
 
     engine = _engine(tmp_path, 'backends:\n  b: {plugin: broken, state: "on"}\n')
     engine.backends.register(Broken())
-    engine.render(write=True)
+    assert engine.render(write=True).ok
     report = engine.check()
     assert [f.code for f in report.findings] == ["config-backend"]
     assert "boom" in report.findings[0].message
     assert report.backends[0]["snapshot_target"] is None
+
+
+def test_a_source_that_raises_anything_is_a_config_source_finding_and_others_still_run(
+    tmp_path: Path,
+) -> None:
+    engine = _engine(
+        tmp_path,
+        """
+        sources:
+          bad: {plugin: boom, state: "on"}
+          good: {plugin: x, state: "on"}
+        """,
+    )
+    engine.sources.register(_RaisingSource(UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad byte")))
+    engine.sources.register(_CustomSource([_row("fine", "good")]))
+    report = engine.check()
+    assert [(f.code, f.subject) for f in report.findings] == [("config-source", "sources.bad")]
+    assert report.findings[0].message.startswith("UnicodeDecodeError: ")
+    assert [s["listings"] for s in report.sources] == [0, 1]
+    assert [r.name for r in engine.listings()] == ["fine"]
+
+
+def test_a_raising_source_refuses_render_and_render_check(tmp_path: Path) -> None:
+    engine = _engine(
+        tmp_path,
+        """
+        sources:
+          bad: {plugin: boom, state: "on"}
+          good: {plugin: x, state: "on"}
+        """,
+    )
+    engine.sources.register(_RaisingSource(RuntimeError("plugin author bug")))
+    engine.sources.register(_CustomSource([_row("fine", "good")]))
+    rendered = engine.render(write=True)
+    assert rendered.ok is False
+    assert [(f.code, f.subject) for f in rendered.findings] == [("config-source", "sources.bad")]
+    assert "RuntimeError: plugin author bug" in rendered.findings[0].message
+    assert rendered.manifests == {} and rendered.written == ()
+    assert not (engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
+    assert not (engine.catalog_dir / CODEX_MANIFEST_RELATIVE).exists()
+    assert [f.code for f in engine.drift()] == ["config-source"]  # never "in sync"
 
 
 # ---------------------------------------------------------------------------
@@ -304,13 +437,14 @@ def test_a_backend_that_raises_never_aborts_check(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _estate_engine(tmp_path: Path, estate_yaml: str) -> CatalogEngine:
+def _estate_engine(tmp_path: Path, estate_yaml: str, extra_sources: str = "") -> CatalogEngine:
     engine = _engine(
         tmp_path,
         """
         sources:
           estate-listings: {plugin: estate-listings, state: "on", path: registry/estate.yaml}
-        """,
+        """
+        + extra_sources,
     )
     registry = engine.catalog_dir / "registry"
     registry.mkdir()
@@ -318,7 +452,7 @@ def _estate_engine(tmp_path: Path, estate_yaml: str) -> CatalogEngine:
     return engine
 
 
-def test_estate_row_naming_another_source_is_a_mismatch(tmp_path: Path) -> None:
+def test_estate_row_naming_another_source_is_a_mismatch_and_is_withheld(tmp_path: Path) -> None:
     engine = _estate_engine(
         tmp_path,
         """
@@ -332,17 +466,18 @@ def test_estate_row_naming_another_source_is_a_mismatch(tmp_path: Path) -> None:
             repository: https://github.com/acme/stray
         """,
     )
-    engine.render(write=True)
+    rendered = engine.render(write=True)
+    assert rendered.ok is False and rendered.written == ()
     report = engine.check()
     assert [(f.code, f.subject) for f in report.findings] == [("listing-source-mismatch", "stray")]
     rows = engine.listings()
     assert [(r.name, r.source, r.trust_tier) for r in rows] == [
         ("good", "estate-listings", "community-reviewed"),
-        ("stray", "other", TIER_UNVERIFIED),
     ]
+    assert [p["name"] for p in _claude(engine)["plugins"]] == ["good"]
 
 
-def test_estate_row_with_empty_source_is_listing_no_source(tmp_path: Path) -> None:
+def test_estate_row_with_empty_source_is_listing_no_source_and_is_withheld(tmp_path: Path) -> None:
     engine = _estate_engine(
         tmp_path,
         """
@@ -352,16 +487,23 @@ def test_estate_row_with_empty_source_is_listing_no_source(tmp_path: Path) -> No
             repository: https://github.com/acme/blank
         """,
     )
-    engine.render(write=True)
     assert [f.code for f in engine.check().findings] == ["listing-no-source"]
+    assert engine.listings() == []
+    assert _claude(engine)["plugins"] == []
 
 
 def test_estate_file_level_source_must_be_estate_listings(tmp_path: Path) -> None:
     engine = _estate_engine(tmp_path, "source: other\nmodules: []\n")
-    engine.render(write=True)
     report = engine.check()
     assert [f.code for f in report.findings] == ["config-source"]
     assert "must say 'estate-listings'" in report.findings[0].message
+
+
+def test_estate_file_level_source_absent_means_estate_listings(tmp_path: Path) -> None:
+    engine = _estate_engine(tmp_path, "modules:\n  - {name: a, repository: https://github.com/acme/a}\n")
+    (row,) = engine.listings()
+    assert row.source == "estate-listings"
+    assert engine.render(write=True).ok
 
 
 @pytest.mark.parametrize(
@@ -371,16 +513,34 @@ def test_estate_file_level_source_must_be_estate_listings(tmp_path: Path) -> Non
         ("modules:\n  - 3\n", "modules[0] must be a mapping"),
         ("modules:\n  - {repository: r}\n", "modules[0].name is required"),
         ("- a\n", "top-level document must be a mapping"),
+        (
+            "modules:\n  - {name: a, repository: https://github.com/acme/a, trust_tier: bmad-certifed}\n",
+            "modules[0].trust_tier = 'bmad-certifed' is not one of",
+        ),
     ],
 )
-def test_malformed_estate_registry_is_a_config_finding(
+def test_malformed_estate_registry_is_a_config_finding_and_refuses_render(
     tmp_path: Path, estate_yaml: str, needle: str
 ) -> None:
     engine = _estate_engine(tmp_path, estate_yaml)
-    engine.render(write=True)
+    rendered = engine.render(write=True)
+    assert rendered.ok is False and rendered.written == ()
+    assert not (engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
     findings = engine.check().findings
     assert [f.code for f in findings] == ["config-source"]
     assert needle in findings[0].message
+    assert [f.code for f in engine.drift()] == ["config-source"]
+
+
+def test_estate_trust_tiers_are_exactly_the_upstream_enum(tmp_path: Path) -> None:
+    assert TRUST_TIERS == ("unverified", "community-reviewed", "bmad-certified")
+    rows = "\n".join(
+        f"  - {{name: m{i}, repository: https://github.com/acme/m{i}, trust_tier: {tier}}}"
+        for i, tier in enumerate(TRUST_TIERS)
+    )
+    engine = _estate_engine(tmp_path, f"modules:\n{rows}\n")
+    assert [r.trust_tier for r in engine.listings()] == list(TRUST_TIERS)
+    assert [p["tags"][1] for p in _claude(engine)["plugins"]] == [f"trust:{t}" for t in TRUST_TIERS]
 
 
 def test_missing_estate_registry_is_a_config_finding(tmp_path: Path) -> None:
@@ -391,6 +551,36 @@ def test_missing_estate_registry_is_a_config_finding(tmp_path: Path) -> None:
     ctx = SourceContext(tmp_path, engine.catalog_dir, engine.config, engine.config.sources[0])
     with pytest.raises(CatalogConfigError, match="estate listings not found"):
         EstateListingsSource().listings(ctx)
+
+
+def test_estate_path_null_means_the_default_registry(tmp_path: Path) -> None:
+    engine = _engine(
+        tmp_path,
+        'sources:\n  estate-listings: {plugin: estate-listings, state: "on", path: null}\n',
+    )
+    registry = engine.catalog_dir / "registry"
+    registry.mkdir()
+    (registry / "estate.yaml").write_text(
+        "modules:\n  - {name: a, repository: https://github.com/acme/a}\n", encoding="utf-8"
+    )
+    assert [r.name for r in engine.listings()] == ["a"]
+
+
+def test_estate_version_follows_the_recipe_version_rule(tmp_path: Path) -> None:
+    engine = _estate_engine(
+        tmp_path,
+        """
+        modules:
+          - {name: s, repository: https://github.com/acme/s, version: "1.10"}
+          - {name: i, repository: https://github.com/acme/i, version: 3}
+          - {name: f, repository: https://github.com/acme/f, version: 1.10}
+          - {name: b, repository: https://github.com/acme/b, version: true}
+          - {name: l, repository: https://github.com/acme/l, version: [1]}
+          - {name: n, repository: https://github.com/acme/n}
+        """,
+    )
+    assert [r.version for r in engine.listings()] == ["1.10", "3", None, None, None, None]
+    assert [p.get("version") for p in _claude(engine)["plugins"]] == ["1.10", "3", None, None, None, None]
 
 
 def test_estate_row_carries_every_listing_field(tmp_path: Path) -> None:
@@ -407,6 +597,7 @@ def test_estate_row_carries_every_listing_field(tmp_path: Path) -> None:
             install_hint: pixi add full
             codex_source: ./plugins/full
             trust_tier: bmad-certified
+            display_name: Full       # upstream field, preserved but not read
         """,
     )
     (row,) = engine.listings()
@@ -435,6 +626,57 @@ def test_estate_row_carries_every_listing_field(tmp_path: Path) -> None:
             "category": KIND_MODULE,
         }
     ]
+
+
+def test_two_listings_with_the_same_kind_and_name_are_a_duplicate(tmp_path: Path) -> None:
+    engine = _estate_engine(
+        tmp_path,
+        """
+        modules:
+          - {name: bmad-builder, repository: https://github.com/acme/bmad-builder}
+          - {name: twice, repository: https://github.com/acme/twice}
+          - {name: twice, repository: https://github.com/acme/twice}
+        """,
+        extra_sources='  wielded-suite: {plugin: wielded-suite, state: "on"}\n',
+    )
+    findings = engine.check().findings
+    assert [(f.code, f.subject) for f in findings] == [
+        ("listing-duplicate", "twice"),
+        ("listing-duplicate", "bmad-builder"),
+    ]
+    assert "'estate-listings' and by 'estate-listings'" in findings[0].message
+    assert "'estate-listings' and by 'wielded-suite'" in findings[1].message
+    assert engine.render(write=True).ok is False
+    # a frame and a module may share a name: the key is (kind, name)
+    engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    engine.sources.register(_CustomSource([_row("same", "extra"), _row("same", "extra", kind=KIND_FRAME)]))
+    assert engine.render(write=True).ok
+    assert engine.check().ok
+    assert [(r.kind, r.name) for r in engine.listings()] == [(KIND_MODULE, "same"), (KIND_FRAME, "same")]
+
+
+@pytest.mark.parametrize(
+    ("repository", "expected"),
+    [
+        ("https://github.com/acme/x", "acme/x"),
+        ("https://github.com/acme/x.git/", "acme/x"),
+        ("github.com/acme/x", "acme/x"),
+        ("acme/x", "acme/x"),
+        ("acme/x.y-z_1", "acme/x.y-z_1"),
+        ("git@github.com:acme/x", None),
+        ("git@github.com:acme/x.git", None),
+        ("acme/x#readme", None),
+        ("acme/x?tab=readme", None),
+        ("acme/my repo", None),
+        ("https://github.com/acme", None),
+        ("https://github.com/acme/x/tree/main", None),
+        ("https://gitlab.com/acme/x", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_github_owner_repo_accepts_exactly_two_safe_segments(repository: str | None, expected: str | None) -> None:
+    assert _github_owner_repo(repository) == expected
 
 
 # ---------------------------------------------------------------------------
@@ -506,8 +748,10 @@ def test_frame_rows_come_from_preflight_and_skip_frames_that_fail_it(tmp_path: P
     assert rows[1].repository == "https://github.com/tester/repo"
     assert rows[1].version == "0.1.0"
     # frames never render into the Claude manifest (module rows only)
-    claude = json.loads(engine.manifests()[CLAUDE_MANIFEST_RELATIVE.as_posix()])
-    assert claude["plugins"] == []
+    assert _claude(engine)["plugins"] == []
+    # `path: null` is absent → the default frames root (the same tmp tree here)
+    engine = _engine(tmp_path, 'sources:\n  estate-frames: {plugin: estate-frames, state: "on", path: null}\n')
+    assert [r.name for r in engine.listings()] == ["pyforge/company", "pyforge/atlas"]
 
 
 # ---------------------------------------------------------------------------
@@ -522,21 +766,30 @@ def test_render_writes_both_manifests_with_required_keys(tmp_path: Path) -> None
             [
                 _row("mod", "extra", version="1.0"),
                 _row("frame-ish", "extra", kind=KIND_FRAME),
-                _row("no-repo", "extra", repository=None),
                 _row("gitlab", "extra", repository="https://gitlab.com/a/b"),
+                _row("ssh", "extra", repository="git@github.com:acme/ssh.git"),
             ]
         )
     )
-    written = engine.render(write=True)
-    assert set(written) == {CLAUDE_MANIFEST_RELATIVE.as_posix(), CODEX_MANIFEST_RELATIVE.as_posix()}
+    rendered = engine.render(write=True)
+    assert rendered.ok
+    assert set(rendered.manifests) == {CLAUDE_MANIFEST_RELATIVE.as_posix(), CODEX_MANIFEST_RELATIVE.as_posix()}
+    assert rendered.written == (
+        str(engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE),
+        str(engine.catalog_dir / CODEX_MANIFEST_RELATIVE),
+    )
     claude = json.loads((engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert claude["name"] == "test-catalog"
     assert claude["owner"] == {"name": "tester"}
-    assert [p["name"] for p in claude["plugins"]] == ["mod"]  # module + github repo only
-    (plugin,) = claude["plugins"]
-    assert plugin["source"] == {"source": "github", "repo": "acme/mod"}
-    assert plugin["version"] == "1.0"
-    assert plugin["tags"] == ["source:extra", f"trust:{TIER_UNVERIFIED}"]
+    assert [p["name"] for p in claude["plugins"]] == ["mod", "gitlab", "ssh"]  # module rows only
+    mod, gitlab, ssh = claude["plugins"]
+    assert mod["source"] == {"source": "github", "repo": "acme/mod"}
+    assert mod["version"] == "1.0"
+    assert mod["tags"] == ["source:extra", f"trust:{TIER_UNVERIFIED}"]
+    # a non-GitHub git URL is Claude Code's documented url form, never dropped
+    assert gitlab["source"] == {"source": "url", "url": "https://gitlab.com/a/b"}
+    # the SSH form is not owner/repo, so it is a url source, never `git@…` as `repo`
+    assert ssh["source"] == {"source": "url", "url": "git@github.com:acme/ssh.git"}
     codex = json.loads((engine.catalog_dir / CODEX_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert codex == {
         "name": "test-catalog",
@@ -546,17 +799,33 @@ def test_render_writes_both_manifests_with_required_keys(tmp_path: Path) -> None
     assert engine.drift() == []
 
 
+def test_a_module_listing_without_a_repository_is_a_finding_not_a_silent_omission(tmp_path: Path) -> None:
+    engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    engine.sources.register(
+        _CustomSource([_row("no-repo", "extra", repository=None), _row("blank", "extra", repository="  ")])
+    )
+    report = engine.check()
+    assert [(f.code, f.subject) for f in report.findings] == [
+        ("listing-no-repository", "no-repo"),
+        ("listing-no-repository", "blank"),
+    ]
+    rendered = engine.render(write=True)
+    assert rendered.ok is False and rendered.written == ()
+    assert not (engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
+
+
 def test_a_listing_change_without_rerender_is_manifest_drift(tmp_path: Path) -> None:
     engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
     source = _CustomSource([_row("one", "extra")])
     engine.sources.register(source)
-    engine.render(write=True)
+    assert engine.render(write=True).ok
     assert engine.check().ok
     source._rows.append(_row("two", "extra"))
     report = engine.check()
     assert [f.code for f in report.findings] == ["manifest-drift"]
     assert report.findings[0].subject == CLAUDE_MANIFEST_RELATIVE.as_posix()
     assert "stale" in report.findings[0].message
+    assert [f.code for f in engine.drift()] == ["manifest-drift"]
 
 
 # ---------------------------------------------------------------------------
@@ -569,14 +838,47 @@ def test_catalog_is_the_twentieth_duty_and_resolves() -> None:
     ns = build_parser().parse_args(["catalog", "render", "--check", "--json"])
     assert (ns.catalog_verb, ns.check, ns.json) == ("render", True, True)
     ns = build_parser().parse_args(["catalog", "--catalog", "/tmp/x"])
-    assert (ns.catalog_verb, ns.catalog) == (None, "/tmp/x")
+    assert (ns.catalog_verb, ns.catalog, ns.json) == (None, "/tmp/x", False)
+
+
+@pytest.mark.parametrize(
+    ("argv", "verb", "catalog", "as_json"),
+    [
+        (["catalog", "--json"], None, None, True),
+        (["catalog", "--catalog", "D"], None, "D", False),
+        (["catalog", "--catalog", "D", "--json"], None, "D", True),
+        (["catalog", "check", "--catalog", "D"], "check", "D", False),
+        (["catalog", "check", "--json"], "check", None, True),
+        (["catalog", "--json", "check"], "check", None, True),
+        (["catalog", "--catalog", "D", "check"], "check", "D", False),
+        (["catalog", "--catalog", "D", "list", "--json"], "list", "D", True),
+        (["catalog", "--json", "render", "--check", "--catalog", "D"], "render", "D", True),
+        (["catalog", "pointers", "--catalog", "D", "--json"], "pointers", "D", True),
+    ],
+)
+def test_catalog_and_json_flags_parse_before_or_after_the_verb(argv, verb, catalog, as_json) -> None:
+    ns = build_parser().parse_args(argv)
+    assert (ns.catalog_verb, ns.catalog, ns.json) == (verb, catalog, as_json)
+
+
+def test_cli_json_with_the_verb_omitted_runs_check(tmp_path: Path, capsys) -> None:
+    catalog_dir = _write_catalog(tmp_path, "")
+    assert CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir).render(write=True).ok
+    rc = main(["catalog", "--catalog", str(catalog_dir), "--json"])
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is True and payload["slots"] == []
+    rc = main(["catalog", "check", "--catalog", str(catalog_dir)])
+    assert rc == EXIT_OK
+    assert "catalog check: ok" in capsys.readouterr().out
+    assert rc != EXIT_USAGE
 
 
 def test_cli_slot_unbound_is_the_only_finding_and_exits_1(tmp_path: Path, capsys) -> None:
     """AC: a new source `on` with `plugin: x` and no plugin `x` registered."""
     catalog_dir = _write_catalog(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
     config = load_config(catalog_dir / "catalog.yaml")
-    CatalogEngine(tmp_path, config, catalog_dir=catalog_dir).render(write=True)
+    assert CatalogEngine(tmp_path, config, catalog_dir=catalog_dir).render(write=True).ok
     rc = main(["catalog", "--catalog", str(catalog_dir), "check", "--json"])
     assert rc == EXIT_FAILED
     payload = json.loads(capsys.readouterr().err)
@@ -598,8 +900,9 @@ def test_cli_render_check_reports_drift_and_render_repairs_it(tmp_path: Path, ca
     assert "manifest-drift" in capsys.readouterr().err
     rc = main(["catalog", "--catalog", str(catalog_dir), "render", "--json"])
     assert rc == EXIT_OK
-    written = json.loads(capsys.readouterr().out)["written"]
-    assert all(Path(p).is_file() for p in written)
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is True and payload["findings"] == []
+    assert all(Path(p).is_file() for p in payload["written"]) and len(payload["written"]) == 2
     rc = main(["catalog", "--catalog", str(catalog_dir), "render", "--check", "--json"])
     assert rc == EXIT_OK
     assert json.loads(capsys.readouterr().out) == {"ok": True, "findings": []}
@@ -610,6 +913,27 @@ def test_cli_render_check_reports_drift_and_render_repairs_it(tmp_path: Path, ca
     rc = main(["catalog", "--catalog", str(catalog_dir), "list"])
     assert rc == EXIT_OK
     assert "no listings" in capsys.readouterr().out
+
+
+def test_cli_render_refuses_on_a_broken_source_and_writes_nothing(tmp_path: Path, capsys) -> None:
+    catalog_dir = _write_catalog(
+        tmp_path,
+        'sources:\n  estate-listings: {plugin: estate-listings, state: "on"}\n',
+    )
+    (catalog_dir / "registry").mkdir()
+    (catalog_dir / "registry" / "estate.yaml").write_text("modules: 3\n", encoding="utf-8")
+    rc = main(["catalog", "--catalog", str(catalog_dir), "render", "--json"])
+    assert rc == EXIT_FAILED
+    payload = json.loads(capsys.readouterr().err)
+    assert payload["ok"] is False and payload["written"] == []
+    assert [f["code"] for f in payload["findings"]] == ["config-source"]
+    assert not (catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
+    rc = main(["catalog", "--catalog", str(catalog_dir), "render"])
+    assert rc == EXIT_FAILED
+    assert "refused, nothing written" in capsys.readouterr().err
+    rc = main(["catalog", "--catalog", str(catalog_dir), "render", "--check"])
+    assert rc == EXIT_FAILED
+    assert "[config-source]" in capsys.readouterr().err
 
 
 def test_cli_config_load_failure_is_a_duty_failure_not_a_crash(tmp_path: Path, capsys) -> None:
@@ -630,6 +954,12 @@ def test_duty_never_raises_past_its_boundary(monkeypatch: pytest.MonkeyPatch) ->
     result = CatalogDuty().run(_ns())
     assert result.ok is False
     assert result.summary == "catalog check failed: RuntimeError: no checkout"
+    result = CatalogDuty().run(_ns(catalog_verb="list", json=True))
+    assert result.ok is False
+    assert json.loads(result.summary) == {
+        "ok": False,
+        "findings": [{"code": "internal", "subject": "list", "message": "RuntimeError: no checkout"}],
+    }
 
 
 def test_duty_unknown_verb_names_the_verbs(tmp_path: Path) -> None:
@@ -666,6 +996,18 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert payload["dedicated_repo"] is None
 
 
+def test_pointers_quote_a_catalog_path_with_a_space(tmp_path: Path) -> None:
+    spaced = tmp_path / "my catalog"
+    spaced.mkdir()
+    (spaced / "catalog.yaml").write_text(_HEADER, encoding="utf-8")
+    engine = CatalogEngine(tmp_path, load_config(spaced / "catalog.yaml"), catalog_dir=spaced)
+    pointers = engine.pointers()
+    quoted = f"'{spaced.resolve()}'"
+    assert pointers["custom_source"] == f"bmad-method install --custom-source {quoted}"
+    assert pointers["claude_plugin_add"] == f"/plugin marketplace add {quoted}"
+    assert pointers["catalog_dir"] == str(spaced.resolve())  # the raw path stays raw
+
+
 def test_pointers_use_the_github_forms_once_a_dedicated_repo_is_confirmed(tmp_path: Path) -> None:
     header = _HEADER.replace("dedicated_repo: null", "dedicated_repo: tester/catalog")
     catalog_dir = _write_catalog(tmp_path, "", header=header)
@@ -678,13 +1020,23 @@ def test_pointers_use_the_github_forms_once_a_dedicated_repo_is_confirmed(tmp_pa
     assert "github forms available" in pointers["github_note"]
 
 
-def test_conda_channel_backend_reads_its_declared_options() -> None:
-    decl = BackendDecl(name="conda-channel", plugin="conda-channel", state="on", options={})
-    assert CondaChannelBackend().snapshot_target(decl) == "conda://SelfExplainML/pyforge-estate-catalog"
-    decl = BackendDecl(
-        name="conda-channel", plugin="conda-channel", state="on", options={"channel": "c", "package": "p"}
+def test_backends_read_declared_options_and_treat_null_as_absent() -> None:
+    def decl(name: str, **options) -> BackendDecl:
+        return BackendDecl(name=name, plugin=name, state="on", options=options)
+
+    conda = CondaChannelBackend()
+    assert conda.snapshot_target(decl("conda-channel")) == "conda://SelfExplainML/pyforge-estate-catalog"
+    assert conda.snapshot_target(decl("conda-channel", channel="c", package="p")) == "conda://c/p"
+    assert (
+        conda.snapshot_target(decl("conda-channel", channel=None, package=None))
+        == "conda://SelfExplainML/pyforge-estate-catalog"
     )
-    assert CondaChannelBackend().snapshot_target(decl) == "conda://c/p"
+    s3 = ObjectStorageBackend()
+    assert s3.snapshot_target(decl("object-storage", bucket=None, key=None)) == "s3://<bucket>/catalog/snapshot.tar.gz"
+    assert s3.snapshot_target(decl("object-storage", bucket="b", key="k")) == "s3://b/k"
+    bundle = GitBundleBackend()
+    assert bundle.snapshot_target(decl("git-bundle", file=None)) == "catalog.bundle"
+    assert bundle.snapshot_target(decl("git-bundle", file="x.bundle")) == "x.bundle"
 
 
 # ---------------------------------------------------------------------------
@@ -712,6 +1064,9 @@ def test_real_tree_check_is_ok_and_manifests_are_in_sync(capsys) -> None:
         ("estate-frames", "on"),
         ("claude-skill-registry", "off"),
     }
+    by_name = {s["name"]: s for s in report["sources"]}
+    assert (by_name["claude-skill-registry"]["plugin"], by_name["claude-skill-registry"]["bound"]) == (None, False)
+    assert by_name["public-bmad-catalog"]["plugin"] == "public-bmad-catalog"
     assert report["catalog"]["edit_store"] == {
         "kind": "git",
         "repo": "rxm7706/local-recipes",
@@ -728,7 +1083,7 @@ def test_real_tree_list_names_a_declared_source_on_every_listing(capsys) -> None
     payload = json.loads(capsys.readouterr().out)
     declared = {"estate-listings", "wielded-suite", "estate-frames"}
     rows = payload["listings"]
-    assert payload["count"] == len(rows) == 13
+    assert payload["count"] == len(rows) == _WIELDED_MODULE_COUNT + EXPECTED_COUNT
     assert all(r["source"] and r["source"] in declared for r in rows)
     wielded = [r for r in rows if r["source"] == "wielded-suite"]
     assert [r["name"] for r in wielded] == [
@@ -741,7 +1096,7 @@ def test_real_tree_list_names_a_declared_source_on_every_listing(capsys) -> None
         str(doc.fields["identifier"]).strip() for doc in preflight_frames(root).frames
     )
     assert sorted(r["name"] for r in frames) == expected
-    assert len(frames) == 9
+    assert len(frames) == EXPECTED_COUNT  # a tenth frame fails in frames.py first
     assert {r["kind"] for r in frames} == {KIND_FRAME}
 
 
@@ -751,15 +1106,29 @@ def test_real_tree_claude_manifest_has_the_discovery_shape() -> None:
     )
     assert manifest["name"] == "pyforge-estate-catalog"
     assert manifest["owner"]["name"] == "rxm7706"
-    assert isinstance(manifest["plugins"], list) and manifest["plugins"]
+    assert isinstance(manifest["plugins"], list) and len(manifest["plugins"]) == _WIELDED_MODULE_COUNT
     for plugin in manifest["plugins"]:
         assert plugin["name"]
         assert plugin["source"]["source"] == "github"
-        assert plugin["source"]["repo"].count("/") == 1
+        assert _github_owner_repo(plugin["source"]["repo"]) == plugin["source"]["repo"]
         assert any(tag.startswith("source:") for tag in plugin["tags"])
         assert any(tag.startswith("trust:") for tag in plugin["tags"])
     codex = json.loads((default_catalog_dir() / CODEX_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert codex["plugins"] == []  # no wielded module ships a .codex-plugin dir
+
+
+def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None:
+    assert main(["catalog", "pointers", "--json"]) == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["extra_known_marketplaces"] == {
+        "extraKnownMarketplaces": {
+            "pyforge-estate-catalog": {
+                "source": {"source": "directory", "path": "src/shared/packages/pyforge-steward/catalog"}
+            }
+        }
+    }
+    assert payload["dedicated_repo"] is None
+    assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())
 
 
 def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
