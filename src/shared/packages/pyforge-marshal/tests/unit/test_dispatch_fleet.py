@@ -3371,6 +3371,59 @@ def test_once_the_ledger_promotes_the_next_story_dispatches(
     assert report.complete is False
 
 
+def test_sibling_promoted_ledger_is_read_when_primary_sits_behind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger`'s own CAP-5
+    isolation never touches the primary checkout, so a sibling station's
+    finalize can promote `head` on `origin/main` while THIS campaign's
+    primary checkout stays dirty (or otherwise unverified as a clean local
+    `main`) and is never fast-forwarded by this fixture. The very next
+    cycle must read the promoted status from `origin/main` -- never the
+    stale local ledger twin -- and chain straight to the next ready story
+    (replays the herald 2026-09-18 sequence's own outcome via the new
+    read-side fallback instead of a local ledger write)."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-herald"
+    head = "23-6-landing-fallout"
+    nxt = "23-7-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [head, nxt]})
+    _seed_finalize_pending_journal(
+        tmp_path,
+        slug=slug,
+        run_id=f"{slug}-20260918T161945000Z-82ce96c8",
+        story_key="23.6",
+        supervisor_pid=99,
+        landing_verdict="landed",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    vcs = FakeVcs(tmp_path)
+    # The primary checkout is dirty -- never fast-forwarded or otherwise
+    # mutated by this fixture. `_station_ledger_statuses` must fall back
+    # to reading `origin/main` directly instead of refusing or blocking.
+    vcs.dirty = True
+    ledger_rel = f"_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+    vcs.remote_ledger_texts[ledger_rel] = (
+        f"development_status:\n  {head}: done\n  {nxt}: backlog\n"
+    )
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        # The LOCAL on-disk twin is deliberately stale -- if the campaign
+        # ever fell back to it, `head` would still read "backlog" and the
+        # station would stay stuck rather than chaining to `nxt`.
+        ledgers={slug: ((head, "backlog"), (nxt, "backlog"))},
+        vcs=vcs,
+        process=FakeProcess(alive_pids=frozenset({99})),
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == [(slug, "23.7")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert report.complete is False
+
+
 def test_herald_2026_09_18_three_cycle_replay_ends_with_the_next_story(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
