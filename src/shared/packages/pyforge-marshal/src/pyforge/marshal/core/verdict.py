@@ -1122,6 +1122,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # and the launch is otherwise entirely viable. The SAME WARN tier as
     # MRS-DISP-033/042 above and for the same reason.
     "MRS-DISP-043": Verdict.WARN,
+    # Story 51.1 (verification sees the merge result): the merge-tree
+    # preview of the branch onto `origin/main` failed `verify_commands`, or
+    # the behind-check itself could not be evaluated -- a hard refusal, the
+    # SAME ERROR tier as MRS-DISP-038 above (both fire immediately before
+    # `forge.merge_pr` and both stop the land attempt cold).
+    "MRS-DISP-044": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
