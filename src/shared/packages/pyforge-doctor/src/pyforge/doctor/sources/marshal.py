@@ -84,12 +84,14 @@ TERMINAL = frozenset({"done"})
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
 DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
-# AD-24 legacy default template; shared with ``pyforge.core.landing_evidence``
-# conformance. Carries no station token, so a subject rendered from it cannot
-# be scoped to any one project -- ``_project_merge_subject_template`` below
-# is the per-project override this module reads FIRST (Story 27.1); this
-# constant is only the fallback for a project whose policy declares none.
-_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+# Repo-default template (Story 50.4), shared with
+# ``pyforge.core.landing_evidence`` conformance. Carries a ``{slug}`` token,
+# so ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+# to the project that rendered it -- ``_project_merge_subject_template``
+# below is the per-project override this module reads FIRST (Story 27.1);
+# this constant is only the fallback for a project whose policy declares
+# none.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 _MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
 _FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
 
@@ -98,10 +100,10 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
     """``project_slug``'s own ``merge_subject_template``, read directly from
     its tracked ``marshal-policy.toml`` as TOML -- never through
     ``pyforge.marshal`` (this module's independence rule, see the module
-    docstring). Degrades to the legacy repo default when the policy file is
+    docstring). Degrades to the repo default when the policy file is
     absent, unreadable, not valid TOML, or does not declare the key --
     "degrades, never crashes," and Story 27.1's own "policy declares no
-    template -> legacy default honoured" row. Duplicated in
+    template -> default honoured" row. Duplicated in
     ``sources/ledger.py`` rather than shared via a cross-import, mirroring
     this module's own ``_git``/``_parse_statuses`` precedent of small,
     per-file self-contained helpers over sibling-module coupling.

@@ -72,11 +72,12 @@ LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
 #: this file's own ``_git``/``_parse_statuses`` precedent of small, per-file
 #: self-contained helpers over sibling-module coupling.
 _MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
-#: AD-24 legacy default template -- carries no station token, so a subject
-#: rendered from it cannot be scoped to any one station (Story 27.1's own
-#: acknowledged residual: "policy declares no template -> legacy default
-#: honoured"). Kept identical to ``sources/marshal.py``'s own constant.
-_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+#: Repo-default template (Story 50.4) -- carries a ``{slug}`` token, so
+#: ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+#: to the project that rendered it, even when that project declares no
+#: override (Story 27.1's own "policy declares no template -> default
+#: honoured" row). Kept identical to ``sources/marshal.py``'s own constant.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 #: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
 #: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
 #: -- i.e. shipped by the range under judgement. Once merged it is in both
@@ -134,9 +135,9 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
     """``project_slug``'s own ``merge_subject_template``, read directly from
     its tracked ``marshal-policy.toml`` as TOML -- never through
     ``pyforge.marshal`` (this module's independence rule). Degrades to the
-    legacy repo default when the policy file is absent, unreadable, not
+    repo default when the policy file is absent, unreadable, not
     valid TOML, or does not declare the key -- "degrades, never crashes,"
-    and Story 27.1's own "policy declares no template -> legacy default
+    and Story 27.1's own "policy declares no template -> default
     honoured" row.
     """
     path = target / PROJECTS_PREFIX / project_slug / _MARSHAL_POLICY_SUFFIX
