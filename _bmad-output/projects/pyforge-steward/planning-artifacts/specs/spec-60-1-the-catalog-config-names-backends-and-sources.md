@@ -2,9 +2,9 @@
 title: '60.1: The catalog config names backends and sources'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 warnings: ['oversized']
 deferred:
@@ -193,3 +193,44 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli catalog check && python -m pyforge.steward.cli catalog render --check` -- expected: exit 0, no drift.
 - `python -m pyforge.doctor.sources spec-surface` -- expected: no drift finding for `pyforge-steward/spec-pyforge-steward` after the memlog entry + re-stamp.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` -- expected: `catalog.py` ≥ 80% unit coverage.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** The estate BMAD catalog has a home in git — `src/shared/packages/pyforge-steward/catalog/` (tracked, not in the wheel) — and `catalog.yaml` there declares every ship backend and source of `backends-and-sources.md` by name with its v1 `state` (`on|off|available`) and the `plugin` that binds it (`null` = empty slot, legal only while off/available). A new backend or source is a declared row plus a `CatalogSourcePlugin` / `ShipBackendPlugin` registered on the engine's `SourceRegistry` / `BackendRegistry` — no engine edit (the ledger-query idiom). Three default sources (`estate-listings` from `registry/estate.yaml`; `wielded-suite` derived from `suite.SUITE_PACKAGES` module-class rows at `bmad-certified`; `estate-frames` from `frames.preflight_frames` at `kind: frame`) and three default backends carrying the shared `snapshot_target` interface (the conda publish itself is 60.3). Every listing names exactly one source; the engine withholds rows that do not and reports `listing-no-source` / `listing-source-mismatch` / `listing-duplicate` / `listing-no-repository`. Two GENERATED manifests sit beside the config — `.claude-plugin/marketplace.json` (Claude Code marketplace; the file the BMAD installer's discovery mode reads; provenance as `tags: ["source:<name>", "trust:<tier>"]`; github `owner/repo` → `github` form, any other git URL → `url` form) and `.agents/plugins/marketplace.json` (Codex; `plugins: []` in v1) — and `render` refuses to write when any collect finding exists. New duty `steward catalog check|list|render [--check]|pointers [--json] [--catalog DIR]` (the twentieth). No GitHub catalog repo was minted (`edit_store.dedicated_repo: null`; `pointers` names the github forms as waiting on operator confirm), `.claude/settings.json` is untouched (`pointers` prints the `directory`-form block), and no Epic 44 ledger key moved.
+
+**Files changed.**
+- `src/shared/packages/pyforge-steward/catalog/catalog.yaml` — the declaration (3 backends, 5 sources, edit store, `dedicated_repo: null`); path anchors documented per row.
+- `src/shared/packages/pyforge-steward/catalog/registry/estate.yaml` — reviewed-listings file in the upstream registry format; `source: estate-listings`, `modules: []`; header documents the accepted row keys.
+- `src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json` — generated Claude/installer manifest (4 wielded-module plugins).
+- `src/shared/packages/pyforge-steward/catalog/.agents/plugins/marketplace.json` — generated Codex manifest (`plugins: []`).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py` — new engine + duty (config loader with named failures, `Listing`, plugin ABCs + registries, default sources/backends, `CatalogEngine.check/listings/render/drift/pointers`, `CatalogDuty`).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — `catalog` registered (`DUTIES`, `_HELP`, `_add_catalog_subparsers` with `--catalog`/`--json` on both parser levels, `resolve_duty`).
+- `src/shared/packages/pyforge-steward/tests/unit/test_catalog.py` — 55 test functions / 91 collected (config failures, I/O-matrix slot, registries, listing rules, both sources, render/drift refusal, CLI verbs and flag placements, pointers, real-tree checks).
+- `src/shared/packages/pyforge-steward/tests/unit/test_cli.py`, `test_restore_duty.py` — twenty duties.
+- `src/shared/packages/pyforge-steward/tests/unit/test_track.py`, `test_provision_module_installers.py`, `test_provision_plugin.py` — three pre-existing test defects fixed in passing (team memory: fix-now), each named in the memlog.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — CAP-117 entry (owner); `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile line; `scripts/.spec-surface-baseline.json` — both scoped stamps.
+- This spec — planned, reviewed, triaged.
+
+**Review findings breakdown** (49 findings from four layers; every row in `## Review Triage Log`).
+- Patches applied — 22 triage entries after grouping, at entry verdict: **medium 3** (render/`render --check` ignored collect findings → `RenderResult` refusal, withheld rows; `_github_owner_repo` accepted SSH/fragment forms → strict two-segment regex; duplicate `(kind, name)` listings → `listing-duplicate`), **low 19** (trust-tier validation; float `version` rule; header wording for the file-level `source:`; non-string declaration keys; unknown top-level keys; `edit_store.kind == git`; `dedicated_repo` shape; null options treated as absent; empty `display_name`; `shlex.quote` on pasted commands; JSON on internal error; `--json`/`--catalog` before or after the verb; `Exception` guard on sources; null-plugin empty slot; non-GitHub git URL → `url` source form + `listing-no-repository`; `path` anchors documented; estate.yaml accepted keys documented; memlog wording/count; real-tree `pointers` test; derived real-tree counts). High 0.
+- Deferred (4, `deferred:` frontmatter): recipe/frame inputs never trigger the steward CI job so the committed manifest can drift on a recipe-only PR (medium; CI wiring / 60.3 render gate); the `test_track.py` schema test still skips in CI without `jsonschema` (low; `pixi.toml`); the SKF-managed `SKILL.md` duty roster trails by three (low; agent-context file); the BMAD installer resolves the catalog but "Found 0 modules" for github-pointer rows (medium; 60.3's vendored snapshot — found by this run's own live verification, not a reviewer).
+- Rejected (8): ECH2 — false, `preflight_frames` never returns early; ECH4 — low, non-UTF-8 generated manifest is not met in everyday use and the fix is a guard; ECH12 — low, duplicate YAML keys need a loader subclass and the real-tree test pins the declared sets; ECH22/IA-d — false, `slots` is defined by this spec's AC 1 and `bound` rides on each row; IA-a — low, "not a rewrite" is met additively (R3a) and AC 6 names the engine registry as the extension point; IA-b — false, the I/O row's scenario has no error path and `slot-unbound` is a distinct `on` state defined by AC 6; IA-e — low, an unattended run cannot ask, the pending decision is named below; IA-h — false, no defect claimed (fixes follow team memory, reconcile follows the governed-surface rule).
+
+**Follow-up review recommendation: `true`** — first pass; patched entries by verdict: high 0, medium 3, low 19. Three medium entries were patched (≥ 2), and the specific unverified risk is the re-derived render/drift/check triad: `render` now returns a `RenderResult` and refuses on any collect finding, `drift()` (what `render --check` reports) returns the collect findings instead of comparing manifests when any exist, and `check` skips the drift comparison under listing findings — that interaction was verified only by the implementer's own tests and this run's real-tree commands, not by a fresh review layer.
+
+**Verification performed.**
+- `pytest tests/unit/test_catalog.py test_cli.py test_duty_protocol.py -q` (worktree code via `PYTHONPATH`): 122 passed.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` (the dispatch's configured verify, real env): **1443 passed, 4 skipped**.
+- `steward catalog check` → exit 0, "3 backends, 5 sources, 13 listings, 4 slots (object-storage, git-bundle, public-bmad-catalog, claude-skill-registry)"; `steward catalog render --check` → "manifests in sync"; `steward catalog --json` and `check --catalog DIR` both parse (were exit 2 before the patch pass).
+- `python -m pyforge.doctor.sources spec-surface` → ok, no drift (both `spec-pyforge-steward` and co-governor `spec-pyforge-core` stamped after the last code edit).
+- `coverage_gates_ci.py --suites unit` (steward): `catalog.py` 97%, `cli.py` 99%, gate OK.
+- Live installer probe (`npx -y bmad-method@latest install --custom-source <catalog> --directory /tmp/bmad-cs-test --tools claude-code --yes`, 6.12.0): exit 0, "Local source resolved", "Found 0 modules" — recorded as the fourth deferred item and printed by `pointers`.
+- Matrix audit: the "new source" row is covered by `test_io_matrix_new_source_is_a_plugin_slot_not_a_rewrite`, `test_declared_off_without_a_plugin_is_a_slot_and_ok` and `test_cli_slot_unbound_is_the_only_finding_and_exits_1`, all executed and passing.
+
+**Residual risks.**
+- Operator decision pending (the contract's "needs operator confirm at this story"): whether to mint a dedicated GitHub catalog repo. Nothing was created; setting `catalog.edit_store.dedicated_repo: <owner/repo>` flips `pointers` to the github forms once confirmed.
+- The four deferred items above; the first (manifest drift on recipe-only PRs) will surface as a red `steward catalog check` on the next steward PR after a wielded-module recipe bump until the CI trigger or a render gate lands.
+- `.claude/settings.json` is not wired; the printed `directory`-form block is documented as "for development only" by Claude Code's settings reference — the durable form is `github`/`git`, which waits on the repo decision.
