@@ -392,6 +392,7 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
     worktree = tmp_path / "wt"
     worktree.mkdir()
     vcs = FakeVcs(merged=False)
+    process = FakeProcess()
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="22-4-example",
@@ -400,12 +401,16 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
         verification_verdict=DispatchVerificationVerdict.VERIFIED,
         vcs=vcs,
         forge=FakeForge(),
-        process=FakeProcess(),
+        process=process,
     )
     assert vcs.pushed == ["dispatch/pyforge-marshal/22.4"]
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert result.marshal_native is True
     assert result.pr_number == 42
+    # Story 51.2 / Verification Gap: the dispatch_land_finalize subprocess
+    # boundary must actually receive the worktree it was given.
+    assert len(process.calls) == 1
+    assert process.calls[0][0][-1] == str(worktree)
 
 
 def test_execute_dispatch_land_refused_result_keeps_pr_facts_after_merge(
