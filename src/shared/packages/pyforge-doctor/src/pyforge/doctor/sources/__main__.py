@@ -54,6 +54,7 @@ from . import (
     capability_effect,
     chain,
     deps,
+    docs_shelf,
     factory,
     capability_ledger,
     frozen_path,
@@ -129,6 +130,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # repo-scope, offline, deterministic -- in detectors-ci from day one.
     Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
     Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
+    # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
+    # occupancy vs the docs/MAP.md allow-list; same shape as
+    # GENERAL_DOCS_CONSISTENCY above.
+    Source.DOCS_SHELF_OCCUPANCY.value: docs_shelf.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

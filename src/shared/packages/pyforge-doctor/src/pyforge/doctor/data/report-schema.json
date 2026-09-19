@@ -90,7 +90,8 @@
             "general-docs-consistency",
             "capability-ledger",
             "chain-sprawl",
-            "fr-without-cap"
+            "fr-without-cap",
+            "docs-shelf-occupancy"
           ]
         },
         "check": { "type": "string" },
