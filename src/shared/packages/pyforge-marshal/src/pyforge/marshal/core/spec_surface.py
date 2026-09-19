@@ -68,7 +68,7 @@ def _skip_leading_banner(text: str) -> str:
     banner's opening marker (Story 51.8, CAP-256, DW-FU-50-6) -- the banner
     need not sit at literal text offset 0. Returns ``text`` unchanged when
     no banner is found there, or when the marker is never closed."""
-    stripped = text.lstrip("﻿ \t\r\n")
+    stripped = text.lstrip("\ufeff \t\r\n")
     if not stripped.startswith(_BANNER_PREFIX):
         return text
     end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
