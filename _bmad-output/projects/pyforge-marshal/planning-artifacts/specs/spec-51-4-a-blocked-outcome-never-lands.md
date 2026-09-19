@@ -2,7 +2,7 @@
 title: '51.4: A blocked outcome never lands'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '1ff4b6d212084d74e3be6112221a4261822d74f0'
 review_loop_iteration: 0
 followup_review_recommended: false
