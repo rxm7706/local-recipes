@@ -399,6 +399,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   forward** (51.2's record) — it needs a DW entry or a scheduled follow-up dispatch, or the next
   landing on the same hub files goes unreviewed. Not decomposed today: (1) is folded into
   CAP-252's amendment (Story 51.4, widened); (2)–(5) are the next `bmad-spec` pass on this chain.
+  **(6), found on 51.9's landing (13:0xZ):** CAP-250's promotion never fires for a
+  pre-authored tracked spec — `_already_promoted_keys` (CAP-248) reads any valid-frontmatter
+  tracked spec as already promoted, and every minted story HAS one (MRS-GATE-010 needs the
+  Success signal on `main` before dispatch), so the worktree twin's Review Triage Log / Auto
+  Run Result / `deferred:` are never merged in; 51.6 self-promoted only because its session
+  wrote the tracked spec directly. The promotion needs a merge rule for a twin whose
+  `status:` is terminal while the tracked copy's is not (or whose Auto Run Result the tracked
+  copy lacks). Hand-promoted for 51.2 and 51.9.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
