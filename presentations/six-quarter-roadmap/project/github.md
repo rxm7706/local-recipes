@@ -19,5 +19,5 @@ date: 2026-09-10T08:37:10Z
 ## Screen map
 | Screen | Repo files |
 |---|---|
-| PyForge Roadmap.dc.html | `_bmad-output/PROJECTS.md`, `_bmad-output/FLEET-READINESS-2026-08-08.md`, `_bmad-output/DREAM-TRIAGE-2026-08-08.md`, all `projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml` |
-| PyForge Roadmap Deck.dc.html | all `projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/PROJECTS.md`, `_bmad-output/FLEET-READINESS-2026-08-08.md`, `_bmad-output/DREAM-TRIAGE-2026-08-08.md` |
+| PyForge Roadmap.dc.html | `_bmad-output/PROJECTS.md`, `archive/_bmad-output/FLEET-READINESS-2026-08-08.md`, `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md`, all `projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml` |
+| PyForge Roadmap Deck.dc.html | all `projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/PROJECTS.md`, `archive/_bmad-output/FLEET-READINESS-2026-08-08.md`, `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md` |
