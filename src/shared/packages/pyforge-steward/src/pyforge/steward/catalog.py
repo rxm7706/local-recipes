@@ -661,6 +661,20 @@ class CatalogReport:
         }
 
 
+@dataclass(frozen=True)
+class RenderResult:
+    """What ``render`` returns: refused (``findings`` non-empty, nothing
+    written) or rendered (``manifests`` by relative path, ``written`` paths)."""
+
+    findings: tuple[CatalogFinding, ...]
+    manifests: dict[str, str]
+    written: tuple[str, ...]
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+
 _REPO_SEGMENT = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
@@ -719,16 +733,31 @@ class CatalogEngine:
 
     # -- binding --
 
+    def _bound(self, decl: SourceDecl | BackendDecl, registry: _Registry) -> bool:
+        return decl.plugin is not None and decl.plugin in registry
+
     def _bound_sources(self) -> list[tuple[SourceDecl, CatalogSourcePlugin]]:
         return [
             (decl, self.sources.get(decl.plugin))
             for decl in self.config.sources
-            if decl.state == STATE_ON and decl.plugin in self.sources
+            if decl.state == STATE_ON and self._bound(decl, self.sources)
         ]
 
     def _collect(self) -> tuple[list[Listing], list[CatalogFinding]]:
+        """Every bound source's rows plus the listing findings.
+
+        A row that names no source or another source (``listing-no-source`` /
+        ``listing-source-mismatch``) is reported and **withheld** — it never
+        reaches a manifest. A source that raises is one ``config-source``
+        finding and the other sources still run (a backend already gets the
+        same guard). Two rows with the same ``(kind, name)`` — from two
+        sources or one — are ``listing-duplicate``; a module row with no
+        repository at all is ``listing-no-repository`` (no manifest source
+        form can express it).
+        """
         listings: list[Listing] = []
         findings: list[CatalogFinding] = []
+        seen: dict[tuple[str, str], str] = {}
         for decl, plugin in self._bound_sources():
             ctx = SourceContext(
                 repo_root=self.repo_root,
@@ -741,6 +770,13 @@ class CatalogEngine:
             except CatalogConfigError as exc:
                 findings.append(CatalogFinding("config-source", f"sources.{decl.name}", str(exc)))
                 continue
+            except Exception as exc:  # noqa: BLE001 — a source must never abort check
+                findings.append(
+                    CatalogFinding(
+                        "config-source", f"sources.{decl.name}", f"{type(exc).__name__}: {exc}"
+                    )
+                )
+                continue
             for row in rows:
                 if not row.source:
                     findings.append(
@@ -750,13 +786,36 @@ class CatalogEngine:
                             f"listing {row.name!r} from source {decl.name!r} names no source",
                         )
                     )
-                elif row.source != decl.name:
+                    continue
+                if row.source != decl.name:
                     findings.append(
                         CatalogFinding(
                             "listing-source-mismatch",
                             row.name,
                             f"listing {row.name!r} names source {row.source!r} but was "
                             f"produced by {decl.name!r}; a listing names exactly one source",
+                        )
+                    )
+                    continue
+                key = (row.kind, row.name)
+                if key in seen:
+                    findings.append(
+                        CatalogFinding(
+                            "listing-duplicate",
+                            row.name,
+                            f"{row.kind} {row.name!r} is listed twice: by {seen[key]!r} and by "
+                            f"{decl.name!r}; a listing names exactly one source",
+                        )
+                    )
+                else:
+                    seen[key] = decl.name
+                if row.kind == KIND_MODULE and not (row.repository or "").strip():
+                    findings.append(
+                        CatalogFinding(
+                            "listing-no-repository",
+                            row.name,
+                            f"module {row.name!r} from {decl.name!r} has no repository; "
+                            "no manifest source form can point at it",
                         )
                     )
                 listings.append(row)
@@ -767,26 +826,36 @@ class CatalogEngine:
 
     # -- manifests --
 
+    @staticmethod
+    def _claude_source(repository: str | None) -> dict[str, str] | None:
+        """GitHub ``owner/repo`` → the ``github`` form; any other git URL →
+        Claude Code's documented ``{"source": "url", "url": …}`` form."""
+        repo = _github_owner_repo(repository)
+        if repo is not None:
+            return {"source": "github", "repo": repo}
+        if repository and repository.strip():
+            return {"source": "url", "url": repository.strip()}
+        return None
+
     def manifests(self, listings: list[Listing] | None = None) -> dict[str, str]:
-        """The two generated manifests, ``{relative path: text}``."""
+        """The two generated manifests, ``{relative path: text}`` — pure; the
+        caller decides whether the rows are fit to render (``render``)."""
         rows = self.listings() if listings is None else listings
         cfg = self.config
         claude_plugins: list[dict[str, object]] = []
         for row in rows:
             if row.kind != KIND_MODULE:
                 continue
-            repo = _github_owner_repo(row.repository)
-            if repo is None:
-                # Claude's github source form needs owner/repo; a module listing
-                # without one cannot be pointed at from this manifest.
-                continue
+            source = self._claude_source(row.repository)
+            if source is None:
+                continue  # `listing-no-repository` already refused the render
             entry: dict[str, object] = {
                 "name": row.name,
                 "description": row.description,
             }
             if row.version:
                 entry["version"] = row.version
-            entry["source"] = {"source": "github", "repo": repo}
+            entry["source"] = source
             if row.link:
                 entry["homepage"] = row.link
             entry["tags"] = [f"source:{row.source}", f"trust:{row.trust_tier}"]
@@ -816,20 +885,31 @@ class CatalogEngine:
             CODEX_MANIFEST_RELATIVE.as_posix(): _json_text(codex),
         }
 
-    def render(self, *, write: bool = False) -> dict[str, str]:
-        """Render both manifests; ``write=True`` puts them beside the config."""
-        manifests = self.manifests()
+    def render(self, *, write: bool = False) -> RenderResult:
+        """Render both manifests; ``write=True`` puts them beside the config.
+
+        Any collect finding (a raising source, a withheld row, a duplicate, a
+        module with no repository) refuses the render: ``ok=False``, the
+        findings in the result, nothing written — a manifest must never
+        silently lack the rows a broken source would have produced.
+        """
+        rows, findings = self._collect()
+        if findings:
+            return RenderResult(findings=tuple(findings), manifests={}, written=())
+        manifests = self.manifests(rows)
+        written: list[str] = []
         if write:
             for rel, text in manifests.items():
                 target = self.catalog_dir / rel
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(text, encoding="utf-8")
-        return manifests
+                written.append(str(target))
+        return RenderResult(findings=(), manifests=manifests, written=tuple(written))
 
-    def drift(self, listings: list[Listing] | None = None) -> list[CatalogFinding]:
+    def _drift_of(self, rows: list[Listing]) -> list[CatalogFinding]:
         """``manifest-drift`` for each generated manifest that is missing or stale."""
         findings: list[CatalogFinding] = []
-        for rel, text in self.manifests(listings).items():
+        for rel, text in self.manifests(rows).items():
             target = self.catalog_dir / rel
             try:
                 on_disk = target.read_text(encoding="utf-8")
@@ -844,13 +924,22 @@ class CatalogEngine:
                 )
         return findings
 
+    def drift(self) -> list[CatalogFinding]:
+        """What ``render --check`` reports: the collect findings when there are
+        any (a fresh render would refuse, so "in sync" would be a false green),
+        else ``manifest-drift`` per missing/stale manifest."""
+        rows, findings = self._collect()
+        if findings:
+            return findings
+        return self._drift_of(rows)
+
     # -- check --
 
     def check(self) -> CatalogReport:
         findings: list[CatalogFinding] = []
         backends: list[dict[str, object]] = []
         for decl in self.config.backends:
-            bound = decl.plugin in self.backends
+            bound = self._bound(decl, self.backends)
             target: str | None = None
             if bound:
                 try:
@@ -885,7 +974,7 @@ class CatalogEngine:
             per_source[row.source] = per_source.get(row.source, 0) + 1
         sources: list[dict[str, object]] = []
         for decl in self.config.sources:
-            bound = decl.plugin in self.sources
+            bound = self._bound(decl, self.sources)
             if not bound and decl.state == STATE_ON:
                 findings.append(
                     CatalogFinding(
@@ -905,7 +994,11 @@ class CatalogEngine:
                 }
             )
 
-        findings.extend(self.drift(listings))
+        # Drift is only meaningful when a fresh render would succeed; with
+        # collect findings the manifests on disk are not comparable to a
+        # row set that is already missing something.
+        if not listing_findings:
+            findings.extend(self._drift_of(listings))
 
         slots = tuple(
             decl.name
@@ -952,15 +1045,16 @@ class CatalogEngine:
                 "without operator confirm"
             )
         )
+        quoted_dir = shlex.quote(str(abs_dir))  # a path with a space must paste intact
         return {
             "catalog_dir": str(abs_dir),
-            "custom_source": f"bmad-method install --custom-source {abs_dir}",
+            "custom_source": f"bmad-method install --custom-source {quoted_dir}",
             "extra_known_marketplaces": {
                 "extraKnownMarketplaces": {
                     name: {"source": {"source": "directory", "path": rel_dir}}
                 }
             },
-            "claude_plugin_add": f"/plugin marketplace add {abs_dir}",
+            "claude_plugin_add": f"/plugin marketplace add {quoted_dir}",
             "codex_plugin_add": (
                 f"codex plugin marketplace add {dedicated}"
                 if dedicated
@@ -1078,16 +1172,21 @@ class CatalogDuty:
                         summary=_json_text(payload).rstrip("\n") if as_json else text,
                         details=payload,
                     )
-                written = engine.render(write=True)
-                paths = [str(catalog_dir / rel) for rel in written]
-                payload = {"ok": True, "written": paths}
+                rendered = engine.render(write=True)
+                payload = {
+                    "ok": rendered.ok,
+                    "findings": [f.to_dict() for f in rendered.findings],
+                    "written": list(rendered.written),
+                }
+                if rendered.ok:
+                    text = "catalog render: wrote " + ", ".join(rendered.written)
+                else:
+                    text = "catalog render: refused, nothing written — " + "; ".join(
+                        f"[{f.code}] {f.subject}: {f.message}" for f in rendered.findings
+                    )
                 return DutyResult(
-                    ok=True,
-                    summary=(
-                        _json_text(payload).rstrip("\n")
-                        if as_json
-                        else "catalog render: wrote " + ", ".join(paths)
-                    ),
+                    ok=rendered.ok,
+                    summary=_json_text(payload).rstrip("\n") if as_json else text,
                     details=payload,
                 )
             if verb == "pointers":
