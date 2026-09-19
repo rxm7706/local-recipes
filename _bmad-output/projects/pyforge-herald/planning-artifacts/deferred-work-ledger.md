@@ -1107,4 +1107,15 @@ deployment.
   origin: spec-deferred 9aa35103a2ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-19 — resolved with a finding. The live proof ran twice on `pyforge-warden` (the only deck with pull etags; `pyforge-herald` has never been pulled and only reaches the skipped path). Record: `planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`. Both runs re-derived the stale deck, pushed both PPTX artifacts with identical read-back, and refused on the standalone HTML read-back — deterministically. The idempotent no-op path therefore stays unproven until DW-FU-23-6-1 is fixed; this entry's own gap (never run live) is closed.
+
+### DW-FU-23-6-1: `deck sync-all` never publishes the standalone infographic HTML — the post-push read-back mismatches every time, so the push is refused (2/2 live runs, 2026-09-19)
+
+- source_spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-19.md`
+  summary: On `pyforge-warden` (the one deck with pull state) two consecutive live `deck sync-all` runs pushed both PPTX artifacts with byte-identical read-back but refused `pyforge-warden-infographic-standalone-2026-09-15.html` with "read-back after push did not match … refused rather than record an unproven push". Deterministic, so not a race: Claude Design most likely normalises HTML on write (whitespace, attribute order, injected support script), which a byte-equality read-back can never satisfy while `.pptx` does. Until fixed, sync-all can never reach the `unchanged` state for a deck with a standalone poster, and the poster is never re-published. Remedy candidates: a normalised comparison for HTML artifacts, or the Design-side content hash the API returns.
+  evidence: `.herald/sync-proof/pyforge-warden/report-20260919T201122485002Z-8ae6ca61.json` and `…201203451643Z-6b319b4d.json` (`labels: ['failed']`, same `error`); `presentations/pyforge-warden/README.md` push-and-prove ledger 2026-09-19.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
+  severity: medium
   status: open
+  raised: 2026-09-19 — Owner: herald. Found by the DW-FU-23-6 live proof.

@@ -371,4 +371,4 @@ If it can't prove your dependencies are safe, it fails — until you pin them, f
 
 ## Ledger
 
-<span data-fact="tree_commit_date">2026-09-15</span> · <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="bmad_core_version">6.12.0</span> · <span data-fact="fleet_epics_done_total">207/219</span> · <span data-fact="fleet_stories_done_total">926/972</span>
+<span data-fact="tree_commit_date">2026-09-19</span> · <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="bmad_core_version">6.12.0</span> · <span data-fact="fleet_epics_done_total">221/239</span> · <span data-fact="fleet_stories_done_total">995/1050</span>
