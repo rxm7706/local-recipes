@@ -159,6 +159,17 @@ class LoadOutcome:
     message: str = ""
 
 
+def _outcome_from_result(result: dict[str, Any]) -> LoadOutcome:
+    return LoadOutcome(
+        status=result["status"],
+        direction=result["direction"],
+        batch_sha=result["batch_sha"],
+        waybill=result["waybill"],
+        transport=result["transport"],
+        message=result.get("message", ""),
+    )
+
+
 def load_extract(
     *,
     direction: str,
@@ -167,29 +178,22 @@ def load_extract(
     transport: str,
     config: CorridorConfig,
 ) -> LoadOutcome:
-    """Idempotent on ``(direction, batch_sha, waybill)`` — a repeat drop of the
-    same file under the same waybill is a no-op, never a duplicate row.
+    """Idempotent on ``(direction, batch_sha, waybill)`` ALONE — no transport
+    qualifier. A repeat drop of an already-loaded file is a no-op regardless
+    of which transport this call names, even an unknown or declared-off one:
+    the existing-record check runs before transport validation, so only the
+    path that would actually CREATE a new row needs a transport that is both
+    declared and ``state: on``.
 
-    Raises :class:`CorridorLoadError` for an unknown or declared-off
-    transport (naming the declared transports so a typo is diagnosable);
-    otherwise reaches ``dashboard/corridor_load.py`` through the one
-    sanctioned dynamic base→dashboard idiom, refusing (never raising) when
-    the ``[dashboard]`` extra is not installed.
+    Raises :class:`CorridorLoadError` only on that create path, for an
+    unknown or declared-off transport (naming the declared transports so a
+    typo is diagnosable); otherwise reaches ``dashboard/corridor_load.py``
+    through the one sanctioned dynamic base→dashboard idiom, refusing (never
+    raising) when the ``[dashboard]`` extra is not installed.
     """
     if direction not in DIRECTIONS:
         raise CorridorLoadError(
             f"unknown direction {direction!r}; must be one of {DIRECTIONS!r}"
-        )
-    decl = config.transport(transport)
-    declared = ", ".join(t.name for t in config.transports) or "(none declared)"
-    if decl is None:
-        raise CorridorLoadError(
-            f"unknown transport {transport!r}; declared transports: {declared}"
-        )
-    if decl.state != STATE_ON:
-        raise CorridorLoadError(
-            f"transport {transport!r} is declared 'off' in corridor.yaml "
-            f"(declared transports: {declared})"
         )
 
     import importlib
@@ -205,17 +209,39 @@ def load_extract(
             transport=transport,
             message="pyforge-steward[dashboard] extra not installed",
         )
+
+    # Read-only probe: does a record already exist for this (direction,
+    # batch_sha, waybill)? If so, it is idempotent no matter what transport
+    # this call passed -- report it immediately without ever consulting
+    # `config` for this call's (possibly unknown / off) transport.
+    probe = module.record_corridor_load(
+        direction=direction,
+        batch_sha=batch_sha,
+        waybill=waybill,
+        transport=transport,
+        create_if_missing=False,
+    )
+    if probe["status"] != "not_found":
+        return _outcome_from_result(probe)
+
+    # No existing record -- this call WOULD create one, so only now does the
+    # transport need to be declared and on.
+    decl = config.transport(transport)
+    declared = ", ".join(t.name for t in config.transports) or "(none declared)"
+    if decl is None:
+        raise CorridorLoadError(
+            f"unknown transport {transport!r}; declared transports: {declared}"
+        )
+    if decl.state != STATE_ON:
+        raise CorridorLoadError(
+            f"transport {transport!r} is declared 'off' in corridor.yaml "
+            f"(declared transports: {declared})"
+        )
+
     result = module.record_corridor_load(
         direction=direction, batch_sha=batch_sha, waybill=waybill, transport=transport
     )
-    return LoadOutcome(
-        status=result["status"],
-        direction=result["direction"],
-        batch_sha=result["batch_sha"],
-        waybill=result["waybill"],
-        transport=result["transport"],
-        message=result.get("message", ""),
-    )
+    return _outcome_from_result(result)
 
 
 def _outcome_payload(outcome: LoadOutcome) -> dict[str, object]:
@@ -227,6 +253,27 @@ def _outcome_payload(outcome: LoadOutcome) -> dict[str, object]:
         "transport": outcome.transport,
         "message": outcome.message,
     }
+
+
+# Mirrors `dashboard/models.py`'s `CorridorLoad.waybill` field
+# (`CharField(max_length=128)`). SQLite (every test) does not enforce
+# `VARCHAR(n)`; PostgreSQL ("the existing Postgres app" this story targets)
+# does -- the same divergence `dashboard/audit.py`'s own module docstring
+# documents and guards against for `AuditEntry`. Enforce the cap in Python,
+# here, before an over-length waybill ever reaches the ORM.
+_MAX_WAYBILL_LENGTH = 128
+
+
+def _load_result(
+    ok: bool, text: str, payload: dict[str, object], *, as_json: bool
+) -> DutyResult:
+    """Every ``LoadDuty.run`` branch returns through here: one consistent
+    payload shape (``"ok"`` always present, merged with the branch's own
+    fields) and one consistent ``--json`` rule (``json.dumps(...)`` or the
+    human-readable ``text``, never a branch that forgets either)."""
+    full_payload: dict[str, object] = {"ok": ok, **payload}
+    summary = json.dumps(full_payload, indent=2, sort_keys=True) if as_json else text
+    return DutyResult(ok=ok, summary=summary, details=full_payload)
 
 
 class LoadDuty:
@@ -250,25 +297,25 @@ class LoadDuty:
             try:
                 config = load_config(corridor_dir / CONFIG_FILENAME)
             except CorridorConfigError as exc:
-                payload = {"ok": False, "message": str(exc)}
-                return DutyResult(
-                    ok=False,
-                    summary=json.dumps(payload, indent=2, sort_keys=True) if as_json else f"load: {exc}",
-                    details=payload,
-                )
+                return _load_result(False, f"load: {exc}", {"message": str(exc)}, as_json=as_json)
 
             verb = getattr(ns, "load_verb", None)
             if verb is None:
                 transports = [{"name": t.name, "state": t.state} for t in config.transports]
-                payload = {"transports": transports}
-                if as_json:
-                    summary = json.dumps(payload, indent=2, sort_keys=True)
-                else:
-                    summary = ", ".join(f"{t['name']}: {t['state']}" for t in transports)
-                return DutyResult(ok=True, summary=summary, details=payload)
+                text = ", ".join(f"{t['name']}: {t['state']}" for t in transports)
+                return _load_result(True, text, {"transports": transports}, as_json=as_json)
+
+            waybill = ns.waybill
+            if len(waybill) > _MAX_WAYBILL_LENGTH:
+                text = (
+                    f"load {verb}: waybill is {len(waybill)} characters, over the "
+                    f"{_MAX_WAYBILL_LENGTH}-character limit"
+                )
+                return _load_result(False, text, {"message": text}, as_json=as_json)
 
             if not Path(ns.file).is_file():
-                return DutyResult(ok=False, summary=f"load {verb}: {ns.file}: not found")
+                text = f"load {verb}: {ns.file}: not found"
+                return _load_result(False, text, {"message": text}, as_json=as_json)
             data = Path(ns.file).read_bytes()
             batch_sha = compute_batch_sha(data)
             transport = getattr(ns, "transport", "app-upload")
@@ -276,12 +323,13 @@ class LoadDuty:
                 outcome = load_extract(
                     direction=verb,
                     batch_sha=batch_sha,
-                    waybill=ns.waybill,
+                    waybill=waybill,
                     transport=transport,
                     config=config,
                 )
             except CorridorLoadError as exc:
-                return DutyResult(ok=False, summary=f"load {verb}: {exc}")
+                text = f"load {verb}: {exc}"
+                return _load_result(False, text, {"message": text}, as_json=as_json)
 
             payload = _outcome_payload(outcome)
             if outcome.status in ("loaded", "idempotent"):
@@ -289,17 +337,12 @@ class LoadDuty:
                     f"{outcome.status}: {verb} waybill={outcome.waybill} "
                     f"sha={outcome.batch_sha[:12]} via {outcome.transport}"
                 )
-                return DutyResult(
-                    ok=True,
-                    summary=json.dumps(payload, indent=2, sort_keys=True) if as_json else text,
-                    details=payload,
-                )
-            # status == "refused"
-            text = f"load {verb}: {outcome.message}"
-            return DutyResult(
-                ok=False,
-                summary=json.dumps(payload, indent=2, sort_keys=True) if as_json else text,
-                details=payload,
-            )
+                return _load_result(True, text, payload, as_json=as_json)
+            if outcome.status == "error":
+                text = f"load {verb}: data error: {outcome.message}"
+            else:
+                # status == "refused" (e.g. the [dashboard] extra not installed)
+                text = f"load {verb}: {outcome.message}"
+            return _load_result(False, text, payload, as_json=as_json)
         except Exception as exc:  # noqa: BLE001 — duty boundary
             return DutyResult(ok=False, summary=f"load failed: {exc}")
