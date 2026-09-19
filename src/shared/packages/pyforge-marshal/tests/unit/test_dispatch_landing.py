@@ -194,6 +194,13 @@ def test_execute_dispatch_land_refuses_unknown_merge_conflicts(tmp_path: Path) -
     disp038 = [f for f in envelope.findings if f.code == "MRS-DISP-038"]
     assert len(disp038) == 1
     assert "recipes/foo/recipe.yaml" in disp038[0].message
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("28-20-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
 
 
 def _ledger_yaml(*pairs: tuple[str, str]) -> str:
