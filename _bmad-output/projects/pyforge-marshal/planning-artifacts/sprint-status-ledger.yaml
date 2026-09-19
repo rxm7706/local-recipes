@@ -280,7 +280,7 @@ development_status:
   51-1-verification-sees-the-merge-result: done
   51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: done
   51-3-the-campaign-reads-the-ledger-it-just-promoted: done
-  51-4-a-blocked-outcome-never-lands: backlog
+  51-4-a-blocked-outcome-never-lands: done
   51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: backlog
   51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: done
   51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: backlog
