@@ -2,7 +2,8 @@
 title: '23.4: Empty the intake inbox per its own README'
 type: 'fix'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '47d61c0f6bf2536c0d29b9a25f57b14fc9f58dea'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
