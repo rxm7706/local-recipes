@@ -23,7 +23,9 @@ from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
     has_git_progress,
+    is_spec_only_narration,
 )
+from ..core.dispatch_harness_done import parse_blocking_condition, parse_spec_status
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -1294,6 +1296,7 @@ def run_dispatch_supervisor(
                 git=git_facts,
                 verification_verdict=v_outcome,
                 session_log=session_log,
+                spec_relative_path=spec_relative_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
         if (
@@ -1349,6 +1352,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
+                    spec_relative_path=spec_relative_path,
                 )
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
@@ -1417,6 +1421,7 @@ def run_dispatch_supervisor(
                             git=git_facts,
                             verification_verdict=v_outcome,
                             session_log=session_log,
+                            spec_relative_path=spec_relative_path,
                         )
                     except (VcsCommandError, ValueError):
                         pass
@@ -1498,6 +1503,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
+                    spec_relative_path=spec_relative_path,
                 )
             except (VcsCommandError, ValueError):
                 pass
