@@ -2,9 +2,42 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
-from pyforge.marshal.dispatch_land_finalize.__main__ import finalize_dispatch_land
+from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.dispatch_land_finalize.__main__ import (
+    _FINALIZE_RESYNC_KIND,
+    finalize_dispatch_land,
+)
+
+
+class _StubVcs:
+    """Story 51.9: production now calls ``vcs.has_uncommitted_changes(root)``
+    directly, before ever reaching a monkeypatched ``_resync_home_branch`` --
+    a bare ``object()`` can't take new attributes, so these tests (which
+    aren't exercising vcs behavior itself) need this minimal fake instead."""
+
+    def __init__(self, *, dirty: bool = False) -> None:
+        self.dirty = dirty
+
+    def has_uncommitted_changes(self, _worktree_path: Path) -> bool:
+        return self.dirty
+
+
+def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
+    """Read back the single ``_FINALIZE_RESYNC_KIND`` journal entry written
+    under ``tmp_path``'s real (unstubbed) ``LocalFs`` for this test run."""
+    runs_dir = (
+        tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    )
+    run_dirs = list(runs_dir.iterdir())
+    assert len(run_dirs) == 1
+    lines = (run_dirs[0] / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    entries = [json.loads(line) for line in lines if line]
+    matches = [entry for entry in entries if entry["kind"] == _FINALIZE_RESYNC_KIND]
+    assert len(matches) == 1
+    return matches[0]
 
 
 def test_finalize_passes_base_main_to_isolated_promote(
@@ -20,13 +53,15 @@ def test_finalize_passes_base_main_to_isolated_promote(
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations. `GitVcs` is a
+    # minimal `_StubVcs` (clean by default) rather than a bare `object()`,
+    # since production now calls `has_uncommitted_changes` directly before
+    # `_resync_home_branch` (itself monkeypatched to a no-op below).
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
-        lambda: object(),
+        lambda: _StubVcs(),
     )
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
@@ -41,6 +76,14 @@ def test_finalize_passes_base_main_to_isolated_promote(
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         _capture,
+    )
+    # Story 51.9: a bare `object()`-stubbed `GitVcs` has no `resolve_ref`/
+    # `worktree_head_sha` -- an unstubbed `_resync_home_branch` call would
+    # raise `AttributeError` and break this test, which isn't exercising
+    # the resync behavior at all.
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
     )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
@@ -65,13 +108,15 @@ def test_finalize_forwards_worktree_to_scan_promotions(
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations. `GitVcs` is a
+    # minimal `_StubVcs` (clean by default) rather than a bare `object()`,
+    # since production now calls `has_uncommitted_changes` directly before
+    # `_resync_home_branch` (itself monkeypatched to a no-op below).
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
-        lambda: object(),
+        lambda: _StubVcs(),
     )
 
     def _capture_scan(*args, **kwargs):
@@ -85,6 +130,10 @@ def test_finalize_forwards_worktree_to_scan_promotions(
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
     )
 
     worktree = tmp_path / "some-worktree"
@@ -105,13 +154,15 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations. `GitVcs` is a
+    # minimal `_StubVcs` (clean by default) rather than a bare `object()`,
+    # since production now calls `has_uncommitted_changes` directly before
+    # `_resync_home_branch` (itself monkeypatched to a no-op below).
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
-        lambda: object(),
+        lambda: _StubVcs(),
     )
 
     def _capture_scan(*args, **kwargs):
@@ -126,6 +177,138 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         lambda *args, **kwargs: (),
     )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
     assert seen["scan_kwargs"]["worktree"] is None
+
+
+def test_finalize_resyncs_the_primary_after_ledger_promotion(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` never touches
+    the primary checkout's own working tree (CAP-5), so nothing else picked
+    up that promotion either. `dispatch_land_finalize` must reuse
+    `_resync_home_branch` VERBATIM, immediately after the ledger promotion,
+    to fast-forward the primary checkout (``root``) onto `origin/main`'s
+    tip whenever it is safely a clean `main` at its own tip."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations. `GitVcs` is a
+    # minimal `_StubVcs` (clean by default) rather than a bare `object()`,
+    # since production now calls `has_uncommitted_changes` directly before
+    # `_resync_home_branch` (itself monkeypatched to a no-op below).
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+
+    def _capture_resync(*args, **kwargs):
+        seen["resync_args"] = args
+        return True
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        _capture_resync,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    assert "resync_args" in seen
+    (
+        _vcs,
+        resync_enabled,
+        merge_strategy,
+        git_repo_root,
+        home,
+        base,
+        head_branch,
+        _findings,
+    ) = seen["resync_args"]
+    assert resync_enabled is True
+    assert merge_strategy == "merge"
+    assert git_repo_root == tmp_path
+    assert home == tmp_path
+    assert base == "main"
+    assert head_branch == "main"
+
+    # Group 3 (IA2/BH6, review pass 2026-09-19): assert the actual written
+    # journal entry, not just the mocked call's own arguments.
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["kind"] == _FINALIZE_RESYNC_KIND
+    assert entry["phase"] == Phase.OBSERVATION
+    assert entry["payload"]["resynced"] is True
+
+
+def test_finalize_skips_resync_on_a_dirty_primary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 51.9 (review pass 2026-09-19, Group 1): `_resync_home_branch`
+    only checks SHA-match, never dirtiness -- a dirty checkout sitting
+    exactly at local `main`'s own tip would pass that check unchanged and
+    still get fast-forwarded with the dirty changes in place. Guard on
+    `vcs.has_uncommitted_changes(root)` BEFORE ever calling
+    `_resync_home_branch`, skip it entirely when dirty, and journal
+    `resynced=False`."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    # `LocalFs` is left unstubbed (real class, real `tmp_path`) since the
+    # unconditional `deploy_run.write(...)` observation write still fires
+    # on this skip branch -- only the resync call itself is skipped.
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(dirty=True),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+
+    def _capture_resync(*args, **kwargs):
+        seen["resync_called"] = True
+        return True
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        _capture_resync,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    assert "resync_called" not in seen
+
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["kind"] == _FINALIZE_RESYNC_KIND
+    assert entry["phase"] == Phase.OBSERVATION
+    assert entry["payload"]["resynced"] is False

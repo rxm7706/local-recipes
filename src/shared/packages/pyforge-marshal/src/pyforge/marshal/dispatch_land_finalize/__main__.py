@@ -20,8 +20,14 @@ from pyforge.marshal.cli.deploy import (
     _execute_promotion_plan,
     _scan_promotions,
 )
-from pyforge.marshal.cli.land import _promote_sprint_ledger
+from pyforge.marshal.cli.land import _promote_sprint_ledger, _resync_home_branch
 from pyforge.marshal.core.identity import MalformedStoryKeyError, normalize
+from pyforge.marshal.core.journal import Phase
+
+# Story 51.9 (re-mint of 51.3): distinct journal-kind namespace for this
+# module's own resync observation -- never conflated with `cli/land.py`'s
+# own `_LAND_*_KIND` constants (a different writer namespace entirely).
+_FINALIZE_RESYNC_KIND = "dispatch-land-finalize-resync"
 
 
 def finalize_dispatch_land(
@@ -73,6 +79,33 @@ def finalize_dispatch_land(
     # and drain re-implemented the landed story (42.2 / 42.3).
     _promote_sprint_ledger(
         fs, vcs, root, project_slug, [key], deploy_run, findings, base="main"
+    )
+    # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
+    # never touches the primary checkout's own working tree (CAP-5) -- so
+    # nothing else picked up that promotion either, and the fleet
+    # campaign's next cycle kept reading the primary's stale on-disk
+    # ledger copy until a human ran `git pull`. Reuse
+    # `_resync_home_branch` VERBATIM (same primitive `marshal land` already
+    # uses to keep a loop-home current with `origin/main`) to fast-forward
+    # THIS primary checkout too, whenever it is safely a clean `main` at
+    # its own tip -- a dirty or non-`main` checkout is refused exactly as
+    # `_resync_home_branch` already refuses one, via its own pre-existing
+    # `_MRS_LAND_009` WARN, never a second write path.
+    #
+    # Review pass 2026-09-19: `_resync_home_branch` only checks SHA-match,
+    # never dirtiness -- a dirty checkout sitting exactly at local `main`'s
+    # own tip would pass that check unchanged and still get fast-forwarded
+    # with the dirty changes in place. Gate on dirtiness HERE, before even
+    # calling it, rather than modifying that shared primitive.
+    if vcs.has_uncommitted_changes(root):
+        resynced = False
+    else:
+        resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
+    deploy_run.write(
+        findings,
+        kind=_FINALIZE_RESYNC_KIND,
+        phase=Phase.OBSERVATION,
+        payload={"story_key": str(key), "resynced": resynced},
     )
     blocking = [f for f in findings if f.severity.name == "ERROR"]
     if blocking:

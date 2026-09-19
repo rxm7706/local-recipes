@@ -1627,6 +1627,7 @@ def run_status(
     missing_spec_escalations = gather_fleet_missing_spec_escalations(
         fs=fs,
         harness=harness,
+        vcs=vcs,
         repo_root=git_repo_root,
     )
     finalize_escalations = gather_fleet_finalize_escalations(
