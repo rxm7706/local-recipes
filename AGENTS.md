@@ -124,6 +124,9 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
 6. **Architecture & Fold Exemptions**:
    - Qualify cross-project architecture citations using `canopy:AD-n` or `pap:AD-n`.
    - Add `fold-exemption: cross-station-seam` (or appropriate exemption category) to Dream and Spec YAML frontmatter for new cross-station capabilities.
+7. **Dream Registry & Doctor Hygiene Tests**:
+   - When creating a new Tier-0 Dream in `docs/dreams/<slug>.md`, add its table row to `docs/dreams/README.md`.
+   - Run `pixi run -e pyforge-doctor pyforge-doctor-test` to ensure `test_live_tree_dream_readme_missing_count` and `dreams-hygiene` pass.
 
 ## Dream-driven: where work starts
 
