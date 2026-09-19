@@ -499,6 +499,106 @@ def _journal_finalize_attempt(
     return counter
 
 
+def _worktree_story_spec(
+    *, fs: FsPort, repo_root: Path, slug: str, story_key: str, worktree: Path
+) -> tuple[str | None, str | None]:
+    """Resolve the story's tracked spec as seen by the worktree (Story 51.4,
+    spec-pyforge-marshal CAP-252).
+
+    Returns ``(worktree_relative_path, text)`` -- either half is ``None``
+    when the spec cannot be resolved, relocated, or read; callers then
+    treat "no signal" as not-blocked, never as blocked.
+    """
+    spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story_key)
+    if spec_path is None:
+        return None, None
+    try:
+        worktree_spec_path = dispatch_core.relocated_spec_path(
+            spec_path, repo_root, worktree
+        )
+    except ValueError:
+        return None, None
+    text = fs.read_text(worktree_spec_path)
+    try:
+        relative = str(
+            worktree_spec_path.resolve().relative_to(worktree.resolve())
+        )
+    except ValueError:
+        relative = None
+    return relative, text
+
+
+def _spec_land_block_reason(
+    *, fs: FsPort, repo_root: Path, slug: str, story_key: str, worktree: Path,
+    git_facts: DispatchGitFacts,
+) -> str | None:
+    """Non-``None`` when the worktree spec blocks verify/land (Story 51.4).
+
+    A deliberate ``status: blocked`` always blocks (the 27.3 incident); so
+    does a diff that collapses to the tracked spec file itself -- narration,
+    not work (the 51.3 incident: a harness-ceiling termination that only
+    ever rewrote its own spec's ``ready -> in-progress`` flip).
+    """
+    spec_relative_path, spec_text = _worktree_story_spec(
+        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+    )
+    if spec_text is None:
+        return None
+    if not (
+        parse_spec_status(spec_text) == "blocked"
+        or is_spec_only_narration(git_facts.changed_paths, spec_relative_path)
+    ):
+        return None
+    return parse_blocking_condition(spec_text) or (
+        "harness produced no changes beyond the tracked spec"
+    )
+
+
+def _journal_dispatch_blocked(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    story_key: str,
+    worktree: Path,
+    reason: str,
+) -> int:
+    """Journal the supervisor halting before verify/land (Story 51.4, CAP-252):
+    the worktree spec is ``blocked``, or the whole diff is spec-only
+    narration with no code progress behind it.
+    """
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, "worktree_path": str(worktree)},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={"story_key": story_key, "reason": reason, "ok": True},
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal blocked halt for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
 def _run_supervisor_finalize_sequence(
     *,
     fs: FsPort,
@@ -622,6 +722,34 @@ def _run_supervisor_finalize_sequence(
             ok=False,
             failed_step=failed_step,
             failed_message=failed_message,
+        )
+        return counter, False
+
+    # Story 51.4 (spec-pyforge-marshal CAP-252): stop before verify/land on a
+    # blocked or narration-only worktree spec -- the 27.3 incident (deliberate
+    # `status: blocked`, reverted to baseline) and the 51.3 incident (harness
+    # print-mode background-wait ceiling, spec-frontmatter-only diff). Since
+    # `_run_and_journal_verification` is only ever called from this sequence,
+    # gating it here also keeps `v_outcome` from ever reading "verified" for
+    # either fixture, which is what both tick-loop land triggers require.
+    block_reason = _spec_land_block_reason(
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        git_facts=git_facts,
+    )
+    if block_reason is not None:
+        counter = _journal_dispatch_blocked(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            reason=block_reason,
         )
         return counter, False
 
