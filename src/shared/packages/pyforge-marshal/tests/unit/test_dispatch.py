@@ -1875,8 +1875,12 @@ def test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider(
     guard only fired on a cross-provider mismatch, so a plainly foreign or
     mistyped model id (here `gpt-9-turbo-nonexistent`, declared by no
     provider and not one of marshal's own tier ids) silently reached launch
-    unchanged. It must now raise MRS-DISP-043 and have its override dropped,
-    exactly like the cross-provider case above -- before any live launch."""
+    unchanged. A `model_cost_catalog` IS declared here (for an unrelated
+    model) so this exercises "catalogued under no provider despite a
+    declared catalog" specifically -- not the no-catalog-at-all case, which
+    must stay silent (see the sibling test below). It must now raise
+    MRS-DISP-043 and have its override dropped, exactly like the
+    cross-provider case above -- before any live launch."""
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
 
@@ -1892,6 +1896,18 @@ def test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider(
         project={
             "model_tier_map": {
                 "medium": {"dev": "gpt-9-turbo-nonexistent"},
+            },
+            "model_cost_catalog": {
+                "providers": {
+                    "anthropic": {
+                        "models": {
+                            "claude-opus-4": {
+                                "input_per_million": 15.0,
+                                "output_per_million": 75.0,
+                            },
+                        },
+                    },
+                },
             },
         },
         flags={},
@@ -1917,6 +1933,60 @@ def test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider(
     uncatalogued_findings = [f for f in attempt.findings if f.code == "MRS-DISP-043"]
     assert len(uncatalogued_findings) == 1
     assert uncatalogued_findings[0].severity is Severity.WARN
+    assert "gpt-9-turbo-nonexistent" in uncatalogued_findings[0].message
+    assert "no known provider" in uncatalogued_findings[0].message
+    assert "declared cost catalog" in uncatalogued_findings[0].message
+
+
+def test_dispatch_tier_mapped_model_with_no_declared_catalog_at_all_is_preserved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253) regression: most real stations (cursor-only
+    `harness_preference`, no `model_cost_catalog` block at all -- the shape
+    every one of pyforge-atlas/-mason/-scribe/-warden's real
+    `marshal-policy.toml` uses) never declare a catalog. `catalog_declared`
+    is `False` there, so `provider_declaring_model` returns `None` for
+    EVERY model, correctly-matched ones included. A correctly tier-mapped,
+    correctly resolved cursor model must NOT be flagged uncatalogued or
+    have its override dropped in that shape -- there is nothing to compare
+    against when no catalog was ever declared."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-atlas"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-no-catalog-preserved"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "harness_preference": ["cursor"],
+            "model_tier_map": {
+                "medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "cursor"
+    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
 def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
@@ -1962,6 +2032,52 @@ def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
     )
     assert attempt.data.get("harness_profile") == "claude"
     assert attempt.data.get("model") == "sonnet"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
+
+
+def test_dispatch_tier_mapped_haiku_on_claude_is_byte_identical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.5 (CAP-253): `haiku` is the third member of
+    `HARNESS_DEFAULT_MODEL_IDS` alongside `sonnet`/`opus` -- exercised here
+    the same way the sonnet case above is, so the widened guard's silence
+    on all three harness-default ids is actually verified, not just
+    asserted in a docstring."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "51-5-haiku-byte-identical"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "model_tier_map": {
+                "medium": {"dev": "haiku"},
+            },
+        },
+        flags={},
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("harness_profile") == "claude"
+    assert attempt.data.get("model") == "haiku"
     assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 

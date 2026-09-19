@@ -106,7 +106,8 @@ def provider_declaring_model(catalog: object, model: str) -> str | None:
     template's baseline adapter while the model override still applies
     unchanged (2026-09-12, dispatch-tier-routing-fails-safe). Absence from
     the catalog is not itself suspicious: most legitimate default-adapter
-    models (``sonnet``, ``opus``) are never catalogued at all, since the
+    models (``sonnet``, ``opus``, ``haiku`` -- see
+    ``HARNESS_DEFAULT_MODEL_IDS``) are never catalogued at all, since the
     catalog is a declared PRICE snapshot, not a model registry."""
     if not catalog_declared(catalog) or not isinstance(catalog, Mapping):
         return None

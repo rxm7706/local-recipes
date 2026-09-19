@@ -1996,10 +1996,21 @@ def dispatch_once(
     # a genuinely foreign or mistyped model id must not reach a live
     # launch uncaught -- while the cross-provider case and the harness's
     # own default/alias ids stay exactly as before.
+    #
+    # `provider_declaring_model` also returns `None` whenever NO catalog is
+    # declared at all -- most stations (e.g. a cursor-only
+    # `harness_preference` with no `model_cost_catalog` block) never
+    # declare one. Without gating on `catalog_declared`, a correctly
+    # tier-mapped, correctly resolved model on one of those stations reads
+    # as "uncatalogued" too and gets its override dropped on every real
+    # dispatch. There is nothing to compare against when no catalog was
+    # ever declared, so that case must stay silent, same as pre-story --
+    # only a DECLARED catalog that omits the model is suspicious.
     model_uncatalogued = (
         data["model"] is not None
         and model_provider is None
         and not is_harness_default_model(data["model"])
+        and catalog_declared(catalog)
     )
     model_cross_provider = (
         model_provider is not None and model_provider != resolved_provider
@@ -2013,9 +2024,9 @@ def dispatch_once(
             )
         else:
             provider_clause = (
-                "is catalogued under no known provider, and is not the "
-                f"live-verified harness {resolution.profile!r}'s own "
-                "default/alias model id"
+                "is catalogued under no known provider despite a declared "
+                "cost catalog, and is not the live-verified harness "
+                f"{resolution.profile!r}'s own default/alias model id"
             )
         findings.append(
             Finding(
