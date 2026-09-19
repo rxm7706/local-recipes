@@ -2,6 +2,7 @@
 id: DREAM-sprint-ledger-query-module
 status: dreamt
 owning-station: pyforge-steward
+fold-exemption: cross-station-seam
 created: 2026-09-19
 updated: 2026-09-19
 kinships:

@@ -100,6 +100,31 @@ parallel agent — `BMAD_ACTIVE_PROJECT` and physical
 `gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads
 the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
 
+## Pre-PR Pre-flight Checklist & Station Invariants
+
+Before creating or pushing any PR touching `src/shared/packages/pyforge-<station>` or governance artifacts, agents **must** complete the following verification steps:
+
+1. **Station Test Suite Verification**:
+   Run the station unit, meta, and integration test suite:
+   `pixi run -e pyforge-<station> pyforge-<station>-test`
+2. **Detector & Merge Gate Audit**:
+   Run the repository merge gate:
+   `pixi run -e pyforge-guild detectors-ci`
+3. **Django Models & Migration Invariants**:
+   When creating or modifying Django models in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/models.py`:
+   - Generate the corresponding Django migration file (`000x_*.py`).
+   - Run `test_dashboard_audit.py` to ensure `makemigrations --check` succeeds.
+   - Update the `dashboard/__init__.py` split docstrings and pinned module assertions in `tests/meta/test_invariants.py`.
+   - Add unit tests covering model creation, admin registrations (`admin.py`), and HTMX view handlers (`views_htmx.py`).
+4. **Station CLI Duty Count Invariant**:
+   When registering a new CLI duty in `cli.py`, update duty count assertions in `tests/unit/test_cli.py` and `tests/unit/test_restore_duty.py`.
+5. **Spec Surface Baseline Stamping**:
+   When adding or updating files under spec governance, stamp scoped baselines after `git add` from a clean tree:
+   `pixi run -e pyforge-guild python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>`
+6. **Architecture & Fold Exemptions**:
+   - Qualify cross-project architecture citations using `canopy:AD-n` or `pap:AD-n`.
+   - Add `fold-exemption: cross-station-seam` (or appropriate exemption category) to Dream and Spec YAML frontmatter for new cross-station capabilities.
+
 ## Dream-driven: where work starts
 
 **Every deliverable starts as a Dream in `docs/dreams/*.md`** — the raw, pre-technical aspiration

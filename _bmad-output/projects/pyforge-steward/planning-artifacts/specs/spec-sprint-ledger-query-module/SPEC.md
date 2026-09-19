@@ -2,6 +2,7 @@
 id: SPEC-sprint-ledger-query-module
 spec: sprint-ledger-query-module
 status: ready
+fold-exemption: cross-station-seam
 created: "2026-09-19"
 updated: "2026-09-19"
 owner-dream: docs/dreams/sprint-ledger-query-module.md
