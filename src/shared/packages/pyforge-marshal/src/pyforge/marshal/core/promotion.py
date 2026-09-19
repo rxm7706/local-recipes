@@ -416,6 +416,27 @@ class PromotionPlan:
 # inside a comment, neither of which is a real frontmatter key).
 _STATUS_KEY_RE = re.compile(r"^status:\s")
 
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading HTML-comment provenance banner (Story 50.5, CAP-248)
+    -- a ``<!-- ... -->`` block, possibly spanning multiple lines, that a
+    recovered or minted tracked spec may carry ABOVE its frontmatter fence
+    instead of below it (herald's pre-#1460 ``spec-1-4``: ``<!-- Promoted
+    from implementation-artifacts/ ... -->`` as line 1). Returns ``text``
+    unchanged when it does not start with the banner's opening marker, or
+    when the marker is never closed -- an unclosed banner is not a banner
+    this parser recognizes, so ``is_valid_spec_text`` still requires the
+    (absent) frontmatter fence and correctly stays invalid."""
+    if not text.startswith(_BANNER_PREFIX):
+        return text
+    end = text.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return text[end + len(_BANNER_SUFFIX) :].lstrip()
+
 
 def is_valid_spec_text(text: str | None) -> bool:
     """The minimal parse validation-before-promotion requires (AD-13):
@@ -429,9 +450,16 @@ def is_valid_spec_text(text: str | None) -> bool:
     when the tracked copy passes this same check -- a broken tracked copy
     never blocks re-promoting a good Tier-3 one, per AD-13's own "never
     promoted over a GOOD copy" wording, which implies a bad existing copy is
-    not one)."""
+    not one).
+
+    Story 50.5/CAP-248: a leading provenance banner (``_skip_leading_
+    banner``) is skipped before the fence check, so a tracked copy that
+    begins with one still parses valid -- the banner-BELOW-frontmatter
+    shape PR #1460 already produces fleet-wide is unaffected either way,
+    since it never starts with ``<!--`` in the first place."""
     if text is None or not text.strip():
         return False
+    text = _skip_leading_banner(text)
     if not text.startswith("---"):
         return False
     end = text.find("\n---", 3)

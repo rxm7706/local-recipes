@@ -582,6 +582,39 @@ def test_is_valid_spec_text_true_for_status_key_regardless_of_line_position():
     )
 
 
+# --- leading provenance banner (Story 50.5, CAP-248) --------------------------
+
+
+def test_is_valid_spec_text_true_for_banner_above_frontmatter():
+    """Herald's pre-#1460 `spec-1-4` shape: a single-line HTML-comment
+    banner sits above the `---` fence instead of below it."""
+    text = (
+        "<!-- Promoted from implementation-artifacts/ to tracked specs on "
+        "2026-08-04 -->\n" + _VALID_SPEC
+    )
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_multiline_banner_above_frontmatter():
+    text = "<!--\nRECOVERED\nfrom a session transcript\n-->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_banner_below_frontmatter_unaffected():
+    """The PR #1460 data-side fix's own shape (banner directly below the
+    closing fence) never starts with `<!--`, so it is untouched by the
+    banner-skip and must keep parsing exactly as before."""
+    text = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\n<!-- Promoted ... -->\n\nbody\n"
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_false_for_unclosed_banner():
+    """An unclosed `<!--` is not a banner this parser recognizes -- the
+    text still doesn't start with `---`, so it stays invalid."""
+    text = "<!-- never closed\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is False
+
+
 # --- classify_promotion_candidates -------------------------------------------
 
 

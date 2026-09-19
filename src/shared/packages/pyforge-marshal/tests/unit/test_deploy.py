@@ -299,6 +299,37 @@ def test_promote_never_overwrites_a_good_tracked_copy_with_a_broken_tier3_one(
     assert _tracked_path(tmp_path, "acme", "1-5").read_text(encoding="utf-8") == _VALID_SPEC
 
 
+def test_promote_treats_a_banner_topped_tracked_copy_as_already_promoted(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 50.5/CAP-248, live incident: herald 23.1's finalize (commit
+    `b0b7f3019f`) overwrote the reconciled tracked `spec-1-4` with its stale
+    Tier-3 twin because the tracked copy began with a
+    `<!-- Promoted from implementation-artifacts/ ... -->` banner ABOVE its
+    frontmatter fence, and `is_valid_spec_text` required `text.startswith
+    ("---")`. The banner-topped tracked copy must count as already-promoted
+    and must never be overwritten by a stale Tier-3 candidate."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    banner_topped = (
+        "<!-- Promoted from implementation-artifacts/ to tracked specs on "
+        "2026-08-04 -->\n" + _VALID_SPEC
+    )
+    stale_tier3 = "---\ntitle: 'x'\nstatus: 'draft'\n---\n\nstale body\n"
+    _write_tier3_spec(tmp_path, "acme", "1-4", stale_tier3)
+    _write_tracked_spec(tmp_path, "acme", "1-4", banner_topped)
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-4 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["already_promoted"] == ["1.4"]
+    assert payload["data"]["gap_count"] == 0
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+    assert _tracked_path(tmp_path, "acme", "1-4").read_text(encoding="utf-8") == banner_topped
+
+
 def test_promote_leaves_a_not_yet_merged_story_untouched(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "9-9", _VALID_SPEC)
