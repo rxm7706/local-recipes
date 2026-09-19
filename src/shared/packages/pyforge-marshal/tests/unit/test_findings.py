@@ -324,6 +324,10 @@ def test_registered_codes_contains_the_real_codes():
             # model's cost-catalog provider disagreed with the
             # live-verified harness the walk landed on -- override dropped.
             "MRS-DISP-043",
+            # Story 51.1 (verification sees the merge result): the
+            # merge-tree preview of the branch onto `origin/main` failed
+            # `verify_commands`, or the behind-check itself was unevaluable.
+            "MRS-DISP-044",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",

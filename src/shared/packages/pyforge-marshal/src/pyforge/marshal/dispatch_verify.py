@@ -100,6 +100,30 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
     return found
 
 
+def run_verify_commands_only(
+    effective: EffectivePolicy, *, process: ProcessPort, worktree: Path
+) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
+    """Story 51.1: loop ``effective.verify_commands.value`` through the same
+    per-command classification (``_run_verify_command``/``gate.classify_outcome``)
+    ``evaluate_dispatch_verification`` uses, WITHOUT its scope/spec-binding/
+    cross-surface layers -- those diff against ``base...HEAD`` (merge-base
+    aware) and do not transfer to a merge-tree preview worktree (see spec
+    Design Notes). Used by ``dispatch_land.py`` to re-run verification
+    against the tree ``git merge-tree --write-tree`` would actually produce
+    before landing, when the branch's baseline is behind ``origin/main``.
+    An empty ``verify_commands`` returns two empty tuples -- no
+    ``no_commands_configured_finding`` here; that policy-level warning
+    belongs to the branch's own verification pass, not this preview re-run."""
+    command_reports: list[dict[str, object]] = []
+    findings: list[Finding] = []
+    for command in effective.verify_commands.value:
+        report, finding = _run_verify_command(command, process=process, worktree=worktree)
+        command_reports.append(report)
+        if finding is not None:
+            findings.append(finding)
+    return tuple(command_reports), tuple(findings)
+
+
 def compose_dispatch_policy(slug: str, repo_root: Path) -> EffectivePolicy:
     """Compose policy from the conventional project path (no cli import)."""
     candidate = (

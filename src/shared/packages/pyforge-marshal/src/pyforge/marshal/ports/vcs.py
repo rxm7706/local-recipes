@@ -259,6 +259,18 @@ class VcsPort(Protocol):
         with no flag. Raises ``VcsCommandError`` on any git failure."""
         ...
 
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (e.g. a raw filesystem delete).
+        Story 51.1's own best-effort cleanup fallback (mirroring
+        ``merge_branch``'s) calls this after a raw ``shutil.rmtree`` when
+        ``remove_worktree`` itself has failed. Raises ``VcsCommandError`` on
+        any git failure -- callers that treat this as best-effort swallow it
+        themselves, matching how ``remove_worktree`` failures are already
+        swallowed."""
+        ...
+
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """Delete ``branch`` (``git branch -d``/``-D``). ``force`` selects
         ``-D``: git's own ``-d`` uses commit-SHA ancestry and would
@@ -447,6 +459,34 @@ class VcsPort(Protocol):
         """Story 28.20: ``git show ref:path``, read-only. Returns ``None``
         when the path is absent at ``ref``. Raises ``VcsCommandError`` on
         other git failures."""
+        ...
+
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        """Story 51.1: ``git merge-tree --write-tree base branch``'s
+        ``--write-tree`` sibling of ``merge_tree_conflict_paths`` above --
+        read-only, and it never performs a real merge or moves any ref.
+        Returns the resulting tree's oid when the merge-tree preview is
+        clean; ``None`` when git itself reports a real conflict (the
+        existing ``merge_tree_conflict_paths``/``MRS-DISP-038`` heal path
+        already owns that case). Raises ``VcsCommandError`` only on a
+        genuine git failure -- an ordinary conflict is a normal outcome,
+        never an exception."""
+        ...
+
+    def add_worktree_for_tree(
+        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
+    ) -> None:
+        """Story 51.1: wraps ``tree_oid`` (typically ``merge_tree_write``'s
+        own output) in a throwaway commit -- pinned ``user.name``/
+        ``user.email``/``commit.gpgsign=false``, mirroring
+        ``is_branch_merged``'s own ``commit-tree`` discipline -- with
+        ``parent`` as its sole parent, then checks it out detached at
+        ``home`` (``git worktree add --detach``, mirroring ``add_worktree``
+        above). The synthetic commit is never referenced by any branch or
+        tag; it exists solely so ``home`` has a commit-ish to check out, and
+        is eligible for garbage collection once ``home`` is removed
+        (``remove_worktree``). Raises ``VcsCommandError`` on any git
+        failure."""
         ...
 
     def commit_paths_onto_remote_tip(
