@@ -112,7 +112,17 @@ def test_gather_live_herald_pair_and_zero_false_positives():
     """Re-measured 2026-09-18 (was herald_pair_fired == 1): the Dream side of
     the known pair was cleaned too -- zero live promissory hits, still zero
     false positives, still `accepted`. Fixture tests above still prove the
-    detector fires."""
+    detector fires.
+
+    Re-measured again 2026-09-19: the live scan is now fully clean -- the last
+    non-promissory finding (an `unparseable` WARN for the unquoted `title:`
+    in `docs/dreams/pyforge-mason-recipe-validator.md`) was reconciled by PR
+    #1493 -- so `gather_promissory_language` emits its clean-state OK summary
+    (same `check`, `status: OK`, see `test_gather_measured_and_rejected_when_
+    not_accepted` for the shape). That summary is the *absence* of a hit, so
+    the assertion filters on the WARN status a real hit carries; a bare
+    `check ==` filter read the summary as a hit and redded the station gate on
+    `main` the moment the tree got clean (doctor dispatch 28.1, MRS-GATE-001)."""
     repo_root = Path(__file__).resolve().parents[6]
     measurement = sbc.measure_promissory_language_precision(repo_root)
     assert measurement.herald_pair_fired == 0
@@ -121,8 +131,19 @@ def test_gather_live_herald_pair_and_zero_false_positives():
     assert sbc.PROMISSORY_LANGUAGE_ACCEPTED is True
 
     findings = sbc.gather_promissory_language(repo_root)
-    promissory = [f for f in findings if f.check == sbc._CHECK_PROMISSORY]
+    promissory = [
+        f
+        for f in findings
+        if f.check == sbc._CHECK_PROMISSORY and f.status is DoctorStatus.WARN
+    ]
     assert promissory == []
+    # Every finding the live gather returns is either the clean-state OK
+    # summary or a non-promissory WARN (an unparseable/unreadable document);
+    # never a promissory hit.
+    assert all(
+        f.status is DoctorStatus.OK or f.check != sbc._CHECK_PROMISSORY
+        for f in findings
+    )
 
 
 def test_gather_combined_includes_cap3(tmp_path: Path):

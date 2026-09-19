@@ -165,6 +165,31 @@ def test_unclosed_banner_above_frontmatter_returns_none():
     assert parse_declared_surface(text) is None
 
 
+def test_blank_line_before_banner_still_reads_the_surface():
+    """Story 51.8 (DW-FU-50-6): a leading blank line before the banner's
+    opening marker must not fall through to "no frontmatter"."""
+    text = "\n<!-- Promoted ... -->\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_spaces_before_banner_still_reads_the_surface():
+    text = "  <!-- Promoted ... -->\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_bom_before_banner_still_reads_the_surface():
+    text = "\ufeff<!-- Promoted ... -->\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    assert parse_declared_surface(text) == ("recipes/x/**",)
+
+
+def test_blank_line_with_no_banner_still_returns_none():
+    """A leading blank line/BOM tolerance must not widen into reading
+    frontmatter that isn't at the start once the (non-existent) banner is
+    skipped."""
+    text = "\n" + _frontmatter(_HEADER + 'surface: ["recipes/x/**"]\n')
+    assert parse_declared_surface(text) is None
+
+
 # --- type contract -------------------------------------------------------------
 
 
