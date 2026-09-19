@@ -425,13 +425,18 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
 def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     """Story 60.1: ``check`` (default) / ``list`` / ``render [--check]`` /
     ``pointers``, all ``--json``. ``--catalog DIR`` points at another catalog
-    dir (default: ``src/shared/packages/pyforge-steward/catalog``)."""
-    catalog_parser.add_argument(
-        "--catalog",
-        default=None,
-        metavar="DIR",
-        help="catalog directory holding catalog.yaml (default: the tracked estate catalog)",
-    )
+    dir (default: ``src/shared/packages/pyforge-steward/catalog``).
+
+    ``--catalog`` and ``--json`` are accepted both before and after the verb:
+    the parent parser owns the defaults, and the verb subparsers redeclare
+    them with ``default=argparse.SUPPRESS`` so an omitted flag never clobbers
+    the parent's value (``steward catalog --json`` with the verb omitted, and
+    ``steward catalog check --catalog DIR``, both parse).
+    """
+    catalog_help = "catalog directory holding catalog.yaml (default: the tracked estate catalog)"
+    json_help = "emit JSON instead of human-readable text"
+    catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
+    catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
     catalog_subs = catalog_parser.add_subparsers(
         dest="catalog_verb", metavar="{check,list,render,pointers}"
     )
@@ -455,9 +460,10 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     )
     for sub in (check, listing, render, pointers):
         sub.add_argument(
-            "--json",
-            action="store_true",
-            help="emit JSON instead of human-readable text",
+            "--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help
+        )
+        sub.add_argument(
+            "--json", action="store_true", default=argparse.SUPPRESS, help=json_help
         )
 
 

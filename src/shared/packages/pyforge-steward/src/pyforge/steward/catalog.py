@@ -1201,8 +1201,17 @@ class CatalogDuty:
                 summary=f"catalog: unknown verb {verb!r}; available verbs are {', '.join(VERBS)}",
             )
         except Exception as exc:  # noqa: BLE001 — duty boundary
+            message = f"{type(exc).__name__}: {exc}"
+            payload = {
+                "ok": False,
+                "findings": [CatalogFinding("internal", verb, message).to_dict()],
+            }
             return DutyResult(
                 ok=False,
-                summary=f"catalog {verb} failed: {type(exc).__name__}: {exc}",
-                details={"error": str(exc)},
+                summary=(
+                    _json_text(payload).rstrip("\n")
+                    if as_json
+                    else f"catalog {verb} failed: {message}"
+                ),
+                details=payload,
             )

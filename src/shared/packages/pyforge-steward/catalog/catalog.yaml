@@ -45,11 +45,13 @@ backends:
     state: available
 
 # Sources (what may appear on the list). A listing names exactly one source.
+# `plugin: null` is an empty slot — declared, unbound, and only legal while
+# the row is off/available; switching it on requires naming the plugin.
 sources:
   estate-listings:
     plugin: estate-listings
     state: "on"
-    path: registry/estate.yaml
+    path: registry/estate.yaml   # CATALOG-DIR-relative: a file inside this edit store
   wielded-suite:
     plugin: wielded-suite
     state: "on"
@@ -60,7 +62,9 @@ sources:
   estate-frames:
     plugin: estate-frames
     state: "on"
-    path: docs/foundry/frames
+    path: docs/foundry/frames    # REPO-ROOT-relative: the Frames live outside this edit store
   claude-skill-registry:
-    plugin: skillsctl
+    # The companion table's v1 default is "empty slot": `skillsctl` (SKU B,
+    # spec CAP-5 / CAP-121) is the later binding; nothing operates it in v1.
+    plugin: null
     state: "off"
