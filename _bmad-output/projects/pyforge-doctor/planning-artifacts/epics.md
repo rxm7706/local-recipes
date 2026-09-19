@@ -1935,7 +1935,8 @@ with a stub left at `docs/specs/<name>.md` (`status: workflow` + pointer)
 **Then** no shipped/superseded Tier-1 spec remains the live home
 **And** `python scripts/bmad_drift_check.py --specs` still lists the three
 workflow stubs and CLAUDE.md still indexes those filenames
-**Status:** backlog
+**Status:** done
+**Outcome (2026-09-18, reconciled 2026-09-19):** landed as PR #1445 (`a8996d5abe`); the ledger row stayed `backlog` and the twin was never promoted — recovered from the session transcript when a 2026-09-19 re-dispatch found `story_merged_on_main`.
 
 ### Story 23.4: Empty the intake inbox per its own README
 
