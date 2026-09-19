@@ -6354,7 +6354,7 @@ status: open
   summary: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
   evidence: Verified live by the 51.8 session: `is_valid_spec_text` and `parse_declared_low_risk` both return False on a fixture whose text is a BOM followed immediately by the `---` fence. Pre-existing gap in the base first-line fence check, orthogonal to banner recognition; CAP-256's intent is scoped to banner tolerance (blank line, spaces and a BOM before `<!--`), so the no-banner BOM case is excluded by the intent itself.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text
-  origin: spec-deferred ed1337df1626 — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
+  origin: spec-deferred 89653d3eb8a4 (was ed1337df1626 before the tracked spec's `location:` was repointed) — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
   severity: low
   promoted: 2026-09-19 — hand-ingested (see origin)
   status: open
