@@ -1266,14 +1266,15 @@ description = "The CI-safe detector subset: scope=repo only, i.e. those reading 
 cmd = "python scripts/detectors.py --scope repo"
 
 [feature.guild-tasks.tasks.pyforge-station-tests]
-description = "Run every PyForge station's own pytest suite locally, mirroring .github/workflows/pyforge-station-tests.yml's per-station jobs — the exact set that ALL fire together whenever pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit changes (that workflow's shared-surface rule), which is easy to miss since most day-to-day PRs only touch one station and never see this combination locally. Added 2026-09-14 after a 5-day GitHub Actions billing outage let ~260 PRs merge with this workflow never actually running; a pixi.toml dep bump was the first push afterward to touch shared surface, and it surfaced 5 days of accumulated drift (doctor/marshal/mason) all at once. Fails fast (first red station stops the run) and covers only each station's own `pyforge-<station>-test` task — NOT atlas's Chromium/DuckDB/WASM setup, herald's browser check, scribe's Postgres+pgvector service (see `scribe-pg-up`), or the separate guild-container job; run those stations' own CI-mirroring steps first if you touched them. Run this before pushing any pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit change."
+description = "Run pyforge-core's suite + every PyForge station's own pytest suite locally, mirroring .github/workflows/pyforge-station-tests.yml's core-test + per-station jobs — the exact set that ALL fire together whenever pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit changes (that workflow's shared-surface rule), which is easy to miss since most day-to-day PRs only touch one station and never see this combination locally. Added 2026-09-14 after a 5-day GitHub Actions billing outage let ~260 PRs merge with this workflow never actually running; a pixi.toml dep bump was the first push afterward to touch shared surface, and it surfaced 5 days of accumulated drift (doctor/marshal/mason) all at once. The pyforge-core leg (Story 52.2, spec-pyforge-core CAP-8) runs FIRST: it is the cheapest (~10 s) and fails fastest, and its sole-ownership meta-tests scan every station's tree, so a station-only change can red it. Fails fast (first red leg stops the run) and covers only pyforge-core's `pyforge-core-test` plus each station's own `pyforge-<station>-test` task — NOT atlas's Chromium/DuckDB/WASM setup, herald's browser check, scribe's Postgres+pgvector service (see `scribe-pg-up`), or the separate guild-container job; run those stations' own CI-mirroring steps first if you touched them. Run this before pushing any pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit change."
 # Declarative cross-environment depends-on, NOT a shell loop. The original
 # 2026-09-14 landing used `set -euo pipefail` + a bash `for`, which pixi's task
 # shell (deno_task_shell) cannot parse -- so this task errored out on its very
 # first token and never ran a single station. Caught 2026-09-14 on the first
-# real invocation. depends-on runs the eight in order, stops at the first red,
-# and needs no shell at all.
+# real invocation. depends-on runs the nine in order (core first), stops at the
+# first red, and needs no shell at all.
 depends-on = [
+  { task = "pyforge-core-test", environment = "pyforge-core" },
   { task = "pyforge-atlas-test", environment = "pyforge-atlas" },
   { task = "pyforge-doctor-test", environment = "pyforge-doctor" },
   { task = "pyforge-herald-test", environment = "pyforge-herald" },
@@ -1300,7 +1301,7 @@ depends-on = [
 [feature.guild-tasks.tasks.pr-preflight]
 description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 
-Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
+Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (pyforge-core + all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
 
 Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivalent: `cfe-regression-net` failed on a stale spec-surface baseline (a scoped `--write-baseline` had been taken, then a governed file was edited again, silently invalidating it), and `named-module-gates (doctor)` failed on a coverage floor that only measures modules a branch touches — so it had been latent for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`.
 

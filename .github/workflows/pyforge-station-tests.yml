@@ -16,7 +16,11 @@ name: PyForge station tests
 # unrelated station's PR doesn't pay for eight suites. Marshal and doctor's
 # jobs are therefore intentionally redundant with coverage-gates.yml /
 # detectors.yml -- cheap insurance, not wasted work, since neither of those
-# workflows contracts to keep running the full suite forever.
+# workflows contracts to keep running the full suite forever. Story 52.2 added
+# a ninth, NON-station job beside them: `core-test` (pyforge-core's own suite,
+# sole-ownership meta-tests included), gated differently from the eight -- it
+# runs whenever the shared surface OR any single station changed, because
+# those meta-tests scan every station's tree.
 
 on:
   pull_request:
@@ -71,6 +75,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
+      core: ${{ steps.filter.outputs.core }}
       atlas: ${{ steps.filter.outputs.atlas }}
       doctor: ${{ steps.filter.outputs.doctor }}
       herald: ${{ steps.filter.outputs.herald }}
@@ -98,8 +103,9 @@ jobs:
             BASE="$(git hash-object -t tree /dev/null)"
           fi
           # pyforge-core / pyforge-testing-kit / pixi.toml / pixi.lock changes
-          # are shared surface -- any of them re-runs every station, since all
-          # eight depend on pyforge-core and pixi.lock pins every env at once.
+          # are shared surface -- any of them re-runs every station (and
+          # core-test), since all eight depend on pyforge-core and pixi.lock
+          # pins every env at once.
           SHARED_CHANGED=false
           if ! git diff --quiet "$BASE"...HEAD -- \
               src/shared/packages/pyforge-core \
@@ -108,13 +114,49 @@ jobs:
               .github/workflows/pyforge-station-tests.yml 2>/dev/null; then
             SHARED_CHANGED=true
           fi
+          # Story 52.2 (spec-pyforge-core CAP-8): pyforge-core's own suite runs
+          # whenever the shared surface OR any single station moved -- its
+          # sole-ownership meta-tests scan every sibling station's src tree, so
+          # a station-only diff can introduce a violation just as easily as a
+          # core edit can.
+          CORE_CHANGED="$SHARED_CHANGED"
           for s in atlas doctor herald marshal mason scribe steward warden; do
             if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" 2>/dev/null; then
               echo "$s=true" >> "$GITHUB_OUTPUT"
+              CORE_CHANGED=true
             else
               echo "$s=false" >> "$GITHUB_OUTPUT"
             fi
           done
+          echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"
+
+  # Story 52.2 (spec-pyforge-core CAP-8): until this job, NO workflow invoked
+  # the `pyforge-core-test` pixi task -- `pyforge-core/**` appeared above only
+  # as a shared-surface TRIGGER for the eight station jobs, and
+  # pyforge-pip-install.yml runs a hand-enumerated subset that never held the
+  # four `tests/meta/*_sole_ownership.py` guards (CAP-5/CAP-7's enforcement).
+  # Six violations accumulated unseen between 2026-09-07 and 09-15 and were
+  # cleared by Story 52.1; this job is what keeps that from recurring. It runs
+  # the pixi TASK (the whole `tests/` tree, meta included), never a file list
+  # -- enumeration is how the meta-tests were lost. A peer of the station
+  # jobs, gated on `core` (shared surface OR any station), not a gate on them.
+  # The `django-*` packages are deliberately neither path triggers nor `core`
+  # inputs: the sole-ownership scan (pyforge-core's
+  # `tests/meta/conftest.py::sibling_station_dirs`) covers `pyforge-*`
+  # directories only, so a django-* edit cannot change this job's verdict.
+  # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
+  core-test:
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-core
+          cache: true
+      - run: pixi run --frozen -e pyforge-core pyforge-core-test
 
   atlas-test:
     needs: changes

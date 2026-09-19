@@ -287,7 +287,7 @@ development_status:
   51-8-the-banner-skip-family-is-complete: done
   51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: backlog
   52-1-the-six-accumulated-violations-are-cleared: done
-  52-2-the-conformance-suite-is-a-pr-gate: backlog
+  52-2-the-conformance-suite-is-a-pr-gate: done
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -413,7 +413,7 @@ development_status:
   epic-50-retrospective: optional
   epic-51: in-progress
   epic-51-retrospective: optional
-  epic-52: in-progress
+  epic-52: done
   epic-52-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

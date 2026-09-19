@@ -6672,4 +6672,8 @@ shared-surface triggers, running `pixi run --frozen -e pyforge-core pyforge-core
 **Then** the lane is green on `main` at merge, and a fixture branch introducing a second `subprocess.run` implementation
 under `src/shared/packages/` reds it
 **And** the job runs the pixi task — no hand-enumerated file list
+**Outcome (2026-09-19):** landed hand-driven (bmad-build-auto, four review layers, 20 findings triaged); `core-test`
+job + `core` filter output, the core leg first in `pyforge-station-tests`, a structural meta-test pinning the wiring
+(`test_conformance_lane_wired.py`, filesystem-derived roster), docs corrected; fixture proof exit 1 → exit 0 recorded on
+the tracked spec. Epic 52 done.
 
