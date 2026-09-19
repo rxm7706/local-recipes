@@ -3623,7 +3623,7 @@
    "scripts/llms_full_check.py": "a4d1b10b2fdece0cf547af6877b21f5ebc7bf672",
    "scripts/missing_preserve_check.py": "957613ef51c65c0a227adc4722caea0f9ba5d8cf",
    "scripts/promote_sprint_status.py": "f2499674c7a160f9d331c67673b57b03ed0ae9a9",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "dba9b762e1d33a77d36b020861936c2c996872f9",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "a6dd65cac51dbea5e9f4d5ffd07a70b705133f95",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "ee373acf2066b427d565526f47c2a72b4c228284",
    "src/shared/packages/pyforge-marshal/.gitignore": "63c59419f6a5a17602e6cecfe6d44e3d491c3c63",
    "src/shared/packages/pyforge-marshal/README.md": "23f6ec82e15c5caed6195cff759709377f083044",
@@ -4000,7 +4000,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "80fdcfb9fd2fca2be7f9eeffa89b43dc880b1579",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "608cd303b7e75ef121ad72c89b1f58b27cb94c4b"
+  "memlog": "1ffed71374a7a6aa5df260c23aacdc1b7b3d1a52"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
