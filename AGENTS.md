@@ -95,7 +95,9 @@ a PR. Prefer `pixi run -e pyforge-steward pyforge steward workspace start
 The worktree branch is `<slug>`, not `main` — Git will refuse `checkout
 main` there because the primary checkout already holds it.
 Never commit on the shared checkout. Never `scripts/bmad-switch` from a
-parallel agent — `BMAD_ACTIVE_PROJECT` and physical
+parallel agent — `BMAD_ACTIVE_PROJECT` and physical `_bmad-output/projects/<slug>/` paths. Create with
+`gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
+
 ## Auto-Memory & Repository Memory Recall
 
 Every agent (Claude Code, Gemini, Cursor, Copilot, Devin, etc.) operating in this repository must actively leverage the checked-in **Auto-Memory Engine** at `.claude/memory/`:
