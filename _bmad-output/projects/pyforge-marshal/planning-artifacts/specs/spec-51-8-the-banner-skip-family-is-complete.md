@@ -20,8 +20,7 @@ deferred:
       `<!--`"), not to a no-banner BOM case, so this is excluded by the
       intent itself, not merely by scope wording.
     location: >-
-      src/pyforge/marshal/core/promotion.py::is_valid_spec_text,
-      src/pyforge/marshal/core/spec_low_risk.py::parse_declared_low_risk
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text
     severity: low
 declared_low_risk: false
 ---
