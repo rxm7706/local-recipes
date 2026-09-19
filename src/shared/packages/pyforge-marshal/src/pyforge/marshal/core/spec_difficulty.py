@@ -167,7 +167,7 @@ def parse_declared_difficulty(text: str) -> str | None:
     if not isinstance(text, str):
         raise TypeError(f"text must be a str, got {text!r}")
 
-    lines = text.splitlines()
+    lines = _skip_leading_banner(text).splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return None
 
