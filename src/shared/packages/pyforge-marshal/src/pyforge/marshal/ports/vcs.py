@@ -449,6 +449,34 @@ class VcsPort(Protocol):
         other git failures."""
         ...
 
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        """Story 51.1: ``git merge-tree --write-tree base branch``'s
+        ``--write-tree`` sibling of ``merge_tree_conflict_paths`` above --
+        read-only, and it never performs a real merge or moves any ref.
+        Returns the resulting tree's oid when the merge-tree preview is
+        clean; ``None`` when git itself reports a real conflict (the
+        existing ``merge_tree_conflict_paths``/``MRS-DISP-038`` heal path
+        already owns that case). Raises ``VcsCommandError`` only on a
+        genuine git failure -- an ordinary conflict is a normal outcome,
+        never an exception."""
+        ...
+
+    def add_worktree_for_tree(
+        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
+    ) -> None:
+        """Story 51.1: wraps ``tree_oid`` (typically ``merge_tree_write``'s
+        own output) in a throwaway commit -- pinned ``user.name``/
+        ``user.email``/``commit.gpgsign=false``, mirroring
+        ``is_branch_merged``'s own ``commit-tree`` discipline -- with
+        ``parent`` as its sole parent, then checks it out detached at
+        ``home`` (``git worktree add --detach``, mirroring ``add_worktree``
+        above). The synthetic commit is never referenced by any branch or
+        tag; it exists solely so ``home`` has a commit-ish to check out, and
+        is eligible for garbage collection once ``home`` is removed
+        (``remove_worktree``). Raises ``VcsCommandError`` on any git
+        failure."""
+        ...
+
     def commit_paths_onto_remote_tip(
         self,
         repo_root: Path,
