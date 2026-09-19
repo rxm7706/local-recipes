@@ -433,6 +433,14 @@ class FakeVcs:
         self.head_sha = "baseline1234"
         self.progressed_worktrees: set[str] = set()
         self.merged_branches: set[str] = set()
+        # Story 51.9 (re-mint of 51.3): default to "clean main" so every
+        # pre-existing test in this file keeps reading the local
+        # `HarnessPort` ledger unchanged; a test can flip `dirty=True`,
+        # move `main_ref` away from `head_sha`, or stock
+        # `remote_ledger_texts` to exercise the new `origin/main` fallback.
+        self.dirty = False
+        self.main_ref = self.head_sha
+        self.remote_ledger_texts: dict[str, str] = {}
 
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
@@ -459,6 +467,17 @@ class FakeVcs:
 
     def commit_subjects(self, repo_root: Path, ref: str):
         return ()
+
+    # Story 51.9 (re-mint of 51.3): the "is the primary safely a clean,
+    # unmoved local `main`" gate + the `origin/main` ledger-text fallback.
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        return self.dirty
+
+    def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        return self.main_ref
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        return self.remote_ledger_texts.get(path)
 
 
 class FakeBuildHarness:
