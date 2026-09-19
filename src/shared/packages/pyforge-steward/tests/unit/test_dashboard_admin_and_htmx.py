@@ -124,7 +124,10 @@ def test_work_passport_model_and_admin() -> None:
     wp_admin = WorkPassportAdmin(WorkPassport, site)
     audit_admin = AuditEntryAdmin(AuditEntry, site)
 
-    assert wp_admin.list_display == ("passport_id", "station", "story_id", "status", "jira_key", "github_item_id", "title")
+    assert wp_admin.list_display == (
+        "passport_id", "station", "story_id", "status", "jira_key", "github_item_id",
+        "vendor_id", "title",
+    )
     assert audit_admin.list_display == ("actor", "role", "action", "target", "row_count", "occurred_at")
 
     passport = WorkPassport.objects.create(
