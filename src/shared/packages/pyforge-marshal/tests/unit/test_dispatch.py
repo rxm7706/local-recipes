@@ -1704,7 +1704,12 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): claude's own default/alias ids --
+                # any OTHER string here now trips the widened MRS-DISP-043
+                # uncatalogued-model guard, which this fixture (adaptive
+                # tiering escalation, unrelated to model-provider matching)
+                # has no catalog declared to satisfy.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -1737,14 +1742,15 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
     )
     assert _count_prior_failed_dispatch_attempts(fs, tmp_path, slug, feed) == 2
     assert attempt.data.get("escalated") is True
-    assert attempt.data.get("from_model") == "composer-2.5-fast"
-    assert attempt.data.get("to_model") == "composer-2.5"
-    assert attempt.data.get("model") == "composer-2.5"
+    assert attempt.data.get("from_model") == "sonnet"
+    assert attempt.data.get("to_model") == "opus"
+    assert attempt.data.get("model") == "opus"
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
     launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
     intent = json.loads(launch_lines[0])
     assert intent["payload"]["escalated"] is True
-    assert intent["payload"]["from_model"] == "composer-2.5-fast"
-    assert intent["payload"]["to_model"] == "composer-2.5"
+    assert intent["payload"]["from_model"] == "sonnet"
+    assert intent["payload"]["to_model"] == "opus"
     assert attempt.data.get("session_pid") == 4242
 
 
@@ -1766,7 +1772,10 @@ def test_dispatch_does_not_escalate_on_first_attempt(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): see the sibling escalation test --
+                # claude's own default/alias ids avoid tripping the widened
+                # MRS-DISP-043 uncatalogued-model guard.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -1785,8 +1794,9 @@ def test_dispatch_does_not_escalate_on_first_attempt(
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
-    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert attempt.data.get("model") == "sonnet"
     assert "escalated" not in attempt.data
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
 def test_dispatch_drops_a_tier_mapped_model_catalogued_under_a_different_provider(
