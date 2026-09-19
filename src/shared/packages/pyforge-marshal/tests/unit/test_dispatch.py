@@ -114,6 +114,15 @@ class FakeVcs:
     def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
         return ""
 
+    # Story 51.9: simulate a clean, unmoved local `main` by default, so the
+    # campaign's ledger reads keep going through the local `HarnessPort`
+    # read unchanged for every pre-existing test in this file.
+    def has_uncommitted_changes(self, _worktree_path: Path) -> bool:
+        return False
+
+    def resolve_ref(self, _repo_root: Path, _ref: str) -> str:
+        return self.worktree_head_sha(_repo_root)
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True, pid: int = 4242) -> None:
