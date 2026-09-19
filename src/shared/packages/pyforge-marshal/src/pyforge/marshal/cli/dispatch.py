@@ -1494,6 +1494,7 @@ def station_story_block_facts(
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
             changed_path_count = 0
             git_progress_unknown = False
+            git_changed_paths: tuple[str, ...] = ()
             if journal.worktree_path is not None and journal.baseline_head_sha:
                 try:
                     git_facts = gather_dispatch_git_facts(
@@ -1507,8 +1508,59 @@ def station_story_block_facts(
                         merge_subject_template=effective_policy.merge_subject_template.value,
                     )
                     changed_path_count = len(git_facts.changed_paths)
+                    git_changed_paths = git_facts.changed_paths
                 except (VcsCommandError, ValueError):
                     git_progress_unknown = True
+
+            # Story 51.4 (CAP-252): the worktree's own tracked spec may name
+            # the block reason itself -- a deliberate `status: blocked` (the
+            # 27.3 incident) always surfaces here, before any self-refusal or
+            # transient/terminal classification below. A diff that collapses
+            # to just that spec file (narration, not work -- the 51.3
+            # incident) is recorded too, so `classify_dispatch_block` can
+            # correctly read it as no-progress.
+            spec_status: str | None = None
+            spec_blocking_condition: str | None = None
+            spec_relative_path: str | None = None
+            if journal.worktree_path is not None:
+                worktree_path = Path(journal.worktree_path)
+                spec_path = dispatch_core.resolve_story_spec_path(
+                    repo_root, slug, feed_story
+                )
+                if spec_path is not None:
+                    try:
+                        worktree_spec_path = dispatch_core.relocated_spec_path(
+                            spec_path, repo_root, worktree_path
+                        )
+                    except ValueError:
+                        worktree_spec_path = None
+                    if worktree_spec_path is not None:
+                        spec_text = fs.read_text(worktree_spec_path)
+                        if spec_text is not None:
+                            spec_status = parse_spec_status(spec_text)
+                            spec_blocking_condition = parse_blocking_condition(
+                                spec_text
+                            )
+                        try:
+                            spec_relative_path = str(
+                                worktree_spec_path.resolve().relative_to(
+                                    worktree_path.resolve()
+                                )
+                            )
+                        except ValueError:
+                            spec_relative_path = None
+
+            if spec_status == "blocked":
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=(
+                        f"the last dispatch of {feed_story!r} (run "
+                        f"{run_dir.name!r}) left its tracked spec "
+                        f"status: blocked (blocking condition: "
+                        f"{spec_blocking_condition or 'not stated'})"
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
+
             # Story 50.1 Part B: ahead of the transient/terminal split, so
             # an already-landed head is never re-dispatched (TRANSIENT) NOR
             # halts the station (TERMINAL) -- it advances, exactly the way
@@ -1530,10 +1582,20 @@ def station_story_block_facts(
                     ),
                     block_class=dispatch_fleet.FleetBlockClass.STORY,
                 )
+            # Story 51.4 (CAP-252): a diff that collapses to just the
+            # tracked spec file is narration, not work -- read it as
+            # zero-progress here so a harness-ceiling termination (the
+            # 51.3 incident) classifies TRANSIENT/re-dispatchable via the
+            # existing session-log check below, not TERMINAL.
+            classify_changed_path_count = changed_path_count
+            if not git_progress_unknown and is_spec_only_narration(
+                git_changed_paths, spec_relative_path
+            ):
+                classify_changed_path_count = 0
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
-                changed_path_count=changed_path_count,
+                changed_path_count=classify_changed_path_count,
             )
             if block_kind is DispatchBlockKind.TRANSIENT:
                 return None
