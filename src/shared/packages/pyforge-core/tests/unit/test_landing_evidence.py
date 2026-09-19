@@ -45,6 +45,7 @@ def test_conformance_matrix(fixture: dict[str, object]) -> None:
             str(fixture["subject"]),
             template=template,
             project_slug=project_slug,
+            branch=fixture.get("branch"),
         )
     elif "branch" in fixture:
         match = classify_branch_name(str(fixture["branch"]), project_slug=project_slug)
@@ -95,6 +96,71 @@ def test_recovery_convention_document_is_non_empty() -> None:
     assert "land/<station>" in RECOVERY_LANDING_CONVENTION
     assert "recover <station>" in RECOVERY_LANDING_CONVENTION
     assert "PRE_CONVENTION_RECOVERY_COMMITS" in RECOVERY_LANDING_CONVENTION
+
+
+# --------------------------------------------------------------------------
+# Story 50.4/FR-191 CAP-247: `{slug}`-scoped templated subjects and
+# branch-corroborated story-direct commits.
+# --------------------------------------------------------------------------
+
+
+def test_templated_merge_subject_rejects_a_foreign_slug() -> None:
+    """A `{slug}`-scoped template rendered under a DIFFERENT project_slug
+    carries a different literal prefix/suffix and simply fails to match --
+    the fix for atlas's `Merge 23-N into main` poisoning herald's own
+    23.1..23.6 once herald renders under its own scoped template."""
+    template = "Merge {slug}/{key} into main"
+    subject = "Merge pyforge-atlas/23-1 into main"
+    match = classify_merge_subject(
+        subject, template=template, project_slug="pyforge-herald"
+    )
+    assert match is None
+
+
+def test_templated_merge_subject_slug_scoped_still_classifies_for_its_own_station() -> None:
+    template = "Merge {slug}/{key} into main"
+    subject = "Merge pyforge-herald/23-1 into main"
+    match = classify_merge_subject(
+        subject, template=template, project_slug="pyforge-herald"
+    )
+    assert match is not None
+    assert match.key == StoryKeyRef(23, 1)
+    assert match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+
+
+def test_story_direct_commit_refuses_without_a_corroborating_branch() -> None:
+    """Steward's `Story 48.2:`/`Story 48.4:` subjects must not poison
+    marshal's own 48.2/48.4 -- ``branch`` defaults to ``None``, which
+    refuses by default when a caller has no branch data at all."""
+    subject = "Story 48.4: R-20 secrets profile for platform deploy."
+    match = classify_merge_subject(
+        subject, template=_TEMPLATE, project_slug="pyforge-marshal"
+    )
+    assert match is None
+
+
+def test_story_direct_commit_refuses_a_foreign_branch() -> None:
+    subject = "Story 48.4: R-20 secrets profile for platform deploy."
+    match = classify_merge_subject(
+        subject,
+        template=_TEMPLATE,
+        project_slug="pyforge-marshal",
+        branch="steward/48-4-secrets-profile",
+    )
+    assert match is None
+
+
+def test_story_direct_commit_classifies_with_a_corroborating_branch() -> None:
+    subject = "Story 48.4: R-20 secrets profile for platform deploy."
+    match = classify_merge_subject(
+        subject,
+        template=_TEMPLATE,
+        project_slug="pyforge-steward",
+        branch="steward/48-4-secrets-profile",
+    )
+    assert match is not None
+    assert match.key == StoryKeyRef(48, 4)
+    assert match.shape is LandingEvidenceShape.STORY_DIRECT_COMMIT_SUBJECT
 
 
 # --------------------------------------------------------------------------

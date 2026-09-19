@@ -457,7 +457,7 @@ _SLUG_CHARS: frozenset[str] = frozenset(
 # policy file, and why `worktree_seed_paths` has no entry here.
 DEFAULT_POLICY: Mapping[str, object] = {
     "verify_commands": (),
-    "merge_subject_template": "Merge {key} into main",
+    "merge_subject_template": "Merge {slug}/{key} into main",
     "model_tier_map": {},
     "gate_mode": "per-story-spec-approval",
     "frozen_surfaces": (),

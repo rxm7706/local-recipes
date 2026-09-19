@@ -53,7 +53,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 from pyforge.core.landing_evidence import (
-    LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
     classify_commit,
@@ -87,12 +86,14 @@ TERMINAL = frozenset({"done"})
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
 DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
-# AD-24 legacy default template; shared with ``pyforge.core.landing_evidence``
-# conformance. Carries no station token, so a subject rendered from it cannot
-# be scoped to any one project -- ``_project_merge_subject_template`` below
-# is the per-project override this module reads FIRST (Story 27.1); this
-# constant is only the fallback for a project whose policy declares none.
-_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+# Repo-default template (Story 50.4), shared with
+# ``pyforge.core.landing_evidence`` conformance. Carries a ``{slug}`` token,
+# so ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+# to the project that rendered it -- ``_project_merge_subject_template``
+# below is the per-project override this module reads FIRST (Story 27.1);
+# this constant is only the fallback for a project whose policy declares
+# none.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 _MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
 _FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
 
@@ -101,10 +102,10 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
     """``project_slug``'s own ``merge_subject_template``, read directly from
     its tracked ``marshal-policy.toml`` as TOML -- never through
     ``pyforge.marshal`` (this module's independence rule, see the module
-    docstring). Degrades to the legacy repo default when the policy file is
+    docstring). Degrades to the repo default when the policy file is
     absent, unreadable, not valid TOML, or does not declare the key --
     "degrades, never crashes," and Story 27.1's own "policy declares no
-    template -> legacy default honoured" row. Duplicated in
+    template -> default honoured" row. Duplicated in
     ``sources/ledger.py`` rather than shared via a cross-import, mirroring
     this module's own ``_git``/``_parse_statuses`` precedent of small,
     per-file self-contained helpers over sibling-module coupling.
@@ -209,10 +210,11 @@ def _keys_from_merge_subjects(
 ) -> frozenset[StoryKeyRef]:
     """Merge-shaped subjects on any ref (route 2) -- excludes story-direct.
 
-    The templated shape (tried first, ONLY when ``project_slug`` declares
-    its OWN override) uses that override (Story 27.1), not the bare repo
-    default -- see ``_project_merge_subject_template``'s own docstring for
-    why an unscoped read misattributes a sibling station's landing.
+    The templated shape (tried first) uses ``project_slug``'s own override
+    when its policy declares one (Story 27.1), else the ``{slug}``-scoped
+    repo default (Story 50.4) -- either way ``parse_templated_merge_subject``
+    self-scopes the read to ``project_slug``, so a sibling station's landing
+    rendered from the textually identical default template still refuses.
 
     Story 27.5 (CAP-80 amended): once every scoped shape above misses, the
     AD-24 bare legacy form (``Merge {key} into main``) is tried once more --
@@ -224,25 +226,24 @@ def _keys_from_merge_subjects(
     reopened the cross-station collision whenever two stations share a
     numeric key -- the common case under one shared grammar.
 
-    A project with NO override of its own is exactly the case where
-    ``_project_merge_subject_template`` returns the bare default itself --
-    trying ``parse_templated_merge_subject`` against THAT would match every
-    OTHER station's own unscoped bare-form merge too (this module's own
-    pre-27.5 defect: unconditional and unscoped), so that parser is skipped
-    entirely for such a project and every bare-form subject instead goes
-    through the corroborated fallback below. ``commits`` therefore carries
-    the sha alongside each subject (routed from ``git log
+    Before Story 50.4 the repo default was the bare, station-blind
+    ``Merge {key} into main``, so a project with NO override of its own had
+    the templated parser skipped entirely (trying it against that default
+    matched every OTHER station's bare-form merge too -- this module's own
+    pre-27.5 defect: unconditional and unscoped). The ``{slug}`` default
+    removes that ambiguity at the source, so the parser now runs for every
+    project; a bare legacy subject can never match a ``{slug}`` template and
+    so always reaches the corroborated fallback below. ``commits`` therefore
+    carries the sha alongside each subject (routed from ``git log
     --format=%H%x00%s``), unlike this function's pre-27.5 subject-only
     shape.
     """
     template = _project_merge_subject_template(target, project_slug)
-    has_override = template != _MERGE_SUBJECT_TEMPLATE
     known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
         parsers: list[Callable[[str], StoryKeyRef | None]] = []
-        if has_override:
-            parsers.append(lambda s: parse_templated_merge_subject(s, template))
+        parsers.append(lambda s: parse_templated_merge_subject(s, template, project_slug))
         parsers.extend((
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
@@ -279,7 +280,6 @@ def _keys_from_main_commits(
     unreadable_diff_shas: list[tuple[str, str]] | None = None,
 ) -> frozenset[StoryKeyRef]:
     template = _project_merge_subject_template(target, project_slug)
-    has_override = template != _MERGE_SUBJECT_TEMPLATE
     known_keys = known_story_keys(target, project_slug)
     keys: set[StoryKeyRef] = set()
     for sha, subject in commits:
@@ -289,13 +289,12 @@ def _keys_from_main_commits(
             template=template,
             project_slug=project_slug,
         )
-        # A project with no override of its own must not accept a match
-        # `classify_commit` only found via the bare default it was handed
-        # (see `_keys_from_merge_subjects`'s own docstring) -- every OTHER
-        # shape `classify_commit` recognizes stays trusted unconditionally.
-        if match is not None and (
-            has_override or match.shape is not LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
-        ):
+        # Every shape `classify_commit` recognizes is trusted unconditionally:
+        # the templated shape is self-scoped by `{slug}` (Story 50.4), so a
+        # project with no override of its own can no longer match a sibling's
+        # subject through the repo default it was handed (the pre-50.4 guard
+        # that lived here -- see `_keys_from_merge_subjects`'s own docstring).
+        if match is not None:
             keys.add(match.key)
             continue
         fallback = _branch_name_fallback_key(subject, project_slug)

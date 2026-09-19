@@ -428,6 +428,59 @@ def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
     assert findings[0].evidence["key"] == "1-1-foo"
 
 
+def test_no_override_scoped_default_merge_suppresses_own_station(
+    tmp_path: Path,
+) -> None:
+    """Story 50.4: a station with NO ``marshal-policy.toml`` override still
+    gets credit for a landing rendered from the (now ``{slug}``-scoped) repo
+    default -- the templated route no longer needs an explicit per-project
+    override to self-scope."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-mason/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "mason", "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_no_override_sibling_scoped_default_merge_does_not_suppress(
+    tmp_path: Path,
+) -> None:
+    """The other half: two stations sharing the identical unset-override
+    default template do not cross-attribute, since each renders its OWN
+    ``{slug}`` segment -- a sibling's ``Merge pyforge-atlas/7-2 into main``
+    is not mason's landing evidence, even though the numeric key
+    coincides."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-atlas/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "mason", "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "7-2-foo"
+
+
 # --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
 # paths its diff touches, never by ledger membership alone -----------------
 
@@ -695,12 +748,19 @@ def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
 
 
-def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
+def test_bare_story_subject_on_main_no_longer_suppresses_the_false_green(
     tmp_path: Path,
 ) -> None:
-    """Route 3: a commit SUBJECT reachable from ``main`` naming both the slug
-    and ``Story <epic>.<seq>``. This is the most intricate rule in the port
-    and the one with no coverage before now."""
+    """Story 50.4/FR-191 CAP-247: a bare ``Story <epic>.<seq>: …`` commit
+    subject carries no station token, so on its own (no branch, no
+    co-occurring station name) Route 3 can no longer treat it as this
+    station's landing evidence -- exactly the shape that let one station's
+    bare direct commit poison a same-numbered key on another station's
+    ledger (the steward ``Story 48.2:``/``Story 48.4:`` incident that
+    poisoned marshal's own 48.2/48.4). A real hand-landed commit still
+    suppresses via Route 4's loose station+key co-occurrence (see the
+    ``test_loose_co_occurrence_*`` tests below) once the station name is
+    part of the subject."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
@@ -716,7 +776,7 @@ def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
     findings = marshal.gather_story_status(target, loop_root=loop_root)
 
     assert len(findings) == 1
-    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].status is DoctorStatus.FAIL
 
 
 def test_route3_requires_matching_story_ref_not_a_neighbour(tmp_path: Path) -> None:
@@ -1002,12 +1062,21 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
     harness verdict and was accused of being a false green.
 
     The repo-level ``rev-parse --git-dir`` probe does not cover this: the repo
-    is perfectly valid, it just has no ``main``."""
+    is perfectly valid, it just has no ``main``.
+
+    The commit subject names the station (Story 50.4/FR-191 CAP-247: a bare
+    ``Story <epic>.<seq>:`` subject alone no longer suppresses via Route 3 --
+    see ``test_bare_story_subject_on_main_no_longer_suppresses_the_false_green``
+    -- so the control assertion below relies on Route 4's loose station+key
+    co-occurrence, which reads ``git log --all`` and is unaffected by the
+    later ``main`` rename; the ``main_commits_unavailable`` short-circuit
+    still skips straight to "could not be queried" before Route 4 ever runs,
+    which is exactly the behaviour this test exists to pin)."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
     _write_feed(target, "warden", ["1-1-foo"])
-    _commit(target, "Story 1.1 - foo, landed by hand")
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
 
     loop_root = tmp_path / "loop_root"
     _write_state(
@@ -1192,12 +1261,19 @@ def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
 @pytest.mark.parametrize(
     ("slug", "key", "subject", "commit_sha"),
     [
-        (
-            "marshal",
-            "8-2-region-parser",
-            "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
-            "accc097e6a",
-        ),
+        # marshal 8-2's real historical commit ("Story 8.2: region parser
+        # ...", sha accc097e6a) is intentionally NOT parametrized here.
+        # Story 50.4/FR-191 CAP-247 requires branch corroboration for a bare
+        # ``Story <epic>.<seq>:`` subject (see
+        # ``test_hand_landed_commit_subject_on_main_suppresses_the_false_
+        # green``), so this case only ever passed via the SHA allowlist --
+        # but ``_git(target, "commit", ...)`` cannot fabricate a commit with
+        # that exact real SHA, so this repo-level fixture never actually
+        # exercised the allowlist path. The allowlist match itself is
+        # covered directly (no synthetic git repo needed) by
+        # ``landing_evidence.conformance_fixtures()``'s
+        # ``allowlist_accc097e6a`` row, shared with
+        # ``test_landing_evidence_conformance.py``.
         (
             "marshal",
             "10-1-copier-engine",

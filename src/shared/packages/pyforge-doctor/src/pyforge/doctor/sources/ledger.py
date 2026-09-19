@@ -73,11 +73,12 @@ LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
 #: this file's own ``_git``/``_parse_statuses`` precedent of small, per-file
 #: self-contained helpers over sibling-module coupling.
 _MARSHAL_POLICY_SUFFIX = "planning-artifacts/marshal-policy.toml"
-#: AD-24 legacy default template -- carries no station token, so a subject
-#: rendered from it cannot be scoped to any one station (Story 27.1's own
-#: acknowledged residual: "policy declares no template -> legacy default
-#: honoured"). Kept identical to ``sources/marshal.py``'s own constant.
-_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+#: Repo-default template (Story 50.4) -- carries a ``{slug}`` token, so
+#: ``parse_templated_merge_subject`` self-scopes a subject rendered from it
+#: to the project that rendered it, even when that project declares no
+#: override (Story 27.1's own "policy declares no template -> default
+#: honoured" row). Kept identical to ``sources/marshal.py``'s own constant.
+_MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 #: A fold PR's re-key map (doctor Story 25.3 / spec-one-chain-per-station
 #: CAP-3(g)). Considered ONLY when present at ``head`` and absent at ``base``
 #: -- i.e. shipped by the range under judgement. Once merged it is in both
@@ -135,9 +136,9 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
     """``project_slug``'s own ``merge_subject_template``, read directly from
     its tracked ``marshal-policy.toml`` as TOML -- never through
     ``pyforge.marshal`` (this module's independence rule). Degrades to the
-    legacy repo default when the policy file is absent, unreadable, not
+    repo default when the policy file is absent, unreadable, not
     valid TOML, or does not declare the key -- "degrades, never crashes,"
-    and Story 27.1's own "policy declares no template -> legacy default
+    and Story 27.1's own "policy declares no template -> default
     honoured" row.
     """
     path = target / PROJECTS_PREFIX / project_slug / _MARSHAL_POLICY_SUFFIX
@@ -619,49 +620,48 @@ def _merged_ids_for_project(
 
     Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
     The first two are scoped to the station short name / ``loop/<slug>``
-    target. The templated shape (AD-24) is attempted ONLY when this project
-    declares its OWN ``merge_subject_template`` that differs from the bare
-    repo default (Story 27.1) — the live incident this exists for:
-    ``Merge pyforge-atlas/13-5 into main`` must count for atlas, while a
-    sibling's ``Merge 13-5 into main`` must not.
+    target. The templated shape is attempted unconditionally: since
+    ``merge_subject_template`` is ``{slug}``-scoped fleet-wide by default
+    (Story 50.4), ``parse_templated_merge_subject`` self-scopes internally —
+    a subject rendered by ``project_slug``'s own template parses, and a
+    sibling's subject rendered from a DIFFERENT slug's template segment
+    (even one that resolves to the textually identical default template)
+    refuses. ``Merge pyforge-atlas/13-5 into main`` counts for atlas; a
+    sibling's own ``Merge pyforge-herald/13-5 into main`` does not, even
+    though both projects share the same unset-override template string.
 
-    The bare legacy default (``Merge {key} into main``, no station token) is
-    never matched UNCONDITIONALLY here, unlike ``sources/marshal.py``'s
-    ``gather_story_status`` (which already carried it, unscoped, before
-    Story 27.1). This function, by contrast, had NO templated-subject
-    matching at all before Story 27.1; wiring the bare default in
-    unconditionally does not narrow an existing ambiguity, it CREATES one,
-    spanning every project this check compares in the same run — verified
-    live 2026-09-18: doing so turned 3 findings into 306, because most of
-    the fleet's stations still have no override and therefore share the
-    identical, contentless template.
+    Before Story 50.4, this templated shape was DELIBERATELY skipped
+    whenever a project's resolved template equalled the (then station-blind)
+    repo default, to avoid the live 2026-09-18 incident where wiring it in
+    unconditionally turned 3 findings into 306 fleet-wide, because most
+    stations shared the identical, contentless template and any one of them
+    could match any other's subject. Story 50.4's slug-scoping is what
+    removes that ambiguity at the source, so the guard that used to carry it
+    is gone — see ``spec-pyforge-marshal`` CAP-247.
 
     Story 27.5 (CAP-80 amended): once the scoped template, GitHub PR-merge,
-    and bmad-loop shapes above all miss, the bare legacy form is tried once
-    more — attributed to ``project_slug`` only when ``sha``'s first-parent
-    diff touches this station's own paths AND this station's own tracked
-    ledger already knows the extracted key
+    and bmad-loop shapes above all miss, the bare legacy form
+    (``Merge {key} into main``, no station token -- which can never match a
+    ``{slug}`` template) is tried once more — attributed to ``project_slug``
+    only when ``sha``'s first-parent diff touches this station's own paths
+    AND this station's own tracked ledger already knows the extracted key
     (``bare_merge.attribute_bare_merge``, shared verbatim with
     ``sources/marshal.py``'s ``_keys_from_merge_subjects``/``_keys_from_
     main_commits``). Replaces Story 27.3's reverted ledger-membership-alone
     gate, which reopened the cross-station collision whenever two stations
-    share a numeric key — the common case under one shared grammar. This is
-    what lets a project with NO override still recognize its own genuine
-    bare-form history (git-diff-corroborated) without reopening the
-    306-finding ambiguity the paragraph above describes: a sibling's own
-    bare-form merge touches only the SIBLING's paths, so it still attributes
-    to nothing here.
+    share a numeric key — the common case under one shared grammar. A
+    sibling's own bare-form merge touches only the SIBLING's paths, so it
+    still attributes to nothing here.
     """
     station = project_slug.removeprefix("pyforge-")
     template = _project_merge_subject_template(target, project_slug)
     known_keys = known_story_keys(target, project_slug)
     out: set[str] = set()
     for sha, subject in commits:
-        if template != _MERGE_SUBJECT_TEMPLATE:
-            templated = parse_templated_merge_subject(subject, template)
-            if templated is not None:
-                out.add(templated.hyphen_form())
-                continue
+        templated = parse_templated_merge_subject(subject, template, project_slug)
+        if templated is not None:
+            out.add(templated.hyphen_form())
+            continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
             branch = gh.group("branch")

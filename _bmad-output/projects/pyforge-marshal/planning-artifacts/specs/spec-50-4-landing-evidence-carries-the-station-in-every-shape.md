@@ -2,7 +2,8 @@
 title: '50.4: Landing evidence carries the station in every shape'
 type: 'fix'
 created: '2026-09-18'
-status: 'ready'
+status: 'done'
+updated: '2026-09-18'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

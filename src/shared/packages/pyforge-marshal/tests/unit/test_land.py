@@ -450,7 +450,7 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert delete_branch is True
     # Story 5.10: the single-key wave's rendered merge subject (AD-24),
     # threaded to `forge.merge_pr` and surfaced in `data["subject"]`.
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert subject == expected_subject
     assert payload["data"]["subject"] == expected_subject
 
@@ -473,7 +473,7 @@ def test_render_text_land_reports_subject_line_on_a_full_merge(tmp_path, capsys,
 
     rendered = capsys.readouterr().out
     assert exit_code == 0
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert f"subject: {expected_subject!r}" in rendered
 
 
@@ -2241,7 +2241,7 @@ def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, mo
     # subject from `wave_keys[0]` ONLY -- the wave's primary (lowest-sorted)
     # key -- never all wave keys.
     assert len(forge.merge_calls) == 1
-    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
     assert forge.merge_calls[0][-1] == expected_subject
     assert payload["data"]["subject"] == expected_subject
 

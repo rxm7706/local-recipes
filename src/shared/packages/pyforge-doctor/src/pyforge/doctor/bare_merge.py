@@ -261,7 +261,7 @@ def attribute_bare_merge(
     reopening the exact collision the module docstring's "neither alone is
     safe" paragraph describes.
     """
-    key = parse_templated_merge_subject(subject, BARE_MERGE_SUBJECT_TEMPLATE)
+    key = parse_templated_merge_subject(subject, BARE_MERGE_SUBJECT_TEMPLATE, project_slug)
     if key is None or key not in known_keys:
         return BareMergeAttribution(key=None)
     slugs = station_slugs_touched(target, sha, cache)

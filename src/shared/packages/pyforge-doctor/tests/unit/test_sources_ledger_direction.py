@@ -329,23 +329,26 @@ def test_own_scoped_template_merge_counts_as_landed(tmp_path: Path) -> None:
     assert fails[0].evidence["project"] == "pyforge-atlas"
 
 
-def test_no_policy_file_never_attempts_the_bare_default_template(
+def test_no_policy_file_legacy_bare_subject_does_not_match_scoped_default(
     tmp_path: Path,
 ) -> None:
     """A project with no ``marshal-policy.toml`` (or none declaring the key)
-    keeps its EXACT pre-Story-27.1 behavior for the templated shape: no
-    attribution attempt at all, never the ambiguous bare-default match.
+    resolves to the repo default, which is ``{slug}``-scoped fleet-wide
+    (Story 50.4) — so a pre-scoping-era bare subject with no station token
+    at all (``Merge 7-2 into main``) still does not match it, and still
+    raises no attribution.
 
-    Verified live 2026-09-18: wiring the bare default into this
-    fleet-spanning check unconditionally turned 3 real findings into 306,
-    because most stations still share it -- every one of them would light up
-    on every OTHER station's own bare-templated landing. Scoping this
-    function's templated check to "only when a project's OWN template
-    differs from the bare default" is what keeps a project with no override
-    from becoming a NEW source of noise -- the acknowledged residual this
-    story does not claim to close (Marshal's own spec-pyforge-marshal
-    CAP-247 / Story 50.4 is what makes the repo default itself
-    station-scoped fleet-wide)."""
+    Before Story 50.4 this function skipped the templated check entirely
+    whenever a project had no override, specifically to dodge the live
+    2026-09-18 incident where wiring the (then station-blind) bare default
+    in unconditionally turned 3 real findings into 306 fleet-wide. Story
+    50.4 removed that guard because the default template itself is no
+    longer station-blind: it is attempted unconditionally now, but a
+    genuinely unscoped legacy subject like this one still can't satisfy a
+    ``{slug}``-carrying template, so the false-positive risk the old guard
+    existed for is gone at the source. See
+    ``test_no_policy_file_scoped_default_template_merge_counts_as_landed``
+    for the positive case this enables."""
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_ledger(repo, "pyforge-mason", {"7-2-something": "backlog"})
@@ -356,6 +359,28 @@ def test_no_policy_file_never_attempts_the_bare_default_template(
 
     fails = [f for f in findings if f.status == DoctorStatus.FAIL]
     assert fails == []
+
+
+def test_no_policy_file_scoped_default_template_merge_counts_as_landed(
+    tmp_path: Path,
+) -> None:
+    """Story 50.4: a project with no override still gets credit for a
+    landing rendered from the (now ``{slug}``-scoped) repo default -- the
+    residual ``test_no_policy_file_legacy_bare_subject_does_not_match_scoped_default``
+    itself named as still open before this story closed it."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-mason", {"7-2-something": "backlog"})
+    _commit(repo, "seed")
+    _commit(repo, "Merge pyforge-mason/7-2 into main", allow_empty=True)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "7-2"
+    assert fails[0].evidence["project"] == "pyforge-mason"
 
 
 # --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
