@@ -138,7 +138,11 @@ class FakeForge:
 
 
 class FakeProcess:
+    def __init__(self) -> None:
+        self.calls: list[tuple[list[str], Path]] = []
+
     def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
         return ProcessResult(returncode=0, stdout="", stderr="")
 
 
@@ -201,6 +205,39 @@ def test_execute_dispatch_land_refuses_unknown_merge_conflicts(tmp_path: Path) -
     )
     assert result.subject == expected_subject
     assert result.marshal_native is True
+
+
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_when_heal_fails(
+    tmp_path: Path,
+) -> None:
+    """Story 51.2: when the forge merge fails and the heal attempt neither
+    finds an escalated (non-mechanical) conflict path nor manages to heal
+    (``heal.healed=False``, ``heal.escalated_paths=()`` -- no ledger-only
+    conflicts to union and no stale-GitHub-state to locally advance past),
+    the REFUSED result must still carry ``pr_number``/``subject``/
+    ``marshal_native=True`` -- not the dataclass's ``None``/``False``
+    defaults."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=BrokenForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("28-20-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
+    assert any(f.code == "MRS-DISP-020" for f in envelope.findings)
 
 
 def _ledger_yaml(*pairs: tuple[str, str]) -> str:

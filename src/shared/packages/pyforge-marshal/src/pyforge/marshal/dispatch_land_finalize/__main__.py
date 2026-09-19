@@ -27,6 +27,12 @@ from pyforge.marshal.core.identity import MalformedStoryKeyError, normalize
 def finalize_dispatch_land(
     project_slug: str, story_key: str, worktree: Path | None = None
 ) -> int:
+    """Run the post-merge finalize sequence for ``story_key``.
+
+    ``worktree`` (Story 51.2), when given, is the dispatch worktree the
+    session actually ran in -- its own Tier-3 ``implementation-artifacts/``
+    is scanned alongside the primary checkout's, in case the session wrote
+    its spec there instead. ``None`` (the default) scans only the primary."""
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()

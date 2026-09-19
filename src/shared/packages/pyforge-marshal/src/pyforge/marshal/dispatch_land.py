@@ -44,7 +44,12 @@ _MAINTENANCE_LABEL = "maintenance"
 
 @dataclass(frozen=True)
 class DispatchLandingResult:
-    """Outcome of a dispatch land attempt."""
+    """Outcome of a dispatch land attempt.
+
+    ``pr_number``/``subject``/``marshal_native`` are populated on
+    ``REFUSED`` too, once each is known (Story 51.2) -- not just on
+    ``LANDED``. ``merge_sha`` stays ``None`` on every ``REFUSED`` result;
+    it is only ever set once an actual merge SHA exists."""
 
     verdict: DispatchLandingVerdict
     merge_sha: str | None = None
