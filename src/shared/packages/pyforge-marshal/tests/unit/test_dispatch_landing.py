@@ -398,6 +398,42 @@ def test_execute_dispatch_land_refused_result_keeps_pr_facts_after_merge(
     assert envelope.data.get("merged") is True
 
 
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_before_merge_native_check(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 51.2: when the rendered merge subject fails the marshal-native
+    check (``MRS-DISP-019``, before any merge is attempted), the REFUSED
+    result must still carry the ``pr_number``/``subject`` already known at
+    that point -- but ``marshal_native`` stays the dataclass default
+    ``False``, since that's the check's real (failed) outcome here, not a
+    guess."""
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land.merge_subject_is_marshal_native",
+        lambda *args, **kwargs: False,
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("22-4-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is False
+    assert any(f.code == "MRS-DISP-019" for f in envelope.findings)
+
+
 def test_unverified_never_lands(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
