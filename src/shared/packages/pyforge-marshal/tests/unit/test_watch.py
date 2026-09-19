@@ -1210,6 +1210,43 @@ def test_default_ports_discover_projects_and_load_queue_read_the_repo(tmp_path: 
     assert ports.load_queue("zeta") == ["9.1"]
 
 
+def test_default_ports_loop_last_fact_reads_the_real_journal(tmp_path: Path, monkeypatch):
+    home = _fake_home(monkeypatch, tmp_path, "acme")
+    run_dir = home / ".bmad-loops" / "acme" / ".bmad-loop" / "runs" / "r1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        '{"ts": 1755500000.0, "kind": "story-started"}\n{"ts": 1755500100.5, "kind": "story-done"}\n',
+        encoding="utf-8",
+    )
+    ports = watch_mod._default_ports(_RecordingProcess({}), tmp_path)
+    assert ports.loop_last_fact is not None
+    assert ports.loop_last_fact("acme", "r1") == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+    # No journal at all for this run -- honest None, not an exception.
+    assert ports.loop_last_fact("acme", "no-such-run") is None
+
+
+def test_default_ports_dispatch_last_fact_reads_the_real_journal(tmp_path: Path):
+    from pyforge.marshal.core.dispatch import dispatch_run_dir
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_dir = dispatch_run_dir(tmp_path, "acme", "d1")
+    run_dir.mkdir(parents=True)
+    entry = build_entry(
+        id=JournalEntryId(run_id="d1", seq=1),
+        ts="2026-09-18T06:00:00Z",
+        run_id="d1",
+        kind="dispatch-launch",
+        phase=Phase.INTENT,
+        payload={"story_key": "6.1", "model": "m", "worktree_path": "/tmp/wt"},
+    )
+    (run_dir / "journal.jsonl").write_text(prepare_for_write(entry).line + "\n", encoding="utf-8")
+    ports = watch_mod._default_ports(_RecordingProcess({}), tmp_path)
+    assert ports.dispatch_last_fact is not None
+    assert ports.dispatch_last_fact("acme", "d1") == datetime(2026, 9, 18, 6, 0, 0, tzinfo=timezone.utc)
+    # A dispatch id with no matching run dir -- honest None.
+    assert ports.dispatch_last_fact("acme", "no-such-run") is None
+
+
 # run_watch: argument errors, the default cache dir, context slug, text render
 
 
