@@ -19,7 +19,7 @@ _PKG = Path(__file__).resolve().parents[1]
 _FIXTURE = _PKG / "fixtures" / "track-run"
 _SPARSE = _PKG / "fixtures" / "track-run-sparse"
 _SCHEMA = (
-    _PKG.parents[1]
+    _PKG.parent  # tests/ -> the pyforge-steward package dir (parents[1] pointed at src/shared/packages/)
     / "src"
     / "pyforge"
     / "steward"
