@@ -1965,56 +1965,6 @@ def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
     assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
-def test_ZZZ_TEMP_repro_cursor_model_no_catalog(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """TEMP repro: mirrors pyforge-atlas's real committed marshal-policy.toml
-    shape -- model_tier_map declares an explicit cursor harness+model, no
-    model_cost_catalog at all."""
-    from pyforge.marshal.cli import dispatch as dispatch_module
-    from pyforge.marshal.core import policy
-
-    slug = "pyforge-atlas"
-    _init_git_repo(tmp_path, scope_slug=slug)
-    story = "99-9-zzz-temp-repro"
-    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
-    specs.mkdir(parents=True, exist_ok=True)
-    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
-
-    effective, _ = policy.compose(
-        project_slug=slug,
-        project={
-            "model_tier_map": {
-                "medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}},
-            },
-            "harness_preference": ["cursor"],
-        },
-        flags={},
-    )
-    from pyforge.marshal.core.model_cost import provider_declaring_model, is_harness_default_model, adapter_provider
-    print("catalog:", effective.model_cost_catalog.value)
-    print("provider_declaring_model:", provider_declaring_model(effective.model_cost_catalog.value, "composer-2.5-fast"))
-    print("is_harness_default_model:", is_harness_default_model("composer-2.5-fast"))
-    print("adapter_provider(cursor):", adapter_provider("cursor"))
-    monkeypatch.setattr(
-        dispatch_module,
-        "_compose_policy",
-        lambda _slug, flags=None: effective,
-    )
-    monkeypatch.chdir(tmp_path)
-    attempt = dispatch_once(
-        slug=slug,
-        story=story,
-        fs=FakeFs(),
-        vcs=FakeVcs(tmp_path),
-        build_harness=FakeBuildHarness(),
-        process=FakeProcess(),
-    )
-    print("harness_profile:", attempt.data.get("harness_profile"))
-    print("model:", attempt.data.get("model"))
-    print("findings:", [(f.code, f.message) for f in attempt.findings])
-
-
 def test_dispatch_explicit_harness_flag_outranks_tier_map_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
