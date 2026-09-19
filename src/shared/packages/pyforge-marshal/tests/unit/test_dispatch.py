@@ -2080,7 +2080,10 @@ def test_dispatch_failure_count_resets_after_completed_run(
         project_slug=slug,
         project={
             "model_tier_map": {
-                "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+                # Story 51.5 (CAP-253): see the sibling escalation tests --
+                # claude's own default/alias ids avoid tripping the widened
+                # MRS-DISP-043 uncatalogued-model guard.
+                "medium": {"dev": "sonnet", "review": "opus"},
             }
         },
         flags={"max_dev_attempts": 2},
@@ -2110,8 +2113,9 @@ def test_dispatch_failure_count_resets_after_completed_run(
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
-    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert attempt.data.get("model") == "sonnet"
     assert "escalated" not in attempt.data
+    assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
 def test_resolve_max_parallel_ignores_seed_max_parallel() -> None:
