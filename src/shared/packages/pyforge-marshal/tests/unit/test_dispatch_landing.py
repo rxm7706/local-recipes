@@ -827,6 +827,96 @@ def test_execute_dispatch_land_refuses_when_behind_check_is_unevaluable(
     assert result.marshal_native is True
 
 
+def test_execute_dispatch_land_refuses_when_merge_tree_write_raises(
+    tmp_path: Path,
+) -> None:
+    """Review finding (2026-09-19): the ``merge_tree_write``-raises branch
+    had no orchestration-level test at all -- unlike the ``fetch``-raises
+    branch, which shares its ``except`` block with ``commits_behind``."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+
+    class RaisingMergeTreeWriteVcs(MergeTreePreviewVcs):
+        def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+            self.merge_tree_write_calls.append((base, branch))
+            raise VcsCommandError("git merge-tree crashed")
+
+    vcs = RaisingMergeTreeWriteVcs(behind=1)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp044 = [f for f in envelope.findings if f.code == "MRS-DISP-044"]
+    assert len(disp044) == 1
+    assert "cannot preview the merge" in disp044[0].message
+    assert vcs.add_worktree_for_tree_calls == []
+
+
+def test_execute_dispatch_land_cleans_up_when_add_worktree_for_tree_raises(
+    tmp_path: Path,
+) -> None:
+    """Review finding (2026-09-19): the ORIGINAL code returned immediately
+    when ``add_worktree_for_tree`` raised, with no cleanup attempt at all --
+    violating the spec's own "always removed (best-effort)" acceptance
+    criterion. Cleanup must now be attempted on this path too."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=1, tree_oid="preview-tree-oid", add_worktree_raises=True)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp044 = [f for f in envelope.findings if f.code == "MRS-DISP-044"]
+    assert len(disp044) == 1
+    assert "cannot materialize the merge-tree preview" in disp044[0].message
+    assert vcs.removed_worktrees == [vcs.preview_home]
+
+
+def test_execute_dispatch_land_falls_back_to_rmtree_when_remove_worktree_raises(
+    tmp_path: Path,
+) -> None:
+    """Review finding (2026-09-19): a failed ``remove_worktree`` was
+    swallowed with no fallback, unlike ``merge_branch``'s own precedent
+    (``adapters/vcs_git.py``), which falls back to a raw ``shutil.rmtree``
+    plus ``git worktree prune`` -- otherwise the preview worktree is
+    permanently orphaned rather than just invisible."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid", remove_worktree_raises=True)
+    process = FakeProcess()
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="51-1-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert vcs.removed_worktrees == [vcs.preview_home]
+    assert vcs.pruned_repo_roots == [tmp_path]
+
+
 def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(
     tmp_path: Path, monkeypatch
 ) -> None:
