@@ -1,5 +1,7 @@
 # pyforge-scribe
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Direct-capture CLI for checked-in team memory. `scribe capture` writes a
 decision, ADR, or piece of project state straight into `.claude/memory/`
 the moment it's made — append-only, no clobber, visible to every

@@ -31,6 +31,7 @@ from pyforge.doctor.sources import (
     capability_effect,
     chain,
     deps,
+    docs_map_hygiene,
     docs_shelf,
     factory,
     frozen_path,
@@ -73,6 +74,8 @@ _EXPECTED_DISPATCH = {
     # Doctor Epic 25 -- both in detectors-ci from day one.
     "chain-sprawl": one_chain.gather_chain_sprawl,
     "fr-without-cap": one_chain.gather_fr_without_cap,
+    # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md hygiene.
+    "docs-map-hygiene": docs_map_hygiene.gather,
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list.
     "docs-shelf-occupancy": docs_shelf.gather,

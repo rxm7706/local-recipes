@@ -86,6 +86,34 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-19 (night)** — **Proposed: the documentation is right, and refreshing it is repeatable
+  — by the change that invalidated it, not by a campaign.** Seeded at the review of PR #1529 (a
+  parallel session's "persona-based documentation" PR: 14 authored pages, 130 identical
+  `README.md` stubs inside skill directories, a `docs-map-hygiene` source that reds on 44 files
+  because it scans everything `docs/MAP.md` itself excludes, ten Spec baselines re-stamped on
+  content-free memlog lines, a 32-line hand-written Spec filed as a story spec whose CAP-82 /
+  Epic 29 collided with the ones minted an hour earlier). The research that fixed the shape:
+  `planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md`.
+  What the estate already owns: the Diátaxis map with a scope contract (CAP-63/64, `docs/MAP.md`
+  § *Outside this map*), `general-docs-consistency` (warn-only, fail-open — CAP-62's posture for
+  docs detectors), and two generator + stamp + detector exemplars (`library-llms-full.md` +
+  `llms-full-check`; herald's `facts.yaml` + `deck-facts`). What it lacks: any enforcement of the
+  map, any notion of which pages are *generated* from a source of truth versus *authored*, and any
+  currency signal for authored prose — which is why the PR's own pages shipped with dead paths, a
+  non-existent CLI grammar and "fleet-picture reads the Tier-3 ledgers". Operator rulings the same
+  night: remove the 130 READMEs (the installer regenerates and retires those dirs — 71 deletions in
+  the 6.10→6.11 upgrade alone; no harness reads a README there); the registry is a `docs/map.yaml`
+  machine twin of `MAP.md`; doctor owns the chain end-to-end (it owns CAP-48..65 already); keep the
+  14 pages, corrected and registered with `sources:`. Decomposed the same night as **CAP-83** (the
+  map is enforced within its own scope — missing link = fail, unmapped quadrant page = warn, the
+  four quadrants only, index pages exempt; Story 30.1, landed with the PR) and **CAP-84** (documentation
+  currency: `docs/map.yaml` registry with `kind: generated | authored | pointer`, `owner`, `sources`,
+  stamps; generators for the pixi-task reference, the station CLI cheat sheet, the detector table
+  and the skills catalog; a `docs-currency` source that reds a stale generated page, a stale
+  authored page — a named source moved past `verified:` or a path/command in it no longer resolves —
+  and a stray file in a managed skill dir; warn first, ratcheted to fail per check; the
+  `bmad-os-docs-audit → bmad-os-diataxis` pass as the authored-page refresh, triggered by the
+  finding; Stories 30.2–30.3, `backlog`).
 - **2026-09-19 (evening)** — **Proposed: the sibling drift check records a per-Dream human
   acknowledgement, and knows where the sibling went.** The moment a `GH_TOKEN` reached the
   sibling (the operator's `.bashrc` now exports one from `gh auth token`), CAP-71 reported six

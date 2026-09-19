@@ -1,5 +1,7 @@
 # pyforge-herald
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Dream-to-deck bridge CLI (`herald`) that seeds, pulls, and syncs [Claude
 Design](https://claude.ai/design) decks against this repo's `docs/dreams/`
 and `presentations/` trees via the `herald deck` subcommands.

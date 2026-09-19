@@ -1,5 +1,5 @@
 # Steward credential inventory (FR-5). Metadata only — never secret values.
-# Recording procedure: src/platform/deploy/overlays/ocp/cluster-bringup.md §5
+# Recording procedure: docs/how-to/ocp-cluster-bringup.md §5
 identities:
   - name: crc-pull-secret
     scope: openshift-local

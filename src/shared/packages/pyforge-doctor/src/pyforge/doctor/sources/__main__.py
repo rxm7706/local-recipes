@@ -57,6 +57,7 @@ from . import (
     docs_shelf,
     factory,
     capability_ledger,
+    docs_map_hygiene,
     frozen_path,
     general_docs_consistency,
     ledger,
@@ -130,6 +131,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # repo-scope, offline, deterministic -- in detectors-ci from day one.
     Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
     Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
+    # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
+    # Diátaxis quadrants -- missing link FAIL, unmapped page WARN.
+    Source.DOCS_MAP_HYGIENE.value: docs_map_hygiene.gather,
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list; same shape as
     # GENERAL_DOCS_CONSISTENCY above.

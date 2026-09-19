@@ -5187,6 +5187,18 @@ capabilities:
     heading: "the sibling drift check honours a per-Dream acknowledgement and follows the sibling's rename"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-83
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "docs/MAP.md is enforced within its own scope"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-84
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "documentation currency: every mapped page is generated, authored-and-verified, or a pointer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald

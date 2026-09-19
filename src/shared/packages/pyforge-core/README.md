@@ -1,5 +1,7 @@
 # pyforge-core
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 The shared leaf every pyforge station may depend on, and that depends on
 none of them. Pure stdlib, zero third-party runtime dependencies. Stories
 14.2–14.4 extracted the atomic-write primitive, verdict lattice, report

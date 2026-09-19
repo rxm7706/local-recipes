@@ -1865,3 +1865,36 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-30-1: `docs/how-to/github-actions-recipe-ci.md` (pre-existing, not one of the 14) claims '19 workflow files' — never re-counted; the count belongs to a generated page (Story 30.3's detector/workflow table) rather than prose.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: `docs/how-to/github-actions-recipe-ci.md` (pre-existing, not one of the 14) claims '19 workflow files' — never re-counted; the count belongs to a generated page (Story 30.3's detector/workflow table) rather than prose.
+  evidence: Implementer sweep 2026-09-19 over every backticked path and pixi task in the 15 corrected pages found no other unverified claim; this count sits outside the story's pages.
+  location: docs/how-to/github-actions-recipe-ci.md
+  origin: spec-deferred 922f3cdd50a8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1-2: `docs/explanation/pyforge-estate-overview.md` uses Docusaurus-style `:::note` admonitions that GitHub does not render; left as authored (style, not fact) — a `docs-currency` style rule or the `bmad-os-diataxis` style guide should decide one admonition syntax for `docs/`.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: `docs/explanation/pyforge-estate-overview.md` uses Docusaurus-style `:::note` admonitions that GitHub does not render; left as authored (style, not fact) — a `docs-currency` style rule or the `bmad-os-diataxis` style guide should decide one admonition syntax for `docs/`.
+  evidence: GitHub renders `> [!NOTE]`; `:::note` shows as literal text.
+  location: docs/explanation/pyforge-estate-overview.md
+  origin: spec-deferred 3bd6506da5c6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1-3: The unmapped-page class is `warn` (CAP-62 posture); nothing blocks a PR that adds a quadrant page without a MAP row until Story 30.2 promotes the class to `fail` once the registry exists.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`
+  summary: The unmapped-page class is `warn` (CAP-62 posture); nothing blocks a PR that adds a quadrant page without a MAP row until Story 30.2 promotes the class to `fail` once the registry exists.
+  evidence: docs_map_hygiene.py `unmapped` → DoctorStatus.WARN by design of CAP-83.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_map_hygiene.py
+  origin: spec-deferred 20381fa0b4a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

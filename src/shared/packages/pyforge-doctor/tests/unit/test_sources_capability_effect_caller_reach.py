@@ -520,3 +520,86 @@ def test_sibling_spec_shorthand_resolves_under_specs_dir(tmp_path: Path) -> None
     assert not any(
         f.check == "capability-effect-absent-surface-path" for f in findings
     )
+
+
+# --- corpus fallback (the path taken when `git grep` cannot run) ------------
+
+
+def _write_corpus_tree(tmp_path: Path) -> None:
+    """A tree exercising every branch of the corpus scan: a defining module,
+    an external caller, a test-only caller, a pruned ``__pycache__`` file, a
+    non-UTF-8 file, and a non-``.py`` mention that must not count."""
+    src = tmp_path / "src" / "pkg"
+    src.mkdir(parents=True)
+    (src / "core.py").write_text(
+        "def shared_fn():\n    return shared_fn\n\nclass Other:\n    pass\n",
+        encoding="utf-8",
+    )
+    (src / "use.py").write_text(
+        "from core import shared_fn\n\n\ndef shared_fn_wrapper():\n"
+        "    return shared_fn()\n",
+        encoding="utf-8",
+    )
+    (src / "notes.txt").write_text("shared_fn shared_fn\n", encoding="utf-8")
+    cache = src / "__pycache__"
+    cache.mkdir()
+    (cache / "stale.py").write_text("shared_fn()\n", encoding="utf-8")
+    (src / "binary.py").write_bytes(b"\xff\xfe shared_fn\n")
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "tool.py").write_text("x = shared_fn()  # shared_fn\n", encoding="utf-8")
+    tests = tmp_path / "src" / "pkg" / "tests"
+    tests.mkdir()
+    (tests / "test_use.py").write_text("shared_fn()\n", encoding="utf-8")
+
+
+def test_build_python_corpus_prunes_pycache_and_undecodable(tmp_path: Path) -> None:
+    _write_corpus_tree(tmp_path)
+
+    corpus = capability_effect._build_python_corpus(tmp_path)
+
+    assert set(corpus) == {
+        "src/pkg/core.py",
+        "src/pkg/use.py",
+        "src/pkg/tests/test_use.py",
+        "scripts/tool.py",
+    }
+    assert corpus["scripts/tool.py"] == ["x = shared_fn()  # shared_fn"]
+
+
+def test_external_reference_count_in_corpus_skips_tests_and_declarations(
+    tmp_path: Path,
+) -> None:
+    _write_corpus_tree(tmp_path)
+    corpus = capability_effect._build_python_corpus(tmp_path)
+    corpus["docs/prose.md"] = ["shared_fn shared_fn"]
+
+    count = capability_effect._external_reference_count_in_corpus(
+        corpus,
+        symbol="shared_fn",
+        defining_rel_paths={"src/pkg/core.py"},
+    )
+
+    # core.py: only the `def shared_fn` line counts, minus the declaration
+    # itself (0); use.py: the import line and the call line (2), while
+    # `def shared_fn_wrapper` is not a whole-word match; scripts/tool.py: one
+    # line (1). tests/ and the .md entry never count.
+    assert count == 3
+
+
+def test_external_reference_count_falls_back_to_corpus_without_git(
+    tmp_path: Path,
+) -> None:
+    _write_corpus_tree(tmp_path)  # deliberately NOT a git repo
+    corpus_holder: list[dict[str, list[str]] | None] = [None]
+
+    count = capability_effect._external_reference_count(
+        tmp_path,
+        symbol="shared_fn",
+        defining_rel_paths={"src/pkg/core.py"},
+        grep_cache={},
+        corpus_holder=corpus_holder,
+    )
+
+    assert count == 3
+    assert corpus_holder[0] is not None  # corpus built once and cached

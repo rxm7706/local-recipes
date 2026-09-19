@@ -1,5 +1,7 @@
 # pyforge-mason
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Mason — the Artisan Builder's station. `mason recipe` / `package` / `environment`.
 
 - **Dream:** `docs/dreams/pyforge-mason.md`

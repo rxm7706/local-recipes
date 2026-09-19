@@ -509,6 +509,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 25.2 -- sources/one_chain.py. A PRD FR minted after the rule
     # date cites a CAP that an open Spec under its station declares;
     # docs/governance/fr-baseline.json is the pre-rule population. CAN FAIL.
+    SourceRegistration(
+        source=Source.DOCS_MAP_HYGIENE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 30.1 (spec-pyforge-doctor CAP-83) -- sources/docs_map_hygiene.py.
+    # docs/MAP.md vs the four Diátaxis quadrants (docs/tutorials, how-to,
+    # reference, explanation) only. A MAP link to a missing page under docs/
+    # is FAIL; an unmapped quadrant page is WARN (warn-first). CAN FAIL.
 )
 
 

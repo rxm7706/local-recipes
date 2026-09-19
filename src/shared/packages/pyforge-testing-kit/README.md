@@ -1,5 +1,7 @@
 # pyforge-testing-kit
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Shared test-support kit for PyForge stations (FR-130 / Story 19.2). Four
 mock families, seeded from Marshal's already-real mocks rather than rewritten:
 
