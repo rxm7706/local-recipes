@@ -16,6 +16,7 @@ the same discipline those files already document for each other.
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 import types
 
@@ -59,7 +60,8 @@ from django.core.management import call_command  # noqa: E402
 
 call_command("migrate", run_syncdb=True, verbosity=0)
 
-from django.db import IntegrityError, OperationalError  # noqa: E402
+from django.contrib.admin.sites import AdminSite  # noqa: E402
+from django.db import DataError, IntegrityError, OperationalError  # noqa: E402
 
 from pyforge.steward.cli import build_parser  # noqa: E402
 from pyforge.steward.corridor import (  # noqa: E402
@@ -72,6 +74,7 @@ from pyforge.steward.corridor import (  # noqa: E402
     load_extract,
 )
 from pyforge.steward.dashboard import corridor_load as corridor_load_module  # noqa: E402
+from pyforge.steward.dashboard.admin import CorridorLoadAdmin  # noqa: E402
 from pyforge.steward.dashboard.models import CorridorLoad  # noqa: E402
 
 
@@ -203,6 +206,42 @@ def test_load_extract_different_waybill_same_sha_creates_second_row():
     assert CorridorLoad.objects.filter(batch_sha=sha).count() == 2
 
 
+def test_load_extract_repeat_with_declared_off_transport_is_still_idempotent():
+    """Idempotent on `(direction, batch_sha, waybill)` ALONE -- the existing-
+    record check runs before transport validation, so a repeat drop naming a
+    declared-off transport (or an unknown one) must still resolve as
+    idempotent, never raise, as long as the record already exists under some
+    other, valid transport."""
+    sha = "j2" + "e" * 62
+    waybill = "w-repeat-off-transport"
+    first = load_extract(
+        direction="inbound", batch_sha=sha, waybill=waybill, transport="app-upload", config=_real_config()
+    )
+    assert first.status == "loaded"
+
+    second = load_extract(
+        direction="inbound", batch_sha=sha, waybill=waybill, transport="email", config=_real_config()
+    )
+    assert second.status == "idempotent"
+    assert second.transport == "app-upload"
+    assert CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill=waybill).count() == 1
+
+
+def test_load_extract_refuses_when_dashboard_extra_not_importable(monkeypatch):
+    """The spec's stated AC: `[dashboard]` not installed -> `status: refused`,
+    exercised through `load_extract` itself (not `record_corridor_load`
+    directly) -- `importlib.import_module` is what actually fails here."""
+    monkeypatch.setitem(sys.modules, "pyforge.steward.dashboard.corridor_load", None)
+    outcome = load_extract(
+        direction="inbound",
+        batch_sha="f2" + "a" * 62,
+        waybill="w-noextra",
+        transport="app-upload",
+        config=_real_config(),
+    )
+    assert outcome.status == "refused"
+
+
 # -- LoadDuty.run() --
 
 
@@ -265,6 +304,85 @@ def test_load_duty_declared_off_transport_fails(tmp_path):
     result = LoadDuty().run(ns)
     assert result.ok is False
     assert CorridorLoad.objects.filter(waybill="w-off").count() == 0
+
+
+def test_load_duty_repeat_with_declared_off_transport_is_still_idempotent(tmp_path):
+    """CLI-level twin of `test_load_extract_repeat_with_declared_off_transport_
+    is_still_idempotent`: load once via `app-upload`, repeat the same file +
+    waybill naming `email` (declared off) -- must still be idempotent, not an
+    error."""
+    extract = tmp_path / "extract.csv"
+    extract.write_text("row,one\n", encoding="utf-8")
+
+    first_ns = build_parser().parse_args(
+        ["load", "inbound", "--file", str(extract), "--waybill", "w-cli-repeat-off"]
+    )
+    first = LoadDuty().run(first_ns)
+    assert first.ok is True
+    assert first.details["status"] == "loaded"
+
+    second_ns = build_parser().parse_args(
+        [
+            "load",
+            "inbound",
+            "--file",
+            str(extract),
+            "--waybill",
+            "w-cli-repeat-off",
+            "--transport",
+            "email",
+        ]
+    )
+    second = LoadDuty().run(second_ns)
+    assert second.ok is True
+    assert second.details["status"] == "idempotent"
+
+
+def test_load_duty_waybill_over_length_cap_fails(tmp_path):
+    """`CorridorLoad.waybill` is `CharField(max_length=128)`; SQLite (every
+    test) never enforces that, PostgreSQL (the target deployment) does -- the
+    same divergence `dashboard/audit.py` documents for `AuditEntry`. Reject
+    in Python before the ORM ever sees it."""
+    extract = tmp_path / "extract.csv"
+    extract.write_text("row,one\n", encoding="utf-8")
+    over_length_waybill = "w" * 129
+    ns = build_parser().parse_args(
+        ["load", "inbound", "--file", str(extract), "--waybill", over_length_waybill]
+    )
+    result = LoadDuty().run(ns)
+    assert result.ok is False
+    assert CorridorLoad.objects.filter(waybill=over_length_waybill).count() == 0
+
+
+def test_load_duty_broken_corridor_config_fails(tmp_path):
+    (tmp_path / "corridor.yaml").write_text("transports: not-a-mapping\n", encoding="utf-8")
+    ns = build_parser().parse_args(["load", "--corridor", str(tmp_path)])
+    result = LoadDuty().run(ns)
+    assert result.ok is False
+
+
+def test_load_duty_json_on_bare_invocation():
+    ns = build_parser().parse_args(["load", "--json"])
+    result = LoadDuty().run(ns)
+    assert result.ok is True
+    payload = json.loads(result.summary)
+    assert payload["ok"] is True
+    assert payload["transports"] == [
+        {"name": "app-upload", "state": "on"},
+        {"name": "shared-folder", "state": "off"},
+        {"name": "email", "state": "off"},
+    ]
+
+
+def test_load_duty_json_on_missing_file_failure():
+    ns = build_parser().parse_args(
+        ["load", "--json", "inbound", "--file", "/nonexistent/path/does-not-exist.csv", "--waybill", "w"]
+    )
+    result = LoadDuty().run(ns)
+    assert result.ok is False
+    payload = json.loads(result.summary)
+    assert payload["ok"] is False
+    assert "message" in payload
 
 
 # -- dashboard/corridor_load.py's own refusal/error branches --
