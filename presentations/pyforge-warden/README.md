@@ -239,3 +239,11 @@ rather than treat it as content — or just use the curl-based route instead, as
 
 `deck-facts pyforge-warden --check` still reads 0 mismatch. Head and Infographic Deck now match
 Design as well as disk — no surface here is standalone-ahead any more.
+
+## Ledger — 2026-09-19 push-and-prove (spec-design-sync-loop CAP-6)
+
+| Artifact | Bytes | Read-back |
+|---|---|---|
+| pyforge-warden-deck-2026-09-15.pptx | 4,405,706 | identical ✓ (both proof runs) |
+| pyforge-warden_infographic_deck-2026-09-15.pptx | 5,886,053 | identical ✓ (both proof runs) |
+| pyforge-warden-infographic-standalone-2026-09-15.html | — | **did not match** — refused rather than record an unproven push (both runs; herald DW-FU-23-6-1) |

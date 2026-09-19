@@ -143,10 +143,10 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
   <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
       <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE GUARDIAN · WARDEN CHAIN · SPEC-PYFORGE-WARDEN</span>
-      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">specified</span> · Spec <span data-fact="spec_status">ready</span> · tree <span data-fact="tree_commit_date">2026-09-19</span></span>
     </div>
     <h1 class="xp" style="font-weight:900; font-size:86px; line-height:0.94; letter-spacing:-0.02em; margin:0;">Warden</h1>
-    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-warden · module pyforge.warden · console script <span data-fact="console_entry">warden</span> · spec-pyforge-warden <span data-fact="spec_capabilities">CAP-1..12</span></div>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-warden · module pyforge.warden · console script <span data-fact="console_entry">warden</span> · spec-pyforge-warden <span data-fact="spec_capabilities">CAP-1..22</span></div>
     <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">One CLI that guards both Python ecosystems — the <b>PyPI</b> world of applications and libraries, and the <b>conda / conda-forge</b> world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across <b>six axes</b> of dependency trust — <b>hygiene</b>, <b>security</b>, <b>license</b> and <b>currency</b> live and gating today; <b>provenance</b> and <b>maintenance</b> named as the destination — and returns <span style="color:var(--color-accent-700); font-weight:700;">one schema-validated report behind one exit code</span>. The soul of it is a promise stated in the negative: <b>Warden refuses to fake a pass.</b></p>
     <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
       <span class="tag tag-outline code">pyforge warden scan &lt;path&gt;</span>
@@ -170,7 +170,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">12</span> · all <span data-fact="spec_status">shipped</span></div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">22</span> · all <span data-fact="spec_status">ready</span></div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
@@ -218,7 +218,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipe directories in the local conda-forge mirror — every one a <i>pre-build source manifest</i> that no incumbent scanner could read</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
-        <div class="bignum"><span data-fact="groundtruth_pixi_envs">31</span></div>
+        <div class="bignum"><span data-fact="groundtruth_pixi_envs">33</span></div>
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">pixi environments in this one workspace alone — <span class="code">pixi.toml</span> and <span class="code">pixi.lock</span> are manifests too, and the gate reads them per environment and platform</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
@@ -480,7 +480,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
       <span class="num">05</span>
       <h2>Twelve capabilities — the whole contract at a glance</h2>
     </div>
-    <p class="lede">Every capability carries a success criterion written to fail when the capability is absent, and every one carries a <span class="code">verified:</span> line from a code-level plus live re-verification at a named HEAD. The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>; the ledger reads <span data-fact="stories_done_total">49/49</span> stories across <span data-fact="epics_done_total">12/12</span> epics.</p>
+    <p class="lede">Every capability carries a success criterion written to fail when the capability is absent, and every one carries a <span class="code">verified:</span> line from a code-level plus live re-verification at a named HEAD. The Spec reads <span data-fact="spec_status">ready</span>; the Dream reads <span data-fact="dream_status">specified</span>; the ledger reads <span data-fact="stories_done_total">49/49</span> stories across <span data-fact="epics_done_total">12/12</span> epics.</p>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;">
         <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip">one command</span></div>
@@ -564,7 +564,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
     <p class="lede">The station is the post, not the person: each is a lifecycle stage plus its independent verdict, under the doctrine's sharpest line — <b>the hand that builds is never the gate that judges.</b> Warden holds the one PR-gate verdict for the whole estate; every other station reads it and none re-derives it. Chips show each station's tracked sprint ledger, stories done over stories total.</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">103/104</span></span></div>
         <h3>Herald</h3>
         <div class="role">Visual Media Engine &amp; System Messenger</div>
         <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
@@ -572,7 +572,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">295/311</span></span></div>
         <h3>Marshal</h3>
         <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
         <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
@@ -604,7 +604,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div class="verbs code">pyforge mason · recipe-build · generate-recipe · lint</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">108/114</span></span></div>
         <h3>Doctor</h3>
         <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
         <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
@@ -612,7 +612,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">37/37</span></span></div>
         <h3>Scribe</h3>
         <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
         <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
@@ -620,7 +620,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div class="verbs code">scribe capture · graph compile · recall</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">239/270</span></span></div>
         <h3>Steward</h3>
         <div class="role">Platform, Deployment &amp; Operations Officer</div>
         <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
@@ -628,7 +628,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div class="verbs code">steward provision · deploy · keys audit · keys rotate · budget enforce</div>
       </div>
     </div>
-    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span> · steward <span data-fact="steward_epics_done_total">56/58</span></span></div>
+    <div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">995/1050</span> stories and <span data-fact="fleet_epics_done_total">221/239</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">21/24</span> · marshal <span data-fact="marshal_epics_done_total">46/50</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · mason <span data-fact="mason_epics_done_total">17/17</span> · doctor <span data-fact="doctor_epics_done_total">25/28</span> · scribe <span data-fact="scribe_epics_done_total">19/19</span> · steward <span data-fact="steward_epics_done_total">58/65</span></span></div>
   </section>
 
   <!-- 07 · THE ENGINES ON THE FLOOR -->
@@ -1185,7 +1185,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <tr><td><b>Build</b></td><td>hatchling · pixi-build-python</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-warden-build</span> task</td><td><span class="code">pixi.toml</span> tasks</td></tr>
         <tr><td><b>Tests</b></td><td>pytest · unit, integration, meta, corpus, slow</td><td>meta-tests pin the doctrine — sole-ownership of the verdict, socket-deny, AST-denylist, the C0 guard corpus; whole-module <span class="code">slow</span> marks for the differential oracle, twice-run byte-identity and the <span class="code">strace</span> egress counter; a p95 overhead budget with engines stubbed</td><td><span class="code">pyforge-warden-test</span></td></tr>
         <tr><td><b>The factory it gates</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span> · conda-forge-expert <span data-fact="cfe_skill_version">8.90.5</span></td><td>Marshal's loop reads Warden's exit as the PR verdict on every landing; the engine mirror recipes are CFE craft</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span> · skill frontmatter</td></tr>
-        <tr><td><b>The estate it scans</b></td><td><span data-fact="groundtruth_pixi_envs">31</span> pixi environments · <span data-fact="recipes_count">7864</span> recipes · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> over <span data-fact="groundtruth_atlas_phases">22</span> pipeline phases</td><td>the manifests Warden reads per environment and platform; the recipe corpus its extractor is ratcheted against; the atlas whose purl exports regenerate the conda→pypi map and whose scanning surface Warden never replaces</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+        <tr><td><b>The estate it scans</b></td><td><span data-fact="groundtruth_pixi_envs">33</span> pixi environments · <span data-fact="recipes_count">7864</span> recipes · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> over <span data-fact="groundtruth_atlas_phases">22</span> pipeline phases</td><td>the manifests Warden reads per environment and platform; the recipe corpus its extractor is ratcheted against; the atlas whose purl exports regenerate the conda→pypi map and whose scanning surface Warden never replaces</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
       </tbody>
     </table>
   </section>
@@ -1706,12 +1706,12 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
       <span class="num">29</span>
       <h2>Proof — the receipts, from the ledgers</h2>
     </div>
-    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the manifests and the ground-truth task at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The poster this one replaces quoted the planning stage of July; this one quotes the ledger of the day it was built.</p>
+    <p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the manifests and the ground-truth task at tree <span data-fact="tree_commit_date">2026-09-19</span> — never from a prior poster, never from memory. The poster this one replaces quoted the planning stage of July; this one quotes the ledger of the day it was built.</p>
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">49/49</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">12/12</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the walking skeleton to the promotion gate that has seen what it ships</div></div>
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">12</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a code-level plus live <span class="code">verified:</span> line at a named HEAD; Spec <span data-fact="spec_status">shipped</span></div></div>
-      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — re-confirmed under the <i>exercised-in-the-estate</i> gate, not the merge gate</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">22</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities, each with a code-level plus live <span class="code">verified:</span> line at a named HEAD; Spec <span data-fact="spec_status">ready</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">specified</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — re-confirmed under the <i>exercised-in-the-estate</i> gate, not the merge gate</div></div>
     </div>
     <table class="tbl">
       <thead><tr><th style="width:17%;">Capability</th><th>What was proven, mechanically</th><th style="width:26%;">Pinned by</th></tr></thead>
@@ -1734,8 +1734,8 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
     <table class="tbl" style="margin-top:0;">
       <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
       <tbody>
-        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><b><span data-fact="warden_stories_done_total">49/49</span></b></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><span data-fact="steward_stories_done_total">231/244</span></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
-        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><b><span data-fact="warden_epics_done_total">12/12</span></b></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><span data-fact="steward_epics_done_total">56/58</span></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">103/104</span></td><td><span data-fact="marshal_stories_done_total">295/311</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><b><span data-fact="warden_stories_done_total">49/49</span></b></td><td><span data-fact="mason_stories_done_total">70/70</span></td><td><span data-fact="doctor_stories_done_total">108/114</span></td><td><span data-fact="scribe_stories_done_total">37/37</span></td><td><span data-fact="steward_stories_done_total">239/270</span></td><td><b><span data-fact="fleet_stories_done_total">995/1050</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">21/24</span></td><td><span data-fact="marshal_epics_done_total">46/50</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><b><span data-fact="warden_epics_done_total">12/12</span></b></td><td><span data-fact="mason_epics_done_total">17/17</span></td><td><span data-fact="doctor_epics_done_total">25/28</span></td><td><span data-fact="scribe_epics_done_total">19/19</span></td><td><span data-fact="steward_epics_done_total">58/65</span></td><td><b><span data-fact="fleet_epics_done_total">221/239</span></b></td></tr>
       </tbody>
     </table>
     <div class="box" style="margin-top:18px;"><b>Twelve epics, read as a story.</b> The spine and the PyPI engine as a contract-first walking skeleton, the frozen lattice whole in the first story; the conda/pixi source-manifest wedge, pulled as early as possible because it is the beachhead value; policy, auditable expiring waivers and the warn-only on-ramp; the CycloneDX machine contract; fleet readiness; then the multi-axis expansion that pulled license, currency, KEV/EPSS, baseline and the fix-PR actuator all into v1 under the D12 re-baseline. Past v1: one provenance trail and one eligibility answer; a web face for the compliance factory; the PR-gate hook book with scanners as plugins; the skill, persona and portal slice; two advisory lenses beside the gate; and — minted on <span data-fact="dream_log_2026-09-09">2026-09-09</span> for the golden-path conda blind spot — a promotion gate that has seen what it ships. Warden's own ledger shows the same discipline turned inward: <span data-fact="stories_done_total">49/49</span> is a count of tracked <span class="code">done</span> keys, not a claim.</div>
@@ -1765,9 +1765,9 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
         <div style="font-size:12px; line-height:1.45;">The fleet readiness pass re-grounded <i>What is real</i> against the live ledger and named the post-v1 epics. Realization was re-confirmed under the <b>exercised-in-the-estate</b> gate rather than the merge gate: <span class="code">warden scan</span> is the sole PR verdict and <span class="code">platform-deploy</span> reads it. The same day the twelfth epic was minted for the golden-path conda blind spot.</div>
       </div>
       <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-19</span></div>
         <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Realized · re-derived</div>
-        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">12/12</span> epics — and this poster rebuilt from the fact ledger at this tree, under the six-act arc, keeping the form that made it the reference.</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">specified</span>, Spec <span data-fact="spec_status">ready</span>, <span data-fact="epics_done_total">12/12</span> epics — and this poster rebuilt from the fact ledger at this tree, under the six-act arc, keeping the form that made it the reference.</div>
       </div>
     </div>
     <div class="box" style="margin-top:22px;"><b>A duplicate Dream, retired the day it appeared.</b> A second Warden Dream — "Compliance Gates" — was created in a bulk commit later found to contain fabricated content elsewhere in the same commit. Its six-item realization list mapped one-to-one onto capabilities the shipped Spec already governed, its opening line was Warden's own verbatim, and its invented precision — match percentages, rule counts, timing targets, audit counts — did not survive verification. It was archived as a duplicate rather than spec'd as new work; the retirement is recorded on its own Spec. The Dream you can read today is the real record, and this poster cites nothing the ledgers cannot re-derive.</div>
@@ -1783,7 +1783,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:24px;">
       <div class="roadband">
         <span class="lbl" style="background:var(--color-accent); color:var(--color-bg);">NOW</span>
-        <span class="ttl">shipped and verified — <span data-fact="spec_capabilities">CAP-1..12</span>, <span data-fact="stories_done_total">49/49</span> stories</span>
+        <span class="ttl">shipped and verified — <span data-fact="spec_capabilities">CAP-1..22</span>, <span data-fact="stories_done_total">49/49</span> stories</span>
         <span class="ln"></span>
       </div>
       <div class="road done">
@@ -1933,7 +1933,7 @@ table.tbl tr.dim td { color:color-mix(in srgb, var(--color-text) 62%, transparen
     <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">Warden refuses to fake a pass.</div>
     <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:1000px; opacity:0.94;">If it can't prove your dependencies are safe, it fails — until you pin them, formally accept the risk on a clock, or explicitly run <span class="code" style="font-weight:800;">--warn-only</span>. An honest "not verified" beats a false "all clear." Halt the threat. Clear the axes. Protect the perimeter — and never, ever write the tree.</p>
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
-      <span><b>Warden</b> · warden chain · <span class="code">spec-pyforge-warden</span> · <span data-fact="spec_capabilities">CAP-1..12</span> · module <span class="code">pyforge.warden</span> · dist <span class="code">pyforge-warden</span> <span data-fact="package_version">0.1.0</span></span>
+      <span><b>Warden</b> · warden chain · <span class="code">spec-pyforge-warden</span> · <span data-fact="spec_capabilities">CAP-1..22</span> · module <span class="code">pyforge.warden</span> · dist <span class="code">pyforge-warden</span> <span data-fact="package_version">0.1.0</span></span>
       <span>docs/dreams/pyforge-warden.md · <span class="code">src/shared/packages/pyforge-warden/</span> · PyForge Guild · Dream to Code</span>
     </div>
   </section>
