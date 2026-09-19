@@ -2,7 +2,8 @@
 title: '23.7: A new Doctor source flags leftover-shelf occupancy'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'b105264cca1ee39ef46b8b48783dae847ef1c047'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
