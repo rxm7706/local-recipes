@@ -9,6 +9,7 @@ FR-187 subject, Story 4.1 spec promotion, Epic 15 ledger). Lives outside
 from __future__ import annotations
 
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,7 +33,7 @@ from .core.identity import StoryKey, normalize, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.verdict import compute_verdict
-from .dispatch_verify import compose_dispatch_policy
+from .dispatch_verify import compose_dispatch_policy, run_verify_commands_only
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
@@ -40,6 +41,13 @@ from .ports.vcs import VcsPort
 _FORGE_REPO = "rxm7706/local-recipes"
 _MERGE_BASE = "main"
 _MAINTENANCE_LABEL = "maintenance"
+# Story 51.1: the REMOTE main -- deliberately never `_MERGE_BASE` (the
+# LOCAL landing base used everywhere else in this file). Verifying against
+# the local `main` would reproduce the exact blind spot this story fixes:
+# the 50.4/27.5 incident's operator-composed merge commit landed against
+# `origin/main`, not whatever a stale local `main` happened to be.
+_ORIGIN_MAIN = "origin/main"
+_ORIGIN_REMOTE = "origin"
 
 
 @dataclass(frozen=True)
@@ -65,6 +73,121 @@ def _dispatch_pr_title(slug: str, story_key: StoryKey) -> Redacted:
 def _dispatch_pr_body(story_key: StoryKey) -> Redacted:
     return Redacted(
         f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4)."
+    )
+
+
+def _tail_lines(text: str, *, limit: int = 20) -> str:
+    lines = text.strip().splitlines()
+    return "\n".join(lines[-limit:])
+
+
+def _describe_verify_failures(reports: tuple[dict[str, object], ...]) -> str:
+    """Names each failing command plus the tail of its captured output, so
+    a runtime exception (e.g. the 50.4/27.5 fixture's ``bare_merge.py``
+    ``TypeError``) is legible directly from the ``MRS-DISP-044`` finding,
+    not just from the envelope's own data blob."""
+    parts: list[str] = []
+    for report in reports:
+        returncode = report.get("returncode")
+        if returncode == 0:
+            continue
+        command = report.get("command")
+        if not report.get("resolvable", True):
+            parts.append(f"{command!r} could not be run")
+            continue
+        captured = f"{report.get('stdout') or ''}{report.get('stderr') or ''}"
+        parts.append(f"{command!r} exited {returncode}: {_tail_lines(captured)}")
+    return "; ".join(parts)
+
+
+def _refuse_via_merge_tree_preview(
+    *,
+    git_repo_root: Path,
+    worktree: Path,
+    head_branch: str,
+    head_sha: str,
+    effective: EffectivePolicy,
+    vcs: VcsPort,
+    process: ProcessPort,
+) -> Finding | None:
+    """Story 51.1: before ``forge.merge_pr``, when the branch's baseline is
+    behind ``origin/main`` at all, materialize the tree ``git merge-tree
+    --write-tree`` would actually produce into a throwaway worktree and
+    re-run the station's own ``verify_commands`` against it -- catching a
+    runtime break the branch's own verification never sees, because it only
+    ever ran against the branch's own tree (the 2026-09-18 50.4/27.5
+    incident this story fixes). Returns an ``MRS-DISP-044`` finding when the
+    preview run is red or unevaluable; ``None`` when the branch is already
+    even with ``origin/main``, or the preview is clean and green. A real
+    (git-detected) merge conflict is untouched: ``merge_tree_write``
+    returning ``None`` falls through to the existing ``forge.merge_pr``
+    attempt and its ``MRS-DISP-038``/heal path, which already owns it."""
+    try:
+        vcs.fetch(git_repo_root, _ORIGIN_REMOTE, "main")
+        behind = vcs.commits_behind(worktree, _ORIGIN_MAIN)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(
+                f"cannot determine whether {head_branch!r} is behind "
+                f"{_ORIGIN_MAIN!r} before landing: {exc}"
+            ),
+        )
+    if behind == 0:
+        return None
+
+    try:
+        tree_oid = vcs.merge_tree_write(git_repo_root, _ORIGIN_MAIN, head_sha)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(
+                f"cannot preview the merge of {head_branch!r} onto "
+                f"{_ORIGIN_MAIN!r} before landing: {exc}"
+            ),
+        )
+    if tree_oid is None:
+        # A real git-detected conflict -- already owned by the existing
+        # MRS-DISP-038/heal path once `forge.merge_pr` itself hits it.
+        return None
+
+    preview_home = Path(tempfile.mkdtemp(prefix="marshal-land-verify-"))
+    # `git worktree add` refuses to reuse a directory it did not create
+    # itself -- mirrors `merge_branch`'s own mkdtemp+rmdir dance.
+    preview_home.rmdir()
+    try:
+        vcs.add_worktree_for_tree(git_repo_root, preview_home, tree_oid, parent=head_sha)
+    except VcsCommandError as exc:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(
+                f"cannot materialize the merge-tree preview of "
+                f"{head_branch!r} onto {_ORIGIN_MAIN!r}: {exc}"
+            ),
+        )
+
+    try:
+        reports, verify_findings = run_verify_commands_only(
+            effective, process=process, worktree=preview_home
+        )
+    finally:
+        try:
+            vcs.remove_worktree(git_repo_root, preview_home, force=True)
+        except VcsCommandError:
+            pass
+
+    if not verify_findings:
+        return None
+    return Finding(
+        code="MRS-DISP-044",
+        severity=Severity.ERROR,
+        message=(
+            f"merge-tree preview of {head_branch!r} onto {_ORIGIN_MAIN!r} "
+            f"failed verification: {_describe_verify_failures(reports)}"
+        ),
     )
 
 
@@ -348,6 +471,33 @@ def execute_dispatch_land(
         return (
             DispatchLandingResult(
                 verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject
+            ),
+            envelope,
+        )
+
+    preview_finding = _refuse_via_merge_tree_preview(
+        git_repo_root=git_repo_root,
+        worktree=worktree,
+        head_branch=head_branch,
+        head_sha=head_sha,
+        effective=effective,
+        vcs=vcs,
+        process=process,
+    )
+    if preview_finding is not None:
+        findings.append(preview_finding)
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
             ),
             envelope,
         )
