@@ -2,10 +2,11 @@
 title: '61.2: Work passport and core schema'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
+warnings: []
 deferred: []
 declared_low_risk: false
 ---
