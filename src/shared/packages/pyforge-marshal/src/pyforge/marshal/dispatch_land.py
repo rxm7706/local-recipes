@@ -44,7 +44,12 @@ _MAINTENANCE_LABEL = "maintenance"
 
 @dataclass(frozen=True)
 class DispatchLandingResult:
-    """Outcome of a dispatch land attempt."""
+    """Outcome of a dispatch land attempt.
+
+    ``pr_number``/``subject``/``marshal_native`` are populated on
+    ``REFUSED`` too, once each is known (Story 51.2) -- not just on
+    ``LANDED``. ``merge_sha`` stays ``None`` on every ``REFUSED`` result;
+    it is only ever set once an actual merge SHA exists."""
 
     verdict: DispatchLandingVerdict
     merge_sha: str | None = None
@@ -340,7 +345,12 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject
+            ),
+            envelope,
+        )
 
     try:
         forge.merge_pr(
@@ -387,7 +397,15 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if not heal.healed:
             findings.append(
                 Finding(
@@ -402,7 +420,15 @@ def execute_dispatch_land(
                 data=data,
                 findings=tuple(findings),
             )
-            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
         if heal.landed_via_local_merge:
             data["local_main_advance"] = True
         if heal.retried_forge_merge:
@@ -418,6 +444,7 @@ def execute_dispatch_land(
                 "pyforge.marshal.dispatch_land_finalize",
                 project_slug,
                 render_feed_key(key),
+                str(worktree),
             ],
             cwd=git_repo_root,
         )
@@ -438,7 +465,15 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
 
     envelope = build_envelope(
         command="dispatch land",

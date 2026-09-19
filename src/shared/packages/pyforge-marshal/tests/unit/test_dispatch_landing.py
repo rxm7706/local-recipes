@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyforge.core.process import ProcessResult
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -138,8 +138,21 @@ class FakeForge:
 
 
 class FakeProcess:
+    def __init__(self) -> None:
+        self.calls: list[tuple[list[str], Path]] = []
+
     def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
         return ProcessResult(returncode=0, stdout="", stderr="")
+
+
+class BrokenProcess:
+    """Story 51.2: a ``ProcessPort`` whose ``.run()`` always raises --
+    simulates ``dispatch_land_finalize`` failing as a subprocess AFTER the
+    PR has already been merged (``data["merged"] = True``)."""
+
+    def run(self, tokens, *, cwd: Path):
+        raise ProcessError("dispatch land finalize subprocess failed")
 
 
 class BrokenForge(FakeForge):
@@ -185,6 +198,46 @@ def test_execute_dispatch_land_refuses_unknown_merge_conflicts(tmp_path: Path) -
     disp038 = [f for f in envelope.findings if f.code == "MRS-DISP-038"]
     assert len(disp038) == 1
     assert "recipes/foo/recipe.yaml" in disp038[0].message
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("28-20-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
+
+
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_when_heal_fails(
+    tmp_path: Path,
+) -> None:
+    """Story 51.2: when the forge merge fails and the heal attempt neither
+    finds an escalated (non-mechanical) conflict path nor manages to heal
+    (``heal.healed=False``, ``heal.escalated_paths=()`` -- no ledger-only
+    conflicts to union and no stale-GitHub-state to locally advance past),
+    the REFUSED result must still carry ``pr_number``/``subject``/
+    ``marshal_native=True`` -- not the dataclass's ``None``/``False``
+    defaults."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=BrokenForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("28-20-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
+    assert any(f.code == "MRS-DISP-020" for f in envelope.findings)
 
 
 def _ledger_yaml(*pairs: tuple[str, str]) -> str:
@@ -339,6 +392,7 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
     worktree = tmp_path / "wt"
     worktree.mkdir()
     vcs = FakeVcs(merged=False)
+    process = FakeProcess()
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="22-4-example",
@@ -347,12 +401,86 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
         verification_verdict=DispatchVerificationVerdict.VERIFIED,
         vcs=vcs,
         forge=FakeForge(),
-        process=FakeProcess(),
+        process=process,
     )
     assert vcs.pushed == ["dispatch/pyforge-marshal/22.4"]
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert result.marshal_native is True
     assert result.pr_number == 42
+    # Story 51.2 / Verification Gap: the dispatch_land_finalize subprocess
+    # boundary must actually receive the worktree it was given.
+    assert len(process.calls) == 1
+    assert process.calls[0][0][-1] == str(worktree)
+
+
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_after_merge(
+    tmp_path: Path,
+) -> None:
+    """Story 51.2: when the PR is already merged (``data["merged"] = True``)
+    but the ``dispatch_land_finalize`` subprocess then raises
+    ``ProcessError``, the REFUSED result must still carry the ``pr_number``
+    and ``subject`` that were already known at that point in execution, and
+    ``marshal_native=True`` (the check that gates ``merge_pr`` already
+    passed) -- not the dataclass's ``None``/``False`` defaults."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = FakeVcs(merged=False)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=BrokenProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("22-4-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
+    assert any(f.code == "MRS-DISP-020" for f in envelope.findings)
+    assert envelope.data.get("merged") is True
+
+
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_before_merge_native_check(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 51.2: when the rendered merge subject fails the marshal-native
+    check (``MRS-DISP-019``, before any merge is attempted), the REFUSED
+    result must still carry the ``pr_number``/``subject`` already known at
+    that point -- but ``marshal_native`` stays the dataclass default
+    ``False``, since that's the check's real (failed) outcome here, not a
+    guess."""
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land.merge_subject_is_marshal_native",
+        lambda *args, **kwargs: False,
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("22-4-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is False
+    assert any(f.code == "MRS-DISP-019" for f in envelope.findings)
 
 
 def test_unverified_never_lands(tmp_path: Path) -> None:
