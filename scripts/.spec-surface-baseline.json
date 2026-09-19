@@ -506,7 +506,7 @@
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
-   "docs/MAP.md": "3e3a8d99e18a49a02a4929a5ffba6fd7a85df168",
+   "docs/MAP.md": "5b7597ab37e5154526df463ee2d64cfd574068be",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
    "docs/explanation/enterprise-deployment.md": "2420ed95fc9800c928f2345714e13980965ca95e",
@@ -681,7 +681,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "44236b33e6e6552bfdef7fe47534ab5afeb83f32"
+  "memlog": "708d201199a4b80da1ec4d8b2d7b5388fa9e3b4e"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2598,7 +2598,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "d5733cde99cfdf5bd1cda82c43e30391d849b35a"
+  "memlog": "ade41d596e9970d39f6645b8cc1137ea26d42e0c"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
@@ -3404,7 +3404,7 @@
    ".cursor/rules/bmad-build-auto.mdc": "9ddb55d39d327e20e2aea73512410064c065c08c",
    ".cursor/rules/bmad-build.mdc": "6425c633bd14353c56d0d6565b9edf5825ecbf8f",
    "_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json": "145f927a95dae989ece5f1b06dda05c9bacacc39",
-   "docs/dashboard/README.md": "579f673c7362acc8631bc754147fb9af1099c66e",
+   "docs/dashboard/README.md": "6638bf46f8135d77ace5628a7ef482cad48441a9",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/api/deploy-viz-metadata": "d1d2447dda80afe6b86726adcff01310786474d2",
@@ -4015,7 +4015,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "80fdcfb9fd2fca2be7f9eeffa89b43dc880b1579",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "9867f1b91108490eb28f9f2ab5cfce200970874b"
+  "memlog": "ea4a01f6cb23f5f21e3e7d145107d03cfc21029c"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

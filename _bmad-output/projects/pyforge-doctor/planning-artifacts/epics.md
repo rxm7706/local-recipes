@@ -2375,3 +2375,36 @@ rule and no leading fence is `({}, False)`; an unclosed fence is `({}, True)`; a
 **And** every existing caller's fixture set yields byte-identical verdicts, and restoring `split("---", 2)` re-truncates
 the fixture (mutation test)
 
+## Epic 29: The sibling drift check records a human acknowledgement and knows where the sibling went (spec-pyforge-doctor CAP-82)
+
+Minted 2026-09-19 (evening) from `spec-pyforge-doctor` CAP-82, seeded the same evening in `docs/dreams/pyforge-doctor.md`'s
+Realization log (Dream-append-first). The first live run with an operator token (`DW-OPS-2026-09-19-6`) found six locally
+`archived` Dreams diverging from their pre-fold sibling copies — expected fold fallout the check cannot be told about, so
+they re-fire forever and would drown a real change — and that the sibling repo has moved (`OpenTeams-WFT-CDO/…` →
+`openteams-ai/mgmt-wf-python-modernization`, reachable only through a 301 the code does not know about).
+**HARD boundaries:** read-only toward the sibling (never a sync engine, no content copied — only a hash recorded on the
+LOCAL Dream); the unreachable / unauthenticated paths stay warn + fail-open; a new epic because Epic 16 (CAP-71) is `done`.
+
+### Story 29.1: A per-Dream acknowledgement silences exactly one sibling hash, and the sibling coordinates are current
+
+As the operator reading `fleet-picture`'s ATTENTION block,
+I want a local Dream to carry `sibling-acknowledged: <sibling content_hash>` so that the drift check stays silent for
+that Dream while the sibling's hash equals it and re-fires the moment it does not, and I want the check to name the
+sibling's current repository,
+So that the six fold-fallout divergences stop re-firing, a genuine later change on the sibling still surfaces, and the
+check does not silently break the day GitHub stops redirecting the old owner.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-82
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` (`_SIBLING_OWNER` →
+`openteams-ai`, old owner kept in the docstring as history; `sibling-acknowledged:` read from the local frontmatter and
+compared to the sibling `content_hash`; `archived` status named in an unacknowledged finding), `tests/unit/test_sources_sibling_dreams.py`
+(ack-match, ack-mismatch, archived-without-ack, renamed owner), the six local Dreams named in `DW-OPS-2026-09-19-6`
+(one `sibling-acknowledged:` line each, at their sibling hashes as measured on the landing day), the DW row closed.
+**Given** the six archived Dreams diverge on every live run and `_SIBLING_OWNER` names an org GitHub only redirects
+**When** the acknowledgement is honoured and the coordinates are current
+**Then** a live run (`GH_TOKEN` set) reports zero findings for the six; a fixture whose acknowledged hash differs from
+the sibling's re-fires exactly that Dream naming both hashes; an archived Dream without an acknowledgement is reported
+with `archived` in the message; the request goes to `openteams-ai/mgmt-wf-python-modernization` directly
+**And** the unreachable and unauthenticated paths are unchanged (`sibling-dreams-unreachable`, warn, exit 0); no content
+from the sibling is written anywhere
+**Status:** backlog

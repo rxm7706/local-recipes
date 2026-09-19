@@ -92,6 +92,7 @@ development_status:
   27-3-a-stations-legacy-template-history-stays-attributed: done
   27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: done
   28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes: done
+  29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current: backlog
   3-1-partition-findings-by-actionability-fr-6-ad-4: done
   3-2-rank-the-actionable-partition-fr-7-ad-4: done
   3-3-root-cause-naming-fr-8: done
@@ -170,6 +171,7 @@ development_status:
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
+  epic-29: backlog
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

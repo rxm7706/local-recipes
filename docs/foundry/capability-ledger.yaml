@@ -5181,6 +5181,12 @@ capabilities:
     heading: "a frontmatter reader that stops at the fence, not at the first dashes"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-82
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "the sibling drift check honours a per-Dream acknowledgement and follows the sibling's rename"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
