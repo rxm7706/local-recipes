@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs
@@ -23,7 +24,9 @@ from pyforge.marshal.cli.land import _promote_sprint_ledger
 from pyforge.marshal.core.identity import MalformedStoryKeyError, normalize
 
 
-def finalize_dispatch_land(project_slug: str, story_key: str) -> int:
+def finalize_dispatch_land(
+    project_slug: str, story_key: str, worktree: Path | None = None
+) -> int:
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
@@ -36,7 +39,7 @@ def finalize_dispatch_land(project_slug: str, story_key: str) -> int:
     findings: list = []
     data: dict[str, object] = {"lock_contended": False}
     deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("dispatch-land-finalize"))
-    scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs)
+    scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs, worktree=worktree)
     findings.extend(scan.findings)
     if scan.plan is not None and scan.plan.to_promote:
         specs_dir = (
@@ -77,8 +80,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Dispatch land finalize (Story 22.4)")
     parser.add_argument("project_slug")
     parser.add_argument("story_key")
+    parser.add_argument("worktree", nargs="?", default=None)
     args = parser.parse_args(argv)
-    return finalize_dispatch_land(args.project_slug, args.story_key)
+    worktree = Path(args.worktree) if args.worktree is not None else None
+    return finalize_dispatch_land(args.project_slug, args.story_key, worktree)
 
 
 if __name__ == "__main__":

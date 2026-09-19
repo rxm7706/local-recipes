@@ -340,7 +340,12 @@ def execute_dispatch_land(
             data=data,
             findings=tuple(findings),
         )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.REFUSED, pr_number=pr.number, subject=subject
+            ),
+            envelope,
+        )
 
     try:
         forge.merge_pr(
@@ -418,6 +423,7 @@ def execute_dispatch_land(
                 "pyforge.marshal.dispatch_land_finalize",
                 project_slug,
                 render_feed_key(key),
+                str(worktree),
             ],
             cwd=git_repo_root,
         )
