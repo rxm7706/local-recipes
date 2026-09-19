@@ -401,6 +401,59 @@ def test_sibling_bare_default_merge_does_not_suppress_once_scoped(
     assert findings[0].evidence["key"] == "1-1-foo"
 
 
+def test_no_override_scoped_default_merge_suppresses_own_station(
+    tmp_path: Path,
+) -> None:
+    """Story 50.4: a station with NO ``marshal-policy.toml`` override still
+    gets credit for a landing rendered from the (now ``{slug}``-scoped) repo
+    default -- the templated route no longer needs an explicit per-project
+    override to self-scope."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-mason/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "mason", "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_no_override_sibling_scoped_default_merge_does_not_suppress(
+    tmp_path: Path,
+) -> None:
+    """The other half: two stations sharing the identical unset-override
+    default template do not cross-attribute, since each renders its OWN
+    ``{slug}`` segment -- a sibling's ``Merge pyforge-atlas/7-2 into main``
+    is not mason's landing evidence, even though the numeric key
+    coincides."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "Merge pyforge-atlas/7-2 into main")
+    _write_feed(target, "mason", ["7-2-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "mason", "run1",
+        {"7-2-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "7-2-foo"
+
+
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
 
 
