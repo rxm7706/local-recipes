@@ -483,6 +483,9 @@ class FakeVcs:
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         return self.remote_ledger_texts.get(path)
 
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        self.fetched.append((remote, ref))
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True) -> None:
@@ -3426,6 +3429,10 @@ def test_sibling_promoted_ledger_is_read_when_primary_sits_behind(
     assert harness.dispatched == [(slug, "23.7")]
     assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
     assert report.complete is False
+    # VG1 (review pass 2026-09-19): the local cache of `origin/main` must be
+    # refreshed before the remote-read fallback trusts it, or a stale cache
+    # would silently defeat this very fallback.
+    assert vcs.fetched == [("origin", "main")]
 
 
 def test_herald_2026_09_18_three_cycle_replay_ends_with_the_next_story(
