@@ -16,6 +16,8 @@ the same discipline those files already document for each other.
 from __future__ import annotations
 
 import hashlib
+import sys
+import types
 
 import pytest
 
