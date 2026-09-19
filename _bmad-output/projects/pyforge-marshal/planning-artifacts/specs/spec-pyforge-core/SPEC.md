@@ -129,9 +129,10 @@ costs two stories of rework; deciding it now costs an epic ordering.
     implementation of that primitive appears anywhere under `src/shared/packages/`.
 - **CAP-8 — the floor is enforced where the build happens.** *(minted 2026-09-19)*
   - **intent:** The conformance suite — the whole `pyforge-core` `tests/` tree, the four
-    sole-ownership meta-tests included — runs on every PR that touches
-    `src/shared/packages/**` and inside `pr-preflight`, so a CAP-5/CAP-7 violation reds the
-    PR that introduces it instead of accumulating on `main`.
+    sole-ownership meta-tests included — runs on every PR that touches the shared surface or
+    any `pyforge-*` package (the set the sole-ownership scan covers; narrowed from
+    `src/shared/packages/**` 2026-09-19) and inside `pr-preflight`, so a CAP-5/CAP-7 violation
+    reds the PR that introduces it instead of accumulating on `main`.
   - **success:** A `core-test` job beside the eight station jobs (same shared-surface
     triggers) runs `pixi run --frozen -e pyforge-core pyforge-core-test`; `pr-preflight`
     depends on it; a fixture PR introducing a second `subprocess.run` implementation under
