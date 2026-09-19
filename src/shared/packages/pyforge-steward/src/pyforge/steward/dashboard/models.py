@@ -83,11 +83,14 @@ class AuditEntry(models.Model):
 
 
 class WorkPassport(models.Model):
-    """Work Passport identity model (Story 65.1; spec-pyforge-steward CAP-140, partial —
-    Story 61.2 remains the passport story of record).
+    """Work Passport identity model (Story 65.1; spec-pyforge-steward CAP-140, fully
+    realized as of Story 61.2, which added `vendor_id` and the always-fresh vendor
+    mint path, `dashboard/passport_mint.py`).
 
     Primary identity is a minted UUID (`passport_id`). External system keys
-    (Jira key, GitHub item ID) are stored as external aliases.
+    (Jira key, GitHub item ID) are stored as external aliases. `vendor_id`
+    names which vendor an inbound row belongs to (v1 operates exactly one
+    vendor) and is null/blank on internal-mint rows, which carry no vendor.
     """
 
     passport_id = models.CharField(max_length=64, primary_key=True)
@@ -98,6 +101,7 @@ class WorkPassport(models.Model):
     status = models.CharField(max_length=32, db_index=True, default="backlog")
     jira_key = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     github_item_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    vendor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     effort = models.CharField(max_length=32, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

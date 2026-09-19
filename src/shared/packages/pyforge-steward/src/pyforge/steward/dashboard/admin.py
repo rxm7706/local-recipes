@@ -29,9 +29,26 @@ class AuditEntryAdmin(admin.ModelAdmin):
 
 @admin.register(WorkPassport)
 class WorkPassportAdmin(admin.ModelAdmin):
-    list_display = ("passport_id", "station", "story_id", "status", "jira_key", "github_item_id", "title")
-    list_filter = ("station", "status")
-    search_fields = ("passport_id", "story_id", "station", "jira_key", "github_item_id", "title")
+    list_display = (
+        "passport_id",
+        "station",
+        "story_id",
+        "status",
+        "jira_key",
+        "github_item_id",
+        "vendor_id",
+        "title",
+    )
+    list_filter = ("station", "status", "vendor_id")
+    search_fields = (
+        "passport_id",
+        "story_id",
+        "station",
+        "jira_key",
+        "github_item_id",
+        "vendor_id",
+        "title",
+    )
     ordering = ("station", "story_id")
 
 
