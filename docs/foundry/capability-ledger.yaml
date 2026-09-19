@@ -3987,6 +3987,31 @@ capabilities:
     heading: "BMAD projection onto Internal GH"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  # steward one-chain fold 2026-09-19 (PR #1507 review): spec-sprint-ledger-query-module CAP-1/2/4/5 -> CAP-146..149
+  - id: pyforge-steward:CAP-146
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "one query engine over every station's tracked ledger"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-147
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "pluggable, hookable, feature-flagged"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-148
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "every consumer gets its own shape from one engine"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-149
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "three front doors, one engine"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1

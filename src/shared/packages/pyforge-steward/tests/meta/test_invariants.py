@@ -360,12 +360,18 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     The one direction it UNDER-flags (stated in review pass 4; the note above
     described only the over-flagging): it reads `ast.Import`/`ast.ImportFrom`
     nodes, so a dynamic import — `importlib.import_module("django")`,
-    `__import__`, `exec` — is invisible to it. No code in this package does
-    that, and every sibling guard here shares the limitation, so it is not
-    treated as a defect; it is written down because dynamic import is the
-    idiomatic way to reach an OPTIONAL dependency, which makes it the first
-    shape a later Epic 9 story is likely to reach for — and it is the one
-    shape this guard would not catch.
+    `__import__`, `exec` — is invisible to it. Every sibling guard here shares
+    the limitation, so it is not treated as a defect; it is written down
+    because dynamic import is the idiomatic way to reach an OPTIONAL
+    dependency. Story 65.1 reached for exactly that shape, and it is now the
+    ONE sanctioned base→dashboard reach: `sprint_ledger_query.sync_to_postgres`
+    calls `importlib.import_module("pyforge.steward.dashboard.passport_sync")`
+    inside the function, refusing (never falling back) on `ImportError`, so the
+    base package keeps working without the extra. The second assertion below
+    pins the narrower claim the sanction rests on — `sprint_ledger_query.py`
+    has NO module-level `django` / `channels` / `pyforge.steward.dashboard`
+    import — since `ast.walk` alone cannot tell a lazy reach from a top-level
+    dependency.
 
     AST-based (imports only), identical rationale to
     `test_no_rotation_scheduler_exists`/
@@ -396,6 +402,31 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
             path.read_text(encoding="utf-8"), own_package_parts, path.name
         )
     assert not offenders, f"dashboard/django/channels import found outside dashboard/: {offenders}"
+
+    # The sanctioned dynamic reach (docstring above) stays a lazy, in-function
+    # one: nothing at MODULE level of `sprint_ledger_query.py` names django,
+    # channels, or the dashboard package -- that would make the extra a base
+    # dependency by construction, whatever the function bodies do.
+    import ast
+
+    module = ast.parse((steward_dir / "sprint_ledger_query.py").read_text(encoding="utf-8"))
+    top_level: list[str] = []
+    for node in module.body:
+        if isinstance(node, ast.Import):
+            top_level += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            top_level.append(node.module)
+    banned_top_level = [
+        name for name in top_level
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
+    ]
+    assert not banned_top_level, (
+        f"sprint_ledger_query.py imports {banned_top_level} at module level -- the "
+        f"dashboard extra may only be reached lazily, inside sync_to_postgres"
+    )
+    assert "pyforge.steward.dashboard.passport_sync" in (steward_dir / "sprint_ledger_query.py").read_text(
+        encoding="utf-8"
+    ), "the sanctioned lazy reach into passport_sync is expected to exist"
 
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
@@ -487,14 +518,17 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
 
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     documented = {
+        "admin.py",
         "apps.py",
         "asgi.py",
         "audit.py",
         "cache.py",
         "consumers.py",
         "models.py",
+        "passport_sync.py",
         "routing.py",
         "views.py",
+        "views_htmx.py",
     }
 
     actual: set[str] = set()

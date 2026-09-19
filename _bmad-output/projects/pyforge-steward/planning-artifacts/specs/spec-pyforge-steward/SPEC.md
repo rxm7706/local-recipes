@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-09-17"
+updated: "2026-09-19"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -541,6 +541,7 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-140 — work passport and frozen core schema** ← spec-work-passports-dated-extracts CAP-2 (shipped 2026-09-15)
   - **intent:** UUID is identity; Jira keys and GitHub numbers are nicknames;
   - **success:** two extracts cannot merge by title; high-value first links
+  - *2026-09-19:* Story 65.1 (PR #1507) shipped a `WorkPassport` Django model (minted UUID `passport_id`; `jira_key` / `github_item_id` as aliases), its admin and a flag-gated Postgres sync — a partial realization outside Story 61.2's declared surface (no `vendor_id`, not the existing join store, 61.1's corridor not landed). 61.2 remains the story of record and builds on it.
 - **CAP-141 — as-of glass (standup and shipped)** ← spec-work-passports-dated-extracts CAP-3 (shipped 2026-09-15)
   - **intent:** vendor data on the existing Postgres app is dated; empty
   - **success:** testers see shipped-from-last-inbound; standup cites a
@@ -556,8 +557,22 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-145 — BMAD projection onto Internal GH** ← spec-work-passports-dated-extracts CAP-7 (shipped 2026-09-15)
   - **intent:** ledger remains source; GH cards say projected.
   - **success:** the slot exists; factory stories do not ride outbound
+- **CAP-146 — one query engine over every station's tracked ledger** ← spec-sprint-ledger-query-module CAP-1 (folded 2026-09-19; shipped 2026-09-19, Story 65.1)
+  - **intent:** An operator, agent or dashboard filters and inspects story/epic telemetry across all eight stations through one engine (`pyforge.steward.sprint_ledger_query.SprintLedgerQueryEngine`) reading each station's TRACKED `sprint-status-ledger.yaml` and `epics.md` — never the Tier-3 feed, never `docs/dashboard/data.js` — with presets and station / epic / status / text filters.
+  - **success:** Per-station done / backlog / blocked counts equal `fleet-picture`'s for the same tree (agreement test against `scripts/fleet_scan.py::parse_sprint_status`); every preset and filter has a fixture test; every ledger status the fleet uses lands in a bucket.
+- **CAP-147 — pluggable, hookable, feature-flagged** ← spec-sprint-ledger-query-module CAP-2 (folded 2026-09-19; shipped 2026-09-19, Story 65.1)
+  - **intent:** Formatters, sources and lifecycle hooks are registered, not hard-coded, and every optional integration sits behind a flag resolved from `flags.json` / environment / CLI override (no SDK dependency in v1), so the core query path has no runtime dependency on any exporter's target.
+  - **success:** A flag left off refuses the gated export (`ok=false`), never silently runs it; a registered plugin or hook is exercised by test without editing the engine; the module's only third-party import is `yaml`.
+- **CAP-148 — every consumer gets its own shape from one engine** ← spec-sprint-ledger-query-module CAP-4 (folded 2026-09-19; shipped 2026-09-19, Story 65.1)
+  - **intent:** One query result renders as `markdown` / `summary` / `table`, schema-validated `json` (the schema ships with the package), Herald's facts-ledger shape, an `atlas-dataset` payload (steward exports, Atlas renders — canopy:AD-13 / canopy:AD-23), `jira-csv`, `github-json`, and `get_runnable_backlog()` for Marshal — with strict stdout/stderr separation and no default write into another station's tree.
+  - **success:** Each formatter round-trips a fixture; the `json` payload validates against the shipped schema; `get_runnable_backlog()` agrees with marshal's Deps grammar (`S-x.y`, `none`, `station:S-x.y`, keyed per station); diagnostics never reach stdout.
+- **CAP-149 — three front doors, one engine** ← spec-sprint-ledger-query-module CAP-5 (folded 2026-09-19; shipped 2026-09-19, Story 65.1)
+  - **intent:** `steward ledger-query` (a counted duty), the pixi tasks `sprint-ledger-query` (`pyforge-guild`) / `sprint-ledger-postgres-sync` (`pyforge-steward` — the one env carrying django; a task registered where it cannot succeed is a trap, not a front door), and the `bmad-sprint-ledger-query` skill wrap the engine rather than re-implement it; the HTMX backlog view reads through it.
+  - **success:** The duty-count invariants include it; `--format` choices come from the formatter registry; the skill's documented invocations run verbatim.
 
 ## Constraints
+
+- **Folded from spec-sprint-ledger-query-module (2026-09-19):** steward never imports vizro (canopy:AD-13 / canopy:AD-23); exporters never write into another station's tree by default (flag + explicit `--output` only); the minted UUID is identity and tracker keys are aliases (CAP-140's rule); reads come from TRACKED ledgers only and `fleet_scan.parse_sprint_status` stays the reader of record; stdout carries payload only.
 
 - **AD-1 (wrap, never reimplement):** every duty adapter's implementation is a subprocess call or a thin import into an existing tool (`_http.py`, `age`, `pixi`, `git`, `gh`, `scripts/bmad-loop-worktree`). A duty module containing its own copy of logic that already exists elsewhere in this repo is a review-blocking finding.
 - **AD-2 (keys' single chokepoint):** `steward.keys`'s host-scoping resolver delegates to `_http.py`'s existing `auth_headers_for(url, skip_auth=...)` pattern for anything HTTP-shaped; no duty module constructs its own request carrying ambient auth headers. Host-allowlist configuration reads `_http.py`'s existing `resolve_*_urls`/`*_BASE_URL` table directly — no duplicate Steward-owned URL config.

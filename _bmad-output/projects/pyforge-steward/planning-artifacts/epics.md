@@ -4215,3 +4215,27 @@ and `frame-upstream-check` never join `detectors-ci`; Warden stays the sole PR v
 **Then** the profile states all ten §7 items for the in-repo reader (reads Markdown, writes none, resolves no composition, `visibility` is declared intent, `specification: draft-mcandrew-frame-spec-00`) and declares under §9 that no trust configuration exists yet
 **And** upstream `validate_frame.py --check-profile` at the pinned SHA accepts it via `frame-upstream-check`
 **Status:** backlog
+
+## Epic 65: The estate sprint-ledger query engine (spec-pyforge-steward CAP-146..149; partially CAP-140)
+
+Minted 2026-09-19 at the review of PR #1507 (a parallel session): the session had appended this as Story 63.5 under
+Epic 63 "The Guild environment", which it has nothing to do with, under a standalone Dream + Spec carrying
+`fold-exemption: cross-station-seam`. Folded per one-chain-per-station: the seed is the 2026-09-19 entry on
+`docs/dreams/pyforge-steward.md`, the contract is `spec-pyforge-steward` CAP-146..149, the passport slice binds to
+CAP-140 with Story 61.2 still the story of record. The `63-5` key never reached `main`; re-minted here as 65.1.
+**HARD boundaries:** steward exports, Atlas renders (canopy:AD-13 / canopy:AD-23); no default write into another station's
+tree; the minted UUID is identity; TRACKED ledgers only and `fleet_scan.parse_sprint_status` stays the reader of
+record; stdout carries payload only.
+
+### Story 65.1: Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD skill
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-146, CAP-147, CAP-148, CAP-149 (folded from spec-sprint-ledger-query-module 2026-09-19) • partially realizes CAP-140 (Story 61.2 remains the story of record)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py`, `.../steward/dashboard/models.py` (`WorkPassport`), `.../steward/dashboard/admin.py`, `.../steward/dashboard/views_htmx.py`, `.../steward/dashboard/passport_sync.py`, `.../steward/dashboard/migrations/0002_workpassport.py`, `.../steward/cli.py` (`ledger-query` duty), `.../steward/data/sprint-ledger-query.schema.json`, tests (`test_sprint_ledger_query.py`, `test_dashboard_admin_and_htmx.py`, `test_cli.py`, `test_restore_duty.py`, `tests/meta/test_invariants.py`), `pixi.toml` (two tasks), `.claude/skills/bmad-sprint-ledger-query/SKILL.md`, `AGENTS.md` (pre-PR checklist). Surface paths corrected at review 2026-09-19 (the mint named `steward/models.py` etc. at paths that do not exist).
+**Given** estate sprint ledgers are scattered across stations and lack pluggable querying, Work Passport UUID identity, and multi-system output formatters
+**When** this story lands
+**Then** `SprintLedgerQueryEngine` provides a pluggable engine with feature-flag evaluation (OpenFeature-shaped `eval_flag`: CLI `--flag` → `FLAGS_<NAME>` env → `.steward/flags.json` → default; no SDK), Work Passports PostgreSQL sync with minted UUIDs, multi-format output (markdown, summary, json, table, sync-matrix, herald-facts, atlas-dataset, static-dossier, jira-csv, github-json), HTMX dashboard view, Django Admin registration, CLI verb `pyforge steward ledger-query`, Pixi tasks `sprint-ledger-query` (`pyforge-guild`) and `sprint-ledger-postgres-sync` (`pyforge-steward`), and the `bmad-sprint-ledger-query` skill
+**Outcome (2026-09-19):** landed as PR #1507 after review + remediation (three review layers; deps grammar, epic status,
+flags wired, stdout purity, HTML escaping, read-only audit admin, Postgres sync refusing instead of no-op'ing, the
+`--epic` filter CAP-146 names, the sync task moved to the env that has django); tracked spec
+`specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md` carries
+the triage log and Auto Run Result; CAP-146..149 shipped, CAP-140 partially realized.

@@ -595,6 +595,10 @@ env = { COVERAGE_GATES_STATIONS = "steward" }
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
 cmd = "python scripts/run_station_coverage_gate.py --station steward"
 
+[feature.pyforge-steward.tasks.sprint-ledger-postgres-sync]
+description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` (or FLAGS_ENABLE_POSTGRES_SYNC=true), else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."
+cmd = "steward ledger-query --sync-postgres --format summary"
+
 [feature.pyforge-steward.tasks.pyforge-steward-dogfood]
 description = "Steward dogfoods itself: run the CLI from the built env, then run its own drift audit against this repo's current state (Story 1.6)."
 cmd = "steward --version && steward keys audit --drift"
@@ -1055,6 +1059,10 @@ cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 [feature.guild-tasks.tasks.bmad-preflight]
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"
+
+[feature.guild-tasks.tasks.sprint-ledger-query]
+description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated: sync-matrix/jira-csv/github-json (enable_jira_github_matrix), herald-facts (enable_herald_facts), atlas-dataset (enable_vizro_dataset), static-dossier (enable_dossier_export) -- open one with `-- --flag <name>=true`, FLAGS_<NAME>=true, or .steward/flags.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
+cmd = "steward ledger-query"
 
 [feature.local-recipes.tasks.tea-playwright-all]
 description = "Story 19.1 / FR-129: regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."

@@ -80,3 +80,33 @@ class AuditEntry(models.Model):
 
     class Meta:
         ordering = ["-occurred_at", "-id"]
+
+
+class WorkPassport(models.Model):
+    """Work Passport identity model (Story 65.1; spec-pyforge-steward CAP-140, partial —
+    Story 61.2 remains the passport story of record).
+
+    Primary identity is a minted UUID (`passport_id`). External system keys
+    (Jira key, GitHub item ID) are stored as external aliases.
+    """
+
+    passport_id = models.CharField(max_length=64, primary_key=True)
+    story_id = models.CharField(max_length=64, db_index=True)
+    station = models.CharField(max_length=64, db_index=True)
+    epic_id = models.CharField(max_length=64, blank=True, default="")
+    title = models.CharField(max_length=512)
+    status = models.CharField(max_length=32, db_index=True, default="backlog")
+    jira_key = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    github_item_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    effort = models.CharField(max_length=32, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["station", "story_id"]
+        verbose_name = "Work Passport"
+        verbose_name_plural = "Work Passports"
+
+    def __str__(self) -> str:
+        return f"{self.station}:{self.story_id} ({self.passport_id[:8]})"
+
