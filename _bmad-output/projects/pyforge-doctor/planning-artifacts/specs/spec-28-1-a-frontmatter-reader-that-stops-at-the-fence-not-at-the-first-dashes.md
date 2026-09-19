@@ -2,7 +2,8 @@
 title: '28.1: A frontmatter reader that stops at the fence, not at the first dashes'
 type: 'fix'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'cefe85df1d6a6fdd7546c804b88f9ad42d5fab36'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
