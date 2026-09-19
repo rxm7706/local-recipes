@@ -116,6 +116,7 @@ from ..core.journal import (
 from ..core.model import Finding, Severity, build_envelope
 from ..core.model_cost import (
     adapter_provider,
+    catalog_declared,
     is_harness_default_model,
     provider_declaring_model,
 )
