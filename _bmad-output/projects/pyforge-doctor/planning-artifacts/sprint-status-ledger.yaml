@@ -78,7 +78,7 @@ development_status:
   23-3-sunset-docs-specs-by-frontmatter-status: done
   23-4-empty-the-intake-inbox-per-its-own-readme: done
   23-5-archive-citations-for-the-five-already-moved-_bmad-output-files: done
-  23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree: backlog
+  23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree: done
   23-7-a-new-doctor-source-flags-leftover-shelf-occupancy: backlog
   24-1-the-evaluator-and-the-thresholds-move-out-of-marshal-s-package-together: backlog
   24-2-an-import-linter-contract-catches-the-class-structurally: backlog
