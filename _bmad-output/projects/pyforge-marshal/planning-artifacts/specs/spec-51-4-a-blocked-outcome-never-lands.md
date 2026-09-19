@@ -2,10 +2,10 @@
 title: '51.4: A blocked outcome never lands'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: '1ff4b6d212084d74e3be6112221a4261822d74f0'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 deferred:
   - summary: >-
@@ -115,3 +115,53 @@ Minted 2026-09-19 from `epics.md` so `marshal factory dispatch` (51.x) or a hand
   - `[false]` `[reject]` Intent Alignment Auditor: flagged that the literal `<intent-contract>` prose (Problem/Approach) only narrates the 27.3 empty-diff case while the diff implements the wider epics.md-informed (narration-only/51.3) reading too — verified this is not a divergence: the Matrix's "the named fixture" row and the Verification section's manual check both explicitly point to epics.md's Given/Then as the source of record, which names both fixtures, so the diff's wider scope is the correctly bound reading, not an overreach.
   - `[medium]` `[patch]` Intent Alignment Auditor: restates the dead `DispatchLandingVerdict.BLOCKED` claim above — shares that fix.
   - `[medium]` `[patch]` Intent Alignment Auditor: observed that the new fleet test for the hollow/51.3 case (`test_a_narration_only_diff_after_a_harness_ceiling_is_transient_not_blocked`) pre-seeds `completion_verdict` directly, short-circuiting before `resolve_dispatch_session_verdict`/`resolve_terminal_session_verdict` ever run — so the real derivation path for the case this story exists to fix is untested. Same fix as the un-threaded `spec_relative_path` group: the new test added there must not pre-seed `completion_verdict`.
+
+## Auto Run Result
+
+**Summary:** the supervisor's finalize sequence and the campaign's block-fact reporter now stop before verify/land on a worktree spec left `status: blocked` (the 27.3 incident's shape) and correctly distinguish that from a narration-only diff (a session that only rewrote its own tracked spec, e.g. after hitting the harness's background-task ceiling — the 51.3 incident), which stays TRANSIENT and re-dispatchable. `has_git_progress` now treats a diff that collapses to just the tracked spec file as no progress; a new `dispatch_once` pre-launch guard (`MRS-DISP-045`) refuses to relaunch `bmad-build-auto` on a `blocked` spec without an operator decision, mirroring the existing `done`/CAP-4-only guard (`MRS-DISP-040`). The review pass completed the `spec_relative_path` threading this pattern requires across the remaining call sites, removed a dead enum member the Binding text had claimed was live, fixed two `parse_blocking_condition` parsing bugs, and added the direct `dispatch_once` test the new guard lacked.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` — new `KIND_DISPATCH_BLOCKED` journal kind.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_completion.py` — `is_spec_only_narration` + `has_git_progress(..., spec_relative_path=...)`: a diff that collapses to just the tracked spec file is not progress.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` — `parse_blocking_condition` reads a spec's stated blocking reason (frontmatter scalar or body line); review pass fixed it to take the last "Blocking condition:" match (not the first) and strip all asterisks (not just edge ones).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — review pass: deleted the dead, never-constructed `DispatchLandingVerdict.BLOCKED` enum member.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` — registered `MRS-DISP-045`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py` — new `HarnessSessionOutcome.BACKGROUND_TASK_CEILING`, classified as transient (the 51.3 incident's harness-side signal).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` — `resolve_terminal_session_verdict` grew a `spec_relative_path` parameter, threaded into its two `has_git_progress` calls.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py` — `MRS-DISP-045` classified at the same ERROR tier as `MRS-DISP-040`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — `station_story_block_facts` resolves `spec_status`/`spec_relative_path` unconditionally (review pass: moved before verdict resolution, and reordered so the already-landed self-refusal check runs before the blocked check); `resolve_dispatch_session_verdict` threads `spec_relative_path` (review pass); new `dispatch_once` pre-launch guard emits `MRS-DISP-045` and returns without relaunch when the live worktree spec reads `status: blocked` (review pass: em dash swapped for plain `--`).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — the finalize sequence's land trigger and 4 `resolve_terminal_session_verdict` call sites thread `spec_relative_path`; `_journal_dispatch_blocked` records the block reason; review pass threaded the 5th, previously-missed `has_git_progress` call (the FAILED-verdict preserve-worktree decision) the same way.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` — review pass: new `test_blocked_spec_does_not_relaunch_harness` exercising `dispatch_once`'s `MRS-DISP-045` guard directly.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py` — fleet-cycle fixtures for the 27.3 blocked-station case and the 51.3 narration-only-transient case, the latter derived through the real `resolve_dispatch_session_verdict` path (no pre-seeded `completion_verdict`).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_spec_block.py` — new unit-test file for the supervisor finalize-sequence's blocked short-circuit.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` — static registration coverage for `MRS-DISP-045`.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-4-a-blocked-outcome-never-lands.md` — this file: Review Triage Log, `deferred` entries, this Auto Run Result.
+
+**Review findings breakdown** (23 findings from 4 layers, grouped by shared root cause into 15 entries):
+- **Patched (8 entries):**
+  - `high` — `cli/dispatch.py::resolve_dispatch_session_verdict` didn't thread `spec_relative_path` into its `resolve_terminal_session_verdict` call, unlike the 4 already-fixed sites in `dispatch_supervisor/__main__.py` — a narration-only diff could resolve LIVE/STOPPED_EXTERNALLY instead of FAILED for the campaign-facing reporter. Fixed the threading and added a test that derives the verdict rather than pre-seeding it (Blind Hunter + Edge Case Hunter + Verification Gap + Intent Alignment Auditor, one shared root cause).
+  - `medium` — `DispatchLandingVerdict.BLOCKED` was defined but never constructed or returned, contradicting the Binding text's claim. Deleted the dead member (Blind Hunter + Edge Case Hunter + Verification Gap + Intent Alignment Auditor).
+  - `low` — the new `blocked`-status check in `station_story_block_facts` ran before the pre-existing already-landed self-refusal check. Reordered (Blind Hunter, 2 rows sharing one fix).
+  - `low` — `MRS-DISP-045`'s message used a Unicode em dash where the rest of the diff uses plain `--`. Swapped the character (Blind Hunter).
+  - `low` — `dispatch_supervisor/__main__.py:1580`'s `has_git_progress` call (the FAILED-verdict preserve-worktree decision) omitted `spec_relative_path`, unlike its 4 siblings. Threaded the kwarg (Edge Case Hunter).
+  - `low` — `parse_blocking_condition`'s body-line regex took the first "Blocking condition:" match instead of the last. Switched to the last match (Edge Case Hunter).
+  - `low` — `parse_blocking_condition`'s `.strip("*")` only stripped edge asterisks, leaving a trailing `**` when the bold-wrapped value ends in punctuation. Strip all asterisks instead (Edge Case Hunter).
+  - `high` — the new `dispatch_once` pre-launch guard (`MRS-DISP-045`) had no test invoking `dispatch_once` directly. Added `test_blocked_spec_does_not_relaunch_harness` (Verification Gap Reviewer).
+- **Deferred (2 entries — recorded in frontmatter `deferred`):**
+  - `medium (unverified)` — `dispatch_survival.py`'s unsupervised-recovery path builds `DispatchCompletionInput` with no `spec_relative_path`, so a supervisor-crash mid-run with a narration-only diff staged can't be recognized as no-progress there; could not establish whether this reaches an actual wrongful landing (Edge Case Hunter, maybe-false).
+  - `medium` — `KIND_DISPATCH_BLOCKED` journal entries are write-only; nothing reads them back, so the block reason is unrecoverable once the backing worktree is cleaned up. Real but outside the Approach's bound intent (which commits only to journaling, not to a reader) — future hardening (Blind Hunter + Edge Case Hunter).
+- **Rejected (5 entries):**
+  - `false` — `parse_blocking_condition`'s frontmatter-scalar branch has no producer anywhere in the repo. Refuted: dead but harmless forward-compatible code, not a mishandled situation (Blind Hunter).
+  - `low` — `station_story_block_facts` and `_worktree_story_spec` independently implement similar worktree-relocated-spec-path logic. Real duplication, both verified correct; a shared-helper extraction is non-trivial, better as a separate follow-up (Blind Hunter).
+  - `low` — a worktree spec reading `status: blocked` alongside genuinely unrelated real changed files never enters the blocked branch (verdict resolves LIVE/STOPPED_EXTERNALLY instead). Verified reachable, but named by neither the intent-contract's Always clause nor the Matrix's epics.md fixtures, and doesn't risk a wrongful landing; the fix would require moving the check outside the verdict gate entirely — not a direct correction (Edge Case Hunter).
+  - `low` — `spec_relative_path` is resolved once before the tick loop rather than re-resolved each tick. Requires the worktree's own spec-file set to change mid-session — not a realistic operational scenario (Edge Case Hunter).
+  - `false` — the `<intent-contract>` prose only narrates the 27.3 empty-diff case while the diff also implements the 51.3 narration-only case. Verified this is the correctly bound reading: the Matrix and Verification section both point to epics.md's Given/Then, which names both fixtures (Intent Alignment Auditor).
+
+**Follow-up review recommendation:** `true`. Two entries this pass were patched at `high` (the `spec_relative_path` threading in `resolve_dispatch_session_verdict`, and the new `MRS-DISP-045` direct test) — either alone meets the threshold. Named unverified risk: the `spec_relative_path` threading is now consistent across `dispatch_supervisor/__main__.py`'s 5 call sites and `cli/dispatch.py`'s campaign-facing reporter, but the composed behavior — a real `bmad-build-auto` session hitting the harness's background-task ceiling, then the supervisor and the fleet-drain campaign both correctly classifying the resulting narration-only diff as TRANSIENT rather than BLOCKED — has only been exercised through fixture-level unit and fleet-cycle tests, never a live session. A follow-up pass should confirm no other `has_git_progress`/`resolve_terminal_session_verdict` call site in the codebase remains unthreaded, and that a real end-to-end run reproduces the 51.3 incident's recovery correctly.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8270 passed, 1 skipped, 12 deselected. Exit 0.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped. Exit 0.
+- Manual: the Then/And of Story 51.4 in `epics.md` hold on the named fixtures — covered by `test_a_deliberate_blocked_spec_status_blocks_its_station_naming_the_reason` (27.3 shape) and `test_a_narration_only_diff_after_a_harness_ceiling_is_transient_not_blocked` (51.3 shape) in `test_dispatch_fleet.py`, plus the new `test_blocked_spec_does_not_relaunch_harness` for the `dispatch_once` pre-launch guard.
+
+**Residual risks:** the two deferred items above — `dispatch_survival.py`'s un-threaded unsupervised-recovery path (medium, unverified — needs a live-fire supervisor-crash test to confirm reachability) and the write-only `KIND_DISPATCH_BLOCKED` journal (medium — no reader exists yet, so a block reason is unrecoverable once its backing worktree is cleaned up).
