@@ -2241,6 +2241,67 @@ def test_spec_frontmatter_deferral_long_summary_is_marked_not_silently_corrupted
     assert str(len(" ".join(long_summary.split()).strip())) in summary
 
 
+# --- Story 28.1 / CAP-81: line-anchored fences, not the first `---` ------------
+
+_CHAIN_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "chain"
+
+
+def test_marshal_50_5_fixture_parses_both_deferrals() -> None:
+    """The bug that motivated Story 28.1: marshal's tracked
+    ``spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`` declares
+    TWO ``deferred:`` frontmatter items, but the first item's own
+    ``evidence:`` block quotes the literal text ``lines[0] == "---"`` --
+    a ``"---"`` substring embedded mid-block. The old
+    ``_frontmatter_parse`` (``text.split("---", 2)``) truncated the YAML at
+    THAT occurrence instead of the real closing fence, silently losing the
+    first item's ``location:`` and the second item entirely (verified,
+    during development: before this story's fix, this exact fixture
+    produced one deferral with no ``location:`` and fingerprint
+    ``fdd6bce25c09``; reverting ``_frontmatter_parse`` to the old
+    split-based form and re-running this test reproduces that failure).
+
+    Reads a byte-verbatim SNAPSHOT under ``tests/fixtures/chain/`` -- NOT
+    marshal's live planning tree. Provenance: copied from
+    ``_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+    spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`` as landed
+    on ``main`` at ``62c09c2e27`` (24,222 bytes), 2026-09-19. A live read
+    would let a marshal-only edit to that spec's ``deferred:`` red doctor's
+    suite on the next unrelated doctor PR, and CI's ``src/shared/packages/**``
+    paths filter cannot fire this lane on the marshal edit (the
+    MRS-GATE-001 live-baseline class that blocked this story at pass 0).
+    Fingerprints/location/severity cross-checked against the same entries'
+    already-hand-reconciled ``origin:``/``severity:`` fields in marshal's
+    ``deferred-work-ledger.md`` (``DW-FU-50-5``/``DW-FU-50-6``), which is how
+    both were independently verified correct outside this parser."""
+    spec_path = (
+        _CHAIN_FIXTURES / "spec-50-5-the-promoter-reads-a-spec-through-its-banner.md"
+    )
+    assert spec_path.is_file()
+
+    fm, unparseable = chain._frontmatter_parse(spec_path)
+    assert unparseable is False
+    assert len(fm.get("deferred") or []) == 2
+
+    findings, malformed = chain.parse_spec_frontmatter_deferrals(spec_path)
+    assert malformed == ()
+    assert len(findings) == 2
+
+    first, second = findings
+    assert first.location == (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/"
+        "spec_low_risk.py::parse_declared_low_risk"
+    )
+    assert first.severity == "medium"
+    assert first.fingerprint == "3bc3d91bdf95"  # matches the ledger's own `origin:` line
+
+    assert second.location == (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/"
+        "promotion.py::_skip_leading_banner"
+    )
+    assert second.severity == "high"
+    assert second.fingerprint == "5434eca8c9e5"
+
+
 def test_tier3_only_deferral_still_reports_fail(tmp_path: Path) -> None:
     """Loop-run bridge regression: Tier-3-only ids still fire."""
     _write_baseline(tmp_path, {})
