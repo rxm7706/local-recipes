@@ -1062,6 +1062,17 @@ class CatalogEngine:
             ),
             "dedicated_repo": dedicated,
             "github_note": github_note,
+            # Verified live 2026-09-19 (bmad-method 6.12.0): the installer resolves
+            # this directory ("Local source resolved") but discovery mode installs
+            # only module trees inside the source ("Found 0 modules" here) — it does
+            # not follow a plugin's `github` source. Pointer rows install from their
+            # own `repository` (`install_hint`); Story 60.3's snapshot vendors them.
+            "installer_note": (
+                "the installer resolves this directory but installs only module trees "
+                "inside it (v1 rows are github pointers: 'Found 0 modules'); install a "
+                "listed module from its own repository / install_hint until 60.3 ships "
+                "the vendored snapshot"
+            ),
             "settings_note": ".claude/settings.json is not edited by this duty; paste the block yourself",
         }
 
@@ -1101,6 +1112,7 @@ def format_pointers(pointers: dict[str, object]) -> str:
             "",
             "BMAD installer (discovery mode reads .claude-plugin/marketplace.json):",
             f"  {pointers['custom_source']}",
+            f"  note: {pointers['installer_note']}",
             "",
             "Claude Code — .claude/settings.json (directory form; repo-relative, worktree-safe):",
             json.dumps(pointers["extra_known_marketplaces"], indent=2),

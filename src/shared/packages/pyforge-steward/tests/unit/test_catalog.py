@@ -982,6 +982,8 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert "codex plugin marketplace add <owner/repo>" in out
     assert "wait on edit_store.dedicated_repo" in out
     assert ".claude/settings.json is not edited" in out
+    # verified live 2026-09-19: bmad-method 6.12.0 resolves the dir but "Found 0 modules"
+    assert "Found 0 modules" in out and "until 60.3" in out
     after = settings.read_bytes() if settings.is_file() else None
     assert before == after
 
