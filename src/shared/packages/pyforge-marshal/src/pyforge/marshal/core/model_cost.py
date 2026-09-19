@@ -122,6 +122,26 @@ def provider_declaring_model(catalog: object, model: str) -> str | None:
     return None
 
 
+#: Marshal's own model-tier vocabulary (Story 22.8's harness-profile TOMLs
+#: under ``data/harness_profiles/``: every profile either maps these three
+#: names to its own CLI spelling (``[model_map]``, e.g. ``gemini.toml``) or
+#: passes them through verbatim as its default ids (``model_passthrough``,
+#: e.g. ``claude.toml``'s own comment: "Marshal's model tiers
+#: (opus/sonnet/haiku)"). These are exactly the "default-adapter models"
+#: ``provider_declaring_model``'s docstring says are legitimately never
+#: catalogued (Story 51.5, CAP-253).
+HARNESS_DEFAULT_MODEL_IDS: frozenset[str] = frozenset({"sonnet", "opus", "haiku"})
+
+
+def is_harness_default_model(model: str) -> bool:
+    """True when ``model`` is one of marshal's own tier-vocabulary ids --
+    a harness's own default/alias id, not a genuinely foreign or mistyped
+    model. Used alongside ``provider_declaring_model`` to tell "uncatalogued
+    because it's the harness's own default" apart from "uncatalogued
+    because no provider claims it at all" (Story 51.5, CAP-253)."""
+    return model in HARNESS_DEFAULT_MODEL_IDS
+
+
 def resolve_cache_read_ratio(
     catalog: Mapping[str, object] | None,
     *,
