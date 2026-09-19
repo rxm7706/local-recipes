@@ -111,6 +111,27 @@ jobs:
       fail-fast: false
       matrix:
         station: ${{ fromJSON(needs.changes.outputs.stations) }}
+    # scribe's leg collects tests/unit/test_graph_store_pg.py and test_recall_semantic.py,
+    # whose conftest fails loudly (never skips) without a reachable PostgreSQL + pgvector --
+    # the same service pyforge-station-tests.yml's scribe-test job runs. This lane never
+    # had it, so every scribe-selected run (any scribe edit, or the shared surface) ended
+    # "18 errors ... pytest failed for pyforge-scribe unit (exit 1)" before the gate could
+    # evaluate anything (found live 2026-09-19 on PR #1513, a pixi.lock change). Services
+    # are job-level in a matrix, so every leg gets the container; only scribe uses it.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: scribe
+          POSTGRES_DB: scribe_graph
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
         with:
@@ -120,6 +141,12 @@ jobs:
         with:
           environments: pyforge-${{ matrix.station }}
           cache: true
+
+      - name: Enable pgvector extension (scribe)
+        if: matrix.station == 'scribe'
+        env:
+          PGPASSWORD: scribe
+        run: psql -h 127.0.0.1 -p 5433 -U postgres -d scribe_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       # herald's tests/meta/test_skf_skill_and_persona.py invokes `uv run` directly
       # (its skf-frontmatter validator is meant to be runnable standalone via uv, not
