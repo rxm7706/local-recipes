@@ -452,3 +452,46 @@ def test_help_lists_watch_subcommand(capsys):
     assert "--fleet" in out
     assert "--project" in out
     assert "--run" in out
+
+
+# --- Story 52.1, SPEC-pyforge-core CAP-5: the re-parent widening guard ----
+
+
+def test_loop_cli_error_is_a_pyforge_error_and_a_runtime_error():
+    """``LoopCliError`` gained ``PyforgeError`` as an additional base and
+    kept its original ``RuntimeError`` base -- every pre-existing exact-class
+    ``except LoopCliError`` site in ``watch.py`` and any ``except
+    RuntimeError`` site behave identically; ``except PyforgeError`` newly
+    catches it too. The ``(command, reason)`` constructor is untouched."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(LoopCliError, PyforgeError)
+    assert issubclass(LoopCliError, RuntimeError)
+    exc = LoopCliError("bmad-loop list --json", "not installed")
+    assert exc.command == "bmad-loop list --json"
+    assert exc.reason == "not installed"
+    assert str(exc) == "bmad-loop list --json: not installed"
+    for catch in (LoopCliError, RuntimeError, PyforgeError):
+        try:
+            raise LoopCliError("bmad-loop status", "x")
+        except catch:
+            pass
+
+
+def test_probe_error_is_a_pyforge_error_and_a_runtime_error():
+    """Same pin for ``ProbeError`` (the ``raise ProbeError("git", "x")``
+    I/O-matrix row): caught by ``except ProbeError``, ``except
+    RuntimeError`` and ``except PyforgeError`` alike."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(ProbeError, PyforgeError)
+    assert issubclass(ProbeError, RuntimeError)
+    exc = ProbeError("git", "x")
+    assert exc.command == "git"
+    assert exc.reason == "x"
+    assert str(exc) == "git: x"
+    for catch in (ProbeError, RuntimeError, PyforgeError):
+        try:
+            raise ProbeError("git", "x")
+        except catch:
+            pass

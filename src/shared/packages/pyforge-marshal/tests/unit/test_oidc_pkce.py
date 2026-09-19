@@ -137,3 +137,22 @@ def test_pkce_login_success_with_injected_transport() -> None:
 def _bind_test_server() -> tuple[HTTPServer, int]:
     server = HTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
     return server, server.server_address[1]
+
+
+# --- Story 52.1, SPEC-pyforge-core CAP-5: the re-parent widening guard ----
+
+
+def test_pkce_login_error_is_a_pyforge_error_and_an_exception() -> None:
+    """``PkceLoginError`` gained ``PyforgeError`` as an additional base and
+    kept its original ``Exception`` base -- so ``login.py``'s exact-class
+    ``except PkceLoginError`` and any ``except Exception`` site behave
+    identically, and ``except PyforgeError`` newly catches it too."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(PkceLoginError, PyforgeError)
+    assert issubclass(PkceLoginError, Exception)
+    for catch in (PkceLoginError, Exception, PyforgeError):
+        try:
+            raise PkceLoginError("no bearer")
+        except catch:
+            pass

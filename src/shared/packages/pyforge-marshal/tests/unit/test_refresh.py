@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import refresh as refresh_mod
@@ -295,35 +296,49 @@ def _seed_epics_and_script(tmp_path: Path) -> None:
     script.write_text("# stub\n", encoding="utf-8")
 
 
+# Story 52.1 (SPEC-pyforge-core CAP-6): `_sync_status_step` runs through
+# `PosixProcess.run`, so these four stubs fake THAT seam (the
+# `test_harness_bmadloop_engine_liveness.py` convention) -- never `subprocess`.
+
+
 def test_sync_status_step_reports_done_with_new_entries(tmp_path, monkeypatch):
     _seed_epics_and_script(tmp_path)
+    calls: list[tuple[list[str], Path, float | None]] = []
 
-    class _Result:
-        returncode = 0
-        stdout = json.dumps({"ok": True, "new_entries": ["epic-2", "2-1-x"]})
-        stderr = ""
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        calls.append((list(argv), cwd, timeout_s))
+        return ProcessResult(
+            returncode=0,
+            stdout=json.dumps({"ok": True, "new_entries": ["epic-2", "2-1-x"]}),
+            stderr="",
+        )
 
-    monkeypatch.setattr(
-        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
-    )
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
     findings: list = []
     result = refresh_mod._sync_status_step("acme", tmp_path, findings)
     assert result.status == "done"
     assert "2 new entries" in result.detail
     assert findings == []
+    # The seam is handed the same argv shape, cwd and timeout as before.
+    assert len(calls) == 1
+    argv, cwd, timeout_s = calls[0]
+    assert argv[:2] == ["uv", "run"]
+    assert argv[3] == "generate"
+    assert cwd == tmp_path
+    assert timeout_s == refresh_mod._SYNC_STATUS_TIMEOUT_S
 
 
 def test_sync_status_step_reports_in_sync_with_no_new_entries(tmp_path, monkeypatch):
     _seed_epics_and_script(tmp_path)
 
-    class _Result:
-        returncode = 0
-        stdout = json.dumps({"ok": True, "new_entries": []})
-        stderr = ""
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(
+            returncode=0,
+            stdout=json.dumps({"ok": True, "new_entries": []}),
+            stderr="",
+        )
 
-    monkeypatch.setattr(
-        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
-    )
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
     assert result.status == "done"
     assert result.detail == "in sync"
@@ -332,30 +347,56 @@ def test_sync_status_step_reports_in_sync_with_no_new_entries(tmp_path, monkeypa
 def test_sync_status_step_reports_failure_and_finding(tmp_path, monkeypatch):
     _seed_epics_and_script(tmp_path)
 
-    class _Result:
-        returncode = 1
-        stdout = ""
-        stderr = "boom"
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(returncode=1, stdout="", stderr="boom")
 
-    monkeypatch.setattr(
-        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
-    )
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
     findings: list = []
     result = refresh_mod._sync_status_step("acme", tmp_path, findings)
     assert result.status == "failed"
+    assert result.detail == "boom"
     assert any(f.code == "MRS-REFRESH-008" for f in findings)
 
 
 def test_sync_status_step_reports_failure_when_launch_raises(tmp_path, monkeypatch):
+    """A launch failure (`PosixProcess.run` raising `ProcessError` -- the
+    typed form of the raw `OSError`/`TimeoutExpired` the old clause caught)
+    is the same caller-visible outcome as before: a `failed` step plus an
+    `MRS-REFRESH-008` finding, never an escaped exception."""
     _seed_epics_and_script(tmp_path)
 
-    def _boom(argv, **kw):
-        raise OSError("no uv on PATH")
+    def _boom(self, argv, *, cwd, timeout_s=None):
+        raise ProcessError("executable not found: 'uv' (no uv on PATH)")
 
-    monkeypatch.setattr(refresh_mod.subprocess, "run", _boom)
+    monkeypatch.setattr(PosixProcess, "run", _boom)
     findings: list = []
     result = refresh_mod._sync_status_step("acme", tmp_path, findings)
     assert result.status == "failed"
+    assert "no uv on PATH" in result.detail
+    assert any(f.code == "MRS-REFRESH-008" for f in findings)
+    assert any("failed to launch" in f.message for f in findings)
+
+
+def test_sync_status_step_reports_failure_when_child_times_out(tmp_path, monkeypatch):
+    """The timeout-shaped `ProcessError` (the message `PosixProcess.run`
+    produces for a child exceeding `timeout_s` -- that mapping itself is
+    pyforge-core's own tested contract, not pinned here) passes through
+    `_sync_status_step` unchanged: the same `failed` step + `MRS-REFRESH-008`
+    finding as any other launch failure, with the seam's message verbatim
+    in `result.detail`."""
+    _seed_epics_and_script(tmp_path)
+
+    def _timeout(self, argv, *, cwd, timeout_s=None):
+        raise ProcessError(
+            f"command timed out after {timeout_s}s: {' '.join(argv)}"
+        )
+
+    monkeypatch.setattr(PosixProcess, "run", _timeout)
+    findings: list = []
+    result = refresh_mod._sync_status_step("acme", tmp_path, findings)
+    assert result.status == "failed"
+    assert f"timed out after {refresh_mod._SYNC_STATUS_TIMEOUT_S}s" in result.detail
+    assert "uv run" in result.detail
     assert any(f.code == "MRS-REFRESH-008" for f in findings)
 
 

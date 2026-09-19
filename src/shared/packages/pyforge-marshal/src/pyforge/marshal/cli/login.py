@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
 import sys
 from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.oidc_pkce import PkceLogin, PkceLoginError
 from ..core.verdict import EXIT_OK, EXIT_USAGE
@@ -61,26 +62,44 @@ def _repo_root(start: Path) -> Path | None:
 
 
 def _mint_local_token(repo_root: Path, persona: str) -> str:
+    # Story 52.1 (SPEC-pyforge-core CAP-6): routed through the ONE sanctioned
+    # subprocess seam, `PosixProcess.run`, which never takes an `env=`
+    # override (it inherits `os.environ` exactly, by design). The custom env
+    # this call used to build set `PYTHONPATH=<repo_root>/src/platform`,
+    # REPLACING whatever `PYTHONPATH` the parent carried, so the old child was
+    # immune to it; a parent `PYTHONPATH` now REACHES the child (it precedes
+    # site-packages, so it can shadow `django` or any other sibling import
+    # where the replaced-env child could not). That widening is accepted
+    # deliberately, with the guarantee scoped to `config` only: the explicit
+    # `sys.path.insert(0, <platform src>)` in the `-c` script keeps `config`
+    # resolving from the platform dir first, deterministically, ahead of any
+    # inherited `PYTHONPATH` entry. The two `setdefault`s the parent also
+    # performed are already performed by the script itself. `PYTHONSAFEPATH`
+    # in the parent's environment does not affect an explicit
+    # `sys.path.insert`. Two further seam deltas are intentional:
+    # `stdin=DEVNULL` (a child that unexpectedly prompts reads EOF instead of
+    # hanging an unattended login) and `encoding="utf-8", errors="replace"`
+    # (undecodable child output is replaced, never raised as a decode error).
+    platform_src = repo_root / _PLATFORM_SRC
     script = (
         "import os, sys;"
+        f"sys.path.insert(0, {str(platform_src)!r});"
         "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local');"
         "os.environ.setdefault('COMPONENT_RUNTIME', 'local');"
         "import django; django.setup();"
         "from config.local_dev.mint import main;"
         "print(main([sys.argv[1]]))"
     )
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(repo_root / _PLATFORM_SRC)
-    env.setdefault("COMPONENT_RUNTIME", "local")
-    env.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
-    completed = subprocess.run(
-        [sys.executable, "-c", script, persona],
-        cwd=str(repo_root),
-        env=env,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        completed = PosixProcess().run(
+            [sys.executable, "-c", script, persona], cwd=repo_root
+        )
+    except ProcessError as exc:
+        # A launch failure (the interpreter could not be spawned at all) is
+        # reported the same way a failed mint is -- `run_login` catches
+        # `RuntimeError` and exits EXIT_USAGE with the message on stderr --
+        # so no raw launch `OSError` escapes this function.
+        raise RuntimeError(f"mint could not launch: {exc}") from exc
     if completed.returncode != 0:
         message = (completed.stderr or completed.stdout or "mint failed").strip()
         raise RuntimeError(message)

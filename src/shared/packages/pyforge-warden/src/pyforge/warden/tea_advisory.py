@@ -68,6 +68,7 @@ from pathlib import Path
 from typing import Any
 
 import tomllib
+from pyforge.core.errors import PyforgeError
 
 from .hooks import PR_GATE_SCAN
 
@@ -88,7 +89,7 @@ _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 TeaRunner = Callable[[Path, Path], "subprocess.CompletedProcess[str] | None"]
 
 
-class TeaRosterMissingError(RuntimeError):
+class TeaRosterMissingError(PyforgeError, RuntimeError):
     """Raised by ``run_tea_test_review`` (default-resolution path only --
     ``runner is None``) when the AD-9 module roster
     (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
@@ -100,7 +101,10 @@ class TeaRosterMissingError(RuntimeError):
     Deliberately NOT caught by ``TeaAdvisoryScanPlugin``'s
     belt-and-suspenders fail-open net -- it must propagate out of the
     PR-gate scan so ``cli.py`` can record it as a loud ``CONFIG_VALIDATION``
-    error rather than a silent no-op."""
+    error rather than a silent no-op.
+
+    Story 52.1, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def _ad9_roster_has_tea(target: Path) -> bool:
