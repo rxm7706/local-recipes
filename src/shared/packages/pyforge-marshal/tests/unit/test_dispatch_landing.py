@@ -617,15 +617,20 @@ class MergeTreePreviewVcs(FakeVcs):
         behind: int = 1,
         tree_oid: str | None = "preview-tree-oid",
         fetch_raises: bool = False,
+        add_worktree_raises: bool = False,
+        remove_worktree_raises: bool = False,
     ) -> None:
         super().__init__(merged=False)
         self.behind = behind
         self.tree_oid = tree_oid
         self.fetch_raises = fetch_raises
+        self.add_worktree_raises = add_worktree_raises
+        self.remove_worktree_raises = remove_worktree_raises
         self.fetch_calls: list[tuple[str, str]] = []
         self.merge_tree_write_calls: list[tuple[str, str]] = []
         self.add_worktree_for_tree_calls: list[tuple[Path, str, str]] = []
         self.removed_worktrees: list[Path] = []
+        self.pruned_repo_roots: list[Path] = []
         self.preview_home: Path | None = None
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
@@ -645,9 +650,16 @@ class MergeTreePreviewVcs(FakeVcs):
     ) -> None:
         self.add_worktree_for_tree_calls.append((home, tree_oid, parent))
         self.preview_home = home
+        if self.add_worktree_raises:
+            raise VcsCommandError("git worktree add --detach failed: disk full")
 
     def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
         self.removed_worktrees.append(home)
+        if self.remove_worktree_raises:
+            raise VcsCommandError("git worktree remove failed: resource busy")
+
+    def prune_worktrees(self, repo_root: Path) -> None:
+        self.pruned_repo_roots.append(repo_root)
 
 
 class PreviewAwareProcess(FakeProcess):
