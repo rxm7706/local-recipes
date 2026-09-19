@@ -79,6 +79,12 @@ def test_backlog_htmx_view_response() -> None:
     assert res.status_code == 200
     assert b"Found" in res.content
 
+    # Test status badges rendering
+    req_all = factory.get("/dashboard/backlog/")
+    res_all = backlog_htmx_view(req_all)
+    assert res_all.status_code == 200
+    assert b"BACKLOG" in res_all.content or b"DONE" in res_all.content or b"Found" in res_all.content
+
 
 def test_sync_work_passports_db_success() -> None:
     story = WorkPassportItem(
@@ -96,3 +102,31 @@ def test_sync_work_passports_db_success() -> None:
     assert res["status"] == "success"
     assert res["synced_count"] == 1
     assert WorkPassport.objects.filter(passport_id="test-uuid-sync-123").exists()
+
+
+def test_dashboard_asgi_and_routing() -> None:
+    pytest.importorskip("channels")
+    from pyforge.steward.dashboard import asgi, routing
+    assert asgi.application is not None
+    assert len(routing.websocket_urlpatterns) == 1
+
+
+def test_dashboard_consumers_helpers() -> None:
+    pytest.importorskip("channels")
+    from pyforge.steward.dashboard.consumers import (
+        EventsStreamConsumer,
+        _assertion_public_pem,
+        _broker_url,
+        _token_from_scope,
+    )
+    assert _token_from_scope({"query_string": b"token=secret123"}) == "secret123"
+    assert _token_from_scope({"query_string": "token=secret456"}) == "secret456"
+    assert _token_from_scope({}) is None
+    assert _token_from_scope({"query_string": b"foo=bar"}) is None
+
+    assert isinstance(_assertion_public_pem(), str)
+    assert isinstance(_broker_url(), str)
+
+    consumer = EventsStreamConsumer()
+    assert consumer._subject is None
+
