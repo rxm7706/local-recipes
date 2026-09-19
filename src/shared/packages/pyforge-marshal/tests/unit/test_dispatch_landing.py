@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyforge.core.process import ProcessResult
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -140,6 +140,15 @@ class FakeForge:
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
         return ProcessResult(returncode=0, stdout="", stderr="")
+
+
+class BrokenProcess:
+    """Story 51.2: a ``ProcessPort`` whose ``.run()`` always raises --
+    simulates ``dispatch_land_finalize`` failing as a subprocess AFTER the
+    PR has already been merged (``data["merged"] = True``)."""
+
+    def run(self, tokens, *, cwd: Path):
+        raise ProcessError("dispatch land finalize subprocess failed")
 
 
 class BrokenForge(FakeForge):
@@ -353,6 +362,40 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert result.marshal_native is True
     assert result.pr_number == 42
+
+
+def test_execute_dispatch_land_refused_result_keeps_pr_facts_after_merge(
+    tmp_path: Path,
+) -> None:
+    """Story 51.2: when the PR is already merged (``data["merged"] = True``)
+    but the ``dispatch_land_finalize`` subprocess then raises
+    ``ProcessError``, the REFUSED result must still carry the ``pr_number``
+    and ``subject`` that were already known at that point in execution, and
+    ``marshal_native=True`` (the check that gates ``merge_pr`` already
+    passed) -- not the dataclass's ``None``/``False`` defaults."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = FakeVcs(merged=False)
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=BrokenProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert result.pr_number == 42
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    expected_subject = render_merge_subject(
+        normalize("22-4-example"), effective.merge_subject_template.value, "pyforge-marshal"
+    )
+    assert result.subject == expected_subject
+    assert result.marshal_native is True
+    assert any(f.code == "MRS-DISP-020" for f in envelope.findings)
+    assert envelope.data.get("merged") is True
 
 
 def test_unverified_never_lands(tmp_path: Path) -> None:

@@ -4586,3 +4586,108 @@ def test_reconcile_completions_subparser_is_registered():
     assert args.handler is deploy_module.run_reconcile_completions
     assert args.project == "acme"
     assert args.format == "json"
+
+
+# --- Story 51.2: `_scan_promotions`'s worktree-aware discovery -------------
+#
+# The landing record follows the session's write, not the primary's
+# directory: a dispatch worktree's own Tier-3 dir is a second, optional
+# discovery source, read before that worktree is torn down. No existing
+# test calls `_scan_promotions` directly (it was previously only exercised
+# via `run_promote`) -- these do, reusing `_write_tier3_spec`/`_VALID_SPEC`.
+
+
+def test_scan_promotions_worktree_only_copy_is_discovered(tmp_path, monkeypatch):
+    """A spec written only into the worktree's Tier-3 dir (never the
+    primary checkout's) still surfaces in ``plan.to_promote`` once its
+    story key is merged."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    worktree = tmp_path / "wt"
+    _write_tier3_spec(worktree, "acme", "1-2", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
+
+    scan = deploy_module._scan_promotions(
+        tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree
+    )
+
+    assert scan.plan is not None
+    promoted = {str(candidate.story_key): candidate for candidate in scan.plan.to_promote}
+    assert "1.2" in promoted
+    assert promoted["1.2"].text == _VALID_SPEC
+
+
+def test_scan_promotions_worktree_copy_wins_on_key_collision(tmp_path, monkeypatch):
+    """When both the primary and the worktree have a Tier-3 copy for the
+    same story key, the worktree's (appended last) is the one
+    ``classify_promotion_candidates`` classifies -- later entry wins."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    primary_text = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\nprimary body\n"
+    worktree_text = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\nworktree body\n"
+    _write_tier3_spec(tmp_path, "acme", "1-2", primary_text)
+    worktree = tmp_path / "wt"
+    _write_tier3_spec(worktree, "acme", "1-2", worktree_text)
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
+
+    scan = deploy_module._scan_promotions(
+        tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree
+    )
+
+    assert scan.plan is not None
+    promoted = {str(candidate.story_key): candidate for candidate in scan.plan.to_promote}
+    assert promoted["1.2"].text == worktree_text
+
+
+def test_scan_promotions_worktree_with_no_twin_is_silent(tmp_path, monkeypatch):
+    """A worktree given but whose Tier-3 dir has no matching file (or
+    doesn't even exist) behaves exactly as ``worktree=None`` would -- no
+    finding, no change to what's classified."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
+    worktree = tmp_path / "wt-empty"  # never created
+
+    with_worktree = deploy_module._scan_promotions(
+        tmp_path,
+        "acme",
+        vcs=_FakeVcs(main_subjects=("Merge acme/1-2 into main",)),
+        fs=LocalFs(),
+        worktree=worktree,
+    )
+    without_worktree = deploy_module._scan_promotions(
+        tmp_path,
+        "acme",
+        vcs=_FakeVcs(main_subjects=("Merge acme/1-2 into main",)),
+        fs=LocalFs(),
+        worktree=None,
+    )
+
+    assert with_worktree.plan is not None and without_worktree.plan is not None
+    with_keys = {str(c.story_key) for c in with_worktree.plan.to_promote}
+    without_keys = {str(c.story_key) for c in without_worktree.plan.to_promote}
+    assert with_keys == without_keys == {"1.2"}
+    assert with_worktree.findings == without_worktree.findings == ()
+
+
+def test_scan_promotions_default_worktree_is_byte_identical(tmp_path, monkeypatch):
+    """Omitting ``worktree`` entirely must classify the same as passing
+    ``worktree=None`` explicitly -- the three other ``_scan_promotions``
+    callers never pass it."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
+
+    explicit_none = deploy_module._scan_promotions(
+        tmp_path,
+        "acme",
+        vcs=_FakeVcs(main_subjects=("Merge acme/1-2 into main",)),
+        fs=LocalFs(),
+        worktree=None,
+    )
+    omitted = deploy_module._scan_promotions(
+        tmp_path,
+        "acme",
+        vcs=_FakeVcs(main_subjects=("Merge acme/1-2 into main",)),
+        fs=LocalFs(),
+    )
+
+    explicit_keys = {str(c.story_key) for c in explicit_none.plan.to_promote}
+    omitted_keys = {str(c.story_key) for c in omitted.plan.to_promote}
+    assert explicit_keys == omitted_keys == {"1.2"}
