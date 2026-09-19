@@ -242,7 +242,10 @@ def test_manifest_write_before_copy_makes_a_copy_failure_retry_self_healing(
     assert (labs_fixture / ".claude/skills/mcp-builder/SKILL.md").is_file()
 
 
-def test_missing_share_package_raises_before_any_write(tmp_path):
+def test_missing_share_package_raises_before_any_write(tmp_path, monkeypatch):
+    # Pin the ambient prefix to an empty env so the share package is missing
+    # regardless of which pixi env runs the suite (pyforge-guild ships it).
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "lean-env"))
     with pytest.raises(FileNotFoundError):
         provision_plugin_skill("labs", "mcp-builder", cwd=tmp_path)
     assert not (tmp_path / "_bmad/custom/config.toml").exists()

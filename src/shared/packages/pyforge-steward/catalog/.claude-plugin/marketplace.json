@@ -1,0 +1,67 @@
+{
+  "name": "pyforge-estate-catalog",
+  "owner": {
+    "name": "rxm7706"
+  },
+  "metadata": {
+    "description": "Estate-reviewed BMAD modules and Frames the PyForge Guild wields or publishes. Git is the edit store; backends and sources are declared in catalog.yaml."
+  },
+  "plugins": [
+    {
+      "name": "bmad-method-test-architecture-enterprise",
+      "description": "BMad Method TEA agent for quality strategy, test automation, and release gates",
+      "version": "1.26.0",
+      "source": {
+        "source": "github",
+        "repo": "bmad-code-org/bmad-method-test-architecture-enterprise"
+      },
+      "homepage": "https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise",
+      "tags": [
+        "source:wielded-suite",
+        "trust:bmad-certified"
+      ]
+    },
+    {
+      "name": "bmad-builder",
+      "description": "BMad Core expansion module for creating, sharing, and discovering AI modules and agents",
+      "version": "2.2.2",
+      "source": {
+        "source": "github",
+        "repo": "bmad-code-org/bmad-builder"
+      },
+      "homepage": "https://github.com/bmad-code-org/bmad-builder",
+      "tags": [
+        "source:wielded-suite",
+        "trust:bmad-certified"
+      ]
+    },
+    {
+      "name": "bmad-creative-intelligence-suite",
+      "description": "BMad Method creative agent suite for innovation, design thinking, and storytelling",
+      "version": "0.3.2",
+      "source": {
+        "source": "github",
+        "repo": "bmad-code-org/bmad-module-creative-intelligence-suite"
+      },
+      "homepage": "https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite",
+      "tags": [
+        "source:wielded-suite",
+        "trust:bmad-certified"
+      ]
+    },
+    {
+      "name": "bmad-utility-skills",
+      "description": "Utility skills for BMad Method contributors (PR review, triage, changelog, root-cause analysis)",
+      "version": "2.0.0",
+      "source": {
+        "source": "github",
+        "repo": "bmad-code-org/bmad-utility-skills"
+      },
+      "homepage": "https://github.com/bmad-code-org/bmad-utility-skills",
+      "tags": [
+        "source:wielded-suite",
+        "trust:bmad-certified"
+      ]
+    }
+  ]
+}

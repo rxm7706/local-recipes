@@ -1,0 +1,7 @@
+{
+  "name": "pyforge-estate-catalog",
+  "interface": {
+    "displayName": "PyForge estate catalog"
+  },
+  "plugins": []
+}

@@ -1,0 +1,39 @@
+# Estate listings — the reviewed-listings file (Story 60.1; Story 60.2 owns
+# publish + review and is the only path that appends here).
+#
+# Row format: the upstream registry file format,
+#   https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml
+#
+# Keys this story's loader (`pyforge.steward.catalog.EstateListingsSource`)
+# reads from each `modules[]` row, and where they go:
+#   name          required; the listing/plugin name         -> both manifests
+#   description   -> Claude manifest `description`
+#   repository    GitHub `owner/repo` URL -> Claude `source: {github, repo}`;
+#                 any other git URL -> `source: {url, url}`; absent -> a
+#                 `listing-no-repository` finding (render refuses)
+#   homepage      -> Claude manifest `homepage` (falls back to `repository`)
+#   version       a string, or an int; an unquoted float (1.10) is dropped
+#                 -> Claude manifest `version`
+#   code          the `steward provision --module` code (listing only)
+#   install_hint  free text (listing only)
+#   codex_source  a `.codex-plugin` dir path -> Codex manifest plugin row
+#   trust_tier    unverified | community-reviewed | bmad-certified
+#                 (default unverified) -> Claude manifest tag `trust:<tier>`
+#   source        optional; when present must equal `estate-listings`
+#                 -> Claude manifest tag `source:<name>`
+# Other upstream schema fields (display_name, author, license, type,
+# category, subcategory, ...) are preserved in this file but not read in
+# this story.
+#
+# The `source:` rule: this file feeds exactly one declared source. The
+# file-level `source:` below, when present, must equal `estate-listings`
+# (catalog.yaml `sources.estate-listings`); absent means `estate-listings`.
+# A per-row `source:` follows the same rule; `steward catalog check` reports
+# `listing-source-mismatch` for a row that names another source. A row never
+# appears here without a steward review record (60.2) unless it is already in
+# the wielded suite — and those rows come from the `wielded-suite` source,
+# never this file.
+#
+# v1 ships with no community modules (operator ruling 4).
+source: estate-listings
+modules: []

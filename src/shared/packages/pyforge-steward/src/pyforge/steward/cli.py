@@ -38,7 +38,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
 # `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
-# `revoke` (Epic 42, Story 42.2 — stop one runaway subject).
+# `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
+# `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -59,9 +60,15 @@ DUTIES: tuple[str, ...] = (
     "guards",
     "cutover",
     "ledger-query",
+    "catalog",
 )
 
 _HELP = {
+    "catalog": (
+        "estate BMAD catalog — check/list/render/pointers over catalog.yaml "
+        "(backends + sources declared in config, git is the edit store; "
+        "generated Claude/Codex marketplace manifests; Story 60.1)"
+    ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
         "(markdown/summary/json/table/sync-matrix/herald-facts/atlas-dataset/"
@@ -192,6 +199,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_cutover_subparsers(duty_parser)
         elif name == "ledger-query":
             _add_ledger_query_subparsers(duty_parser)
+        elif name == "catalog":
+            _add_catalog_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -411,6 +420,51 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
         metavar="NAME=VALUE",
         help="feature-flag override, repeatable (e.g. --flag enable_dossier_export=true); outranks FLAGS_<NAME> and flags.json",
     )
+
+
+def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
+    """Story 60.1: ``check`` (default) / ``list`` / ``render [--check]`` /
+    ``pointers``, all ``--json``. ``--catalog DIR`` points at another catalog
+    dir (default: ``src/shared/packages/pyforge-steward/catalog``).
+
+    ``--catalog`` and ``--json`` are accepted both before and after the verb:
+    the parent parser owns the defaults, and the verb subparsers redeclare
+    them with ``default=argparse.SUPPRESS`` so an omitted flag never clobbers
+    the parent's value (``steward catalog --json`` with the verb omitted, and
+    ``steward catalog check --catalog DIR``, both parse).
+    """
+    catalog_help = "catalog directory holding catalog.yaml (default: the tracked estate catalog)"
+    json_help = "emit JSON instead of human-readable text"
+    catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
+    catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
+    catalog_subs = catalog_parser.add_subparsers(
+        dest="catalog_verb", metavar="{check,list,render,pointers}"
+    )
+    check = catalog_subs.add_parser(
+        "check",
+        help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
+    )
+    listing = catalog_subs.add_parser("list", help="every listing with its source and trust tier")
+    render = catalog_subs.add_parser(
+        "render",
+        help="regenerate .claude-plugin/marketplace.json + .agents/plugins/marketplace.json",
+    )
+    render.add_argument(
+        "--check",
+        action="store_true",
+        help="report drift between the committed manifests and a fresh render; write nothing",
+    )
+    pointers = catalog_subs.add_parser(
+        "pointers",
+        help="print how the installer, Claude and Codex point at this catalog (edits nothing)",
+    )
+    for sub in (check, listing, render, pointers):
+        sub.add_argument(
+            "--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help
+        )
+        sub.add_argument(
+            "--json", action="store_true", default=argparse.SUPPRESS, help=json_help
+        )
 
 
 def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
@@ -1162,6 +1216,10 @@ def resolve_duty(name: str) -> Duty:
         from .sprint_ledger_query import LedgerQueryDuty
 
         return LedgerQueryDuty()
+    if name == "catalog":
+        from .catalog import CatalogDuty
+
+        return CatalogDuty()
     return NullDuty(name)
 
 
