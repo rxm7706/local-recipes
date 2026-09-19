@@ -157,4 +157,12 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   `scripts/.spec-surface-baseline.json` (doctor/marshal-owned). (10) Devin Playbooks / MultiDevin and
   Copilot custom agents (`.github/agents/*.agent.md`) are first-class analogues of marshal dispatch
   and the SKF personas the estate does not use yet — an opportunity for Herald/Marshal, recorded here
-  because Scribe owns the instruction surface they would read.
+  because Scribe owns the instruction surface they would read. Devin's own docs (checked 2026-09-19):
+  it reads `AGENTS.md` before coding and its Knowledge ingests `AGENTS.md`, `CLAUDE.md`, `.mdc` rules
+  and `.claude/skills/**/SKILL.md`; Playbooks and Repo Setup (the `pixi install -e pyforge-guild`
+  snapshot) are **app-side, not repo files** — an operator with a Devin seat must create them; no
+  Devin session was available to verify any of this live. Microsoft Copilot (M365 / Copilot Studio)
+  reads no repo files at all — BMAD reaches it only through a declarative agent with a knowledge
+  source (the *Run-BMad-in-Microsoft-Copilot* intake gist); out of scope for file discovery.
+  **Live-verified today: Claude Code only** (a fresh `claude -p` in the PR worktree quoted the
+  verified block through `@AGENTS.md`; the same prompt on `main` answered NOT LOADED).

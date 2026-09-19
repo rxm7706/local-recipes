@@ -149,5 +149,9 @@ Minted 2026-09-19 at the review of PR #1513: the parallel session's PR carried n
   deduplicated and corrected, the Claude Code import added, Gemini and VS Code settings checked in,
   three team-memory captures made, and an 18-test parity gate added to the scribe suite (verified to
   red against today's `main` on four of its assertions).
-- **Verification (exit codes read directly, 2026-09-19):** filled in at landing — see the PR.
+- **Verification (exit codes read directly, 2026-09-19):**
+  - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` → 384 passed, 11 skipped (26 of them the two new meta-tests).
+  - **Live, Claude Code:** `claude -p` in this worktree quoted the verified block's attribution bullet verbatim through `@AGENTS.md`; the same prompt in the `main` checkout answered `NOT LOADED`.
+  - `governance-currency` on `AGENTS.md` and `CLAUDE.md` → 0; `spec-surface`, `deferred-work`, `story-status`, `forward-dependency`, `capability-ledger`, `chain-sprawl`, `chain-completeness`, `fr-without-cap`, `chain-currency-sweep`, `dream-chain --dreams` → 0; `pr-preflight` → 0 after re-merging `main` (#1516).
+  - **Not live-verified** (docs only): Gemini, Cursor (account out of usage), Copilot cloud agent / CLI / VS Code chat, Devin, Codex — research doc § 5.
 - **Files changed:** see Code Map.

@@ -113,7 +113,30 @@ at `71c7fe93a2`.
 - **Scribe ingests every harness's sessions** and **recall is reachable from the Guild env / MCP**.
 - **Per-spec surface baselines** so parallel lanes stop colliding on one JSON file.
 
-## 4. Sources (live, 2026-09-19)
+## 5. How each claim was verified — and what was NOT (honesty table)
+
+| Harness | Verified how | Live-tested here? |
+|---|---|---|
+| **Claude Code** | Docs + **live**: a fresh `claude -p` session in the PR worktree (with `@AGENTS.md`) quoted the verified block's attribution bullet verbatim; the same prompt in the `main` checkout (no import) answered `NOT LOADED`. | **Yes** (2026-09-19) |
+| **Gemini CLI / Antigravity** | Docs only (`context.fileName`, `/memory show`). Not run: it would send the repo's instruction files to the Gemini API on the operator's key. Verify with `gemini` → `/memory show` after merge. | No |
+| **Cursor** | Docs only (native `AGENTS.md`, nested, `.mdc`). The `cursor-agent` CLI is installed but the account is out of usage today. | No |
+| **GitHub Copilot cloud agent / CLI / VS Code chat** | Docs only. Cloud-agent verification = assign an issue and read the PR's **References**; VS Code = the References list on a chat reply; CLI = `/instructions`. | No |
+| **Devin** | Docs only — three pages: `onboard-devin/agents-md` ("Devin will look for the file before it starts coding"), `onboard-devin/knowledge-onboarding` (Knowledge auto-pulls from `.rules`, `.mdc`, `.cursorrules`, `.windsurf`, `CLAUDE.md`, `AGENTS.md` — not general `.md`), `cli/reference/configuration/read-config-from` (Devin CLI imports `AGENTS.md` / `AGENTS.local.md`, `.cursor/rules/*.mdc`, `CLAUDE.md`, `.claude/skills/**/SKILL.md`, `.github/skills/`, MCP configs; project config `.devin/config.json`). **Playbooks are app-native only** ("Create the playbook directly in the web app") — there is no repo-side playbook file; **Repo Setup / machine snapshot** is likewise configured in the app ("just ask Devin to do it"). No Devin session or CLI was available here. | No |
+| **Codex / Jules / Zed / Warp / Aider / goose / Windsurf / Amp / Factory** | agents.md's native-support list only. | No |
+| **Microsoft Copilot (M365 / Copilot Studio)** | Not a repo-file harness at all: it does not clone or read `AGENTS.md`; BMAD reaches it only through a declarative agent with a knowledge source (the intake gist *Run-BMad-in-Microsoft-Copilot*). Out of scope for a file-discovery mechanism; recorded on the Dream. | n/a |
+
+**What this means for Devin specifically.** Devin is served by this PR in exactly one way: it reads
+`AGENTS.md` natively and its Knowledge ingests `AGENTS.md`, `CLAUDE.md`, the `.mdc` rules and the
+`.claude/skills/**/SKILL.md` tree — which is *why* the no-duplication rule matters more for Devin than
+for anyone (duplicated sections become duplicated, possibly conflicting Knowledge entries). Everything
+else Devin needs is **app-side and not in this repo**: a Repo Setup snapshot that runs
+`pixi install -e pyforge-guild` (the same lean env `copilot-setup-steps.yml` and Cursor's
+`environment.json` install), Knowledge pinned to this repo, and a Playbook per repeatable task (the
+natural one: "land one story" — the marshal dispatch prompt's Procedure / Specifications / Forbidden
+Actions, e.g. never `bmad-switch`, never commit on the shared checkout, `--merge` only). None of that
+was done or claimed here; it is Dream item (10) and needs an operator with a Devin seat.
+
+## 6. Sources (live, 2026-09-19)
 
 - agents.md open format — https://agents.md/
 - Claude Code memory docs (AGENTS.md rules, `@import`, 200-line target, `.claude/rules/`) — https://code.claude.com/docs/en/memory
