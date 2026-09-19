@@ -33,9 +33,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 from datetime import datetime
 from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -187,15 +188,19 @@ def _sync_status_step(
         "--date",
         datetime.now().strftime("%m-%d-%Y %H:%M"),
     ]
+    # Story 52.1 (SPEC-pyforge-core CAP-6): routed through the ONE sanctioned
+    # subprocess seam. `PosixProcess.run` never raises for a non-zero exit
+    # (that case is classified below) and raises `ProcessError` for the
+    # launch/timeout failures the raw `(OSError, subprocess.TimeoutExpired)`
+    # clause used to catch. Two seam deltas are intentional: `stdin=DEVNULL`
+    # (a child that prompts reads EOF instead of hanging) and
+    # `encoding="utf-8", errors="replace"` (undecodable output is replaced,
+    # never raised as a decode error).
     try:
-        result = subprocess.run(
-            argv,
-            cwd=git_repo_root,
-            capture_output=True,
-            text=True,
-            timeout=_SYNC_STATUS_TIMEOUT_S,
+        result = PosixProcess().run(
+            argv, cwd=git_repo_root, timeout_s=_SYNC_STATUS_TIMEOUT_S
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except ProcessError as exc:
         findings.append(
             Finding(
                 code=_MRS_REFRESH_008,

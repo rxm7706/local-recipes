@@ -147,8 +147,11 @@ costs two stories of rework; deciding it now costs an epic ordering.
     6 failed / 1855 passed — exception root: marshal `adapters/oidc_pkce.py`, `cli/watch.py`,
     warden `tea_advisory.py`; second subprocess implementation: marshal `cli/login.py`,
     `cli/refresh.py`, testing-kit `branch_diff_guard.py`); each re-parent widens no `except`
-    clause (the CAP-5 test); each subprocess call routes through the core guard; the touched
-    stations' own suites stay green.
+    clause (the CAP-5 test); marshal's two subprocess sites route through the core guard, and
+    the kit's file — outside this Spec's scope (Non-goals; Q2) and a stdlib leaf by Q-26 — is
+    cleared as CAP-6's recorded, tested opt-out: a file-level guard exemption pinned to the
+    kit's `dependencies == []` so it self-retires if Q2 changes the declaration (corrected
+    2026-09-19 at Story 52.1's review); the touched stations' own suites stay green.
 
 ## Constraints
 

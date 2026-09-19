@@ -648,3 +648,24 @@ def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(
         "a refusal contributes no advisory note -- distinguishing it from "
         "the ordinary scored-finding path"
     )
+
+
+# --- Story 52.1, SPEC-pyforge-core CAP-5: the re-parent widening guard ----
+
+
+def test_tea_roster_missing_error_is_a_pyforge_error_and_a_runtime_error():
+    """``TeaRosterMissingError`` gained ``PyforgeError`` as an additional
+    base and kept its original ``RuntimeError`` base -- the exact-class
+    ``except TeaRosterMissingError`` sites (``_contribute``'s deliberate
+    re-raise, ``cli.py``'s ``CONFIG_VALIDATION`` mapping) and any ``except
+    RuntimeError`` site behave identically; ``except PyforgeError`` newly
+    catches it too."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(TeaRosterMissingError, PyforgeError)
+    assert issubclass(TeaRosterMissingError, RuntimeError)
+    for catch in (TeaRosterMissingError, RuntimeError, PyforgeError):
+        try:
+            raise TeaRosterMissingError("roster lacks tea")
+        except catch:
+            pass

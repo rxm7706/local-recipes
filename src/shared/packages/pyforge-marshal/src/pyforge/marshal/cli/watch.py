@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..core.context import MarshalContext
@@ -42,8 +43,11 @@ _CACHE_RELPATH = (".claude", "data", "marshal-run-watch")
 _WATCH_TIMEOUT_S = 90.0
 
 
-class LoopCliError(RuntimeError):
-    """``bmad-loop status``/``list`` failed -- never fabricate a delta."""
+class LoopCliError(PyforgeError, RuntimeError):
+    """``bmad-loop status``/``list`` failed -- never fabricate a delta.
+
+    Story 52.1, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
     def __init__(self, command: str, reason: str) -> None:
         super().__init__(f"{command}: {reason}")
@@ -51,8 +55,11 @@ class LoopCliError(RuntimeError):
         self.reason = reason
 
 
-class ProbeError(RuntimeError):
-    """Best-effort git/gh probe failed -- finding, not a crash."""
+class ProbeError(PyforgeError, RuntimeError):
+    """Best-effort git/gh probe failed -- finding, not a crash.
+
+    Story 52.1, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
     def __init__(self, command: str, reason: str) -> None:
         super().__init__(f"{command}: {reason}")
