@@ -41,7 +41,7 @@ def _skip_leading_banner(text: str) -> str:
     spaces before the banner's opening marker -- the banner need not sit
     at literal text offset 0. Returns ``text`` unchanged when no banner is
     found there, or when the marker is never closed."""
-    stripped = text.lstrip("﻿ \t\r\n")
+    stripped = text.lstrip("\ufeff \t\r\n")
     if not stripped.startswith(_BANNER_PREFIX):
         return text
     end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
@@ -68,7 +68,7 @@ def _frontmatter_scalar(text: str, key: str) -> str | None:
     """Read one inline YAML scalar from the first ``---`` frontmatter block."""
     if not isinstance(text, str):
         raise TypeError(f"text must be a str, got {text!r}")
-    lines = text.splitlines()
+    lines = _skip_leading_banner(text).splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return None
     frontmatter: list[str] = []
