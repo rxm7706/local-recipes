@@ -86,6 +86,24 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-09-18 (night)** — **Proposed: a frontmatter reader that stops at the
+  first `---` it sees.** `sources/chain.py::_frontmatter_parse` splits a spec on
+  the first `---` *anywhere in the file*, not on a line-anchored fence. Marshal
+  Story 50.5's tracked spec quotes a `"---"` fence inside its first deferral's
+  `evidence:`, so the YAML was cut mid-scalar, `yaml.safe_load` still returned a
+  mapping, and the detector saw one deferral where two exist: the first lost its
+  `location:` (and so its fingerprint, `fdd6bce25c09` for `3bc3d91bdf95`), the
+  second — severity *high* — was invisible to `deferred-work` and to
+  `deferred_work_intake.py`, which reported "all 118 already in tracked ledger."
+  Every doctor source that reads frontmatter through this helper (spec status,
+  deferrals, surface, ownership) inherits the same silent truncation, and a
+  quoted fence is ordinary in any spec about frontmatter. Reconciled by hand
+  tonight (DW-FU-50-5 rewritten in full-parse form, DW-FU-50-6 added). The
+  fix is a line-anchored fence split (marshal's `promotion.py`/`spec_surface.py`
+  already parse this way after 50.5); it is `spec-pyforge-doctor` surface, so it
+  waits for its CAP and Story rather than a night-time patch. Same family as
+  CAP-80's lesson: a reader that degrades silently is worse than one that
+  refuses.
 - **2026-09-18 (later still)** — **Corrected: the atlas rows were a rekey, not a
   sibling.** Story 27.1 landed (PR #1471) with both halves of CAP-78 real —
   `ledger-regression` judges a PR at its merge-base, and the merge-history

@@ -6318,3 +6318,26 @@ status: open
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-50-5: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`
+  summary: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
+  evidence: Traced `cli/gate.py::_gather_review_depth` -> `_find_spec_text` (gate.py:494-519) -> `spec_low_risk.py::parse_declared_low_risk` (spec_low_risk.py:55-68): the latter still gates on `lines[0] == "---"` with no banner-skip, so a banner-topped tracked spec's `declared_low_risk: true` is read as `False`, pushing `classify_review_tier` to a heavier review tier than declared. Separately traced `cli/dispatch.py:2098-2099`'s one call site for `dispatch_harness_done.py::parse_spec_status` through `_spec_text_prefer_worktree` (dispatch.py:465-480): it reads only the current dispatch worktree's relocated spec text, never a promoted tracked copy. Flagged by both the Blind Hunter and Verification Gap review layers on this story's 2026-09-18 review pass; explicitly out of this story's declared Surface (intent contract "Never" clause names all three modules as excluded).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_low_risk.py::parse_declared_low_risk
+  origin: spec-deferred 3bc3d91bdf95 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  note: also read as spec-deferred fdd6bce25c09 by doctor's pre-fix `_frontmatter_parse`, which splits on the first `---` anywhere and so truncated this item at the quoted fence in its evidence (location dropped) — hand-rewritten 2026-09-19 in full-parse form; seeded on docs/dreams/pyforge-doctor.md
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-50-6: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
+
+- source_spec: `planning-artifacts/specs/spec-50-5-the-promoter-reads-a-spec-through-its-banner.md`
+  summary: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
+  evidence: Raised independently by the Blind Hunter and Edge Case Hunter review layers on this story's 2026-09-18 review pass (promotion.py:433, spec_surface.py:69); not exercised by any test in this story's added coverage. Undecided from the diff/code alone: confirmed via repo-wide search (`grep -rn "Promoted from implementation-artifacts" --include="*.py"`) that no code in this repository programmatically writes the provenance banner text at all — it is always hand/LLM-authored — so whether any real authoring path ever introduces leading whitespace before the banner could not be settled from this codebase alone.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::_skip_leading_banner
+  origin: spec-deferred 5434eca8c9e5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
