@@ -2,7 +2,7 @@
 title: '24.3: The second `sync-all` run is proven unchanged on a real deck'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -49,3 +49,7 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - With `HERALD_LIVE_SYNC_PROOF=1` and live Design credentials, the opt-in task runs `sync-all --slug <seeded deck>` twice; the second report is all-`unchanged` with zero git and zero Design writes; both reports + stamps are recorded; `live-proof-surfaces.md` gains the row; DW-FU-23-6 is marked done citing the recorded run. The live half is operator-run — the story is done when the recorded run exists.
+
+## Auto Run Result
+
+**Landed 2026-09-18 (PR #1482, `709c47bf2f Merge pyforge-herald/24-3 into main`) — mechanism complete, live proof pending the operator.** The dispatched session built everything a session can: the opt-in `deck-sync-proof` pixi task gated on `HERALD_LIVE_SYNC_PROOF=1`, `sync-all --proof-dir` writing both per-deck reports plus tree/etag stamps under `.herald/sync-proof/<slug>/`, the `live-proof-surfaces.md` row on `spec-pyforge-doctor`, and tests (+695 lines). The supervisor verified and landed it while the session was still waiting on its own `pyforge-station-tests` run, so this spec's status was never flipped by the session; set `done` here to match the promoted ledger row, with the honest caveat the story's own And-clause states: **the story is done when the recorded run exists, not when the task does** — that run needs live Claude Design credentials only the operator has. `DW-FU-23-6` stays **open** until `HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <seeded deck>` has been run twice and its artifacts recorded under `planning-artifacts/specs/spec-pyforge-herald/`.

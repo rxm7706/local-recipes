@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.core.landing_evidence import StoryKeyRef
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import marshal
 
@@ -119,6 +120,32 @@ def _write_policy(target: Path, slug: str, merge_subject_template: str) -> None:
     policy.write_text(
         f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8"
     )
+
+
+def _write_ledger(target: Path, slug: str, statuses: dict[str, str]) -> None:
+    """A minimal tracked ``sprint-status-ledger.yaml`` -- Story 27.5's
+    ``bare_merge.known_story_keys`` corroboration source, distinct from the
+    gitignored Tier-3 feed ``_write_feed`` writes."""
+    ledger = (
+        target / "_bmad-output" / "projects" / f"pyforge-{slug}"
+        / "planning-artifacts" / "sprint-status-ledger.yaml"
+    )
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["development_status:"]
+    lines.extend(f"  {key}: {value}" for key, value in statuses.items())
+    ledger.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _commit_touching(target: Path, subject: str, *, path: str) -> str:
+    """A REAL commit (unlike ``_commit``'s ``--allow-empty``) whose diff
+    touches exactly ``path`` -- Story 27.5's diff-path gate needs an actual
+    file change to classify, not an empty merge."""
+    file_path = target / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text("x\n", encoding="utf-8")
+    _git(target, "add", path)
+    _git(target, "commit", "-q", "-m", subject)
+    return _git(target, "rev-parse", "HEAD").strip()
 
 
 # --- False-green story -------------------------------------------------
@@ -452,6 +479,270 @@ def test_no_override_sibling_scoped_default_merge_does_not_suppress(
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
     assert findings[0].evidence["key"] == "7-2-foo"
+
+
+# --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
+# paths its diff touches, never by ledger membership alone -----------------
+
+
+def test_bare_form_merge_is_attributed_by_the_paths_its_diff_touches(
+    tmp_path: Path,
+) -> None:
+    """The real regression this story fixes: marshal's own `34-3`
+    (`dcda31b8cb Merge 34-3 into main`, 2026-09-12) -- no scoped template
+    override, but its first-parent diff touches ONLY marshal's own paths,
+    and marshal's own tracked ledger already marks the key `done`."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """27.3's own reopened gap: this station's ledger ALSO knows the key
+    (the common case under one shared numbering grammar), but the merge's
+    diff never touches this station's own paths -- ledger membership alone
+    must not be enough."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-steward/core/whatever.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_bare_form_merge_touching_two_stations_with_the_same_key_attributes_to_neither(
+    tmp_path: Path,
+) -> None:
+    """The compound collision Blind Hunter caught in review: a genuinely
+    cross-cutting commit touches BOTH marshal's and a sibling's own paths,
+    and BOTH stations' ledgers independently track the same numeric key
+    (the module's own docstring calls that "the common case, not the
+    exception"). `project_slug in slugs` alone would attribute this to
+    marshal too, exactly the "fleet-wide mop commit... attributed to every
+    station it touches" collision the spec's Never bullet forbids -- the
+    diff must touch marshal's paths EXCLUSIVELY to attribute."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    (target / "src/shared/packages/pyforge-marshal/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-marshal/core/a.py").write_text(
+        "x\n", encoding="utf-8",
+    )
+    (target / "src/shared/packages/pyforge-steward/core").mkdir(parents=True)
+    (target / "src/shared/packages/pyforge-steward/core/b.py").write_text(
+        "x\n", encoding="utf-8",
+    )
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_bare_form_merge_touching_no_station_path_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """A merge touching no ``_bmad-output/projects/*`` or ``src/shared/
+    packages/*`` path at all (docs, root config) attributes to nothing --
+    not even a fleet-wide mop commit gets laundered into landing evidence."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(target, "Merge 34-3 into main", path="docs/some-note.md")
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
+def test_bare_form_merge_diff_query_failure_warns_even_alongside_a_false_green(
+    tmp_path: Path,
+) -> None:
+    """A ``git diff`` call that cannot run (here: the merge sha is the
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to a
+    standalone WARN naming the sha, surfaced even when the SAME run also
+    produces an unrelated false-green FAIL -- a version of this that only
+    rode on the OK Finding's caveat string would have dropped it silently
+    the moment `false_greens` also fired, since that branch returns first."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _git(target, "init", "-q", "--initial-branch=main")
+    _git(target, "config", "user.email", "doctor-test@example.com")
+    _git(target, "config", "user.name", "Doctor Test")
+    _git(target, "config", "commit.gpgsign", "false")
+    _git(target, "config", "core.hooksPath", "/dev/null")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _git(target, "add", "-A")
+    _git(target, "commit", "-q", "-m", "Merge 34-3 into main")
+    root_sha = _git(target, "rev-parse", "HEAD").strip()
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    warns = [f for f in findings if f.check == "bare-merge-diff-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status is DoctorStatus.WARN
+    assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
+
+    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["key"] == "34-3-factory-drain"
+
+
+def test_keys_from_main_commits_attributes_a_bare_form_merge_via_diff_and_ledger(
+    tmp_path: Path,
+) -> None:
+    """Direct proof at Route 3's own boundary: ``_keys_from_main_commits``'s
+    bare-merge fallback branch alone, isolated from Route 2
+    (``_keys_from_merge_subjects`` over ``--all``, a superset of ``main``)
+    which always resolves first inside ``gather_story_status`` and would
+    shadow a bug in Route 3's own fallback forever."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    sha = _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+
+    keys = marshal._keys_from_main_commits(
+        target,
+        [(sha, "Merge 34-3 into main")],
+        project_slug="pyforge-marshal",
+        diff_cache={},
+    )
+
+    assert keys == frozenset({StoryKeyRef(34, 3)})
+
+
+def test_bare_form_merge_still_attributes_once_the_station_has_its_own_override(
+    tmp_path: Path,
+) -> None:
+    """The literal real-world scenario this story exists to fix: marshal
+    has carried its own scoped ``merge_subject_template`` since PR #1467,
+    but ``34-3`` (``dcda31b8cb``) landed under the bare default BEFORE that
+    override existed. A real (non-empty) historical bare-form commit whose
+    diff touches only marshal's own paths, naming a key marshal's own
+    ledger already knows, must still attribute -- the scoped-template
+    fixtures elsewhere in this file all use EMPTY commits, and the
+    bare-fallback fixtures elsewhere all use a project with NO override, so
+    neither alone proves this combination works."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_policy(target, "marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(target, "marshal", {"34-3-factory-drain": "done"})
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
+
+
+def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """The mirror of the already-covered "ledger knows it, path doesn't
+    match" case: the diff touches ONLY this station's own paths, but the
+    extracted key is absent from this station's own tracked ledger
+    entirely -- the ledger gate is checked BEFORE the diff is even queried
+    (``bare_merge.attribute_bare_merge``), so this must not attribute
+    either."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_ledger(target, "marshal", {"9-9-unrelated": "done"})  # no 34-3 row at all
+    _commit_touching(
+        target, "Merge 34-3 into main",
+        path="src/shared/packages/pyforge-marshal/core/dispatch_fleet.py",
+    )
+    _write_feed(target, "marshal", ["34-3-factory-drain"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"34-3-factory-drain": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["key"] == "34-3-factory-drain"
 
 
 # --- Route 3: hand-landed, named in a commit subject on main ---------------

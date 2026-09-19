@@ -6296,3 +6296,14 @@ status: open
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-50-3: The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model isn't catalogued under ANY provider, so a genuinely foreign model could still reach a live launch uncaught.
+
+- source_spec: `planning-artifacts/specs/spec-50-3-harness-outranks-a-dead-tier-map-harness.md`
+  summary: The MRS-DISP-043 fails-safe guard is silent when a tier-mapped model isn't catalogued under ANY provider, so a genuinely foreign model could still reach a live launch uncaught.
+  evidence: provider_declaring_model returns None for an uncatalogued model, and the guard's condition (`model_provider is not None and model_provider != resolved_provider`) only fires when the model IS found under some OTHER provider -- an uncatalogued-but-foreign model slips through silently. Pre-existing since the guard's 2026-09-12 introduction; unchanged by Story 50.3's diff, and explicitly outside this story's boundary ("Never ... add a second gate").
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1901-1904
+  origin: spec-deferred 43c57981dccf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -72,6 +72,24 @@ def _commit(repo: Path, message: str, *, allow_empty: bool = False) -> None:
     _git(repo, *args)
 
 
+def _write_rekey(
+    repo: Path, project: str, text: str, name: str = "rekey-2026-09-17.md"
+) -> Path:
+    """A fold PR's re-key map -- same shape ``sources/ledger.py``'s
+    ``gather()`` already reads (doctor Story 25.3)."""
+    p = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / project
+        / "planning-artifacts"
+        / name
+    )
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
 def _write_policy(repo: Path, project: str, merge_subject_template: str) -> None:
     """A minimal ``marshal-policy.toml`` declaring only the one key this
     module reads -- Story 27.1's per-station template read."""
@@ -363,3 +381,308 @@ def test_no_policy_file_scoped_default_template_merge_counts_as_landed(
     assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
     assert fails[0].evidence["story_id"] == "7-2"
     assert fails[0].evidence["project"] == "pyforge-mason"
+
+
+# --- Story 27.5 (CAP-80 amended): a bare-form merge is attributed by the
+# paths its diff touches, never by ledger membership alone -----------------
+
+
+def test_bare_form_merge_touching_own_station_paths_surfaces_landed_but_unpromoted(
+    tmp_path: Path,
+) -> None:
+    """The real regression this story fixes (marshal's own `34-3`,
+    `dcda31b8cb Merge 34-3 into main`, 2026-09-12): no scoped template
+    override, but the merge's first-parent diff touches ONLY marshal's own
+    paths, and marshal's own tracked ledger already knows the key -- so it
+    correctly attributes and surfaces the genuine landed-but-unpromoted
+    drift (proving attribution actually happened, not merely "nothing
+    contradicted")."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "34-3"
+    assert fails[0].evidence["project"] == "pyforge-marshal"
+
+
+def test_bare_form_merge_is_attributed_when_ledger_already_says_done(
+    tmp_path: Path,
+) -> None:
+    """The exact real-case shape: marshal's own tracked ledger already
+    marks `34-3` `done`, so once the diff-path gate corroborates the merge
+    as marshal's own, the story reads as landed -- no finding at all."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_bare_form_merge_touching_only_a_sibling_station_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """27.3's own reopened gap: marshal's ledger ALSO knows the key (the
+    common case under one shared numbering grammar), but the merge's diff
+    never touches marshal's own paths -- ledger membership alone must not
+    be enough to attribute."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    steward_dir = repo / "_bmad-output" / "projects" / "pyforge-steward" / "planning-artifacts"
+    steward_dir.mkdir(parents=True)
+    (steward_dir / "note.md").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+def test_bare_form_merge_touching_no_station_path_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """A merge touching no ``_bmad-output/projects/*`` or ``src/shared/
+    packages/*`` path at all (docs, root config) attributes to nothing --
+    not even a fleet-wide mop commit gets laundered into landing evidence."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    _commit(repo, "seed ledger")
+    (repo / "docs").mkdir(parents=True)
+    (repo / "docs" / "note.md").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+def test_bare_form_merge_diff_query_failure_warns_naming_the_sha(
+    tmp_path: Path,
+) -> None:
+    """A ``git diff`` call that cannot run (here: the merge sha is the
+    repository's ROOT commit, so ``<sha>^1`` does not resolve) degrades to
+    a WARN naming the sha rather than crashing or silently attributing."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "backlog"})
+    # The ledger write above lands in this SAME commit (git add -A), so this
+    # is genuinely the repository's root commit -- no parent to diff against.
+    _commit(repo, "Merge 34-3 into main")
+    root_sha = _git(repo, "rev-parse", "HEAD").strip()
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "bare-merge-diff-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert warns[0].evidence == {"project": "pyforge-marshal", "sha": root_sha}
+
+
+def test_bare_form_merge_still_attributes_once_the_station_has_its_own_override(
+    tmp_path: Path,
+) -> None:
+    """The literal real-world scenario this story exists to fix: marshal has
+    carried its own scoped ``merge_subject_template`` since PR #1467, but
+    ``34-3`` (``dcda31b8cb``) landed under the bare default BEFORE that
+    override existed. A real (non-empty) historical bare-form commit whose
+    diff touches only marshal's own paths, naming a key marshal's own
+    ledger already knows, must still attribute even though this project HAS
+    an override -- the existing override fixtures elsewhere in this file
+    all use EMPTY commits, and the existing bare-fallback-positive fixtures
+    all use a project with NO override, so neither alone proves this
+    combination works."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_policy(repo, "pyforge-marshal", "Merge pyforge-marshal/{key} into main")
+    _write_ledger(repo, "pyforge-marshal", {"34-3-factory-drain": "done"})
+    _commit(repo, "seed ledger + policy")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_attribute(
+    tmp_path: Path,
+) -> None:
+    """The mirror of the already-covered "ledger knows it, path doesn't
+    match" case: the diff touches ONLY marshal's own paths, but the
+    extracted key is absent from marshal's own tracked ledger entirely --
+    the ledger gate is checked BEFORE the diff is even queried
+    (``bare_merge.attribute_bare_merge``), so this must not attribute
+    either."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"9-9-unrelated": "done"})  # no 34-3 row
+    _commit(repo, "seed ledger")
+    marshal_dir = repo / "src" / "shared" / "packages" / "pyforge-marshal" / "core"
+    marshal_dir.mkdir(parents=True)
+    (marshal_dir / "dispatch_fleet.py").write_text("x\n", encoding="utf-8")
+    _commit(repo, "Merge 34-3 into main")
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert fails == []
+
+
+# --- Story 27.2: gather_direction reads the station's rekey map -----------
+
+
+def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
+    """The live incident: atlas's own ``rekey-2026-09-17.md`` renumbered
+    ``13-5`` to ``12-5``, and its own bmad-loop merge still names the OLD
+    key -- reading that merge as ``landed-but-unpromoted`` forever was the
+    bug this story fixes."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"12-5-downstream-handoff-to-mason-fr-68": "done"},
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "13-5-downstream-handoff-to-mason -> 12-5-downstream-handoff-to-mason-fr-68\n",
+    )
+    _commit(repo, "seed ledger with rekey map")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_chained_rekey_maps_resolve_to_current_key(tmp_path: Path) -> None:
+    """A station can ship a SECOND fold that renumbers an already-renumbered
+    sid (``13-5 -> 12-5`` in one map, ``12-5 -> 11-5`` in a later one). A
+    merge naming the OLDEST spelling must resolve all the way to the
+    CURRENT one, not stop at the intermediate hop -- otherwise this exact
+    bug class recurs one fold later."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"11-5-downstream-handoff-to-mason-final": "done"},
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "13-5-downstream-handoff-to-mason -> 12-5-downstream-handoff-to-mason-fr-68\n",
+        name="rekey-2026-09-17.md",
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "12-5-downstream-handoff-to-mason-fr-68 -> 11-5-downstream-handoff-to-mason-final\n",
+        name="rekey-2026-09-20.md",
+    )
+    _commit(repo, "seed ledger with two chained rekey maps")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_without_rekey_map_old_key_reads_as_unpromoted(tmp_path: Path) -> None:
+    """Mutation-test companion to the above: same fixture, minus the map --
+    the ``landed-but-unpromoted`` row returns."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {"12-5-downstream-handoff-to-mason-fr-68": "done"},
+    )
+    _commit(repo, "seed ledger without rekey map")
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
+        "loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+    assert fails[0].evidence["story_id"] == "13-5"
+    assert fails[0].evidence["project"] == "pyforge-atlas"
+
+
+def test_malformed_rekey_map_is_warn_naming_the_file(tmp_path: Path) -> None:
+    """An unparseable rekey map degrades to a WARN naming the file -- never
+    a silent pass, never a crash."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"1-1-something": "backlog"})
+    _write_rekey(repo, "pyforge-atlas", "not a valid rekey line at all\n")
+    _commit(repo, "seed with a broken rekey map")
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "rekey-map-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert "rekey-2026-09-17.md" in warns[0].message
+
+
+def test_unreadable_rekey_map_never_crashes(tmp_path: Path) -> None:
+    """A rekey map whose blob cannot be decoded degrades to the same WARN,
+    rather than raising out of ``gather_direction``."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"1-1-something": "backlog"})
+    rekey_path = _write_rekey(repo, "pyforge-atlas", "placeholder\n")
+    rekey_path.write_bytes(b"1-1-x -> 1-1-\xe9\n")
+    _commit(repo, "seed with an undecodable rekey map")
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.check == "rekey-map-unreadable"]
+    assert len(warns) == 1
+    assert warns[0].status == DoctorStatus.WARN
+    assert "rekey-2026-09-17.md" in warns[0].message
