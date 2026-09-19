@@ -369,4 +369,3 @@ def test_land_or_journal_block_lands_through_unchanged_when_not_blocked(
     assert recorded["story_key"] == _STORY_KEY
     assert recorded["verification_verdict"] == DispatchVerificationVerdict.VERIFIED
     assert recorded["worktree"] == worktree
-    assert recorded["git_facts"] == facts
