@@ -1772,8 +1772,41 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 - source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
   summary: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
   evidence: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:631 splits the text on its first three-dash substring; `scope = parts[1]` when the text starts with three dashes. A frontmatter value quoting three dashes before the pin key truncates `scope` and `_PIN_KEY_RE.search` misses the pin -> `pin-missing` on a doc that declares one. No live doc has the shape today (review pass 1 scan, 2026-09-19); same named blocker as the status_body_consistency entry — a separate capability's reader.
-  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:631
-  origin: spec-deferred aa1fc9be1d1f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py::_doc_pin
+  origin: spec-deferred 7dd30eafde52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-3: 34 archived docs/dreams/*.md files carry a glued opener (three dashes fused to `title:` on line 1) and are now refused as unparseable-frontmatter, hiding 20 readme-table-drift and 2 kinship-wikilink-dead findings until the openers are repaired
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: 34 archived docs/dreams/*.md files carry a glued opener (three dashes fused to `title:` on line 1) and are now refused as unparseable-frontmatter, hiding 20 readme-table-drift and 2 kinship-wikilink-dead findings until the openers are repaired
+  evidence: The 2026-09-17 one-chain-per-station fold wrote the opener as three dashes fused to `title:`; `0b74756679` ("keep satellite Dream hashes") deliberately restored that shape on all 34 to hold spec-pyforge-steward's surface stable. Story 28.1's opener rule (an attempted-but-unbounded opener is refused, never parsed leniently or read as absent) turns them into 34 live `unparseable-frontmatter` WARNs (`gather_dreams_hygiene` 173 -> 185, `gather_dream_chain` 1 OK -> 34 WARN) and skips them before the readme-drift and Kinship scans (`readme-table-drift` 73 -> 53; `kinship-wikilink-dead` 33 -> 31, both from `enterprise-airgap.md`). Repair: insert a line break after the three dashes on line 1 of each file. Two of them -- `docs/dreams/mcp-era-isolation.md` and `docs/dreams/mcp-host-real-station-tools.md` -- are governed by `pyforge-steward/spec-mcp-era-isolation` / `spec-mcp-host-real-station-tools` (steward memlog event + scoped `--write-baseline` for each), and the same PR must re-measure `test_live_tree_kinship_wikilink_dead_count` 31 -> 33 and run `pyforge-doctor-test` locally, because a docs-only diff cannot fire the doctor station lane (the MRS-GATE-001 class). Named blocker: cross-station (steward- governed files) and outside Story 28.1's Surface; verified live 2026-09-19.
+  location: docs/dreams/ (34 files whose first line begins with the three dashes fused to `title:`; the two steward-governed ones are named in the evidence)
+  origin: spec-deferred a1a347e035e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-4: `unparseable-frontmatter` findings name no refusal cause, and `_unparseable_frontmatter_item`'s remedy text ("could not be parsed as a mapping ... fix the fenced YAML frontmatter block") is wrong for the attempted-but- unbounded opener that produces all 34 live hits
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: `unparseable-frontmatter` findings name no refusal cause, and `_unparseable_frontmatter_item`'s remedy text ("could not be parsed as a mapping ... fix the fenced YAML frontmatter block") is wrong for the attempted-but- unbounded opener that produces all 34 live hits
+  evidence: `chain.py::_frontmatter_parse` returns `(dict, bool)`; after Story 28.1 four distinct refusal causes (unclosed fence; attempted-but-unbounded opener; YAML error; non-mapping block) collapse into one bool, so `gather_dreams_hygiene` (the `unparseable-frontmatter` WARN, evidence `{"subject": slug}`) and `_unparseable_frontmatter_item` (the remedy line) cannot say WHICH line to fix -- for the 34 glued-opener Dreams the block IS a valid mapping and the only defect is line 1. Story 28.1's Never clause ("do not touch callers") excludes threading a reason through those call sites. Named blocker: needs a CAP that widens the reader's return contract (a reason enum) or adds a reason field to the finding, under spec-pyforge-doctor; review pass 2, 2026-09-19.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py::_unparseable_frontmatter_item
+  origin: spec-deferred a8c284f7e5ef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-5: Five other doctor readers close the frontmatter block on a stripped three-dash line, so an indented three-dash line inside a block scalar ends their block early with no error -- the class Story 28.1 fixed only in chain.py::_frontmatter_parse
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: Five other doctor readers close the frontmatter block on a stripped three-dash line, so an indented three-dash line inside a block scalar ends their block early with no error -- the class Story 28.1 fixed only in chain.py::_frontmatter_parse
+  evidence: `line.strip()` fence tests at `hygiene.py::_dream_frontmatter_status` (:269/:272), `sibling_dreams.py` (:82/:85), `status_body_consistency.py` (:518/:520 and :699/:702), `board.py` (:433) and `chain.py::_parse_surface` (:1615, the marshal-bound spec-surface contract). An `evidence: |` block scalar whose content has an indented three-dash line closes each of these early and drops every later key with no error (`_frontmatter_parse` now uses `rstrip`, column 0). 0 live Dreams/specs carry the shape (scan 2026-09-19). Named blocker: other capabilities' readers and a marshal-bound contract -- their own CAP/story, not Story 28.1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py::_dream_frontmatter_status
+  origin: spec-deferred a4e74eb1dcfa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
