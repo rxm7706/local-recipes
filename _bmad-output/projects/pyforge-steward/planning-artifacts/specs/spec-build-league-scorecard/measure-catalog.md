@@ -19,16 +19,16 @@ only `on` rows. They must not invent a substitute for `off` or `archived`.
 
 ## First cut (all `on`, 2026-09-15)
 
-| id | Dimension | Source (already counted) | Notes |
-|---|---|---|---|
-| `warden-verdict` | human | Warden verdict rungs | Q8 remains the PR gate |
-| `owner-work-class` | human | steward discovery `owner` / `work_class` | 03 work only |
-| `gate-record-outcomes` | agent | `gate-record.json` per-story commands | pass/fail, not a new score |
-| `journal-timing` | agent | `journal.json` run/phase timing | |
-| `run-cost-usd` | agent | `driver.py` per-run `total_cost_usd` | |
-| `ledger-throughput` | team | sprint ledger stories → `done` | |
-| `detector-pass-fail` | team | detector / `detectors-ci` vector | |
-| `five-tier-completeness` | team | five-tier 8×5 ladder | **never** score 01/02 work |
+| id | Dimension | Source (already counted) | State | Notes |
+|---|---|---|---|---|
+| `warden-verdict` | human | Warden verdict rungs | `on` | Q8 remains the PR gate |
+| `owner-work-class` | human | steward discovery `owner` / `work_class` | `on` | 03 work only |
+| `gate-record-outcomes` | agent | `gate-record.json` per-story commands | `on` | pass/fail, not a new score |
+| `journal-timing` | agent | `journal.json` run/phase timing | `on` | |
+| `run-cost-usd` | agent | `driver.py` per-run `total_cost_usd` | `on` | |
+| `ledger-throughput` | team | sprint ledger stories → `done` | `on` | |
+| `detector-pass-fail` | team | detector / `detectors-ci` vector | `on` | |
+| `five-tier-completeness` | team | five-tier 8×5 ladder | `on` | **never** score 01/02 work |
 
 ## Out of this catalog
 
