@@ -20,10 +20,11 @@ def test_finalize_passes_base_main_to_isolated_promote(
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations; `GitVcs` stays a
+    # bare `object()` stub since `_resync_home_branch` itself is
+    # monkeypatched to a no-op below.
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
         lambda: object(),
@@ -73,10 +74,11 @@ def test_finalize_forwards_worktree_to_scan_promotions(
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations; `GitVcs` stays a
+    # bare `object()` stub since `_resync_home_branch` itself is
+    # monkeypatched to a no-op below.
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
         lambda: object(),
@@ -117,10 +119,11 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations; `GitVcs` stays a
+    # bare `object()` stub since `_resync_home_branch` itself is
+    # monkeypatched to a no-op below.
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
         lambda: object(),
@@ -166,10 +169,11 @@ def test_finalize_resyncs_the_primary_after_ledger_promotion(
         "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
         lambda: tmp_path,
     )
-    monkeypatch.setattr(
-        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
-        lambda: object(),
-    )
+    # Story 51.9: `LocalFs` is left unstubbed (real class, real `tmp_path`)
+    # because the new `_resync_home_branch` + `deploy_run.write(...)`
+    # observation write now exercises real fs operations; `GitVcs` stays a
+    # bare `object()` stub since `_resync_home_branch` itself is
+    # monkeypatched to a no-op below.
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
         lambda: object(),

@@ -522,9 +522,25 @@ def test_gather_fleet_missing_spec_escalations_reads_latest_campaign(
         def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
             return (("22-7-fleet", "backlog"),)
 
+    class _Vcs:
+        """Story 51.9: simulates a clean, unmoved local `main` so this test
+        keeps exercising the local `HarnessPort` read it always has --
+        `tmp_path` isn't a real git repo, so this must never fall through
+        to the new `origin/main` read path."""
+
+        def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+            return False
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "same-sha"
+
+        def resolve_ref(self, repo_root: Path, ref: str) -> str:
+            return "same-sha"
+
     escalations = gather_fleet_missing_spec_escalations(
         fs=fs,
         harness=_Harness(),
+        vcs=_Vcs(),
         repo_root=tmp_path,
     )
     assert slug in escalations
