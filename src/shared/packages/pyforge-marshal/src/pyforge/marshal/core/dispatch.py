@@ -52,6 +52,10 @@ KIND_DISPATCH_WAVE = "dispatch-wave"
 #: Story 28.24 (CAP-7): supervisor commit/push/verify when the harness
 #: cannot run shell.
 KIND_DISPATCH_FINALIZE = "dispatch-finalize"
+#: Story 51.4 (CAP-252): the supervisor stopped before verify/land because
+#: the worktree spec is `blocked` or the entire diff is narration (the
+#: tracked spec file itself) with no code progress behind it.
+KIND_DISPATCH_BLOCKED = "dispatch-blocked"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"

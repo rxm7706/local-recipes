@@ -1266,6 +1266,196 @@ def test_escalation_pause_is_story_block_and_not_skipped_under_skip_on_blocked(
     assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.BLOCKED
 
 
+def _seed_background_task_ceiling_dispatch(
+    tmp_path: Path,
+    *,
+    slug: str,
+    run_id: str,
+    story_key: str,
+) -> Path:
+    """Terminated before verify, narration-only diff (Story 51.4, CAP-252 --
+    the 51.3 incident): the harness hit its background-task ceiling
+    mid-session. The supervisor's own tick loop (already threading
+    ``spec_relative_path``) recorded the correct ``failed`` completion
+    verdict directly -- no verify entries, mirroring
+    ``_seed_escalation_pause_dispatch``'s shape."""
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    wt = str(tmp_path / ".worktrees" / f"dispatch-{slug}")
+    intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-19T00:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": story_key,
+                "worktree_path": wt,
+                "baseline_head_sha": "aaa111",
+            },
+        )
+    ).line
+    launch_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-19T00:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"session_pid": 42},
+        )
+    ).line
+    completion_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-09-19T00:10:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.INTENT,
+            payload={"verdict": "failed"},
+        )
+    ).line
+    completion_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-09-19T00:10:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={"verdict": "failed", "ok": True},
+        )
+    ).line
+    (run_dir / "journal.jsonl").write_text(
+        intent
+        + "\n"
+        + launch_outcome
+        + "\n"
+        + completion_intent
+        + "\n"
+        + completion_outcome
+        + "\n",
+        encoding="utf-8",
+    )
+    (run_dir / "session.log").write_text(
+        "resolving story...\n"
+        "Background tasks still running after 600s; terminating\n",
+        encoding="utf-8",
+    )
+    return run_dir
+
+
+class _NarrationOnlyVcs(FakeVcs):
+    """A dead session's diff that collapses to just the tracked spec's own
+    relative path -- narration, not work (Story 51.4, the 51.3 incident's
+    shape). Real progress happened (the head sha moves), it just was not
+    implementation."""
+
+    def __init__(self, repo_root: Path, *, worktree: Path, spec_relative: str) -> None:
+        super().__init__(repo_root)
+        self._worktree = str(worktree)
+        self._spec_relative = spec_relative
+        self.progressed_worktrees.add(self._worktree)
+
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+        if str(worktree_path) == self._worktree:
+            return (self._spec_relative,)
+        return ()
+
+
+def test_a_deliberate_blocked_spec_status_blocks_its_station_naming_the_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.4 (CAP-252), the 27.3 incident: a session that reverted to
+    baseline and left its tracked spec ``status: blocked`` must halt the
+    station and name the blocking condition -- an empty diff is never
+    silently promoted to ``done``."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["27-3-gap", "27-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-27-3",
+        story_key="27.3",
+        baseline_head_sha="baseline1234",
+    )
+    wt = tmp_path / ".worktrees" / "dispatch-pyforge-marshal"
+    spec_path = (
+        dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
+        / "spec-27-3-gap.md"
+    )
+    relocated = dispatch_core.relocated_spec_path(spec_path, tmp_path, wt)
+    relocated.parent.mkdir(parents=True, exist_ok=True)
+    relocated.write_text(
+        "---\n"
+        "status: blocked\n"
+        'blocking_condition: "an intent gap was found; reverted to baseline"\n'
+        "---\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers={
+            "pyforge-marshal": (("27-3-gap", "backlog"), ("27-4-next", "backlog"))
+        },
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.BLOCKED
+    blocked = next(f for f in report.findings if f.code == "MRS-DRAIN-005")
+    assert "status: blocked" in blocked.message
+    assert "intent gap" in blocked.message
+
+
+def test_a_narration_only_diff_after_a_harness_ceiling_is_transient_not_blocked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.4 (CAP-252), the 51.3 incident: a session that hit the
+    harness's background-task ceiling before verify, leaving only the
+    tracked spec's own frontmatter changed, must classify TRANSIENT --
+    re-dispatchable -- never a terminal station block."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["51-3-ceiling", "51-4-next"]})
+    _seed_background_task_ceiling_dispatch(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-51-3",
+        story_key="51.3",
+    )
+    wt = tmp_path / ".worktrees" / "dispatch-pyforge-marshal"
+    spec_path = (
+        dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
+        / "spec-51-3-ceiling.md"
+    )
+    relocated = dispatch_core.relocated_spec_path(spec_path, tmp_path, wt)
+    relocated.parent.mkdir(parents=True, exist_ok=True)
+    relocated.write_text("---\nstatus: in-progress\n---\n", encoding="utf-8")
+    spec_relative = str(relocated.resolve().relative_to(wt.resolve()))
+    vcs = _NarrationOnlyVcs(tmp_path, worktree=wt, spec_relative=spec_relative)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers={
+            "pyforge-marshal": (("51-3-ceiling", "backlog"), ("51-4-next", "backlog"))
+        },
+        vcs=vcs,
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    assert harness.dispatched == [("pyforge-marshal", "51.3")]
+    assert (
+        _status_by_station(report)["pyforge-marshal"] is not StationCycleStatus.BLOCKED
+    )
+
+
 def test_retry_environment_blocks_cli_wiring_moves_past_crash(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
