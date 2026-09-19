@@ -394,19 +394,35 @@ class BackendRegistry(_Registry):
 # ── default sources ──────────────────────────────────────────────────────────
 
 
+def _version_text(raw: object) -> str | None:
+    """``suite.read_recipe_version``'s rule: a ``str`` as-is, a non-bool ``int``
+    as ``str(int)``, anything else (an unquoted YAML float like ``1.10`` →
+    ``1.1``, a bool, a list) → ``None``."""
+    if isinstance(raw, str):
+        return raw.strip() or None
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return str(raw)
+    return None
+
+
 class EstateListingsSource(CatalogSourcePlugin):
     """``registry/estate.yaml`` — YAML we authored and steward reviewed, in the
     upstream registry file format (``modules: [{name, …, trust_tier}]``).
-    The file-level ``source:`` must equal this plugin's name; a per-row
-    ``source:`` defaults to it and, when it differs, the engine reports
-    ``listing-source-mismatch``."""
+
+    Anchor: the declared ``path`` is **catalog-dir-relative** (it names a file
+    inside the edit store; default ``registry/estate.yaml``). A file-level
+    ``source:``, when present, must equal this plugin's name (absent means
+    this plugin); a per-row ``source:`` defaults to it and, when it differs,
+    the engine reports ``listing-source-mismatch``. ``trust_tier`` must be one
+    of ``TRUST_TIERS`` — a typo'd tier never reaches a manifest tag.
+    """
 
     @property
     def name(self) -> str:
         return "estate-listings"
 
     def listings(self, ctx: SourceContext) -> list[Listing]:
-        rel = ctx.decl.options.get("path", DEFAULT_ESTATE_REGISTRY)
+        rel = ctx.decl.options.get("path") or DEFAULT_ESTATE_REGISTRY
         path = ctx.catalog_dir / str(rel)
         document = _load_yaml_mapping(path, what="estate listings")
         file_source = document.get("source")
@@ -429,6 +445,13 @@ class EstateListingsSource(CatalogSourcePlugin):
                 raise CatalogConfigError(
                     f"{path}: modules[{index}].name is required and must be a non-empty string"
                 )
+            tier = row.get("trust_tier")
+            if tier is None:
+                tier = TIER_UNVERIFIED
+            if tier not in TRUST_TIERS:
+                raise CatalogConfigError(
+                    f"{path}: modules[{index}].trust_tier = {tier!r} is not one of {TRUST_TIERS!r}"
+                )
             row_source = row.get("source", self.name)
             repository = row.get("repository")
             rows.append(
@@ -436,10 +459,10 @@ class EstateListingsSource(CatalogSourcePlugin):
                     name=name.strip(),
                     kind=KIND_MODULE,
                     source=str(row_source) if row_source is not None else "",
-                    trust_tier=str(row.get("trust_tier") or TIER_UNVERIFIED),
+                    trust_tier=tier,
                     description=str(row.get("description") or ""),
                     repository=str(repository) if repository else None,
-                    version=str(row["version"]) if row.get("version") is not None else None,
+                    version=_version_text(row.get("version")),
                     code=str(row["code"]) if row.get("code") else None,
                     install_hint=str(row["install_hint"]) if row.get("install_hint") else None,
                     link=str(row.get("homepage") or repository or "") or None,
@@ -504,14 +527,18 @@ class EstateFramesSource(CatalogSourcePlugin):
     """``docs/foundry/frames/`` — each Frame that passes ``frames.preflight_frames``
     (reused, never a second Frame parser) is a ``kind: frame`` listing keyed by
     its ``identifier``; ``unverified`` because the validator is the preflight,
-    and promotion is a 60.2 review record."""
+    and promotion is a 60.2 review record.
+
+    Anchor: the declared ``path`` is **repo-root-relative** (the Frames live in
+    the repo, outside the edit store; absent/null → ``frames.FRAMES_RELATIVE``).
+    """
 
     @property
     def name(self) -> str:
         return "estate-frames"
 
     def listings(self, ctx: SourceContext) -> list[Listing]:
-        rel = ctx.decl.options.get("path")
+        rel = ctx.decl.options.get("path") or None
         frames_root = ctx.repo_root / str(rel) if rel else None
         report = preflight_frames(ctx.repo_root, frames_root=frames_root)
         failed = {finding.path for finding in report.findings}
@@ -560,8 +587,9 @@ class CondaChannelBackend(ShipBackendPlugin):
         return "conda-channel"
 
     def snapshot_target(self, decl: BackendDecl) -> str:
-        channel = decl.options.get("channel", "SelfExplainML")
-        package = decl.options.get("package", "pyforge-estate-catalog")
+        # `or`, not a `.get` default: a declared `channel: null` is absent, not "None".
+        channel = decl.options.get("channel") or "SelfExplainML"
+        package = decl.options.get("package") or "pyforge-estate-catalog"
         return f"conda://{channel}/{package}"
 
 
@@ -573,8 +601,8 @@ class ObjectStorageBackend(ShipBackendPlugin):
         return "object-storage"
 
     def snapshot_target(self, decl: BackendDecl) -> str:
-        bucket = decl.options.get("bucket", "<bucket>")
-        key = decl.options.get("key", "catalog/snapshot.tar.gz")
+        bucket = decl.options.get("bucket") or "<bucket>"
+        key = decl.options.get("key") or "catalog/snapshot.tar.gz"
         return f"s3://{bucket}/{key}"
 
 
@@ -586,7 +614,7 @@ class GitBundleBackend(ShipBackendPlugin):
         return "git-bundle"
 
     def snapshot_target(self, decl: BackendDecl) -> str:
-        return str(decl.options.get("file", "catalog.bundle"))
+        return str(decl.options.get("file") or "catalog.bundle")
 
 
 def default_backends() -> list[ShipBackendPlugin]:

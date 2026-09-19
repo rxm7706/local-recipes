@@ -7,7 +7,28 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
-deferred: []
+deferred:
+  - summary: >-
+      The committed generated manifests bake recipe `version`/`description` (and the frame count) from inputs — `recipes/bmad-{builder,utility-skills,creative-intelligence-suite,method-test-architecture-enterprise}/recipe.yaml` and `docs/foundry/frames/**` — that never trigger the steward CI job, so a recipe-only PR leaves `main` with `manifest-drift` and `steward catalog check` red until the next steward PR runs `steward catalog render` and commits.
+    evidence: |-
+      Verified by execution: with `read_recipe_version` returning `9.9.9` for `bmad-builder`, `CatalogEngine.drift()` on the committed tree goes from `[]` to `[("manifest-drift", ".claude-plugin/marketplace.json")]`; `.github/workflows/pyforge-station-tests.yml` `paths` lists `src/shared/packages/pyforge-*/**`, `pixi.toml`, `pixi.lock` and container files — neither `recipes/**` nor `docs/foundry/frames/**`; those four recipes bumped on 2026-08-21, 09-09, 09-11 and 09-12 as recipe-only PRs. Closure: add the four `recipes/bmad-*/**` paths and `docs/foundry/frames/**` to the steward trigger, or put `steward catalog render --check` into `detectors-ci`/`pr-preflight`; Story 60.3 (ship backends) needs a render gate before it can publish a snapshot anyway. Both edits are outside this story's surface.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (WieldedSuiteSource.listings / CatalogEngine.drift); .github/workflows/pyforge-station-tests.yml
+    severity: medium
+  - summary: >-
+      The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
+    evidence: |-
+      `.pixi/envs/pyforge-steward/bin/python -c "import jsonschema"` → `ModuleNotFoundError`; the station suite reports `SKIPPED [1] test_track.py:111: could not import 'jsonschema'`; both `pyforge-station-tests.yml` and `coverage-gates.yml` run steward in that env. Closure: add `jsonschema` to `[feature.pyforge-steward.dependencies]` in `pixi.toml` (shared-surface rule: `environment.yaml` regen + all eight station suites) or drop the `importorskip` — a `pixi.toml` change outside this story.
+    location: >-
+      src/shared/packages/pyforge-steward/tests/unit/test_track.py:111
+    severity: low
+  - summary: >-
+      `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` "Registered duties" now trails the CLI by three (`cutover`, `ledger-query`, `catalog`); it is an SKF-managed agent-context file, so the roster is refreshed by an SKF re-export, not a hand edit in a story.
+    evidence: |-
+      `SKILL.md:90-94` lists seventeen duties; `cli.py` `DUTIES` has twenty. `tests/meta/test_skf_steward_skill.py` guards the managed-section shape.
+    location: >-
+      .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md:90
+    severity: low
 declared_low_risk: false
 baseline_revision: 'f843ba9137758782c8b626f3708b00716c58166a'
 ---
