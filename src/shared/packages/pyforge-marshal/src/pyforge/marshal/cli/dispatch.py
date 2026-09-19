@@ -1482,6 +1482,48 @@ def station_story_block_facts(
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key != feed_story:
             continue
+
+        # Story 51.4 (CAP-252): resolve the worktree's own tracked spec once
+        # per run, before verdict resolution -- a deliberate `status: blocked`
+        # (the 27.3 incident) or a diff that collapses to just that spec file
+        # (narration, not work -- the 51.3 incident) must both read as
+        # no-progress to `resolve_dispatch_session_verdict` itself, not only
+        # to the block-reason checks below it (2026-09-19 review pass: the
+        # original placement inside the `verdict == FAILED` branch meant
+        # `resolve_dispatch_session_verdict`'s own `has_git_progress` call
+        # never saw a narration-only diff as no-progress, so the campaign
+        # could resolve LIVE/STOPPED_EXTERNALLY instead of FAILED for it).
+        spec_status: str | None = None
+        spec_blocking_condition: str | None = None
+        spec_relative_path: str | None = None
+        if journal.worktree_path is not None:
+            worktree_path = Path(journal.worktree_path)
+            spec_path = dispatch_core.resolve_story_spec_path(
+                repo_root, slug, feed_story
+            )
+            if spec_path is not None:
+                try:
+                    worktree_spec_path = dispatch_core.relocated_spec_path(
+                        spec_path, repo_root, worktree_path
+                    )
+                except ValueError:
+                    worktree_spec_path = None
+                if worktree_spec_path is not None:
+                    spec_text = fs.read_text(worktree_spec_path)
+                    if spec_text is not None:
+                        spec_status = parse_spec_status(spec_text)
+                        spec_blocking_condition = parse_blocking_condition(
+                            spec_text
+                        )
+                    try:
+                        spec_relative_path = str(
+                            worktree_spec_path.resolve().relative_to(
+                                worktree_path.resolve()
+                            )
+                        )
+                    except ValueError:
+                        spec_relative_path = None
+
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
             vcs=vcs,
@@ -1491,6 +1533,7 @@ def station_story_block_facts(
             journal=journal,
             effective_policy=effective_policy,
             run_dir=run_dir,
+            spec_relative_path=spec_relative_path,
         )
         if verdict == DispatchSessionVerdict.FAILED:
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
@@ -1514,61 +1557,15 @@ def station_story_block_facts(
                 except (VcsCommandError, ValueError):
                     git_progress_unknown = True
 
-            # Story 51.4 (CAP-252): the worktree's own tracked spec may name
-            # the block reason itself -- a deliberate `status: blocked` (the
-            # 27.3 incident) always surfaces here, before any self-refusal or
-            # transient/terminal classification below. A diff that collapses
-            # to just that spec file (narration, not work -- the 51.3
-            # incident) is recorded too, so `classify_dispatch_block` can
-            # correctly read it as no-progress.
-            spec_status: str | None = None
-            spec_blocking_condition: str | None = None
-            spec_relative_path: str | None = None
-            if journal.worktree_path is not None:
-                worktree_path = Path(journal.worktree_path)
-                spec_path = dispatch_core.resolve_story_spec_path(
-                    repo_root, slug, feed_story
-                )
-                if spec_path is not None:
-                    try:
-                        worktree_spec_path = dispatch_core.relocated_spec_path(
-                            spec_path, repo_root, worktree_path
-                        )
-                    except ValueError:
-                        worktree_spec_path = None
-                    if worktree_spec_path is not None:
-                        spec_text = fs.read_text(worktree_spec_path)
-                        if spec_text is not None:
-                            spec_status = parse_spec_status(spec_text)
-                            spec_blocking_condition = parse_blocking_condition(
-                                spec_text
-                            )
-                        try:
-                            spec_relative_path = str(
-                                worktree_spec_path.resolve().relative_to(
-                                    worktree_path.resolve()
-                                )
-                            )
-                        except ValueError:
-                            spec_relative_path = None
-
-            if spec_status == "blocked":
-                return dispatch_fleet.StationBlockEvidence(
-                    reason=(
-                        f"the last dispatch of {feed_story!r} (run "
-                        f"{run_dir.name!r}) left its tracked spec "
-                        f"status: blocked (blocking condition: "
-                        f"{spec_blocking_condition or 'not stated'})"
-                    ),
-                    block_class=dispatch_fleet.FleetBlockClass.STORY,
-                )
-
             # Story 50.1 Part B: ahead of the transient/terminal split, so
             # an already-landed head is never re-dispatched (TRANSIENT) NOR
             # halts the station (TERMINAL) -- it advances, exactly the way
             # MRS-DISP-040 does. ``git_progress_unknown`` means the campaign
             # could not observe the changed paths at all, and an unobserved
-            # zero is never treated as an observed one.
+            # zero is never treated as an observed one. Checked before the
+            # blocked-spec check below (2026-09-19 review pass) so a worktree
+            # that is both already-landed and carries a stale `blocked` spec
+            # still reports the more definitive, terminal fact.
             if not git_progress_unknown and dispatch_fleet.is_already_landed_self_refusal(
                 changed_path_count=changed_path_count,
                 session_log=session_log,
@@ -1581,6 +1578,21 @@ def station_story_block_facts(
                         "paths and merged evidence in its session log -- the "
                         "work is already landed, so the station advances "
                         "instead of relaunching it"
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
+
+            # Story 51.4 (CAP-252): the worktree's own tracked spec may name
+            # the block reason itself -- a deliberate `status: blocked` (the
+            # 27.3 incident) surfaces here, before the transient/terminal
+            # classification below.
+            if spec_status == "blocked":
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=(
+                        f"the last dispatch of {feed_story!r} (run "
+                        f"{run_dir.name!r}) left its tracked spec "
+                        f"status: blocked (blocking condition: "
+                        f"{spec_blocking_condition or 'not stated'})"
                     ),
                     block_class=dispatch_fleet.FleetBlockClass.STORY,
                 )
@@ -2210,7 +2222,7 @@ def dispatch_once(
                 severity=Severity.ERROR,
                 message=(
                     f"story {render_feed_key(story_key)!r} worktree spec is "
-                    f"status: blocked — not relaunching bmad-build-auto without "
+                    f"status: blocked -- not relaunching bmad-build-auto without "
                     f"an operator decision (blocking condition: "
                     f"{parse_blocking_condition(live_spec_text) or 'not stated'})"
                 ),

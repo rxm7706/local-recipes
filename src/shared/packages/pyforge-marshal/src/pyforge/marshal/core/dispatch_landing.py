@@ -20,11 +20,6 @@ class DispatchLandingVerdict(StrEnum):
     REFUSED = "refused"
     ALREADY_LANDED = "already_landed"
     SKIPPED_UNVERIFIED = "skipped-unverified"
-    #: Story 51.4 (CAP-252): the worktree spec is ``blocked`` (or the whole
-    #: diff is spec-only narration) -- landing is refused before verify is
-    #: even attempted, distinct from ``REFUSED`` (which implies a verify
-    #: attempt ran and failed).
-    BLOCKED = "blocked"
 
 
 def may_attempt_dispatch_landing(

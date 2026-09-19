@@ -142,10 +142,10 @@ def parse_blocking_condition(text: str) -> str | None:
     value = _frontmatter_scalar(text, _BLOCKING_CONDITION_KEY)
     if value is not None:
         return value
-    match = _BLOCKING_CONDITION_BODY_RE.search(text)
-    if match is None:
+    matches = list(_BLOCKING_CONDITION_BODY_RE.finditer(text))
+    if not matches:
         return None
-    found = match.group(1).strip().strip("*").strip()
+    found = matches[-1].group(1).strip().replace("*", "").strip()
     return found or None
 
 

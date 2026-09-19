@@ -1577,7 +1577,9 @@ def run_dispatch_supervisor(
             baseline_revision=git_facts.baseline_head_sha,
             final_revision=git_facts.current_head_sha,
         )
-        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(git_facts):
+        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(
+            git_facts, spec_relative_path=spec_relative_path
+        ):
             counter = _journal_dispatch_preserve(
                 fs=fs,
                 vcs=vcs,
