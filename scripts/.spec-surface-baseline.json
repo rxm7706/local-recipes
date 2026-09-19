@@ -3292,7 +3292,8 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "8b373b348d5f2032d6717213c7688610b989f859",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "d45124ee19ee64f810e4d210a21565f0c91d42eb",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "b8b28cfd15759ba0778d2004d096e201c5548716",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py": "b4eac44f23831c6faf32c295c2d2b9d10e032c7c",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "5648e6bde6178662ab2dadb78bd475b1eb54ed7d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/cutover.py": "7e25b07eaaee97609c13bff1a4f0cc353b05d4b6",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py": "6c9d5bacc361539879966d363f3fea0d27d50db0",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/admin.py": "7107a887ed33d85e62b1e56131ed5c40f9a233d2",
@@ -3377,7 +3378,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "be417e14a75cd019505a48ced277933f5f8451b0"
+  "memlog": "5cc8615639ce3fdf91ccf2cc8aa3007ca146f181"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
