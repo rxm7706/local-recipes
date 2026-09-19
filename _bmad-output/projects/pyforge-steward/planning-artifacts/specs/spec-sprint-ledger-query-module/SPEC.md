@@ -20,7 +20,7 @@ owner-dream: docs/dreams/sprint-ledger-query-module.md
 
 **Always:**
 - Work Passport identity is a minted UUID (`passport_id`). Jira keys and GitHub item/issue numbers are external nicknames/aliases.
-- Preserve canopy AD-13/AD-23 boundary invariant: `pyforge-steward` never imports `vizro` directly. Steward exports data payloads; Atlas renders Vizro pages.
+- Preserve canopy:AD-13 and canopy:AD-23 boundary invariant: `pyforge-steward` never imports `vizro` directly. Steward exports data payloads; Atlas renders Vizro pages.
 - Enforce strict `stdout` vs `stderr` separation in CLI outputs so JSON payloads parse cleanly for `bmad-dashboard` VS Code Extension (VSX) and Web views.
 
 **Never:**

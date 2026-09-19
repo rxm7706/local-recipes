@@ -5036,7 +5036,7 @@
  "pyforge-scribe/spec-pyforge-scribe": {
   "files": {
    ".cursor/rules/scribe-recall.mdc": "8603c2df33cfbe298ae899ad0fdc4bbefdf78be7",
-   "AGENTS.md": "ce14fbe5da5a5ddbbd440fd38e218ebbd10d83ec",
+   "AGENTS.md": "dbe1eabc5ee288140d5eaae22a0423eb76261b4f",
    "scripts/scribe_graph_freshness_check.py": "992380215b7243a111a4e968a6fd50ea7f8b5dae",
    "scripts/scribe_install_nightly_trigger.py": "a4a0daff11a85afb65b75a2294d3e311398e9e92",
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
