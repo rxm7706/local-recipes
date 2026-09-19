@@ -6358,3 +6358,15 @@ status: open
   severity: low
   promoted: 2026-09-19 — hand-ingested (see origin)
   status: open
+
+### DW-FU-51-2-1: Story 51.2's Auto Run Result set `followup_review_recommended: true` (two mediums patched on one pass) and nothing carries that forward.
+
+- source_spec: `planning-artifacts/specs/spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md`
+  summary: Story 51.2 landed with `followup_review_recommended: true` and `warnings: ['oversized']`; the named unverified risk is whether `BrokenForge()` + `FakeVcs(merged=False)` genuinely reaches `heal.healed=False` / `escalated_paths=()` and whether `FakeProcess.calls` matches the real `PosixProcess` argv shape. No ledger row, DW item or scheduled dispatch consumed the flag; the very next landing on the same hub files (51.3) received no review at all.
+  evidence: Post-hoc review 2026-09-19 (Blind Hunter over `git diff 9b3c5afec8..e7a71df640`): the flag is only read by bmad-build-auto's step-01 on a re-dispatch of a `done` spec — which `factory dispatch` never issues for a `done` ledger row. Location is the landing code the follow-up would re-review.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  origin: post-hoc review 2026-09-19 (hand-filed; the 51.2 session's record, tracked spec Auto Run Result)
+  severity: medium
+  promoted: 2026-09-19 — hand-filed
+  status: open
+  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5).
