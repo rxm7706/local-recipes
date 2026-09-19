@@ -2,7 +2,7 @@
 title: '23.6: MAP names publish roots; do not mint an empty vizro/ tree'
 type: 'fix'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '1a0857aa9be731c5868e3f1f76bcb2b46d621a43'
 review_loop_iteration: 0
 followup_review_recommended: false
