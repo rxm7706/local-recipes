@@ -53,6 +53,10 @@ through the same accounting path as the other five.
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+
+**Manual checks:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test -k policy or -k recall` -- expected: a fixture
   test asserts `[context.recall]`'s presence and default in a freshly rendered `policy.toml`, and
   that `enabled = false` suppresses Story 47.1's query without touching the other five layers

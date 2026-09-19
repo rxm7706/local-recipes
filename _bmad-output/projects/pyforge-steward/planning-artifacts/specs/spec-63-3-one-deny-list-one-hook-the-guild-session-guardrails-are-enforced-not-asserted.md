@@ -47,6 +47,11 @@ Ledger key: `63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforc
 Ledger status at mint (unchanged): `backlog`.
 Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spec-63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted.md`.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
 ## Epic excerpt
 
 **Type:** feature • **Effort:** M • **Deps:** S-63.1 • **FR/AD:** spec-pyforge-steward CAP-5; marshal-token-economy:CAP-20 (silent saves; the front door)

@@ -41,3 +41,9 @@ Parent Spec capability: `spec-self-hosted-bmad-marketplace CAP-3`.
 Surface: a noarch catalog-index recipe under recipes/; the existing SelfExplainML / Artifactory channel path..
 Ledger key: `60-3-ship-backends-conda-channel-default`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-60-3-ship-backends-conda-channel-default.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

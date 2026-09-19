@@ -44,6 +44,11 @@ Surface: the existing Postgres join store..
 Ledger key: `61-2-work-passport-and-core-schema`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-61-2-work-passport-and-core-schema.md`.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
 ## Note — 2026-09-19
 
 Story 65.1 (PR #1507) shipped a `WorkPassport` Django model (`dashboard/models.py`, migration

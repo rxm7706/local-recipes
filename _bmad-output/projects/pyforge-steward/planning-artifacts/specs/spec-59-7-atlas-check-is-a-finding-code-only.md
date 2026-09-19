@@ -41,3 +41,9 @@ Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-8`.
 Surface: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py.
 Ledger key: `59-7-atlas-check-is-a-finding-code-only`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-7-atlas-check-is-a-finding-code-only.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

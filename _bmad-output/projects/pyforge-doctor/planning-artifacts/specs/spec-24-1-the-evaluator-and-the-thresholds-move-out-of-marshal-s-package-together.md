@@ -45,3 +45,9 @@ Parent Spec capability: `spec-coverage-gate-independence CAP-1 CAP-2`.
 Surface: pyforge/marshal/coverage_gate.py and coverage_thresholds.toml removed; docs/governance/coverage-thresholds.toml; evaluator outside every pyforge.<station> package; scripts/coverage_gates_ci.py; scripts/run_station_coverage_gate.py; .github/workflows/coverage-gates.yml; eight pyforge-<station>-coverage-gate tasks; marshal AD-3/AD-4 import-linter contract and marshal tests for the old module..
 Ledger key: `24-1-the-evaluator-and-the-thresholds-move-out-of-marshals-package-together`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-24-1-the-evaluator-and-the-thresholds-move-out-of-marshals-package-together.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

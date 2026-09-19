@@ -44,3 +44,9 @@ Parent Spec capability: `spec-build-league-scorecard CAP-3`.
 Surface: a refuse path Herald / Atlas / Marshal / Doctor can call..
 Ledger key: `62-3-consumers-cite-on-rows-only`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-62-3-consumers-cite-on-rows-only.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
