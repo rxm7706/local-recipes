@@ -110,3 +110,34 @@ class WorkPassport(models.Model):
     def __str__(self) -> str:
         return f"{self.station}:{self.story_id} ({self.passport_id[:8]})"
 
+
+class CorridorDirection(models.TextChoices):
+    INBOUND = "inbound", "Inbound"
+    OUTBOUND = "outbound", "Outbound"
+
+
+class CorridorLoad(models.Model):
+    """CAP-139 (spec-work-passports-dated-extracts CAP-1 / spec-pyforge-steward
+    CAP-139): one durable record of a corridor drop. Idempotent on
+    (direction, batch_sha, waybill) -- see dashboard/corridor_load.py."""
+
+    direction = models.CharField(max_length=8, choices=CorridorDirection.choices, db_index=True)
+    batch_sha = models.CharField(max_length=64, db_index=True)
+    waybill = models.CharField(max_length=128, db_index=True)
+    transport = models.CharField(max_length=32)
+    loaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-loaded_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["direction", "batch_sha", "waybill"],
+                name="corridorload_unique_direction_batch_sha_waybill",
+            )
+        ]
+        verbose_name = "Corridor Load"
+        verbose_name_plural = "Corridor Loads"
+
+    def __str__(self) -> str:
+        return f"{self.direction}:{self.waybill} ({self.batch_sha[:8]})"
+

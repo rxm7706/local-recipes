@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from django.contrib import admin
-from pyforge.steward.dashboard.models import AuditEntry, WorkPassport
+from pyforge.steward.dashboard.models import AuditEntry, CorridorLoad, WorkPassport
 
 
 @admin.register(AuditEntry)
@@ -33,3 +33,24 @@ class WorkPassportAdmin(admin.ModelAdmin):
     list_filter = ("station", "status")
     search_fields = ("passport_id", "story_id", "station", "jira_key", "github_item_id", "title")
     ordering = ("station", "story_id")
+
+
+@admin.register(CorridorLoad)
+class CorridorLoadAdmin(admin.ModelAdmin):
+    """Read-only: a corridor load is a durable fact recorded by
+    `corridor_load.record_corridor_load` alone and never edited, added to,
+    or deleted through the admin."""
+
+    list_display = ("direction", "waybill", "batch_sha", "transport", "loaded_at")
+    list_filter = ("direction", "transport")
+    search_fields = ("batch_sha", "waybill")
+    ordering = ("-loaded_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
