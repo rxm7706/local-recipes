@@ -42,6 +42,14 @@ def test_finalize_passes_base_main_to_isolated_promote(
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         _capture,
     )
+    # Story 51.9: a bare `object()`-stubbed `GitVcs` has no `resolve_ref`/
+    # `worktree_head_sha` -- an unstubbed `_resync_home_branch` call would
+    # raise `AttributeError` and break this test, which isn't exercising
+    # the resync behavior at all.
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
     assert seen["kwargs"]["base"] == "main"
@@ -86,6 +94,10 @@ def test_finalize_forwards_worktree_to_scan_promotions(
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         lambda *args, **kwargs: (),
     )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
 
     worktree = tmp_path / "some-worktree"
     assert finalize_dispatch_land("pyforge-steward", "42.5", worktree) == 0
@@ -125,6 +137,10 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
     monkeypatch.setattr(
         "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
         lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
     )
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0

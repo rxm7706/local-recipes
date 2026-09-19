@@ -2907,10 +2907,64 @@ def _predicate_from_payload(raw: object) -> dispatch_re_preflight.RefusePredicat
     )
 
 
+def _primary_checkout_is_clean_main(vcs: VcsPort, repo_root: Path) -> bool:
+    """``True`` only when the primary checkout (``repo_root``) is a clean,
+    unmoved local ``main`` -- the same "is this checkout safe to trust"
+    gate ``cli/land.py::_resync_home_branch`` already encodes for
+    fast-forwarding (Story 51.9, re-mint of 51.3). Any git failure is
+    treated as "not safe to trust" rather than propagated -- the caller
+    falls back to reading ``origin/main`` directly in that case, never
+    crashes the campaign's own ledger read."""
+    try:
+        if vcs.has_uncommitted_changes(repo_root):
+            return False
+        return vcs.worktree_head_sha(repo_root) == vcs.resolve_ref(repo_root, "main")
+    except VcsCommandError:
+        return False
+
+
+def _station_ledger_statuses(
+    *,
+    harness: HarnessPort,
+    vcs: VcsPort,
+    repo_root: Path,
+    ledger_path: Path,
+) -> tuple[tuple[str, str], ...]:
+    """One station's ledger statuses (Story 51.9, re-mint of 51.3).
+
+    ``_promote_sprint_ledger`` (CAP-5) publishes a promotion onto
+    ``origin/main`` WITHOUT ever touching the primary checkout's own
+    working tree -- so a sibling station's finalize can promote a story to
+    ``done`` while this campaign's primary checkout sits stale, dirty, or
+    on a different branch. Trusts the local ``HarnessPort`` read only when
+    ``repo_root`` is verifiably a clean, unmoved ``main`` (byte-identical
+    to before this story); otherwise reads ``origin/main``'s own copy of
+    the ledger via ``VcsPort.file_text_at_ref`` and the pre-existing
+    ``_parse_sprint_ledger_statuses`` text scanner, falling back to the
+    local ``HarnessPort`` read when the remote read fails or the ledger is
+    absent at ``origin/main``. Raises only what
+    ``HarnessPort.ledger_story_statuses`` itself already raises -- every
+    call site's own pre-existing exception handling is unchanged."""
+    if _primary_checkout_is_clean_main(vcs, repo_root):
+        return harness.ledger_story_statuses(ledger_path)
+    remote_text: str | None = None
+    try:
+        rel_path = ledger_path.relative_to(
+            dispatch_core.canonical_repo_root(repo_root)
+        ).as_posix()
+        remote_text = vcs.file_text_at_ref(repo_root, "origin/main", rel_path)
+    except (VcsCommandError, ValueError):
+        remote_text = None
+    if remote_text is None:
+        return harness.ledger_story_statuses(ledger_path)
+    return tuple(_parse_sprint_ledger_statuses(remote_text).items())
+
+
 def gather_fleet_missing_spec_escalations(
     *,
     fs: FsPort,
     harness: HarnessPort,
+    vcs: VcsPort,
     repo_root: Path,
 ) -> dict[str, dispatch_fleet.MissingSpecEscalation]:
     """Active ``MRS-DISP-005`` campaign blocks that still lack a tracked spec.
@@ -2937,7 +2991,9 @@ def gather_fleet_missing_spec_escalations(
                 continue
             ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
             try:
-                statuses = harness.ledger_story_statuses(ledger_path)
+                statuses = _station_ledger_statuses(
+                    harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path
+                )
             except (HarnessError, OSError, ValueError):
                 continue
             backlog = dispatch_fleet.station_backlog(statuses)
@@ -3376,7 +3432,9 @@ def execute_fleet_cycle(
     for slug in slugs:
         ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
         try:
-            statuses = harness.ledger_story_statuses(ledger_path)
+            statuses = _station_ledger_statuses(
+                harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path
+            )
         except (HarnessError, OSError, ValueError) as exc:
             findings.append(
                 Finding(
@@ -4164,7 +4222,9 @@ def run_fleet_drain(
                 return _emit(args, data, findings, command="factory drain")
             ledger_path = dispatch_fleet.station_ledger_path(repo_root, station)
             try:
-                statuses = harness.ledger_story_statuses(ledger_path)
+                statuses = _station_ledger_statuses(
+                    harness=harness, vcs=vcs, repo_root=repo_root, ledger_path=ledger_path
+                )
             except (HarnessError, OSError, ValueError) as exc:
                 findings.append(
                     Finding(
