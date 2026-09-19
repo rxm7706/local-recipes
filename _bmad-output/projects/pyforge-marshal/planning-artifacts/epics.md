@@ -6388,3 +6388,254 @@ stale Tier-3 twin, because the tracked copy began `<!-- Promoted from implementa
 `to_promote` for the pair, and `parse_declared_surface` returns the banner-topped spec's `surface:` list
 **And** a spec with no frontmatter at all, or an unclosed banner, is still invalid (negative fixtures), and the 45
 banner-below-frontmatter files #1460 produced parse identically before and after
+
+## Epic 51: The landing self-drives, second round — what the second autonomous drain still needed a human for (spec-pyforge-marshal CAP-249..256)
+
+Minted 2026-09-19 from the station Dream's "2026-09-18 (later)" Realization-log entry (`docs/dreams/pyforge-marshal.md`,
+Dream-append-first per `one-chain-per-station`). With Epic 50 draining under its own fixes, doctor 27.1–27.5, herald
+24.1–24.3 and marshal 50.1–50.5 all landed themselves the same day — 17 `marshal factory dispatch` landings on
+claude/sonnet — and the next set of human acts is different in kind from the first: a green branch suite that was not a
+green merge (50.4 vs doctor 27.5, hand-composed `1a5895317f`), a landing record written into the worktree's Tier-3 twin
+that finalize never saw (50.4, promoted by hand in #1488), an operator `git pull` before every campaign cycle, a `blocked`
+session landed as `done` (doctor 27.3, PR #1476), a silent MRS-DISP-043, a `marshal watch` reading August's paused loop,
+and a mint branch that poisoned a key (`doctor/27-4-mint`, PR #1477). Each story below closes one of them, measured on
+the run journals and PRs named in the Dream entry, plus the two banner-parser deferrals 50.5's own review raised
+(DW-FU-50-5, DW-FU-50-6 severity high). **Epics 48 and 49 remain reserved holes** (steward's `Story 48.N:` / `Story 49.N:`
+subjects, renumber-never-exclude). The eighth human act — `pyforge-core-test` has no CI lane — is `spec-pyforge-core`
+CAP-8/CAP-9 and is Epic 52, not re-implemented here.
+**HARD boundaries:** the supervisor still observes from outside and never trusts self-report; git stays the sole authority
+for merged facts (marshal materialises the merge-tree, never performs the merge); one harness seam; no new gate and no
+second verdict owner; the primary checkout is moved only when it is a clean `main`.
+**Serial dispatch order (surface-overlap matrix, `cli/dispatch.py` and `dispatch_land.py` are the hubs):**
+51.8 → 51.2 → 51.3 → 51.6 → 51.1 → 51.4 → 51.5 → 51.7; schedule 51.6 after Epic 52's Story 52.1 has merged (both touch `cli/watch.py` — a merge-order note, not a `Deps:` entry, so `forward-dependency` stays green).
+
+### Story 51.1: Verification sees the merge result
+
+As a fleet operator whose stations land on shared modules within the same hour,
+I want `dispatch land` to verify the tree `main` will actually contain — the merge of the branch onto `origin/main` —
+whenever the branch's baseline predates a sibling's landing on overlapping files,
+So that a story is never refused at land after a green verify (MRS-DISP-038, PR left open), and never auto-merged into a
+runtime break.
+
+**Type:** fix • **Effort:** M • **Deps:** S-51.2 • **FR/AD:** spec-pyforge-marshal CAP-249
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (the hook before `forge.merge_pr`;
+the MRS-DISP-038 branch), `.../dispatch_verify.py::evaluate_dispatch_verification` (a merged-tree checkout is another
+`worktree` path), `.../ports/vcs.py` + `.../adapters/vcs_git.py` (a `--write-tree` sibling of `merge_tree_conflict_paths`
+that materialises the tree), `.../core/dispatch_landing.py` (pure eligibility), `.../dispatch_supervisor/__main__.py`
+(`_run_and_journal_landing`, only if a new journal kind is needed), tests.
+**Given** on 2026-09-18 marshal 50.4's review pass rewired doctor's `sources/marshal.py` / `sources/ledger.py` 42 min after
+doctor 27.5 had rewired the same files past 50.4's baseline — the branch suite was green, land was refused, the operator
+hand-composed `1a5895317f`, and the part git *would* have auto-merged called `bare_merge.py` with 2 args against the new
+3-arg signature
+**When** the branch baseline is behind `origin/main` on any file the branch touches, land materialises
+`git merge-tree --write-tree origin/main <head>`, runs the station's own `verify_commands` against that tree, and refuses
+with a named finding when it is red — while a conflict-free green merge lands with no operator action
+**Then** the 50.4/27.5 fixture refuses with the runtime `TypeError` named in the finding, a fixture with a clean
+merge lands, and a branch whose baseline already equals `origin/main` verifies exactly once (byte-identical to today)
+**And** removing the merged-tree run lets the 50.4/27.5 fixture land green (mutation test); marshal never performs the merge
+and no new gate or verdict owner appears
+
+### Story 51.2: The landing record follows the session's write, not the primary's directory
+
+As a station whose dispatched sessions write their Review Triage Log, Auto Run Result and deferrals into the worktree's
+Tier-3 twin,
+I want `dispatch_land_finalize` to discover and promote that twin, and a land refused after the PR was opened to journal
+the PR it opened,
+So that no tracked spec lands `done` with none of its record and no deferral is invisible to the ledger.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-250
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (accepts the
+worktree beside `slug`/`key`), `.../dispatch_land.py` (spawns finalize with the worktree; the two REFUSED
+`DispatchLandingResult` constructors keep `pr_number` / `marshal_native`), `.../cli/deploy.py::_scan_promotions` /
+`_discover_candidates` (a second Tier-3 source: the dispatch worktree's `implementation-artifacts/`, read before
+teardown), tests.
+**Given** bmad-build-auto wrote 50.4's Review Triage Log, Auto Run Result, `followup_review_recommended: true` and one
+deferral to `<worktree>/_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-50-4-…md` (tracked spec as
+`context:`), flipped only `status:` on the tracked copy, and finalize's scan of the primary's Tier-3 dir found nothing —
+promoted by hand (#1488), DW-FU-50-4 ingested by hand; the same landing's `dispatch-land` projection read
+`pr_number: null, marshal_native: false` for a refusal that happened after PR #1487 was opened
+**When** finalize's promotion scan reads the worktree's Tier-3 dir as a discovery source beside the primary's, and the
+REFUSED result carries the PR facts already known at :317
+**Then** the 50.4 fixture's tracked spec carries `## Auto Run Result` and its `deferred:` item reaches
+`deferred_work_intake.py` with no hand step; a post-open refusal journals `pr_number` and `marshal_native`
+**And** the primary-directory promotion path is byte-identical (existing fixtures), and a worktree with no twin promotes
+nothing (silence is not a finding)
+
+### Story 51.3: The campaign reads the ledger it just promoted
+
+As a fleet operator running a multi-story drain,
+I want the campaign's next cycle to read the ledger finalize just promoted onto `origin/main` without my `git pull`,
+So that a drain reaches zero with zero operator commands between landings.
+
+**Type:** fix • **Effort:** S • **Deps:** S-51.2 • **FR/AD:** spec-pyforge-marshal CAP-251
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (post-ledger
+refresh step, reusing `cli/land.py::_resync_home_branch`), `.../cli/land.py::_promote_sprint_ledger` (unchanged single
+writer onto the remote tip), `.../cli/dispatch.py` (the fleet cycle's ledger read — `station_finalize_pending_story` /
+the `ledger_story_statuses(ledger_path)` call — falls back to `origin/main` when the primary is not a clean `main`),
+`.../core/dispatch_fleet.py::station_ledger_path`, tests.
+**Given** every herald 23.x landing on 2026-09-18 promoted the ledger onto `origin/main` and the campaign kept reading
+the primary checkout's stale copy until an operator pulled
+**When** finalize fast-forwards the primary only when it is a clean `main` (refusing by name and journaling otherwise —
+the checkout may belong to another session) and the campaign otherwise reads the promoted ledger from `origin/main`
+**Then** a fixture replaying the herald sequence (ledger promoted remotely, primary one commit behind) reports the
+story `done` on the next cycle and chains the next ready story with zero operator commands
+**And** a dirty or non-`main` primary is never moved (fixture), `_promote_sprint_ledger` gains no second writer, and a
+primary already at `origin/main` is byte-identical
+
+### Story 51.4: A blocked outcome never lands
+
+As a station whose dispatched session can discover an intent gap and stop,
+I want a session that ends `blocked` — branch reverted to baseline, `status: blocked` written — to produce no PR, no
+`done` promotion, and a journal fact carrying its reason,
+So that the ledger tells the truth and the story is re-driven or re-minted deliberately instead of read as shipped.
+
+**Type:** fix • **Effort:** M • **Deps:** S-51.1, S-51.3 • **FR/AD:** spec-pyforge-marshal CAP-252
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`
+(`_run_supervisor_finalize_sequence` and the run-loop land trigger read the worktree spec's `status:` before verify/land),
+`.../core/dispatch_completion.py::has_git_progress` (a revert-to-baseline plus a status flip is not progress),
+`.../core/dispatch_harness_done.py::parse_spec_status` (reused; the pre-launch guard treats `blocked` as not
+relaunchable without an operator decision), `.../core/dispatch_landing.py` (a `blocked` verdict), `.../cli/dispatch.py::
+station_story_block_facts` + `.../core/dispatch_fleet.py` (the block reason; `NON_IMPLEMENT_STATUSES` already lists
+`blocked`), tests.
+**Given** doctor 27.3's session found an intent gap, reverted to baseline and set `blocked`; marshal landed the empty
+branch (PR #1476) and promoted `27-3 → done` — the truth was written above the Auto Run Result by hand and the story
+re-minted as 27.4→27.5
+**When** the supervisor's finalize sequence stops before verify and land on a `blocked` spec, journals
+`dispatch-blocked` with the spec's own reason, and the campaign records a station block rather than an advance
+**Then** the 27.3 fixture (empty diff against baseline + `status: blocked`) produces no PR and its tracked ledger row
+never reads `done`; the campaign fact names the reason
+**And** an implementation with changed paths lands exactly as today (existing fixtures), and removing the status read
+re-lands the 27.3 fixture (mutation test)
+
+### Story 51.5: MRS-DISP-043 speaks for an uncatalogued model
+
+As a fleet operator whose tier map may name a model id no provider declares,
+I want the fails-safe guard to fire for a model catalogued under *no* provider, not only under a different one —
+while the chosen harness's own default and alias ids stay silent,
+So that a genuinely foreign model never reaches a live launch uncaught and no claude dispatch WARNs spuriously.
+
+**Type:** fix • **Effort:** S • **Deps:** S-51.4 • **FR/AD:** spec-pyforge-marshal CAP-253 • closes DW-FU-50-3
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the guard at the
+`provider_declaring_model` / `resolved_provider` comparison), `.../core/model_cost.py::provider_declaring_model` (or a
+sibling predicate that knows the harness's own default/alias set), `.../core/findings.py` / `.../core/verdict.py` only
+if the finding text changes, tests.
+**Given** the guard's condition (`model_provider is not None and model_provider != resolved_provider`) only fires when the
+model IS found under some OTHER provider, and `provider_declaring_model` returns `None` both for a foreign id and — by
+documented design — for `sonnet` / `opus` on claude
+**When** the predicate distinguishes "uncatalogued and not the chosen harness's own id" from "the harness's own default"
+**Then** a fixture tier map naming an id no provider declares raises MRS-DISP-043 before launch, `sonnet` on claude is
+byte-identical (no finding), and the cross-provider case is unchanged
+**And** removing the uncatalogued branch silences the fixture (mutation test); no second gate
+
+### Story 51.6: `marshal watch` follows the engine that is actually driving the station
+
+As a fleet operator watching a station that moved from bmad-loop to `factory dispatch`,
+I want `marshal watch` to report the run whose journal moved last,
+So that a dispatch run journaled today is never hidden behind a loop row paused in August.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-254 • schedule after Story 52.1 lands (shared `cli/watch.py`; a merge-order note, not a dependency)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py::_gather_station` (the
+`_LIVE_STATUSES` row wins today; the choice becomes one pure function over the loop row's and the dispatch run's last
+journal timestamps), its `WatchPorts` / `_default_ports` (importing `iter_dispatch_run_dirs` /
+`gather_dispatch_journal_facts` from `cli/dispatch.py`, not re-implementing them), tests.
+**Given** on 2026-09-18 the fleet watch read `dispatch-runs/` journals directly all day because `_gather_station` lets
+any `running`/`paused` `bmad-loop list` row win and consults `dispatch_run_id` only when no live row exists
+**When** the station's current run is the engine whose last journal fact is most recent
+**Then** a fixture with a `paused` loop row from 2026-08 and a dispatch run journaled today reports the dispatch run
+(harness, key, phase, last fact); with no dispatch run the loop row is chosen exactly as today; neither reports idle
+**And** the choice function is mutation-tested (swapping the comparison re-selects the stale row)
+
+### Story 51.7: Landing evidence is intent-scoped, not just station-scoped
+
+As a station whose planning, mint and fallout branches must be allowed to mention a story key,
+I want only the shapes marshal itself mints for a landing to mark a key merged,
+So that a branch like `doctor/27-4-mint` can never make a story read landed before its first dispatch.
+
+**Type:** fix • **Effort:** M • **Deps:** S-51.8 • **FR/AD:** spec-pyforge-marshal CAP-255 • closes DW-FU-50-4 •
+co-governed by spec-landing-evidence-grammar / spec-pyforge-core
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` (`parse_station_branch_name`
+requires the landing grammar — `dispatch/<slug>/<key>` or the key as the whole last segment; `parse_github_pr_merge_subject`
+stops accepting a key-prefixed token; `_branch_belongs_to_project` gains its production caller),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::_classify_merge_subject` /
+`merged_story_keys` (passes real branch data, not `branch=None`), tests in both packages; doctor's `sources/marshal.py`
+consumers verified green (`pyforge-doctor-test`, `pyforge-core-test` — outside marshal's `verify_commands`, so run by hand
+before land).
+**Given** on 2026-09-18 doctor Story 27.4 was minted on `doctor/27-4-mint`; when PR #1477 merged, `story_merged_on_main`
+read true for 27.4 and its first dispatch completed in one second and detached from a live session (story re-keyed to
+27.5, 27.4 a reserved hole)
+**When** a station-prefixed branch counts as a landing only under the landing grammar, and the retrospective scan
+corroborates the un-scoped shape with the branch it actually came from
+**Then** `merged_story_keys` for `pyforge-doctor` against `origin/main` no longer contains 27.4, while every `done` row of
+the eight tracked ledgers with real landing evidence still classifies (the CAP-247 regression fixture extended)
+**And** live history is never re-attributed; the MRS-GATE scope advisory for `pyforge-core/**` is expected and recorded,
+not suppressed
+
+### Story 51.8: The banner-skip family is complete
+
+As a station whose tracked story specs carry a provenance banner,
+I want every marshal reader that skips a banner to tolerate leading whitespace or a BOM, and the last banner-blind
+sibling reachable through a promoted spec to skip it too,
+So that no tracked spec is misread as unpromoted or as `declared_low_risk: false`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-256 • closes DW-FU-50-6 (severity high)
+and DW-FU-50-5
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::_skip_leading_banner`,
+`.../core/spec_surface.py::_skip_leading_banner`, `.../core/spec_low_risk.py::parse_declared_low_risk` (reached via
+`cli/gate.py::_gather_review_depth` → `_find_spec_text`), tests. `spec_difficulty.py` and
+`dispatch_harness_done.py` stay untouched (verified unreachable, DW-FU-50-5).
+**Given** both `_skip_leading_banner` copies recognise a banner only at literal text offset 0 (a leading blank line, BOM
+or space falls through to "no frontmatter" — the failure 50.5 exists to close), and `parse_declared_low_risk` still gates
+on `lines[0] == "---"` so a banner-topped spec's `declared_low_risk: true` silently reads `False`
+**When** the banner skip tolerates leading whitespace/BOM and `parse_declared_low_risk` skips a banner the same way
+**Then** fixtures with a blank line, spaces and a BOM before `<!--` are valid in both parsers, and a banner-topped
+`declared_low_risk: true` spec resolves the declared review depth through `cli/gate.py`
+**And** a spec with no frontmatter or an unclosed banner is still invalid, the 45 banner-below-frontmatter files parse
+identically, and no second parser or gate appears
+
+## Epic 52: The shared floor is enforced where the build happens (spec-pyforge-core CAP-8..9)
+
+Minted 2026-09-19 from the marshal Dream's "2026-09-18 (later)" item (8) — routed to `spec-pyforge-core` (hosted here, as
+Epic 14 was; its own Dream is archived into the marshal Dream). `pixi run --frozen -e pyforge-core pyforge-core-test` is
+red on `main` today: 6 failed / 1855 passed, all CAP-5/CAP-7 conformance violations that accumulated between 09-07 and
+09-15 and surfaced only because 50.4's hand-merge was verified on that suite. The Dream's causal claim is corrected in
+the Spec: #1086's retirement of `pyforge-core.yml` was coverage-neutral — that lane and `pyforge-pip-install.yml` run the
+same enumerated subset, and `tests/meta/*_sole_ownership.py` were never wired into any workflow. **HARD boundaries:** the
+lane runs the pixi task, never a hand-enumerated file list; 52.1 lands before 52.2 (a gate born red is a gate nobody
+trusts); 52.1 is hand-driven, not dispatched — half its files are warden/testing-kit, outside marshal's dispatch surface.
+
+### Story 52.1: The six accumulated violations are cleared
+
+As the fleet's shared floor,
+I want the six CAP-5/CAP-7 violations on `main` cleared the way CAP-5 and CAP-6 prescribe,
+So that the conformance suite is green before its CI lane exists.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-core CAP-9 (realizes CAP-5, CAP-6)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/oidc_pkce.py`, `.../cli/watch.py`,
+`src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py` (exception root — re-parent to the core root,
+no `except` clause widens); `.../marshal/cli/login.py`, `.../marshal/cli/refresh.py`,
+`src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py` (route through the core subprocess
+guard); tests.
+**Given** `test_exception_root_sole_ownership` fails for the three exception files and
+`test_no_second_subprocess_implementation` for the three subprocess files (2026-09-19)
+**When** each is brought under the extracted primitive
+**Then** `pixi run --frozen -e pyforge-core pyforge-core-test` → 0 failed, and `pyforge-marshal-test`,
+`pyforge-warden-test` and the testing-kit suite stay green
+**And** the CAP-5 widening test passes for every re-parented class
+
+### Story 52.2: The conformance suite is a PR gate
+
+As the fleet's shared floor,
+I want `pyforge-core-test` — the whole `tests/` tree, meta-tests included — to run on every PR that touches
+`src/shared/packages/**` and inside `pr-preflight`,
+So that a CAP-5/CAP-7 violation reds the PR that introduces it instead of accumulating on `main`.
+
+**Type:** infra • **Effort:** S • **Deps:** S-52.1 • **FR/AD:** spec-pyforge-core CAP-8 (realizes CAP-7's "fails the build")
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (a `core-test` job beside the eight station jobs, same
+shared-surface triggers, running `pixi run --frozen -e pyforge-core pyforge-core-test`), `pixi.toml`
+(`pr-preflight` depends on `pyforge-core-test`; `environment.yaml` regenerated), docs that list the lanes.
+**Given** no workflow invokes the `pyforge-core-test` task and the four sole-ownership meta-tests have never run in CI
+**When** the job exists and `pr-preflight` depends on it
+**Then** the lane is green on `main` at merge, and a fixture branch introducing a second `subprocess.run` implementation
+under `src/shared/packages/` reds it
+**And** the job runs the pixi task — no hand-enumerated file list
+

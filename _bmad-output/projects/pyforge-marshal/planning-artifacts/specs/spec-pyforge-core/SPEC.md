@@ -1,7 +1,7 @@
 ---
 id: SPEC-pyforge-core
 spec: pyforge-core
-status: draft
+status: ready
 owner-dream: docs/dreams/pyforge-core.md
 surface:
   - src/shared/packages/pyforge-core/**            # net-new, not yet created
@@ -127,8 +127,34 @@ costs two stories of rework; deciding it now costs an epic ordering.
   - **success:** One sole-ownership meta-test per extracted primitive, following the
     pattern marshal and warden already use; each fails the build when a second
     implementation of that primitive appears anywhere under `src/shared/packages/`.
+- **CAP-8 — the floor is enforced where the build happens.** *(minted 2026-09-19)*
+  - **intent:** The conformance suite — the whole `pyforge-core` `tests/` tree, the four
+    sole-ownership meta-tests included — runs on every PR that touches
+    `src/shared/packages/**` and inside `pr-preflight`, so a CAP-5/CAP-7 violation reds the
+    PR that introduces it instead of accumulating on `main`.
+  - **success:** A `core-test` job beside the eight station jobs (same shared-surface
+    triggers) runs `pixi run --frozen -e pyforge-core pyforge-core-test`; `pr-preflight`
+    depends on it; a fixture PR introducing a second `subprocess.run` implementation under
+    `src/shared/packages/` reds the lane; the lane is green on `main` at the story's merge.
+    Evidence for the gap: #1086's retirement of `pyforge-core.yml` was coverage-neutral —
+    it and `pyforge-pip-install.yml` run the same enumerated subset, and
+    `tests/meta/*_sole_ownership.py` were never wired into any workflow; no workflow
+    invokes the `pyforge-core-test` task at all.
+- **CAP-9 — the six accumulated violations are cleared.** *(minted 2026-09-19)*
+  - **intent:** The six CAP-5/CAP-7 conformance failures on `main` are cleared the way
+    CAP-5 and CAP-6 prescribe, so the suite is green before CAP-8's lane is born.
+  - **success:** `pixi run --frozen -e pyforge-core pyforge-core-test` → 0 failed (2026-09-19:
+    6 failed / 1855 passed — exception root: marshal `adapters/oidc_pkce.py`, `cli/watch.py`,
+    warden `tea_advisory.py`; second subprocess implementation: marshal `cli/login.py`,
+    `cli/refresh.py`, testing-kit `branch_diff_guard.py`); each re-parent widens no `except`
+    clause (the CAP-5 test); each subprocess call routes through the core guard; the touched
+    stations' own suites stay green.
 
 ## Constraints
+
+- **The CI lane runs the pixi task, never a hand-enumerated file list** *(2026-09-19, CAP-8)*:
+  enumeration is how the meta-tests were lost the first time. **CAP-9 lands before CAP-8** — a
+  gate born red is a gate nobody trusts.
 
 - **Leaf or nothing.** Pure stdlib; no module in `pyforge-core` may import from any
   `pyforge.<station>`. If a primitive needs a station's type, the extraction was wrong and

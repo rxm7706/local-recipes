@@ -103,7 +103,10 @@ forward. That dream is archived; this one is the real record.
   already parse this way after 50.5); it is `spec-pyforge-doctor` surface, so it
   waits for its CAP and Story rather than a night-time patch. Same family as
   CAP-80's lesson: a reader that degrades silently is worse than one that
-  refuses.
+  refuses. **Decomposed 2026-09-19** as CAP-81 / **Epic 28**, Story 28.1 (27.4
+  stays a reserved hole); the same helper's second defect — `if "---" in text:
+  return {}, True` marks any prose file with a horizontal rule as unparseable
+  frontmatter — is in the CAP's success.
 - **2026-09-18 (later still)** — **Corrected: the atlas rows were a rekey, not a
   sibling.** Story 27.1 landed (PR #1471) with both halves of CAP-78 real —
   `ledger-regression` judges a PR at its merge-base, and the merge-history

@@ -6307,6 +6307,7 @@ status: open
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  story: promoted to Story 51.5 (spec-pyforge-marshal CAP-253, Epic 51, minted 2026-09-19); close when 51.5 lands, citing its merge.
 
 ### DW-FU-50-4: Direct-commit branch corroboration (_branch_belongs_to_project) has no production call site that supplies real branch data for the retrospective git-log-only subject scan, so this shape can never actually corroborate in that path today.
 
@@ -6318,6 +6319,7 @@ status: open
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  story: promoted to Story 51.7 (spec-pyforge-marshal CAP-255, Epic 51, minted 2026-09-19); close when 51.7 lands, citing its merge.
 
 ### DW-FU-50-5: Three sibling frontmatter parsers share the identical pre-banner-skip fence-check bug this story fixed in `promotion.py`/`spec_surface.py`. Of the three, `spec_low_risk.py::parse_declared_low_risk` is verified reachable via a promoted, banner-topped tracked spec and silently misreads its `declared_low_risk: true` as `False`; `dispatch_harness_done.py::parse_spec_status` and `spec_difficulty.py` are verified NOT reachable that way (both only ever read Tier-3/ worktree draft spec text, which never... [truncated, 529 chars total]
 
@@ -6330,6 +6332,7 @@ status: open
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.
 
 ### DW-FU-50-6: `_skip_leading_banner` (both `promotion.py` and `spec_surface.py`) only recognizes a banner starting at literal text offset 0 — a leading blank line, BOM, or other whitespace before the `<!--` marker falls through to "no frontmatter," reproducing the same failure mode this story exists to close.
 
@@ -6341,3 +6344,4 @@ status: open
   severity: high
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  story: promoted to Story 51.8 (spec-pyforge-marshal CAP-256, Epic 51, minted 2026-09-19); close when 51.8 lands, citing its merge.

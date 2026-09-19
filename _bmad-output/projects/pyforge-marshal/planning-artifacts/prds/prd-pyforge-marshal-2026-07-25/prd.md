@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-09-18"
+updated: "2026-09-19"
+# 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
 # 2026-09-18  # currency reconciliation (§ 20): FR-196..FR-200 registered from spec-pyforge-marshal CAP-244..248 (Epic 50, the landing self-drives); harness policy back on claude this week.
 # 2026-09-14  # currency reconciliation (§ 19): `spec-pyforge-marshal` moved to 2026-09-13 while this PRD sat at 2026-09-08. The Spec's 2026-09-09 OPERATOR ANSWERING PASS closed six items that this PRD still carried as open under its OWN numbering — Q-4 (fleet budgets), Q-5 (OTel), Q-6 (ACP trigger), Q-7 (idle threshold) — plus the trust-model declaration (Spec F-4) and the freeze-writer clause (Spec F-5). Those four § 13 entries are amended in place with dated ANSWERED text, § 8's fleet-budget Non-Goal is amended, and § 11 gains C-11 (the declared, advisory-in-v1 trust model). This is a CONTENT change, not a re-stamp.
 # 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
@@ -2430,3 +2431,79 @@ tier map declares — a pinned ladder had turned marshal's own verify command re
 
 **Content changed:** § 20 added (FR-196..FR-200 registered, harness-policy note). No FR
 renumbered or removed.
+
+## 21. Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep: `spec-pyforge-marshal` gained CAP-249..256 and `spec-pyforge-core`
+(hosted here, as Epic 14 was) gained CAP-8..9 on 2026-09-19 while this PRD sat at 2026-09-18.
+Same-day reconcile; FRs derived from the CAPs per `one-chain-per-station`'s rule that the PRD is
+the Spec's decomposition, never an independent namespace.*
+
+### 21.1 The FR space: FR-201..FR-210 registered
+
+The second autonomous drain (2026-09-18/19) landed 17 stories across herald, doctor and marshal
+under Epic 50's fixes, and the human acts it still needed are different in kind from the first
+drain's — a green branch that was not a green merge, a landing record finalize never saw, an
+operator pull before every cycle, a `blocked` session landed as `done`, a silent guard, a watch
+reading the wrong engine, a mint branch poisoning a key, and a conformance suite with no lane.
+The station Dream's "2026-09-18 (later)" Realization-log entry measures each on the run journals
+and PRs; FR-201..FR-208 decompose into **Epic 51** (Stories 51.1–51.8), FR-209..FR-210 into
+**Epic 52** (Stories 52.1–52.2). Epics 48 and 49 remain reserved holes.
+
+#### FR-201: Verification sees the merge result ← CAP-249
+`dispatch land` materialises `git merge-tree --write-tree origin/main <head>` whenever the branch
+baseline is behind `origin/main` on a file the branch touches, runs the station's own
+`verify_commands` against that tree, and refuses with a named finding when it is red; a
+conflict-free green merge lands unattended; a branch already at `origin/main` verifies once.
+Fixture: 50.4 vs doctor 27.5 (`1a5895317f`). Story 51.1.
+
+#### FR-202: The landing record follows the session's write, not the primary's directory ← CAP-250
+`dispatch_land_finalize` reads the dispatch worktree's `implementation-artifacts/` as a discovery
+source beside the primary's, before teardown, so the Review Triage Log, Auto Run Result and
+`deferred:` items a session wrote there reach the tracked spec and the ledger; a land refused after
+the PR was opened journals `pr_number` / `marshal_native`. Fixture: 50.4 (#1488). Story 51.2.
+
+#### FR-203: The campaign reads the ledger it just promoted ← CAP-251
+After finalize promotes the tracked ledger onto `origin/main`, the next campaign cycle reads it:
+the primary checkout is fast-forwarded only when it is a clean `main` (refused by name otherwise),
+else the ledger is read from `origin/main`. Fixture: herald 23.x. Story 51.3.
+
+#### FR-204: A blocked outcome never lands ← CAP-252
+A session ending `blocked` produces no PR, no `done` promotion and a `dispatch-blocked` journal
+fact with its reason; a revert-to-baseline plus a status flip is not git progress. Fixture:
+doctor 27.3 (PR #1476). Story 51.4.
+
+#### FR-205: MRS-DISP-043 speaks for an uncatalogued model ← CAP-253
+The fails-safe guard fires for a model catalogued under no provider, with the chosen harness's own
+default/alias ids kept silent. Closes DW-FU-50-3. Story 51.5.
+
+#### FR-206: `marshal watch` follows the engine that is actually driving the station ← CAP-254
+The station's current run is the engine whose last journal fact is most recent — a dispatch run
+journaled today outranks a loop row paused in August. Story 51.6.
+
+#### FR-207: Landing evidence is intent-scoped, not just station-scoped ← CAP-255
+Only the shapes marshal mints for a landing mark a key merged; `doctor/27-4-mint` (PR #1477) no
+longer lands 27.4; `_branch_belongs_to_project` gains its production caller. Closes DW-FU-50-4.
+Co-governed by spec-landing-evidence-grammar / spec-pyforge-core. Story 51.7.
+
+#### FR-208: The banner-skip family is complete ← CAP-256
+`_skip_leading_banner` (both copies) tolerates leading whitespace/BOM; `parse_declared_low_risk`
+skips a banner. Closes DW-FU-50-6 (severity high) and DW-FU-50-5. Story 51.8.
+
+#### FR-209: The six accumulated violations are cleared ← spec-pyforge-core CAP-9
+`pyforge-core-test` → 0 failed on `main` (today 6 failed / 1855 passed: three exception-root, three
+second-subprocess), each fix the way CAP-5/CAP-6 prescribe; hand-driven (warden and testing-kit
+files are outside marshal's dispatch surface). Story 52.1.
+
+#### FR-210: The conformance suite is a PR gate ← spec-pyforge-core CAP-8
+A `core-test` job beside the eight station jobs runs the `pyforge-core-test` pixi task on every
+PR touching `src/shared/packages/**`, and `pr-preflight` depends on it; never a hand-enumerated
+file list. Realizes CAP-7's "fails the build". Story 52.2.
+
+**ONE FR space now FR-1..FR-210** (FR-211 = next free id).
+
+**Ledger state at this stamp** (measured with `fleet_scan.parse_sprint_status`, not a regex):
+**310 story keys — 286 `done`, 23 `backlog`, 1 `blocked` — across 50 epics** (45 `done`, 4
+`backlog`, 1 `in-progress`). Epics 51 and 52 are the two newest of the four backlog epics.
+
+**Content changed:** § 21 added (FR-201..FR-210 registered). No FR renumbered or removed.

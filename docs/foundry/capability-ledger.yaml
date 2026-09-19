@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-18"
+updated: "2026-09-19"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -3012,6 +3012,110 @@ capabilities:
     heading: "the promoter reads a spec through its banner"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-09-19 second-drain gaps (docs/dreams/pyforge-marshal.md 2026-09-18 (later), Epic 51)
+  - id: pyforge-marshal:CAP-249
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "verification sees the merge result"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-250
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the landing record follows the session's write, not the primary's directory"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-251
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the campaign reads the ledger it just promoted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-252
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a blocked outcome never lands"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-253
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "MRS-DISP-043 speaks for an uncatalogued model"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-254
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`marshal watch` follows the engine that is actually driving the station"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-255
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "landing evidence is intent-scoped, not just station-scoped"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-256
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the banner-skip family is complete"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
+  - id: pyforge-core:CAP-1
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the leaf exists and is provably a leaf"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-2
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "atomic write has one implementation and twenty fewer copies"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-3
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the verdict lattice is declared once, and narrowing is expressed, not asserted"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-4
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "one report envelope, extended rather than rivalled"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-5
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "one exception root"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-6
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the subprocess seam is reconciled, and the reconciliation is honest about Marshal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-7
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "a second implementation cannot appear unnoticed"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-8
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the floor is enforced where the build happens"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
+  - id: pyforge-core:CAP-9
+    spec: pyforge-core
+    station: pyforge-marshal
+    heading: "the six accumulated violations are cleared"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
   # 2026-09-17 steward one-chain fold remints
   - id: pyforge-steward:CAP-1
     spec: pyforge-steward
@@ -5032,6 +5136,12 @@ capabilities:
     spec: pyforge-doctor
     station: pyforge-doctor
     heading: "a station's legacy-template history stays attributed after its template changes"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-81
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a frontmatter reader that stops at the fence, not at the first dashes"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
