@@ -215,6 +215,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_catalog_subparsers(duty_parser)
         elif name == "load":
             _add_load_subparsers(duty_parser)
+        elif name == "passport":
+            _add_passport_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -511,6 +513,28 @@ def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
             metavar="NAME",
             help="declared transport name in corridor.yaml (default: app-upload)",
         )
+
+
+def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:
+    """Story 61.2: bare (refuses -- a verb is required) / ``mint``.
+    ``--json`` sits on the parent only, mirroring ``load``'s parent-only
+    placement.
+    """
+    passport_parser.add_argument(
+        "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
+    )
+    passport_subs = passport_parser.add_subparsers(dest="passport_verb", metavar="{mint}")
+    mint = passport_subs.add_parser(
+        "mint", help="mint a fresh vendor Work Passport UUID -- never merges by key"
+    )
+    mint.add_argument("--vendor-id", required=True, metavar="NAME", help="the vendor this row belongs to")
+    mint.add_argument(
+        "--jira-key", default=None, metavar="KEY", help="Jira issue key nickname (optional)"
+    )
+    mint.add_argument(
+        "--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)"
+    )
+    mint.add_argument("--title", default="", metavar="TEXT", help="a human-readable title (optional)")
 
 
 def _add_track_subparsers(track_parser: argparse.ArgumentParser) -> None:
@@ -1270,6 +1294,10 @@ def resolve_duty(name: str) -> Duty:
         from .corridor import LoadDuty
 
         return LoadDuty()
+    if name == "passport":
+        from .passport import PassportDuty
+
+        return PassportDuty()
     return NullDuty(name)
 
 
