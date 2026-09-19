@@ -94,7 +94,7 @@ Decided at review pass 1 (2026-09-19) from the epic's own wording — "the openi
 
 ### Fence rule (both fences column-0, exactly `---`)
 
-- Read the file, apply `_skip_leading_banner` (Story 50.5 / CAP-248 port — see KEEP), then `splitlines()`.
+- Read the file, apply `_skip_leading_banner` (Story 50.5 / `spec-pyforge-marshal:CAP-248` port — see KEEP), then `splitlines()`.
 - A line is a fence iff `line.rstrip() == "---"`. **Not** `line.strip()`: an INDENTED `  ---` is content inside a YAML block scalar (`evidence: |` … `  ---`), and treating it as the closing fence silently truncates the block — the story's own defect class one shape over from the 50.5 fixture. `hygiene.py`'s local reader uses `.strip()`; do not copy that here, and do not touch `hygiene.py`.
 - Opening fence: `lines[0]` must be a fence. Closing fence: the first later line that is a fence. Everything between is the YAML block; `yaml.safe_load` it; keep the existing tail unchanged (`None` → `({}, False)`; non-mapping → `({}, True)`; YAML error → `({}, True)`; read failure → `({}, True)`).
 - No closing fence → `({}, True)` (unbounded, refused — Story 17-1 / FR-144).
