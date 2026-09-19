@@ -2,9 +2,9 @@
 title: '51.5: MRS-DISP-043 speaks for an uncatalogued model'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 deferred:
   - summary: >-
@@ -86,3 +86,26 @@ Minted 2026-09-19 from `epics.md` so `marshal factory dispatch` (51.x) or a hand
   - `[low]` `[patch]` Intent Alignment Auditor: the `haiku` addition is sourced from `claude.toml`'s own comment rather than from the Problem statement or `provider_declaring_model`'s (pre-fix) docstring, which named only sonnet/opus — same root cause as the docstring-staleness finding above, same fix.
   - `[low]` `[reject]` Intent Alignment Auditor: the spec's I/O & Edge-Case Matrix row is generic boilerplate ("the named fixture" / "the Then holds") rather than a concrete worked scenario. Pre-existing in `<intent-contract>` as minted, and any fix would mean editing this build's own spec's intent-contract — rejected per the rule against fixes that edit this build's spec.
   - `[false]` `[reject]` Intent Alignment Auditor: reported a `test_ZZZ_TEMP_repro_cursor_model_no_catalog` scratch function (print-only, no assertions) present in the working tree from a commit made during this review. Verified via `git log`: it was added in `30970024a0` and removed again in the very next checkpoint commit `179413598f`, before this triage began — `git grep` confirms it is absent from the current tree. Disproven; nothing to clean up.
+
+## Auto Run Result
+
+**Summary of implemented change:** `MRS-DISP-043` (the dispatch-engine's model/harness-provider mismatch guard) now also fires when a tier-mapped model is catalogued under no provider at all — not only when it's catalogued under a *different* provider than the resolved harness — while staying silent for the harness's own default/alias ids (`sonnet`/`opus`/`haiku`). The review pass then found and fixed a real regression the original widening introduced: the new branch fired even when no `model_cost_catalog` was declared at all, dropping correctly-matched models on every station that omits one.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py` — added `HARNESS_DEFAULT_MODEL_IDS` / `is_harness_default_model`; `provider_declaring_model`'s docstring now names all three harness-default ids (was sonnet/opus only).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — widened `model_uncatalogued`'s predicate, then (review patch) gated it on `catalog_declared(catalog)` so a station with no declared catalog at all stays silent; tightened the WARN message wording for the remaining "catalog declared but model missing" case.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` — comment-only update to the `MRS-DISP-043` registry entry.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` — 3 pre-existing tests re-fixtured off `sonnet`/`opus`; added `test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider` (review patch: now declares a real catalog for an unrelated model, plus `.message` assertions), `test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical`, `test_dispatch_tier_mapped_haiku_on_claude_is_byte_identical` (review patch), and `test_dispatch_tier_mapped_model_with_no_declared_catalog_at_all_is_preserved` (review patch — reproduces the real atlas/mason/scribe/warden shape).
+
+**Review findings breakdown:** 13 findings — patched: 6 (1 high — the no-catalog-at-all regression, grouped across Blind Hunter + Verification Gap Reviewer; 5 low — docstring/contract-text staleness, missing haiku test coverage, message-ambiguity/assertion gap). Deferred: 2 (both medium, one grouped entry — the un-widened `harness_bmadloop.py::render_policy_toml` sibling guard, pre-existing and out of this story's Surface). Rejected: 5 (3 low — harness-agnostic exemption-set design risk with no live reachable misfire ×2 [Blind Hunter + Intent Auditor], and the spec's own boilerplate I/O-matrix row whose only fix would edit this build's spec; 1 false — a transient scratch test function that had already self-reverted by an earlier checkpoint commit before triage began; the false one is also counted in the false tally above, giving 8 low + 1 false = 9, plus 2 high + 2 medium = 13 total).
+
+**Follow-up review recommended:** `true`. This pass patched a `high`-verdict entry (the no-catalog-at-all regression) on a first pass, which mandates a follow-up per the finalize rule. Named unverified risk: the `catalog_declared` gating fix is exercised by the new regression test's synthetic fixture (mirroring atlas's real policy shape) and the full `pyforge-marshal` + `pyforge-deps` suites, but has not been exercised against a live `dispatch_once` run driven by the real `pyforge-atlas`/`-mason`/`-scribe`/`-warden` `marshal-policy.toml` files loaded through the actual `policy.compose` file-loading path (only a hand-built `project=` dict was used) — a follow-up pass should confirm the real policy files load and resolve identically.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: 8274 passed, 1 skipped, 12 deselected (exit 0; was 8272 passed pre-patch, +2 for the two new tests).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: 130 passed, 3 skipped (exit 0).
+- Targeted `-k` run of all 8 Story-51.5-relevant tests (the 2 no-provider/no-catalog cases, sonnet/haiku byte-identical, cross-provider, and the 3 re-fixtured escalation tests): 8 passed (exit 0).
+- Manual check: Story 51.5's Then/And hold on the named fixture — confirmed via the passing `test_dispatch_drops_a_tier_mapped_model_catalogued_under_no_provider` (uncatalogued model raises MRS-DISP-043, override dropped) and `test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical` (harness default stays silent, override survives).
+- Live-verified the Verification Gap Reviewer's central claim directly against the real tracked policy files: `_bmad-output/projects/{pyforge-atlas,pyforge-mason,pyforge-scribe,pyforge-warden}/planning-artifacts/marshal-policy.toml` all declare `harness_preference = ["cursor"]` and real cursor models in `model_tier_map` with zero occurrences of `model_cost_catalog` across all four files.
+
+**Residual risks:** the real-policy-file follow-up named above; the deferred spin-engine sibling-guard gap (medium, tracked in frontmatter `deferred`).
