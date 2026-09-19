@@ -363,15 +363,17 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     `__import__`, `exec` — is invisible to it. Every sibling guard here shares
     the limitation, so it is not treated as a defect; it is written down
     because dynamic import is the idiomatic way to reach an OPTIONAL
-    dependency. Story 65.1 reached for exactly that shape, and it is now the
-    ONE sanctioned base→dashboard reach: `sprint_ledger_query.sync_to_postgres`
+    dependency. Story 65.1 reached for exactly that shape, and it is one of
+    the sanctioned base→dashboard reaches: `sprint_ledger_query.sync_to_postgres`
     calls `importlib.import_module("pyforge.steward.dashboard.passport_sync")`
     inside the function, refusing (never falling back) on `ImportError`, so the
-    base package keeps working without the extra. The second assertion below
-    pins the narrower claim the sanction rests on — `sprint_ledger_query.py`
-    has NO module-level `django` / `channels` / `pyforge.steward.dashboard`
-    import — since `ast.walk` alone cannot tell a lazy reach from a top-level
-    dependency.
+    base package keeps working without the extra. Story 61.1 added a second,
+    identically-shaped reach: `corridor.load_extract` calls
+    `importlib.import_module("pyforge.steward.dashboard.corridor_load")`. The
+    assertions below pin the narrower claim each sanction rests on — neither
+    `sprint_ledger_query.py` nor `corridor.py` has a module-level `django` /
+    `channels` / `pyforge.steward.dashboard` import — since `ast.walk` alone
+    cannot tell a lazy reach from a top-level dependency.
 
     AST-based (imports only), identical rationale to
     `test_no_rotation_scheduler_exists`/
@@ -427,6 +429,27 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     assert "pyforge.steward.dashboard.passport_sync" in (steward_dir / "sprint_ledger_query.py").read_text(
         encoding="utf-8"
     ), "the sanctioned lazy reach into passport_sync is expected to exist"
+
+    # Story 61.1's corridor.py added a second sanctioned lazy reach, into
+    # dashboard/corridor_load.py — same shape, same narrower claim pinned.
+    corridor_module = ast.parse((steward_dir / "corridor.py").read_text(encoding="utf-8"))
+    corridor_top_level: list[str] = []
+    for node in corridor_module.body:
+        if isinstance(node, ast.Import):
+            corridor_top_level += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            corridor_top_level.append(node.module)
+    banned_corridor_top_level = [
+        name for name in corridor_top_level
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
+    ]
+    assert not banned_corridor_top_level, (
+        f"corridor.py imports {banned_corridor_top_level} at module level -- the "
+        f"dashboard extra may only be reached lazily, inside load_extract"
+    )
+    assert "pyforge.steward.dashboard.corridor_load" in (steward_dir / "corridor.py").read_text(
+        encoding="utf-8"
+    ), "the sanctioned lazy reach into corridor_load is expected to exist"
 
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
@@ -524,6 +547,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
         "audit.py",
         "cache.py",
         "consumers.py",
+        "corridor_load.py",
         "models.py",
         "passport_sync.py",
         "routing.py",

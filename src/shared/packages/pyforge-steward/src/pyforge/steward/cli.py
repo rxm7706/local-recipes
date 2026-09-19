@@ -39,7 +39,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
-# `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config).
+# `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
+# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -61,6 +62,7 @@ DUTIES: tuple[str, ...] = (
     "cutover",
     "ledger-query",
     "catalog",
+    "load",
 )
 
 _HELP = {
@@ -68,6 +70,10 @@ _HELP = {
         "estate BMAD catalog — check/list/render/pointers over catalog.yaml "
         "(backends + sources declared in config, git is the edit store; "
         "generated Claude/Codex marketplace manifests; Story 60.1)"
+    ),
+    "load": (
+        "extract corridor -- idempotent inbound/outbound file loads keyed by "
+        "batch sha + waybill; transports declared in corridor.yaml (Story 61.1)"
     ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
@@ -201,6 +207,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_ledger_query_subparsers(duty_parser)
         elif name == "catalog":
             _add_catalog_subparsers(duty_parser)
+        elif name == "load":
+            _add_load_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -464,6 +472,38 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
         )
         sub.add_argument(
             "--json", action="store_true", default=argparse.SUPPRESS, help=json_help
+        )
+
+
+def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
+    """Story 61.1: bare (report declared transports, default) / ``inbound`` /
+    ``outbound``. ``--corridor``/``--json`` sit on the parent only — unlike
+    ``catalog``'s before-and-after-the-verb UX, this story only needs them to
+    parse in the conventional position, before the verb.
+    """
+    load_parser.add_argument(
+        "--corridor",
+        default=None,
+        metavar="DIR",
+        help="corridor directory holding corridor.yaml (default: the tracked estate corridor)",
+    )
+    load_parser.add_argument(
+        "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
+    )
+    load_subs = load_parser.add_subparsers(dest="load_verb", metavar="{inbound,outbound}")
+    for verb in ("inbound", "outbound"):
+        sub = load_subs.add_parser(
+            verb, help=f"load a {verb} extract, idempotent on batch sha + waybill"
+        )
+        sub.add_argument("--file", required=True, metavar="PATH", help="the extract file to load")
+        sub.add_argument(
+            "--waybill", required=True, metavar="LABEL", help="caller-supplied waybill label"
+        )
+        sub.add_argument(
+            "--transport",
+            default="app-upload",
+            metavar="NAME",
+            help="declared transport name in corridor.yaml (default: app-upload)",
         )
 
 
@@ -1220,6 +1260,10 @@ def resolve_duty(name: str) -> Duty:
         from .catalog import CatalogDuty
 
         return CatalogDuty()
+    if name == "load":
+        from .corridor import LoadDuty
+
+        return LoadDuty()
     return NullDuty(name)
 
 
