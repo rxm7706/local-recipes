@@ -23,7 +23,9 @@ from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
     has_git_progress,
+    is_spec_only_narration,
 )
+from ..core.dispatch_harness_done import parse_blocking_condition, parse_spec_status
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
@@ -499,6 +501,106 @@ def _journal_finalize_attempt(
     return counter
 
 
+def _worktree_story_spec(
+    *, fs: FsPort, repo_root: Path, slug: str, story_key: str, worktree: Path
+) -> tuple[str | None, str | None]:
+    """Resolve the story's tracked spec as seen by the worktree (Story 51.4,
+    spec-pyforge-marshal CAP-252).
+
+    Returns ``(worktree_relative_path, text)`` -- either half is ``None``
+    when the spec cannot be resolved, relocated, or read; callers then
+    treat "no signal" as not-blocked, never as blocked.
+    """
+    spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story_key)
+    if spec_path is None:
+        return None, None
+    try:
+        worktree_spec_path = dispatch_core.relocated_spec_path(
+            spec_path, repo_root, worktree
+        )
+    except ValueError:
+        return None, None
+    text = fs.read_text(worktree_spec_path)
+    try:
+        relative = str(
+            worktree_spec_path.resolve().relative_to(worktree.resolve())
+        )
+    except ValueError:
+        relative = None
+    return relative, text
+
+
+def _spec_land_block_reason(
+    *, fs: FsPort, repo_root: Path, slug: str, story_key: str, worktree: Path,
+    git_facts: DispatchGitFacts,
+) -> str | None:
+    """Non-``None`` when the worktree spec blocks verify/land (Story 51.4).
+
+    A deliberate ``status: blocked`` always blocks (the 27.3 incident); so
+    does a diff that collapses to the tracked spec file itself -- narration,
+    not work (the 51.3 incident: a harness-ceiling termination that only
+    ever rewrote its own spec's ``ready -> in-progress`` flip).
+    """
+    spec_relative_path, spec_text = _worktree_story_spec(
+        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+    )
+    if spec_text is None:
+        return None
+    if not (
+        parse_spec_status(spec_text) == "blocked"
+        or is_spec_only_narration(git_facts.changed_paths, spec_relative_path)
+    ):
+        return None
+    return parse_blocking_condition(spec_text) or (
+        "harness produced no changes beyond the tracked spec"
+    )
+
+
+def _journal_dispatch_blocked(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    story_key: str,
+    worktree: Path,
+    reason: str,
+) -> int:
+    """Journal the supervisor halting before verify/land (Story 51.4, CAP-252):
+    the worktree spec is ``blocked``, or the whole diff is spec-only
+    narration with no code progress behind it.
+    """
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, "worktree_path": str(worktree)},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={"story_key": story_key, "reason": reason, "ok": True},
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal blocked halt for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
 def _run_supervisor_finalize_sequence(
     *,
     fs: FsPort,
@@ -625,6 +727,34 @@ def _run_supervisor_finalize_sequence(
         )
         return counter, False
 
+    # Story 51.4 (spec-pyforge-marshal CAP-252): stop before verify/land on a
+    # blocked or narration-only worktree spec -- the 27.3 incident (deliberate
+    # `status: blocked`, reverted to baseline) and the 51.3 incident (harness
+    # print-mode background-wait ceiling, spec-frontmatter-only diff). Since
+    # `_run_and_journal_verification` is only ever called from this sequence,
+    # gating it here also keeps `v_outcome` from ever reading "verified" for
+    # either fixture, which is what both tick-loop land triggers require.
+    block_reason = _spec_land_block_reason(
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        git_facts=git_facts,
+    )
+    if block_reason is not None:
+        counter = _journal_dispatch_blocked(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            reason=block_reason,
+        )
+        return counter, False
+
     if not _verification_already_journaled(folded, run_id):
         counter = _run_and_journal_verification(
             fs=fs,
@@ -735,6 +865,69 @@ def _run_and_journal_landing(
             file=sys.stderr,
         )
     return counter
+
+
+def _land_or_journal_block(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+    verification_verdict: DispatchVerificationVerdict,
+    merge_subject_template: str,
+) -> int:
+    """Land, unless the worktree spec is blocked/narration-only (Story 51.4,
+    spec-pyforge-marshal CAP-252 -- defense in depth).
+
+    ``_run_supervisor_finalize_sequence`` already stops before verification
+    is ever journaled "verified" for a blocked or narration-only spec, so
+    ``verification_verdict`` reaching this function as VERIFIED should never
+    coincide with a block reason in practice. This is a second, independent
+    read of the same worktree facts at the tick loop's own land trigger --
+    the surface the Binding names explicitly -- rather than the sole guard.
+    """
+    block_reason = _spec_land_block_reason(
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        git_facts=git_facts,
+    )
+    if block_reason is not None:
+        return _journal_dispatch_blocked(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            reason=block_reason,
+        )
+    return _run_and_journal_landing(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        verification_verdict=verification_verdict,
+        merge_subject_template=merge_subject_template,
+    )
 
 
 def _session_awaits_verification(
@@ -1041,6 +1234,13 @@ def run_dispatch_supervisor(
     stuck_land_ticks = 0
     last_session_log_snapshot: str | None = None
     last_session_activity_monotonic = time.monotonic()
+    # Story 51.4 (CAP-252): the worktree-relative path of the story's own
+    # tracked spec, resolved once (the worktree path is fixed for the run) --
+    # threaded into every terminal-verdict read so a diff collapsing to just
+    # this file is judged as no progress, not live/stopped-externally work.
+    spec_relative_path, _initial_spec_text = _worktree_story_spec(
+        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+    )
 
     while True:
         tick_count += 1
@@ -1096,6 +1296,7 @@ def run_dispatch_supervisor(
                 git=git_facts,
                 verification_verdict=v_outcome,
                 session_log=session_log,
+                spec_relative_path=spec_relative_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
         if (
@@ -1151,6 +1352,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
+                    spec_relative_path=spec_relative_path,
                 )
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
@@ -1183,7 +1385,7 @@ def run_dispatch_supervisor(
                         stuck_land_ticks=stuck_land_ticks,
                     )
                 ):
-                    counter = _run_and_journal_landing(
+                    counter = _land_or_journal_block(
                         fs=fs,
                         vcs=vcs,
                         process=process,
@@ -1195,6 +1397,7 @@ def run_dispatch_supervisor(
                         slug=slug,
                         story_key=story_key,
                         worktree=worktree,
+                        git_facts=git_facts,
                         verification_verdict=DispatchVerificationVerdict.VERIFIED,
                         merge_subject_template=merge_subject_template,
                     )
@@ -1218,6 +1421,7 @@ def run_dispatch_supervisor(
                             git=git_facts,
                             verification_verdict=v_outcome,
                             session_log=session_log,
+                            spec_relative_path=spec_relative_path,
                         )
                     except (VcsCommandError, ValueError):
                         pass
@@ -1263,7 +1467,7 @@ def run_dispatch_supervisor(
             landing_journaled=landing_journaled,
             stuck_land_ticks=stuck_land_ticks,
         ):
-            counter = _run_and_journal_landing(
+            counter = _land_or_journal_block(
                 fs=fs,
                 vcs=vcs,
                 process=process,
@@ -1275,6 +1479,7 @@ def run_dispatch_supervisor(
                 slug=slug,
                 story_key=story_key,
                 worktree=worktree,
+                git_facts=git_facts,
                 verification_verdict=DispatchVerificationVerdict.VERIFIED,
                 merge_subject_template=merge_subject_template,
             )
@@ -1298,6 +1503,7 @@ def run_dispatch_supervisor(
                     git=git_facts,
                     verification_verdict=v_outcome,
                     session_log=session_log,
+                    spec_relative_path=spec_relative_path,
                 )
             except (VcsCommandError, ValueError):
                 pass
@@ -1371,7 +1577,9 @@ def run_dispatch_supervisor(
             baseline_revision=git_facts.baseline_head_sha,
             final_revision=git_facts.current_head_sha,
         )
-        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(git_facts):
+        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(
+            git_facts, spec_relative_path=spec_relative_path
+        ):
             counter = _journal_dispatch_preserve(
                 fs=fs,
                 vcs=vcs,
