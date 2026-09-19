@@ -91,10 +91,11 @@ class SurfaceParseError(PyforgeError, ValueError):
 
 def parse_declared_surface(text: str) -> tuple[str, ...] | None:
     """Parse the ``surface:`` field out of ``text``'s YAML-ish frontmatter
-    block (the region between the first line -- which must be exactly
-    ``---``, after skipping a leading HTML-comment provenance banner if one
-    is present (Story 50.5, CAP-248; see ``_skip_leading_banner``) -- and
-    the next line that is exactly ``---``).
+    block. ``text`` is first stripped of a leading HTML-comment provenance
+    banner if one is present (Story 50.5, CAP-248; see
+    ``_skip_leading_banner``); the frontmatter block is then the region
+    between the resulting first line -- which must be exactly ``---`` --
+    and the next line that is exactly ``---``.
 
     Returns ``None`` when: ``text`` carries no recognizable frontmatter
     block (no leading ``---``, or no closing ``---``); the block has no
