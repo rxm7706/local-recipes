@@ -6612,15 +6612,20 @@ So that the conformance suite is green before its CI lane exists.
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-core CAP-9 (realizes CAP-5, CAP-6)
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/oidc_pkce.py`, `.../cli/watch.py`,
 `src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py` (exception root — re-parent to the core root,
-no `except` clause widens); `.../marshal/cli/login.py`, `.../marshal/cli/refresh.py`,
-`src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py` (route through the core subprocess
-guard); tests.
+no `except` clause widens); `.../marshal/cli/login.py`, `.../marshal/cli/refresh.py` (route through the core subprocess
+guard); `src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py` (cleared as CAP-6's
+recorded, tested opt-out — a file-level entry in the guard's `_EXEMPT_RELATIVE_PATHS` pinned to the kit's Q-26
+`dependencies == []`; the kit is outside spec-pyforge-core's scope per its Non-goals until Q2 — corrected at review
+2026-09-19); tests.
 **Given** `test_exception_root_sole_ownership` fails for the three exception files and
 `test_no_second_subprocess_implementation` for the three subprocess files (2026-09-19)
 **When** each is brought under the extracted primitive
 **Then** `pixi run --frozen -e pyforge-core pyforge-core-test` → 0 failed, and `pyforge-marshal-test`,
 `pyforge-warden-test` and the testing-kit suite stay green
 **And** the CAP-5 widening test passes for every re-parented class
+**Outcome (2026-09-19):** landed hand-driven (bmad-build-auto: four review layers + one follow-up pass, 32 findings
+triaged); `pyforge-core-test` 6 failed → 0 failed (1863 passed); the kit's file cleared as CAP-6's recorded opt-out with a
+premise pin, CAP-9's success text corrected accordingly. The tracked story spec carries the full record.
 
 ### Story 52.2: The conformance suite is a PR gate
 
