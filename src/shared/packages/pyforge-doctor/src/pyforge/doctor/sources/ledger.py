@@ -614,38 +614,33 @@ def _merged_ids_for_project(
 
     Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
     The first two are scoped to the station short name / ``loop/<slug>``
-    target. The templated shape (AD-24) is attempted ONLY when this project
-    declares its OWN ``merge_subject_template`` that differs from the bare
-    repo default (Story 27.1) — the live incident this exists for:
-    ``Merge pyforge-atlas/13-5 into main`` must count for atlas, while a
-    sibling's ``Merge 13-5 into main`` must not.
+    target. The templated shape is attempted unconditionally: since
+    ``merge_subject_template`` is ``{slug}``-scoped fleet-wide by default
+    (Story 50.4), ``parse_templated_merge_subject`` self-scopes internally —
+    a subject rendered by ``project_slug``'s own template parses, and a
+    sibling's subject rendered from a DIFFERENT slug's template segment
+    (even one that resolves to the textually identical default template)
+    refuses. ``Merge pyforge-atlas/13-5 into main`` counts for atlas; a
+    sibling's own ``Merge pyforge-herald/13-5 into main`` does not, even
+    though both projects share the same unset-override template string.
 
-    The bare legacy default (``Merge {key} into main``, no station token) is
-    DELIBERATELY never attempted here, unlike ``sources/marshal.py``'s
-    ``gather_story_status`` (which already carried it, unscoped, before this
-    story — a pre-existing ambiguity this story narrows for the stations
-    that opt in, without adding a NEW one for the stations that don't). This
-    function, by contrast, had NO templated-subject matching at all before
-    Story 27.1; wiring the bare default into it unconditionally does not
-    narrow an existing ambiguity, it CREATES one, spanning every project this
-    check compares in the same run — verified live 2026-09-18: doing so
-    turned 3 findings into 306, because most of the fleet's stations still
-    have no override and therefore share the identical, contentless
-    template. A project with no override keeps exactly its PRE-27.1 behavior
-    for this shape (matches only via GitHub PR-merge / bmad-loop-native
-    subjects) — the acknowledged residual (Marshal's own
-    spec-pyforge-marshal CAP-247 / Story 50.4 is what makes the repo default
-    itself station-scoped fleet-wide).
+    Before Story 50.4, this templated shape was DELIBERATELY skipped
+    whenever a project's resolved template equalled the (then station-blind)
+    repo default, to avoid the live 2026-09-18 incident where wiring it in
+    unconditionally turned 3 findings into 306 fleet-wide, because most
+    stations shared the identical, contentless template and any one of them
+    could match any other's subject. Story 50.4's slug-scoping is what
+    removes that ambiguity at the source, so the guard that used to carry it
+    is gone — see ``spec-pyforge-marshal`` CAP-247.
     """
     station = project_slug.removeprefix("pyforge-")
     template = _project_merge_subject_template(target, project_slug)
     out: set[str] = set()
     for subject in subjects:
-        if template != _MERGE_SUBJECT_TEMPLATE:
-            templated = parse_templated_merge_subject(subject, template, project_slug)
-            if templated is not None:
-                out.add(templated.hyphen_form())
-                continue
+        templated = parse_templated_merge_subject(subject, template, project_slug)
+        if templated is not None:
+            out.add(templated.hyphen_form())
+            continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
             branch = gh.group("branch")
