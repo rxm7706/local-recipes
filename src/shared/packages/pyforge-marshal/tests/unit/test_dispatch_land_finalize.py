@@ -145,3 +145,68 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
     assert seen["scan_kwargs"]["worktree"] is None
+
+
+def test_finalize_resyncs_the_primary_after_ledger_promotion(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` never touches
+    the primary checkout's own working tree (CAP-5), so nothing else picked
+    up that promotion either. `dispatch_land_finalize` must reuse
+    `_resync_home_branch` VERBATIM, immediately after the ledger promotion,
+    to fast-forward the primary checkout (``root``) onto `origin/main`'s
+    tip whenever it is safely a clean `main` at its own tip."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.LocalFs",
+        lambda: object(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: object(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+
+    def _capture_resync(*args, **kwargs):
+        seen["resync_args"] = args
+        return True
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        _capture_resync,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    assert "resync_args" in seen
+    (
+        _vcs,
+        resync_enabled,
+        merge_strategy,
+        git_repo_root,
+        home,
+        base,
+        head_branch,
+        _findings,
+    ) = seen["resync_args"]
+    assert resync_enabled is True
+    assert merge_strategy == "merge"
+    assert git_repo_root == tmp_path
+    assert home == tmp_path
+    assert base == "main"
+    assert head_branch == "main"
