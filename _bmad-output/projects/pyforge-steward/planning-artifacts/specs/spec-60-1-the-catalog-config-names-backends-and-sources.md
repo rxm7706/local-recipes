@@ -2,7 +2,7 @@
 title: '60.1: The catalog config names backends and sources'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -81,7 +81,7 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - Given `catalog/.claude-plugin/marketplace.json`, when read as JSON, then it has `name`, `owner.name`, `plugins[]`, each plugin has `name`, `source.source == "github"`, `source.repo`, and a `source:<name>` tag -- the shape `bmad-method install --custom-source <catalog dir>` (discovery mode) and Claude `extraKnownMarketplaces` resolve.
 - Given `steward catalog pointers`, when it runs, then stdout shows the `--custom-source <abs catalog path>` line, an `extraKnownMarketplaces` JSON block using the `directory` source with the repo-relative catalog path, and notes that the `github` form waits on `edit_store.dedicated_repo` (operator confirm) -- and `.claude/settings.json` is unchanged.
 - Given a config that declares a new source `on` with `plugin: x` and no plugin `x` registered, when `check` runs, then the only finding is `slot-unbound` for that source and exit is 1; when a `CatalogSourcePlugin` named `x` is registered on the engine, then `check` is ok with no edit to `CatalogEngine` -- the I/O-matrix row.
-- Given the story lands, when `git status` is inspected, then no file outside `src/shared/packages/pyforge-steward/**`, the steward specs dir, and `scripts/.spec-surface-baseline.json` changed, no Epic 44 ledger key moved, and no GitHub repository was created.
+- Given the story lands, when `git status` is inspected, then no file outside `src/shared/packages/pyforge-steward/**`, the steward specs dir, `scripts/.spec-surface-baseline.json`, and the co-governor `spec-pyforge-core/.memlog.md` (one dated reconcile line) changed, no Epic 44 ledger key moved, and no GitHub repository was created.
 
 ## Spec Change Log
 
@@ -90,6 +90,7 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - 2026-09-19 (dev): `EstateListingsSource` also enforces the file-level `source:` (must be `estate-listings`, else a `config-source` finding) so a mis-sourced registry with `modules: []` is not a silent green; the per-row mismatch is `listing-source-mismatch` as specified. A module listing whose `repository` is not a GitHub `owner/repo` is omitted from the Claude manifest (its `github` source form cannot express it) — not a finding in this story.
 - 2026-09-19 (dev): three pre-existing steward tests were fixed in the same sitting (team memory `pre-existing-findings-fix-now-is-the-default`): `test_track.py` `_SCHEMA` path (`_PKG.parents[1]` → `_PKG.parent`, latent under `importorskip("jsonschema")`), and the two "missing share" provision tests now pin `CONDA_PREFIX` to an empty tmp env so a fat ambient env (pyforge-guild ships the tea/labs share trees) cannot make them red. Named in the memlog entry.
 - 2026-09-19 (dev): `pyforge-marshal/spec-pyforge-core` co-governs `src/shared/packages/pyforge-steward/src/**` and reports drift on `catalog.py`/`cli.py`; its memlog is outside this story's surface (AC 7 / dispatch gate), so that reconcile (`.memlog.md` entry + `--write-baseline --spec pyforge-marshal/spec-pyforge-core`) is left for the landing pass, as PR #1511 did.
+- 2026-09-19 (verify, supersedes the line above): the co-governor reconcile was done in this dispatch after all — `marshal/core/policy.py` `DEFAULT_POLICY["scope_violation_mode"]` is `warn` and steward's `marshal-policy.toml` does not override it, so one out-of-surface memlog line is a WARN advisory, not a gate failure, and team memory says fix-now is the default. Appended the dated co-governor line to `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` (imports stay inside `pyforge.steward`; one `ValueError` subclass at the config boundary; no django/marshal/network/subprocess) and re-stamped `--spec pyforge-marshal/spec-pyforge-core`; `python -m pyforge.doctor.sources spec-surface` is now `ok`. AC 7 amended to admit exactly that one file. KEEP: the reconcile belongs in the story that causes the drift, not on `main` after merge.
 
 ## Review Triage Log
 
