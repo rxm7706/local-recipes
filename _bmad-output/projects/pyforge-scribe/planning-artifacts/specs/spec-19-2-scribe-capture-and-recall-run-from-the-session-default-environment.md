@@ -13,7 +13,7 @@ deferred:
     severity: low
 declared_low_risk: true
 baseline_revision: '1ff4b6d212084d74e3be6112221a4261822d74f0'
-final_revision: 'pending — the merge commit of PR #1513'
+final_revision: 'f2744fa151ed04b10ec115860eae3d6ac8b3d0e1'
 ---
 
 <intent-contract>

@@ -260,3 +260,13 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-19-1-3: the instruction-surface parity (CAP-27) is live-verified on Claude Code only; Gemini, Cursor, Copilot (cloud agent / CLI / VS Code chat) and Devin are docs-only until an operator runs one session each
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md`
+  summary: Story 19.1's evidence for "every harness loads `AGENTS.md`" is documentary for every harness but Claude Code (research doc § 5). Needed, one session each, by someone with the seat: Gemini CLI at the repo root → `/memory show` lists `AGENTS.md` then `GEMINI.md`; a Cursor Agent chat that quotes the verified block's attribution bullet; VS Code Copilot chat → the reply's **References** lists `AGENTS.md` (and `/instructions` in the Copilot CLI); a Devin session → "Accessed Knowledge" shows `AGENTS.md`-derived entries, plus the app-side Repo Setup (`pixi install -e pyforge-guild`) and a "land one story" Playbook. Record each result in the research doc's § 5 table and, on any miss, open a story under Epic 19.
+  evidence: `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` § 5 (honesty table); Cursor's account was out of usage on 2026-09-19; no Devin seat in the session.
+  location: planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: scribe. Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.

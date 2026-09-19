@@ -124,6 +124,10 @@ other tool and person.
   --text "…"` at the moment a decision is made, or promote a personal auto-memory entry with
   `scribe capture --promote` (proposal, then confirmation). Never cite a home-directory file from a
   repo document — cite the promoted `.claude/memory/<type>/<slug>.md`.
+- **Before a session ends,** anything only the operator can close (a credential-bound proof, a
+  purge, a retire, a decision) is written with `scribe capture --type project` and, where a
+  station owns it, as a `deferred-work-ledger.md` row — never left in chat or in one agent's
+  auto-memory (2026-09-19: six such asks and four older leftovers were found there).
 - **Entries every PR author hits:**
   `.claude/memory/feedback/a-pr-from-a-parallel-agent-that-adds-a-station-capability-mu.md`
   (a capability PR carries the whole chain),

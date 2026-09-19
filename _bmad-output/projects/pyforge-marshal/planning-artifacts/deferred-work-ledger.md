@@ -6414,3 +6414,43 @@ status: open
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-OPS-2026-09-19-1: five stale August bmad-loop runs sit `paused — ESCALATED` in the loop homes and pollute `marshal watch --fleet`; every loop home is 447 commits behind `main`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `marshal watch --fleet` (2026-09-19T19:14Z) lists doctor `20260815-112702-c77e`, herald `20260813-094918-551b`, marshal `20260813-094919-bfcb`, mason `20260820-135424-1a75`, steward `20260815-112704-748b` as `paused — ESCALATED` with August "blocked outcome" / intent-gap escalations; none is a live lane (today's work runs through `marshal factory dispatch` worktrees, which do not register there). `fleet-picture` adds "loop home is 447 commit(s) behind origin/main — resync before its next spin" for all eight stations. **Operator decision needed:** `marshal retire --execute` on the five runs + `marshal refresh` of the loop homes (destructive-ish — the escalated runs' worktrees go), or leave them and accept the noise until the next `bmad-loop` spin.
+  evidence: `pixi run --frozen -e pyforge-guild marshal watch --fleet --format text` from `lr-m50`; `fleet-picture` ATTENTION rows. The escalations' stories have since landed through other routes (e.g. marshal seed copier — Epic 46/47 chain).
+  location: ~/.bmad-loops/pyforge-{doctor,herald,marshal,mason,steward}
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: marshal (loop-home lifecycle). Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.
+
+### DW-OPS-2026-09-19-2: the main checkout still carries 14 stashes and eight merged `.worktrees/dispatch-*` worktrees (+ their local/remote `dispatch/*` branches) that a session cannot remove
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Phase 0.3 of the 2026-09-19 plan (operator-approved: "export stash@{12} to a patch, drop all 14") could not be executed by the agent — the permission classifier blocks `git stash clear` and `git worktree remove` as irreversible local destruction. Patches are archived at `~/UserLocal/Projects/Github/rxm7706/_stash-archive/` (`2026-08-12-warden-14-2-stash12.patch`, `herald-21.1-unmerged.patch`). Remaining: `git stash clear`; `git worktree remove` for `.worktrees/dispatch-pyforge-{marshal-46.1,marshal-46.2,marshal-46.5,mason-16.4,steward-44.4,steward-44.5,steward-44.6,steward-59.2,herald-21.1}` (all merged / `ahead=0`), `git worktree prune`, `git branch -d` the merged `dispatch/*` locals and `git push origin --delete` their remotes. `marshal retire --execute` skips worktree-pinned branches, so this is hand work. **Operator-only.**
+  evidence: `git stash list` (14, Aug 12 → Sep 2), `git worktree list` in the main checkout, 2026-09-19.
+  location: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: marshal (dispatch worktree lifecycle; see also steward's resolved worktree-residue entry of 2026-09-08). Asked of the operator in the 2026-09-19 session.
+
+### DW-OPS-2026-09-19-3: marshal Story 46.5's key is poisoned — PR #1448 (Story 28.24, "supervisor finalize") merged from a branch named `dispatch/pyforge-marshal/46.5`, so `merged_story_keys` reads 46.5 as landed while the ledger row is `backlog`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `git log origin/main` carries `Merge pull request #1448 from rxm7706/dispatch/pyforge-marshal/46.5` and `wip: 46.5 (auto-checkpoint)` subjects for work that was Story 28.24; the real 46.5 ("the journal splits silent saves from configured layers…") has never been implemented. A dispatch of 46.5 will either be refused as already-landed or complete instantly with `story_merged_on_main` (the doctor 23.3 shape, 2026-09-19). Remedy is the 51.3 → 51.9 precedent: before Epic 46 dispatches, re-mint the story as 46.11 (epics.md "supersedes Story 46.5", ledger `46-5` → `done` with a hollow/poisoned note, `46-11` `backlog`, tracked spec, capability-ledger unchanged).
+  evidence: `git log origin/main --format=%s | grep -E '46\.5'` on 2026-09-19; spec-landing-evidence-grammar (`parse_station_branch_name`) reads the branch name.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: marshal. Found while preflighting the third drain's Epic 46 lane.
+
+### DW-OPS-2026-09-19-4: the `headroom` MCP server entry points at a removed worktree's interpreter and fails to connect at every Claude Code session start; the `plugin:github` MCP answers 400 "Authorization header is badly formatted"
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Session boot reports `headroom (ENOENT): posix_spawn '…/local-recipes-wt-token-economy-claude-session-path/.pixi/envs/local-recipes/bin/python3.14'` — the worktree was removed after the token-economy work landed, the MCP config (operator-level Claude settings) still names its env. Repoint to the main checkout's `.pixi/envs/pyforge-guild/bin/python` (headroom-ai is a Guild-env dep since Story 63.1). The GitHub plugin MCP's auth header is malformed — an operator credential/config fix. Both are operator-level config outside the repo; recorded so the session-start error stops being background noise.
+  evidence: Claude Code session-start MCP failure notices, every session since ~2026-09-16.
+  location: ~/.claude.json (mcpServers) / ~/.claude/settings.json
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: marshal (token-economy kit). Operator-only.
