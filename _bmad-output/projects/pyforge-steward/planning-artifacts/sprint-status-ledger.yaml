@@ -250,7 +250,7 @@ development_status:
   60-2-publish-uses-tools-we-wield-steward-records-the-review: backlog
   60-3-ship-backends-conda-channel-default: backlog
   60-4-frame-index-and-a-thin-browse-list: backlog
-  61-1-corridor-transports-upload-default: backlog
+  61-1-corridor-transports-upload-default: done
   61-2-work-passport-and-core-schema: backlog
   61-3-as-of-glass-and-mailed-query: backlog
   61-4-signed-outbound-slice: backlog
