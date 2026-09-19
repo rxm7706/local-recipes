@@ -285,7 +285,7 @@ development_status:
   51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: done
   51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: backlog
   51-8-the-banner-skip-family-is-complete: done
-  51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: backlog
+  51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: done
   52-1-the-six-accumulated-violations-are-cleared: done
   52-2-the-conformance-suite-is-a-pr-gate: done
   5-1-fleet-view: done
