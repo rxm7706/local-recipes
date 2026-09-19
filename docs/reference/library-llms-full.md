@@ -12,7 +12,9 @@
 `psutil`, `attrs`, `packageurl-python`, `license-expression` — six deps every affected
 station's own nested `pixi.toml [package.run-dependencies]` already declared, root
 `pixi.toml` never mirrored; `pydantic`'s existing transitive-only note sharpened to also
-name pyforge-atlas's and pyforge-scribe's direct declarations). Channels: conda-forge + SelfExplainML.
+name pyforge-atlas's and pyforge-scribe's direct declarations) and 2026-09-19 (§ 1a adds
+`tornado` — pyforge-atlas's nested run-dep behind the Bokeh server, the one `undocumented-dep`
+`llms-full-check` reported on `main`). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -152,6 +154,11 @@ manifest is a second, un-mirrored source root `pixi.toml` doesn't otherwise expo
   (`duckdb_writer.py`, `admission.py`) only. Distinct from the separate marshal/scribe
   filelock *adoption* question tracked in `spec-pyforge-unifying-strategy`'s "Estate
   leverage — installed, bind now" table — this is atlas's own already-shipped use.
+- **tornado** (>=6.5.8) — async networking: IOLoop + HTTP server; `pyforge-atlas` only
+  (`views/live.py` hard-imports `bokeh.server.server.Server`, which runs on Tornado —
+  Story 14.3 / AUD-ATLAS-010: an undeclared module-level import is a runtime dependency).
+  Resolvable transitively via **bokeh** in every other env; declared directly only in
+  atlas's nested manifest, in step with its `pyproject.toml`.
 
 ---
 
