@@ -71,6 +71,8 @@ def _ports(
     slugs: list[str] | None = None,
     queue: list[str] | None = None,
     per_slug: dict[str, dict] | None = None,
+    loop_last_fact: dict[str, datetime | None] | None = None,
+    dispatch_last_fact: dict[str, datetime | None] | None = None,
 ) -> WatchPorts:
     listed = listed if listed is not None else {"runs": [{"id": "20260914-201759-bd47", "status": "running"}]}
     status = status if status is not None else _loop_status()
@@ -124,6 +126,14 @@ def _ports(
         del slug
         return list(queue)
 
+    def loop_last_fact_fn(slug: str, run_id: str) -> datetime | None:
+        del slug
+        return (loop_last_fact or {}).get(run_id)
+
+    def dispatch_last_fact_fn(slug: str, dispatch_id: str) -> datetime | None:
+        del slug
+        return (dispatch_last_fact or {}).get(dispatch_id)
+
     return WatchPorts(
         list_runs=list_runs,
         run_status=run_status,
@@ -132,6 +142,8 @@ def _ports(
         list_prs=list_prs,
         discover_projects=discover_projects,
         load_queue=load_queue,
+        loop_last_fact=loop_last_fact_fn,
+        dispatch_last_fact=dispatch_last_fact_fn,
     )
 
 
