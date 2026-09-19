@@ -441,6 +441,10 @@ class FakeVcs:
         self.dirty = False
         self.main_ref = self.head_sha
         self.remote_ledger_texts: dict[str, str] = {}
+        # Review pass 2026-09-19 (VG1): record `fetch` calls so tests can
+        # assert the local `origin/main` cache is refreshed before the
+        # remote-read fallback trusts it.
+        self.fetched: list[tuple[str, str]] = []
 
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
