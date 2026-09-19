@@ -615,6 +615,30 @@ def test_is_valid_spec_text_false_for_unclosed_banner():
     assert is_valid_spec_text(text) is False
 
 
+def test_is_valid_spec_text_true_for_blank_line_before_banner():
+    """Story 51.8 (DW-FU-50-6): a leading blank line before the banner's
+    opening marker must not fall through to "no frontmatter"."""
+    text = "\n<!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_spaces_before_banner():
+    text = "  <!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_true_for_bom_before_banner():
+    text = "\ufeff<!-- Promoted ... -->\n" + _VALID_SPEC
+    assert is_valid_spec_text(text) is True
+
+
+def test_is_valid_spec_text_false_for_no_frontmatter_still_invalid():
+    """A leading blank line/BOM tolerance must not widen into accepting a
+    spec with no frontmatter at all once the (non-existent) banner is
+    skipped."""
+    assert is_valid_spec_text("\nno frontmatter here\n") is False
+
+
 # --- classify_promotion_candidates -------------------------------------------
 
 
