@@ -663,7 +663,7 @@ class _PromotionScan:
 
 
 def _scan_promotions(
-    root: Path, project_slug: str, *, vcs: VcsPort, fs: FsPort
+    root: Path, project_slug: str, *, vcs: VcsPort, fs: FsPort, worktree: Path | None = None
 ) -> _PromotionScan:
     """The ONE implementation of "which of this slug's stories are durable,
     and what should happen to each of their Tier-3 specs" (Story 4.2's own
@@ -672,7 +672,16 @@ def _scan_promotions(
     candidates and already-promoted keys, reads both AD-29 reachability
     routes, and delegates classification to ``core.promotion``'s pure
     functions -- exactly what ``run_promote`` did inline before this story;
-    ``unreachable_promotions_for_slug`` is the second real caller."""
+    ``unreachable_promotions_for_slug`` is the second real caller.
+
+    ``worktree``, when given (Story 51.2), is a second discovery source: a
+    dispatch worktree's own Tier-3 ``implementation-artifacts/`` dir, read
+    before that worktree is torn down. A session may have written its spec
+    there instead of into the primary checkout's Tier-3 dir -- its
+    candidates are appended AFTER the primary's, so on a story-key
+    collision the worktree's copy is the one ``classify_promotion_candidates``
+    classifies (later entry wins its ``candidate_by_key`` dict-merge). No
+    twin in the worktree is silent -- not a finding."""
     project_data: Mapping[str, object] = {}
     findings: list[Finding] = []
     if project_slug and policy._is_valid_project_slug(project_slug):
@@ -705,6 +714,11 @@ def _scan_promotions(
     specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
 
     candidates = _discover_candidates(fs, tier3_dir)
+    if worktree is not None:
+        worktree_tier3_dir = (
+            worktree / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
+        )
+        candidates = candidates + _discover_candidates(fs, worktree_tier3_dir)
     already_promoted = _already_promoted_keys(fs, vcs, root, specs_dir, candidates)
 
     # Push route: best-effort, never a hard failure (AD-29/F-14) -- a
