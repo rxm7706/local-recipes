@@ -14,6 +14,7 @@ from pyforge.core.client import (
     parse_request_path,
     urllib_request,
 )
+from pyforge.core.errors import PyforgeError
 
 from ..core.pkce import challenge_for, generate_verifier
 
@@ -21,8 +22,11 @@ TokenTransport = Callable[[str, dict[str, str], bytes], bytes]
 BrowserOpener = Callable[[str], None]
 
 
-class PkceLoginError(Exception):
-    """PKCE login failed before a bearer could be obtained."""
+class PkceLoginError(PyforgeError, Exception):
+    """PKCE login failed before a bearer could be obtained.
+
+    Story 52.1, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 class _CallbackResult:

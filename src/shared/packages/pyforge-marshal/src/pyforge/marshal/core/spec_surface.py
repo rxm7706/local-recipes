@@ -64,14 +64,17 @@ def _skip_leading_banner(text: str) -> str:
     recovered or minted tracked spec may carry a ``<!-- ... -->`` banner
     ABOVE its frontmatter fence instead of below it, and this parser's
     ``lines[0] == "---"`` check must not read that as "no frontmatter at
-    all". Returns ``text`` unchanged when it does not start with the
-    banner's opening marker, or when the marker is never closed."""
-    if not text.startswith(_BANNER_PREFIX):
+    all". Tolerates a leading BOM, blank lines, or spaces before the
+    banner's opening marker (Story 51.8, CAP-256, DW-FU-50-6) -- the banner
+    need not sit at literal text offset 0. Returns ``text`` unchanged when
+    no banner is found there, or when the marker is never closed."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
         return text
-    end = text.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
     if end == -1:
         return text
-    return text[end + len(_BANNER_SUFFIX) :].lstrip()
+    return stripped[end + len(_BANNER_SUFFIX) :].lstrip()
 
 
 class SurfaceParseError(PyforgeError, ValueError):

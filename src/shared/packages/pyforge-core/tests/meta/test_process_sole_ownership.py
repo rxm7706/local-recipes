@@ -78,7 +78,7 @@ independently bans every ``subprocess``/HTTP import package-wide, and every
 file but one scans clean here, serving as this guard's real-tree
 positive-coverage proof, the same role ``fs_local.py``'s clean scan plays
 for the atomic-write guard. The one exception, ``query_plane_boot.py``, gets
-its own file-level exemption below (fourth entry in ``_EXEMPT_RELATIVE_PATHS``):
+its own file-level exemption below (fifth entry in ``_EXEMPT_RELATIVE_PATHS``):
 atlas's OWN ``NO_INLINE_IO_EXEMPT`` already sanctions it as "the ONE
 ``duckdb-server`` launch site in the atlas surface" (governed by its own
 ``tests/singularity/test_one_duckdb_server_launch_site.py``), and its
@@ -87,6 +87,23 @@ terminate/wait(timeout)/kill/wait sequence -- a capability neither
 ``PosixProcess.run`` (blocks to completion) nor ``spawn_detached`` (returns
 a bare pid, no handle at all) offers.
 
+The sixth file-level exemption (Story 52.1, CAP-6's "recorded as a
+sanctioned, tested opt-out") is the testing-kit's ``branch_diff_guard.py``,
+and its capability gap is the PACKAGE, not a missing ``ProcessPort`` option:
+Q-26 (decided 2026-08-23, ``spec-19-2-the-shared-test-support-kit``'s Spec
+Change Log) ships ``pyforge-testing-kit`` as its own stdlib leaf --
+``pyproject.toml`` ``dependencies = []``, ``[package.run-dependencies]``
+python only, "never a package run-dep" -- so every public function of that
+file routing through ``pyforge.core.process`` would give the BUILT kit an
+undeclared runtime dependency and it would cease to be the leaf Q-26 made
+it; ``spec-pyforge-core``'s own Non-goals exclude the kit ("Not
+``pyforge-testing-kit``") until its open Q2 decides whether the two are one
+package; and ``tests/packaging/test_dependency_completeness.py`` skips the
+``pyforge`` namespace entirely, so nothing else would catch a stray import.
+The exemption is pinned to that premise below
+(``test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration``): it
+self-retires the day the leaf declaration changes.
+
 Scans SOURCE trees (reads files from disk), not installed packages -- same
 convention as every other ``pyforge-core`` meta test.
 """
@@ -94,6 +111,7 @@ convention as every other ``pyforge-core`` meta test.
 from __future__ import annotations
 
 import ast
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -155,6 +173,20 @@ _EXEMPT_RELATIVE_PATHS = frozenset(
         Path("pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py"),
         Path("pyforge-marshal/src/pyforge/marshal/cli/dispatch.py"),
         Path("pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"),
+        # Story 52.1 (CAP-6 sanctioned opt-out). Q-26 (2026-08-23) declares
+        # `pyforge-testing-kit` a stdlib leaf: `pyproject.toml`
+        # `dependencies = []`, `[package.run-dependencies]` python only,
+        # "never a package run-dep". Routing this file's nine `git` calls
+        # through `pyforge.core.process` would give the BUILT kit an
+        # undeclared runtime dependency -- it cannot import
+        # `pyforge.core.process` without ceasing to be that leaf.
+        # `spec-pyforge-core`'s Non-goals exclude the kit until its open Q2
+        # decides whether the two are one package, and
+        # `tests/packaging/test_dependency_completeness.py` skips the
+        # `pyforge` namespace, so nothing else would catch a stray import.
+        # Pinned to its premise by
+        # `test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration`.
+        Path("pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py"),
     }
 )
 
@@ -297,6 +329,48 @@ def test_query_plane_boot_is_excluded_from_the_scan():
     excluded = PACKAGES_ROOT / "pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"
     assert excluded.is_file(), f"expected {excluded} to exist"
     assert excluded not in _scannable_files()
+
+
+_BRANCH_DIFF_GUARD = Path("pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py")
+
+
+def test_branch_diff_guard_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / _BRANCH_DIFF_GUARD
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_branch_diff_guard_would_fire_if_it_were_not_excluded():
+    """Non-vacuous proof the Story 52.1 file-level exemption is doing real
+    work (the same shape as the Doctor/Herald station-level proofs below):
+    ``branch_diff_guard.py`` really does invoke ``subprocess`` -- exactly
+    nine ``run``/``check_output`` git call sites -- so without its entry in
+    ``_EXEMPT_RELATIVE_PATHS`` this file would be a real violation, not an
+    accidentally-unused permission. The count is pinned so a tenth raw site
+    (or a partial migration) is a visible change, not a silent one."""
+    guard_path = PACKAGES_ROOT / _BRANCH_DIFF_GUARD
+    assert guard_path.is_file(), f"expected {guard_path} to exist"
+    assert len(_subprocess_violations(_parse(guard_path))) == 9
+
+
+def test_branch_diff_guard_exemption_rests_on_the_kits_leaf_declaration():
+    """PREMISE pin: the exemption exists ONLY because Q-26 declares
+    ``pyforge-testing-kit`` a stdlib leaf (``[project] dependencies = []``).
+    The day that declaration changes -- the kit grows a ``pyforge-core``
+    dependency, or Q2 folds it into this package -- this test reds, and the
+    right move is to migrate ``branch_diff_guard.py``'s git calls onto
+    ``PosixProcess.run`` and delete the exemption in the same change, not to
+    loosen this pin."""
+    pyproject = PACKAGES_ROOT / "pyforge-testing-kit" / "pyproject.toml"
+    assert pyproject.is_file(), f"expected {pyproject} to exist"
+    with pyproject.open("rb") as handle:
+        declared = tomllib.load(handle)["project"]["dependencies"]
+    assert declared == [], (
+        f"pyforge-testing-kit now declares runtime dependencies {declared!r} -- "
+        f"the Q-26 stdlib-leaf premise behind branch_diff_guard.py's exemption "
+        f"no longer holds; migrate its git calls to PosixProcess.run and remove "
+        f"the exemption"
+    )
 
 
 def test_out_of_scope_stations_matches_the_documented_six():

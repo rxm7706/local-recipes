@@ -10,8 +10,9 @@ unchanged.
 
 ``except PyforgeError`` is the one new sentence CAP-5 gives every station's
 caller: a single base every re-parented exception (herald's ``HeraldError``,
-mason's ``MasonError``, and the 37 scattered family-root classes across
-warden/marshal/atlas) shares, without changing any existing ``except``
+mason's ``MasonError``, and the 41 scattered family-root classes across
+warden/marshal/atlas -- 37 from Story 14.3 plus the four Story 52.1 cleared)
+shares, without changing any existing ``except``
 clause's behaviour -- each re-parented class keeps its original stdlib base
 in its MRO via multiple inheritance, so every pre-existing catch site still
 catches it.

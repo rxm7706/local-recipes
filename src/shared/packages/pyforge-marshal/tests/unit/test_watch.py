@@ -452,3 +452,739 @@ def test_help_lists_watch_subcommand(capsys):
     assert "--fleet" in out
     assert "--project" in out
     assert "--run" in out
+
+
+# --- Story 52.1, SPEC-pyforge-core CAP-5: the re-parent widening guard ----
+
+
+def test_loop_cli_error_is_a_pyforge_error_and_a_runtime_error():
+    """``LoopCliError`` gained ``PyforgeError`` as an additional base and
+    kept its original ``RuntimeError`` base -- every pre-existing exact-class
+    ``except LoopCliError`` site in ``watch.py`` and any ``except
+    RuntimeError`` site behave identically; ``except PyforgeError`` newly
+    catches it too. The ``(command, reason)`` constructor is untouched."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(LoopCliError, PyforgeError)
+    assert issubclass(LoopCliError, RuntimeError)
+    exc = LoopCliError("bmad-loop list --json", "not installed")
+    assert exc.command == "bmad-loop list --json"
+    assert exc.reason == "not installed"
+    assert str(exc) == "bmad-loop list --json: not installed"
+    for catch in (LoopCliError, RuntimeError, PyforgeError):
+        try:
+            raise LoopCliError("bmad-loop status", "x")
+        except catch:
+            pass
+
+
+def test_probe_error_is_a_pyforge_error_and_a_runtime_error():
+    """Same pin for ``ProbeError`` (the ``raise ProbeError("git", "x")``
+    I/O-matrix row): caught by ``except ProbeError``, ``except
+    RuntimeError`` and ``except PyforgeError`` alike."""
+    from pyforge.core.errors import PyforgeError
+
+    assert issubclass(ProbeError, PyforgeError)
+    assert issubclass(ProbeError, RuntimeError)
+    exc = ProbeError("git", "x")
+    assert exc.command == "git"
+    assert exc.reason == "x"
+    assert str(exc) == "git: x"
+    for catch in (ProbeError, RuntimeError, PyforgeError):
+        try:
+            raise ProbeError("git", "x")
+        except catch:
+            pass
+
+
+# --- Coverage of the remaining branches (Story 52.1 coverage gate) --------
+# Fakes only: a recording `ProcessPort` for `_default_ports`, `tmp_path`
+# trees for the cache/queue readers, fixture `WatchPorts` for `run_watch`.
+
+import sys as _sys
+
+import pytest
+from pyforge.core.process import ProcessError, ProcessResult
+from pyforge.marshal.cli import watch as watch_mod
+from pyforge.marshal.core.model import Finding, Severity
+
+
+class _RecordingProcess:
+    """A `ProcessPort` fake: `responses` maps the FIRST argv element that
+    identifies the command (`"list"`, `"status"`, `"pyforge.marshal"`,
+    `"fetch"`, `"rev-parse"`, `"gh"`) to a `ProcessResult` or an exception."""
+
+    def __init__(self, responses: dict[str, object]) -> None:
+        self.responses = responses
+        self.calls: list[tuple[list[str], Path, float | None]] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.calls.append((list(argv), cwd, timeout_s))
+        for key, response in self.responses.items():
+            if key in argv:
+                if isinstance(response, BaseException):
+                    raise response
+                return response
+        raise AssertionError(f"unexpected argv: {argv!r}")
+
+    def is_alive(self, pid: int) -> bool:  # pragma: no cover - protocol filler
+        return False
+
+    def spawn_detached(self, argv, *, cwd, log_path):  # pragma: no cover
+        raise AssertionError("never spawned")
+
+
+def _ok(payload: object) -> ProcessResult:
+    return ProcessResult(returncode=0, stdout=json.dumps(payload), stderr="")
+
+
+def _fake_home(monkeypatch, tmp_path: Path, *slugs: str) -> Path:
+    home = tmp_path / "home"
+    for slug in slugs:
+        (home / ".bmad-loops" / slug).mkdir(parents=True)
+    monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: home))
+    return home
+
+
+def _cached_snapshot(tmp_path: Path, slug: str, run_id: str) -> dict:
+    """The snapshot `run_watch` persisted -- it lives in the cache file, not
+    in the envelope's `data`."""
+    return json.loads((tmp_path / "cache" / f"{slug}__{run_id}.json").read_text(encoding="utf-8"))["snapshot"]
+
+
+# seconds_to_next_half_hour / recommend_delay
+
+
+def test_seconds_to_next_half_hour_handles_naive_and_second_half():
+    naive = datetime(2026, 9, 15, 12, 45, 30)
+    assert seconds_to_next_half_hour(naive) == 14 * 60 + 30
+    on_boundary = datetime(2026, 9, 15, 12, 30, 0, tzinfo=timezone.utc)
+    assert seconds_to_next_half_hour(on_boundary) == 30 * 60
+
+
+def test_recommend_delay_idle_run_is_boundary_only():
+    now = datetime(2026, 9, 15, 12, 10, 0, tzinfo=timezone.utc)
+    delay, reason = recommend_delay(
+        finished=False, paused_or_escalated=False, actively_progressing=False, now=now, fleet=False
+    )
+    assert delay == 20 * 60
+    assert reason.startswith("idle/paused fleet or non-active run")
+    # A finished FLEET never recommends stop.
+    delay, _ = recommend_delay(
+        finished=True, paused_or_escalated=False, actively_progressing=False, now=now, fleet=True
+    )
+    assert delay == 20 * 60
+
+
+# cache readers
+
+
+def test_read_cache_tolerates_missing_malformed_and_non_object(tmp_path: Path):
+    assert watch_mod._read_cache(tmp_path / "absent.json") is None
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    assert watch_mod._read_cache(bad) is None
+    non_object = tmp_path / "list.json"
+    non_object.write_text("[1, 2]", encoding="utf-8")
+    assert watch_mod._read_cache(non_object) is None
+    good = tmp_path / "good.json"
+    watch_mod._write_cache(good, {"snapshot": {"a": 1}})
+    assert watch_mod._read_cache(good) == {"snapshot": {"a": 1}}
+
+
+# pure helpers over bmad-loop payload shapes
+
+
+def test_story_rows_accepts_tasks_alias_and_skips_junk():
+    rows = watch_mod._story_rows(
+        {
+            "tasks": [
+                "not-a-mapping",
+                {"no_key": True},
+                {"story_key": "1.2", "status": "done", "commit": "abc", "attempt_number": 2, "token_consumption": 7},
+                {"story": "1.3"},
+            ]
+        }
+    )
+    assert rows == [
+        {"key": "1.2", "phase": "done", "commit_sha": "abc", "attempt": 2, "tokens": 7},
+        {"key": "1.3", "phase": "", "commit_sha": None, "attempt": None, "tokens": None},
+    ]
+    assert watch_mod._story_rows({"stories": "nope", "tasks": None}) == []
+
+
+def test_overall_status_falls_back_to_list_row_then_unknown():
+    assert watch_mod._overall_status({"finished": True}, None) == "finished"
+    assert watch_mod._overall_status({"run_status": "paused"}, None) == "paused"
+    assert watch_mod._overall_status({"status": ""}, {"status": "running"}) == "running"
+    assert watch_mod._overall_status({}, {"status": 3}) == "unknown"
+    assert watch_mod._overall_status({}, None) == "unknown"
+
+
+def test_list_row_live_row_and_newest_row_edge_shapes():
+    assert watch_mod._list_row({"runs": "nope"}, "x") is None
+    assert watch_mod._list_row({"runs": [{"id": "a"}, "junk"]}, "b") is None
+    assert watch_mod._list_row({"runs": [{"run_id": "b"}]}, "b") == {"run_id": "b"}
+    assert watch_mod._live_loop_row({"runs": None}) is None
+    assert watch_mod._live_loop_row({"runs": [{"status": "finished"}]}) is None
+    assert watch_mod._live_loop_row(
+        {"runs": [{"id": "1", "status": "running"}, {"id": "2", "status": "paused"}]}
+    ) == {"id": "2", "status": "paused"}
+    assert watch_mod._newest_row({"runs": []}) is None
+    assert watch_mod._newest_row({"runs": "nope"}) is None
+    assert watch_mod._newest_row({"runs": [{"id": "1"}, "junk"]}) is None
+    assert watch_mod._newest_row({"runs": [{"id": "1"}]}) == {"id": "1"}
+
+
+def test_filter_prs_skips_non_mappings_and_foreign_heads():
+    rows = [
+        "junk",
+        {"number": 1, "headRefName": "loop/pyforge-atlas", "state": "OPEN"},
+        {"number": 2, "headRefName": "loop/pyforge-herald", "title": "t", "state": "MERGED", "updatedAt": "u"},
+    ]
+    assert watch_mod._filter_prs(rows, "pyforge-herald") == [
+        {"number": 2, "title": "t", "headRefName": "loop/pyforge-herald", "state": "MERGED", "updatedAt": "u"}
+    ]
+
+
+def test_changed_and_delta_lines_for_a_dispatch_snapshot():
+    prev = {
+        "pattern": "bmad-build-auto",
+        "status": "running",
+        "dispatch_completion_verdict": None,
+        "dispatch_verification_verdict": None,
+        "paused_reason": None,
+        "escalation_reason": None,
+        "loop_sha": "aaa",
+        "prs": [],
+    }
+    same = dict(prev)
+    assert watch_mod._changed(prev, same) is False
+    assert watch_mod._delta_lines(prev, same) == ["nothing changed"]
+    completed = dict(prev, dispatch_completion_verdict="passed")
+    assert watch_mod._changed(prev, completed) is True
+    assert "dispatch_completion_verdict None -> passed" in watch_mod._delta_lines(prev, completed)
+    verified = dict(prev, dispatch_verification_verdict="green")
+    assert watch_mod._changed(prev, verified) is True
+    assert watch_mod._changed(prev, dict(prev, paused_reason="x")) is True
+    assert watch_mod._changed(prev, dict(prev, escalation_reason="y")) is True
+    assert watch_mod._changed(prev, dict(prev, loop_sha="bbb")) is True
+    # A SHA that could not be probed (None) is not a change.
+    assert watch_mod._changed(prev, dict(prev, loop_sha=None)) is False
+    assert watch_mod._changed(prev, dict(prev, prs=[{"number": 1}])) is True
+
+
+def test_delta_lines_for_a_loop_snapshot_cover_every_field():
+    prev = {
+        "pattern": "bmad-loop",
+        "status": "running",
+        "stories": [
+            "junk",
+            {"key": "1.1", "phase": "done", "commit_sha": "a"},
+            {"key": "1.2", "phase": "ready", "commit_sha": None},
+        ],
+        "paused_reason": None,
+        "escalation_reason": None,
+        "loop_sha": "aaa",
+        "prs": [],
+    }
+    curr = {
+        "pattern": "bmad-loop",
+        "status": "paused",
+        "stories": [
+            "junk",
+            {"key": "1.1", "phase": "done", "commit_sha": "a"},
+            {"key": "1.2", "phase": "dev-running", "commit_sha": "b"},
+            {"key": "1.3", "phase": "ready", "commit_sha": None},
+            {"key": None, "phase": "ready"},
+        ],
+        "paused_reason": "spec-approval",
+        "escalation_reason": "needs operator",
+        "loop_sha": "bbb",
+        "prs": [{"number": 9}],
+    }
+    lines = watch_mod._delta_lines(prev, curr)
+    assert "1.2: ready -> dev-running (commit None -> b)" in lines
+    assert "new story 1.3: phase=ready" in lines
+    assert "new story None: phase=ready" in lines
+    assert "run status running -> paused" in lines
+    assert "new paused_reason: spec-approval" in lines
+    assert "new escalation_reason: needs operator" in lines
+    assert "origin/loop SHA aaa -> bbb" in lines
+    assert "PR list changed" in lines
+    assert watch_mod._delta_lines(None, curr) == ["first observation -- no prior cache"]
+
+
+def test_session_completions_and_currently_running_for_dispatch():
+    snap = {
+        "pattern": "bmad-build-auto",
+        "dispatch_completion_verdict": "passed",
+        "current_story": "11.1",
+        "status": "finished",
+    }
+    assert watch_mod._session_completions(snap, []) == ["11.1 -- completion passed"]
+    assert watch_mod._session_completions(dict(snap, dispatch_completion_verdict="pending"), []) == []
+    assert watch_mod._session_completions(
+        dict(snap, current_story=None, dispatch_completion_verdict="failed"), []
+    ) == ["dispatch -- completion failed"]
+    assert watch_mod._currently_running(snap, []) == {
+        "story": "11.1",
+        "phase": "finished",
+        "verdict": "passed",
+    }
+    loop_rows = [{"key": "2.1", "phase": "ready"}, {"key": "2.2", "phase": "done"}]
+    assert watch_mod._currently_running({"pattern": "bmad-loop"}, loop_rows) == {
+        "story": None,
+        "phase": None,
+    }
+
+
+def test_up_next_falls_back_to_status_rows_when_the_queue_is_exhausted():
+    rows = [
+        {"key": "3.1", "phase": "done"},
+        {"key": "3.2", "phase": "dev-running"},
+        {"key": "3.3", "phase": "ready"},
+        {"key": "3.4", "phase": "backlog"},
+    ]
+    assert watch_mod._up_next({"pattern": "bmad-loop"}, rows, ["3.1", "3.2"]) == ["3.3", "3.4"]
+    assert watch_mod._up_next({"pattern": "bmad-loop"}, rows, ["3.4", "3.5"]) == ["3.4", "3.5"]
+
+
+def test_user_action_composes_every_part():
+    text = watch_mod._user_action(
+        status={"paused_stage": "escalation", "escalation_reason": "needs operator"},
+        overall="running",
+        stale_dispatch="old-dispatch",
+        home_state="paused-on-escalation",
+    )
+    assert text.startswith("blocking: needs operator; ")
+    assert "stale unrelated dispatch record 'old-dispatch'" in text
+    assert text.endswith("supervisor liveness (marshal status homes[0].state): paused-on-escalation")
+    assert watch_mod._user_action(
+        status={}, overall="escalated", stale_dispatch=None, home_state=None
+    ) == "blocking: escalated"
+
+
+def test_parse_queue_reads_epics_headings_minus_ledger_done(tmp_path: Path):
+    planning = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    planning.mkdir(parents=True)
+    (planning / "epics.md").write_text(
+        "# Epic 1\n\n### Story 1.1: first\n\n### Story 1.2: second\n\n#### Story 1.3: third\n",
+        encoding="utf-8",
+    )
+    (planning / "sprint-status-ledger.yaml").write_text(
+        "epic-1: in-progress\n1-1: done\n1-2: in-progress\n  1-3: done\nnot a row\n",
+        encoding="utf-8",
+    )
+    assert watch_mod._parse_queue("acme", tmp_path) == ["1.2"]
+    assert watch_mod._parse_queue("missing", tmp_path) == []
+
+
+# _default_ports: every real-I/O port over a recording ProcessPort
+
+
+def test_default_ports_list_runs_and_run_status_go_through_bmad_loop(tmp_path: Path, monkeypatch):
+    home = _fake_home(monkeypatch, tmp_path, "acme")
+    process = _RecordingProcess(
+        {
+            "list": _ok({"runs": [{"id": "r1", "status": "running"}]}),
+            "status": _ok({"run_id": "r1", "finished": False}),
+        }
+    )
+    ports = watch_mod._default_ports(process, tmp_path)
+    assert ports.list_runs("acme") == {"runs": [{"id": "r1", "status": "running"}]}
+    assert ports.run_status("acme", "r1") == {"run_id": "r1", "finished": False}
+    argv, cwd, timeout_s = process.calls[0]
+    assert argv == ["pixi", "run", "-e", "local-recipes", "bmad-loop", "list", "--json"]
+    assert cwd == home / ".bmad-loops" / "acme"
+    assert timeout_s == watch_mod._WATCH_TIMEOUT_S
+    assert process.calls[1][0][-3:] == ["status", "r1", "--json"]
+    # No loop home for this slug: list reports an empty fleet without a
+    # process launch, and status falls back to the repo root as cwd.
+    assert ports.list_runs("nobody") == {"runs": []}
+    assert len(process.calls) == 2
+    ports.run_status("nobody", "r9")
+    assert process.calls[2][1] == tmp_path
+
+
+@pytest.mark.parametrize(
+    ("response", "reason"),
+    [
+        (ProcessError("executable not found: 'pixi'"), "executable not found"),
+        (ProcessResult(returncode=3, stdout="", stderr="boom"), "exit 3"),
+        (ProcessResult(returncode=0, stdout="not json", stderr=""), "did not parse as JSON"),
+        (ProcessResult(returncode=0, stdout="[1]", stderr=""), "JSON was not an object"),
+    ],
+    ids=["launch-failure", "non-zero", "non-json", "non-object"],
+)
+def test_default_ports_run_json_failures_become_loop_cli_errors(
+    tmp_path: Path, monkeypatch, response, reason
+):
+    _fake_home(monkeypatch, tmp_path, "acme")
+    ports = watch_mod._default_ports(_RecordingProcess({"list": response}), tmp_path)
+    with pytest.raises(LoopCliError) as excinfo:
+        ports.list_runs("acme")
+    assert excinfo.value.command == "bmad-loop list --json"
+    assert reason in excinfo.value.reason
+
+
+def test_default_ports_marshal_home_reads_homes_zero(tmp_path: Path):
+    process = _RecordingProcess(
+        {"pyforge.marshal": _ok({"data": {"homes": [{"state": "running", "dispatch_run_id": "d1"}]}})}
+    )
+    ports = watch_mod._default_ports(process, tmp_path)
+    assert ports.marshal_home("acme") == {"state": "running", "dispatch_run_id": "d1"}
+    argv, cwd, _ = process.calls[0]
+    assert argv[:3] == [_sys.executable, "-m", "pyforge.marshal"]
+    assert argv[3:] == ["status", "--project", "acme", "--format", "json"]
+    assert cwd == tmp_path
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        ProcessError("cannot launch"),
+        ProcessResult(returncode=0, stdout="not json", stderr=""),
+        ProcessResult(returncode=0, stdout="[]", stderr=""),
+        ProcessResult(returncode=0, stdout=json.dumps({"data": {"homes": []}}), stderr=""),
+        ProcessResult(returncode=0, stdout=json.dumps({"data": {"homes": ["junk"]}}), stderr=""),
+    ],
+    ids=["launch-failure", "non-json", "non-object", "no-homes", "junk-home"],
+)
+def test_default_ports_marshal_home_is_advisory_and_degrades_to_none(tmp_path: Path, response):
+    ports = watch_mod._default_ports(_RecordingProcess({"pyforge.marshal": response}), tmp_path)
+    assert ports.marshal_home("acme") is None
+
+
+def test_default_ports_loop_sha_fetches_then_rev_parses(tmp_path: Path):
+    process = _RecordingProcess(
+        {
+            "fetch": ProcessResult(returncode=0, stdout="", stderr=""),
+            "rev-parse": ProcessResult(returncode=0, stdout="cafebabe\n", stderr=""),
+        }
+    )
+    ports = watch_mod._default_ports(process, tmp_path)
+    assert ports.loop_sha("acme") == "cafebabe"
+    assert process.calls[0][0] == ["git", "fetch", "origin", "--quiet"]
+    assert process.calls[1][0] == ["git", "rev-parse", "origin/loop/acme"]
+
+
+def test_default_ports_loop_sha_probe_failures_become_probe_errors(tmp_path: Path):
+    launch_fail = _RecordingProcess({"fetch": ProcessError("no git")})
+    with pytest.raises(ProbeError, match="no git") as excinfo:
+        watch_mod._default_ports(launch_fail, tmp_path).loop_sha("acme")
+    assert excinfo.value.command == "git rev-parse"
+    empty = _RecordingProcess(
+        {
+            "fetch": ProcessResult(returncode=0, stdout="", stderr=""),
+            "rev-parse": ProcessResult(returncode=128, stdout="  \n", stderr="unknown revision"),
+        }
+    )
+    with pytest.raises(ProbeError, match="empty stdout"):
+        watch_mod._default_ports(empty, tmp_path).loop_sha("acme")
+
+
+def test_default_ports_list_prs_parses_gh_json_and_drops_non_mappings(tmp_path: Path):
+    process = _RecordingProcess(
+        {"gh": ProcessResult(returncode=0, stdout=json.dumps([{"number": 1}, "junk"]), stderr="")}
+    )
+    ports = watch_mod._default_ports(process, tmp_path)
+    assert ports.list_prs("acme") == [{"number": 1}]
+    argv = process.calls[0][0]
+    assert argv[:3] == ["gh", "pr", "list"]
+    assert "--json" in argv and "number,title,headRefName,state,updatedAt" in argv
+
+
+@pytest.mark.parametrize(
+    ("response", "reason"),
+    [
+        (ProcessError("no gh"), "no gh"),
+        (ProcessResult(returncode=0, stdout="nope", stderr=""), "did not parse as JSON"),
+        (ProcessResult(returncode=0, stdout="{}", stderr=""), "JSON was not a list"),
+    ],
+    ids=["launch-failure", "non-json", "non-list"],
+)
+def test_default_ports_list_prs_failures_become_probe_errors(tmp_path: Path, response, reason):
+    ports = watch_mod._default_ports(_RecordingProcess({"gh": response}), tmp_path)
+    with pytest.raises(ProbeError) as excinfo:
+        ports.list_prs("acme")
+    assert excinfo.value.command == "gh pr list"
+    assert reason in excinfo.value.reason
+
+
+def test_default_ports_discover_projects_and_load_queue_read_the_repo(tmp_path: Path):
+    ports = watch_mod._default_ports(_RecordingProcess({}), tmp_path)
+    assert ports.discover_projects() == []
+    projects = tmp_path / "_bmad-output" / "projects"
+    (projects / "zeta" / "planning-artifacts").mkdir(parents=True)
+    (projects / "alpha").mkdir()
+    (projects / "stray-file.md").write_text("x", encoding="utf-8")
+    (projects / "zeta" / "planning-artifacts" / "epics.md").write_text(
+        "### Story 9.1: only\n", encoding="utf-8"
+    )
+    assert ports.discover_projects() == ["alpha", "zeta"]
+    assert ports.load_queue is not None
+    assert ports.load_queue("zeta") == ["9.1"]
+
+
+# run_watch: argument errors, the default cache dir, context slug, text render
+
+
+def test_run_watch_argument_errors(tmp_path: Path, capsys):
+    ports = _ports(tmp_path)
+    rc = _run(tmp_path, _args(fleet=True, project="pyforge-herald"), ports)
+    payload = _payload(capsys)
+    assert rc == 4
+    assert "mutually exclusive" in payload["findings"][0]["message"]
+    rc = _run(tmp_path, _args(), ports)
+    payload = _payload(capsys)
+    assert rc == 4
+    assert "need --project SLUG or --fleet" in payload["findings"][0]["message"]
+
+
+def test_run_watch_run_without_project_is_rejected(tmp_path: Path, capsys):
+    """`--run` alone: the `run_id and not slug` guard (reached only when the
+    generic `not fleet and not slug` guard is bypassed by a context that
+    itself carries no slug)."""
+
+    class _NoSlugContext:
+        slug = ""
+
+    rc = run_watch(
+        _args(run="r1"),
+        context=_NoSlugContext(),
+        ports=_ports(tmp_path),
+        now=_NOW,
+        cache_dir=tmp_path / "cache",
+        repo=tmp_path,
+    )
+    payload = _payload(capsys)
+    assert rc == 4
+    assert "need --project SLUG or --fleet" in payload["findings"][0]["message"]
+
+
+def test_run_watch_takes_the_slug_from_the_context_and_default_cache_dir(tmp_path: Path, capsys):
+    class _Context:
+        slug = "pyforge-herald"
+
+    naive_now = datetime(2026, 9, 15, 12, 10, 0)
+    rc = run_watch(
+        _args(run="20260914-201759-bd47"),
+        context=_Context(),
+        ports=_ports(tmp_path),
+        now=naive_now,
+        repo=tmp_path,
+    )
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["data"]["slug"] == "pyforge-herald"
+    assert payload["data"]["checked_at"] == "2026-09-15T12:10:00Z"
+    default_cache = tmp_path / ".claude" / "data" / "marshal-run-watch"
+    assert (default_cache / "pyforge-herald__20260914-201759-bd47.json").is_file()
+
+
+def test_run_watch_uses_the_injected_process_for_default_ports(tmp_path: Path, monkeypatch, capsys):
+    """No `ports=`: `run_watch` builds `_default_ports` over the injected
+    `ProcessPort` -- proven by the recorded argv of the first call."""
+    _fake_home(monkeypatch, tmp_path)  # no loop home -> list_runs returns {"runs": []}
+    process = _RecordingProcess({"pyforge.marshal": ProcessError("no marshal")})
+    rc = run_watch(
+        _args(project="acme"), process=process, now=_NOW, cache_dir=tmp_path / "cache", repo=tmp_path
+    )
+    payload = _payload(capsys)
+    assert rc == 4
+    assert any(f["code"] == "MRS-WATCH-002" for f in payload["findings"])
+    assert process.calls[0][0][:3] == [_sys.executable, "-m", "pyforge.marshal"]
+
+
+def test_pinned_text_report_renders_every_section_and_findings(tmp_path: Path, capsys):
+    ports = _ports(tmp_path, sha_error=ProbeError("git rev-parse", "no such ref"))
+    rc = _run(tmp_path, _args(project="pyforge-herald", run="20260914-201759-bd47", format="text"), ports)
+    text = capsys.readouterr().out
+    assert rc == 0
+    assert text.startswith("## pyforge-herald — Run `20260914-201759-bd47` (bmad-loop) Status Report")
+    assert "**Session Completions:**\n- 21.4 -- done" in text
+    assert "- first observation -- no prior cache" in text
+    assert "**Currently Running:**\n- story=21.5 phase=dev-running attempt=1 tokens=None" in text
+    assert "**Up Next & Full Queue:**\n- 21.6\n- 21.7" in text
+    assert "**User Action Required:** None; stale unrelated dispatch" in text
+    assert "next-check delay: 300s -- actively progressing" in text
+    assert "findings:\n  MRS-WATCH-003 [warn] git rev-parse failed" in text
+
+
+def test_finished_text_report_prints_the_reason_without_a_delay(tmp_path: Path, capsys):
+    ports = _ports(
+        tmp_path,
+        listed={"runs": [{"id": "r", "status": "finished"}]},
+        status=_loop_status(
+            finished=True,
+            status="finished",
+            stories=[{"key": "21.5", "phase": "ready", "commit_sha": None}],
+        ),
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald", run="r", format="text"), ports)
+    text = capsys.readouterr().out
+    assert rc == 0
+    assert "**Session Completions:**\n- (none)" in text
+    assert "next-check delay:" not in text  # the `<delay>s -- <reason>` line
+    assert text.rstrip().endswith("run/dispatch is finished -- no next-check delay")
+
+
+def test_fleet_text_report_and_second_observation_delta(tmp_path: Path, capsys):
+    per_slug = {
+        "pyforge-herald": {
+            "listed": {"runs": [{"id": "20260914-201759-bd47", "status": "running"}]},
+            "status": _loop_status(),
+            "home": {"state": "running", "dispatch_run_id": None},
+        },
+        "idle-one": {"listed": {"runs": []}, "home": {"state": "idle", "dispatch_run_id": None}},
+    }
+    ports = _ports(tmp_path, slugs=["pyforge-herald", "idle-one"], per_slug=per_slug)
+    rc = _run(tmp_path, _args(fleet=True, format="text"), ports)
+    text = capsys.readouterr().out
+    assert rc == 0
+    assert text.startswith("## Fleet Watch — 2 projects")
+    assert "- first observation -- no prior cache" in text
+    assert "- pyforge-herald — bmad-loop — 20260914-201759-bd47 — in-progress" in text
+    assert "- idle-one — None — idle — idle" in text
+    assert "**User Action Required:** None" in text
+    # Second observation, nothing moved: quiet.
+    rc = _run(tmp_path, _args(fleet=True, format="text"), ports)
+    text = capsys.readouterr().out
+    assert rc == 0
+    assert "nothing changed" in text
+    # Third observation, herald finished: a per-slug delta line.
+    per_slug["pyforge-herald"]["status"] = _loop_status(finished=True, status="finished")
+    rc = _run(tmp_path, _args(fleet=True), _ports(tmp_path, slugs=["pyforge-herald", "idle-one"], per_slug=per_slug))
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["data"]["changed"] is True
+    assert payload["data"]["quiet"] is False
+    assert payload["data"]["delta"][0].startswith("pyforge-herald: ")
+
+
+def test_fleet_escalated_member_names_the_action(tmp_path: Path, capsys):
+    ports = _ports(
+        tmp_path,
+        slugs=["pyforge-atlas"],
+        per_slug={
+            "pyforge-atlas": {
+                "listed": {"runs": [{"id": "atlas-run", "status": "paused"}]},
+                "status": _loop_status(status="paused", paused_stage="escalation", paused_reason="needs operator"),
+                "home": {"state": "paused-on-escalation", "dispatch_run_id": None},
+            }
+        },
+    )
+    rc = _run(tmp_path, _args(fleet=True, format="text"), ports)
+    text = capsys.readouterr().out
+    assert rc == 0
+    assert "— ESCALATED" in text
+    assert "**User Action Required:** pyforge-atlas: blocking: needs operator" in text
+
+
+# _gather_station: the remaining error branches
+
+
+def test_status_failure_after_a_live_row_is_a_loop_cli_error(tmp_path: Path, capsys):
+    ports = _ports(tmp_path, status_error=LoopCliError("bmad-loop status r --json", "exit 1"))
+    rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
+    payload = _payload(capsys)
+    assert rc == 4
+    assert any(
+        f["code"] == "MRS-WATCH-001" and "bmad-loop status" in f["message"] for f in payload["findings"]
+    )
+
+
+def test_live_row_without_an_id_is_no_active_run(tmp_path: Path, capsys):
+    ports = _ports(tmp_path, listed={"runs": [{"status": "running"}]})
+    rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
+    payload = _payload(capsys)
+    assert rc == 4
+    assert any(f["code"] == "MRS-WATCH-002" for f in payload["findings"])
+
+
+def test_gh_failure_is_a_warn_finding_and_marshal_home_crash_is_swallowed(tmp_path: Path, capsys):
+    base = _ports(tmp_path)
+
+    def _no_prs(slug: str) -> list[dict]:
+        raise ProbeError("gh pr list", "not authenticated")
+
+    def _crashing_home(slug: str) -> dict | None:
+        raise RuntimeError("marshal status exploded")
+
+    ports = WatchPorts(
+        list_runs=base.list_runs,
+        run_status=base.run_status,
+        marshal_home=_crashing_home,
+        loop_sha=base.loop_sha,
+        list_prs=_no_prs,
+        discover_projects=base.discover_projects,
+        load_queue=None,
+    )
+    rc = _run(tmp_path, _args(project="pyforge-herald", run="20260914-201759-bd47"), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["verdict"] == "warn"
+    assert any(f["code"] == "MRS-WATCH-004" for f in payload["findings"])
+    assert _cached_snapshot(tmp_path, "pyforge-herald", "20260914-201759-bd47")["prs"] == []
+    assert payload["data"]["stale_dispatch_ignored"] is False
+    # No load_queue port: up-next comes from the status rows alone.
+    assert payload["data"]["sections"]["up_next"] == ["21.6"]
+
+
+def test_pinned_run_id_with_no_live_row_still_asks_bmad_loop_status(tmp_path: Path, capsys):
+    ports = _ports(tmp_path, listed={"runs": [{"id": "other", "status": "finished"}]})
+    rc = _run(tmp_path, _args(project="pyforge-herald", run="pinned-run"), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["data"]["pattern"] == "bmad-loop"
+    assert payload["data"]["run_id"] == "pinned-run"
+    assert _cached_snapshot(tmp_path, "pyforge-herald", "pinned-run")["list_status"] is None
+
+
+def test_dispatch_pattern_escalated_and_finished_flags(tmp_path: Path, capsys):
+    home = {
+        "state": "paused-on-escalation",
+        "dispatch_run_id": "warden-dispatch",
+        "dispatch_completion_verdict": "failed",
+        "dispatch_verification_verdict": "red",
+        "current_story": "11.1",
+        "escalation_reason": "spec gap",
+    }
+    ports = _ports(tmp_path, listed={"runs": []}, home=home)
+    rc = _run(tmp_path, _args(project="pyforge-warden"), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    data = payload["data"]
+    assert data["pattern"] == "bmad-build-auto"
+    snapshot = _cached_snapshot(tmp_path, "pyforge-warden", "warden-dispatch")
+    assert snapshot["status"] == "finished"
+    assert snapshot["paused_stage"] == "escalation"
+    assert data["sections"]["session_completions"] == ["11.1 -- completion failed"]
+    assert data["sections"]["user_action_required"].startswith("blocking: spec gap")
+    # finished + escalated: the delay recommendation is the terminal one.
+    assert data["delay_seconds"] is None
+    assert "finished" in data["delay_reason"]
+
+
+def test_prior_cache_with_a_non_object_snapshot_counts_as_first_observation(tmp_path: Path, capsys):
+    cache = tmp_path / "cache"
+    watch_mod._write_cache(cache / "pyforge-herald__20260914-201759-bd47.json", {"snapshot": "junk"})
+    rc = _run(tmp_path, _args(project="pyforge-herald", run="20260914-201759-bd47"), _ports(tmp_path))
+    payload = _payload(capsys)
+    assert rc == 0
+    assert payload["data"]["first_observation"] is True
+
+
+def test_emit_suppresses_a_dead_stdout(tmp_path: Path, monkeypatch):
+    suppressed: list[bool] = []
+    monkeypatch.setattr(watch_mod, "_suppress_downstream_pipe_close", lambda: suppressed.append(True))
+
+    def _dead_print(*args, **kwargs):
+        raise OSError(32, "Broken pipe")
+
+    monkeypatch.setattr(watch_mod, "print", _dead_print, raising=False)
+    findings = [Finding(code="MRS-WATCH-003", severity=Severity.WARN, message="probe failed")]
+    rc = watch_mod._emit(_args(format="text"), {"scope": "station", "quiet": True}, findings)
+    assert rc == 0
+    assert suppressed == [True]
