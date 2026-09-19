@@ -44,3 +44,9 @@ Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-6`.
 Surface: scripts/deferred_work_promote.py.
 Ledger key: `59-5-one-mint-time-slugify-and-two-dw-families`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-5-one-mint-time-slugify-and-two-dw-families.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

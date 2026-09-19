@@ -790,6 +790,18 @@ capabilities:
     heading: "The compiled store remembers when it was built"
     mode: rebuild
     path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-27
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "the session contract reaches every harness from one file"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
+  - id: pyforge-scribe:CAP-28
+    spec: pyforge-scribe
+    station: pyforge-scribe
+    heading: "scribe capture and recall run from the session default environment"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md
   - id: bmad-method-core-upgrade:CAP-1
     spec: bmad-method-core-upgrade
     station: pyforge-steward

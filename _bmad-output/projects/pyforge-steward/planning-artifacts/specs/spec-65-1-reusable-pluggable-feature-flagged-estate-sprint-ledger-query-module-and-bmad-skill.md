@@ -21,7 +21,7 @@ deferred:
     severity: low
 declared_low_risk: false
 baseline_revision: '7d0fa6118c326a8b91482e1586c33c9ba717f996'
-final_revision: 'pending — the merge commit of PR #1507 (`Merge pyforge-steward/65-1 into main`)'
+final_revision: '1ff4b6d212084d74e3be6112221a4261822d74f0'
 ---
 
 <intent-contract>

@@ -188,8 +188,10 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the scoped commands below are manual checks, not the declared command).
+
+**Manual checks:**
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_catalog.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py -q` -- expected: all pass.
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: the station suite green (the dispatch's configured verify).
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli catalog check && python -m pyforge.steward.cli catalog render --check` -- expected: exit 0, no drift.
 - `python -m pyforge.doctor.sources spec-surface` -- expected: no drift finding for `pyforge-steward/spec-pyforge-steward` after the memlog entry + re-stamp.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` -- expected: `catalog.py` ≥ 80% unit coverage.

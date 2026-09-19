@@ -688,6 +688,41 @@ shipped `--mode`; this epic wires the callers.
 **And** `recall_cli_argv` with no mode has neither `--mode` nor `--kind`; `mode=planning|memory|code` appends that `--mode`
 **And** `AGENTS.md` session path and `.cursor/rules/scribe-recall.mdc` show `--mode planning` on the decision command
 
+## Epic 19: The session contract reaches every harness
+
+**Spec binding.** `spec-pyforge-scribe` CAP-27. Minted 2026-09-19 at the review of PR #1513 (a
+parallel session's AGENTS.md / GEMINI.md governance PR) from the Dream entry "Scribe serves every
+harness"; the research that fixed the shape is
+`planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md`. Operator rulings the
+same day: point, don't copy; `@AGENTS.md` import + no attribution trailers; direct-capture the
+team-relevant notes; full chain. **HARD boundaries:** the `bmad:context` block is
+`bmad-project-context`'s, never hand-edited; no instruction content that belongs in `AGENTS.md` is
+authored into a per-tool file; Dream items (4)–(10) are seeded, not this epic's scope.
+
+### Story 19.1: One AGENTS.md, reached natively or by a one-line pointer from every harness
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pyforge-scribe` CAP-27
+**difficulty:** medium
+**Surface:** `AGENTS.md` (team-memory section with real `.claude/memory/` paths; behavioural guidelines; "how each harness loads this file"; pre-PR checklist items 9–12 corrected and folded), `CLAUDE.md` (`@AGENTS.md` import), `GEMINI.md` (thin Gemini addendum), `.gemini/settings.json` (new: `context.fileName` with `AGENTS.md` first), `.github/copilot-instructions.md` (thin addendum), `.vscode/settings.json` (`chat.useAgentsMdFile`), `.claude/memory/feedback/*.md` + `MEMORY.md` (three direct captures), `scripts/spec_surface_allowlist.txt` (GEMINI.md moves to the scribe surface), `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (new).
+**Given** `CLAUDE.md` exists and never imports `AGENTS.md`, Gemini has no `context.fileName`, and PR #1513 pointed every harness at memory files that live in one operator's home directory
+**When** this story lands
+**Then** Claude Code loads the verified `bmad:context` block through `@AGENTS.md`; Gemini CLI / Antigravity load `AGENTS.md` first through the checked-in `.gemini/settings.json`; VS Code chat loads it through `chat.useAgentsMdFile`; Cursor, Codex, the Copilot cloud agent, Devin and Jules keep loading it natively
+**And** `AGENTS.md` names `.claude/memory/MEMORY.md` as the session-boot read and `scribe capture` as the way in; every memory path it cites exists in the repo; the three lessons PR #1513 cited from auto-memory exist as team entries
+**And** `GEMINI.md`, `.github/copilot-instructions.md` and the `.cursor/rules` pointers carry no section that also exists in `AGENTS.md`, and a scribe meta-test reds the import, the Gemini setting, the VS Code setting, any duplicated H2, a per-tool file over 60 lines, or a dangling memory path
+**And** `governance-currency` stays green on `AGENTS.md` and `CLAUDE.md`; the pre-PR checklist's items 9–12 read as the repo's real invariants (the `dashboard/` extra boundary, `pr-preflight`'s known gaps) with no duplicates
+**Status:** done
+**Outcome (2026-09-19):** landed as PR #1513 after review + rebuild (three review layers over the parallel session's diff; the research doc; chain minted the same day); tracked spec `specs/spec-19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness.md` carries the triage log and Auto Run Result.
+
+### Story 19.2: scribe capture and recall run from the session default environment
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-scribe` CAP-28 (Dream item (7), pixi-env half)
+**difficulty:** easy
+**Surface:** `pixi.toml` (`[feature.pyforge-guild.dependencies]` + the `pyforge-scribe` path dep; comment at `feature.pyforge-guild`), `pixi.lock`, `AGENTS.md` / `CLAUDE.md` / `.cursor/rules/scribe-recall.mdc` (capture/recall invocations on `-e pyforge-guild`), `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` (new).
+**Given** `pyforge-guild` is the default environment for every harness but the scribe CLI lived only in `-e pyforge-scribe`, so a sandbox that installs the Guild default could neither capture nor recall
+**When** this story lands
+**Then** `pixi run -e pyforge-guild scribe --help` lists `capture` / `recall` / `graph`; the core package's run-deps (`typer`, `pydantic`, `pyforge-core`) are the only additions; `graphifyy`, `cocoindex` and `psycopg` stay in `-e pyforge-scribe`
+**And** every governance doc routes `scribe capture` / `scribe recall` to `-e pyforge-guild`; `environment.yaml` is unchanged; `llms-full-check` is green; a scribe meta-test pins the membership and the doc routing
+**Status:** done
+**Outcome (2026-09-19):** landed with Story 19.1 in PR #1513 (operator: "shouldn't we fix this" — yes, one path dependency); tracked spec `specs/spec-19-2-scribe-capture-and-recall-run-from-the-session-default-environment.md`.
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

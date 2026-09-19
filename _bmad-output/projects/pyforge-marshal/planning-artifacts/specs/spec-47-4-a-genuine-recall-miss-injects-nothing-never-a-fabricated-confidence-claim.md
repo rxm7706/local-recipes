@@ -47,6 +47,10 @@ sentence, not a "checked, nothing found" note. Absence of a block is itself the 
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+
+**Manual checks:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test -k recall` -- expected: a fixture test feeds
   the formatting helper a grounded-miss `RecallAnswer` and asserts the injected text is empty/
   absent, contrasted against a grounded-hit case in the same test module

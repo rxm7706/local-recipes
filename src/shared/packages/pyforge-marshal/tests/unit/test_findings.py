@@ -328,6 +328,10 @@ def test_registered_codes_contains_the_real_codes():
             # merge-tree preview of the branch onto `origin/main` failed
             # `verify_commands`, or the behind-check itself was unevaluable.
             "MRS-DISP-044",
+            # Story 51.4 (spec-pyforge-marshal CAP-252): the pre-launch
+            # guard's worktree spec is `status: blocked` -- refuse to
+            # relaunch bmad-build-auto without an operator decision.
+            "MRS-DISP-045",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",

@@ -1,18 +1,18 @@
-# AI Agent Instructions (GitHub Copilot)
+# GitHub Copilot — read AGENTS.md
 
-Read `AGENTS.md` at the repo root first: its `bmad:context` block carries the verified
-policy, gates, and pitfalls every tool must follow. Then read `CLAUDE.md` for the
-Claude-specific detail it adds (conda-forge-expert lifecycle, BMAD multi-project switch,
-PR CI gates, skill reference).
+`AGENTS.md` at the repo root is the whole cross-tool contract (verified `bmad:context` block,
+Dream-first workflow, tier model, team memory, pre-PR checklist). The Copilot cloud agent and the
+Copilot CLI load it natively (root and nested, nearest wins); VS Code chat loads it through
+`.vscode/settings.json` → `chat.useAgentsMdFile`. This file is the Copilot-only addendum and must
+not repeat `AGENTS.md` (`spec-pyforge-scribe` CAP-27 — a scribe meta-test reds a duplicated
+section).
 
-## Dream-first workflow (also read `AGENTS.md`)
-
-This repo is **Dream-first and framework-neutral** — see **`AGENTS.md`** at the repo root.
-- **Everything starts with a Dream in `docs/dreams/*.md`** — the raw aspiration; BMAD-method
-  turns it into the spec (`bmad-spec`, or the planning chain for product scope).
-- **The active spec is a BMAD artifact** in `_bmad-output/projects/<slug>/planning-artifacts/`.
-- Tier model (do not cross): Tier-0 Dream = `docs/dreams/`; Tier-1 = `docs/specs/`
-  (**LEGACY** — kept for in-flight efforts, author no new specs there); Tier-2 spec & planning =
-  `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
-  `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
-- A spec never belongs in a Tier-3 output dir.
+Copilot-specific:
+- The cloud agent's sandbox is provisioned by `.github/workflows/copilot-setup-steps.yml`
+  (job `copilot-setup-steps`) with **`pyforge-guild`** — the session default for every harness
+  (detectors, ledger sync, surface stamps, marshal dispatch, steward; ~860 MB, frozen). Never
+  install `local-recipes` (Mason's 10 GB recipe-factory environment) unless the task is a conda
+  recipe. A session has a 59-minute hard cap — plan one story, not an epic.
+- Because the agent also ingests `CLAUDE.md` and `GEMINI.md`, never copy their content here.
+- Verify with `/instructions` (CLI) or the **References** list on a chat reply that `AGENTS.md` was
+  loaded.

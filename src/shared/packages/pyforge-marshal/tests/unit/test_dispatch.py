@@ -1483,6 +1483,40 @@ def test_done_spec_does_not_launch_harness(
     assert any(str(worktree) in f.message for f in attempt.findings)
 
 
+_BLOCKED_SPEC = (
+    '---\nstatus: blocked\nblocking_condition: "awaiting operator review"\n'
+    "difficulty: medium\n---\n# spec\n"
+)
+
+
+def test_blocked_spec_does_not_relaunch_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 51.4: worktree spec status: blocked -> MRS-DISP-045, 0 launches, no CAP-4 land attempt."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "13-2-recipe-refresh"
+    _write_worktree_spec(tmp_path, slug, story, _BLOCKED_SPEC)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_blocked_no_relaunch") is True
+    assert attempt.data.get("land_verdict") is None
+    codes = [f.code for f in attempt.findings]
+    assert "MRS-DISP-045" in codes
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-045"]
+    assert "status: blocked" in finding.message
+    assert "awaiting operator review" in finding.message
+
+
 def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

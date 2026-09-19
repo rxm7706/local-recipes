@@ -43,3 +43,9 @@ Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-7`.
 Surface: docs/governance/guild-roster.json; Dream files under docs/dreams/; commit-subject convention (hook or detector). S-N.N stays prose-only..
 Ledger key: `59-6-shape-hygiene-roster-s-n-n-commits-status-comments`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-6-shape-hygiene-roster-s-n-n-commits-status-comments.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

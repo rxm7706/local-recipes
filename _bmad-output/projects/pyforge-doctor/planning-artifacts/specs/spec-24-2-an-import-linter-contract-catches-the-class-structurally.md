@@ -42,3 +42,9 @@ Parent Spec capability: `spec-coverage-gate-independence CAP-3`.
 Surface: src/shared/packages/pyforge-marshal/pyproject.toml [tool.importlinter] and/or a fleet-level contract; marshal tests/meta/test_ad3_ad4_import_linter.py or a sibling; a fixture that fires..
 Ledger key: `24-2-an-import-linter-contract-catches-the-class-structurally`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-24-2-an-import-linter-contract-catches-the-class-structurally.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

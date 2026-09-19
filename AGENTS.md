@@ -75,7 +75,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 When you need a **team decision**, an active Dream or SPEC, or a Herald fact
 ledger number — not a guess from chat memory — run:
 
-`pixi run -e pyforge-scribe scribe recall "…" --mode planning`
+`pixi run -e pyforge-guild scribe recall "…" --mode planning`
 
 Default recall omits `kind=code` graphify AST nodes. Use `--mode planning`
 (docs/memlogs), `--mode memory`, or `--mode code` when you want one
@@ -95,10 +95,66 @@ a PR. Prefer `pixi run -e pyforge-steward pyforge steward workspace start
 The worktree branch is `<slug>`, not `main` — Git will refuse `checkout
 main` there because the primary checkout already holds it.
 Never commit on the shared checkout. Never `scripts/bmad-switch` from a
-parallel agent — `BMAD_ACTIVE_PROJECT` and physical
-`_bmad-output/projects/<slug>/` paths. Create with
-`gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads
-the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
+parallel agent — `BMAD_ACTIVE_PROJECT` and physical `_bmad-output/projects/<slug>/` paths. Create with
+`gh pr create --repo rxm7706/local-recipes`; merge `--merge`. Cursor loads the same contract from `.cursor/rules/trunk-worktree-pr.mdc`.
+
+## Behavioural guidelines (every harness)
+
+1. **Think before coding** — state assumptions; for an ambiguous ask, present the interpretations,
+   never pick one silently.
+2. **Simplicity first** — the minimum change that solves the problem; nothing speculative.
+3. **Surgical changes** — touch only what the task requires; match the surrounding style.
+4. **Goal-driven execution** — turn the task into verifiable goals and loop until they are verified
+   locally; GitHub Actions is the arbiter, not the debugger.
+5. **Dream to code, always** — every effort enters as a Dream seed in `docs/dreams/`, `bmad-spec`
+   derives the Spec, a numbered Story precedes code (§ *Dream-driven* below). Gap-closure and small
+   fixes are not exempt.
+
+## Team memory — read at session start, every harness
+
+`.claude/memory/` is the checked-in **team** memory (owner: scribe; schema and promotion workflow in
+`.claude/memory/README.md`). It is not any one operator's Claude Code auto-memory
+(`~/.claude/projects/<encoded-path>/memory/`), which lives outside the repo and is invisible to every
+other tool and person.
+
+- **At session start** read `.claude/memory/MEMORY.md` — one line per entry: decisions, failure-mode
+  traps, reference material. Claude Code gets it through `CLAUDE.md`'s `@.claude/memory/MEMORY.md`
+  import; every other harness reads the file.
+- **Add to it** with `pixi run -e pyforge-guild scribe capture --type <feedback|project|reference>
+  --text "…"` at the moment a decision is made, or promote a personal auto-memory entry with
+  `scribe capture --promote` (proposal, then confirmation). Never cite a home-directory file from a
+  repo document — cite the promoted `.claude/memory/<type>/<slug>.md`.
+- **Before a session ends,** anything only the operator can close (a credential-bound proof, a
+  purge, a retire, a decision) is written with `scribe capture --type project` and, where a
+  station owns it, as a `deferred-work-ledger.md` row — never left in chat or in one agent's
+  auto-memory (2026-09-19: six such asks and four older leftovers were found there).
+- **Entries every PR author hits:**
+  `.claude/memory/feedback/a-pr-from-a-parallel-agent-that-adds-a-station-capability-mu.md`
+  (a capability PR carries the whole chain),
+  `.claude/memory/feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md`
+  (`git add` before a scoped stamp),
+  `.claude/memory/feedback/before-pushing-a-non-recipe-branch-replicate-every-ci-lane-t.md`
+  (replicate every triggered lane locally; exit codes, never pipes),
+  `.claude/memory/feedback/coverage-gates-run-per-station-in-that-station-s-own-pixi-en.md`
+  (coverage floors per station, in that station's env),
+  `.claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md`.
+
+## How each harness loads this file
+
+`AGENTS.md` is the one place the cross-tool contract is written; per-tool files carry only
+tool-specific addenda, and `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py`
+reds a missing pointer or a duplicated section (`spec-pyforge-scribe` CAP-27; research:
+`_bmad-output/projects/pyforge-scribe/planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md`).
+
+| Harness | How it reaches `AGENTS.md` |
+|---|---|
+| Claude Code | `CLAUDE.md` imports it (`@AGENTS.md`) — with a `CLAUDE.md` present Claude Code reads `AGENTS.md` only through that import |
+| Gemini CLI / Antigravity | `.gemini/settings.json` → `context.fileName: ["AGENTS.md", "GEMINI.md"]`; `GEMINI.md` is the Gemini-only addendum |
+| Cursor | native (root and nested `AGENTS.md`); `.cursor/rules/*.mdc` add glob-scoped rules only |
+| GitHub Copilot cloud agent / CLI | native (root + nested; nearest wins); `.github/copilot-instructions.md` is the Copilot-only addendum; `.github/workflows/copilot-setup-steps.yml` installs the Guild env |
+| VS Code Copilot chat | `.vscode/settings.json` → `chat.useAgentsMdFile: true` |
+| Devin | native (Knowledge also ingests `CLAUDE.md` and `.mdc` rules — which is why they must not duplicate this file) |
+| Codex, Jules, Zed, Warp, Aider, goose, Windsurf, Amp, Factory | native (`AGENTS.md` open format; closest file wins) |
 
 ## Pre-PR Pre-flight Checklist & Station Invariants
 
@@ -107,11 +163,18 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
 1. **Station Test Suite Verification**:
    Run the station unit, meta, and integration test suite:
    `pixi run -e pyforge-<station> pyforge-<station>-test`
-2. **Detector & Merge Gate Audit**:
+2. **Detector & Merge Gate Audit — locally, before any push**:
    Run the full local twin of every lane that reds a PR (CLAUDE.md § PR CI gates, rule 4):
    `pixi run -e pyforge-guild pr-preflight` — `detectors-ci` alone misses the `test-ci`
    spec-surface meta-test, the station suites and the touched-module coverage floors. Read
-   every verdict from the exit code, never through a pipe.
+   every verdict from the exit code (`$?`, or write output to a file and read it back) — never
+   through a pipe (`cmd | tail`, `cmd | grep`), which reports the pipe's status and false-greens
+   (`docs/reference/judgement-vocabulary.md` § *Severity and exit codes*; the doctor sources use
+   a different exit-code domain than the aggregator). Never push to `origin` to see what CI says:
+   one push per batch of locally green fixes. `pr-preflight` does not cover container /
+   `guild-container` (Docker/podman), atlas's Chromium/DuckDB/WASM gate (required under `CI=1`),
+   herald's browser check or scribe's Postgres (`scribe-pg-up` first) — run those by hand when
+   your diff touches them.
 3. **Django Models & Migration Invariants**:
    When creating or modifying Django models in `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/models.py`:
    - Generate the corresponding Django migration file (`000x_*.py`).
@@ -131,7 +194,9 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
    --write-baseline --spec <project>/<spec>` for exactly those Specs; (d) re-run
    `pixi run -e pyforge-guild spec-surface-check` and read its exit code. A stamp is only valid
    until the next edit of any file in that Spec's surface — re-stamp after your last edit.
-   Never re-stamp a Spec your change did not touch.
+   Never re-stamp a Spec your change did not touch. A cross-package edit usually has a
+   co-governor (`spec-pyforge-core` governs every station's `src/`): reconcile and stamp **every**
+   Spec the detector names, one `--spec` each.
 6. **One chain per station — a new capability is a Dream APPEND, not a new Dream**:
    - A station-owned feature (steward's, marshal's, …) enters as a dated entry on that station's
      Dream (`docs/dreams/pyforge-<station>.md`), then `bmad-spec` mints its `CAP-n` on the
@@ -160,6 +225,24 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
 8. **Dream Registry & Doctor Hygiene Tests**:
    - When creating a new Tier-0 Dream in `docs/dreams/<slug>.md`, add its table row to `docs/dreams/README.md`.
    - Run `pixi run -e pyforge-doctor pyforge-doctor-test` to ensure `test_live_tree_dream_readme_missing_count` and `dreams-hygiene` pass.
+9. **The `dashboard/` extra is the only place Django lives** (steward `tests/meta/test_invariants.py`,
+   Story 9.1; atlas carries the same split):
+   - No module outside `src/shared/packages/pyforge-<station>/src/pyforge/<station>/dashboard/`
+     imports `django`, `channels` or `pyforge.<station>.dashboard` at module level — the base
+     package must import and run its CLI without the `[dashboard]` extra installed.
+   - The one sanctioned reach is a function-local `importlib.import_module("pyforge.<station>.dashboard.<module>")`
+     that refuses (never falls back silently) when the extra is absent, and the meta-test pins it
+     by name. `django.apps.apps.get_model` belongs to `src/platform/` migrations, not station code.
+10. **Instruction files: one `AGENTS.md`, pointers elsewhere** (`spec-pyforge-scribe` CAP-27):
+   - Cross-tool rules go in this file, outside the `bmad:context` block (that block is
+     `bmad-project-context`'s — refresh it with the skill, never by hand). `GEMINI.md`,
+     `.github/copilot-instructions.md` and `.cursor/rules/*.mdc` carry tool-specific addenda only;
+     `scribe`'s parity meta-test reds a duplicated section, a missing `@AGENTS.md` import in
+     `CLAUDE.md`, a missing Gemini / VS Code setting, or a memory path this file cites that does
+     not exist.
+   - `governance-currency` (`pixi run -e pyforge-guild detectors-ci`) reds a skill, script or
+     path named here that no longer resolves — mark a deliberately historical name with
+     `governance-currency:ignore-start/end`, never leave it bare.
 
 ## Dream-driven: where work starts
 
@@ -316,22 +399,19 @@ framework available in this repo's pixi environments — per-library capabilitie
 import-name gotchas, environment membership, and what is deliberately NOT installed. It is
 derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
 before importing a library or proposing a new dependency, and run all work through pixi:
-`pixi run -e pyforge-guild …` for planning-chain work (the session default — detectors, ledger
-sync, surface stamps, marshal dispatch/spin, the token-economy kit; ~860 MB), `-e local-recipes`
-for recipe-factory work (Mason's environment, 10 GB, includes every Guild task), `-e pyforge-scribe`
-for scribe recall (steward Story 63.1, `spec-pyforge-steward` CAP-5). Staleness check: `pixi run -e pyforge-guild llms-full-check`
+`pixi run -e pyforge-guild …` for planning-chain work (the session default for every harness —
+detectors, ledger sync, surface stamps, marshal dispatch/spin, the token-economy kit, and since
+2026-09-19 `scribe capture` / `scribe recall` (scribe Story 19.2); ~860 MB), `-e local-recipes`
+only for recipe-factory work (Mason's environment, 10 GB, includes every Guild task), `-e pyforge-scribe`
+only for `scribe graph compile` with the graphify / cocoindex / postgres extras (steward Story 63.1,
+`spec-pyforge-steward` CAP-5). Staleness check: `pixi run -e pyforge-guild llms-full-check`
 exits non-zero when the catalog drifts from `pixi.toml`.
 
 ## How each tool discovers this
 
-| Tool | Entry file (thin pointer → this file + `docs/dreams/` + the BMAD planning folder) |
-|---|---|
-| Claude Code | `CLAUDE.md` (full repo guidance) |
-| Cursor | `.cursor/rules/specs.mdc` |
-| GitHub Copilot | `.github/copilot-instructions.md` |
-| Gemini CLI | `GEMINI.md` |
-| Devin / Codex / Factory / Zed | this `AGENTS.md` |
-| Agentic frameworks (BMAD, Agno, CrewAI, LangGraph) | start from the Dream in `docs/dreams/`; BMAD's `bmad-spec` produces the spec the agent then consumes |
+See § *How each harness loads this file* above for the per-harness pointer or setting. Agentic
+frameworks (BMAD, Agno, CrewAI, LangGraph) start from the Dream in `docs/dreams/`; BMAD's
+`bmad-spec` produces the spec the agent then consumes.
 
 ## Keeping the BMAD planning docs accurate
 

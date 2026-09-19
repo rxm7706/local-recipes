@@ -41,3 +41,9 @@ Parent Spec capability: `spec-coverage-gate-independence CAP-1; spec-pyforge-tes
 Surface: docs/governance/spec-coverage-gate-independence/SPEC.md + .memlog.md; spec-pyforge-testing-charter SPEC.md + .memlog.md; scripts/.spec-surface-baseline.json (scoped stamps only)..
 Ledger key: `24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-24-3-the-surfaces-are-reconciled-so-no-file-is-governed-twice-or-not-at-all.md`.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+

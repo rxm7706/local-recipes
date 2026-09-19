@@ -1128,6 +1128,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # SAME ERROR tier as MRS-DISP-038 above (both fire immediately before
     # `forge.merge_pr` and both stop the land attempt cold).
     "MRS-DISP-044": Verdict.ERROR,
+    # Story 51.4 (spec-pyforge-marshal CAP-252): the worktree spec is
+    # `status: blocked` -- the pre-launch guard refuses to relaunch
+    # bmad-build-auto without an operator decision. The SAME ERROR tier as
+    # MRS-DISP-040 above (the sibling `done`-status CAP-4-only refusal).
+    "MRS-DISP-045": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

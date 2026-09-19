@@ -125,3 +125,59 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   scribe capability. Also closed this date on `spec-pyforge-scribe`'s memlog: the ADR-numbering
   question (kept Scribe's own vocabulary; the read-a-target-repo's-`docs/adr/` half split off as
   deferred work), and the two remaining body questions, both answered in code.
+- **2026-09-19 — Scribe serves every harness (seeded at the review of PR #1513, a parallel
+  session's AGENTS.md / GEMINI.md governance PR).** "What the team knows, every agent and every
+  session knows" was true for one harness: Claude Code imports `.claude/memory/MEMORY.md`, and
+  nothing else did. The research that decided the shape —
+  `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` (every harness's
+  live docs checked that day: Claude Code, Cursor, Gemini CLI / Antigravity, Copilot cloud agent +
+  CLI, Devin, Codex, BMAD-METHOD) — found: (1) **Claude Code never loads `AGENTS.md` here** — a
+  `CLAUDE.md` exists and does not import it, so the verified `bmad:context` block bound every
+  harness except the one doing most of the work (four PRs that day carry the attribution trailers
+  it forbids); BMAD's own `bmad-project-context` prescribes the one-line `@AGENTS.md` import.
+  (2) Copilot's coding agent and Devin's Knowledge ingest `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
+  and every `.mdc` at once, so **copying a manual into each tool file multiplies and contradicts**;
+  Cursor / Codex / Jules / Devin / Copilot read `AGENTS.md` natively, Gemini needs
+  `.gemini/settings.json` `context.fileName`, VS Code chat needs `chat.useAgentsMdFile`. (3) The
+  PR pointed every harness at five memory files that exist only in one operator's Claude auto-memory
+  (`~/.claude/projects/…`), not in `.claude/memory/` — the promotion path is `scribe capture`.
+  Decomposed the same day as **`spec-pyforge-scribe` CAP-27 / Epic 19 / Story 19.1** (operator
+  rulings: point, don't copy; import + no trailers; direct-capture the team-relevant notes; full
+  chain). Seeded, not decomposed — each a later `bmad-spec` pass: (4) the root `AGENTS.md` (402
+  lines) and `CLAUDE.md` (357) shrink to the < 200-line / "expensive to rediscover" bar with a
+  nested `AGENTS.md` per station package (atlas is the exemplar) and path-scoped rules; (5) the
+  skill tree (`.claude/skills/`, 76 BMAD + 7 SKF) is exposed on the Agent Skills neutral path so
+  Cursor, Codex, Gemini, Copilot and Antigravity discover the same skills; (6) the transcript scanner
+  (CAP-17/18) ingests Cursor / Gemini / Copilot / Devin session logs, not only
+  `~/.claude/projects/**`; (7) `scribe recall` is reachable from the Guild env or the station MCP
+  so a 59-minute Copilot session or a Cursor Cloud agent can ask it (PRD FR-13 "any session, any
+  operator" → "any harness") — *the Guild-env half decomposed the same day as CAP-28 / Story 19.2 on
+  the operator's ruling ("shouldn't we fix this"); the MCP half stays seeded*; (8) the pointer files join `governance-currency`'s governed documents
+  (marshal-owned script); (9) a per-spec surface-baseline file so parallel lanes stop colliding on
+  `scripts/.spec-surface-baseline.json` (doctor/marshal-owned). (10) Devin Playbooks / MultiDevin and
+  Copilot custom agents (`.github/agents/*.agent.md`) are first-class analogues of marshal dispatch
+  and the SKF personas the estate does not use yet — an opportunity for Herald/Marshal, recorded here
+  because Scribe owns the instruction surface they would read. Devin's own docs (checked 2026-09-19):
+  it reads `AGENTS.md` before coding and its Knowledge ingests `AGENTS.md`, `CLAUDE.md`, `.mdc` rules
+  and `.claude/skills/**/SKILL.md`; Playbooks and Repo Setup (the `pixi install -e pyforge-guild`
+  snapshot) are **app-side, not repo files** — an operator with a Devin seat must create them; no
+  Devin session was available to verify any of this live. Microsoft Copilot (M365 / Copilot Studio)
+  reads no repo files at all — BMAD reaches it only through a declarative agent with a knowledge
+  source (the *Run-BMad-in-Microsoft-Copilot* intake gist); out of scope for file discovery.
+  **Live-verified today: Claude Code only** (a fresh `claude -p` in the PR worktree quoted the
+  verified block through `@AGENTS.md`; the same prompt on `main` answered NOT LOADED).
+  (11) **The operator inbox is a machine-tracked surface, not a chat message.** The same day's
+  closeout found six asks that existed only in one agent's auto-memory and the conversation
+  (stale loop runs to retire, a stash/worktree purge, a live sync proof, cross-harness
+  verification, a quota cap, a token) plus four older leftovers nobody had written down (a
+  poisoned story key, a dead MCP path, an unanchored `.gitignore` rule, seventeen merged
+  worktrees). Today `deferred_work_intake.py` ingests only a story spec's `deferred:` list, and
+  `fleet-picture` surfaces only what a detector can compute. Target: (a) story specs and
+  session hand-offs carry a `needs_operator:` list that the same intake turns into DW rows
+  with `status: awaiting-operator` (owner: marshal — the intake script); (b) a doctor source
+  `operator-inbox` lists every `awaiting-operator` row and every team-memory
+  `operator-inbox-*` entry with its age in `fleet-picture` ATTENTION, never silently ageing out
+  (owner: doctor); (c) the session contract in `AGENTS.md` says a session that leaves an
+  operator-only ask writes it with `scribe capture --type project` before it ends, and the
+  `.claude/memory/project/operator-inbox-*` entry is the human-readable twin of the DW rows
+  (owner: scribe — this item). Seeded here; `bmad-spec` mints the CAPs on the next pass.

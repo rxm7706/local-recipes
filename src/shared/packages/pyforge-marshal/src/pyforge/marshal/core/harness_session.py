@@ -16,6 +16,7 @@ class HarnessSessionOutcome(StrEnum):
     QUOTA_EXCEEDED = "quota_exceeded"
     AUTH_FAILURE = "auth_failure"
     HARNESS_MISCONFIG = "harness_misconfig"
+    BACKGROUND_TASK_CEILING = "background_task_ceiling"
     UNKNOWN = "unknown"
 
 
@@ -62,6 +63,14 @@ _HARNESS_CONFIG_MARKERS: tuple[str, ...] = (
     "is not an available model",
 )
 
+# Story 51.4 (CAP-252, epics.md widening): the harness's own print-mode
+# background-wait ceiling (Claude Code's 600s cap) kills the session before
+# it can commit real work -- the exact 51.3 incident. Transient: the next
+# dispatch of the same story is expected to make progress, not repeat.
+_BACKGROUND_TASK_CEILING_MARKERS: tuple[str, ...] = (
+    "background tasks still running",
+)
+
 
 def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:
     if not log_text or not log_text.strip():
@@ -73,6 +82,8 @@ def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:
         return HarnessSessionOutcome.AUTH_FAILURE
     if any(marker in lowered for marker in _HARNESS_CONFIG_MARKERS):
         return HarnessSessionOutcome.HARNESS_MISCONFIG
+    if any(marker in lowered for marker in _BACKGROUND_TASK_CEILING_MARKERS):
+        return HarnessSessionOutcome.BACKGROUND_TASK_CEILING
     return HarnessSessionOutcome.UNKNOWN
 
 
@@ -81,4 +92,5 @@ def is_transient_harness_session_outcome(outcome: HarnessSessionOutcome) -> bool
         HarnessSessionOutcome.QUOTA_EXCEEDED,
         HarnessSessionOutcome.AUTH_FAILURE,
         HarnessSessionOutcome.HARNESS_MISCONFIG,
+        HarnessSessionOutcome.BACKGROUND_TASK_CEILING,
     }

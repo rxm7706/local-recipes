@@ -62,6 +62,10 @@ clearly-labeled block.
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+
+**Manual checks:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test -k recall` -- expected: all new tests pass,
   covering every I/O matrix row above via fixture `scribe recall` output, not a live scribe
   process
