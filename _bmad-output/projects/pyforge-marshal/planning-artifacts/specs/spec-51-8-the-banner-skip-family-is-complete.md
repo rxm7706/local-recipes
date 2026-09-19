@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-09-19'
 status: 'in-review'
 baseline_revision: 'cefe85df1d'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 deferred: []
