@@ -1832,3 +1832,36 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-23-6: This story's own tracking artifacts (sprint-status-ledger.yaml key 23-6-…, epics.md's Story 23.6 section) still read backlog even as the spec advances through in-review to done.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: This story's own tracking artifacts (sprint-status-ledger.yaml key 23-6-…, epics.md's Story 23.6 section) still read backlog even as the spec advances through in-review to done.
+  evidence: Real desync, but ledger/epics promotion is a distinct post-merge step (sprint-ledger-sync) that this build-auto workflow does not perform — it happens at landing time per this repo's own established convention (see git log: "marshal: promote sprint-status ledger ... -> done" commits following each merge).
+  location: planning-artifacts/sprint-status-ledger.yaml, planning-artifacts/epics.md (Story 23.6)
+  origin: spec-deferred 75105d6f468d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-6-2: spec-pyforge-doctor/SPEC.md's CAP-53 annotation still reads "(ready 2026-09-17)" even as the underlying story spec advances.
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: spec-pyforge-doctor/SPEC.md's CAP-53 annotation still reads "(ready 2026-09-17)" even as the underlying story spec advances.
+  evidence: Confirmed pre-existing and systemic, not caused by this diff: every sibling CAP-48..54 annotation in the same block carries the identical stale "(ready 2026-09-17)" marker, including CAP-50 whose story (23.3) is already done. This diff doesn't touch SPEC.md; fixing the pattern is a separate, repo-wide reconciliation across all seven CAPs.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md:222
+  origin: spec-deferred 9cc841072d32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-6-3: Sibling story 23.5's three status trackers disagree with each other (spec still 'ready', epics.md still backlog, ledger already done).
+
+- source_spec: `planning-artifacts/specs/spec-23-6-map-names-publish-roots-do-not-mint-an-empty-vizro-tree.md`
+  summary: Sibling story 23.5's three status trackers disagree with each other (spec still 'ready', epics.md still backlog, ledger already done).
+  evidence: Real, but about a different story entirely and outside this spec's declared Surface (docs/MAP.md, docs/dashboard/README.md). This diff's herald memlog entry only reconciles spec-surface hashes for 23.5's already-landed citation fix; it does not and should not touch 23.5's own status fields.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-23-5-archive-citations-for-the-five-already-moved-_bmad-output-files.md
+  origin: spec-deferred 781afe7e4bdd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
