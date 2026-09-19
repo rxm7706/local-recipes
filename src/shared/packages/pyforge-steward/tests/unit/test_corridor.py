@@ -433,20 +433,93 @@ def test_record_corridor_load_refuses_on_operational_error(monkeypatch):
     assert result["status"] == "refused"
 
 
-def test_record_corridor_load_reports_error_on_integrity_error(monkeypatch):
+def test_record_corridor_load_reports_error_on_data_error(monkeypatch):
+    """A genuine data error (e.g. a value the DB itself rejects) at `.create()`
+    stays `status: error` -- distinct from `IntegrityError`, which the race
+    test below shows is recovered as idempotent instead."""
+
     class _EmptyQuerySet:
         def first(self):
             return None
 
-    def _raise_integrity(**kwargs):
-        raise IntegrityError("dup")
+    def _raise_data_error(**kwargs):
+        raise DataError("value too long for type")
 
     monkeypatch.setattr(CorridorLoad.objects, "filter", lambda **kw: _EmptyQuerySet())
-    monkeypatch.setattr(CorridorLoad.objects, "create", _raise_integrity)
+    monkeypatch.setattr(CorridorLoad.objects, "create", _raise_data_error)
     result = corridor_load_module.record_corridor_load(
         direction="inbound", batch_sha="i" * 64, waybill="w-dataerr", transport="app-upload"
     )
     assert result["status"] == "error"
+
+
+def test_record_corridor_load_idempotent_on_concurrent_create_race(monkeypatch):
+    """A genuine concurrent double-drop: `.filter().first()` misses (no row
+    yet), but another writer's `.create()` lands first, so THIS call's own
+    `.create()` hits the `UniqueConstraint` and raises `IntegrityError`. The
+    loser of that race must still report the idempotent outcome the caller
+    actually gets -- the WINNER's transport, not this call's -- never a
+    generic `status: error`.
+    """
+
+    class _Miss:
+        def first(self):
+            return None
+
+    class _Hit:
+        def first(self):
+            return types.SimpleNamespace(transport="app-upload")
+
+    calls = {"n": 0}
+
+    def _filter(**kwargs):
+        calls["n"] += 1
+        return _Miss() if calls["n"] == 1 else _Hit()
+
+    def _raise_integrity(**kwargs):
+        raise IntegrityError("unique constraint violated")
+
+    monkeypatch.setattr(CorridorLoad.objects, "filter", _filter)
+    monkeypatch.setattr(CorridorLoad.objects, "create", _raise_integrity)
+
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="k" * 64, waybill="w-race", transport="shared-folder"
+    )
+    assert result["status"] == "idempotent"
+    assert result["transport"] == "app-upload"
+    assert calls["n"] == 2
+
+
+def test_record_corridor_load_idempotent_reports_originally_recorded_transport():
+    """The idempotent payload's `transport` is the ORIGINALLY recorded one,
+    never the one this call was invoked with -- a swap of `existing.
+    transport` for the incoming parameter would pass every other test here,
+    since they all repeat with the SAME transport both times."""
+    direction, sha, waybill = "inbound", "l" * 64, "w-transport-provenance"
+    first = corridor_load_module.record_corridor_load(
+        direction=direction, batch_sha=sha, waybill=waybill, transport="app-upload"
+    )
+    assert first["status"] == "loaded"
+
+    second = corridor_load_module.record_corridor_load(
+        direction=direction, batch_sha=sha, waybill=waybill, transport="shared-folder"
+    )
+    assert second["status"] == "idempotent"
+    assert second["transport"] == "app-upload"
+
+
+# -- dashboard/admin.py's CorridorLoadAdmin --
+
+
+def test_corridor_load_admin_is_read_only_with_declared_list_config():
+    admin = CorridorLoadAdmin(CorridorLoad, AdminSite())
+    assert admin.has_add_permission(None) is False
+    assert admin.has_change_permission(None) is False
+    assert admin.has_delete_permission(None) is False
+    assert admin.list_display == ("direction", "waybill", "batch_sha", "transport", "loaded_at")
+    assert admin.list_filter == ("direction", "transport")
+    assert admin.search_fields == ("batch_sha", "waybill")
+    assert admin.ordering == ("-loaded_at",)
 
 
 # -- CLI parsing --
