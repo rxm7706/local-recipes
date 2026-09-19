@@ -1755,3 +1755,25 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   status: open
   raised: 2026-09-18 — Owner: doctor. The fix is mechanical (thread `_new_rekey_maps`/`RekeyMap` through `gather_direction` the same way `gather()` already does, remapping `merged_ids`/`done_ids` through the project's rekey map before diffing) but is a behaviour change to a Doctor detector source, which this repo's always-on Dream-first rule does not exempt even for a small, well-understood fix — needs a Dream seed + `bmad-spec` before implementation, not a same-pass hand-edit.
+
+### DW-FU-28-1: status_body_consistency._parse_frontmatter is a verbatim copy of the pre-CAP-81 first-dashes-anywhere reader, so CAP-3 and CAP-81 now render contradictory verdicts on the same document
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: status_body_consistency._parse_frontmatter is a verbatim copy of the pre-CAP-81 first-dashes-anywhere reader, so CAP-3 and CAP-81 now render contradictory verdicts on the same document
+  evidence: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py:219-236 still tests for the three-dash substring anywhere in the text and splits on its first occurrence; its `_body_after_frontmatter` (:239-246) finds the first newline-fence-newline marker (the three dashes are not spelled out here so no first-dashes reader truncates this very entry). After CAP-81 lands, a Dream with prose, a three-dash thematic break and no frontmatter is `({}, False)` -> `dream-without-spec` in chain.py but `({}, True)` -> an `unparseable` WARN in status_body_consistency.py, and the 34 glued-opener (three dashes fused to `title:`) archived Dreams are refused by chain.py but silently parsed by this copy. Review pass 1 (2026-09-19) verified the divergence by reading both readers; PR #1494's memlog entry already notes this copy "for CAP-81's story". Named blocker: CAP-81's intent names `chain.py::_frontmatter_parse` only, and a detector's own reader is chain work (Dream-first) — this needs its own CAP/story under spec-pyforge-doctor, not a hand-patch under Story 28.1.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py::_parse_frontmatter
+  origin: spec-deferred be6c272db6d7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-1-2: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
+
+- source_spec: `planning-artifacts/specs/spec-28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes.md`
+  summary: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
+  evidence: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:631 splits the text on its first three-dash substring; `scope = parts[1]` when the text starts with three dashes. A frontmatter value quoting three dashes before the pin key truncates `scope` and `_PIN_KEY_RE.search` misses the pin -> `pin-missing` on a doc that declares one. No live doc has the shape today (review pass 1 scan, 2026-09-19); same named blocker as the status_body_consistency entry — a separate capability's reader.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:631
+  origin: spec-deferred aa1fc9be1d1f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
