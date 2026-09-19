@@ -2,7 +2,8 @@
 title: '51.3: The campaign reads the ledger it just promoted'
 type: 'fix'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '9b3c5afec8f41cb92de21433825aad50efbe6826'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
