@@ -1391,7 +1391,7 @@ def test_a_deliberate_blocked_spec_status_blocks_its_station_naming_the_reason(
     relocated.write_text(
         "---\n"
         "status: blocked\n"
-        "blocking_condition: an intent gap was found; reverted to baseline\n"
+        'blocking_condition: "an intent gap was found; reverted to baseline"\n'
         "---\n",
         encoding="utf-8",
     )
