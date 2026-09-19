@@ -2337,3 +2337,40 @@ subject; the rule is renumber, never exclude. The story is 27.5 below, unchanged
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` and `.../sources/ledger.py` (one shared helper: for a bare legacy-form templated subject, `git diff --name-only <merge>^1 <merge>` classified into station slugs by `_bmad-output/projects/<slug>/` and `src/shared/packages/<slug>/` prefixes, cached per sha; a bare-form merge attributes to the querying station iff its paths appear AND the station's ledger knows the key; the scoped form and every other shape unchanged), `tests/unit/test_sources_marshal_story_status.py`, `tests/unit/test_sources_ledger_direction.py`; the reverted 27.3 patch in the 27.3 dispatch worktree (`spec-27-3-attempted-patch-2026-09-18.patch`) is prior art for the plumbing, not the rule.
 **Given** Story 27.3's review found that "the querying station's ledger knows the key" reopens the cross-station collision whenever two stations know the same integer key (the common case under one shared grammar) and the story landed empty, while marshal `34-3` (`dcda31b8cb Merge 34-3 into main`, 2026-09-12, harness run `deferred`) still reads `done` with no merge commit anywhere — its first-parent diff touches `_bmad-output/projects/pyforge-marshal/**` and `src/shared/packages/pyforge-marshal/**` and nothing else **When** a bare-form merge is attributed by the station paths its diff touches, with ledger membership as a second necessary condition, never the sole one **Then** `story-status` on `main` reports no finding for marshal `34-3`; a fixture where a bare `Merge 34-3 into main` diff touches only another station's paths attributes nothing to the querying station even though its ledger knows 34-3; a merge touching no station path attributes nothing; the scoped form still attributes; CAP-78's PR #1465 replay and CAP-79's rekey replay stay green
 **And** one helper serves both sources, the git call is cached per sha within a run, and the exit-code domain `{0, 2, 130}` is untouched
+
+## Epic 28: A frontmatter reader that stops at the fence, not at the first dashes (spec-pyforge-doctor CAP-81)
+
+Minted 2026-09-19 from `spec-pyforge-doctor` CAP-81, seeded 2026-09-18 (night) in `docs/dreams/pyforge-doctor.md`'s
+Realization log (Dream-append-first). `sources/chain.py::_frontmatter_parse` splits a spec on the first `---`
+*anywhere in the file* (`text.split("---", 2)`), not on a line-anchored fence. Marshal Story 50.5's tracked spec quotes
+a `"---"` fence inside its first deferral's `evidence:`, so the YAML was cut mid-scalar, `yaml.safe_load` still returned
+a mapping, and the detector saw one deferral where two exist: the first lost its `location:` (and so its fingerprint,
+`fdd6bce25c09` for `3bc3d91bdf95`), the second — severity *high* — was invisible to `deferred-work` and to
+`deferred_work_intake.py`, which reported "all 118 already in tracked ledger". Reconciled by hand that night
+(DW-FU-50-5 rewritten in full-parse form, DW-FU-50-6 added). The same helper also marks any prose file containing a
+`---` horizontal rule as unparseable frontmatter (`if "---" in text: return {}, True`). Every Doctor source that reads
+frontmatter through this helper (spec status, deferrals, surface, ownership) inherits the fix. **HARD boundaries:** the
+refusal semantics of Story 17-1 / FR-144 stay — an unbounded or non-mapping block is `({}, True)`, never a silent `{}`;
+the exit-code domain is untouched; Story 27.4 remains a reserved hole (`rekey-2026-09-18.md`).
+
+### Story 28.1: A frontmatter reader that stops at the fence, not at the first dashes
+
+As every Doctor source that reads a spec's frontmatter,
+I want `_frontmatter_parse` to bound the YAML block by line-anchored `---` fences — the opening fence on the first line
+(optionally after a `<!-- … -->` banner, as marshal's post-CAP-248 readers allow), the closing fence a line that is
+exactly `---`,
+So that a quoted `---` inside a scalar or a `---` rule in prose never truncates or invents frontmatter, and a block
+that cannot be bounded is refused rather than degraded.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-81
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py::_frontmatter_parse` (and
+`_frontmatter_fields`), tests (`tests/` fixture = marshal 50.5's tracked spec as landed on `main`), no caller changes.
+**Given** `_frontmatter_parse` on marshal's `spec-50-5-the-promoter-reads-a-spec-through-its-banner.md` returns one
+deferral with no `location:` where the file declares two, and a prose file containing `---` returns `({}, True)`
+**When** the block is bounded by line-anchored fences and a leading banner is skipped
+**Then** the 50.5 fixture parses both deferrals — the first with `location:` (fingerprint `fdd6bce25c09`), the second
+(`5434eca8c9e5`, severity high) visible to `deferred-work` and to `deferred_work_intake.py`; a prose file with a `---`
+rule and no leading fence is `({}, False)`; an unclosed fence is `({}, True)`; a banner-topped tracked spec parses
+**And** every existing caller's fixture set yields byte-identical verdicts, and restoring `split("---", 2)` re-truncates
+the fixture (mutation test)
+

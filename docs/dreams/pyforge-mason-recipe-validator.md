@@ -1,5 +1,5 @@
 ---
-title: Dream — PyForge Mason: Recipe Validator
+title: "Dream — PyForge Mason: Recipe Validator"
 type: dream
 owner: mason
 status: archived

@@ -277,6 +277,16 @@ development_status:
   50-3-harness-outranks-a-dead-tier-map-harness: done
   50-4-landing-evidence-carries-the-station-in-every-shape: done
   50-5-the-promoter-reads-a-spec-through-its-banner: done
+  51-1-verification-sees-the-merge-result: backlog
+  51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: backlog
+  51-3-the-campaign-reads-the-ledger-it-just-promoted: backlog
+  51-4-a-blocked-outcome-never-lands: backlog
+  51-5-mrs-disp-043-speaks-for-an-uncatalogued-model: backlog
+  51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station: backlog
+  51-7-landing-evidence-is-intent-scoped-not-just-station-scoped: backlog
+  51-8-the-banner-skip-family-is-complete: backlog
+  52-1-the-six-accumulated-violations-are-cleared: backlog
+  52-2-the-conformance-suite-is-a-pr-gate: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-11-a-harness-native-terminal-run-reads-as-finished-not-unknown: done
@@ -400,6 +410,10 @@ development_status:
   epic-47-retrospective: optional
   epic-50: done
   epic-50-retrospective: optional
+  epic-51: backlog
+  epic-51-retrospective: optional
+  epic-52: backlog
+  epic-52-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done

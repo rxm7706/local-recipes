@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-18"
+updated: "2026-09-19"
+# 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
 # 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
 # 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
 # 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
@@ -1686,3 +1687,63 @@ from `spec-pyforge-marshal` CAP-244..248 (Epic 50 — the landing self-drives), 
 
 **Content changed:** AD-24's default form (amended in place above, dated). `updated:`
 bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-09-19 after registering FR-201..FR-210
+from `spec-pyforge-marshal` CAP-249..256 (Epic 51 — the landing self-drives, second round) and
+`spec-pyforge-core` CAP-8..9 (Epic 52 — the shared floor is a PR gate), which fires the
+`prd→arch` edge. This section is the as-built check against the ten FRs.*
+
+**No AD is amended; every FR lands on an existing decision.**
+
+- **FR-201 (CAP-249) lands on AD-8 (unevaluable is failure) and AD-33 (truth partitioned by
+  domain).** The branch tip was never the thing being merged; verifying it and calling the
+  merge green was a false-green by construction (50.4 vs doctor 27.5, `1a5895317f`). Marshal
+  *materialises* the tree git would produce (`merge-tree --write-tree`) and re-runs the station's
+  own `verify_commands` against it — git stays the sole authority for the merge result, marshal
+  never performs the merge, and no second verdict owner appears (AD-7). A branch already at
+  `origin/main` verifies once: the re-run is conditional on baseline lag, not a second gate.
+- **FR-202 (CAP-250) lands on AD-11 (the loop home is the write boundary) and AD-13/AD-29
+  (promote before teardown, durable off the disposable ref).** The dispatch worktree *is* the
+  session's write boundary, so the promotion scan's discovery must include it — finalize reading
+  only the primary's `implementation-artifacts/` was reading the wrong home. The durability
+  predicate is unchanged; the source set grows by one. The REFUSED landing result carrying
+  `pr_number` / `marshal_native` is AD-5/AD-6 (write-before-act: the PR was opened, so the
+  journal must say so even when land is then refused).
+- **FR-203 (CAP-251) lands on AD-21 (mutating commands reconcile, then act) and AD-42 (derived
+  surfaces regenerate on `main`, never merge from homes).** The promoted ledger lives on
+  `origin/main` by AD-42; the campaign reading a stale primary copy was reading a derived surface
+  from the wrong place. Fast-forwarding the primary only when it is a clean `main` is AD-11's
+  write boundary applied to a checkout marshal does not own (the 2026-09-13 shared-checkout
+  ruling); the fallback read from `origin/main` needs no write at all.
+- **FR-204 (CAP-252) lands on AD-9 (the supervisor observes from outside) and AD-32
+  (session-authored data is evidence, never a control input).** `status: blocked` in the
+  worktree spec is session-authored — it cannot *decide* anything, but it is evidence the
+  supervisor must read before it lands an empty branch; the externally observable fact (zero diff
+  against baseline) corroborates it. `has_git_progress` stops treating a revert-plus-status-flip as
+  progress — the same "not its own witness" rule as AD-9.
+- **FR-205 (CAP-253) lands on AD-8 and AD-15 (findings are coded).** "Catalogued under no
+  provider" is an unevaluable model identity and must be a finding, not silence; the predicate
+  excludes the harness's own default/alias ids so the finding stays meaningful (AD-15's
+  documented-remedy rule, no noise).
+- **FR-206 (CAP-254) lands on AD-5 (the journal is the single source of run truth).** Which
+  engine drives a station is a journal fact — the most recent journal write wins — not a
+  property of which process list reports a live row. One pure function over two timestamps (AD-4).
+- **FR-207 (CAP-255) lands on AD-73 (landing evidence is one grammar with two consumers) and
+  AD-23 (story identity is one format).** The grammar was station-scoped by FR-199 / AD-24's
+  amendment; it now becomes intent-scoped too: a key mentioned inside a branch name is not the
+  landing shape marshal mints (`dispatch/<slug>/<key>`, the slug-templated subject). Both
+  consumers (marshal's `promotion.py`, doctor's `sources/marshal.py`) read the one grammar in
+  `pyforge.core.landing_evidence`, which is why the story hand-verifies doctor's and core's suites
+  beside marshal's. Live history is never re-attributed (AD-33).
+- **FR-208 (CAP-256) lands on AD-13 as the same parser tolerance FR-200 introduced**, extended
+  to the whitespace/BOM prefix and to the one remaining banner-blind sibling on the promoted-spec
+  path (`spec_low_risk.py`, reached through `cli/gate.py`). No second parser.
+- **FR-209 / FR-210 (spec-pyforge-core CAP-9 / CAP-8) land on AD-3's family rule for the shared
+  floor — one primitive, one home — as it was decomposed in Epic 14.** CAP-7's sole-ownership
+  meta-tests were the enforcement; they enforced nothing because no lane ran them. The lane runs
+  the pixi task, never an enumerated file list (the enumeration is how they were lost), and the
+  six violations are cleared before the lane exists so the gate is born green.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

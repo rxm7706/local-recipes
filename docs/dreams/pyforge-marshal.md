@@ -367,6 +367,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   by `spec-pyforge-core`. Not decomposed tonight: (1)–(7) are the next
   `bmad-spec` pass on this chain (Epic 51 onward; 48/49 stay reserved holes),
   (8) is a `spec-pyforge-core` realization gap.
+  **Decomposed 2026-09-19:** (1)–(7) as CAP-249..256 / **Epic 51** (51.1–51.8, one per
+  CAP, plus 50.5's two review deferrals DW-FU-50-5/-6 folded into 51.8; DW-FU-50-3 is
+  51.5, DW-FU-50-4 is 51.7); (8) as `spec-pyforge-core` CAP-8/CAP-9 / **Epic 52** (52.1
+  clears the six violations by hand — half the files are warden/testing-kit; 52.2 wires
+  the lane). One correction on the evidence: #1086's retirement of `pyforge-core.yml`
+  was coverage-neutral — that lane and `pyforge-pip-install.yml` run the same enumerated
+  subset, and `tests/meta/*_sole_ownership.py` (added 2026-08-12/13) were never wired
+  into any workflow; the suite was red on `main` today at 6 failed / 1855 passed.
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size
