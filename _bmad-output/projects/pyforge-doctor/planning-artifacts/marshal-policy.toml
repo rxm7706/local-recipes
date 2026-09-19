@@ -38,14 +38,17 @@ gate_mode = "none"
 # is the fix). Flip this line and the tier map together when Cursor returns.
 harness_preference = ["claude"]
 
-# merge_subject_template (AD-24): station-scoped, NOT the repo default
-# "Merge {key} into main" -- the default carries no station token and Story
-# 35.1's known_keys corroboration only rejects keys this ledger does NOT know,
-# so another station's "Merge N-M into main" merge reads as this station's N.M
-# already merged (herald PR #1457's finding; spec-pyforge-marshal CAP-247 /
-# Story 50.4 makes this the repo default). Rendered subjects still classify
-# marshal-native.
-merge_subject_template = "Merge pyforge-doctor/{key} into main"
+# merge_subject_template: no override -- the repo default
+# ("Merge {slug}/{key} into main", Story 50.4/spec-pyforge-marshal CAP-247)
+# is now station-scoped at the grammar layer, making this station's former
+# override redundant. It's removed here rather than kept-but-inert to avoid
+# a second truth that could silently drift from the default. History: this
+# override was added 2026-09-18 after herald PR #1457's finding that another
+# station's unscoped "Merge N-M into main" merge could read as this
+# station's own N.M already merged (Story 35.1's known_keys corroboration
+# only rejects a match whose key is NOT already tracked). The gate-side fix
+# -- the `{slug}` placeholder in the templated shape itself -- is what Story
+# 50.4 shipped.
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was

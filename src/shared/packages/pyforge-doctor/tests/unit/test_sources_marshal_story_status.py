@@ -457,7 +457,7 @@ def test_no_override_sibling_scoped_default_merge_does_not_suppress(
 # --- Route 3: hand-landed, named in a commit subject on main ---------------
 
 
-def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
+def test_bare_story_subject_on_main_no_longer_suppresses_the_false_green(
     tmp_path: Path,
 ) -> None:
     """Story 50.4/FR-191 CAP-247: a bare ``Story <epic>.<seq>: …`` commit
@@ -775,7 +775,7 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
 
     The commit subject names the station (Story 50.4/FR-191 CAP-247: a bare
     ``Story <epic>.<seq>:`` subject alone no longer suppresses via Route 3 --
-    see ``test_hand_landed_commit_subject_on_main_suppresses_the_false_green``
+    see ``test_bare_story_subject_on_main_no_longer_suppresses_the_false_green``
     -- so the control assertion below relies on Route 4's loose station+key
     co-occurrence, which reads ``git log --all`` and is unaffected by the
     later ``main`` rename; the ``main_commits_unavailable`` short-circuit

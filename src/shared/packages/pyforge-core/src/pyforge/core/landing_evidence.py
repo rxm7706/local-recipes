@@ -175,7 +175,7 @@ def _station_from_project_slug(project_slug: str) -> str:
     return project_slug.removeprefix("pyforge-")
 
 
-def _branch_belongs_to_project(branch: str, project_slug: str) -> bool:
+def _branch_belongs_to_project(branch: str | None, project_slug: str) -> bool:
     """Does ``branch`` name a branch of ``project_slug``'s station?
 
     Two sanctioned shapes, both project-scoped so a cross-station key
