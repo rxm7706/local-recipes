@@ -2,7 +2,7 @@
 title: '28.1: A frontmatter reader that stops at the fence, not at the first dashes'
 type: 'fix'
 created: '2026-09-19'
-status: 'blocked'
+status: 'in-review'
 baseline_revision: 'cefe85df1d6a6fdd7546c804b88f9ad42d5fab36'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -79,3 +79,5 @@ Blocking condition: implementation verification failed
 **Re-dispatched 2026-09-19 (this invocation):** the invocation prompt pointed directly at this spec file, whose frontmatter `status` is `blocked`. Per `bmad-build-auto` step 1's intent-check routing, a directly-supplied `blocked` spec HALTs immediately with blocking condition `blocked spec supplied` — no resumption attempted this pass.
 
 Noted for whoever re-routes this next: the failure recorded above (`test_gather_live_herald_pair_and_zero_false_positives`, pre-existing and unrelated to this story's `chain.py` diff) has since been fixed on `main` by commit `41ec2b4c802993000bd98e5ebeb97f400e4e24cf` ("doctor: the live promissory test filters on WARN status — the clean-state OK summary is not a hit (red-main fallout after #1493)"), which landed after this branch's `baseline_revision` (`cefe85df1d`). This branch has not merged that commit yet. Merging/rebasing onto current `main` and re-running `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` is the likely path to unblock — flagged here as a lead, not asserted as verified, since this HALT did not attempt it.
+
+**Re-routed 2026-09-19 by the operator (hand step):** the blocking test was fixed on `main` by PR #1494 (`7380ecdb41`); `origin/main` merged into this branch, `status` set back to `in-review` so the next dispatch resumes at the review step over the diff since `baseline_revision` (this story's `chain.py` change plus #1494's three files). The `blocked` verdict above was the gate's, not this story's.
