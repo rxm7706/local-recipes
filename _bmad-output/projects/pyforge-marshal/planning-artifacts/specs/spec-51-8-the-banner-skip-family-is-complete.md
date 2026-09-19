@@ -2,12 +2,27 @@
 title: '51.8: The banner-skip family is complete'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'cefe85df1d'
 review_loop_iteration: 1
 followup_review_recommended: false
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      A bare BOM directly before the frontmatter fence with no banner present
+      at all is still misread as invalid/undeclared.
+    evidence: |-
+      Verified live: `is_valid_spec_text` and `parse_declared_low_risk` both
+      return `False`/`False` on the fixture `"﻿---\n..."`. Pre-existing
+      gap in the base `lines[0] == "---"` fence check, orthogonal to banner
+      recognition; the intent-contract's Problem/Approach/Always bullets are
+      scoped to banner tolerance ("blank line, spaces and a BOM before
+      `<!--`"), not to a no-banner BOM case, so this is excluded by the
+      intent itself, not merely by scope wording.
+    location: >-
+      src/pyforge/marshal/core/promotion.py::is_valid_spec_text,
+      src/pyforge/marshal/core/spec_low_risk.py::parse_declared_low_risk
+    severity: low
 declared_low_risk: false
 ---
 
@@ -119,3 +134,32 @@ Minted 2026-09-19 from `epics.md` so `marshal factory dispatch` (51.x) or a hand
 - Diff since baseline (`git diff cefe85df1d..HEAD --stat`, code+tests only): 10 files changed, 292 insertions(+), 13 deletions(-) — the 5 Surface source files (`promotion.py`, `spec_surface.py`, `spec_low_risk.py`, `spec_difficulty.py`, `dispatch_harness_done.py`) plus their 5 matching test files.
 
 **Matrix Test Audit:** the intent-contract's I/O & Edge-Case Matrix has one generic row ("the named fixture" → "the Then holds"). Its concrete instances are the fixtures enumerated in the Boundaries & Constraints `Always`/`Never` bullets plus the review-pass-1 Surface amendment, each covered by a test that ran and passed above: blank-line/spaces/BOM-before-banner tolerance in `promotion.py`/`spec_surface.py` (`test_is_valid_spec_text_true_for_blank_line_before_banner`, `_true_for_spaces_before_banner`, `_true_for_bom_before_banner`; `test_blank_line_before_banner_still_reads_the_surface`, `_spaces_before_banner_still_reads_the_surface`, `_bom_before_banner_still_reads_the_surface`); the same tolerance in `parse_declared_low_risk` (`test_blank_line_before_banner_reads_true`, `_spaces_before_banner_reads_true`, `_bom_before_banner_reads_true`); the same tolerance in `parse_declared_difficulty` (`test_blank_line_before_banner_reads_the_value`, `_spaces_before_banner_reads_the_value`, `_bom_before_banner_reads_the_value`); the same tolerance in `parse_spec_status` (`test_blank_line_before_banner_reads_status`, `_spaces_before_banner_reads_status`, `_bom_before_banner_reads_status`); no-frontmatter and unclosed-banner still invalid across all five modules (`test_is_valid_spec_text_false_for_no_frontmatter_still_invalid`, `test_blank_line_with_no_banner_still_returns_none`, `test_unclosed_banner_above_frontmatter_reads_false`, `test_unclosed_banner_above_frontmatter_returns_none` ×2); a leading blank line with NO banner present must still read as absent (not merely "the banner is missing") across all five modules (`test_blank_line_with_no_banner_still_returns_none` in `test_spec_surface.py`/`test_spec_difficulty.py`/`test_dispatch_harness_done.py`, `test_blank_line_with_no_banner_still_returns_false` in `test_spec_low_risk.py` — the latter three added review pass 2 to close a gap Blind Hunter and the Verification Gap reviewer both independently raised against `promotion.py`'s own `is_valid_spec_text_false_for_no_frontmatter_still_invalid` fixture, which already covers this case for that one module); banner-below-frontmatter unaffected across all five modules (`test_is_valid_spec_text_true_for_banner_below_frontmatter_unaffected`, `test_banner_below_frontmatter_unaffected` ×3). All ran and passed in the verbose run above — audit satisfied, no gaps.
+
+## Auto Run Result
+
+**Summary:** the banner-skip family is now complete across all five parsers that read a tracked spec's HTML-comment provenance banner. Review pass 1 fixed the two parsers named in the original intent (`promotion.py`/`spec_surface.py`'s pre-existing `_skip_leading_banner` widened to tolerate a leading BOM/blank-line/spaces before `<!--`) and added the same helper from scratch to `spec_low_risk.py`. A `bad_spec` finding in pass 1 (both a `medium` and a `high` from the Verification Gap reviewer) proved the original `## Binding` Surface undercounted the family: `spec_difficulty.py::parse_declared_difficulty` (real caller: `cli/spin.py::_story_declared_difficulty`) and `dispatch_harness_done.py::_frontmatter_scalar`/`parse_spec_status` (real caller: `cli/dispatch.py`'s `blocks_harness_relaunch` harness-relaunch gate) shared the identical unwidened bug — `## Binding` was amended and both files were extended with the same module-local helper. Review pass 2 found no further `bad_spec`/`intent_gap`; it patched three small gaps (a missing no-banner-plus-leading-whitespace regression test in three of the five modules, plus two stale spec-prose annotations) and converged.
+
+**Files changed:**
+- `src/pyforge/marshal/core/promotion.py` — `_skip_leading_banner` widened: `lstrip("﻿ \t\r\n")` before the banner-prefix check, instead of anchoring at literal offset 0.
+- `src/pyforge/marshal/core/spec_surface.py` — identical widening (`parse_declared_surface`'s call site).
+- `src/pyforge/marshal/core/spec_low_risk.py` — new `_skip_leading_banner` helper (+ `_BANNER_PREFIX`/`_BANNER_SUFFIX`) added from scratch; `parse_declared_low_risk` now skips a leading banner before its fence check.
+- `src/pyforge/marshal/core/spec_difficulty.py` — new `_skip_leading_banner` helper added (review-pass-1 `bad_spec` re-derivation); `parse_declared_difficulty` now skips a leading banner before its fence check.
+- `src/pyforge/marshal/core/dispatch_harness_done.py` — new `_skip_leading_banner` helper added (review-pass-1 `bad_spec` re-derivation); `_frontmatter_scalar` (backing `parse_spec_status`/`followup_review_recommended`) now skips a leading banner before its fence check.
+- `tests/unit/test_promotion.py`, `tests/unit/test_spec_surface.py` — 3 new tests each (blank-line/spaces/BOM-before-banner).
+- `tests/unit/test_spec_low_risk.py` — 6 new tests (5 banner-tolerance cases from pass 1, plus `test_blank_line_with_no_banner_still_returns_false` from pass 2).
+- `tests/unit/test_spec_difficulty.py`, `tests/unit/test_dispatch_harness_done.py` — 6 new tests each (5 banner-tolerance cases from the pass-1 `bad_spec` re-derivation, plus `test_blank_line_with_no_banner_still_returns_none` from pass 2).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml` — `51-8-the-banner-skip-family-is-complete: backlog` → `done`.
+
+**Review findings breakdown:**
+- Pass 1: 10 findings — 1 `high` + 1 `medium` `bad_spec` (Surface amendment, code re-derived — see `## Spec Change Log`); 2 `patch` (deferred to pass 2's final commit: ledger update, regression-scan scope); 1 `defer` (a bare-BOM-with-no-banner gap, orthogonal to this story's banner-recognition scope — logged in `deferred:` below); 3 `reject` (`false`): duplicated banner-detection logic across modules (intentional convention), untested character-combination cases (stdlib `lstrip` guarantee), diff-stat staleness fixed as a `low`/`patch` instead.
+- Pass 2: 13 findings — 1 `medium`/`patch` (missing no-banner-leading-whitespace regression test in 3 modules, now added); 3 `low`/`patch` (2 stale pass-1 annotations reworded, 1 ledger update carried from pass 1 and applied here); 9 `reject` (`false`): intent-contract text scope (deliberately immutable — `## Binding` is the Surface record), document ordering (template-mandated), `followup_review_recommended` semantics, `review_loop_iteration`/heading-timing semantics, and three Intent Alignment Auditor divergences (end-to-end routing coverage — re-confirmed as thin pass-throughs; regression-scan corpus growing from 45/99 to 504 — a strict superset; inert inherited HARD-boundary boilerplate).
+- No findings were deferred in pass 2. One finding remains in `deferred:` from pass 1 (the bare-BOM-with-no-banner gap) — out of this story's scope per the intent-contract's own fixture enumeration.
+
+**Follow-up review recommendation: `false`.** This pass patched 0 `high` and 1 `medium` entry (below the 2-`medium` threshold for a first pass); no unverified risk remains to name.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — PASS: 8113 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — PASS: 130 passed, 3 skipped.
+- Manual: 504-file repo-wide banner/frontmatter regression scan across all four parser functions, zero unexpected exceptions or behavior changes (see `## Verification` Results above).
+
+**Residual risks:** none identified beyond the pre-existing, deliberately out-of-scope bare-BOM-with-no-banner gap recorded in `deferred:` below.
