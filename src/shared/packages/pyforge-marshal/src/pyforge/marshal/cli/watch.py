@@ -868,6 +868,13 @@ def _gather_station(
 
     pattern: str
     resolved: str | None = run_id
+    #: Story 51.6 (review followup): the winning engine's own last journal
+    #: fact (ISO 8601 string in the return dict, ``None`` when unknown), and
+    #: -- when dispatch outranks a loop row that was itself paused -- that
+    #: loop run's id, so its escalation doesn't silently drop out of the
+    #: fleet's escalated-first sort just because a newer dispatch run won.
+    last_fact_at: datetime | None = None
+    stale_loop_id: str | None = None
     if live is not None:
         loop_id = str(live.get("id") or live.get("run_id") or "")
         pattern = "bmad-loop"
@@ -890,6 +897,11 @@ def _gather_station(
             if _dispatch_outranks_loop(loop_last_fact=loop_last, dispatch_last_fact=dispatch_last):
                 pattern = "bmad-build-auto"
                 resolved = raw_dispatch_id
+                last_fact_at = dispatch_last
+                if str(live.get("status") or "") == "paused":
+                    stale_loop_id = loop_id
+            else:
+                last_fact_at = loop_last
     elif resolved is not None:
         # Pinned run_id with no live row: still try bmad-loop status first.
         pattern = "bmad-loop"
@@ -971,9 +983,12 @@ def _gather_station(
             "rows": rows,
             "stale_dispatch_ignored": bool(stale),
             "stale_dispatch_run_id": stale,
+            "stale_loop_ignored": False,
+            "stale_loop_run_id": None,
             "actively_progressing": _is_active_rows(rows),
             "paused_or_escalated": _paused_or_escalated(status, overall),
             "finished": overall in _TERMINAL_STATUSES or bool(status.get("finished")),
+            "last_fact_at": last_fact_at.isoformat() if last_fact_at is not None else None,
         }
 
     assert home is not None
@@ -995,6 +1010,7 @@ def _gather_station(
             overall=str(snap.get("status")),
             stale_dispatch=None,
             home_state=str(home.get("state")) if home.get("state") else None,
+            stale_loop=stale_loop_id,
         ),
     }
     active = str(home.get("state") or "") in {"running", "dev-running"} and not snap["finished"]
@@ -1007,9 +1023,15 @@ def _gather_station(
         "rows": rows,
         "stale_dispatch_ignored": False,
         "stale_dispatch_run_id": None,
+        "stale_loop_ignored": bool(stale_loop_id),
+        "stale_loop_run_id": stale_loop_id,
         "actively_progressing": active,
-        "paused_or_escalated": bool(home.get("escalation_reason")),
+        # Story 51.6 (review followup): OR in a loop row that was itself
+        # paused and got outranked -- it must not vanish from the fleet's
+        # escalated-first sort just because a newer dispatch run won.
+        "paused_or_escalated": bool(home.get("escalation_reason")) or bool(stale_loop_id),
         "finished": bool(snap.get("finished")),
+        "last_fact_at": last_fact_at.isoformat() if last_fact_at is not None else None,
     }
 
 

@@ -302,6 +302,15 @@ def test_dispatch_run_outranks_a_stale_paused_loop_row(tmp_path: Path, capsys):
     assert data["sections"]["currently_running"]["phase"] == "running"  # phase
     assert data["run_id"] != _AUG_LOOP_RUN_ID
 
+    # last fact: _gather_station's own return dict carries the winning
+    # engine's last journal fact (ISO 8601) -- the value the comparison
+    # actually used to prefer dispatch over the stale loop row.
+    from pyforge.marshal.cli.watch import _gather_station
+
+    gathered = _gather_station(ports=ports, slug="pyforge-herald", run_id=None, findings=[])
+    assert gathered is not None
+    assert gathered["last_fact_at"] == "2026-09-18T06:00:00+00:00"
+
 
 def test_with_no_dispatch_last_fact_the_loop_row_is_chosen_exactly_as_today(tmp_path: Path, capsys):
     """Then: with no dispatch run (no discoverable journal fact for the
@@ -356,6 +365,51 @@ def test_a_pinned_run_id_is_never_overridden_by_a_fresher_dispatch_run(tmp_path:
     assert rc == 0
     assert payload["data"]["pattern"] == "bmad-loop"
     assert payload["data"]["run_id"] == _AUG_LOOP_RUN_ID
+
+
+def test_fleet_mode_escalated_loop_row_outranked_by_dispatch_still_sorts_first(tmp_path: Path, capsys):
+    """--fleet: a loop row stuck in escalation must not silently drop out
+    of the escalated-first sort just because a newer dispatch run outranked
+    it for engine selection -- ``paused_or_escalated`` ORs the two in, and
+    the stale loop run's id still surfaces in ``user_action_required``."""
+    ports = _ports(
+        tmp_path,
+        listed={"runs": [{"id": _AUG_LOOP_RUN_ID, "status": "paused"}]},
+        status=_loop_status(status="paused", paused_stage="escalation", paused_reason="needs operator"),
+        home={
+            "state": "running",
+            "dispatch_run_id": _TODAY_DISPATCH_ID,
+            "dispatch_completion_verdict": None,
+            "dispatch_verification_verdict": None,
+            "current_story": "6.1",
+            "escalation_reason": None,
+        },
+        slugs=["pyforge-herald", "aaa-station"],
+        per_slug={
+            "aaa-station": {
+                "listed": {"runs": [{"id": "other-run", "status": "running"}]},
+                "status": _loop_status(
+                    status="in-progress",
+                    stories=[{"key": "1.1", "phase": "dev-running", "commit_sha": "zzz", "attempt": 1}],
+                ),
+                "home": {"state": "running", "dispatch_run_id": None},
+            }
+        },
+        loop_last_fact={_AUG_LOOP_RUN_ID: datetime(2026, 8, 14, tzinfo=timezone.utc)},
+        dispatch_last_fact={_TODAY_DISPATCH_ID: datetime(2026, 9, 18, tzinfo=timezone.utc)},
+    )
+    rc = _run(tmp_path, _args(fleet=True), ports)
+    payload = _payload(capsys)
+    assert rc == 0
+    data = payload["data"]
+    projects = data["projects"]
+    # aaa-station sorts alphabetically before pyforge-herald -- if escalation
+    # weren't OR'd in, that alphabetical order would win instead.
+    assert [p["slug"] for p in projects] == ["pyforge-herald", "aaa-station"]
+    herald = next(p for p in projects if p["slug"] == "pyforge-herald")
+    assert herald["pattern"] == "bmad-build-auto"
+    assert herald["escalated"] is True
+    assert _AUG_LOOP_RUN_ID in data["user_action_required"]
 
 
 def test_dispatch_outranks_loop_is_a_strict_newer_than_comparison():
@@ -432,6 +486,36 @@ def test_loop_journal_last_fact_takes_the_last_parseable_ts():
     assert result == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
     assert watch_mod._loop_journal_last_fact("") is None
     assert watch_mod._loop_journal_last_fact("not json at all") is None
+
+
+def test_loop_journal_last_fact_returns_the_true_max_not_the_last_line():
+    """An out-of-order journal (the last line isn't the newest ``ts``) must
+    still report its real maximum, matching the sibling
+    ``_dispatch_journal_last_fact``'s own ``max(...)`` behavior."""
+    text = "\n".join(
+        [
+            '{"ts": 1755500100.5, "kind": "story-done"}',
+            '{"ts": 1755500000.0, "kind": "story-started"}',
+        ]
+    )
+    assert watch_mod._loop_journal_last_fact(text) == datetime.fromtimestamp(1755500100.5, tz=timezone.utc)
+
+
+def test_loop_journal_last_fact_skips_non_finite_ts_instead_of_crashing():
+    """``json.loads`` parses ``NaN``/``Infinity`` as floats;
+    ``datetime.fromtimestamp`` then raises on them -- a malformed line must
+    be skipped, not fatal to ``marshal watch``."""
+    text = "\n".join(
+        [
+            '{"ts": NaN, "kind": "bogus"}',
+            '{"ts": Infinity, "kind": "also-bogus"}',
+            '{"ts": -Infinity, "kind": "still-bogus"}',
+            '{"ts": 1755500000.0, "kind": "story-started"}',
+        ]
+    )
+    assert watch_mod._loop_journal_last_fact(text) == datetime.fromtimestamp(1755500000.0, tz=timezone.utc)
+    # Entirely non-finite -- honest None, never a crash.
+    assert watch_mod._loop_journal_last_fact('{"ts": NaN}') is None
 
 
 def test_station_auto_detects_loop_run(tmp_path: Path, capsys):
