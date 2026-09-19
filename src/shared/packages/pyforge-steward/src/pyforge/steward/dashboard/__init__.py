@@ -18,8 +18,10 @@ and — since Story 9.2 — `views.py`, and — since Story 48.6 — `consumers.
 Story 65.1 — `passport_sync.py` and `views_htmx.py` import `django` LAZILY,
 inside their functions (the module imports cleanly without the extra, calling
 it does not), so the base package's `sprint_ledger_query.sync_to_postgres` can
-reach `passport_sync` by dynamic import (the one sanctioned base→dashboard
-reach, pinned in `tests/meta/test_invariants.py`); `declarations.py`,
+reach `passport_sync` by dynamic import (one of the sanctioned base→dashboard
+reaches, pinned in `tests/meta/test_invariants.py`) — and since Story 61.1 —
+`corridor_load.py` does the same, reached by `corridor.load_extract`;
+`declarations.py`,
 `middleware.py`, — since Story 9.4 — `export.py` (`ExportPolicy` +
 `authorize_export`/`maybe_encrypt_export`), and — since Story 9.2 —
 `navigation.py`/`filtering.py` are plain Python (the ASGI3 callable shape

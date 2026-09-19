@@ -547,6 +547,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
         "audit.py",
         "cache.py",
         "consumers.py",
+        "corridor_load.py",
         "models.py",
         "passport_sync.py",
         "routing.py",
