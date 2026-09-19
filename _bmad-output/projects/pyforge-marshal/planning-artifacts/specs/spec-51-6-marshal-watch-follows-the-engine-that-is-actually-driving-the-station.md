@@ -2,9 +2,9 @@
 title: '51.6: `marshal watch` follows the engine that is actually driving the station'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 deferred: []
 declared_low_risk: false
@@ -71,4 +71,31 @@ Minted 2026-09-19 from `epics.md` so `marshal factory dispatch` (51.x) or a hand
   - `medium` `patch` the dedicated `_default_ports` real-I/O test block covers every other port (`list_runs`/`run_status`, `marshal_home`, `loop_sha`, `list_prs`, `discover_projects`/`load_queue`) except the two new ones this story adds (`loop_last_fact`, `dispatch_last_fact`) — if either closure's path construction or lazy import regresses, both would silently return `None` on every call and the engine-selection fix would revert to the pre-fix always-loop-wins behavior in production while the full test suite (which only exercises these ports through injected fakes) stays green. Pre-verified per the verification-gap layer's filed evidence. Fix applied: added `test_default_ports_loop_last_fact_reads_the_real_journal` and `test_default_ports_dispatch_last_fact_reads_the_real_journal`, each writing a real `journal.jsonl` fixture and reading it back through the actual closure.
   - `false` `reject` the "no dispatch run" reading (Reading A vs. Reading B divergence) — refuted as a live gap: this fixture variation is a no-op path unaffected by the diff (gated behind `raw_dispatch_id` being truthy) and was already covered by pre-existing tests before this story.
   - `false` `reject` the fix's scope is narrower than the Problem statement's broader framing (limited to the unpinned branch) — refuted as a defect: explicitly defensible given the Never boundary's "do not... move a primary checkout" spirit and the dedicated pinned-run test (`test_a_pinned_run_id_is_never_overridden_by_a_fresher_dispatch_run`); the auditor itself frames this as a reasonable, intentional scoping choice.
-- Patch fixes requested from the same step-03 subagent (`af5d9fa8fa5859b9d`); see its follow-up report for what changed.
+- Patch fixes requested from the same step-03 subagent (`af5d9fa8fa5859b9d`); it applied all six, `pixi run --frozen -e pyforge-marshal python -m pytest tests/unit/test_watch.py -q` went 76/76, and both `## Verification` commands were re-run clean after (see `## Auto Run Result`).
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary:** `marshal watch`'s station-engine choice (`_gather_station`) no longer lets any live `bmad-loop list` row win unconditionally. When a station has both a live loop row and a `dispatch_run_id`, and no `--run` is pinned, the engine whose last journal fact (`_dispatch_outranks_loop`, mutation-tested) is strictly newer wins — so a dispatch run journaled today is reported instead of a loop row left paused weeks earlier. The report now also carries the winning engine's `last_fact_at`, and an outranked-but-still-escalated loop row no longer silently drops out of `--fleet`'s escalated-first sort.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` — new pure `_dispatch_outranks_loop` comparison; `_dispatch_journal_last_fact` / `_loop_journal_last_fact` journal-fact parsers; two new `WatchPorts` fields (`loop_last_fact`, `dispatch_last_fact`) wired in `_default_ports` off `cli/dispatch.py`'s existing readers; `_gather_station` applies the comparison (only when `run_id` is unpinned), threads `last_fact_at` and `stale_loop_ignored`/`stale_loop_run_id` (OR'd into `paused_or_escalated`) into both return branches; `_user_action` gained a `stale_loop` parameter.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_watch.py` — `_ports()` fixture extended with `loop_last_fact`/`dispatch_last_fact`; new tests for the comparison, journal parsers, the Given/Then fixture (dispatch outranks a stale paused loop row; no-dispatch fallback; neither reports idle; a pinned run is never overridden; a `--fleet` escalation-preservation case), and two `_default_ports` real-I/O tests.
+
+**Review findings breakdown** (14 findings across 4 layers; full detail in `## Review Triage Log` above):
+- Patched (6, grouped into 6 entries — high 1, medium 3, low 2): missing `last_fact_at` on the report (2 rows, shared root cause); dropped loop-escalation visibility on outrank + no `--fleet` test coverage (2 rows, shared root cause, `high`); `_loop_journal_last_fact` missing explicit max (`low`); non-finite `ts` crash (`low`); uncaught `FsError` in `dispatch_last_fact` (`medium`); untested `_default_ports` I/O closures (`medium`).
+- Rejected — `false` (5): tz-naive/aware datetime mixing (unreachable given codebase invariants); empty run/loop id "wrong file" read (no sibling file exists, graceful `None` either way); linear-scan-vs-direct-path "conflation" (identical behavior either way); "no dispatch run" reading (no-op path, already covered pre-diff); narrower-than-Problem-statement scoping (explicitly defensible per the Never boundary and its own dedicated test).
+- Rejected — `low` (1): `_dispatch_journal_last_fact` ignoring other journal-fact kinds (narrow post-story-end race window, unlikely in everyday use, fix would expand a shared dataclass's public surface across other consumers).
+- Deferred: none.
+
+**Follow-up review recommendation: true** (first pass; a patched entry was `high`, and 3 patched entries were `medium`, either alone clearing the bar). Specific unverified risk: the escalation-preservation fix (`stale_loop_ignored`/`stale_loop_run_id`, `paused_or_escalated` OR-logic) and the two new `_default_ports` I/O closures (`loop_last_fact`, `dispatch_last_fact`) are each verified independently — the former via injected fakes in `--fleet` mode, the latter via real on-disk journal fixtures in isolation — but no test exercises them together: an actual `marshal watch --fleet` run wired to `_default_ports` against a real multi-station fixture tree. A wiring-level mismatch between the two (e.g. a path or signature drift) would not be caught by the current suite.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8237 passed, 1 skipped, 12 deselected.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped.
+- Matrix Test Audit: the intent-contract's single I/O & Edge-Case Matrix row ("the named fixture… the Then holds") is covered by `test_dispatch_run_outranks_a_stale_paused_loop_row`, `test_with_no_dispatch_last_fact_the_loop_row_is_chosen_exactly_as_today`, and `test_neither_engine_selection_reports_idle`, all of which ran and passed above.
+- Diff re-staged against `baseline_revision` after the patch pass and read in full; every patched row's fix confirmed present in the diff, not just the subagent's report.
+
+**Residual risks:** the named follow-up-review risk above (no combined `--fleet` + real-`_default_ports` integration test); the deferred-as-`low` gap that `_dispatch_journal_last_fact` can't see completion/verification/land/push/wave/preserve journal-fact kinds, narrow and pre-existing to `DispatchJournalFacts`'s shape.
