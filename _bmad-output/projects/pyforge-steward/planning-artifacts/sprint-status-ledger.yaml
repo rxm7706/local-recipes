@@ -255,7 +255,7 @@ development_status:
   61-3-as-of-glass-and-mailed-query: backlog
   61-4-signed-outbound-slice: backlog
   61-5-quarantine-mint-then-reject: backlog
-  62-1-the-catalog-names-eight-measures-and-their-states: backlog
+  62-1-the-catalog-names-eight-measures-and-their-states: done
   62-2-add-switch-and-archive-without-a-rewrite: backlog
   62-3-consumers-cite-on-rows-only: backlog
   63-1-the-pyforge-guild-feature-and-environment-exist-and-the-guild-tasks-live-in-it: done
