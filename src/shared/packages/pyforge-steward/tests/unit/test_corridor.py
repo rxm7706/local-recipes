@@ -59,6 +59,8 @@ from django.core.management import call_command  # noqa: E402
 
 call_command("migrate", run_syncdb=True, verbosity=0)
 
+from django.db import IntegrityError, OperationalError  # noqa: E402
+
 from pyforge.steward.cli import build_parser  # noqa: E402
 from pyforge.steward.corridor import (  # noqa: E402
     CorridorConfigError,
@@ -69,6 +71,7 @@ from pyforge.steward.corridor import (  # noqa: E402
     load_config,
     load_extract,
 )
+from pyforge.steward.dashboard import corridor_load as corridor_load_module  # noqa: E402
 from pyforge.steward.dashboard.models import CorridorLoad  # noqa: E402
 
 
@@ -262,6 +265,70 @@ def test_load_duty_declared_off_transport_fails(tmp_path):
     result = LoadDuty().run(ns)
     assert result.ok is False
     assert CorridorLoad.objects.filter(waybill="w-off").count() == 0
+
+
+# -- dashboard/corridor_load.py's own refusal/error branches --
+#
+# These call `record_corridor_load` directly (not through `load_extract`) to
+# exercise the environmental-failure and data-failure paths its docstring
+# promises: django missing, settings unconfigured, the model import failing,
+# and the two ORM exception groups. Each uses a scoped `monkeypatch` (`sys.
+# modules` entries or a manager method), restored automatically once the
+# test returns -- no other test in this process observes the patch.
+
+
+def test_record_corridor_load_refuses_when_django_is_not_importable(monkeypatch):
+    monkeypatch.setitem(sys.modules, "django", None)
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="e" * 64, waybill="w-noimport", transport="app-upload"
+    )
+    assert result["status"] == "refused"
+
+
+def test_record_corridor_load_refuses_when_settings_unconfigured(monkeypatch):
+    monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+    fake_conf = types.ModuleType("django.conf")
+    fake_conf.settings = types.SimpleNamespace(configured=False)
+    monkeypatch.setitem(sys.modules, "django.conf", fake_conf)
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="f" * 64, waybill="w-unset", transport="app-upload"
+    )
+    assert result["status"] == "refused"
+
+
+def test_record_corridor_load_refuses_when_model_import_fails(monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyforge.steward.dashboard.models", None)
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="g" * 64, waybill="w-modelimport", transport="app-upload"
+    )
+    assert result["status"] == "refused"
+
+
+def test_record_corridor_load_refuses_on_operational_error(monkeypatch):
+    def _raise_operational(**kwargs):
+        raise OperationalError("db unreachable")
+
+    monkeypatch.setattr(CorridorLoad.objects, "filter", _raise_operational)
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="h" * 64, waybill="w-opfail", transport="app-upload"
+    )
+    assert result["status"] == "refused"
+
+
+def test_record_corridor_load_reports_error_on_integrity_error(monkeypatch):
+    class _EmptyQuerySet:
+        def first(self):
+            return None
+
+    def _raise_integrity(**kwargs):
+        raise IntegrityError("dup")
+
+    monkeypatch.setattr(CorridorLoad.objects, "filter", lambda **kw: _EmptyQuerySet())
+    monkeypatch.setattr(CorridorLoad.objects, "create", _raise_integrity)
+    result = corridor_load_module.record_corridor_load(
+        direction="inbound", batch_sha="i" * 64, waybill="w-dataerr", transport="app-upload"
+    )
+    assert result["status"] == "error"
 
 
 # -- CLI parsing --
