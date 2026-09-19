@@ -2,12 +2,13 @@
 title: '51.6: `marshal watch` follows the engine that is actually driving the station'
 type: 'fix'
 created: '2026-09-19'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 deferred: []
 declared_low_risk: false
+baseline_revision: 'd7f31dd88fdc2ebd05e54ce4e60ea897a839f3af'
 ---
 
 <intent-contract>
