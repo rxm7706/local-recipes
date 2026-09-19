@@ -20,4 +20,4 @@ This directory also holds a Dream-level Spec for a Herald-owned satellite
 Dream (`spec-herald-moments-2-4-live-backend/SPEC.md`, distinct from the
 per-story `spec-<epic>-<story>-...md` files above) — `status: draft`,
 archive-leaning per its own open questions. See
-`_bmad-output/DREAM-TRIAGE-2026-08-08.md`.
+`archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md`.

@@ -62,4 +62,4 @@ This directory also holds Dream-level Specs (`spec-<dream-slug>/SPEC.md`, distin
 per-story specs above): `spec-kedro-org-tooling-adoption` (`status: draft`, fold-in-ready as a
 small audit-and-decide story), plus the pre-existing `spec-pyforge-atlas-intelligence-platform`,
 `spec-microsoft-org-sweep`, `spec-upstream-discovery`. See
-`_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the newest one's readiness signal.
+`archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the newest one's readiness signal.
