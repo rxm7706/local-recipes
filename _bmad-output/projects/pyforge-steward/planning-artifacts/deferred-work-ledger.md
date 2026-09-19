@@ -4607,3 +4607,13 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-OPS-2026-09-19-5: `.gitignore:740` is an unanchored `data/` pattern — it swallows every `data/` directory in the tree, including packaged JSON schemas that must ship (two `git add -f` so far); worktree hygiene pass pending for 17 merged sibling/agent worktrees
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`
+  summary: (a) `data/` at `.gitignore:740` ignores `src/shared/packages/pyforge-steward/src/pyforge/steward/data/*.schema.json` (`track.schema.json`, `sprint-ledger-query.schema.json` were force-added); a plain `git add -A` silently drops the next one. Anchor the rule (`/data/`) or add `!src/**/data/*.json`; line 902's own comment already warns about unanchored patterns. (b) Hygiene: `../local-recipes-wt-{agents-governance-enhancements,ci-fix-steward-doctor-live-baselines,hub-scribe-17-mint,ledger-flip-23-2-46-4,mason-cfe-surface-policy,pyforge-pages,sprint-ledger-query-module,steward-pyforge-guild-env}`, `../lr-pwb` and eight `.claude/worktrees/agent-*` are all merged (`ahead=0`); `lr-m50` / `lr-s59` are live dispatch clones and stay. Removal is operator work (agent sessions are classifier-blocked on `git worktree remove`; `pyforge steward workspace clean` is the sanctioned door for the steward-made ones).
+  evidence: `git check-ignore -v src/shared/packages/pyforge-steward/src/pyforge/steward/data/sprint-ledger-query.schema.json` → `.gitignore:740:data/`; `git -C <wt> rev-list --count origin/main..HEAD` = 0 for each listed worktree (2026-09-19).
+  location: .gitignore
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: steward (repo hygiene, scratch-worktree lifecycle). Operator-only for (b).

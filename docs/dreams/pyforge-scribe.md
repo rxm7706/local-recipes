@@ -166,3 +166,18 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   source (the *Run-BMad-in-Microsoft-Copilot* intake gist); out of scope for file discovery.
   **Live-verified today: Claude Code only** (a fresh `claude -p` in the PR worktree quoted the
   verified block through `@AGENTS.md`; the same prompt on `main` answered NOT LOADED).
+  (11) **The operator inbox is a machine-tracked surface, not a chat message.** The same day's
+  closeout found six asks that existed only in one agent's auto-memory and the conversation
+  (stale loop runs to retire, a stash/worktree purge, a live sync proof, cross-harness
+  verification, a quota cap, a token) plus four older leftovers nobody had written down (a
+  poisoned story key, a dead MCP path, an unanchored `.gitignore` rule, seventeen merged
+  worktrees). Today `deferred_work_intake.py` ingests only a story spec's `deferred:` list, and
+  `fleet-picture` surfaces only what a detector can compute. Target: (a) story specs and
+  session hand-offs carry a `needs_operator:` list that the same intake turns into DW rows
+  with `status: awaiting-operator` (owner: marshal — the intake script); (b) a doctor source
+  `operator-inbox` lists every `awaiting-operator` row and every team-memory
+  `operator-inbox-*` entry with its age in `fleet-picture` ATTENTION, never silently ageing out
+  (owner: doctor); (c) the session contract in `AGENTS.md` says a session that leaves an
+  operator-only ask writes it with `scribe capture --type project` before it ends, and the
+  `.claude/memory/project/operator-inbox-*` entry is the human-readable twin of the DW rows
+  (owner: scribe — this item). Seeded here; `bmad-spec` mints the CAPs on the next pass.

@@ -6434,3 +6434,23 @@ status: open
   severity: low
   status: open
   raised: 2026-09-19 — Owner: marshal (dispatch worktree lifecycle; see also steward's resolved worktree-residue entry of 2026-09-08). Asked of the operator in the 2026-09-19 session.
+
+### DW-OPS-2026-09-19-3: marshal Story 46.5's key is poisoned — PR #1448 (Story 28.24, "supervisor finalize") merged from a branch named `dispatch/pyforge-marshal/46.5`, so `merged_story_keys` reads 46.5 as landed while the ledger row is `backlog`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `git log origin/main` carries `Merge pull request #1448 from rxm7706/dispatch/pyforge-marshal/46.5` and `wip: 46.5 (auto-checkpoint)` subjects for work that was Story 28.24; the real 46.5 ("the journal splits silent saves from configured layers…") has never been implemented. A dispatch of 46.5 will either be refused as already-landed or complete instantly with `story_merged_on_main` (the doctor 23.3 shape, 2026-09-19). Remedy is the 51.3 → 51.9 precedent: before Epic 46 dispatches, re-mint the story as 46.11 (epics.md "supersedes Story 46.5", ledger `46-5` → `done` with a hollow/poisoned note, `46-11` `backlog`, tracked spec, capability-ledger unchanged).
+  evidence: `git log origin/main --format=%s | grep -E '46\.5'` on 2026-09-19; spec-landing-evidence-grammar (`parse_station_branch_name`) reads the branch name.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  severity: medium
+  status: open
+  raised: 2026-09-19 — Owner: marshal. Found while preflighting the third drain's Epic 46 lane.
+
+### DW-OPS-2026-09-19-4: the `headroom` MCP server entry points at a removed worktree's interpreter and fails to connect at every Claude Code session start; the `plugin:github` MCP answers 400 "Authorization header is badly formatted"
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: Session boot reports `headroom (ENOENT): posix_spawn '…/local-recipes-wt-token-economy-claude-session-path/.pixi/envs/local-recipes/bin/python3.14'` — the worktree was removed after the token-economy work landed, the MCP config (operator-level Claude settings) still names its env. Repoint to the main checkout's `.pixi/envs/pyforge-guild/bin/python` (headroom-ai is a Guild-env dep since Story 63.1). The GitHub plugin MCP's auth header is malformed — an operator credential/config fix. Both are operator-level config outside the repo; recorded so the session-start error stops being background noise.
+  evidence: Claude Code session-start MCP failure notices, every session since ~2026-09-16.
+  location: ~/.claude.json (mcpServers) / ~/.claude/settings.json
+  severity: low
+  status: open
+  raised: 2026-09-19 — Owner: marshal (token-economy kit). Operator-only.
