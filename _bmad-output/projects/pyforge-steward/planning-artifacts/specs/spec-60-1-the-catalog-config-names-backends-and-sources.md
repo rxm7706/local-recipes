@@ -85,6 +85,12 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 ## Spec Change Log
 
+- 2026-09-19 (dev): `slots` is read as *every declared backend/source whose `state` is not `on`* — the Code Map's "declared-but-unbound off/available entries" and the AC's exact list (`object-storage`, `git-bundle`, `public-bmad-catalog`, `claude-skill-registry`) only agree that way, since `ObjectStorageBackend`/`GitBundleBackend` are default plugins and therefore bound. Each `backends[]`/`sources[]` row carries `bound` so the unbound subset is still one filter away. `slot-unbound` stays exactly as specified (only `state: on` naming an unregistered plugin).
+- 2026-09-19 (dev): `state` accepts bare YAML `on`/`off` (YAML 1.1 booleans) and normalizes them to the words; the shipped `catalog.yaml` quotes them anyway.
+- 2026-09-19 (dev): `EstateListingsSource` also enforces the file-level `source:` (must be `estate-listings`, else a `config-source` finding) so a mis-sourced registry with `modules: []` is not a silent green; the per-row mismatch is `listing-source-mismatch` as specified. A module listing whose `repository` is not a GitHub `owner/repo` is omitted from the Claude manifest (its `github` source form cannot express it) — not a finding in this story.
+- 2026-09-19 (dev): three pre-existing steward tests were fixed in the same sitting (team memory `pre-existing-findings-fix-now-is-the-default`): `test_track.py` `_SCHEMA` path (`_PKG.parents[1]` → `_PKG.parent`, latent under `importorskip("jsonschema")`), and the two "missing share" provision tests now pin `CONDA_PREFIX` to an empty tmp env so a fat ambient env (pyforge-guild ships the tea/labs share trees) cannot make them red. Named in the memlog entry.
+- 2026-09-19 (dev): `pyforge-marshal/spec-pyforge-core` co-governs `src/shared/packages/pyforge-steward/src/**` and reports drift on `catalog.py`/`cli.py`; its memlog is outside this story's surface (AC 7 / dispatch gate), so that reconcile (`.memlog.md` entry + `--write-baseline --spec pyforge-marshal/spec-pyforge-core`) is left for the landing pass, as PR #1511 did.
+
 ## Review Triage Log
 
 ## Design Notes
