@@ -277,7 +277,7 @@ development_status:
   50-3-harness-outranks-a-dead-tier-map-harness: done
   50-4-landing-evidence-carries-the-station-in-every-shape: done
   50-5-the-promoter-reads-a-spec-through-its-banner: done
-  51-1-verification-sees-the-merge-result: backlog
+  51-1-verification-sees-the-merge-result: done
   51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory: done
   51-3-the-campaign-reads-the-ledger-it-just-promoted: done
   51-4-a-blocked-outcome-never-lands: backlog

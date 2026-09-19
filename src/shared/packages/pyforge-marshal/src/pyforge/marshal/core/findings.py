@@ -1717,6 +1717,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # adapters/harness_bmadloop.py::render_policy_toml's same guard on
         # the spin engine.
         "MRS-DISP-043",
+        # Story 51.1 (verification sees the merge result, CAP-4): the tree
+        # `git merge-tree --write-tree origin/main <head>` would actually
+        # produce fails the station's own `verify_commands` (or the
+        # `commits_behind`/merge-tree-preview check itself could not be
+        # evaluated) -- a break the branch's own tree never exposed, caught
+        # immediately before `forge.merge_pr` (the 2026-09-18 50.4/27.5
+        # incident this closes).
+        "MRS-DISP-044",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

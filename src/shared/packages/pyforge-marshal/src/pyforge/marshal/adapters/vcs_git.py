@@ -527,6 +527,17 @@ class GitVcs:
                 f"git worktree remove failed for {home}: {result.stderr.strip()}"
             )
 
+    def prune_worktrees(self, repo_root: Path) -> None:
+        """``git worktree prune`` -- clears stale worktree registrations
+        left behind when a worktree's directory was removed by some means
+        other than ``remove_worktree`` (Story 51.1's best-effort cleanup
+        fallback, mirroring ``merge_branch``'s own two-stage cleanup)."""
+        result = _run(["git", "-C", str(repo_root), "worktree", "prune"])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree prune failed for {repo_root}: {result.stderr.strip()}"
+            )
+
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         """``git branch -d``/``-D``, selected by ``force``. See the port's
         own docstring for why a caller that already ran ``is_branch_merged``
@@ -1152,6 +1163,82 @@ class GitVcs:
                 f"git show {ref}:{path} failed: {result.stderr.strip()}"
             )
         return result.stdout
+
+    def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
+        """Story 51.1: mirrors ``merge_tree_conflict_paths``'s own
+        ``_run(... "merge-tree" ...)`` shape and ``"CONFLICT" in
+        result.stdout`` disambiguation, but drives the modern two-arg
+        ``--write-tree`` form (git computes the merge base itself -- no
+        separate ``merge_base`` call needed) and returns the resulting
+        tree's oid instead of parsing conflict paths. On a real conflict
+        git still exits with the toplevel tree's oid as its first output
+        line (a tree carrying literal conflict markers) followed by
+        ``"CONFLICT"`` sections -- that oid is not a clean merge result, so
+        it is discarded in favor of ``None`` rather than returned."""
+        result = _run(
+            ["git", "-C", str(repo_root), "merge-tree", "--write-tree", base, branch],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if result.returncode != 0 and "CONFLICT" not in result.stdout:
+            raise VcsCommandError(
+                f"git merge-tree --write-tree {base} {branch} failed: "
+                f"{result.stderr.strip() or result.stdout.strip()}"
+            )
+        if "CONFLICT" in result.stdout:
+            return None
+        tree_oid = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+        if not tree_oid:
+            raise VcsCommandError(
+                f"git merge-tree --write-tree {base} {branch} produced no tree oid"
+            )
+        return tree_oid
+
+    def add_worktree_for_tree(
+        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
+    ) -> None:
+        """Story 51.1: wraps ``tree_oid`` in a throwaway commit -- pinned
+        ``user.name``/``user.email``/``commit.gpgsign=false`` via ``-c``
+        flags, mirroring ``is_branch_merged``'s own ``commit-tree``
+        discipline exactly -- with ``parent`` as its sole parent, then
+        checks it out DETACHED at ``home`` (``git worktree add --detach``,
+        mirroring ``add_worktree``'s own invocation style). The synthetic
+        commit is never referenced by any branch or tag; it exists solely
+        so ``home`` has a commit-ish to check out."""
+        commit_result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "-c",
+                "user.name=marshal-land-verify",
+                "-c",
+                "user.email=marshal-land-verify@localhost",
+                "-c",
+                "commit.gpgsign=false",
+                "commit-tree",
+                tree_oid,
+                "-p",
+                parent,
+                "-m",
+                "marshal merge-tree preview (not a real commit)",
+            ]
+        )
+        if commit_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot build the merge-tree preview commit for tree "
+                f"{tree_oid} onto {parent}: {commit_result.stderr.strip()}"
+            )
+        synthetic_sha = commit_result.stdout.strip()
+
+        add_result = _run(
+            ["git", "-C", str(repo_root), "worktree", "add", "--detach", str(home), synthetic_sha],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if add_result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree add --detach {home} {synthetic_sha} failed: "
+                f"{add_result.stderr.strip()}"
+            )
 
     def commit_paths_onto_remote_tip(
         self,
