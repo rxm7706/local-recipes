@@ -1715,7 +1715,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # landed on — the model override is dropped, the harness's own
         # default applies. The dispatch engine's own counterpart to
         # adapters/harness_bmadloop.py::render_policy_toml's same guard on
-        # the spin engine.
+        # the spin engine. Widened by Story 51.5 (CAP-253): also fires when
+        # the model is catalogued under NO provider at all and is not one
+        # of the harness's own default/alias ids (`sonnet`/`opus`/`haiku`)
+        # — a genuinely foreign or mistyped model id must not reach a live
+        # launch uncaught.
         "MRS-DISP-043",
         # Story 51.1 (verification sees the merge result, CAP-4): the tree
         # `git merge-tree --write-tree origin/main <head>` would actually

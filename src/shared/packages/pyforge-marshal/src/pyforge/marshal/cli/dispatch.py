@@ -114,7 +114,12 @@ from ..core.journal import (
     sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
-from ..core.model_cost import adapter_provider, provider_declaring_model
+from ..core.model_cost import (
+    adapter_provider,
+    catalog_declared,
+    is_harness_default_model,
+    provider_declaring_model,
+)
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -1980,17 +1985,57 @@ def dispatch_once(
     resolved_provider = adapter_provider(resolution.profile)
     catalog = effective_policy.model_cost_catalog.value
     model_provider = provider_declaring_model(catalog, data["model"]) if data["model"] else None
-    if model_provider is not None and model_provider != resolved_provider:
+    # Story 51.5 (CAP-253): `provider_declaring_model` returns `None` both
+    # for a genuinely uncatalogued model id and, by documented design, for
+    # the harness's own default/alias ids (`sonnet`/`opus`/`haiku` -- the
+    # catalog is a declared PRICE snapshot, not a model registry, see
+    # `is_harness_default_model`). The ORIGINAL guard below only fired on
+    # the cross-provider case (`model_provider` names a DIFFERENT
+    # provider); widen it so a model catalogued under NO provider at all,
+    # and not one of the harness's own default/alias ids, ALSO WARNs --
+    # a genuinely foreign or mistyped model id must not reach a live
+    # launch uncaught -- while the cross-provider case and the harness's
+    # own default/alias ids stay exactly as before.
+    #
+    # `provider_declaring_model` also returns `None` whenever NO catalog is
+    # declared at all -- most stations (e.g. a cursor-only
+    # `harness_preference` with no `model_cost_catalog` block) never
+    # declare one. Without gating on `catalog_declared`, a correctly
+    # tier-mapped, correctly resolved model on one of those stations reads
+    # as "uncatalogued" too and gets its override dropped on every real
+    # dispatch. There is nothing to compare against when no catalog was
+    # ever declared, so that case must stay silent, same as pre-story --
+    # only a DECLARED catalog that omits the model is suspicious.
+    model_uncatalogued = (
+        data["model"] is not None
+        and model_provider is None
+        and not is_harness_default_model(data["model"])
+        and catalog_declared(catalog)
+    )
+    model_cross_provider = (
+        model_provider is not None and model_provider != resolved_provider
+    )
+    if model_cross_provider or model_uncatalogued:
+        if model_provider is not None:
+            provider_clause = (
+                f"is catalogued under provider {model_provider!r}, but the "
+                f"live-verified harness {resolution.profile!r} resolves to "
+                f"provider {resolved_provider!r}"
+            )
+        else:
+            provider_clause = (
+                "is catalogued under no known provider despite a declared "
+                "cost catalog, and is not the live-verified harness "
+                f"{resolution.profile!r}'s own default/alias model id"
+            )
         findings.append(
             Finding(
                 code="MRS-DISP-043",
                 severity=Severity.WARN,
                 message=(
-                    f"tier-mapped model {data['model']!r} is catalogued under "
-                    f"provider {model_provider!r}, but the live-verified harness "
-                    f"{resolution.profile!r} resolves to provider "
-                    f"{resolved_provider!r} -- dropping the model override for "
-                    "this dispatch; the harness's own default applies"
+                    f"tier-mapped model {data['model']!r} {provider_clause} "
+                    "-- dropping the model override for this dispatch; the "
+                    "harness's own default applies"
                 ),
             )
         )
