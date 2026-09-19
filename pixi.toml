@@ -810,7 +810,7 @@ cmd = "python -m pytest tests/scripts -q"
 # probing the lean pyforge-marshal env: no headroom; caveman is a per-harness skill, so the
 # env guarantees nodejs for `npx skills add` via the python feature): headroom-ai is declared
 # here explicitly so wire `auto` never degrades to MRS-DISP-033 for want of a binary.
-# Scribe recall stays `-e pyforge-scribe` (cocoindex + graphify are heavy and already per-env).
+# Scribe capture/recall run here too since 2026-09-19 (Story 19.2, the core package only); `scribe graph compile` with the graphify/cocoindex/postgres extras stays `-e pyforge-scribe` (those are heavy and already per-env).
 # Foundry mode: rebuild -- python-foundry re-derives the same split.
 [feature.pyforge-guild.dependencies]
 pyforge-core = { path = "src/shared/packages/pyforge-core" }
@@ -823,6 +823,7 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps
 # detectors-ci has always run in local-recipes. The warden seam stays `-e pyforge-doctor` / `-e pyforge-warden`.
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }    # dispatch / spin / seed check; run-dep bmad-loop
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }    # workspace start/clean, frame-preflight; run-dep age
+pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
 headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
 # The adopted bmad-suite members (adoption-register § 2, spec-bmad-suite-lifecycle AD-2) -- ~13 MB
