@@ -905,6 +905,7 @@ def resolve_dispatch_session_verdict(
     journal: dispatch_core.DispatchJournalFacts,
     effective_policy: policy.EffectivePolicy,
     run_dir: Path | None = None,
+    spec_relative_path: str | None = None,
 ) -> DispatchSessionVerdict | None:
     if journal.completion_verdict in {
         DispatchSessionVerdict.COMPLETED.value,
@@ -945,6 +946,7 @@ def resolve_dispatch_session_verdict(
         verification_verdict=journal.verification_verdict,
         detach_reason=journal.completion_stop_reason,
         session_log=session_log,
+        spec_relative_path=spec_relative_path,
     )
 
 

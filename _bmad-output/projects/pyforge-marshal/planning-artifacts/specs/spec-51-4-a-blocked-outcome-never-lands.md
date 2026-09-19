@@ -7,7 +7,42 @@ baseline_revision: '1ff4b6d212084d74e3be6112221a4261822d74f0'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
-deferred: []
+deferred:
+  - summary: >-
+      The supervisor-crash unsupervised-recovery path (dispatch_survival.py)
+      cannot recognize a narration-only diff as no-progress because
+      DispatchCompletionInput has no spec_relative_path field.
+    evidence: |-
+      derive_supervision_state/reconcile_unsupervised_verdict build
+      DispatchCompletionInput(session_alive=session_alive, git=git) with no
+      spec_relative_path, unlike the 4 correctly-threaded
+      resolve_terminal_session_verdict call sites in
+      dispatch_supervisor/__main__.py and the cli/dispatch.py fix landed in
+      this pass. What would settle whether this reaches an actual wrongful
+      landing (medium/high) versus a merely different in-flight status: a
+      live-fire test that kills the supervisor process mid-run with a
+      narration-only diff staged and traces whether recovery treats it as
+      progress through to an actual land attempt.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py:89-104,113-118
+    severity: medium (unverified)
+  - summary: >-
+      KIND_DISPATCH_BLOCKED journal entries are write-only; nothing reads
+      them back, so a block reason is unrecoverable once the worktree that
+      backs the live spec re-read is already cleaned up.
+    evidence: |-
+      Unlike KIND_DISPATCH_FINALIZE, which has a dedicated reader in
+      dispatch_supervisor_finalize.py, no code folds or reads
+      KIND_DISPATCH_BLOCKED entries. station_story_block_facts's blocked
+      detection depends entirely on a live re-read of the worktree spec; once
+      the worktree is removed, spec_text is None and the blocked branch is
+      silently skipped with no journal fallback. The Approach clause commits
+      only to journaling the reason, not to a reader, so this is out of this
+      story's bound intent -- real future hardening, not a defect in what was
+      built.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py::_journal_dispatch_blocked
+    severity: medium
 declared_low_risk: false
 ---
 
