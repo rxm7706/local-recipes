@@ -1696,3 +1696,83 @@ def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
         vcs.commit_paths_onto_remote_tip(
             repo, remote="origin", ref="main", writes=(), message="nope"
         )
+
+
+# --- merge_tree_write / add_worktree_for_tree (Story 51.1) --------------------
+#
+# Review finding (2026-09-19): these two methods -- the actual git mechanics
+# this story's whole fix depends on -- had no real-git coverage at all, only
+# a hand-rolled fake in test_dispatch_landing.py. Added here to match this
+# module's own established convention (add_worktree, is_branch_merged) of
+# testing GitVcs against real temp git repos.
+
+
+def test_merge_tree_write_returns_tree_oid_for_a_clean_merge(vcs, repo):
+    _git(repo, "checkout", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature content\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    _git(repo, "checkout", "main")
+    (repo / "main-only.txt").write_text("main content\n", encoding="utf-8")
+    _git(repo, "add", "main-only.txt")
+    _git(repo, "commit", "-m", "add main-only.txt")
+
+    tree_oid = vcs.merge_tree_write(repo, "main", "feature/clean")
+
+    assert tree_oid is not None
+    assert _git(repo, "cat-file", "-t", tree_oid).stdout.strip() == "tree"
+    names = _git(repo, "ls-tree", "-r", "--name-only", tree_oid).stdout.split()
+    assert "feature.txt" in names
+    assert "main-only.txt" in names
+
+
+def test_merge_tree_write_returns_none_on_a_real_conflict(vcs, repo):
+    _git(repo, "commit", "--allow-empty", "-m", "checkpoint")
+    base_sha = _git(repo, "rev-parse", "HEAD~1").stdout.strip()
+    (repo / "README.md").write_text("main version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "main edits README")
+    _git(repo, "checkout", "-b", "feature/conflict", base_sha)
+    (repo / "README.md").write_text("feature version\n", encoding="utf-8")
+    _git(repo, "commit", "-am", "feature edits README")
+
+    assert vcs.merge_tree_write(repo, "main", "feature/conflict") is None
+
+
+def test_add_worktree_for_tree_checks_out_the_merged_content(vcs, repo, tmp_path):
+    _git(repo, "checkout", "-b", "feature/clean")
+    (repo / "feature.txt").write_text("feature content\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "add feature.txt")
+    feature_sha = _git(repo, "rev-parse", "feature/clean").stdout.strip()
+    _git(repo, "checkout", "main")
+    (repo / "main-only.txt").write_text("main content\n", encoding="utf-8")
+    _git(repo, "add", "main-only.txt")
+    _git(repo, "commit", "-m", "add main-only.txt")
+
+    tree_oid = vcs.merge_tree_write(repo, "main", "feature/clean")
+    assert tree_oid is not None
+
+    home = tmp_path / "merge-tree-preview-home"
+    vcs.add_worktree_for_tree(repo, home, tree_oid, parent=feature_sha)
+
+    assert (home / "feature.txt").read_text(encoding="utf-8") == "feature content\n"
+    assert (home / "main-only.txt").read_text(encoding="utf-8") == "main content\n"
+    assert any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
+
+    # the synthetic wrapper commit is never referenced by any branch or tag.
+    synthetic_sha = _git(home, "rev-parse", "HEAD").stdout.strip()
+    assert synthetic_sha != feature_sha
+    contains = _git(repo, "for-each-ref", "--contains", synthetic_sha)
+    assert contains.stdout.strip() == ""
+
+    vcs.remove_worktree(repo, home, force=True)
+    assert not any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
+
+
+def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_parent(
+    vcs, repo, tmp_path
+):
+    tree_oid = _git(repo, "rev-parse", "HEAD^{tree}").stdout.strip()
+    home = tmp_path / "merge-tree-preview-home"
+    with pytest.raises(VcsCommandError):
+        vcs.add_worktree_for_tree(repo, home, tree_oid, parent="no-such-ref")
