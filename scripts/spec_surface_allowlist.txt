@@ -67,9 +67,10 @@ helm/lasuite-docs/values.yaml  # stray inherited file — archive candidate, fla
 .windsurfrules           # thin per-tool pointer (AGENTS.md family)
 .scripts/**              # inherited staged-recipes helper scripts (upstream-owned)
 # AGENTS.md removed 2026-09-13 — spec-scribe-knowledge-layers CAP-5
-# (surface) now governs it. CLAUDE.md / GEMINI.md stay allowlisted.
+# (surface) now governs it. GEMINI.md removed 2026-09-19 — spec-pyforge-scribe
+# CAP-27 governs the per-tool pointer family (GEMINI.md, .gemini/settings.json,
+# .github/copilot-instructions.md). CLAUDE.md stays allowlisted.
 CLAUDE.md                # per-tool pointer (governance doc)
-GEMINI.md                # per-tool pointer (governance doc)
 README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license

@@ -28,6 +28,8 @@ development_status:
   16-1-recall-modes-join-the-cli: done
   17-1-marshal-codegraph-owns-symbol-navigation: done
   18-1-retrieve-and-sessions-pass-mode-planning: done
+  19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness: done
+  19-2-scribe-capture-and-recall-run-from-the-session-default-environment: done
   2-1-graphstore-port-flat-file-v1-adapter: done
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
@@ -69,6 +71,8 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
+  epic-19: done
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

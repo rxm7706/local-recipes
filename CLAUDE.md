@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+The cross-tool contract lives in `AGENTS.md` (the verified `bmad:context` block, the team-memory
+boot line, the pre-PR checklist); with a `CLAUDE.md` present, Claude Code reads it only through the
+import below — keep this line bare (`spec-pyforge-scribe` CAP-27).
+
+@AGENTS.md
+
 ## Behavioral Guidelines
 
 These five principles govern all work in this repo. The `conda-forge-expert` skill specializes them for recipe work; the BMAD skills apply them to planning/dev. Apply them globally.
@@ -37,7 +43,7 @@ Recipe-only PRs (touching only `recipes/**`) need neither.
 
 ## Common Commands
 
-Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list -e pyforge-guild` for the Guild set, `-e local-recipes` for the full set). **`pyforge-guild` is the session default** for every agent and harness doing planning-chain work (detectors, ledger sync, surface stamps, `fleet-picture`, marshal dispatch/spin, the token-economy kit — ~860 MB; steward Story 63.1, `spec-pyforge-steward` CAP-5); `local-recipes` (10 GB) is Mason's recipe-factory environment and includes every Guild task, so `-e local-recipes <guild task>` still works. Scribe recall stays `-e pyforge-scribe`. Full recipe-lifecycle reference: `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md`.
+Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list -e pyforge-guild` for the Guild set, `-e local-recipes` for the full set). **`pyforge-guild` is the session default** for every agent and harness doing planning-chain work (detectors, ledger sync, surface stamps, `fleet-picture`, marshal dispatch/spin, the token-economy kit — ~860 MB; steward Story 63.1, `spec-pyforge-steward` CAP-5); `local-recipes` (10 GB) is Mason's recipe-factory environment and includes every Guild task, so `-e local-recipes <guild task>` still works. `scribe capture` / `scribe recall` run in `pyforge-guild` too (scribe Story 19.2, 2026-09-19); only `scribe graph compile` with the graphify / cocoindex / postgres extras needs `-e pyforge-scribe`. Full recipe-lifecycle reference: `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md`.
 
 **Recipes:**
 - Build one recipe natively (recommended default): `pixi run -e local-recipes recipe-build recipes/<name>` — rattler-build, auto-detects platform, layers conda-forge-pinning so `${{ python_min }}` resolves like upstream CI. Variants: `recipe-build-docker`, `recipe-build-cross`.
