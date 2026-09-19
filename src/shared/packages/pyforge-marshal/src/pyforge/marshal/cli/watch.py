@@ -25,6 +25,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..core.context import MarshalContext
+from ..core.dispatch import DispatchJournalFacts
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
@@ -78,6 +79,15 @@ class WatchPorts:
     list_prs: Callable[[str], list[Mapping[str, Any]]]
     discover_projects: Callable[[], list[str]]
     load_queue: Callable[[str], list[str]] | None = None
+    #: Story 51.6 (spec-pyforge-marshal CAP-254): the bmad-loop run's own
+    #: last journal fact (``(slug, run_id) -> ts``), read from its
+    #: ``journal.jsonl`` -- ``None`` when unset (existing callers) or when
+    #: the journal can't be read, never fabricated.
+    loop_last_fact: Callable[[str, str], datetime | None] | None = None
+    #: The dispatch run's own last journal fact (``(slug, dispatch_run_id)
+    #: -> ts``), via ``cli/dispatch.py``'s ``iter_dispatch_run_dirs`` /
+    #: ``gather_dispatch_journal_facts`` -- same absent-is-``None`` contract.
+    dispatch_last_fact: Callable[[str, str], datetime | None] | None = None
 
 
 def seconds_to_next_half_hour(now: datetime) -> int:
@@ -259,6 +269,57 @@ def _paused_or_escalated(status: Mapping[str, Any], overall: str) -> bool:
     if stage in {"escalation", "paused"} or overall in {"paused", "escalated"}:
         return True
     return bool(status.get("paused_reason") or status.get("escalation_reason"))
+
+
+def _dispatch_outranks_loop(
+    *, loop_last_fact: datetime | None, dispatch_last_fact: datetime | None
+) -> bool:
+    """Story 51.6 (spec-pyforge-marshal CAP-254) -- the ONE comparison
+    ``_gather_station`` uses to pick its engine, kept pure and small on
+    purpose so it can be mutation-tested directly: true only when the
+    dispatch run's last journal fact is STRICTLY newer than the loop run's.
+    Either side's fact being unknown never outranks -- an unreadable or
+    absent journal keeps today's loop-wins default rather than guessing."""
+    if loop_last_fact is None or dispatch_last_fact is None:
+        return False
+    return dispatch_last_fact > loop_last_fact
+
+
+def _dispatch_journal_last_fact(facts: DispatchJournalFacts) -> datetime | None:
+    """The dispatch run's own last known journal fact -- the latest of its
+    launch time and its timing entry's recorded start/end. Never a
+    directory ``mtime`` (this module's established precedent against it,
+    see ``cli/status.py::_discover_harness_run_id_by_filesystem``)."""
+    candidates: list[datetime] = []
+    if facts.launched_at is not None:
+        candidates.append(facts.launched_at)
+    for raw in (facts.story_started_at, facts.story_ended_at):
+        if isinstance(raw, str) and raw:
+            try:
+                candidates.append(datetime.fromisoformat(raw.replace("Z", "+00:00")))
+            except ValueError:
+                continue
+    return max(candidates) if candidates else None
+
+
+def _loop_journal_last_fact(text: str) -> datetime | None:
+    """The latest epoch ``ts`` among a bmad-loop ``journal.jsonl``'s lines
+    -- that file's own append-only shape (each line an object with a float
+    ``ts``). A malformed line is skipped, never fatal; an empty or entirely
+    unparseable journal reports ``None`` rather than a fabricated time."""
+    last_ts: float | None = None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ts = entry.get("ts") if isinstance(entry, dict) else None
+        if isinstance(ts, (int, float)) and not isinstance(ts, bool):
+            last_ts = float(ts)
+    return datetime.fromtimestamp(last_ts, tz=timezone.utc) if last_ts is not None else None
 
 
 def _filter_prs(rows: Sequence[Mapping[str, Any]], slug: str) -> list[dict[str, Any]]:
