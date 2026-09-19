@@ -160,6 +160,14 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
 8. **Dream Registry & Doctor Hygiene Tests**:
    - When creating a new Tier-0 Dream in `docs/dreams/<slug>.md`, add its table row to `docs/dreams/README.md`.
    - Run `pixi run -e pyforge-doctor pyforge-doctor-test` to ensure `test_live_tree_dream_readme_missing_count` and `dreams-hygiene` pass.
+9. **Core Package Dynamic Model Loading (Boundary Isolation)**:
+   - Core package utility modules (`src/pyforge/<station>/<module>.py`) must never import Django models (`models.py`) at top-level. Use dynamic loading (`django.apps.apps.get_model`) inside function bodies to preserve standalone CLI and non-Django execution contexts.
+10. **Multi-Spec Surface Baseline Audit**:
+    - When editing files across multiple station packages or specs (e.g. `steward` and `marshal`), audit all drifted spec surfaces using `pixi run -e pyforge-guild python -m pyforge.doctor.sources spec-surface` and stamp scoped baselines (`--write-baseline --spec <project>/<spec>`) for **every** affected spec surface before pushing.
+11. **Zero Remote-Debugging Push Policy**:
+    - Never push commits to `origin` to test CI remotely. Execute `pixi run -e pyforge-guild pr-preflight` locally and verify an exit code of 0 across all local suites prior to `git push`.
+12. **Exit Code Verdict Integrity (No Pipe Wrapping)**:
+    - Never evaluate detector or test exit codes through a pipe (e.g. `cmd | grep ...` or swallowing exit codes). Read raw exit codes directly from execution to prevent false green verdicts.
 
 ## Dream-driven: where work starts
 
