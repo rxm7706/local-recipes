@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -112,6 +113,20 @@ class FakeVcs:
 
     def resolve_ref(self, repo_root: Path, ref: str) -> str:
         return "abc123"
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        """Story 51.1: safe no-op default so every pre-existing ``FakeVcs()``
+        construction keeps working now that ``execute_dispatch_land``
+        unconditionally fetches ``origin/main`` before landing."""
+        return None
+
+    def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
+        """Story 51.1: ``0`` by default -- "already even with origin/main",
+        the byte-identical-to-pre-51.1 path every pre-existing test in this
+        file implicitly exercises (the merge-tree-preview check
+        short-circuits immediately). Fixtures that need the check to
+        actually fire use ``MergeTreePreviewVcs`` below."""
+        return 0
 
 
 class FakeForge:
