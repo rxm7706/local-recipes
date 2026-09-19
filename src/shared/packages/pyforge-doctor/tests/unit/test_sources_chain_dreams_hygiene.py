@@ -417,14 +417,93 @@ def test_kinship_wikilink_skips_frontmatter_fence(tmp_path: Path) -> None:
     assert not any(f.check == "kinship-wikilink-dead" for f in findings)
 
 
+def test_kinship_wikilink_skips_frontmatter_with_a_quoted_dashes_scalar(
+    tmp_path: Path,
+) -> None:
+    """Story 28.1 / CAP-81, body boundary: a frontmatter scalar quoting
+    ``"---"`` BEFORE a ``[[...]]`` inside the fence. The parser now accepts
+    this Dream (the quoted ``---`` is not a fence line); the body-side
+    reader must bound the body by the SAME line-anchored scan, or the
+    frontmatter tail after the quoted ``---`` is scanned as Kinship body
+    and ``[[not-a-link]]`` fires a false ``kinship-wikilink-dead`` (the
+    known-bad state review pass 1 reproduced with the parser fixed but
+    ``_dream_body_after_frontmatter`` still on ``split("---", 2)``)."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "quoted.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "---",
+                "owner: herald",
+                "status: dreamt",
+                "type: dream",
+                "title: Quoted",
+                'evidence: \'the gate still checks lines[0] == "---" first\'',
+                "note: [[not-a-link]]",
+                "---",
+                "",
+                "Body only.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("quoted.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "unparseable-frontmatter" for f in findings)
+    assert not any(f.check == "kinship-wikilink-dead" for f in findings)
+
+
+def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> None:
+    """Story 28.1 / CAP-81, body boundary: a banner-topped Dream with a
+    ``[[...]]`` inside the fence. The parser skips the banner and accepts
+    the block; the body-side reader must skip it the same way -- before
+    this story the file was refused outright and never reached the scan,
+    and with only the parser fixed the old ``startswith("---")`` guard
+    returned the whole text (banner, frontmatter and all) as body."""
+    _write_roster(tmp_path)
+    path = tmp_path / "docs" / "dreams" / "bannered.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "<!-- Promoted from implementation-artifacts/ on 2026-09-19 -->",
+                "---",
+                "owner: herald",
+                "status: dreamt",
+                "type: dream",
+                "title: Bannered",
+                "note: [[not-a-link]]",
+                "---",
+                "",
+                "Body only.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_readme(tmp_path, [("bannered.md", "dreamt")])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert not any(f.check == "unparseable-frontmatter" for f in findings)
+    assert not any(f.check == "kinship-wikilink-dead" for f in findings)
+
+
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-09-18: 33 dead Kinship wikilinks under docs/dreams/
-    (was 26 on 2026-09-14 — new Dream content added targets; this test only
-    tracks the live count)."""
+    """Measured live 2026-09-19 under Story 28.1's opener rule: 31 dead
+    Kinship wikilinks under docs/dreams/ (was 33 on 2026-09-18, 26 on
+    2026-09-14). The -2 is one archived Dream, ``enterprise-airgap.md``,
+    whose glued ``---title:`` opener (the 2026-09-17 fold, deliberately
+    left in place by ``0b74756679``) is now refused as
+    ``unparseable-frontmatter`` before the Kinship scan runs; the old
+    reader parsed that opener leniently and scanned its body, where
+    ``[[deckcraft]]`` and ``[[pyforge-genesis]]`` do not resolve. The
+    count returns to 33 once that Dream's opener is repaired (and its two
+    links are still dead); this test only tracks the live count."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 33
+    assert len(dead) == 31
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:

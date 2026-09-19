@@ -6354,7 +6354,19 @@ status: open
   summary: A bare BOM directly before the frontmatter fence with no banner present at all is still misread as invalid/undeclared.
   evidence: Verified live by the 51.8 session: `is_valid_spec_text` and `parse_declared_low_risk` both return False on a fixture whose text is a BOM followed immediately by the `---` fence. Pre-existing gap in the base first-line fence check, orthogonal to banner recognition; CAP-256's intent is scoped to banner tolerance (blank line, spaces and a BOM before `<!--`), so the no-banner BOM case is excluded by the intent itself.
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py::is_valid_spec_text
-  origin: spec-deferred ed1337df1626 — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
+  origin: spec-deferred 89653d3eb8a4 (was ed1337df1626 before the tracked spec's `location:` was repointed) — hand-ingested 2026-09-19 from spec frontmatter `deferred:`: `scripts/deferred_work_intake.py --fix --project marshal` refused it as "no resolvable location" because doctor's pre-CAP-81 `chain._frontmatter_parse` splits on the first `---` anywhere and the entry's `evidence:` quotes a `---` fence (the same truncation that hid DW-FU-50-6; doctor Story 28.1 is the fix, in flight)
   severity: low
   promoted: 2026-09-19 — hand-ingested (see origin)
   status: open
+
+### DW-FU-51-2-1: Story 51.2's Auto Run Result set `followup_review_recommended: true` (two mediums patched on one pass) and nothing carries that forward.
+
+- source_spec: `planning-artifacts/specs/spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md`
+  summary: Story 51.2 landed with `followup_review_recommended: true` and `warnings: ['oversized']`; the named unverified risk is whether `BrokenForge()` + `FakeVcs(merged=False)` genuinely reaches `heal.healed=False` / `escalated_paths=()` and whether `FakeProcess.calls` matches the real `PosixProcess` argv shape. No ledger row, DW item or scheduled dispatch consumed the flag; the very next landing on the same hub files (51.3) received no review at all.
+  evidence: Post-hoc review 2026-09-19 (Blind Hunter over `git diff 9b3c5afec8..e7a71df640`): the flag is only read by bmad-build-auto's step-01 on a re-dispatch of a `done` spec — which `factory dispatch` never issues for a `done` ledger row. Location is the landing code the follow-up would re-review.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  origin: post-hoc review 2026-09-19 (hand-filed; the 51.2 session's record, tracked spec Auto Run Result)
+  severity: medium
+  promoted: 2026-09-19 — hand-filed
+  status: open
+  story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5).

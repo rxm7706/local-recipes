@@ -6407,7 +6407,7 @@ CAP-8/CAP-9 and is Epic 52, not re-implemented here.
 for merged facts (marshal materialises the merge-tree, never performs the merge); one harness seam; no new gate and no
 second verdict owner; the primary checkout is moved only when it is a clean `main`.
 **Serial dispatch order (surface-overlap matrix, `cli/dispatch.py` and `dispatch_land.py` are the hubs):**
-51.8 → 51.2 → 51.3 → 51.6 → 51.1 → 51.4 → 51.5 → 51.7; schedule 51.6 after Epic 52's Story 52.1 has merged (both touch `cli/watch.py` — a merge-order note, not a `Deps:` entry, so `forward-dependency` stays green).
+51.8 → 51.2 → 51.3 (landed hollow; re-minted as 51.9) → 51.6 → 51.9 → 51.1 → 51.4 → 51.5 → 51.7; schedule 51.6 after Epic 52's Story 52.1 has merged (both touch `cli/watch.py` — a merge-order note, not a `Deps:` entry, so `forward-dependency` stays green).
 
 ### Story 51.1: Verification sees the merge result
 
@@ -6481,15 +6481,21 @@ the checkout may belong to another session) and the campaign otherwise reads the
 story `done` on the next cycle and chains the next ready story with zero operator commands
 **And** a dirty or non-`main` primary is never moved (fixture), `_promote_sprint_ledger` gains no second writer, and a
 primary already at `origin/main` is byte-identical
+**Outcome (2026-09-19):** landed HOLLOW as PR #1501 (`e7a71df640`) — the dispatched session was terminated at Claude Code's
+600 s print-mode background-wait ceiling before its implementation subagent committed anything; the branch's only change was
+this spec's `ready → in-progress` flip, which `has_git_progress` counted as progress, so verify (green on an unchanged tree)
+and land followed and finalize promoted `done`. Nothing under CAP-251's Surface changed. Re-minted as **Story 51.9**
+(identical contract); the truth is on 51.3's tracked spec. `done` never moves (`ledger-regression`).
 
 ### Story 51.4: A blocked outcome never lands
 
-As a station whose dispatched session can discover an intent gap and stop,
-I want a session that ends `blocked` — branch reverted to baseline, `status: blocked` written — to produce no PR, no
-`done` promotion, and a journal fact carrying its reason,
+As a station whose dispatched session can discover an intent gap and stop — or be killed before it does anything,
+I want a session that ends `blocked` (branch reverted to baseline, `status: blocked` written) OR hollow (no changed path
+outside the story's own tracked spec — the 51.3 shape: a harness-terminated session whose only commit was the spec's
+status flip) to produce no PR, no `done` promotion, and a journal fact carrying its reason,
 So that the ledger tells the truth and the story is re-driven or re-minted deliberately instead of read as shipped.
 
-**Type:** fix • **Effort:** M • **Deps:** S-51.1, S-51.3 • **FR/AD:** spec-pyforge-marshal CAP-252
+**Type:** fix • **Effort:** M • **Deps:** S-51.1, S-51.9 • **FR/AD:** spec-pyforge-marshal CAP-252 (widened 2026-09-19: a hollow outcome is a blocked outcome)
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`
 (`_run_supervisor_finalize_sequence` and the run-loop land trigger read the worktree spec's `status:` before verify/land),
 `.../core/dispatch_completion.py::has_git_progress` (a revert-to-baseline plus a status flip is not progress),
@@ -6502,8 +6508,10 @@ branch (PR #1476) and promoted `27-3 → done` — the truth was written above t
 re-minted as 27.4→27.5
 **When** the supervisor's finalize sequence stops before verify and land on a `blocked` spec, journals
 `dispatch-blocked` with the spec's own reason, and the campaign records a station block rather than an advance
-**Then** the 27.3 fixture (empty diff against baseline + `status: blocked`) produces no PR and its tracked ledger row
-never reads `done`; the campaign fact names the reason
+**Then** the 27.3 fixture (empty diff against baseline + `status: blocked`) and the 51.3 fixture (branch diff = the
+tracked spec's frontmatter only, session log ending `Background tasks still running after 600s; terminating`) each
+produce no PR and their tracked ledger rows never read `done`; the campaign fact names the reason, and the block classifier
+recognises the harness-ceiling wording as `transient` (re-dispatchable), not terminal
 **And** an implementation with changed paths lands exactly as today (existing fixtures), and removing the status read
 re-lands the 27.3 fixture (mutation test)
 
@@ -6591,6 +6599,27 @@ on `lines[0] == "---"` so a banner-topped spec's `declared_low_risk: true` silen
 `declared_low_risk: true` spec resolves the declared review depth through `cli/gate.py`
 **And** a spec with no frontmatter or an unclosed banner is still invalid, the 45 banner-below-frontmatter files parse
 identically, and no second parser or gate appears
+
+### Story 51.9: The campaign reads the ledger it just promoted (re-mint of 51.3)
+
+As a fleet operator running a multi-story drain,
+I want the campaign's next cycle to read the ledger finalize just promoted onto `origin/main` without my `git pull`,
+So that a drain reaches zero with zero operator commands between landings.
+
+**Type:** fix • **Effort:** S • **Deps:** S-51.2 • **FR/AD:** spec-pyforge-marshal CAP-251 • supersedes Story 51.3 (landed hollow: the session was killed at the harness's 600 s print-mode ceiling before its implementation subagent committed anything; see 51.3's tracked spec)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (post-ledger
+refresh step, reusing `cli/land.py::_resync_home_branch`), `.../cli/land.py::_promote_sprint_ledger` (unchanged single
+writer onto the remote tip), `.../cli/dispatch.py` (the fleet cycle's ledger read — `station_finalize_pending_story` /
+the `ledger_story_statuses(ledger_path)` call — falls back to `origin/main` when the primary is not a clean `main`),
+`.../core/dispatch_fleet.py::station_ledger_path`, tests.
+**Given** every herald 23.x landing on 2026-09-18 promoted the ledger onto `origin/main` and the campaign kept reading
+the primary checkout's stale copy until an operator pulled
+**When** finalize fast-forwards the primary only when it is a clean `main` (refusing by name and journaling otherwise —
+the checkout may belong to another session) and the campaign otherwise reads the promoted ledger from `origin/main`
+**Then** a fixture replaying the herald sequence (ledger promoted remotely, primary one commit behind) reports the
+story `done` on the next cycle and chains the next ready story with zero operator commands
+**And** a dirty or non-`main` primary is never moved (fixture), `_promote_sprint_ledger` gains no second writer, and a
+primary already at `origin/main` is byte-identical
 
 ## Epic 52: The shared floor is enforced where the build happens (spec-pyforge-core CAP-8..9)
 

@@ -115,6 +115,86 @@ def _normalize_title(title: str) -> str:
     return _NORMALIZE_RE.sub("", title.lower()).strip()
 
 
+#: Story 28.1 / CAP-81: a leading HTML-comment provenance banner a promoted
+#: tracked spec may carry ABOVE its frontmatter fence -- mirrors
+#: ``pyforge.marshal.core.promotion``/``core.spec_surface``'s own
+#: ``_BANNER_PREFIX``/``_BANNER_SUFFIX`` (Story 50.5, CAP-248; the leading
+#: BOM/whitespace tolerance is Story 51.8, CAP-256, closing DW-FU-50-6),
+#: duplicated here per that convention rather than shared across packages.
+_BANNER_PREFIX = "<!--"
+_BANNER_SUFFIX = "-->"
+
+#: The frontmatter fence: a whole line that is exactly ``---`` (Story 28.1).
+_FENCE = "---"
+
+
+def _skip_leading_banner(text: str) -> str:
+    """Skip a leading ``<!-- ... -->`` banner, possibly spanning multiple
+    lines -- verbatim port of ``pyforge.marshal.core.promotion``'s own
+    helper (Story 50.5, CAP-248). Tolerates a leading BOM, blank lines, or
+    spaces before the banner's opening marker (marshal Story 51.8, CAP-256,
+    closing DW-FU-50-6) -- the banner need not sit at literal text offset 0.
+    Returns ``text`` unchanged when no banner is found there, or when the
+    marker is never closed -- an unclosed banner is not a banner this
+    parser recognizes, so the frontmatter-fence check below still requires
+    the (absent) fence and correctly reports no parseable frontmatter.
+
+    One consequence of the port, kept deliberately for marshal parity: the
+    trailing ``.lstrip()`` strips indentation from whatever follows the
+    banner, so the column-0 fence rule (``_is_fence``) applies to the
+    POST-BANNER text -- a banner-topped file tolerates leading whitespace
+    on its opening fence (``<!-- b -->\\n   ---\\n...`` parses) while a bare
+    ``   ---`` opener with no banner is refused as attempted-but-unbounded.
+    """
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
+        return text
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    if end == -1:
+        return text
+    return stripped[end + len(_BANNER_SUFFIX):].lstrip()
+
+
+def _is_fence(line: str) -> bool:
+    """A fence is a line that is exactly ``---`` at column 0 (trailing
+    whitespace tolerated). Deliberately ``rstrip``, never ``strip``: an
+    INDENTED ``  ---`` is content inside a YAML block scalar (``evidence: |``
+    quoting a fence, say), and treating it as the closing fence would
+    silently truncate the block -- Story 28.1's own defect class one shape
+    over from the fixture that motivated it."""
+    return line.rstrip() == _FENCE
+
+
+def _fenced_lines(text: str) -> list[str]:
+    """The document's lines as the fence scan sees them: the leading
+    provenance banner skipped, then ``splitlines()``."""
+    return _skip_leading_banner(text).splitlines()
+
+
+def _split_fenced_block(lines: list[str]) -> tuple[list[str], list[str], bool] | None:
+    """Split a document (``_fenced_lines``) at its LINE-ANCHORED frontmatter
+    fences -- the one scan ``_frontmatter_parse`` and
+    ``_dream_body_after_frontmatter`` both derive from, so the block one
+    accepts is exactly the block the other excludes from the body
+    (Story 28.1 / CAP-81).
+
+    Returns ``None`` when the first line is not a fence (no frontmatter
+    block opens the document -- the caller decides whether that is absent
+    metadata or an attempted-but-unbounded opener; see
+    ``_frontmatter_parse``). Otherwise returns ``(block, body, closed)``:
+    ``block`` is every line strictly between the opening fence and the first
+    later fence line, ``body`` every line after that closing fence, and
+    ``closed`` is ``False`` when no closing fence exists (``block`` is then
+    the rest of the file and ``body`` is empty).
+    """
+    if not lines or not _is_fence(lines[0]):
+        return None
+    for index in range(1, len(lines)):
+        if _is_fence(lines[index]):
+            return lines[1:index], lines[index + 1:], True
+    return lines[1:], [], False
+
+
 def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     """Parse a ``---``-fenced YAML frontmatter block.
 
@@ -124,22 +204,60 @@ def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     metadata, ``({}, False)``). Story 17-1 / FR-144 residual: the old
     ``except: return {}`` path silently converted unparseable Spec frontmatter
     into "no owner-dream", inflating INV-0.
+
+    Story 28.1 / CAP-81: the frontmatter block is bounded by LINE-ANCHORED
+    fences -- the opening fence is the first line (after an optional
+    ``<!-- ... -->`` provenance banner, ``_skip_leading_banner``, the shape
+    ``pyforge.marshal`` already reads through per Story 50.5 / CAP-248), the
+    closing fence the first later line that is exactly ``---``
+    (``_is_fence``; see ``_split_fenced_block``). The old
+    ``text.split("---", 2)`` cut at the FIRST literal ``---`` substring
+    anywhere in the document -- including one quoted mid-scalar inside the
+    block itself (marshal's Story 50.5 spec: a deferred-work ``evidence:``
+    block quoting ``lines[0] == "---"``) -- silently corrupting a
+    well-formed block into a truncated fragment: one deferral with no
+    ``location:`` where the file declares two. And its ``"---" in text``
+    pre-check made any prose file with a markdown thematic break read as
+    unparseable frontmatter.
+
+    Verdicts (Design Notes, Story 28.1):
+
+    - first line is a fence, a later line is a fence: the block between is
+      ``yaml.safe_load``-ed -- ``None`` (empty block) is ``({}, False)``, a
+      non-mapping or a YAML error is ``({}, True)``;
+    - first line is a fence, no later fence: ``({}, True)`` -- an unbounded
+      block is refused, never degraded (Story 17-1 / FR-144);
+    - first line is not a fence but starts with ``---`` after stripping
+      (``---title:`` glued on line 1, ``----``, `` ---``, ``--- # c``): the
+      document ATTEMPTED a block that cannot be bounded -- ``({}, True)``.
+      Reading these as absent instead silently dropped owner/status/title
+      on 34 archived Dreams (review pass 1); reading them leniently would
+      widen what counts as parseable (the Never clause);
+    - anything else on the first line (prose, a blank line, a BOM, an
+      unclosed ``<!--``, a ``---``/YAML/``---`` block displaced below prose,
+      a thematic break lower down): ``({}, False)`` -- absent metadata.
     """
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
         return {}, True
 
-    if not text.startswith("---"):
-        if "---" in text:
+    lines = _fenced_lines(text)
+    split = _split_fenced_block(lines)
+    if split is None:
+        if lines and lines[0].strip().startswith(_FENCE):
             return {}, True
         return {}, False
 
+    block, _body, closed = split
+    if not closed:
+        return {}, True
+
     try:
-        parts = text.split("---", 2)
-        if len(parts) < 3:
-            return {}, True
-        data = yaml.safe_load(parts[1])
+        # Trailing "\n": the old `parts[1]` slice ended at the newline before
+        # the closing fence, so a `|` block scalar that is the LAST key kept
+        # its final line break -- keep that value byte-identical.
+        data = yaml.safe_load("\n".join(block) + "\n")
     except Exception:
         return {}, True
 
@@ -1018,11 +1136,33 @@ def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
 
 
 def _dream_body_after_frontmatter(text: str) -> str:
-    """Dream markdown body with the leading ``---`` fence stripped."""
-    if not text.startswith("---"):
+    """Dream markdown body with the leading frontmatter block stripped.
+
+    Story 28.1 / CAP-81: derives the body from the SAME line-anchored scan
+    ``_frontmatter_parse`` bounds the block with (``_split_fenced_block``),
+    so the block the parser accepts is exactly what the Kinship scan does
+    not read. The old ``text.split("---", 2)`` cut at the first ``---``
+    substring, so a Dream the parser now accepts -- a ``---`` quoted inside
+    a frontmatter scalar, or a banner-topped file -- had its frontmatter
+    tail scanned as body and emitted a false ``kinship-wikilink-dead``.
+
+    No leading fence: ``text`` unchanged (the caller only reaches here after
+    ``_frontmatter_parse`` accepted the file, so this is the no-frontmatter
+    case). No closing fence: ``""``. Otherwise the lines after the closing
+    fence, re-joined with ``\\n`` plus the original's trailing newline if it
+    had one -- the caller only regexes ``[[...]]`` out of the result, so the
+    exact leading/trailing whitespace is not load-bearing and line endings
+    are normalised (``splitlines()`` + ``"\\n".join``: CRLF input comes back
+    as ``\\n``).
+    """
+    split = _split_fenced_block(_fenced_lines(text))
+    if split is None:
         return text
-    parts = text.split("---", 2)
-    return parts[2] if len(parts) >= 3 else ""
+    _block, body, closed = split
+    if not closed:
+        return ""
+    joined = "\n".join(body)
+    return joined + "\n" if text.endswith("\n") else joined
 
 
 def _specs_covering_dream(
