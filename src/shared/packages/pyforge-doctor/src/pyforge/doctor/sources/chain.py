@@ -118,8 +118,9 @@ def _normalize_title(title: str) -> str:
 #: Story 28.1 / CAP-81: a leading HTML-comment provenance banner a promoted
 #: tracked spec may carry ABOVE its frontmatter fence -- mirrors
 #: ``pyforge.marshal.core.promotion``/``core.spec_surface``'s own
-#: ``_BANNER_PREFIX``/``_BANNER_SUFFIX`` (Story 50.5, CAP-248), duplicated
-#: here per that convention rather than shared across packages.
+#: ``_BANNER_PREFIX``/``_BANNER_SUFFIX`` (Story 50.5, CAP-248; the leading
+#: BOM/whitespace tolerance is Story 51.8, CAP-256, closing DW-FU-50-6),
+#: duplicated here per that convention rather than shared across packages.
 _BANNER_PREFIX = "<!--"
 _BANNER_SUFFIX = "-->"
 
@@ -130,17 +131,28 @@ _FENCE = "---"
 def _skip_leading_banner(text: str) -> str:
     """Skip a leading ``<!-- ... -->`` banner, possibly spanning multiple
     lines -- verbatim port of ``pyforge.marshal.core.promotion``'s own
-    helper (Story 50.5, CAP-248). Returns ``text`` unchanged when it does
-    not start with the banner's opening marker, or when the marker is never
-    closed -- an unclosed banner is not a banner this parser recognizes, so
-    the frontmatter-fence check below still requires the (absent) fence and
-    correctly reports no parseable frontmatter."""
-    if not text.startswith(_BANNER_PREFIX):
+    helper (Story 50.5, CAP-248). Tolerates a leading BOM, blank lines, or
+    spaces before the banner's opening marker (marshal Story 51.8, CAP-256,
+    closing DW-FU-50-6) -- the banner need not sit at literal text offset 0.
+    Returns ``text`` unchanged when no banner is found there, or when the
+    marker is never closed -- an unclosed banner is not a banner this
+    parser recognizes, so the frontmatter-fence check below still requires
+    the (absent) fence and correctly reports no parseable frontmatter.
+
+    One consequence of the port, kept deliberately for marshal parity: the
+    trailing ``.lstrip()`` strips indentation from whatever follows the
+    banner, so the column-0 fence rule (``_is_fence``) applies to the
+    POST-BANNER text -- a banner-topped file tolerates leading whitespace
+    on its opening fence (``<!-- b -->\\n   ---\\n...`` parses) while a bare
+    ``   ---`` opener with no banner is refused as attempted-but-unbounded.
+    """
+    stripped = text.lstrip("\ufeff \t\r\n")
+    if not stripped.startswith(_BANNER_PREFIX):
         return text
-    end = text.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
+    end = stripped.find(_BANNER_SUFFIX, len(_BANNER_PREFIX))
     if end == -1:
         return text
-    return text[end + len(_BANNER_SUFFIX):].lstrip()
+    return stripped[end + len(_BANNER_SUFFIX):].lstrip()
 
 
 def _is_fence(line: str) -> bool:
@@ -242,7 +254,10 @@ def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
         return {}, True
 
     try:
-        data = yaml.safe_load("\n".join(block))
+        # Trailing "\n": the old `parts[1]` slice ended at the newline before
+        # the closing fence, so a `|` block scalar that is the LAST key kept
+        # its final line break -- keep that value byte-identical.
+        data = yaml.safe_load("\n".join(block) + "\n")
     except Exception:
         return {}, True
 
