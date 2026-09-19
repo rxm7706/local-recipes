@@ -1130,6 +1130,10 @@ cmd = "python -m pyforge.doctor.sources status-body-consistency"
 description = "Detector: human-facing documentation identity contradictions (Story 22.3, spec-general-docs-consistency CAP-3). Cross-references station README vs skill-brief and AGENTS.md vs station Dream claims — bounded, textual, evidence-based. Warn-only, read-only, fail-open — never a second PR gate. Contract: spec-22-3-a-repeatable-doctor-detector-catches-this-class-of-drift-going-forward."
 cmd = "python -m pyforge.doctor.sources general-docs-consistency"
 
+[feature.guild-tasks.tasks.docs-map-hygiene-check]
+description = "Detector: docs/MAP.md alignment with the four Diátaxis quadrants it governs — docs/tutorials, docs/how-to, docs/reference, docs/explanation (Story 30.1, spec-pyforge-doctor CAP-83). A MAP link to a missing page under docs/ is FAIL; a quadrant page not linked from MAP.md is WARN (warn-first). Quadrant README.md index pages are exempt; MAP.md's own 'Outside this map' layers are never scanned. Read-only, fail-open."
+cmd = "python -m pyforge.doctor.sources docs-map-hygiene"
+
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
 cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"

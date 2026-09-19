@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-18'   # Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
+updated: '2026-09-19'   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2408,3 +2408,46 @@ with `archived` in the message; the request goes to `openteams-ai/mgmt-wf-python
 **And** the unreachable and unauthenticated paths are unchanged (`sibling-dreams-unreachable`, warn, exit 0); no content
 from the sibling is written anywhere
 **Status:** backlog
+
+## Epic 30: The documentation is right, and refreshing it is repeatable (spec-pyforge-doctor CAP-83, CAP-84)
+
+Minted 2026-09-19 (night) from `spec-pyforge-doctor` CAP-83/84, seeded the same night in `docs/dreams/pyforge-doctor.md`'s
+Realization log at the review of PR #1529 (a parallel session's documentation PR: 14 authored pages with day-one errors,
+130 README stubs inside skill dirs, a map check that scanned everything `docs/MAP.md` excludes, ten laundering re-stamps,
+a hand-written Spec whose CAP-82 / Epic 29 collided with #1526's). Research:
+`planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md`. Extends Epics 22–23 (the
+Diátaxis map, the docs shelf) with enforcement and currency. **HARD boundaries:** the map's own scope contract (four
+quadrants) is the detector's scope; docs detectors start warn (CAP-62) and are promoted to fail per check; generated pages
+are never hand-edited; skill directories hold only the Agent Skills layout; doctor owns the chain, a station owns the
+generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the PRD, citing CAP-83/CAP-84).
+
+### Story 30.1: The map is enforced within its scope, the stubs are gone, and the new pages are true
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-17, spec-pyforge-doctor CAP-83
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_map_hygiene.py` (rescoped to the four quadrants; missing = fail, unmapped = warn, index pages exempt), `sources/__init__.py`, `sources/__main__.py`, `models.py` (`Source.DOCS_MAP_HYGIENE`), `tests/unit/test_sources_docs_map_hygiene.py` (new), `scripts/detectors.py` + `pixi.toml` (`docs-map-hygiene-check` in `guild-tasks`), `docs/MAP.md` (the genuine gaps mapped; `docs/foundry/` listed outside the map), the 14 pages under `docs/{explanation,how-to,reference,tutorials}/` (errors corrected; `sources:` / `verified:` frontmatter), `.claude/skills/*/README.md` ×130 removed, nine station READMEs (plain-text pointer), `.steward/keys-inventory.yaml` (runbook pointer), `docs/dreams/pyforge-doctor.md`, `.claude/skills/bmad-os-docs-audit/SKILL.md` (kept).
+**Given** the PR's check reds on 44 files on `main`, the pages cite paths and grammars that do not exist, and 130 stubs sit inside installer-managed skill directories
+**When** this story lands
+**Then** `python -m pyforge.doctor.sources docs-map-hygiene` reports OK on `main`, warns on an unmapped quadrant page and fails on a dead MAP link (each covered by a unit test); every backticked path, pixi task and CLI grammar in the 14 pages resolves; no `README.md` sits inside `.claude/skills/*/` except the three pre-existing conda-forge-expert subfolder READMEs; `pyforge-doctor-test` and the doctor coverage gate are green
+**And** the chain carries the record: Dream entry, CAP-83/84, this epic, the tracked story spec with the review triage, capability-ledger rows, real memlog entries on every Spec the diff touches, scoped stamps for exactly those
+**Status:** done
+**Outcome (2026-09-19):** landed as PR #1529 after review + rebuild; tracked spec `specs/spec-30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true.md`.
+
+### Story 30.2: docs/map.yaml is the registry, MAP.md is its render, and `docs-currency` reds a stale page
+**Type:** feature • **Effort:** M • **Deps:** S-30.1 • **FR/AD:** FR-17, spec-pyforge-doctor CAP-84
+**difficulty:** medium
+**Surface:** `docs/map.yaml` (new; quadrant / owner / kind / sources / stamp per page), a renderer task (`docs-map-render`) that writes `docs/MAP.md` from it, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py` (new; the four checks, warn), its unit tests, `scripts/detectors.py` + `pixi.toml` (`docs-currency-check`), frontmatter `sources:` / `verified:` on every authored page, `docs-map-hygiene` retired into `docs-currency` (or kept as its map-alignment check — the story decides and records it).
+**Given** MAP.md is hand-maintained and no page declares what it derives from or explains
+**When** this story lands
+**Then** `map.yaml` validates against a schema shipped in the doctor package; `MAP.md` equals its render (a byte diff is a finding); `docs-currency` reports OK on `main` and reds (warn) an authored page whose named source moved past `verified:`, a page whose backticked path / pixi task / CLI grammar no longer resolves, and a stray file inside a managed skill dir; the unmapped-page class is promoted from warn to fail
+**And** the promotion is recorded on the doctor memlog; `general-docs-consistency` and `governance-currency` keep their lanes
+**Status:** backlog
+
+### Story 30.3: The reference pages are generated — pixi tasks, station CLIs, detectors, skills — and stamped
+**Type:** feature • **Effort:** M • **Deps:** S-30.2 • **FR/AD:** FR-17, spec-pyforge-doctor CAP-84
+**difficulty:** medium
+**Surface:** generator tasks `docs-pixi-tasks`, `docs-station-cli`, `docs-detectors`, `docs-skills-catalog`, `docs-environments` (each a script under `scripts/` or a station duty, registered in `docs/map.yaml` as the page's source), the generated pages `docs/how-to/pixi-tasks.md`, `docs/reference/station-cheat-sheet.md`, `docs/reference/detectors.md` (new), `docs/reference/skills-catalog.md` (new), `docs/reference/environments.md` (new) with `derived_at` + `tree` stamps, `docs-currency`'s generated-page check (source newer than stamp, or regeneration differs), `library-llms-full.md` unchanged (its own lane).
+**Given** the task reference is hand-written and already stale, the cheat sheet was typed from memory, and no page lists the detectors or the skills
+**When** this story lands
+**Then** each generator is idempotent on an unchanged tree and rewrites its page + stamp on a changed one; editing `pixi.toml`'s tasks, a station CLI's grammar, a detector registration or a `SKILL.md` frontmatter without regenerating reds `detectors-ci`; a hand edit to a generated page is a finding
+**And** the pages agents should read (reference) are exact by construction; authored explanation stays for humans
+**Status:** backlog
+

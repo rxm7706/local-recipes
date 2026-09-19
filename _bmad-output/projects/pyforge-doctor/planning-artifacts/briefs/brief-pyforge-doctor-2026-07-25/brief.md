@@ -2,7 +2,7 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: '2026-08-26'
+updated: '2026-09-19'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
@@ -10,6 +10,7 @@ inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-08-08.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-08-08.md'
+  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/market-doctor-health-diagnostics-2026-08-08.md'
   - 'src/shared/packages/pyforge-warden/src/pyforge/warden/{cli,engines}.py (--doctor exit-code + subprocess-seam precedent)'
 ---
@@ -277,3 +278,34 @@ Unifying Strategy (`spec-pyforge-unifying-strategy`), Doctor's estate role is fl
 vitals and prescriptions whose findings stay **advisory or Warden inputs — never a
 second PR gate** — a constraint this brief's "operability, not policy" framing
 anticipated and that now binds fleet-wide.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep: `research/documentation-currency-and-repeatable-refresh-2026-09-19.md`
+(now in `inputs:`) post-dated this brief. It was written while reviewing PR #1529 — a parallel
+agent's "estate overview" documentation pass — and asks a question this brief never framed:
+who owns the repository's human documentation, and what makes refreshing it repeatable.*
+
+**What the research settled, and how it lands on Doctor.** The repo's Diátaxis shelf
+(`docs/{tutorials,how-to,reference,explanation}`, mapped by `docs/MAP.md`) had drifted in
+four ways the research ranks: stale facts in authored pages (pixi-env defaults, task names,
+detector counts), a MAP that named pages it did not have, one-off "overview" pages with no
+source of truth to refresh from, and — the PR's own contribution — 130 per-skill `README.md`
+stubs under `.claude/skills/`, a tree the BMAD installer regenerates and deletes on upgrade
+(71 deletions in 6.10→6.11), so anything authored there is lost silently. Four operator
+rulings followed (research §4): the stubs go; a machine-readable registry (`docs/map.yaml`)
+becomes the twin of `docs/MAP.md`; **Doctor owns the docs-currency chain end-to-end**
+(detector, registry render, generated reference pages); the fourteen authored pages stay,
+corrected now and registered with their `sources:`.
+
+**Why this is Doctor's and not a new station's.** The brief's framing — Doctor judges another
+station's artifact and stays advisory (FR-15, Charter §6) — already covers documentation:
+the shelf is an artifact every station produces into and none owns, and a docs-currency
+finding is a prescription, never a PR gate on prose. `docs-map-hygiene` (Story 30.1) is the
+first source of that family; the registry and the generated pages follow as Stories 30.2 and
+30.3 (`spec-pyforge-doctor` CAP-83, CAP-84; PRD FR-17).
+
+**What this brief's scope statement now reads as.** "Fleet vitals and prescriptions" gains
+one more vital sign — whether the documentation matches the code it describes — measured the
+same way as the others: from the code and manifests (`pixi.toml`, the station CLIs, the
+detector registry), never from the prose's own claims.

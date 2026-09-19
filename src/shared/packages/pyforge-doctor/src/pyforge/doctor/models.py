@@ -328,6 +328,14 @@ class Source(StrEnum):
     # a PRD FR minted after the rule date must cite a resolving `CAP-m`.
     CHAIN_SPRAWL = "chain-sprawl"
     FR_WITHOUT_CAP = "fr-without-cap"
+    # Story 30.1 (spec-pyforge-doctor CAP-83): the closed taxonomy EXTENDED
+    # once more -- docs/MAP.md vs the four Diátaxis quadrant directories
+    # (docs/tutorials, docs/how-to, docs/reference, docs/explanation) it
+    # governs. A MAP link to a missing page under docs/ is FAIL; a quadrant
+    # page absent from MAP.md is WARN (warn-first, CAP-62 posture). Quadrant
+    # README.md index pages are exempt; MAP.md § "Outside this map" layers
+    # are never scanned.
+    DOCS_MAP_HYGIENE = "docs-map-hygiene"
 
 
 class Partition(StrEnum):

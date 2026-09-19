@@ -1,9 +1,13 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-17'
+updated: '2026-09-19'
 status: final
-currency_review: 'Reviewed 2026-09-17 — one-chain doctor fold reminted spec-pyforge-doctor
+currency_review: 'Reviewed 2026-09-19 — chain-currency sweep after PR #1529 (doctor Story
+  30.1). research/documentation-currency-and-repeatable-refresh-2026-09-19.md post-dated the
+  brief; spec-pyforge-doctor minted CAP-83/CAP-84 (docs currency, Epic 30). FR-17 minted
+  below to cite them; reconciled in the appended § Currency reconciliation — 2026-09-19.
+  Prior: Reviewed 2026-09-17 — one-chain doctor fold reminted spec-pyforge-doctor
   CAP-1..76. Kernel FR-1..13 cite CAP-1..13 (original station CAPs, same numbers).
   Absorbed CAPs were already decomposed as Epics 5–25 on their own Specs — remint
   is provenance, not a new FR set. FR delta: citations only. Reviewed 2026-09-14 —
@@ -47,7 +51,7 @@ inputs:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md
 - docs/dreams/pyforge-doctor.md
 - docs/dreams/ecosystem-crew.md § 6 Doctor
-fr-derivation-from: '2026-09-17'
+fr-derivation-from: '2026-09-19'
 ---
 
 # PRD: Doctor (pyforge-doctor)
@@ -586,6 +590,40 @@ registry itself, emitting no finding. Doctor's `sources/marshal.py` — the flee
 §6-compliant verdict — is not wired to any verb (Story 5.2, backlog), so an operator
 cannot currently reach it.*
 
+## FR-17 — The documentation is right, and refreshing it is repeatable (spec-pyforge-doctor CAP-83, CAP-84)
+
+Added 2026-09-19 (operator rulings recorded in
+`research/documentation-currency-and-repeatable-refresh-2026-09-19.md` §4). The repository's
+human documentation — the Diátaxis shelf under `docs/{tutorials,how-to,reference,explanation}`
+mapped by `docs/MAP.md` — is an artifact every station writes into and none owns, so under
+FR-15 its currency verdict is Doctor's. Two capabilities:
+
+- **CAP-83 — the map is enforced within its scope.** A `docs-map-hygiene` source judges the
+  four quadrants only: a page the MAP links but the tree lacks is a `fail`; a quadrant page the
+  MAP does not link is a `warn` (warn-first, the CAP-62 posture); quadrant `README.md` indexes
+  are exempt; everything the MAP's § *Outside this map* names (governance files, intake
+  specs, dashboards, `docs/foundry/`, station READMEs, skill directories) is out of scope by
+  construction. Nothing is authored under `.claude/skills/` — the BMAD installer owns that tree.
+- **CAP-84 — refresh is repeatable.** `docs/map.yaml` is the machine twin of `docs/MAP.md`
+  (every page: `kind` generated|authored|pointer, owner, `sources`, `derived_at` + tree
+  stamps); `docs/MAP.md` renders from it; generated reference pages (pixi tasks, station CLIs,
+  detector catalog, skills catalog, environments) are produced by generators from the code and
+  manifests — never hand-edited — and a `docs-currency` source flags a generated page whose
+  stamp is older than its sources, and an authored page whose `sources:` moved since
+  `verified:`. Authored pages are re-verified through `bmad-os-docs-audit → bmad-os-diataxis`.
+
+**Consequences (testable):** `docs-map-hygiene` is in the `detectors` and `detectors-ci`
+registry with the `warn`/`fail` split above and reports OK on `main` after Story 30.1;
+`docs/map.yaml` round-trips to the committed `docs/MAP.md` byte-for-byte once Story 30.2
+lands; every generated page carries a stamp a generator can compare; `doctor check` stays
+inside SM-C1 (5.0s) — measured.
+
+**Non-goals:** no docs PR gate (findings stay advisory or Warden inputs, Charter §6); no
+prose-quality judgement — currency is about facts the code can refute, not style; the
+legacy `docs/specs/` intake tier, `docs/dreams/`, and `_bmad-output/` are not on the shelf.
+
+*Decomposed as Epic 30 — Stories 30.1 (done, PR #1529), 30.2, 30.3.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -625,7 +663,8 @@ Story 5.2. The tracked ledger reports **82/82 stories done across Epics 1–18**
 this stamp.
 
 **FR-inventory boundary — the decompose-directly convention.** FR-1..15 (plus FR-16,
-the spike-report classifier, minted 2026-08-11 at epics level) is the complete FR set
+the spike-report classifier, minted 2026-08-11 at epics level, and FR-17, docs
+currency, minted 2026-09-19) is the complete FR set
 this PRD owns, but it is deliberately **not** the complete story universe: Epics 7–16
 decompose sibling doctor Specs directly (spec-deferred-work-visibility,
 spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program,
@@ -805,3 +844,16 @@ two entries are one story, not two.
 ## Currency reconciliation — 2026-09-17
 
 One-chain fold. `fr-derivation-from` set. Every kernel FR heading cites its source CAP. No new FR minted. Absorbed Spec CAPs stay epic-decomposed.
+
+## Currency reconciliation — 2026-09-19
+
+*Chain-currency sweep after PR #1529 (doctor Story 30.1): the brief absorbed
+`research/documentation-currency-and-repeatable-refresh-2026-09-19.md`, and
+`spec-pyforge-doctor` minted CAP-83/CAP-84 (Epic 30) the same day.*
+
+**One new FR.** FR-17 cites CAP-83/CAP-84 — the first kernel-Spec CAPs since the one-chain fold
+that describe product scope this PRD had not framed (documentation currency as a fleet vital
+sign). It is minted here, not decomposed directly, because the capability is Doctor's own
+(FR-15's "home for every detector judging another station's artifact" applied to the docs
+shelf), not a sibling Spec's. Epic 30 is its decomposition; the FR-inventory boundary paragraph
+in § Currency reconciliation — 2026-08-26 is amended to name it.

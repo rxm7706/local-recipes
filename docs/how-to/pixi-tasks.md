@@ -1,12 +1,18 @@
 # Pixi tasks
 
-Task-oriented reference for the `local-recipes` pixi environment. The full task surface is defined in `pixi.toml`. Pass extra args after `--`:
+Task-oriented reference for the pixi task surface. Everything is defined in `pixi.toml`, and every task is bound to one or more environments:
+
+- **`pyforge-guild`** — the session default for every agent and harness (~860 MB): detectors, ledger sync, surface stamps, `fleet-picture`, marshal dispatch/spin, and the `doctor` / `marshal` / `scribe` / `steward` CLIs. `pixi task list -e pyforge-guild` lists the Guild set.
+- **`local-recipes`** — Mason's recipe-factory environment (10 GB): rattler-build, the conda-forge-expert wrappers, and the cf_atlas CLIs. It also includes every Guild task, so `pixi run -e local-recipes <guild task>` still works, but it is not the default. `pixi task list -e local-recipes` lists the full set.
+- **Per-station and tool envs** — `pyforge-<station>` for each station's own `-test` / `-build` tasks, `grayskull` / `conda-smithy` for recipe scaffolding and lint, `vuln-db` for the vulnerability database, `platform-dev` for the Django host.
+
+Pass extra args after `--`:
 
 ```bash
-pixi run -e local-recipes <task> -- [args]
+pixi run -e <env> <task> -- [args]
 ```
 
-List all tasks: `pixi task list -e local-recipes`
+The tables below name each task's environment where it is not `local-recipes`.
 
 ## Build tasks (per-platform `build-locally.py` wrappers)
 
@@ -42,6 +48,34 @@ with `--help` to see its options.
 | `autotick` | `recipe_updater.py` — PyPI autotick |
 | `autotick-github` | `github_updater.py` — GitHub-release autotick |
 | `autotick-npm` | `npm_updater.py` — npm-registry autotick |
+
+## Scaffolding & Linting (grayskull / conda-smithy)
+
+Tasks for bootstrapping and linting recipes via external generators. Run these in the `grayskull` or `conda-smithy` environments.
+
+| Task | What it does |
+|------|--------------|
+| `pypi` | Generate a v1 (rattler-build) recipe from PyPI via grayskull |
+| `cran` | Generate a v1 recipe from CRAN via grayskull |
+| `pypi-v0` | Generate a v0 (meta.yaml) recipe from PyPI |
+| `cran-v0` | Generate a v0 recipe from CRAN |
+| `lint` | Run the CI-parity `conda-smithy` linter across all recipes |
+
+## Station Operations (PyForge Guild)
+
+Each station's test and build tasks live in that station's own environment (`pixi run -e pyforge-<station> …`); the cross-station tasks live in `pyforge-guild`.
+
+| Task | Environment | What it does |
+|------|-------------|--------------|
+| `pyforge-mason-build` | `pyforge-mason` | Builds both the conda package and the wheel/sdist for the Mason station |
+| `pyforge-mason-test` | `pyforge-mason` | Runs the Mason unit + meta test suite (`pyforge-mason-test-slow` for the real-CFE tests) |
+| `pyforge-steward-build` | `pyforge-steward` | Builds both artifacts for the Steward station |
+| `pyforge-steward-test` | `pyforge-steward` | Runs the Steward suite across all three tiers |
+| `pyforge-<station>-test` / `-build` | `pyforge-<station>` | (Pattern) The same pair for any of the 8 stations |
+| `pyforge-station-tests` | `pyforge-guild` | `pyforge-core` + all 8 station suites, mirroring `.github/workflows/pyforge-station-tests.yml` — run before pushing any `pixi.toml` / `pixi.lock` / `pyforge-core` / `pyforge-testing-kit` change |
+| `detectors` / `detectors-ci` | `pyforge-guild` | Every detector / the CI-safe subset (see [run-and-understand-detectors.md](run-and-understand-detectors.md)) |
+| `fleet-picture` | `pyforge-guild` | Read-only fleet progress report from the tracked sprint ledgers (see [monitor-the-fleet.md](monitor-the-fleet.md)) |
+| `pr-preflight` | `pyforge-guild` | Everything a non-recipe PR actually gates on, in one local run |
 
 ## Cross-channel package intelligence (Atlas + vulnerability DB)
 
@@ -79,9 +113,9 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 |------|--------------|
 | `health-check` | Full diagnostic on the dev env (Docker, gh, OSV API, scripts) |
 | `bootstrap-data` | One-time / periodic full atlas refresh + mapping + CVE + vdb (30-45 min cold, 5-10 min warm) |
-| `verify-env` | Confirms the shell is inside the `local-recipes` pixi env and the `# default-env:` directive is intact |
-| `bmad-groundtruth` | Live factory facts as JSON (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) |
-| `bmad-drift-check` | Artifact-vs-live drift report (pins, counts, stale rules, archive hygiene, baseline) |
+| `verify-env` | Confirms the shell is inside the `local-recipes` pixi env and the `# default-env:` directive is intact (`local-recipes` only) |
+| `bmad-groundtruth` | Live factory facts as JSON (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) — also in `pyforge-guild` |
+| `bmad-drift-check` | Artifact-vs-live drift report (pins, counts, stale rules, archive hygiene, baseline) — also in `pyforge-guild` |
 | `update-cve-db` | Refresh local OSV CVE database |
 | `update-mapping-cache` | Refresh PyPI ↔ conda name mapping cache |
 | `sync-upstream-conda-forge` | Rebase fork onto `conda-forge/staged-recipes` |

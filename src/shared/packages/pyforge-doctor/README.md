@@ -1,5 +1,7 @@
 # pyforge-doctor
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Pre-flight + fleet-watch diagnostics CLI (`doctor check` / `doctor monitor` /
 `doctor diagnose`) consolidating [`pyforge-warden`](../pyforge-warden) +
 `cf_atlas` signals into one schema-validated `DoctorReport` envelope; findings

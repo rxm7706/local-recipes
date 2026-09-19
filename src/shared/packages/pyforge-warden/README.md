@@ -1,5 +1,7 @@
 # pyforge-warden
 
+General documentation (architecture, operations, how-tos): docs/MAP.md at the repository root.
+
 Unified dependency-hygiene + vulnerability scanner that orchestrates
 [`deptry`](https://deptry.com/) (unused / missing / transitive deps) and
 Google's [`osv-scanner`](https://github.com/google/osv-scanner) (known CVEs)

@@ -137,6 +137,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.CAPABILITY_LEDGER: "capability_ledger.py",  # Story 55.2
     Source.CHAIN_SPRAWL: "one_chain.py",  # Story 25.1 (spec-one-chain-per-station CAP-2)
     Source.FR_WITHOUT_CAP: "one_chain.py",  # Story 25.2 (spec-one-chain-per-station CAP-5)
+    Source.DOCS_MAP_HYGIENE: "docs_map_hygiene.py",  # Story 30.1 (spec-pyforge-doctor CAP-83)
     Source.DOCS_SHELF_OCCUPANCY: "docs_shelf.py",  # Story 23.7 (spec-pyforge-doctor CAP-54)
 }
 
