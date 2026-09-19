@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
@@ -305,9 +306,13 @@ def _dispatch_journal_last_fact(facts: DispatchJournalFacts) -> datetime | None:
 def _loop_journal_last_fact(text: str) -> datetime | None:
     """The latest epoch ``ts`` among a bmad-loop ``journal.jsonl``'s lines
     -- that file's own append-only shape (each line an object with a float
-    ``ts``). A malformed line is skipped, never fatal; an empty or entirely
-    unparseable journal reports ``None`` rather than a fabricated time."""
-    last_ts: float | None = None
+    ``ts``). A malformed line is skipped, never fatal -- including a
+    non-finite ``ts`` (``NaN``/``Infinity`` parse fine as JSON floats but
+    crash ``datetime.fromtimestamp``). Tracks the true maximum rather than
+    the last-seen line, so an out-of-order journal still reports its real
+    latest fact. An empty or entirely unparseable journal reports ``None``
+    rather than a fabricated time."""
+    max_ts: float | None = None
     for line in text.splitlines():
         line = line.strip()
         if not line:
@@ -317,9 +322,10 @@ def _loop_journal_last_fact(text: str) -> datetime | None:
         except json.JSONDecodeError:
             continue
         ts = entry.get("ts") if isinstance(entry, dict) else None
-        if isinstance(ts, (int, float)) and not isinstance(ts, bool):
-            last_ts = float(ts)
-    return datetime.fromtimestamp(last_ts, tz=timezone.utc) if last_ts is not None else None
+        if isinstance(ts, (int, float)) and not isinstance(ts, bool) and math.isfinite(ts):
+            if max_ts is None or ts > max_ts:
+                max_ts = float(ts)
+    return datetime.fromtimestamp(max_ts, tz=timezone.utc) if max_ts is not None else None
 
 
 def _filter_prs(rows: Sequence[Mapping[str, Any]], slug: str) -> list[dict[str, Any]]:
@@ -509,6 +515,7 @@ def _user_action(
     overall: str,
     stale_dispatch: str | None,
     home_state: str | None,
+    stale_loop: str | None = None,
 ) -> str:
     parts: list[str] = []
     if status.get("paused_stage") == "escalation" or overall in {"paused", "escalated"}:
@@ -520,6 +527,11 @@ def _user_action(
         parts.append(
             f"stale unrelated dispatch record {stale_dispatch!r} was present and ignored "
             "(per-story detail is from bmad-loop status only)"
+        )
+    if stale_loop:
+        parts.append(
+            f"loop run {stale_loop!r} is paused/escalated but was outranked by a newer "
+            "dispatch run -- operator attention still needed"
         )
     if home_state:
         parts.append(f"supervisor liveness (marshal status homes[0].state): {home_state}")
@@ -671,7 +683,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         # Story 51.6: reuse cli/dispatch.py's own run-dir/journal readers --
         # imported lazily, mirroring cli/status.py::_merge_dispatch_overlay's
         # identical local-import precedent for the same module.
-        from ..adapters.fs_local import LocalFs
+        from ..adapters.fs_local import FsError, LocalFs
         from .dispatch import gather_dispatch_journal_facts, iter_dispatch_run_dirs
 
         run_dir = next(
@@ -680,7 +692,13 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         )
         if run_dir is None:
             return None
-        facts = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+        try:
+            facts = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+        except FsError:
+            # Same fail-safe contract as loop_last_fact's `except OSError:
+            # return None` above -- an unreadable journal (permission
+            # denied, corrupt encoding) is never fatal to `marshal watch`.
+            return None
         return _dispatch_journal_last_fact(facts)
 
     return WatchPorts(
