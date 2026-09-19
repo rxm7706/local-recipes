@@ -506,7 +506,7 @@
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
-   "docs/MAP.md": "5b7597ab37e5154526df463ee2d64cfd574068be",
+   "docs/MAP.md": "d97f288ed0ab8e8710623bbd122e57aded9fc981",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
    "docs/explanation/enterprise-deployment.md": "2420ed95fc9800c928f2345714e13980965ca95e",
@@ -681,7 +681,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "079003af09c8b00f8128921c6094b69c7381ab6d"
+  "memlog": "8396bac99b44f8b53ecbcdc9102d6e774c4d1558"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2369,7 +2369,7 @@
    "presentations/six-quarter-roadmap/project/_ds/modernist-fbc1d6c8-b35f-4df6-9044-a64d2675427b/readme.md": "1082b4d77ebc2522d9b4f42d1bb7ce011efe7b63",
    "presentations/six-quarter-roadmap/project/_ds/modernist-fbc1d6c8-b35f-4df6-9044-a64d2675427b/styles.css": "a303340a2f90ffab8c7b906e419fe302af62ab3d",
    "presentations/six-quarter-roadmap/project/deck-stage.js": "dad2ee7c2e2922c4dc9b5e151ce7f45b4680e2eb",
-   "presentations/six-quarter-roadmap/project/github.md": "e8f2115f92e5d858a426f4a0b374810ef0bd13a1",
+   "presentations/six-quarter-roadmap/project/github.md": "dfa71060201b0fd1905f93b3485c4e51d2a72535",
    "presentations/six-quarter-roadmap/project/support.js": "2e38395c4a4ac9dd45b360554b9b99ba5a509250",
    "presentations/unity-data-stack/.gitignore": "025335f219a16bba8d557392b778c394782c01d4",
    "presentations/unity-data-stack/README.md": "ad81055b8ed1797bc387680e747c5474ecbf251b",
@@ -2593,7 +2593,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "1f2ad46642d05c9948011e2d86a584332ef58c6c"
+  "memlog": "837903beddf7445c52d76139757809ce2b218672"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
@@ -3398,7 +3398,7 @@
    ".cursor/rules/bmad-build-auto.mdc": "9ddb55d39d327e20e2aea73512410064c065c08c",
    ".cursor/rules/bmad-build.mdc": "6425c633bd14353c56d0d6565b9edf5825ecbf8f",
    "_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json": "145f927a95dae989ece5f1b06dda05c9bacacc39",
-   "docs/dashboard/README.md": "6638bf46f8135d77ace5628a7ef482cad48441a9",
+   "docs/dashboard/README.md": "53d4c36dd800eb49cec9d13bb512de97bef5c987",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/api/deploy-viz-metadata": "d1d2447dda80afe6b86726adcff01310786474d2",
@@ -4009,7 +4009,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "80fdcfb9fd2fca2be7f9eeffa89b43dc880b1579",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "ae7b72364261280902f033f70f5f4f64b6908ca0"
+  "memlog": "e034ab8f4c4d2f3aed5f700431c6234badfbc193"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
