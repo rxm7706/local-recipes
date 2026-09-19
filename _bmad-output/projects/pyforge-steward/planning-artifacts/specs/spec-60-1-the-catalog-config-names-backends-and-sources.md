@@ -29,6 +29,13 @@ deferred:
     location: >-
       .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md:90
     severity: low
+  - summary: >-
+      The BMAD installer resolves the catalog directory but installs nothing from it: `bmad-method install --custom-source <catalog>` (6.12.0, `--yes`) reports "Local source resolved" then "Found 0 modules", because discovery mode installs only module trees inside the source (a plugin dir with `module.yaml`) and does not follow a plugin's `github` source; the v1 rows are all github pointers.
+    evidence: |-
+      Verified live 2026-09-19 in a scratch directory (`/tmp/bmad-cs-test`): the real catalog → "Found 0 modules", only core installed; a probe marketplace with one `./plugins/probe-mod` (SKILL.md, no `module.yaml`) and one github-object entry → also "Found 0 modules". Claude Code's marketplace resolution (github/url plugin sources) is the documented form and is unaffected. Closure: Story 60.3's snapshot vendors each listed module's tree under the catalog (upstream layout `skills/module.yaml`, e.g. bmad-builder) so discovery finds them; until then `steward catalog pointers` prints the limitation beside the `--custom-source` line and each row's `repository`/`install_hint` is the install path.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py (CatalogEngine.pointers → installer_note); src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json
+    severity: medium
 declared_low_risk: false
 baseline_revision: 'f843ba9137758782c8b626f3708b00716c58166a'
 ---
