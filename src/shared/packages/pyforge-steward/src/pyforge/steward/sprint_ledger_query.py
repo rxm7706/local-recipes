@@ -915,28 +915,10 @@ class SprintLedgerQueryEngine:
 
 def sync_to_postgres(result: QueryResult, db_connection_url: Optional[str] = None) -> Dict[str, Any]:
     """Sync Work Passports identity records to PostgreSQL database / Django ORM."""
-    synced_records = []
     try:
-        from pyforge.steward.dashboard.models import WorkPassport
-        from django.db import transaction
-
-        with transaction.atomic():
-            for s in result.stories:
-                obj, created = WorkPassport.objects.update_or_create(
-                    passport_id=s.passport_id,
-                    defaults={
-                        "story_id": s.story_id,
-                        "station": s.station,
-                        "epic_id": s.epic_id,
-                        "title": s.title,
-                        "status": s.status,
-                        "jira_key": s.jira_key,
-                        "github_item_id": s.github_item_id,
-                        "effort": s.effort,
-                    }
-                )
-                synced_records.append(obj.passport_id)
-        return {"status": "success", "synced_count": len(synced_records), "method": "django-orm"}
+        import importlib
+        sync_module = importlib.import_module("pyforge.steward.dashboard.passport_sync")
+        return sync_module.sync_work_passports_db(result.stories)
     except Exception as exc:
         # Fallback to JSON payload generation if Django DB is uninitialized
         return {

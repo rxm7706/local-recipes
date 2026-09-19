@@ -487,14 +487,17 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
 
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     documented = {
+        "admin.py",
         "apps.py",
         "asgi.py",
         "audit.py",
         "cache.py",
         "consumers.py",
         "models.py",
+        "passport_sync.py",
         "routing.py",
         "views.py",
+        "views_htmx.py",
     }
 
     actual: set[str] = set()
