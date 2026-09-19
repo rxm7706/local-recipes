@@ -5416,7 +5416,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py": "a971f6fd18e545bcd9279383ff93304f28695a2f",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "7e25068f778b0e5c294684b81816324fdc5da277",
    "src/shared/packages/pyforge-steward/tests/unit/test_cutover.py": "289953b1e9e892ed5a0d58ae0caba6b4c38c1423",
-   "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py": "f554c822efb8d614dbfa7e903a827c0ce679cd36",
+   "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py": "5230751a871978914e85cc7c0c93e667eca79003",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py": "f34121d38da67e52d6e28458cea986167008ef91",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_cache.py": "72056861b06b8e493c73c378d711d358f7d85b5d",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_declarations.py": "b5401bb806792e67dc62f7f6d8a307740efaeece",
