@@ -4683,3 +4683,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-61-2: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+
+- source_spec: `planning-artifacts/specs/spec-61-2-work-passport-and-core-schema.md`
+  summary: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+  evidence: Diff touches only `_bmad-output/**` and `src/shared/packages/**`, no `recipes/**`. CLAUDE.md / AGENTS.md require `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance` for any such PR. No PR exists yet from this single-story dev dispatch.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
+  origin: spec-deferred 69522e746566 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: done
+  verified: 2026-09-20 — resolved at landing: PR #1532 carried the `maintenance` label, applied by `dispatch_land.py` (`_MAINTENANCE_LABEL`) as every dispatch landing does; no code or spec defect (merged 03112ba2d7).
