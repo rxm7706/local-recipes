@@ -134,7 +134,9 @@ class GlassDuty:
         # Wrap the whole body in one outer try/except Exception as exc:  # noqa: BLE001 -- duty
         #   boundary -> _glass_result(False, {"message": f"glass failed: {exc}"}, f"glass failed: {exc}", as_json).
         # verb is None (bare): standup = compute_glass_reading(direction="inbound");
-        #   shipped = compute_glass_reading(direction="outbound"); payload =
+        #   shipped = compute_glass_reading(direction="inbound")  -- SAME reading, per the
+        #   2026-09-19 bad_spec correction: "shipped" sources from inbound, not outbound
+        #   (outbound belongs to Story 61.4); payload =
         #   {"standup": asdict(standup), "shipped": asdict(shipped)}; ok = _direction_ok(standup) and
         #   _direction_ok(shipped); plain = f"{_line('standup', standup)} | {_line('shipped', shipped)}"
         #   (a `_line` helper: "refused (message)" when status == "refused", else
@@ -171,18 +173,25 @@ No new model, no migration — this is a read-only query over the `CorridorLoad`
 shipped.
 
 **Views (edit existing `dashboard/views_htmx.py`, already django-lazy per its own docstring):**
-`standup_htmx_view(request)` (direction="inbound", label "Standup — any news from the vendor?") and
-`shipped_htmx_view(request)` (direction="outbound", label "Shipped"), both calling
-`glass.compute_glass_reading` and a shared `_render_glass_fragment(reading, title, dom_id) -> str`
-helper (pure string-building, `html.escape` on `waybill`/`loaded_at`/`message` — `waybill` is
-caller-supplied free text per 61.1, same escaping discipline `backlog_htmx_view` already applies to
-every interpolated field) that renders a state badge (fresh/stale/failed green/amber/red,
-`refused`/`unborn` grey — mirror `backlog_htmx_view`'s inline `badge_cls` dict idiom) plus the cited
-waybill and `loaded_at`. Each view wraps the fragment in `HttpResponse(fragment,
-content_type="text/html")` with `response["Cache-Control"] = "no-store"` (django imported lazily
-inside each view function, matching this file's existing pattern — no module-level django import
-added). No new routing: this package ships no `urls.py` (AD-1); an adopter wires these in
-externally, same as `backlog_htmx_view` today.
+`standup_htmx_view(request)` and `shipped_htmx_view(request)` **both** call
+`glass.compute_glass_reading(direction="inbound")` — per the 2026-09-19 Spec Change Log amendment,
+"shipped" reads the SAME inbound corridor reading as "standup", not `direction="outbound"`
+(`docs/dreams/work-passports-dated-extracts.md:45`: "Testers pull a shipped shelf from the last
+**inbound** extract"; `direction="outbound"` belongs exclusively to Story 61.4's distinct "signed
+outbound slice"). The two views differ only in label/framing, not in data source: `standup_htmx_view`
+labels the fragment "Standup — any news from the vendor?" (a process-facing status), `shipped_htmx_view`
+labels it "Shipped — what testers can currently rely on" (a testers-facing framing of the identical
+as-of fact). Both call a shared `_render_glass_fragment(reading, title, dom_id) -> str` helper (pure
+string-building, `html.escape` on `waybill`/`loaded_at`/`message` — `waybill` is caller-supplied free
+text per 61.1, same escaping discipline `backlog_htmx_view` already applies to every interpolated
+field) that renders a state badge (fresh/stale/failed green/amber/red, `refused`/`unborn` grey —
+mirror `backlog_htmx_view`'s inline `badge_cls` dict idiom) plus the cited waybill and `loaded_at`.
+Each view wraps the fragment in `HttpResponse(fragment, content_type="text/html")` with
+`response["Cache-Control"] = "no-store"` (django imported lazily inside each view function, matching
+this file's existing pattern — no module-level django import added). No new routing: this package
+ships no `urls.py` (AD-1); an adopter wires these in externally, same as `backlog_htmx_view` today.
+`GlassDuty`'s bare invocation follows the same correction: its "shipped" entry also calls
+`compute_glass_reading(direction="inbound")`, not `"outbound"`.
 
 **CLI wiring (edit existing `cli.py`):**
 - `DUTIES` tuple (currently 22, ending `..., "load", "passport"`): append `"glass"` (23rd duty).
@@ -453,15 +462,19 @@ inbound reading"). Re-derive `standup_htmx_view`/`shipped_htmx_view` and their t
 
 ## Design Notes
 
-- **Two views, one glass, one shared function — "do not invent a second standup source of truth."**
-  `standup` (inbound: "any news FROM the vendor?") and `shipped` (outbound: what WE have sent) are
-  read as the two directions of the *same* `CorridorLoad` idempotency record 61.1 already shipped,
-  through one shared `compute_glass_reading(direction=...)` — neither view (nor any future one)
-  computes freshness itself. `spec-work-passports-dated-extracts CAP-3`'s own success text
-  ("shipped-from-last-inbound; standup cites a...") and the companion doc's Given/When/Then state
-  the freshness rule generically (not per-direction), which is what makes one shared function the
-  natural reading rather than two independently hand-rolled ones — the reading this story's own
-  "Never: do not invent a second standup source of truth" boundary is written to prevent.
+- **Two views, one glass, ONE reading — "do not invent a second standup source of truth."**
+  **Corrected 2026-09-19 (bad_spec, review pass 1):** `standup` and `shipped` are NOT two
+  directions of the corridor — both read `compute_glass_reading(direction="inbound")`, the exact
+  same reading. The Dream (`docs/dreams/work-passports-dated-extracts.md:45`) states "Testers pull
+  a shipped shelf from the last **inbound** extract," and `spec-pyforge-steward CAP-141`'s own
+  success text ("testers see shipped-from-last-inbound") sources "shipped" from inbound too;
+  `direction="outbound"` belongs exclusively to Story 61.4's distinct, gated "signed outbound
+  slice" (`spec-work-passports-dated-extracts CAP-4`) and must not be reused here. The two views
+  differ only in label/framing for two audiences (a process-facing "any news from the vendor?"
+  status vs. a testers-facing "what can I currently rely on?" shelf), never in data source or
+  computation — neither view (nor any future one) computes freshness itself. This is what "do not
+  invent a second standup source of truth" actually protects: not just "don't duplicate storage,"
+  but "don't let two views silently diverge on what they're even reading."
 - **"Empty" is a zero-byte-file check, not content parsing.** `corridor.py`'s `load_extract` was
   already shipped (61.1) and re-confirmed (61.2) as deliberately content-blind — it hashes the whole
   file and stops there, with "no per-row hook... to extend." Extending it to parse rows would cross
