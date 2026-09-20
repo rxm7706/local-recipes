@@ -9,6 +9,7 @@ from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
+    blocked_twin_promotion_text,
     ledger_status_precedence,
     may_attempt_dispatch_landing,
     merge_subject_is_marshal_native,
@@ -952,3 +953,33 @@ def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(
     )
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
+
+
+# --------------------------------------------------------------------------
+# blocked_twin_promotion_text (Story 51.11, CAP-258)
+# --------------------------------------------------------------------------
+
+
+def test_blocked_twin_promotion_text_promotes_differing_primary() -> None:
+    worktree_text = "---\nstatus: blocked\n---\n"
+    promoted = blocked_twin_promotion_text(
+        primary_text="---\nstatus: in-progress\n---\n",
+        worktree_text=worktree_text,
+    )
+    assert promoted == worktree_text
+
+
+def test_blocked_twin_promotion_text_none_when_unreadable_primary() -> None:
+    assert (
+        blocked_twin_promotion_text(
+            primary_text=None, worktree_text="---\nstatus: blocked\n---\n"
+        )
+        is None
+    )
+
+
+def test_blocked_twin_promotion_text_none_when_already_matching() -> None:
+    text = "---\nstatus: blocked\n---\n"
+    assert (
+        blocked_twin_promotion_text(primary_text=text, worktree_text=text) is None
+    )
