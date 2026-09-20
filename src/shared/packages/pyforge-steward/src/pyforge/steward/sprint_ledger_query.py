@@ -28,6 +28,14 @@ Supports:
   a thin call into the `pyforge-steward[dashboard]` extra's `passport_sync`.
 - `get_runnable_backlog()` for Marshal's dispatch selection, using marshal's own
   dependency grammar (restated below) keyed by `(station, story_id)`.
+- Story 65.2 (CAP-150): every story carries a `next` field -- `done`, `running`,
+  `ready` (the same predicate `get_runnable_backlog()` uses), `waits on S-x.y[, …]`,
+  `blocked`, or `?` (the running fact was unavailable). `--ready`/`--running`
+  filter on it. The `running` fact comes from ONE `marshal watch --fleet --format
+  json` call per query, via `pyforge.core.process` -- never a `pyforge.marshal`
+  import, never a read of marshal's own journal. Unreachable marshal fails open:
+  every `next` that would read `running` reads `?` instead, with one warning; the
+  fact is this checkout's own (marshal's Tier-3 state is per clone).
 
 stdout carries payload only; every diagnostic this module emits goes to stderr.
 """
@@ -49,6 +57,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import yaml
+
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 # ── Repo-root resolution (mirrors `provision.py`'s walk-up precedent, keyed on
 # `scripts/bmad-loop-worktree` -- the one marker path that exists exactly once
@@ -222,6 +232,11 @@ class WorkPassportItem:
     fr_ad: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    #: Story 65.2 (CAP-150): `done` / `running` / `ready` / `waits on S-x.y[, …]`
+    #: / `blocked` / `?`. Set by `SprintLedgerQueryEngine.query()` for every
+    #: loaded story -- `""` only ever appears on a `WorkPassportItem` built
+    #: directly (e.g. a test fixture), never on one a query returned.
+    next: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -256,6 +271,12 @@ class StationProgress:
     ready: int = 0
     other: int = 0
     completion_pct: float = 0.0
+    #: Story 65.2 (CAP-150): counts by the COMPUTED `next` field, distinct from
+    #: the `ready` bucket above (which counts the literal ledger status
+    #: `ready`). `next_ready` is `get_runnable_backlog()`'s predicate;
+    #: `next_running` is a live dispatch/loop run confirmed via marshal.
+    next_ready: int = 0
+    next_running: int = 0
 
 
 @dataclass
@@ -274,6 +295,10 @@ class EstateSummary:
     total_ready: int = 0
     total_other: int = 0
     overall_completion_pct: float = 0.0
+    #: Story 65.2 (CAP-150): estate-wide sums of `StationProgress.next_ready` /
+    #: `next_running`.
+    total_next_ready: int = 0
+    total_next_running: int = 0
 
 
 @dataclass
@@ -461,6 +486,7 @@ class MarkdownFormatter(QueryFormatterPlugin):
                 gh_str = f" GH: `{s.github_item_id}`" if s.github_item_id else ""
                 lines.append(f"- {status_badge} `{s.station}` / Story `{s.story_id}`: **{s.title}**{jira_str}{gh_str}")
                 lines.append(f"  - Passport UUID: `{s.passport_id}`")
+                lines.append(f"  - Next: {s.next}")
                 if s.effort or s.deps or s.fr_ad:
                     meta_parts = []
                     if s.effort:
@@ -492,7 +518,8 @@ class SummaryFormatter(QueryFormatterPlugin):
         for st_name, st in sorted(s.stations.items()):
             lines.append(
                 f"  {st_name}: {st.total_stories} stories, done {st.done}, backlog {st.backlog}, "
-                f"blocked {st.blocked}, in-progress {st.in_progress}, optional {st.optional}"
+                f"blocked {st.blocked}, in-progress {st.in_progress}, optional {st.optional}, "
+                f"ready {st.next_ready}, running {st.next_running}"
             )
         return "\n".join(lines)
 
