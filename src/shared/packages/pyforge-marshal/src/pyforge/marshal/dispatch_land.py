@@ -278,48 +278,70 @@ def _reconcile_spec_surface_drift(
     Reads ``pyforge.doctor.sources.chain.gather_spec_surface`` install-free
     (this checkout's own files on ``sys.path``, never modified -- Boundaries:
     doctor's verdict is read-only here, and stays doctor's alone), mirroring
-    ``scripts/spec_surface_reconcile.py``'s own established pattern. Every
-    failure of this reconcile machinery itself (the doctor source tree
-    unreachable, the verdict crashing, ``VcsPort.changed_files`` failing, a
-    memlog append erroring on a locked/missing-frontmatter file, the scoped
-    stamp subprocess failing, or the reconcile commit failing to push) also
-    reports through ``MRS-DISP-048`` -- the same code, several triggering
-    shapes, one tier (AD-31's established reuse pattern; c.f.
-    ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``): none of them may reach
-    ``forge.merge_pr`` with the branch's own drift left unreconciled."""
+    ``scripts/spec_surface_reconcile.py``'s own established pattern.
+
+    Two families of failure, two tiers (AD-31's established reuse pattern;
+    c.f. ``MRS-DEPLOY-003``/``MRS-DEPLOY-024``): failing to even EVALUATE
+    drift (the doctor source tree unreachable, or the verdict crashing --
+    both should be unreachable in a real dispatch worktree, which is always
+    a full checkout, but are defended against here regardless) reports
+    through the same non-blocking ``MRS-DISP-047`` tier a successful
+    reconcile does, since blocking every landing on an environment gap this
+    story is not scoped to fix would be a worse outage than the ritual it
+    closes. Failing to safely APPLY a reconcile once drift is already known
+    (``VcsPort.changed_files`` failing to tell own from foreign, a memlog
+    append erroring on a locked/missing-frontmatter file, the scoped stamp
+    subprocess failing, or the reconcile commit failing to push) reports
+    through ``MRS-DISP-048`` and refuses: none of THESE may reach
+    ``forge.merge_pr`` with known, un-reconciled drift left behind."""
     try:
         doctor_src = worktree / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
         if str(doctor_src) not in sys.path:
             sys.path.insert(0, str(doctor_src))
         from pyforge.doctor.sources.chain import gather_spec_surface
     except ImportError as exc:
+        # Unlike the failures below, this fires before we know whether the
+        # branch left ANY drift behind at all -- a real dispatch worktree is
+        # always a full checkout with the doctor source tree in place, so
+        # this is an environmental/wiring gap, not a git fact about this
+        # landing. Blocking every landing on it would be a worse outage than
+        # the ritual this story closes, so it degrades to the same
+        # non-blocking MRS-DISP-047 tier as a successful reconcile (AD-31
+        # reuse) rather than refusing via MRS-DISP-048 -- visible, never
+        # silent, but never gating on an environment problem this story was
+        # not scoped to fix.
         return _SpecSurfaceReconcileOutcome(
             finding=Finding(
-                code="MRS-DISP-048",
-                severity=Severity.ERROR,
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
                 message=(
                     f"cannot reach the spec-surface verdict from {worktree}: "
-                    f"{exc} — refusing to land {key} without a drift reconcile"
+                    f"{exc} — landing {key} without a drift reconcile"
                 ),
             ),
-            refuse=True,
+            refuse=False,
         )
 
     try:
         surface_findings = gather_spec_surface(worktree)
     except Exception as exc:  # noqa: BLE001 -- a read-only judge's own crash
-        # must refuse the landing, never be swallowed into a silent merge.
+        # `gather_spec_surface` already wraps its own body in
+        # `degrade_on_exception` (converts an internal crash to a WARN
+        # finding rather than raising), so this is defense-in-depth for an
+        # exception escaping that boundary itself -- same "can't evaluate,
+        # don't know if there's drift" category as the ImportError above,
+        # so the same non-blocking MRS-DISP-047 tier applies.
         return _SpecSurfaceReconcileOutcome(
             finding=Finding(
-                code="MRS-DISP-048",
-                severity=Severity.ERROR,
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
                 message=(
                     f"spec-surface verdict crashed for {worktree}: "
-                    f"{exc.__class__.__name__}: {exc} — refusing to land "
-                    f"{key} without a drift reconcile"
+                    f"{exc.__class__.__name__}: {exc} — landing {key} "
+                    "without a drift reconcile"
                 ),
             ),
-            refuse=True,
+            refuse=False,
         )
 
     by_spec: dict[str, set[str]] = {}
