@@ -6849,6 +6849,7 @@ for exactly those Specs; a commit on the dispatch branch; `MRS-DISP-047` warn / 
 with foreign drift is refused with `MRS-DISP-048` naming the foreign paths; a session that reconciled itself produces no entry and no
 finding; `MRS-DISP-047` is journaled whenever the landing had to name paths
 **And** finalize ingests the run's deferrals and journals any refusal; never a bare `--write-baseline`; the loop path is untouched
+**Outcome (2026-09-20):** landed as PR #1554 (`51bf3e10d1`, `Merge pyforge-marshal/53-2 into main`) after the fleet reformat was merged in and three deferrals ingested (DW-FU-53-2/-2/-3); the touched-module coverage floor found `dispatch_supervisor/__main__` at 35% — landed behind a dated per-module exception (Story 53.3 retires it); tracked spec carries the triage log and Auto Run Result. Ledger row promoted by hand: the session wrote its tracked spec directly, so `dispatch_land_finalize` found no Tier-3 twin to promote from.
 
 ### Story 53.3: The supervisor entrypoint reaches the floor
 
