@@ -542,7 +542,6 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   - **intent:** UUID is identity; Jira keys and GitHub numbers are nicknames;
   - **success:** two extracts cannot merge by title; high-value first links
   - *2026-09-19:* Story 65.1 (PR #1507) shipped a `WorkPassport` Django model (minted UUID `passport_id`; `jira_key` / `github_item_id` as aliases), its admin and a flag-gated Postgres sync — a partial realization outside Story 61.2's declared surface (no `vendor_id`, not the existing join store, 61.1's corridor not landed). 61.2 remains the story of record and builds on it.
-  - *2026-09-19 (cont.):* Story 61.2 landed — `vendor_id` added to `WorkPassport` (nullable; internal-mint rows unaffected), migration `0004_workpassport_vendor_id`, `dashboard/passport_mint.py::record_vendor_passport` (always a fresh `uuid.uuid4()`, never a lookup-by-key — the identity rule), `passport.py::mint_vendor_passport`/`PassportDuty` (`steward passport mint`, the 22nd duty). CAP-140 fully realized.
 - **CAP-141 — as-of glass (standup and shipped)** ← spec-work-passports-dated-extracts CAP-3 (shipped 2026-09-15)
   - **intent:** vendor data on the existing Postgres app is dated; empty
   - **success:** testers see shipped-from-last-inbound; standup cites a
