@@ -140,6 +140,7 @@ _GLASS_BADGE_CLS = {
     "fresh": "background:#238636;color:#fff",
     "stale": "background:#9e6a03;color:#fff",
     "failed": "background:#da3633;color:#fff",
+    "unborn": "background:#484f58;color:#fff",
 }
 
 
@@ -147,7 +148,9 @@ def _render_glass_fragment(reading: GlassReading, title: str, dom_id: str) -> st
     """Shared renderer for `standup_htmx_view`/`shipped_htmx_view`: pure
     string-building, HTML-escaped (`waybill`/`loaded_at`/`message` are
     caller-supplied or free-text, same discipline `backlog_htmx_view` already
-    applies). `refused`/`unborn` fall through to the default grey badge.
+    applies). `unborn` gets its own distinct grey; `refused` (a genuinely
+    different situation -- the system itself couldn't answer, not just a
+    benign never-happened) falls through to the default grey badge.
     """
     esc = html.escape
     badge_cls = _GLASS_BADGE_CLS.get(reading.state or "", "background:#6e7681;color:#fff")

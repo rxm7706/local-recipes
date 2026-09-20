@@ -341,6 +341,7 @@ def test_glass_duty_bare_dashboard_extra_unavailable_is_not_ok_via_duty_layer(mo
     result = GlassDuty().run(build_parser().parse_args(["glass"]))
     assert result.ok is False
     assert result.details["standup"]["status"] == "refused"
+    assert result.details["shipped"]["status"] == "refused"
 
 
 def test_glass_duty_export_flag_off_by_default_names_the_flag():

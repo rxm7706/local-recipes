@@ -28,7 +28,7 @@ def _refused(direction: str, exc: BaseException) -> dict[str, Any]:
     }
 
 
-def read_latest_corridor_load(*, direction: str) -> Dict[str, Any]:
+def read_latest_corridor_load(*, direction: str) -> dict[str, Any]:
     """Return the most recent `CorridorLoad` row for `direction`, or a
     `found: False` payload when none has ever loaded.
 
