@@ -451,6 +451,27 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         encoding="utf-8"
     ), "the sanctioned lazy reach into corridor_load is expected to exist"
 
+    # Story 61.2's passport.py added a third sanctioned lazy reach, into
+    # dashboard/passport_mint.py — same shape, same narrower claim pinned.
+    passport_module = ast.parse((steward_dir / "passport.py").read_text(encoding="utf-8"))
+    passport_top_level: list[str] = []
+    for node in passport_module.body:
+        if isinstance(node, ast.Import):
+            passport_top_level += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            passport_top_level.append(node.module)
+    banned_passport_top_level = [
+        name for name in passport_top_level
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
+    ]
+    assert not banned_passport_top_level, (
+        f"passport.py imports {banned_passport_top_level} at module level -- the "
+        f"dashboard extra may only be reached lazily, inside mint_vendor_passport"
+    )
+    assert "pyforge.steward.dashboard.passport_mint" in (steward_dir / "passport.py").read_text(
+        encoding="utf-8"
+    ), "the sanctioned lazy reach into passport_mint is expected to exist"
+
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
     """Review pass 3: the guard above SKIPS everything under `dashboard/`, so
@@ -549,6 +570,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
         "consumers.py",
         "corridor_load.py",
         "models.py",
+        "passport_mint.py",
         "passport_sync.py",
         "routing.py",
         "views.py",
