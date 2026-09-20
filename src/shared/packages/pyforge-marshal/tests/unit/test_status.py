@@ -6431,3 +6431,106 @@ class TestLatestBmadLoopRunId:
         newer.mkdir()
         (newer / "state.json").write_text("{}", encoding="utf-8")
         assert status_cli._latest_bmad_loop_run_id(home) == "20260820-140536-988f"
+
+
+class TestDispatchOnlyCheckoutRows:
+    """Story 51.12 (spec-pyforge-marshal CAP-259): a checkout with NO
+    ``loop/<slug>`` worktree but a dispatch run in its own Tier-3 -- the
+    one-station-per-clone pattern (MRS-DISP-041) -- still yields a fleet row
+    for that station, carried by the dispatch overlay. Before this story the
+    worktree sweep produced no row, the overlay had nothing to land on, and
+    the marshal and steward clones reported ``homes: []`` while their
+    dispatch sessions ran (2026-09-20 00:47Z)."""
+
+    def test_dispatch_only_station_gets_a_row_from_its_tier3_run(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+        _write_dispatch_run_journal(
+            tmp_path,
+            "acme",
+            "acme-20260920T000000000Z-deadbeef",
+            harness_profile="claude",
+            layer_savings={},
+        )
+        # The real launch shape names the story on the intent entry
+        # (`gather_dispatch_journal_facts` reads `story_key` from it); the
+        # 46.5 fixture above writes only the outcome + a budget row.
+        journal = (
+            tmp_path
+            / "_bmad-output/projects/acme/implementation-artifacts/dispatch-runs"
+            / "acme-20260920T000000000Z-deadbeef"
+            / "journal.jsonl"
+        )
+        journal.write_text(
+            json.dumps(
+                {
+                    "id": {"writer_id": "test", "counter": 1},
+                    "ts": "2026-09-20T00:00:00.000Z",
+                    "run_id": "acme-20260920T000000000Z-deadbeef",
+                    "kind": "dispatch-launch",
+                    "phase": "intent",
+                    "payload": {"harness_profile": "claude", "story_key": "1.1"},
+                }
+            )
+            + "\n"
+            + journal.read_text(),
+            encoding="utf-8",
+        )
+        exit_code = status_cli.run_status(
+            _args(project="acme"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        homes = payload["data"]["homes"]
+        assert [h["slug"] for h in homes] == ["acme"]
+        assert homes[0]["dispatch_run_id"] == "acme-20260920T000000000Z-deadbeef"
+        assert homes[0]["branch"] == "loop/acme"
+        assert exit_code == 0
+
+    def test_dispatch_only_station_is_scoped_by_project_and_never_duplicates_a_loop_home(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        )
+        for slug in ("acme", "beta"):
+            _write_dispatch_run_journal(
+                tmp_path, slug, f"{slug}-run", harness_profile="claude", layer_savings={}
+            )
+        # Fleet sweep: the loop-home station appears once (overlaid, not
+        # duplicated by its own Tier-3 run); the dispatch-only sibling appears too.
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert sorted(h["slug"] for h in payload["data"]["homes"]) == ["acme", "beta"]
+        assert exit_code == 0
+        # `--project` still scopes a dispatch-only station like any other.
+        capsys.readouterr()
+        status_cli.run_status(
+            _args(project="beta"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert [h["slug"] for h in payload["data"]["homes"]] == ["beta"]
+
+    def test_checkout_without_projects_dir_yields_no_dispatch_only_rows(self, tmp_path):
+        assert status_cli._dispatch_only_slugs(tmp_path) == ()

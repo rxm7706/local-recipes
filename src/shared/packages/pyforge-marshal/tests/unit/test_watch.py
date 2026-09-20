@@ -794,7 +794,7 @@ from pyforge.marshal.core.model import Finding, Severity
 
 class _RecordingProcess:
     """A `ProcessPort` fake: `responses` maps the FIRST argv element that
-    identifies the command (`"list"`, `"status"`, `"pyforge.marshal"`,
+    identifies the command (`"list"`, `"status"`, the marshal status module,
     `"fetch"`, `"rev-parse"`, `"gh"`) to a `ProcessResult` or an exception."""
 
     def __init__(self, responses: dict[str, object]) -> None:
@@ -1113,14 +1113,43 @@ def test_default_ports_run_json_failures_become_loop_cli_errors(
 
 def test_default_ports_marshal_home_reads_homes_zero(tmp_path: Path):
     process = _RecordingProcess(
-        {"pyforge.marshal": _ok({"data": {"homes": [{"state": "running", "dispatch_run_id": "d1"}]}})}
+        {
+            watch_mod._MARSHAL_STATUS_MODULE: _ok(
+                {"data": {"homes": [{"state": "running", "dispatch_run_id": "d1"}]}}
+            )
+        }
     )
     ports = watch_mod._default_ports(process, tmp_path)
     assert ports.marshal_home("acme") == {"state": "running", "dispatch_run_id": "d1"}
     argv, cwd, _ = process.calls[0]
-    assert argv[:3] == [_sys.executable, "-m", "pyforge.marshal"]
+    # Story 51.10: the argv is asserted against the constant the probe itself
+    # uses, never a literal -- the pre-fix version of this test pinned the
+    # non-executable package name ("pyforge.marshal") against this same fake.
+    assert argv[:3] == [_sys.executable, "-m", watch_mod._MARSHAL_STATUS_MODULE]
     assert argv[3:] == ["status", "--project", "acme", "--format", "json"]
     assert cwd == tmp_path
+
+
+def test_marshal_status_module_is_executable_by_this_interpreter(tmp_path: Path):
+    """Story 51.10 (spec-pyforge-marshal CAP-257): the module the probe names
+    must be runnable as ``python -m <module>`` by the interpreter the probe
+    uses -- the fake-port tests above cannot see a wrong name, and from 51.6's
+    landing until 2026-09-20 the probe named the package ``pyforge.marshal``
+    (no ``__main__``), so every call raised ``ProcessError``, the probe read
+    ``None`` and ``marshal watch --fleet`` reported live dispatch runs as idle
+    stations. Runs the real module through the sanctioned process primitive;
+    ``--help`` is the cheapest argv that proves the module executes."""
+    from pyforge.core.process import PosixProcess
+
+    result = PosixProcess().run(
+        [_sys.executable, "-m", watch_mod._MARSHAL_STATUS_MODULE, "--help"],
+        cwd=tmp_path,
+        timeout_s=60.0,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "status" in result.stdout
+    # The package itself is NOT executable -- the exact shape of the bug.
+    assert watch_mod._MARSHAL_STATUS_MODULE != "pyforge.marshal"
 
 
 @pytest.mark.parametrize(
@@ -1135,7 +1164,9 @@ def test_default_ports_marshal_home_reads_homes_zero(tmp_path: Path):
     ids=["launch-failure", "non-json", "non-object", "no-homes", "junk-home"],
 )
 def test_default_ports_marshal_home_is_advisory_and_degrades_to_none(tmp_path: Path, response):
-    ports = watch_mod._default_ports(_RecordingProcess({"pyforge.marshal": response}), tmp_path)
+    ports = watch_mod._default_ports(
+        _RecordingProcess({watch_mod._MARSHAL_STATUS_MODULE: response}), tmp_path
+    )
     assert ports.marshal_home("acme") is None
 
 
@@ -1307,14 +1338,14 @@ def test_run_watch_uses_the_injected_process_for_default_ports(tmp_path: Path, m
     """No `ports=`: `run_watch` builds `_default_ports` over the injected
     `ProcessPort` -- proven by the recorded argv of the first call."""
     _fake_home(monkeypatch, tmp_path)  # no loop home -> list_runs returns {"runs": []}
-    process = _RecordingProcess({"pyforge.marshal": ProcessError("no marshal")})
+    process = _RecordingProcess({watch_mod._MARSHAL_STATUS_MODULE: ProcessError("no marshal")})
     rc = run_watch(
         _args(project="acme"), process=process, now=_NOW, cache_dir=tmp_path / "cache", repo=tmp_path
     )
     payload = _payload(capsys)
     assert rc == 4
     assert any(f["code"] == "MRS-WATCH-002" for f in payload["findings"])
-    assert process.calls[0][0][:3] == [_sys.executable, "-m", "pyforge.marshal"]
+    assert process.calls[0][0][:3] == [_sys.executable, "-m", watch_mod._MARSHAL_STATUS_MODULE]
 
 
 def test_pinned_text_report_renders_every_section_and_findings(tmp_path: Path, capsys):

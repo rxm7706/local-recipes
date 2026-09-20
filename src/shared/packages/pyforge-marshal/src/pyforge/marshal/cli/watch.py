@@ -43,6 +43,17 @@ _TERMINAL_STATUSES = frozenset({"finished", "complete", "completed", "stopped"})
 _STORY_HEADING = re.compile(r"^#{2,4}\s+Story\s+(\d+\.\d+)\b", re.MULTILINE)
 _CACHE_RELPATH = (".claude", "data", "marshal-run-watch")
 _WATCH_TIMEOUT_S = 90.0
+#: The module ``_default_ports.marshal_home`` executes as ``python -m <this>``
+#: to read a station's marshal home. It is the console script's own module
+#: (``[project.scripts] marshal = "pyforge.marshal.cli.main:main"``) -- NOT the
+#: package ``pyforge.marshal``, which has no ``__main__`` and so cannot be run.
+#: Story 51.10 (spec-pyforge-marshal CAP-257): from 51.6's landing until
+#: 2026-09-20 the probe named the package, every call raised ``ProcessError``,
+#: the probe degraded to ``None`` and ``_gather_station``'s dispatch-run
+#: detection never fired -- ``marshal watch --fleet`` read three live dispatch
+#: sessions as idle stations. ``test_watch.py`` executes this exact module
+#: against the real interpreter so the name can never silently rot again.
+_MARSHAL_STATUS_MODULE = "pyforge.marshal.cli.main"
 
 
 class LoopCliError(PyforgeError, RuntimeError):
@@ -594,7 +605,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
                 [
                     sys.executable,
                     "-m",
-                    "pyforge.marshal",
+                    _MARSHAL_STATUS_MODULE,
                     "status",
                     "--project",
                     slug,

@@ -6628,6 +6628,70 @@ story `done` on the next cycle and chains the next ready story with zero operato
 **And** a dirty or non-`main` primary is never moved (fixture), `_promote_sprint_ledger` gains no second writer, and a
 primary already at `origin/main` is byte-identical
 
+### Story 51.10: The watch's marshal-status probe is executable and proven against the real interpreter
+
+As a fleet operator asking `marshal watch --fleet` what is running,
+I want the probe that reads each station's marshal home to invoke a module this interpreter can actually execute, proven by a test that runs it,
+So that a live dispatch run is never reported as an idle station again.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-257 • realizes the CAP-254 / 51.6 detection that has been dead in production since it landed
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` (`_default_ports.marshal_home` — one module-level
+constant naming the console script's module `pyforge.marshal.cli.main`, used by the probe), `tests/unit/test_watch.py` (the
+fake-probe argv assertions read the constant; a new regression test executes `[sys.executable, "-m", <constant>, "--help"]`
+through `pyforge.core.process` and asserts exit 0). Hand-driven, same PR as the mint (operator ruling 2026-09-20 00:40Z:
+fix it, don't read journals around it).
+**Given** at 2026-09-20 00:38Z `marshal watch --fleet` reported all eight stations idle while doctor 26.1, steward 61.3 and marshal
+51.7 dispatch sessions were live, because `python -m pyforge.marshal status …` fails (`pyforge/marshal/__main__.py` does not
+exist) and the probe degrades to `None`; `test_default_ports_marshal_home_reads_homes_zero` asserted that exact argv against a fake
+**When** the probe names the executable module through one constant and a test runs that module for real
+**Then** `marshal watch --fleet` on that fleet names all three runs by `dispatch_run_id`, and the regression test fails on the
+old module name and passes on the new one
+**And** the probe remains advisory (`ProcessError` / non-JSON → `None`, existing degradation tests unchanged), no second subprocess
+implementation appears (spec-pyforge-core CAP-7), and no `pyforge/marshal/__main__.py` is minted to paper over the name
+**Outcome (2026-09-20):** done, hand-driven — see the tracked spec's Auto Run Result; the clone-side half became Story 51.12.
+
+### Story 51.11: A session that halts blocked with its verdict uncommitted is a blocked outcome, not an operator stop
+
+As a fleet operator reading a dispatch run's outcome,
+I want a session that halts on an intent gap and exits with its blocked spec still uncommitted to be recorded as `dispatch-blocked`,
+So that the block, its triage log and its saved attempt survive worktree teardown and show on the fleet picture instead of reading as an operator stop.
+
+**Type:** fix • **Effort:** M • **Deps:** S-51.4, S-51.7 • **FR/AD:** spec-pyforge-marshal CAP-258 • widens CAP-252's blocked detection from committed state to the working tree
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` (the exit classifier: read the
+worktree's working-tree copy of the tracked spec via `core/dispatch_harness_done.py::parse_spec_status` before deciding
+`external-operator-stop`; on `blocked` commit the spec + any `*-attempted-change*.patch` under the worktree's Tier-3 onto the dispatch
+branch, journal `dispatch-blocked`, preserve, complete `blocked`), `core/dispatch_completion.py`, `core/dispatch_landing.py`
+(twin promotion of a `blocked` tracked spec), tests with a fixture replaying doctor run `pyforge-doctor-20260919T233255320Z-8f2b958e`.
+**Given** doctor 26.1's session reverted its code, wrote `status: blocked` + an Auto Run Result into the tracked spec, saved its patch
+to the worktree's Tier-3, and exited without committing; the supervisor saw HEAD `678d409fc3` (two wip commits with real code),
+`session_alive: False`, wrote `dispatch-finalize ok:false` and `stop_reason: external-operator-stop`, no `dispatch-blocked` row
+**When** the classifier reads the working tree's tracked spec before calling an unexplained exit an operator stop
+**Then** the replay fixture yields `dispatch-blocked` (reason: intent gap) + completion verdict `blocked`, a branch commit carrying the
+blocked spec and the patch, and the primary's tracked twin at `status: blocked`
+**And** a session that dies with a clean working tree and no terminal spec status still reads `stopped_externally`; marshal 51.7's
+committed-halt path is byte-identical; the supervisor reads files, `git status` and the process — never the session's own output
+
+### Story 51.12: A dispatch-only checkout still has fleet rows
+
+As a fleet operator running one station per clone,
+I want `marshal status` — and so `marshal watch` — to report a station whose Tier-3 in this checkout carries a dispatch run even when no `loop/<slug>` worktree exists here,
+So that a live dispatch session in a dispatch-only clone is never reported as an absent or idle station.
+
+**Type:** fix • **Effort:** S • **Deps:** S-51.10 • **FR/AD:** spec-pyforge-marshal CAP-259 • the second half of the 2026-09-20 watch finding: with the probe fixed (51.10) the marshal and steward clones still returned `homes: []`
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py` (`run_status`'s fleet sweep gains `_dispatch_only_slugs(repo_root)`
+— every `_bmad-output/projects/<slug>/` with a dispatch run, via `cli/dispatch.py::latest_dispatch_run_dir`; a station not already in the
+loop-home fleet gets a `(slug, None)` entry, a `FleetHomeFacts(slug, branch="loop/<slug>")` placeholder — the Spec's "home with no run
+yet" row — and the existing `_merge_dispatch_overlay`; `_gather_failed_patches` is skipped for a `None` home), `tests/unit/test_status.py`
+(`TestDispatchOnlyCheckoutRows`). Hand-driven in the 51.10 PR.
+**Given** at 2026-09-20 00:47Z, with the 51.10 probe fix installed, `marshal status --project pyforge-marshal --format json` from `lr-m50`
+returned `homes: []` while marshal 51.7's dispatch session ran, because the fleet is built only from `loop/`-prefixed git worktrees
+**When** the sweep also admits stations discovered from this checkout's own Tier-3 dispatch runs, as placeholder rows the overlay fills
+**Then** the same command names run `pyforge-marshal-20260919T235245280Z-a215d473` with state `running`; the unit fixture (no worktrees,
+one Tier-3 run) yields one row carrying `dispatch_run_id`
+**And** a loop-home station is never duplicated by its own Tier-3 run, `--project` scopes the new rows, a checkout without
+`_bmad-output/projects/` yields none, and no second directory convention is introduced
+**Outcome (2026-09-20):** done, hand-driven in the 51.10 PR — see the tracked spec's Auto Run Result.
+
 ## Epic 52: The shared floor is enforced where the build happens (spec-pyforge-core CAP-8..9)
 
 Minted 2026-09-19 from the marshal Dream's "2026-09-18 (later)" item (8) — routed to `spec-pyforge-core` (hosted here, as
