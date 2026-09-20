@@ -6692,6 +6692,24 @@ one Tier-3 run) yields one row carrying `dispatch_run_id`
 `_bmad-output/projects/` yields none, and no second directory convention is introduced
 **Outcome (2026-09-20):** done, hand-driven in the 51.10 PR — see the tracked spec's Auto Run Result.
 
+### Story 51.13: The watch reads the dispatch verdict in the supervisor's own vocabulary
+
+As a fleet operator reading `marshal watch`,
+I want a running dispatch to read `running`, and only a completed, failed or externally-stopped one to read `finished`,
+So that the watch's state column is the supervisor's verdict and not a second, invented vocabulary.
+
+**Type:** fix • **Effort:** XS • **Deps:** S-51.10 • **FR/AD:** spec-pyforge-marshal CAP-260 • found the moment 51.10 made the probe return data
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` (`_snapshot_dispatch`'s `finished` predicate reads
+`core/dispatch_completion.py::DispatchSessionVerdict` — finished iff the verdict is a member other than `LIVE`), `tests/unit/test_watch.py`
+(dispatch-snapshot tests rewritten in the real vocabulary; a meta-test refuses any `dispatch_completion_verdict` literal that is not an enum member). Hand-driven.
+**Given** at 2026-09-20 01:25Z doctor 26.1's two-minute-old dispatch (`marshal status`: state `running`, `dispatch_completion_verdict: live`,
+`current_story: 26.1`) read `finished` in `marshal watch --fleet`, because `_snapshot_dispatch` treated any verdict outside `{"", "None", "pending",
+"in-progress"}` as terminal
+**When** the predicate is the enum: `live` (and absent/empty/unknown) is not finished; `completed`, `failed`, `stopped_externally` are
+**Then** the same row snapshots as status `running`, `finished: false`; the three live fleet runs read `running`
+**And** no watch test names a verdict outside `DispatchSessionVerdict`; `_session_completions` / `_currently_running` keep their reporting shape
+**Outcome (2026-09-20):** done, hand-driven — see the tracked spec's Auto Run Result.
+
 ## Epic 52: The shared floor is enforced where the build happens (spec-pyforge-core CAP-8..9)
 
 Minted 2026-09-19 from the marshal Dream's "2026-09-18 (later)" item (8) — routed to `spec-pyforge-core` (hosted here, as

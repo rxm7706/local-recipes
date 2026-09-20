@@ -232,7 +232,7 @@ def test_stale_dispatch_ignored_for_per_story_detail(tmp_path: Path, capsys):
             "state": "idle",
             "dispatch_run_id": "herald-OLD-DISPATCH",
             "current_story": "99.9",
-            "dispatch_completion_verdict": "passed",
+            "dispatch_completion_verdict": "completed",
         },
     )
     rc = _run(tmp_path, _args(project="pyforge-herald"), ports)
@@ -944,9 +944,9 @@ def test_changed_and_delta_lines_for_a_dispatch_snapshot():
     same = dict(prev)
     assert watch_mod._changed(prev, same) is False
     assert watch_mod._delta_lines(prev, same) == ["nothing changed"]
-    completed = dict(prev, dispatch_completion_verdict="passed")
+    completed = dict(prev, dispatch_completion_verdict="completed")
     assert watch_mod._changed(prev, completed) is True
-    assert "dispatch_completion_verdict None -> passed" in watch_mod._delta_lines(prev, completed)
+    assert "dispatch_completion_verdict None -> completed" in watch_mod._delta_lines(prev, completed)
     verified = dict(prev, dispatch_verification_verdict="green")
     assert watch_mod._changed(prev, verified) is True
     assert watch_mod._changed(prev, dict(prev, paused_reason="x")) is True
@@ -1001,19 +1001,19 @@ def test_delta_lines_for_a_loop_snapshot_cover_every_field():
 def test_session_completions_and_currently_running_for_dispatch():
     snap = {
         "pattern": "bmad-build-auto",
-        "dispatch_completion_verdict": "passed",
+        "dispatch_completion_verdict": "completed",
         "current_story": "11.1",
         "status": "finished",
     }
-    assert watch_mod._session_completions(snap, []) == ["11.1 -- completion passed"]
-    assert watch_mod._session_completions(dict(snap, dispatch_completion_verdict="pending"), []) == []
+    assert watch_mod._session_completions(snap, []) == ["11.1 -- completion completed"]
+    assert watch_mod._session_completions(dict(snap, dispatch_completion_verdict="live"), []) == []
     assert watch_mod._session_completions(
         dict(snap, current_story=None, dispatch_completion_verdict="failed"), []
     ) == ["dispatch -- completion failed"]
     assert watch_mod._currently_running(snap, []) == {
         "story": "11.1",
         "phase": "finished",
-        "verdict": "passed",
+        "verdict": "completed",
     }
     loop_rows = [{"key": "2.1", "phase": "ready"}, {"key": "2.2", "phase": "done"}]
     assert watch_mod._currently_running({"pattern": "bmad-loop"}, loop_rows) == {
@@ -1539,3 +1539,58 @@ def test_emit_suppresses_a_dead_stdout(tmp_path: Path, monkeypatch):
     rc = watch_mod._emit(_args(format="text"), {"scope": "station", "quiet": True}, findings)
     assert rc == 0
     assert suppressed == [True]
+
+
+# --- Story 51.13 (spec-pyforge-marshal CAP-260): the supervisor's own verdict vocabulary ---
+
+from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict as _DSV
+
+
+@pytest.mark.parametrize(
+    ("verdict", "terminal"),
+    [
+        (_DSV.LIVE.value, False),
+        (_DSV.COMPLETED.value, True),
+        (_DSV.FAILED.value, True),
+        (_DSV.STOPPED_EXTERNALLY.value, True),
+        (None, False),
+        ("", False),
+        ("not-a-verdict", False),
+    ],
+    ids=["live", "completed", "failed", "stopped_externally", "absent", "empty", "unknown"],
+)
+def test_dispatch_verdict_terminality_is_the_enum(verdict, terminal):
+    assert watch_mod._dispatch_verdict_is_terminal(verdict) is terminal
+
+
+def test_live_dispatch_row_snapshots_as_running_not_finished():
+    """The 2026-09-20 01:25Z shape: `marshal status` reports a running
+    session with `dispatch_completion_verdict: live`; the watch read it
+    `finished`."""
+    home = {
+        "state": "running",
+        "dispatch_run_id": "pyforge-doctor-20260920T011757605Z-329534a6",
+        "dispatch_completion_verdict": _DSV.LIVE.value,
+        "current_story": "26.1",
+    }
+    snap = watch_mod._snapshot_dispatch("pyforge-doctor", home, None, [])
+    assert snap["status"] == "running"
+    assert snap["finished"] is False
+    done = watch_mod._snapshot_dispatch(
+        "pyforge-doctor", dict(home, state="stopped", dispatch_completion_verdict=_DSV.COMPLETED.value), None, []
+    )
+    assert done["status"] == "finished" and done["finished"] is True
+
+
+def test_watch_tests_use_only_the_supervisor_verdict_vocabulary():
+    """Meta: every `dispatch_completion_verdict` literal in this file is a
+    `DispatchSessionVerdict` member -- the pre-51.13 tests asserted with
+    `passed`/`pending`, values the supervisor never emits, which is how the
+    wrong predicate stayed green."""
+    import re as _re
+    from pathlib import Path as _P
+
+    text = _P(__file__).read_text(encoding="utf-8")
+    literals = set(_re.findall(r'dispatch_completion_verdict["\']?\s*[:=]\s*["\']([^"\']*)["\']', text))
+    allowed = {m.value for m in _DSV}
+    assert literals <= allowed, sorted(literals - allowed)
