@@ -2,7 +2,7 @@
 title: '29.1: A per-Dream acknowledgement silences exactly one sibling hash, and the sibling coordinates are current'
 type: 'feature'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -109,4 +109,32 @@ _None — the pre-authored intent-contract needed no amendment; investigation co
   - Intent Alignment Auditor: descriptive report only (no discrete findings per its format) — confirmed the diff implements the literal, explicit reading of every I/O matrix row and every Always/Never constraint; its two identified "surface divergence" observations (row 2 vs row 3 archived-tag scope; the live-zero row's inherent two-tier verification split) are the same observations already triaged above as `false` under Blind Hunter's B5 and B9.
 
 Patches applied (2): the Dream outcome append and the YAML-coercion defensive fix, both verified live — `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` → 1864 passed, 1 skipped, exit 0 (was 1862 passed before the two new regression tests).
+
+## Auto Run Result
+
+- **Summary:** `sibling_dreams.py` now honours a per-Dream `sibling-acknowledged: <hash>` frontmatter
+  line — silent while it equals the sibling's current `content_hash` (whole-Dream, regardless of
+  which axis diverges), re-firing naming both hashes the moment it does not — and appends
+  `(archived)` to an unacknowledged, diverging, locally-`archived` Dream's message so the operator
+  sees the fold. `_SIBLING_OWNER` moved to `openteams-ai` (old owner kept in the docstring as
+  history); a new `_SiblingHTTPError` surfaces the real HTTP status in the
+  `sibling-dreams-unreachable` finding for a real `urllib.error.HTTPError` at either fetch site,
+  while every other transport failure still fails open exactly as before. All six
+  `DW-OPS-2026-09-19-6` Dreams carry their landing-day `sibling-acknowledged:` hash; `DW-OPS-2026-09-19-6`
+  is closed in the ledger. Review pass applied two small patches (YAML int/bool coercion for the
+  acknowledgement field; a Dream Realization-log outcome append).
+- **Files changed:**
+  - `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` — see Code Map.
+  - `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` — see Code Map; 10 new tests.
+  - `docs/dreams/{django-accelerator-framework,enterprise-data-models-and-apis,miniforge-installer,package-inventory-eligibility,pixi-container-image,reusable-cicd-workflows}.md` — one `sibling-acknowledged:` line each.
+  - `docs/dreams/pyforge-doctor.md` — outcome append on the proposing Realization-log entry (review patch).
+  - `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` — `DW-OPS-2026-09-19-6` closed.
+- **Review findings breakdown:** 10 findings across 4 layers (Blind Hunter 9, Edge Case Hunter 1, Verification Gap 0, Intent Alignment Auditor 0 discrete). 2 `low` patched (Dream outcome note; YAML numeric-coercion fix), 7 `false`/rejected (each refuted against the spec's own I/O matrix, Binding section, or this repo's established Auto-Run-Result convention — see Review Triage Log for each), 1 `defer` (pre-existing DW-ledger owner-attribution inaccuracy, not caused by this diff — recorded in frontmatter `deferred:`).
+- **Verification performed (exit codes read directly, 2026-09-20):**
+  - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` → 1864 passed, 1 skipped, exit 0.
+  - `test_sources_sibling_dreams.py` alone → 32 passed.
+  - `GH_TOKEN="$(gh auth token)" pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources sibling-dreams-drift` → exit 0, zero `sibling-dreams-drift` findings for the six acknowledged Dreams (live, against `openteams-ai/mgmt-wf-python-modernization`).
+- **Residual risks:** none rated `high`/`medium`. The acknowledgement's hash-only granularity (a sibling metadata-only change with an unchanged body would stay silenced under a stale-but-still-matching ack) is a known, spec-mandated tradeoff documented in Design Notes — not a residual defect. `sprint-status-ledger.yaml` still keys this story `backlog`; per the Binding section that transition is a landing-time step (`sprint-ledger-sync`), outside this session's scope.
+
+Follow-up review recommendation: **false** — this pass patched 0 `high` and 0 `medium` entries (2 `low` only), below the threshold for a recommended follow-up.
 
