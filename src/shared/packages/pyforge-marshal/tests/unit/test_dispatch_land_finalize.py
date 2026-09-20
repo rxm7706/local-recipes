@@ -5,9 +5,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
     _FINALIZE_RESYNC_KIND,
+    _run_deferred_work_intake,
     finalize_dispatch_land,
 )
 
@@ -312,3 +315,149 @@ def test_finalize_skips_resync_on_a_dirty_primary(
     assert entry["kind"] == _FINALIZE_RESYNC_KIND
     assert entry["phase"] == Phase.OBSERVATION
     assert entry["payload"]["resynced"] is False
+
+
+# Story 53.2 (spec-pyforge-marshal CAP-261b): `_run_deferred_work_intake`
+# promotes a landed story's `deferred:` entries via
+# `scripts/deferred_work_intake.py --fix` -- unit-level coverage of its own
+# three branches (clean, refused, could-not-launch), plus one integration
+# test proving `finalize_dispatch_land` actually wires its return value
+# into the SAME `findings` list that gates the function's own return code.
+
+
+class _FakeIntakeProcess:
+    def __init__(self, *, returncode: int = 0, stderr: str = "", stdout: str = "") -> None:
+        self.returncode = returncode
+        self.stderr = stderr
+        self.stdout = stdout
+        self.calls: list[tuple[list[str], Path]] = []
+
+    def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
+        return ProcessResult(returncode=self.returncode, stdout=self.stdout, stderr=self.stderr)
+
+
+class _RaisingIntakeProcess:
+    def run(self, tokens, *, cwd: Path):
+        raise ProcessError("deferred_work_intake.py could not be launched")
+
+
+def test_run_deferred_work_intake_clean_run_returns_none(tmp_path: Path) -> None:
+    process = _FakeIntakeProcess(returncode=0)
+    assert _run_deferred_work_intake(process, tmp_path, "pyforge-steward") is None
+    [argv], [cwd] = zip(*process.calls)
+    assert argv[-2:] == ["--project", "steward"]
+    assert "--fix" in argv
+    assert cwd == tmp_path
+
+
+def test_run_deferred_work_intake_refusal_returns_warn_finding(tmp_path: Path) -> None:
+    process = _FakeIntakeProcess(returncode=1, stderr="no resolvable location:")
+    finding = _run_deferred_work_intake(process, tmp_path, "pyforge-marshal")
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "marshal" in finding.message
+    assert "no resolvable location:" in finding.message
+
+
+def test_run_deferred_work_intake_process_error_returns_warn_finding(tmp_path: Path) -> None:
+    finding = _run_deferred_work_intake(_RaisingIntakeProcess(), tmp_path, "pyforge-doctor")
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "doctor" in finding.message
+
+
+def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_list(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Black-box proof that `_run_deferred_work_intake`'s return value
+    reaches the SAME `findings` list `finalize_dispatch_land` checks for a
+    blocking severity: force it to return an ERROR-severity finding and
+    confirm the whole finalize call goes non-zero because of it, exactly
+    as it would for any other blocking finding this function collects."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, root, project_slug):
+        seen["intake_args"] = (root, project_slug)
+        return Finding(code="MRS-DISP-047", severity=Severity.ERROR, message="forced for test")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 1
+    assert seen["intake_args"] == (tmp_path, "pyforge-steward")
+
+
+def test_finalize_stays_green_when_intake_returns_no_finding(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The common case: intake ran clean (or found nothing to promote) and
+    returned ``None`` -- finalize must not append anything for it and must
+    stay green."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, root, project_slug):
+        seen["called"] = True
+        return None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    assert seen["called"] is True
