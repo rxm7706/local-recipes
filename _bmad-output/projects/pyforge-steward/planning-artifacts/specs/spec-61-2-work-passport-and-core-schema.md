@@ -2,7 +2,7 @@
 title: '61.2: Work passport and core schema'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -142,7 +142,7 @@ passport with a vendor one).
 
 **Manual checks:**
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py src/shared/packages/pyforge-steward/tests/meta/test_invariants.py -q` -- expected: all pass, including `test_the_shipped_migration_matches_the_model` and `test_no_module_outside_dashboard_imports_dashboard_django_or_channels`.
-- `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli passport mint --vendor-id acme --jira-key PROJ-1` -- expected: exit 0, prints a minted `passport_id`.
+- `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli passport mint --vendor-id acme --jira-key PROJ-1` -- like `load inbound` (61.1), this verb needs a configured `DJANGO_SETTINGS_MODULE`, which a bare shell in this sandbox does not have; expected here is a clean refusal (`passport mint: DJANGO_SETTINGS_MODULE is unset...`, exit 1), never a raised `ImportError`/traceback -- confirmed identical to `load inbound`'s own behavior under the same bare invocation. The real ORM path (`status: minted`, a persisted row) is exercised and passes under the test suite's migrated in-memory SQLite database (`test_passport_mint.py`), which is where this duty is actually verified end-to-end.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` -- expected: `passport.py` and `dashboard/passport_mint.py` at or above the station's coverage floor.
 
 ## Note — 2026-09-19
