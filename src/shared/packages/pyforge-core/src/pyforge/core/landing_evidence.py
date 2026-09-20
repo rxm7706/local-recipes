@@ -407,10 +407,19 @@ def parse_recovery_commit_sha(commit_sha: str) -> StoryKeyRef | None:
 
 @dataclass(frozen=True)
 class LandingEvidenceMatch:
-    """A single classified landing-evidence hit."""
+    """A single classified landing-evidence hit.
+
+    ``branch_shape`` (Story 51.7/CAP-255) names which project-scoped branch
+    grammar the match's branch satisfied -- populated only for
+    ``GITHUB_PR_MERGE_SUBJECT`` (the one shape whose branch can equally
+    well belong to a mint, fallout or fix PR, never a real intent signal by
+    itself); ``None`` for every other shape, including when no branch was
+    involved at all.
+    """
 
     key: StoryKeyRef
     shape: LandingEvidenceShape
+    branch_shape: BranchDerivedShape | None = None
 
 
 def classify_merge_subject(
@@ -435,7 +444,14 @@ def classify_merge_subject(
     ):
         key = parser(subject)
         if key is not None:
-            return LandingEvidenceMatch(key=key, shape=shape)
+            branch_shape: BranchDerivedShape | None = None
+            if shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT:
+                gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
+                if gh_match is not None:
+                    branch_shape = _branch_derived_shape(
+                        gh_match.group("branch"), project_slug
+                    )
+            return LandingEvidenceMatch(key=key, shape=shape, branch_shape=branch_shape)
     return None
 
 

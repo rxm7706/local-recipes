@@ -53,9 +53,12 @@ yet"), so it produces nothing in either bucket.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pyforge.core.landing_evidence import (
+    BranchDerivedShape,
+    LandingEvidenceMatch,
     LandingEvidenceShape,
     StoryKeyRef,
     classify_branch_name,
@@ -470,6 +473,45 @@ def is_valid_spec_text(text: str | None) -> bool:
         return False
     frontmatter = text[3:end]
     return any(_STATUS_KEY_RE.match(line.strip()) for line in frontmatter.splitlines())
+
+
+# The `status:` VALUE, not merely the key `is_valid_spec_text` proves exists
+# (Story 51.7/CAP-255) -- an optionally quoted bare token, mirroring
+# `core/dispatch.py`'s own `_DIFFICULTY_RE` value-capture convention.
+_STATUS_VALUE_RE = re.compile(r"^status:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$")
+
+#: A `status: done` string, the one value `corroborated_merged_story_keys`
+#: treats as landing evidence.
+SPEC_STATUS_DONE = "done"
+
+
+def read_spec_status(text: str | None) -> str | None:
+    """The tracked spec's own ``status:`` frontmatter VALUE (Story 51.7/
+    CAP-255).
+
+    ``is_valid_spec_text`` above only proves the KEY exists;
+    ``corroborated_merged_story_keys`` needs the value itself to tell a
+    landing (``status: done``) apart from a mint, fallout or fix PR's spec
+    (``status: ready``/``backlog``/…). Banner-tolerant (``_skip_leading_
+    banner``, Story 51.8/CAP-256) for the same recovered/minted-spec shapes
+    ``is_valid_spec_text`` already tolerates. Returns ``None`` for missing
+    or empty text, a missing frontmatter fence, or no ``status:`` key at
+    all -- never raises, so a caller can treat "unreadable" and "no status"
+    identically: both fail closed, never corroborating a landing."""
+    if text is None or not text.strip():
+        return None
+    text = _skip_leading_banner(text)
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    frontmatter = text[3:end]
+    for line in frontmatter.splitlines():
+        match = _STATUS_VALUE_RE.match(line.strip())
+        if match is not None:
+            return match.group(1)
+    return None
 
 
 def classify_promotion_candidates(
