@@ -284,6 +284,32 @@ def test_authored_page_dead_reference_inside_ignore_marker_is_skipped(tmp_path: 
     assert finding.status == DoctorStatus.OK
 
 
+def test_dead_looking_reference_covered_by_gitignore_is_not_flagged(tmp_path: Path):
+    _init_repo(tmp_path)
+    pages = [_POINTER_PAGE, {
+        "path": "how-to/example.md",
+        "quadrant": "how-to",
+        "owner": "fleet",
+        "kind": "authored",
+    }]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    (tmp_path / ".gitignore").write_text(
+        "docs/generated-ignored.md\n", encoding="utf-8"
+    )
+    _write_authored_page(
+        tmp_path,
+        "how-to/example.md",
+        # Never written to disk, but covered by .gitignore -- a legitimately
+        # absent generated artifact, not a dead reference.
+        body="See `docs/generated-ignored.md` for detail.\n",
+    )
+    _commit_all(tmp_path, "seed with .gitignore rule (ignored path never created)")
+
+    finding = _only(docs_currency.gather(tmp_path))
+    assert finding.status == DoctorStatus.OK
+
+
 # --- skill-dir-hygiene --------------------------------------------------------
 
 

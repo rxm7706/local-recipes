@@ -72,5 +72,11 @@ This occurs if you create a standalone Dream/Spec pair that violates the 1:1 "on
 - **Fix:** Either fold the capability into an existing station's Spec, or add an exemption if it is truly cross-cutting (e.g., the testing kit). See [One-Chain Station Ops](one-chain-station-ops.md).
 
 ### Docs map hygiene (`docs-map-hygiene-check`)
-A page under `docs/tutorials`, `docs/how-to`, `docs/reference` or `docs/explanation` is not linked from `docs/MAP.md` (warn), or the map links a page under `docs/` that does not exist (fail).
+A page under `docs/tutorials`, `docs/how-to`, `docs/reference` or `docs/explanation` is not linked from `docs/MAP.md` (fail — promoted from warn by Story 30.2/CAP-84), or the map links a page under `docs/` that does not exist (fail).
 - **Fix:** Add the page to the right quadrant table in `docs/MAP.md`, or repoint/remove the dead link.
+
+### Docs currency (`docs-currency-check`)
+Three checks over `docs/map.yaml` (the registry) and `docs/MAP.md` (its render): `map-render` (the generated `## Page registry` section is stale against a fresh render of `docs/map.yaml`), `authored-page-stale` (a `kind: authored` page's own `sources:`/`verified:` frontmatter has fallen behind a named source's git last-touch, or a named source has no git history at all, or the page body cites a backticked skill/script/path token that no longer resolves), `skill-dir-hygiene` (a stray `README.md` inside a managed `bmad-*`/`pyforge-*`/`skf-*` skill directory). All three warn-only, fail-open.
+- **Fix (map-render):** run `pixi run -e pyforge-guild docs-map-render` to regenerate the section from `docs/map.yaml`.
+- **Fix (authored-page-stale):** after confirming the page's claims still hold against the named source's current content, bump its frontmatter `verified:` date; for a dead body reference, fix the token, or — when it is a deliberate historical citation — wrap it in `<!-- governance-currency:ignore-start (reason) --> ... <!-- governance-currency:ignore-end -->`.
+- **Fix (skill-dir-hygiene):** remove the stray file; nothing outside the Agent Skills layout belongs in a managed skill directory.
