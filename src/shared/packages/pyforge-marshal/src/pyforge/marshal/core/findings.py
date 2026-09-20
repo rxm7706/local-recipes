@@ -830,6 +830,43 @@ closing step, not a precondition of the write it follows), and the next
 ``sprint-ledger-sync --repair-feed`` run or ``dashboard-drift-check``'s
 own twin-ahead-of-feed detector still catches the gap.
 
+Story 53.2 ("the landing reconciles from git facts and runs intake",
+spec-pyforge-marshal CAP-261b) adds two more codes to ``dispatch_land.py``'s
+existing ``MRS-DISP-*`` area, closing the gap 53.1 left open: even a
+gated, told producer can still exit with drift on its OWN files, which
+today lands green and leaves ``main`` red until a human hand-writes the
+memlog entry, stamps the Spec, and runs ``deferred_work_intake`` -- the
+four fallout PRs of 2026-09-20 (#1533, #1537, #1544, #1546) were nothing
+but that ritual. Between verification and ``forge.merge_pr``, the landing
+now runs the doctor spec-surface verdict (``pyforge.doctor.sources.chain.
+gather_spec_surface``, read-only, never modified) over the branch's own
+``git diff``-derived changed governed paths. ``MRS-DISP-047`` names a
+Spec whose drift consists ENTIRELY of this branch's own changed paths: the
+landing appended one memlog event (via ``_bmad/scripts/memlog.py append``)
+naming the story key, run id, and every path, scoped-stamped exactly that
+Spec (``scripts/spec_surface_check.py --write-baseline --spec``, never a
+bare ``--write-baseline``), committed the reconcile onto the dispatch
+branch, and pushed again before merging. It classifies ``Verdict.WARN``,
+the same tier as ``MRS-DISP-046``: the reconcile succeeded and the merge
+proceeds, so this is visibility only (surfaced in ``marshal watch`` and
+``fleet-picture``'s ATTENTION rows), never a refusal. ``MRS-DISP-048``
+names a Spec whose drift includes AT LEAST ONE path this branch did NOT
+change -- foreign drift a scoped stamp would silently launder alongside
+the branch's own, since a stamp accepts that Spec's ENTIRE current
+file-hash snapshot. It also covers the surrounding reconcile machinery's
+own failure shapes (the doctor source tree unreachable from the worktree,
+``VcsPort.changed_files`` failing, a memlog append erroring on a
+locked/missing-frontmatter file, the scoped-stamp subprocess exiting
+non-zero, or the post-reconcile push failing) -- AD-31's own "same code,
+several triggering shapes, same tier" precedent, e.g. ``MRS-DEPLOY-003``/
+``MRS-DEPLOY-024``. ``MRS-DISP-048`` classifies ``Verdict.ERROR``, the
+same tier as ``MRS-DISP-044``: both fire immediately before
+``forge.merge_pr`` and both stop the land attempt cold, naming every
+foreign path (or the failure) rather than absorbing it. Neither code
+changes what a self-reconciled session does: a branch whose own memlog
+already names every changed path produces no entry, no stamp, and
+neither finding.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -1738,6 +1775,16 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # its baseline_revision does not match this run's own baseline --
         # advisory only, the exit still classifies as stopped_externally.
         "MRS-DISP-046",
+        # Story 53.2 (spec-pyforge-marshal CAP-261b): the landing reconciled
+        # spec-surface drift on this branch's own changed governed paths --
+        # memlog entries appended, exactly those Specs scoped-stamped, a
+        # commit pushed before merge. Visibility only, never a refusal.
+        "MRS-DISP-047",
+        # Story 53.2 (spec-pyforge-marshal CAP-261b): a Spec this branch's
+        # own changed paths co-govern also carries drift on a path the
+        # branch did not change -- foreign drift the landing refuses rather
+        # than silently launder into a scoped stamp.
+        "MRS-DISP-048",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
