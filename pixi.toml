@@ -828,6 +828,18 @@ pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
 headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
+# headroom-ai's `[proxy]` extra (needed for `headroom wrap claude`'s actual wire-compression
+# proxy, not just the CLI) declares these at runtime; found missing live 2026-09-20 when
+# `marshal factory dispatch`'s `claude` harness profile (which always declares a [wrapper], so
+# wire "auto" resolves enabled) crashed the whole dispatch in <2s with "No module named 'openai'"
+# before the harness session ever started. Pinned to the extra's own declared floors.
+openai = ">=2.14.0"
+orjson = ">=3.9.14"
+magika = ">=0.6.0"
+zstandard = ">=0.20.0"
+onnxruntime = ">=1.24.0"
+transformers = ">=5.5.0,<6.0"
+watchdog = ">=4.0.0"
 # Story 66.1 / 66.2 (spec-pyforge-steward CAP-153 / CAP-154, 2026-09-20): the lint / type gate and the
 # pre-commit set run from the session default, so `pixi run -e pyforge-guild ruff|ruff-format|mypy` is the
 # same invocation CI runs and `steward setup`'s hooks step can `pre-commit install` from here.
@@ -854,6 +866,9 @@ jsonschema = ">=4.26.0"
 # (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
 pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
 pytest-cov = ">=7.1.0"
+
+[feature.pyforge-guild.pypi-dependencies]
+sqlite-vec = ">=0.1.6"            # headroom-ai's [proxy] extra; not on conda-forge
 
 [feature.pyforge-guild.target.linux-64.dependencies]
 bmad-module-skill-forge = ">=2.1.0"  # Story 63.6 (spec-pyforge-steward CAP-152): `steward upgrade` re-applies local skill edits from the packaged skf source (release catalog `packaged_source`), and only the Guild env exists at runtime -- mirrors [feature.local-recipes.target.linux-64.dependencies]'s pin (SelfExplainML build is linux-64 only)

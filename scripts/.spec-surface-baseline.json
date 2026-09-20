@@ -3669,9 +3669,9 @@
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081",
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
-   "docs/reference/library-llms-full.md": "71c3402812faa1e2ecad27b05ac3df38f08ff517",
+   "docs/reference/library-llms-full.md": "e1939bb72079f487bd9573baf9a4edd8753aef63",
    "environment.yaml": "2ff33759670cfb763b1bc6e72e96f931b1cfcdc3",
-   "pixi.toml": "5782218f8e3d1fc9c5057525d3e49c7cd19c66b6",
+   "pixi.toml": "667bf9bfc84027d39f940bd692e6d547181ef029",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "77fa15c301ea17b4452638923a67c99811989f92",
@@ -4067,7 +4067,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "3cfc7206cad16b3e91aea18808da109a1ca9f028"
+  "memlog": "b81a3cb32346dd919dfd513253e17896121b1878"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -5361,7 +5361,7 @@
    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md": "002b2f409cd33910e6f784285b8fb10311b660a2",
    "docs/dreams/mcp-era-isolation.md": "08cb991e1ed22ad162f4fdaab93e5d3ef042f8d8",
    "docs/dreams/mcp-host-real-station-tools.md": "eac346ba0a7ddc94ef01280c258b4d061813474d",
-   "docs/reference/library-llms-full.md": "71c3402812faa1e2ecad27b05ac3df38f08ff517",
+   "docs/reference/library-llms-full.md": "e1939bb72079f487bd9573baf9a4edd8753aef63",
    "docs/reference/pixi-config-jfrog.example.toml": "d3d4af5b71406572d164c8ecddb27ab7fd0cc2a6",
    "evals/review-catches-planted-defect/README.md": "a8c03fa932199cc73f53f27a5f66ccfdd3ced217",
    "evals/review-catches-planted-defect/arms/clean.diff": "8a5abed77a0fc68cb9da84cd6476848cf46cf774",
@@ -5575,7 +5575,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "0234f9f1c32c32a2bc784ad028d3cb1cca523a30",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "b06cc85edeb5f0c9f924919c94d57b98849b0ccc"
   },
-  "memlog": "02babf471df1762afd2cbed6e088b7bf137e51a2"
+  "memlog": "a82d712c767c6f96ae4bf71c2c75f403779c5a3b"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
