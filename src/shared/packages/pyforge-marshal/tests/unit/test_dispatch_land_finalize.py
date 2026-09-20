@@ -576,3 +576,94 @@ def test_finalize_stays_green_when_intake_returns_no_finding(
 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
     assert seen["called"] is True
+
+
+def test_finalize_journals_the_intake_finding_into_the_resync_payload(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.2 review (I2): the intake finding's serialized form must
+    reach the ``_FINALIZE_RESYNC_KIND`` journal payload -- a WARN-severity
+    intake refusal never blocks the return code, so without this the
+    finding would be visible nowhere durable once it prints to stderr."""
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, fs, vcs, root, project_slug):
+        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message="forced for test")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["payload"]["deferred_work_intake_finding"] == {
+        "code": "MRS-DISP-047",
+        "severity": "warn",
+        "message": "forced for test",
+    }
+
+
+def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The common (no-op) case journals an explicit ``None``, not an
+    absent key -- so a reader never has to distinguish "never ran" from
+    "ran clean"."""
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        lambda process, fs, vcs, root, project_slug: None,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["payload"]["deferred_work_intake_finding"] is None
