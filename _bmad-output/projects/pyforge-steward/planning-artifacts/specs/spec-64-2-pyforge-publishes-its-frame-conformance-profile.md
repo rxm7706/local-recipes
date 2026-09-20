@@ -56,3 +56,15 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **And** upstream `validate_frame.py --check-profile` at the pinned SHA accepts it via `frame-upstream-check`
 **Status:** backlog
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `7d4b6ed6ba` (2026-09-16, "steward: open CAP-5 (pyforge-guild env) and CAP-6 (Frame draft re-grounding); land 64.1+64.2"). Ledger row `64-2-pyforge-publishes-its-frame-conformance-profile: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/intelligence-hub.md`, `docs/dreams/pyforge-steward.md`, `docs/foundry/frames/README.md`, `docs/foundry/frames/conformance-profile.yaml`, `docs/foundry/frames/pyforge.frame.md`, `docs/foundry/frames/stations/atlas.frame.md` (+11 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

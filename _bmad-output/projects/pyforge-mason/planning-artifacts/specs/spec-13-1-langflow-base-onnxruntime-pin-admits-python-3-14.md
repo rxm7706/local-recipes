@@ -2,7 +2,7 @@
 title: "langflow-base onnxruntime pin admits Python 3.14"
 type: "feature"
 created: "2026-09-02"
-status: "blocked"
+status: "done"
 updated: "2026-09-02"
 baseline_revision: "637f4158"
 review_loop_iteration: 0
@@ -147,3 +147,7 @@ pixi run -e pyforge-mason pyforge-mason-test
 - Feedstock maintainer PR not opened; AC requiring published PR number is incomplete.
 - Rule 2 CFE retro not run (deferred to closeout after green verification).
 - Document conversion round-trip not covered by script test (imports only).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `blocked` → `done` (ledger row `13-1-langflow-base-onnxruntime-pin-admits-python-3-14: done`).

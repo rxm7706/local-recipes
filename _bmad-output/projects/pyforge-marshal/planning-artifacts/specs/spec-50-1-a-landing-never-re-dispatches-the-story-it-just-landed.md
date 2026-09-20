@@ -2,7 +2,7 @@
 title: '50.1: A landing never re-dispatches the story it just landed'
 type: 'fix'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'ed367a47d8fb4e2da2275f1f0504e5084840d7c2'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -117,3 +117,17 @@ def is_advance_reason(reason: str) -> bool:
 
 **Manual checks:**
 - A fixture journal replaying herald's 2026-09-18 sequence (`fleet-drain-runs/…151925342Z-82ce96c8`) completes with the NEXT story `dispatched`, never the same story `blocked`; a genuine failed dispatch with no merged evidence still blocks (mutation test).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `a3037fa3fd` (2026-09-18, "Merge pyforge-marshal/50-1 into main"). Ledger row `50-1-a-landing-never-re-dispatches-the-story-it-just-landed: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-50-1-a-landing-never-re-dispatches-the-story-it-just-landed.md`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `50-1-a-landing-never-re-dispatches-the-story-it-just-landed: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -92,7 +92,7 @@
    "src/shared/packages/pyforge-atlas/.gitignore": "8b9e0d2cf2c060de6f13a5e80225b558449040d8",
    "src/shared/packages/pyforge-atlas/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
    "src/shared/packages/pyforge-atlas/AGENTS.md": "b4b057dd3738aeab02ee9623057b2826aa4ca6f8",
-   "src/shared/packages/pyforge-atlas/README.md": "8b196b705a4f4e910bc081592a7aa28fda24aec0",
+   "src/shared/packages/pyforge-atlas/README.md": "fec59f5d3f6cd5d2b7e0d2e5aabe58ea3cb47764",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "cc950947eea01299f83eb05b084fcabe2a0a3ad9",
    "src/shared/packages/pyforge-atlas/conf/base/curated_groups.json": "4edccaacc36b24c7e503ca8801547d640972e06a",
@@ -435,7 +435,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "ab6fff332758845117dc7c531b5bc8e8362b29d5"
+  "memlog": "7d866661dc756c3ac45a29680b463338f21b6229"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -715,7 +715,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "f2428ba64ecb4e43f52b0b851f1dde7cf2044613"
+  "memlog": "ddd36e478031ad5c7f6a8573dc79a61bed956e5b"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2632,7 +2632,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "58ecff9c8074dc7562b077afa3cfef00c01d720b"
+  "memlog": "cb935142005873dceba82e052ef36f483b0552e5"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
@@ -4064,7 +4064,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "80fdcfb9fd2fca2be7f9eeffa89b43dc880b1579",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "0cbec6fbdd4a4b6d9a68d77e8e38364be387b71c"
+  "memlog": "af499d46f86316ca366f3b5f1919085de73a5961"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -5081,7 +5081,7 @@
    "src/shared/packages/pyforge-mason/tests/unit/test_render.py": "d312702d1da3dd0b848414a7ab832d3172bf0d5d",
    "src/shared/packages/pyforge-mason/tests/unit/test_resolve.py": "61997133ccd61ea7b83652e81fc457632d6341fa"
   },
-  "memlog": "1fc031ecfcc5a28fc2018fe4f93e2d5e00a7175e"
+  "memlog": "1db052febc30e2a9d251e63920c0208c2ab706c6"
  },
  "pyforge-mason/spec-pyforge-mason-recipe-validator": {
   "files": {},
@@ -5155,7 +5155,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "b930ea93bcacb749aa861db73d57aa3262e02521",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "0efaf939105d070379ce53b64178277c9639e5b3"
+  "memlog": "4dcf02adb3dab011888a27b9113821be2f899237"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
@@ -5565,7 +5565,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "50efeb5a650cd8dc2855619e2df11787ce85fe8b"
+  "memlog": "6c7843550f308237fdf484508586872d6a9d9355"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -8865,7 +8865,7 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "e4e17ee14876306c9ca603ce84ddc1a38eae8722",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "453f54e0821d23843825505b3894e4481461a8d5"
   },
-  "memlog": "4885f6fc460ef932657e8443bc14308e4da3124d"
+  "memlog": "d5dec4189458a3980c2017219f3df9ad0da13332"
  },
  "pyforge-warden/spec-pyforge-warden-compliance-gates": {
   "files": {},

@@ -92,3 +92,16 @@ Checked specifically for: exception handling (`recommend_safe_upgrade` has zero 
 **Follow-up review recommendation: false** -- the field-name deviation is the one open item, and it's a documentation-sync note for a future pass, not a code defect; behavior is fully tested both at the pure-function and CLI-wiring layers.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ff89063c64` (2026-08-14, "mason: environment check review patches (Story 4.4, second pass)"); also `337506c1df` (2026-08-14, "mason: environment check (Story 4.4)"); also `37e1c54c2e` (2026-08-07, "doctor: sync sprint-status ledger — Epic 4 done (Stories 4.1-4.4)"). Ledger row `4-4-safe-upgrade-path-recommendation-fr-13: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `pixi.lock`, `src/shared/packages/pyforge-mason/pixi.toml`, `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/environment.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py`, `src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py`, `src/shared/packages/pyforge-mason/tests/unit/test_engines_condalock.py`, `src/shared/packages/pyforge-mason/tests/unit/test_errors.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

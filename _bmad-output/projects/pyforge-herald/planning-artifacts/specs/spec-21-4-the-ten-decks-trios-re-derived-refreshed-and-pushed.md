@@ -1,8 +1,8 @@
 ---
-title: 'The ten decks' trios re-derived, refreshed and pushed'
+title: 'The ten decks'' trios re-derived, refreshed and pushed'
 type: 'feature'
 created: '2026-09-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: ~
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -62,3 +62,17 @@ drafted, not necessarily the final implementation. For the actual landing record
 - Aggregation story applying 21-1, 21-2, 21-3 to full set
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `548919f73e` (2026-09-17, "Merge pull request #1404 from rxm7706/herald/21-4-status-and-outcome-note"); also `bce76a992b` (2026-09-17, "Merge pull request #1403 from rxm7706/herald/21-4-warden-push-readback"); also `48b64c84c2` (2026-09-17, "Merge pull request #1402 from rxm7706/herald/21-4-unifying-strategy-push-readback"). Ledger row `21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `21-4-the-ten-decks-trios-re-derived-refreshed-and-pushed: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

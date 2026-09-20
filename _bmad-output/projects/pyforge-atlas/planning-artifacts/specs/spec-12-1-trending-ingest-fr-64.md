@@ -2,7 +2,7 @@
 title: 'Trending ingest — GitHub-trending discovery pipeline (S-13.1, FR-64/CAP-1)'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 baseline_revision: '329b7eb19258dcd69387934c0840c82a07a62c3e'
 final_revision: 'e569cac396d1a6bb82c10f4f792f69a590077302'
 review_loop_iteration: 0
@@ -211,3 +211,6 @@ truncation, column-presence-only write validation, and non-positive-cadence
 misconfiguration. None block CAP-1's stated success criteria; all are pre-existing
 patterns or explicitly out-of-scope per the story's own Never-clause.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `12-1-trending-ingest-fr-64: done`).

@@ -10,7 +10,7 @@ project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-20"   # chain-currency cascade (arch→epics) after the 2026-09-20 docs-site research seed; no story minted. Prior 2026-09-18   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
+updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade (arch→epics) after the 2026-09-20 docs-site research seed; no story minted. Prior 2026-09-18   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -897,3 +897,13 @@ So that a deck sync never depends on the recipe factory's environment.
 **And** `pyforge-herald-test` green
 **Outcome (2026-09-20):** done, hand-driven in PR #1551 with steward 63.6 (the gate resolved in one landing) — see the tracked spec's Auto Run Result.
 
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*

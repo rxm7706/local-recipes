@@ -92,3 +92,16 @@ warnings: []
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 161 passed (122 pre-Epic-3 baseline + 39 new across all four Epic 3 stories, this story's own share is `test_provision_env.py`'s 13 tests).
 - **Live verification (real, not faked):** `pixi run --frozen -e pyforge-steward steward provision --env pyforge-steward` was run against the REAL repo-root `pixi.toml` and the REAL `pixi` binary — output: `provision --env: 'pyforge-steward' materialized (pixi install -e pyforge-steward)`, exit 0. Also run live: `steward provision --env not-a-real-env` (real error path) -- output named all 19 real environment names and exited 1, `pixi` never invoked (confirmed by the absence of any pixi solve/download output in the transcript).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `4d8bdb4c9e` (2026-08-07, "herald: Story 3.1 — herald deck status [<slug>]"); also `8344d21bd3` (2026-08-07, "steward: sync sprint-status ledger — Epic 3 done (Stories 3.1-3.4)"); also `98bb47f33d` (2026-08-07, "steward: Story 3.1 — any named pixi environment materializes with one command"). Ledger row `3-1-any-named-pixi-environment-materializes-with-one-command: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-3-1-herald-deck-status-slug.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/state.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_cli_status.py`, `src/shared/packages/pyforge-herald/tests/test_deck_status.py` (+2 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

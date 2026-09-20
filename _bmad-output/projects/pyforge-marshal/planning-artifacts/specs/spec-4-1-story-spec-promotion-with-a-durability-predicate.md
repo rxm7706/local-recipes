@@ -188,3 +188,16 @@ baseline_revision: '51d51597b0b71794cedda5d071dbde0645eef0d4'
 ## Post-Merge Finding (2026-08-06)
 
 **First real run against this repo (`marshal deploy promote`, invoked live to close out Epic 2) found a real filename-derivation bug.** `run_promote` computed the tracked-archive destination as a freshly-derived bare `spec-{render_filename_slug(story_key)}.md` (e.g. `spec-2-3.md`), discarding the Tier-3 source file's own descriptive title slug (`spec-2-3-frozen-surface-scope-check-narrowing-only.md`) — every prior promotion in this archive (Epic 3's 8 specs, promoted by hand) preserved the full title. Fixed by using `Path(spec_candidate.path).name` (the Tier-3 file's own filename) as the destination name instead of re-deriving one. `_already_promoted_keys`'s glob (checking both the bare and titled forms) was unaffected either way. Updated `test_promote_copies_and_commits_a_durable_unpromoted_spec` to assert the titled destination name. Caught before the mis-named commit was pushed anywhere — reset locally and re-run with the fix in place.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `88f2e3bf33` (2026-08-06, "Merge pull request #270 from rxm7706/marshal/4-1-story-spec-promotion"). Ledger row `4-1-story-spec-promotion-with-a-durability-predicate: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py` (+1 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

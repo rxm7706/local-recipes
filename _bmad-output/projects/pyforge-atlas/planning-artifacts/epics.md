@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-17"
+updated: "2026-09-20"
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2155,3 +2155,11 @@ measured by nothing. 1735 tests pass, 18 skipped, after the move.
 Also: `pyforge-atlas-test` now exists as the canonical pixi task name (CLAUDE.md documents
 `pyforge-<station>-test` as the fleet grammar, and atlas was the one station where that
 command did not resolve); `kedro-test` is retained as a delegating alias.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `spec-pyforge-atlas/.memlog.md` gained a 2026-09-20 event (the fleet
+consistency pass reconciled 56 tracked story specs' frontmatter against the sprint ledger and
+reconstructed missing Auto Run Results from git), which post-dated this artifact through the
+`spec→prd→arch→epics` cascade. It is bookkeeping, not a capability: no requirement, decision or
+story changes here. `updated:` bumped to record that the check ran.*

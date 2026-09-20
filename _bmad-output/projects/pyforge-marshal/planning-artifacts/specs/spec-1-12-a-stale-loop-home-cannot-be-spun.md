@@ -49,3 +49,16 @@ Type / Effort / Deps: feature / S / S-1.11.
 ## Source
 
 Contract recovered from `epics.md` Story 1.12 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `736a2af407` (2026-08-09, "fix(marshal 1.12): the currency check was inert — missing import, wrong port method"); also `7a52b6da13` (2026-08-09, "marshal 1.12: a stale loop home cannot be spun"). Ledger row `1-12-a-stale-loop-home-cannot-be-spun: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_ad11_write_boundary.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

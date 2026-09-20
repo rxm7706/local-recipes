@@ -126,3 +126,16 @@ only reaffirms it.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9f2bfd9057` (2026-09-07, "feat(warden): Story 11.2 -- tea-test-review is a warden advisory finding"); also `44ddfff455` (2026-08-21, "marshal: mark Story 11.2 done, promote its spec"); also `ea59db5c13` (2026-08-21, "marshal: Story 11.2 - PROJECTS.md index and artifact-symlink derivation"). Ledger row `11-2-automation-reliability: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/data/report-schema.json`, `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/models.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/report.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py`, `src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py`, `src/shared/packages/pyforge-warden/tests/conformance/test_doctor.py`, `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py`, `src/shared/packages/pyforge-warden/tests/unit/test_report.py`, `src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

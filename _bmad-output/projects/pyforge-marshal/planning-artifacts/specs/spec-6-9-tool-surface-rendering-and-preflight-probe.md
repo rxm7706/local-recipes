@@ -313,3 +313,16 @@ Dispatched with the diff file path only, no shared context.
 **Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e pyforge-marshal python3 -m pytest src/shared/packages/pyforge-marshal/tests -q` -- **3055 passed** (full suite).
 
 **Follow-up review recommendation (updated): false** -- narrow fix, covered by a dedicated regression test.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `5036ba6af6` (2026-08-07, "Merge pull request #304 from rxm7706/marshal-6-9-tool-surface"). Ledger row `6-9-tool-surface-rendering-and-preflight-probe: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

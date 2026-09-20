@@ -2,7 +2,7 @@
 title: 'Error taxonomy and exit-code contract'
 type: 'feature'
 created: '2026-07-30'
-status: in-review
+status: done
 baseline_revision: 'b9d28c704527c15c9cbdb259199f339e7ffa3dd9'
 final_revision: 'a889753d71c21d95a9e49e54fa1b337075f83b78'
 review_loop_iteration: 0
@@ -228,3 +228,16 @@ EX_SOFTWARE-derived `EXIT_INTERNAL = 70`, which predates and contradicts AD-7/FR
 **Commands:**
 - `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (existing + new tests).
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `713091c4a5` (2026-08-07, "herald: Story 1.3 — fallback transport adapter (AgentSdkTransport)"); also `d68187f4b3` (2026-07-31, "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone "); also `f93e838f83` (2026-07-31, "mason: recover Story 1.3 — error taxonomy and exit-code contract (review TIMED OUT, no ver"). Ledger row `1-3-error-taxonomy-and-exit-code-contract: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-1-3-fallback-transport-adapter.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `1-3-error-taxonomy-and-exit-code-contract: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

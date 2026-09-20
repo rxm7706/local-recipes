@@ -122,3 +122,16 @@ change what already wasn't gated.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8f8d7a0e9c` (2026-08-15, "Story 9.2: hygiene sweep across all eight stations (CAP-8)"); also `11634075b3` (2026-08-08, "herald: Story 9.2 + 9.3 + 9.5 — success CLI wired to claim storage"). Ledger row `9-2-implement-auto-extract-operator-review-gate: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py`, `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_models.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

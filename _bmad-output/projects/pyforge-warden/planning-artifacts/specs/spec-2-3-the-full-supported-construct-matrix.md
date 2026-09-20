@@ -2,7 +2,7 @@
 title: 'Story 2.3: The full supported-construct matrix (ratcheted)'
 type: 'feature'
 created: '2026-07-16'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -92,3 +92,17 @@ warnings: []
 **Commands:**
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior 1.x/2.x suites unchanged + new test files/fixtures green; sole-ownership/no-execution/socket-deny meta-guards stay green automatically for the modified `extract/` files.
 - Manual: `git diff --stat` shows zero changes to `verdict.py`, `interfaces.py`, `models.py`'s frozen enums, and to `Provenance`/`Component`'s field sets in `inventory.py`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f46f39fea5` (2026-08-07, "herald: Story 2.3 — authored-source pull (Marp sources)"); also `c16df8fe60` (2026-08-07, "scribe: Story 2.3 — fact supersession in the compiled graph"); also `b06cf1a166` (2026-08-07, "doctor: Story 2.3 — doctor monitor --fleet CLI wiring, default axis set, --json"). Ledger row `2-3-the-full-supported-construct-matrix: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `2-3-the-full-supported-construct-matrix: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

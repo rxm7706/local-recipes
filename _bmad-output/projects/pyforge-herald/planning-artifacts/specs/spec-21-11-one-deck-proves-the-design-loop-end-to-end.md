@@ -46,3 +46,16 @@ Surface: one deck's `project/` artifacts, its `README.md` ledger, `docs/specs/pr
 Deps: S-21.4.
 Ledger key: `21-11-one-deck-proves-the-design-loop-end-to-end`.
 Minted 2026-09-18 from `epics.md` (Intent + ACs only) so the filename matches CHAIN-STANDARD §5 (`spec-` + ledger key).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b8016a87e7` (2026-09-13, "herald: pull pyforge-unifying-strategy's Design-side visual pass (Story 21.11)"); also `2bb7bc58f5` (2026-09-10, "Wire capability-effect beside story-status-check (Story 21.11)."). Ledger row `21-11-one-deck-proves-the-design-loop-end-to-end: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/deck-inventory.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/.memlog.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `presentations/pyforge-unifying-strategy/README.md`, `presentations/pyforge-unifying-strategy/project/PyForge Story.dc.html`, `presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Executive Summary.dc.html`, `presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Infographic Deck.dc.html`, `presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy - Infographic.dc.html`, `presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic standalone.html`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

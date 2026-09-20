@@ -67,3 +67,16 @@ scan cache `transcript-scan-cache.json`; live re-measure 25 files / 651MB in
 **Commands:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass
   (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `6e8cf8d258` (2026-09-18, "Recover tracked story spec for scribe 3.3"); also `f0267f5c03` (2026-08-27, "feat(scribe): story 3.3 -- nightly compile bounded, locked, scheduled (SM-4 met; DW-FU-3-2"); also `39ab78ca2b` (2026-08-07, "steward: Story 3.3 — the operator can see every environment that exists, before picking on"). Ledger row `3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

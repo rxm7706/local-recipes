@@ -2,7 +2,7 @@
 title: '25.2: A product requirement minted after the rule date names its source capability'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -49,3 +49,17 @@ Standard: `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md`.
 Surface: doctor sources/prd.py (or board.py) gather_fr_without_cap, sources registration + dispatcher, pixi.toml fr-without-cap-check, scripts/detectors.py, docs/governance/fr-baseline.json, doctor tests.
 Ledger key: `25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability.md`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `065f73c9b5` (2026-09-16, "doctor: promote 25.1+25.2+25.3 to done (landed in #1385)"); also `52ebe88a18` (2026-09-10, "feat(atlas): a live Artifactory transport for Story 25.2's attended run (Story 25.4)"). Ledger row `25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `25-2-a-product-requirement-minted-after-the-rule-date-names-its-source-capability: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

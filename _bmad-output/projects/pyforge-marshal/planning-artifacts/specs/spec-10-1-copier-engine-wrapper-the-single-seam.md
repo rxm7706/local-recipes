@@ -265,7 +265,8 @@ through `fs` — this module's manifest-only check is a first filter, not the fi
 
 ## Auto Run Result
 
-Status: `blocked`
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `5290c9bcd2 2026-08-14 recover marshal 10-1 (Copier engine wrapper — the single seam)` — that promotion is the ruling this record now reflects.
 
 Blocking condition: `intent gap in intent contract`
 
@@ -323,3 +324,7 @@ incidents. `status` set to `done` here (not re-driven through `bmad-dev-auto`) s
 code is the same, real, already-reviewed work — a fresh drive would duplicate it. This gap (no
 preserved artifact on an intent-gap revert) is tracked as its own Dream:
 `docs/dreams/bmad-loop-intent-gap-work-preservation.md`.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

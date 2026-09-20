@@ -6492,3 +6492,14 @@ status: open
   severity: medium
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-28-31-1: Dispatch structure-graph — shared index provisioning via sync-from-base was drafted after the 28.31 spike but never minted as a story.
+
+- source_spec: `planning-artifacts/specs/spec-28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session.md`
+  summary: A draft story spec (`spec-28-34-dispatch-structure-graph-shared-index-provisioning.md`, written by the 28.31 session's auto-checkpoint `6a674c4f14` on 2026-09-10) proposed provisioning the dispatch structure-graph index from a shared base instead of per-worktree; it never got a ledger row, an epics.md story, or a CAP, and Epic 28 closed done without it. Found by the 2026-09-20 fleet consistency pass as the one tracked story spec with no ledger row.
+  evidence: `git log -- _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-*` shows only the 28.31 auto-checkpoint; `sprint-status-ledger.yaml` has no `28-34-*` key; `epics.md` has no `### Story 28.34`.
+  location: archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-dispatch-structure-graph-shared-index-provisioning.md (archived 2026-09-20, never deleted — steward 41.1)
+  origin: fleet consistency pass 2026-09-20 (spec-status fallout PR)
+  severity: low
+  promoted: 2026-09-20
+  status: open — mint as a story (new epic, since Epic 28 is done) only if the token-economy layers are switched on and dispatch index provisioning cost is measured again; until then the draft is reference material.

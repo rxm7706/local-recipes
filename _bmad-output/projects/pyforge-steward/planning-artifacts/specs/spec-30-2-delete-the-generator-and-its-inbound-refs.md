@@ -2,7 +2,7 @@
 title: 'Story 30.2: Delete the generator and its inbound refs'
 type: chore
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
 baseline_revision: f5f0bccf3b5dc0f9a4ebd1ebd142ab5f7d595540
 review_loop_iteration: 0
@@ -98,3 +98,17 @@ deferred: []
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `a3784c33ed` (2026-08-25, "Merge pull request #804 from rxm7706/steward/30-2-ledger-finalize"); also `c3ac2f3ec2` (2026-08-25, "Merge pull request #803 from rxm7706/steward/30-2-delete-the-generator-and-its-inbound-ref"). Ledger row `30-2-delete-the-generator-and-its-inbound-refs: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.cursor/pyforge-fleet-drain/queues.yaml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `30-2-delete-the-generator-and-its-inbound-refs: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

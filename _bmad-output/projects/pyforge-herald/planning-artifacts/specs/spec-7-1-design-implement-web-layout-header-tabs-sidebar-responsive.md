@@ -191,3 +191,15 @@ tab-persistence/sidebar-collapse checks, still hold.
 
 **Follow-up review recommendation:** none outstanding for this story.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9f13e032de` (2026-09-07, "scribe: sprint-ledger-sync -- Story 7.1 + epic-7 flip to done"); also `2df4fa7d46` (2026-09-07, "scribe: Story 7.1 -- audit-file-refs pass over docs/reference/, capture landed"); also `30589a72e9` (2026-08-07, "herald: Story 7.1 + 7.2 — web dashboard layout, tabs, sidebar, tooltips & inline help"). Ledger row `7-1-design-implement-web-layout-header-tabs-sidebar-responsive: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

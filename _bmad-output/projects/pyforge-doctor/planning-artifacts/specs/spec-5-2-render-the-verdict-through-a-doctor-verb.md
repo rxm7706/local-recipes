@@ -83,3 +83,16 @@ mutation-tested before landing. A subset check passes in exactly the case worth 
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `64b46de2de` (2026-08-08, "doctor 5.2: render the marshal-durability verdict, and the schema gap it exposed"); also `2425dc3216` (2026-08-08, "doctor: 5.2's forward dependency on the profile is now expressed, not prose"); also `e2c77635e0` (2026-08-07, "herald: Story 5.2 — conflict refusal on export push (CAP-5)"). Ledger row `5-2-render-the-verdict-through-a-doctor-verb: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json`, `src/shared/packages/pyforge-doctor/tests/unit/test_cli_check.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_models.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

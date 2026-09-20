@@ -2,8 +2,9 @@
 title: '30.2: docs/map.yaml is the registry, MAP.md is its render, and `docs-currency` reds a stale page'
 type: 'feature'
 created: '2026-09-20'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'fa54e525cbf28e49e6975799390866e996ca0e59'
+final_revision: 'e2105fec02'
 review_loop_iteration: 1
 followup_review_recommended: true
 context: ['{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md']

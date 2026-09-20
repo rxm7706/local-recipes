@@ -42,3 +42,16 @@ deferred: []
 ## Verification
 
 `pixi run -e pyforge-atlas -- pytest src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py src/shared/packages/pyforge-atlas/tests/test_estate_cache_bsl.py -q`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9446d14bc2` (2026-08-26, "Merge pull request #873 from rxm7706/steward/36-2-estate-cache-vizro-page"). Ledger row `36-2-estate-cache-vizro-page: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-36-2-estate-cache-vizro-page.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py`, `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

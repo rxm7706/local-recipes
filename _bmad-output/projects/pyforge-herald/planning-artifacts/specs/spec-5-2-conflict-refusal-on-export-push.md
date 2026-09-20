@@ -175,3 +175,16 @@ pyforge-herald-test` -- 491 passed, 2 skipped.
 
 **Follow-up review recommendation:** none outstanding beyond the pre-existing, already-disclosed
 PPTX-export and deferred-live-MCP-proof gaps.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `e2c77635e0` (2026-08-07, "herald: Story 5.2 — conflict refusal on export push (CAP-5)"); also `9e99defb16` (2026-08-07, "marshal: Story 5.2 -- per-run detail"). Ledger row `5-2-conflict-refusal-on-export-push: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-5-2-conflict-refusal-on-export-push.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

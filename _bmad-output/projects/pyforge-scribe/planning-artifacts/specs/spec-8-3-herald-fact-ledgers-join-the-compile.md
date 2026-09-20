@@ -2,7 +2,7 @@
 title: 'Herald fact ledgers join the compile'
 type: 'feature'
 created: '2026-09-13'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -85,3 +85,17 @@ presentations export tree.
 
 - **2026-09-13:** minted from `spec-scribe-graphify-nightly-currency` CAP-3
   and `epics.md` Story 8.3, kinship `spec-deck-family-currency`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f71a381c3c` (2026-08-15, "doctor: land Story 8.3 -- sprint ledger, dashboard, epics outcome, spec promotion"); also `d2617c4036` (2026-08-15, "doctor: Story 8.3 -- deferred_work_promote.py, the --fix mode"). Ledger row `8-3-herald-fact-ledgers-join-the-compile: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready-for-dev` → `done` (ledger row `8-3-herald-fact-ledgers-join-the-compile: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

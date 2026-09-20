@@ -2,7 +2,7 @@
 title: 'Tier classification — join trending candidates against atlas signals (S-13.2, FR-65/CAP-2)'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 baseline_revision: '6c99ac4ae32ba679be856e417658d2663b64370c'
 final_revision: 'd9a0796454192186b6017b0c5fcb625a982d300f'
 review_loop_iteration: 0
@@ -256,3 +256,6 @@ to 3x from CAP-1's three trending windows. None blocks CAP-2's stated success cr
 (an already-on-cf skip and an awesome-list skip), all are visible to a human via the
 `reason` column, and CAP-3 is the first consumer that must settle them.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `12-2-tier-classification-fr-65: done`).

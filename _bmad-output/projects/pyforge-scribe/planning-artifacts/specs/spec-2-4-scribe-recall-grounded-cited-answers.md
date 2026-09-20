@@ -2,7 +2,7 @@
 title: 'scribe recall — grounded, cited answers (Story 2.4)'
 type: 'feature'
 created: '2026-08-07'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -147,3 +147,17 @@ to call it, replacing the Epic-1 stub.
   non-zero code that would make an ungrounded-but-otherwise-successful
   query look like a hard failure to a caller.
 - **No findings requiring further changes.**
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `fc52917899` (2026-08-07, "herald: Story 2.4 — authored-source pull (standalone bundle)"); also `aaee60fd03` (2026-08-07, "scribe: sync sprint-status ledger — Epic 2 done (Stories 2.1-2.4)"); also `5bae304e38` (2026-08-07, "scribe: Story 2.4 — scribe recall, grounded cited answers"). Ledger row `2-4-scribe-recall-grounded-cited-answers: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `2-4-scribe-recall-grounded-cited-answers: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

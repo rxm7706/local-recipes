@@ -158,3 +158,16 @@ who runs it directly.
 pyforge-herald-test` -- 614 passed, 2 skipped.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `540cb1ea7c` (2026-08-08, "herald: Epic 9 story specs 9.1-9.5 (scaled-down Success Proclamation)"); also `11634075b3` (2026-08-08, "herald: Story 9.2 + 9.3 + 9.5 — success CLI wired to claim storage"). Ledger row `9-5-implement-evidence-validation-sync-async: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-9-1-claim-data-model-local-storage.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-9-2-cli-triggered-draft-creation.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-9-3-success-cli.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-9-4-success-web-archive.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-9-5-evidence-validation-wiring.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

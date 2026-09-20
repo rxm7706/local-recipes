@@ -2,7 +2,7 @@
 title: 'Module-template is authoring-only and mybmad is an isolated sidecar never the console'
 type: 'feature'
 created: '2026-09-13'
-status: 'backlog'
+status: 'done'
 context: []
 warnings: []
 deferred: []
@@ -73,3 +73,17 @@ Prisma confined to schema `mybmad`, same Keycloak/OIDC as `/console/`.
 6. `pipeline-truth` `wired` agrees with the register.
 7. django-pyforge chrome can show mybmad (switcher and/or embed) under the same OIDC session; it is not a ninth station and not `/console/`.
 8. Ledger key `52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console` exists; this Story does not self-close as `done` in the mint commit.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `50504e52e9` (2026-09-13, "Merge pull request #1332 from rxm7706/steward-52-1-impl"). Ledger row `52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/platform/db/changelog/changes/pyforge-mybmad-1-schema.sql`, `src/platform/db/changelog/changes/pyforge-mybmad-2-app-role-grants.sql`, `src/platform/db/changelog/db.changelog-master.yaml` (+9 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `backlog` → `done` (ledger row `52-1-module-template-is-authoring-only-and-mybmad-is-an-isolated-sidecar-never-the-console: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -2,7 +2,7 @@
 title: 'Index freshness is an advisory finding (Story 28.7, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'de24e3961e7464d8f0019db4e28e1a46439e90cd'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -181,3 +181,7 @@ Status: done
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 118 passed, 1 skipped
 
 **Residual risks:** Runtime detector reads `~/.bmad-loops` loop homes (scope=runtime); CI excludes it via detectors-ci. Staleness is advisory-only at `marshal check` — not auto-wired into spin/preflight (deferred: admission-path hook). End-to-end `marshal check` → real detectors subprocess not covered in tests (marshal side uses _FakeProcess; detector side now has run_one integration).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `28-7-index-freshness-is-an-advisory-finding: done`).

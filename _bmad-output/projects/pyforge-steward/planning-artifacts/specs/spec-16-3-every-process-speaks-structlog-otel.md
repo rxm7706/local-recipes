@@ -44,3 +44,16 @@ baseline_revision: 40a7bf666b
 - Fixture/request→Celery path: ids present on both sides; one correlated trace
 - OTLP endpoint unset → no export; set → export path active (asserted)
 - `pixi run --frozen -e platform-ci-test` / related pytest green; CI detectors/linter/package tests
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b0782c48b4` (2026-08-23, "Merge pull request #688 from rxm7706/steward/16-3-every-process-speaks-structlog-otel"). Ledger row `16-3-every-process-speaks-structlog-otel: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `pixi.lock`, `pixi.toml`, `src/platform/config/asgi.py`, `src/platform/config/celery_app.py`, `src/platform/config/observability/__init__.py`, `src/platform/config/observability/logging.py`, `src/platform/config/observability/telemetry.py`, `src/platform/config/settings/base.py`, `src/platform/config/settings/production.py`, `src/platform/config/wsgi.py`, `src/platform/manage.py`, `src/platform/platformapp/users/tasks.py` (+2 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

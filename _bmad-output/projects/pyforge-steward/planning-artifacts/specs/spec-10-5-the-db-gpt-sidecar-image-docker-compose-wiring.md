@@ -57,3 +57,15 @@ integration is testable end-to-end without a manual DB-GPT setup step. Added 202
 Story 10.3 shipped "one image, both engines" before this deviation existed; this is the
 additive counterpart for the engine that no longer fits that image, not a correction to 10.3.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `087d218fbd` (2026-08-21, "Merge pull request #583 from rxm7706/steward/10-5-db-gpt-sidecar-compose"). Ledger row `10-5-the-db-gpt-sidecar-image-docker-compose-wiring: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.github/workflows/platform-ci.yml`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `pixi.lock`, `pixi.toml`, `src/platform/compose/compose.yml`, `src/platform/compose/dbgpt/Containerfile`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

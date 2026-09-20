@@ -2,7 +2,7 @@
 title: 'Asymmetric receipts, partial failure, and idempotence'
 type: 'feature'
 created: '2026-08-14'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '4219f1dea4d7f61ce8fa7c70c53053d4c44232d3'
 final_revision: '462a3f0f291ec531aeb8cd4e6cee586b4c614778'
 review_loop_iteration: 0
@@ -269,3 +269,17 @@ fully tested, realizes FR-18's third bullet and AD-10's conda-forge mechanism no
 
 **Commands:**
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `03d8fc8c86` (2026-08-14, "recover mason 3.7 (asymmetric receipts, partial failure and idempotence) from run 20260813-145934-3eb0's faile"); also `aa5025ba3d` (2026-08-04, "marshal: refresh dashboard after Story 3.7 lands, run paused"); also `94ba58a96d` (2026-08-03, "marshal: review pass 2 fixes for escalation, deferral, and resume (Story 3.7)"). Ledger row `3-7-asymmetric-receipts-partial-failure-and-idempotence: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `pixi.lock`, `src/shared/packages/pyforge-mason/pixi.toml`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/gh.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/engines/pixi.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/models.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/package.py`, `src/shared/packages/pyforge-mason/src/pyforge/mason/pypi_index.py`, `src/shared/packages/pyforge-mason/tests/meta/test_credential_isolation.py`, `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py`, `src/shared/packages/pyforge-mason/tests/unit/test_doctor.py`, `src/shared/packages/pyforge-mason/tests/unit/test_engines.py` (+5 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `3-7-asymmetric-receipts-partial-failure-and-idempotence: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

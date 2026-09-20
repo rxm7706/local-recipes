@@ -61,3 +61,15 @@ replaying 2026-09-06 (skf deselected and deleted by `-y`; `skf-campaign` undecla
 its config equal to the pre-apply bytes plus the installer's own appended keys
 (failure-modes.md traps 13–14).
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `196b8a8d2a` (2026-09-06, "feat(steward): CAP-7 — custom modules survive the core apply (Story 14.7)"). Ledger row `14-7-custom-modules-survive-the-core-apply: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/customization-inventory.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/failure-modes.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/.memlog.md`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml`, `src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py`, `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py`, `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

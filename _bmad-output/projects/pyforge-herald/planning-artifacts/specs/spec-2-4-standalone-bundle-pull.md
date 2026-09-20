@@ -136,3 +136,16 @@ bundle existence BEFORE deciding to fall back, not racing), per this effort's ow
 `test_cli_pull.py`). `ruff format --check` / `ruff check` clean on every file this story touches (17
 pre-existing findings elsewhere in the package, untouched by this epic, remain out of scope per Story
 1.6's own precedent note).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `87a7d3e60f` (2026-08-07, "herald: sync sprint-status ledger — Epic 2 done (Stories 2.1-2.4)"); also `fc52917899` (2026-08-07, "herald: Story 2.4 — authored-source pull (standalone bundle)"); also `5bae304e38` (2026-08-07, "scribe: Story 2.4 — scribe recall, grounded cited answers"). Ledger row `2-4-standalone-bundle-pull: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

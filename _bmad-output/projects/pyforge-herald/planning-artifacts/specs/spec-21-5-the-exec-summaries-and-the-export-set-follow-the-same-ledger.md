@@ -45,3 +45,16 @@ verdict_mode: advisory
 - Ten PyForge decks: exec stamped; marp `{deck,executive-summary,infographic}-2026-09-15.md` exist; standalone HTML and both PPTX dated 2026-09-15.
 - `deck-facts <slug> --check` reports 0 mismatch on stamped exec/marp marks. Residual unmarked historical tokens stay in the deferred list.
 - No README still reads "standalone ahead".
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `52c52398b3` (2026-09-10, "chore(doctor): promote Story 21.5 to done in sprint ledger"); also `d13fb96d4a` (2026-08-30, "feat(atlas): Story 21.5 -- Tier 2 catalog sources (about maintainers, curated org seed, Ar"); also `5227971d11` (2026-08-23, "feat(marshal): Story 21.5 configurable per-project CAP-5 invocation"). Ledger row `21-5-the-exec-summaries-and-the-export-set-follow-the-same-ledger: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

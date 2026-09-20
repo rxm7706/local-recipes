@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-20'   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
+updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2451,3 +2451,13 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **And** the pages agents should read (reference) are exact by construction; authored explanation stays for humans
 **Status:** backlog
 
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*

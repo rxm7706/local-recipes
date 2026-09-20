@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-09-17"
+updated: "2026-09-20"
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3084,3 +3084,11 @@ measured by nothing. 1735 tests pass, 18 skipped, after the move.
 Also: `pyforge-atlas-test` now exists as the canonical pixi task name (CLAUDE.md documents
 `pyforge-<station>-test` as the fleet grammar, and atlas was the one station where that
 command did not resolve); `kedro-test` is retained as a delegating alias.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `spec-pyforge-atlas/.memlog.md` gained a 2026-09-20 event (the fleet
+consistency pass reconciled 56 tracked story specs' frontmatter against the sprint ledger and
+reconstructed missing Auto Run Results from git), which post-dated this artifact through the
+`spec→prd` cascade. It is bookkeeping, not a capability: no requirement, decision or
+story changes here. `updated:` bumped to record that the check ran.*

@@ -194,3 +194,16 @@ baseline_revision: '060fc7352f06515d5b0f4cdf34bd581e6f5034a7'
 
 - Proof no new CLI argv was introduced.
   [`test_spin.py:1`](../../../../src/shared/packages/pyforge-marshal/tests/unit/test_spin.py#L1)
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `2b9c26c619` (2026-08-14, "Merge branch 'bmad-loop/20260813-145934-3eb0/3-8-mason-ships-mason' of /home/rxm7706/.bmad-loops/pyforge-mason"); also `92efb27d15` (2026-08-05, "Merge pull request #266 from rxm7706/marshal/3-8-stage-bound-durability"). Ledger row `3-8-stage-bound-durability-and-fleet-launch-wiring: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-mason/tests/integration/test_package_ship.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

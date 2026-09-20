@@ -2,7 +2,7 @@
 title: SKF skill ownership and BMAD persona for scribe
 type: feature
 created: '2026-08-25'
-status: in-progress
+status: done
 updated: '2026-08-25'
 baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
 context:
@@ -64,3 +64,17 @@ Bind to epics.md Story 5.1 and the 2026-08-25 station-skill-portal SCP. Follow s
 
 **Commands:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9da49578fa` (2026-08-26, "Merge pull request #833 from rxm7706/scribe/5-1-skill-ownership"). Ledger row `5-1-skf-skill-ownership-and-bmad-persona-for-scribe: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-5-1-skf-skill-and-persona-for-scribe.md`, `src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py`, `src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `5-1-skf-skill-ownership-and-bmad-persona-for-scribe: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

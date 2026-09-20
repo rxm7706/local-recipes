@@ -131,3 +131,16 @@ costs nothing and preserves both contracts.
 pyforge-herald-test` -- 599 passed, 2 skipped.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3fbf29750a` (2026-08-08, "herald: Story 10.2/10.4 — notice authoring workflow & CLI"). Ledger row `10-4-notice-cli: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/tests/test_cli_epic6.py`, `src/shared/packages/pyforge-herald/tests/test_cli_notice_epic10.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

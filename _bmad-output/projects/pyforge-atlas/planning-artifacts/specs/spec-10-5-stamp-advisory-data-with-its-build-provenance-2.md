@@ -2,7 +2,7 @@
 title: 'Stamp advisory data with its build provenance (AD-17)'
 type: 'feature'
 created: '2026-07-28'
-status: shipped
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false  # discharged 2026-07-30 by review pass 5 (independent, adversarial-mutation lens over pass 4's surfaces): 7 mutants, 5 caught, 2 survived — N3 (the numeric guard) proved a genuine no-op, unreachable by construction, so NOT a gap; N7 (resolve_for_file's non-ENOENT reason) was a real vacuity reporting an existing file as missing, now fixed by test_resolve_for_file_says_unreadable_not_missing. kedro-test 902 -> 903 passed, catalog-check 47/47. 0 behavioural defects.
 context: []
@@ -754,3 +754,7 @@ full reading of `provenance.py`. Deliberately a different lens from passes 1–4
 **Flag cleared.** `followup_review_recommended` → `false`. Pass 4 produced 1 medium plus 4
 auto-fixed patches; this pass produced **0 behavioural defects, 1 vacuity (fixed), and 1
 disproved hypothesis**. Nothing deferred.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `10-5-stamp-advisory-data-with-its-build-provenance-ad-17: done`).

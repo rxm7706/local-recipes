@@ -64,3 +64,16 @@ resolved here.
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station verify
   suite; contract mint, no new per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `27e7f340f6` (2026-08-28, "fix(doctor 8.6): DW-FU-8-4 closes -- fleet-wide deferred-work promotion unblocked"). Ledger row `8-6-dw-fu-8-4-closes-the-collision-abort-redesign-plus-the-parsing-gap-it-surfaced: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `scripts/.deferred-work-baseline.json`, `scripts/deferred_work_promote.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` (+1 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -182,3 +182,16 @@ _None. No `bad_spec` finding triggered a repair loopback in this run._
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `f58e91bfff` (2026-09-11, "pyforge-mason: promote sprint-status ledger for Story 16.2 -> done"); also `caf8b96f9f` (2026-08-20, "rescue: atlas 16.2 revised work, uncommitted in a stale run worktree"). Ledger row `16-2-handoffs-are-execution-ready: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -49,3 +49,16 @@ Type / Effort / Deps: change / M / —.
 ## Source
 
 Contract recovered from `epics.md` Story 13.2 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `ab0cb3b2a0` (2026-09-11, "retro(cfe): Story 13.2 G26 dbgpt-client upper-bound cap case study (v8.90.2)"). Ledger row `13-2-a-moved-contract-reconciles-only-the-paths-it-names: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/CHANGELOG.md`, `.claude/skills/conda-forge-expert/MANIFEST.yaml`, `.claude/skills/conda-forge-expert/SKILL.md`, `.claude/skills/conda-forge-expert/config/skill-config.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

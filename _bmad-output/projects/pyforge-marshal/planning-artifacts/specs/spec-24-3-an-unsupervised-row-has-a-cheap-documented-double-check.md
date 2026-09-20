@@ -2,7 +2,7 @@
 title: An UNSUPERVISED row has a cheap documented double-check
 type: docs+feature
 created: '2026-08-24'
-status: shipped
+status: done
 updated: '2026-08-24'
 context: []
 warnings: []
@@ -43,9 +43,15 @@ baseline_revision: 39cee7530c
 
 ## Auto Run Result
 
-Status: shipped
+Status: done
+Reconciled 2026-09-20: `shipped` is the Spec-level word; a story's terminal state is `done` (ledger row `24-3-an-unsupervised-row-has-a-cheap-documented-double-check: done`).
 PR: https://github.com/rxm7706/local-recipes/pull/720 (admin merge — GitHub Actions billing blocker; local tests green: meta 13 passed)
 Merge SHA: `39cee7530c16ac3d17aeb031e726c4a877097e4b`
 Implementation: CAP-3 UNSUPERVISED section in `fleet-landing-pass-liveness.md`; fleet-picture ATTENTION split for unsupervised vs stopped; `marshal status --help` cites follow-up; 3 new meta tests in `test_operator_liveness_instructions.py`. `derive_home_state` unchanged.
 Completes Epic 24 (FR-195 CAP-1/CAP-2/CAP-3 all shipped via Stories 24.1–24.3).
 Finalize SHA: `122b1299a3b16ae5f7daadc013d66440ab92706e`
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `24-3-an-unsupervised-row-has-a-cheap-documented-double-check: done`).
+- Auto Run Result `Status: shipped` → `done` (see the reconcile line under it).

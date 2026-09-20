@@ -162,3 +162,16 @@ same-agent pass finding nothing is weaker evidence than an independent second pa
 nothing, precisely because the reviewer already knows how the gate is supposed to work and is
 less likely to think adversarially about ways around it that were never considered during
 implementation.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `fa61d99a05` (2026-08-30, "scribe: graph-node staleness flag (Story 6.3, CAP-13)"); also `6dcb882e94` (2026-08-21, "mason: promote Story 6.3 spec to tracked, mark 6-3 done in the sprint ledger"); also `ec193303b6` (2026-08-21, "mason: close the github_version_checker.py cross-slice gap (Story 6.3)"). Ledger row `6-3-implement-cli-authentication-authorization: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-3-the-graph-node-staleness-flag.md`, `src/shared/packages/pyforge-scribe/docs/cli-runbooks.md`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plane.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/models.py`, `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_compile.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_operations.py`, `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py` (+1 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

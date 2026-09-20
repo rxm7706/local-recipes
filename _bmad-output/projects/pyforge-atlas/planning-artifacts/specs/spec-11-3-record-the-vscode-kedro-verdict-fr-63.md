@@ -2,7 +2,7 @@
 title: 'Record the vscode-kedro verdict'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: ['{project-root}/_bmad-output/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md']
@@ -123,3 +123,7 @@ file — no code path, build, or CI behavior depends on it. The only external de
 (the extension ID staying `kedro.Kedro` on both registries) is unenforced, matching
 this repo's convention for optional editor recommendations; the decision doc itself
 states how to re-open the decision if circumstances change.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `11-3-record-the-vscode-kedro-verdict-fr-63: done`).

@@ -2,7 +2,7 @@
 title: 'CycloneDX 1.6 SBOM emission'
 type: 'feature'
 created: '2026-07-18'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -97,3 +97,17 @@ warnings: ['oversized']
 
 **Manual checks (if no CLI):**
 - Round-trip smoke check (cross-tool, not part of the pixi test task): `warden scan . --sbom-output /tmp/out.json` in the `pyforge-warden` env, then `scan-project --sbom-in /tmp/out.json` in the `local-recipes`/CFE env — confirm it ingests without error.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `19b388d781` (2026-08-07, "herald: Story 4.1 -- poll loop with quiescence debounce"); also `5424d55c0c` (2026-08-07, "steward: Story 4.1 — A ceiling can be declared, machine-readably"); also `631c2c87b0` (2026-08-07, "doctor: Story 4.1 — health scoring"). Ledger row `4-1-cyclonedx-sbom-emission: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-1-poll-loop-with-quiescence-debounce.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_cli_watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `4-1-cyclonedx-sbom-emission: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

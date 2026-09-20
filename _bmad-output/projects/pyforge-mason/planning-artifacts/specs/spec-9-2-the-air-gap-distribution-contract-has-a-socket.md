@@ -64,3 +64,16 @@ shape-validation + register helpers with unit tests. No installer is built here.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `5a07304fbf` (2026-08-22, "Merge pull request #634 from rxm7706/mason/9-2-airgap-distribution-contract-socket"). Ledger row `9-2-the-air-gap-distribution-contract-has-a-socket: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `docs/reference/airgap-distribution-contract.md`, `src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py`, `src/shared/packages/pyforge-mason/tests/unit/test_airgap_contract.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

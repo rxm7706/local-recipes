@@ -2,7 +2,7 @@
 title: 'Canvas deprecation switch (both default) (Story 22.6, Epic 22, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 baseline_revision: 'NO_VCS'
 context:
@@ -223,7 +223,8 @@ story ID.
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+Reconciled 2026-09-20: the `in-review` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `86d1cdf3ee 2026-09-17 land atlas fold: one chain — 13 Dreams, 10 Specs, rekey 2026-09-17` — that promotion is the ruling this record now reflects.
 
 Summary: Added `INVENTORY_IDENTITY_UI` env-var gate (`both` | `canvas` | `vizro`, default `both`) to
 `conda-forge-packaging-inventory-operations_priority.py` and
@@ -242,3 +243,8 @@ Verification:
   `ModuleNotFoundError: pyforge.atlas` in gist integration tests, unrelated to Story 22.6
 
 PR note: non-`recipes/` change requires `maintenance` label at PR open.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `21-6-canvas-deprecation-switch: done`).
+- Auto Run Result `Status: in-review` → `done` (see the reconcile line under it).

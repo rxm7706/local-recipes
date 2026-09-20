@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-09-19"
+updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-19
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
 # 2026-09-18  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-196..FR-200 / CAP-244..248 (Epic 50). AD-24 amended in place: default merge-subject form gains {slug}. Four FRs land on AD-5/26/28, the harness seam, AD-16 and AD-13 -- no AD added or removed. See § Currency reconciliation — 2026-09-18.
 # 2026-09-14  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine). The PRD gained C-11/C-12 (the declared advisory-in-v1 trust model; no unattended mid-run freeze writer) from the Spec's 2026-09-09 operator answering pass. As-built check appended as § Currency reconciliation — 2026-09-14: both land ON the existing AD-5/AD-26/AD-28/AD-30 journal spine; no AD added, changed or removed.
@@ -1747,3 +1747,14 @@ from `spec-pyforge-marshal` CAP-249..256 (Epic 51 — the landing self-drives, s
   six violations are cleared before the lane exists so the gate is born green.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*
