@@ -775,10 +775,16 @@ def _promote_blocked_twin(
         )
     except ValueError:
         return
-    worktree_text = fs.read_text(worktree_spec_path)
+    try:
+        worktree_text = fs.read_text(worktree_spec_path)
+    except FsError:
+        return
     if worktree_text is None:
         return
-    primary_text = fs.read_text(spec_path)
+    try:
+        primary_text = fs.read_text(spec_path)
+    except FsError:
+        return
     promoted = blocked_twin_promotion_text(
         primary_text=primary_text, worktree_text=worktree_text
     )
