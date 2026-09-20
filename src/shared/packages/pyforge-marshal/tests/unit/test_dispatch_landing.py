@@ -439,6 +439,11 @@ def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
     stamp_calls = [c for c in process.calls if "spec_surface_check.py" in c[0][1]]
     assert len(memlog_calls) == 2
     assert len(stamp_calls) == 1
+    # Story 53.2 review (V1): the caller-supplied `run_id` must actually
+    # reach the memlog `--text` argv, not just be accepted as a parameter.
+    for tokens, _cwd in memlog_calls:
+        text_arg = tokens[tokens.index("--text") + 1]
+        assert "(run run-7)" in text_arg
     stamp_argv = stamp_calls[0][0]
     assert stamp_argv.count("--spec") == 2
     assert "pyforge-marshal/spec-alpha" in stamp_argv
