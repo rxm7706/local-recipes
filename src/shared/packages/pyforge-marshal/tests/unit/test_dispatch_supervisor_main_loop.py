@@ -1974,6 +1974,72 @@ class _LandsDuringFinalizeFs(FakeFs):
             super().append_line(path, extra, fsync=False)
 
 
+class _HeadShaFailsOnceJournaledVcs(FakeVcs):
+    """``worktree_head_sha`` refuses once the journal names ``marker``.
+
+    Keyed on journal state, not on a call count: the mid-tick git re-reads
+    (``__main__.py:1527-1539``, ``:1600-1619``, ``:1682-1701``) each sit
+    behind ``except VcsCommandError, ValueError: pass``, and a count-keyed
+    double would pin how many reads the loop performs instead of the
+    survival those arms exist for.
+    """
+
+    def __init__(
+        self,
+        *,
+        fs: FakeFs,
+        run_dir: Path,
+        marker: str,
+        refusals: int | None = None,
+        **kwargs: object,
+    ) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self._fs = fs
+        self._run_dir = run_dir
+        self._marker = marker
+        self._refusals = refusals
+        self.refused = 0
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        spent = self._refusals is not None and self.refused >= self._refusals
+        if not spent and self._marker in self._fs.journal_text(self._run_dir):
+            self.refused += 1
+            raise VcsCommandError("git rev-parse failed (test double)")
+        return super().worktree_head_sha(worktree_path)
+
+
+def test_supervisor_survives_a_git_read_failure_after_finalize(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    fs = FakeFs()
+    vcs = _HeadShaFailsOnceJournaledVcs(
+        fs=fs,
+        run_dir=run_dir,
+        marker=dispatch_core.KIND_DISPATCH_FINALIZE,
+        branches=frozenset({branch}),
+        head_sha=_MOVED,
+    )
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    # The re-read raises, the loop keeps the facts it already has, and the
+    # tick still terminalizes and publishes -- a git failure between finalize
+    # and the verdict is survivable, not a supervisor crash.
+    assert code == 0
+    assert dispatch_core.KIND_DISPATCH_FINALIZE in fs.journal_text(run_dir)
+    assert publisher.completions
+
+
 def test_supervisor_completes_when_another_writer_lands_during_finalize(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
