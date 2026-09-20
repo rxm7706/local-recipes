@@ -2,7 +2,8 @@
 title: '65.2: The ledger query answers done / running / next in one call'
 type: 'feature'
 created: '2026-09-20'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '5e0b1d0a8cc7bebedcaf23d4f19202a75cc43ba8'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
