@@ -388,6 +388,24 @@ def test_local_fingerprints_skip_unusable_files(tmp_path: Path):
 # --- sibling-acknowledged (Story 29.1 / CAP-82) --------------------------
 
 
+def test_parse_dream_fingerprint_coerces_all_digit_ack_to_string():
+    # An all-digit sha256-shaped value YAML-parses as an int; review-caught
+    # edge case (Story 29.1 patch) -- must not be silently discarded.
+    fp = sibling_dreams._parse_dream_fingerprint(
+        "---\ntitle: T\nsibling-acknowledged: 1234567890\n---\nbody\n"
+    )
+    assert fp is not None
+    assert fp["sibling_acknowledged"] == "1234567890"
+
+
+def test_parse_dream_fingerprint_drops_non_scalar_ack():
+    fp = sibling_dreams._parse_dream_fingerprint(
+        "---\ntitle: T\nsibling-acknowledged: true\n---\nbody\n"
+    )
+    assert fp is not None
+    assert fp["sibling_acknowledged"] == ""
+
+
 def _write_local_dream_with_ack(
     dreams: Path,
     slug: str,
