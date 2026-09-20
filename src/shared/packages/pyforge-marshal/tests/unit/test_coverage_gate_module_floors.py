@@ -1,6 +1,11 @@
 """Per-module coverage floors (marshal Story 53.2 landing, 2026-09-20): a
 dated, story-bound exception for one module that can only lower the
-station floor, is never anonymous, and is named on the gate's OK line."""
+station floor, is never anonymous, and is named on the gate's OK line.
+
+The mechanism stays; the one exception it was built for does not. Story 53.3
+covered ``dispatch_supervisor.__main__`` to the fleet floor and deleted its
+entry, so the live file now holds none and the test that pinned that entry's
+presence is retired with it -- what is pinned here instead is the absence."""
 
 from __future__ import annotations
 
@@ -10,11 +15,13 @@ import pytest
 
 from pyforge.marshal.coverage_gate import (
     ModuleFloor,
+    default_thresholds_path,
     evaluate_coverage_payload,
     evaluate_suite,
     floor_for_module,
     load_module_floors,
     modules_below_threshold,
+    thresholds_for,
 )
 
 TOML = """[defaults]
@@ -92,7 +99,21 @@ def test_evaluate_coverage_payload_reads_the_exceptions_from_the_thresholds_file
     assert not ok and "pyforge.marshal.small" in message
 
 
-def test_the_live_file_names_the_supervisor_exception_with_its_story() -> None:
-    floors = load_module_floors()
-    entry = floors["pyforge.marshal.dispatch_supervisor.__main__"]
-    assert entry.unit == 35.0 and entry.story == "53-3-the-supervisor-entrypoint-reaches-the-floor" and entry.until
+def test_the_live_file_holds_no_module_exception() -> None:
+    """Story 53.3: marshal carries no named coverage debt.
+
+    The supervisor entry point is covered to the fleet floor by
+    ``tests/unit/test_dispatch_supervisor_main_loop.py``, so its Story 53.2
+    exception is gone and no other module has taken its place. A new entry
+    here is a deliberate, reviewable act -- never a silent one.
+
+    ``load_module_floors`` returns ``{}`` for a *missing* file too, so the
+    emptiness assertion alone would stay green if the packaged thresholds
+    file were renamed or dropped -- taking every station floor with it. The
+    file's presence and its parsed station floor are asserted first, so this
+    test fails loudly on that, exactly as the presence-pinning test it
+    replaced would have.
+    """
+    assert default_thresholds_path().is_file()
+    assert thresholds_for("marshal").for_suite("unit") == 80.0
+    assert load_module_floors() == {}
