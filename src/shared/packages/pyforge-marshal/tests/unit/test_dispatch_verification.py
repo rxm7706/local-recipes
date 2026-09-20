@@ -389,6 +389,41 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
     ]
 
 
+def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_spacing(
+    tmp_path: Path,
+) -> None:
+    """Story 53.1 review finding: the dedup collapses whitespace the same
+    way ``gate.check_spec_binding`` does, so a station that declared the
+    guard with different internal spacing still runs it exactly once,
+    matching ``check_spec_binding``'s own normalization instead of an exact
+    string comparison that would miss this case."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    respaced_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split(" ", 1))
+    respaced_guard = _SURFACE_RECONCILE_COMMAND.replace(" ", "  ", 1)
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true", respaced_guard]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    reports = envelope.data["commands"]
+    assert [report["command"] for report in reports] == [
+        "true",
+        _SURFACE_RECONCILE_COMMAND,
+    ]
+
+
 def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_default(
     tmp_path: Path,
 ) -> None:
