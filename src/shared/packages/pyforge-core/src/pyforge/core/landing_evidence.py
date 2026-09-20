@@ -115,6 +115,24 @@ class LandingEvidenceShape(StrEnum):
     RECOVERY_COMMIT_ALLOWLIST = "recovery_commit_allowlist"
 
 
+class BranchDerivedShape(StrEnum):
+    """Which project-scoped branch grammar a matched branch satisfied.
+
+    Story 51.7/CAP-255: ``_branch_belongs_to_project`` accepts two shapes
+    that carry very different intent guarantees -- marshal Story 22.9's
+    ``dispatch/<project_slug>/<key>`` branch, which marshal itself mints
+    ONLY when it has actually dispatched ``key``, versus a bare
+    ``<station>/…`` branch, which a mint, fallout or fix PR can equally
+    well carry (it names the key with no intent to land it -- the
+    2026-09-18 ``doctor/27-4-mint`` incident). Exposed on
+    ``LandingEvidenceMatch`` so a caller can tell the two apart without
+    re-deriving the branch grammar itself.
+    """
+
+    DISPATCH_BRANCH = "dispatch_branch"
+    STATION_BRANCH = "station_branch"
+
+
 @dataclass(frozen=True, order=True)
 class StoryKeyRef:
     """Portable story key for cross-package grammar (stdlib-only).
@@ -175,21 +193,31 @@ def _station_from_project_slug(project_slug: str) -> str:
     return project_slug.removeprefix("pyforge-")
 
 
-def _branch_belongs_to_project(branch: str | None, project_slug: str) -> bool:
-    """Does ``branch`` name a branch of ``project_slug``'s station?
+def _branch_derived_shape(branch: str | None, project_slug: str) -> BranchDerivedShape | None:
+    """Which project-scoped branch grammar (if any) ``branch`` satisfies.
 
     Two sanctioned shapes, both project-scoped so a cross-station key
     collision can never classify: the legacy/loop ``<station>/…`` prefix,
     and marshal Story 22.9's ``dispatch/<project_slug>/…`` -- the latter
     carrying the FULL slug, which is exactly what makes
     ``dispatch/pyforge-mason/22.9`` unrecognizable to ``pyforge-marshal``.
+    ``None`` when ``branch`` matches neither -- the sole source of truth
+    ``_branch_belongs_to_project`` and ``classify_merge_subject`` both
+    delegate to (Story 51.7/CAP-255).
     """
     if not isinstance(branch, str) or not project_slug:
-        return False
+        return None
     if branch.startswith(f"{DISPATCH_BRANCH_PREFIX}/{project_slug}/"):
-        return True
+        return BranchDerivedShape.DISPATCH_BRANCH
     station = _station_from_project_slug(project_slug)
-    return bool(station) and branch.startswith(f"{station}/")
+    if station and branch.startswith(f"{station}/"):
+        return BranchDerivedShape.STATION_BRANCH
+    return None
+
+
+def _branch_belongs_to_project(branch: str | None, project_slug: str) -> bool:
+    """Does ``branch`` name a branch of ``project_slug``'s station?"""
+    return _branch_derived_shape(branch, project_slug) is not None
 
 
 def _parse_key_token(raw: str) -> StoryKeyRef | None:
