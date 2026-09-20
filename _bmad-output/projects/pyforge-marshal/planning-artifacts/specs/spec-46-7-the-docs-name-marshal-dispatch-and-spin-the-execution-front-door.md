@@ -2,7 +2,8 @@
 title: '46.7: The docs name marshal dispatch and spin the execution front door'
 type: 'docs'
 created: '2026-09-18'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'ff2455866b'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
