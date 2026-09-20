@@ -31,6 +31,7 @@ from pyforge.doctor.sources import (
     capability_effect,
     chain,
     deps,
+    docs_currency,
     docs_map_hygiene,
     docs_shelf,
     factory,
@@ -77,6 +78,9 @@ _EXPECTED_DISPATCH = {
     "fr-without-cap": one_chain.gather_fr_without_cap,
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md hygiene.
     "docs-map-hygiene": docs_map_hygiene.gather,
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render,
+    # authored-page staleness, skill-dir hygiene.
+    "docs-currency": docs_currency.gather,
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list.
     "docs-shelf-occupancy": docs_shelf.gather,

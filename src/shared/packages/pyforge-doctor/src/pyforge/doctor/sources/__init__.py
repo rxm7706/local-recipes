@@ -528,6 +528,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # atlas, warden, guild-cross-station) gets an advisory finding naming it;
     # fleet subject (the catalog spans multiple stations, same rationale as
     # GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY above). Never FAIL.
+    SourceRegistration(
+        source=Source.DOCS_CURRENCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 30.2 (spec-pyforge-doctor CAP-84) -- sources/docs_currency.py.
+    # map-render / authored-page-stale / skill-dir-hygiene, beside
+    # DOCS_MAP_HYGIENE above; fleet subject (the general docs layer, same
+    # rationale as GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY). Never FAIL.
 )
 
 

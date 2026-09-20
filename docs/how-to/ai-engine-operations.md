@@ -5,7 +5,7 @@ sources:
   - src/platform/compose/compose.yml
   - src/platform/compose/dbgpt/Containerfile
   - docs/explanation/platform-deployment-architecture.md
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # AI Engine Operations

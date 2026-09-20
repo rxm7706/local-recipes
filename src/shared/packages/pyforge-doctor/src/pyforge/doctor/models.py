@@ -347,6 +347,19 @@ class Source(StrEnum):
     # keyword pulled from prose. Always WARN, never FAIL (AD-2). See
     # sources/live_proof_surfaces.py for the independence rationale.
     LIVE_PROOF_SURFACE = "live-proof-surface"
+    # Story 30.2 (spec-pyforge-doctor CAP-84): the closed taxonomy EXTENDED
+    # once more -- three read-only checks over docs/map.yaml (the new
+    # machine registry) and docs/MAP.md (its render): (a) map-render --
+    # MAP.md's generated "## Page registry" section byte-matches a fresh
+    # render of map.yaml; (b) authored-page-stale -- a kind: authored page's
+    # own sources:/verified: frontmatter has fallen behind a named source's
+    # git last-touch, or the page body cites a backticked skill/script/path
+    # token that no longer resolves; (c) skill-dir-hygiene -- a stray
+    # non-layout file inside a bmad-*/pyforge-*/skf-* skill directory. All
+    # three WARN-only, fail-open (never FAIL; a missing/invalid docs/map.yaml
+    # degrades to one WARN via degrade_on_exception). See
+    # sources/docs_currency.py for the independence rationale.
+    DOCS_CURRENCY = "docs-currency"
 
 
 class Partition(StrEnum):

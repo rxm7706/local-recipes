@@ -11,7 +11,7 @@ spec_updated: 2026-06-20
 > recipe edit is built + tested locally before it is pushed.
 >
 > This is a *timeless workflow* spec, parameterized per case. It rests on three
-> pillars: **BMAD** drives execution (`bmad-quick-dev` per run,
+> pillars: **BMAD** drives execution (`bmad-build` per run,
 > `bmad-retrospective` at closeout); the **`conda-forge-expert` skill** owns the
 > procedural detail (SKILL.md diagnostic chain + gotchas G10/G14/G19/G24/G26/
 > G31–G34) and is authoritative on any conflict; the **conda-forge-atlas**
@@ -20,7 +20,7 @@ spec_updated: 2026-06-20
 > prerequisite naming. This spec is the orchestration layer on top. New cases
 > append to "Worked Examples"; the body stays stable.
 >
-> Run via `bmad-quick-dev` with the failing PR(s) named in the prompt.
+> Run via `bmad-build` with the failing PR(s) named in the prompt.
 
 ---
 

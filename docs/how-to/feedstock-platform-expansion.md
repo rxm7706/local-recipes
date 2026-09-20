@@ -10,7 +10,7 @@ spec_updated: 2026-06-20
 > `<target_platforms>` in the same PR. Both ship together so the
 > platform-add lands on a known-good recipe baseline.
 >
-> **BMAD intake document.** Written for `bmad-quick-dev` (Quick Flow
+> **BMAD intake document.** Written for `bmad-build` (Quick Flow
 > track — single-feedstock update, no PRD/architecture phase). ~13
 > stories across 3 waves. Run BMAD with this file as the intent
 > document, naming the feedstock + target platforms in the prompt:

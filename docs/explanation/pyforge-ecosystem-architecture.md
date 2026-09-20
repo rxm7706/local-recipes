@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - pixi.toml
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # PyForge Ecosystem Architecture
