@@ -67,6 +67,7 @@ from ..core.publish import dispatch_complete_result, shape_dispatch_publish
 from ..core.model import Finding, Severity
 from ..core.journal import (
     JournalEntryId,
+    LAND_FINDINGS_FIELD,
     Phase,
     SCOPE_VIOLATION_ADVISORIES_FIELD,
     build_entry,

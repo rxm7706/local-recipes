@@ -143,6 +143,11 @@ SIDECAR_THRESHOLD_BYTES = 4096
 SCOPE_VIOLATION_ADVISORIES_FIELD = "scope_violation_advisories"
 SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF = "scope_violation_advisories_sidecar_ref"
 
+# Dispatch landing findings (Story 53.2): `execute_dispatch_land`'s envelope
+# findings (MRS-DISP-047/048) -- always 0-1 items, so no sidecar-offload path
+# is needed unlike the scope-advisories field above.
+LAND_FINDINGS_FIELD = "land_findings"
+
 # Story 2.3's two new observation kinds (AD-26/AD-27): "registered" here in
 # the same sense every OTHER kind this module's own docstring names is --
 # this module keeps no closed kind-registry/enum (`kind` is any non-blank
@@ -512,6 +517,16 @@ def resolve_scope_violation_advisories_from_payload(
     offloaded = parsed.get(SCOPE_VIOLATION_ADVISORIES_FIELD)
     if isinstance(offloaded, list):
         return tuple(item for item in offloaded if isinstance(item, dict))
+    return ()
+
+
+def resolve_land_findings_from_payload(
+    payload: Mapping[str, object],
+) -> tuple[dict[str, object], ...]:
+    """Read landing findings (MRS-DISP-047/048) from an outcome payload."""
+    inline = payload.get(LAND_FINDINGS_FIELD)
+    if isinstance(inline, list):
+        return tuple(item for item in inline if isinstance(item, dict))
     return ()
 
 
