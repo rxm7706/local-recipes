@@ -251,7 +251,7 @@ development_status:
   60-3-ship-backends-conda-channel-default: backlog
   60-4-frame-index-and-a-thin-browse-list: backlog
   61-1-corridor-transports-upload-default: done
-  61-2-work-passport-and-core-schema: backlog
+  61-2-work-passport-and-core-schema: done
   61-3-as-of-glass-and-mailed-query: backlog
   61-4-signed-outbound-slice: backlog
   61-5-quarantine-mint-then-reject: backlog
