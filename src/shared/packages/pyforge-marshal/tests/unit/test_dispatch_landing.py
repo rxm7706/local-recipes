@@ -464,6 +464,70 @@ def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
     assert vcs.pushed == ["dispatch/pyforge-marshal/53.2"]
 
 
+def test_spec_surface_name_re_matches_doctor_message_formats() -> None:
+    """Story 53.2 review (B8): ``_SPEC_SURFACE_NAME_RE`` is documented only by
+    a code comment as matching doctor's exact message text -- pin that
+    coupling with a test built from the three literal formats
+    ``pyforge.doctor.sources.chain._drift_findings`` emits today (the
+    ``no-baseline``, ``drift``, and ``drift-presumed`` kinds), so a future
+    edit to either side that breaks the match fails loudly here instead of
+    only inside a real dispatch landing."""
+    name = "pyforge-marshal/spec-alpha"
+    messages = (
+        f"{name}: run --write-baseline --spec {name}",
+        f"{name}: src/a.py changed but the spec's memlog did not move — "
+        f"reconcile the spec, then --write-baseline --spec {name}",
+        f"{name}: src/a.py changed; the memlog moved but does not name "
+        f"this path — confirm it was reconciled, then --write-baseline "
+        f"--spec {name}",
+    )
+    for message in messages:
+        match = _SPEC_SURFACE_NAME_RE.search(message)
+        assert match is not None, message
+        assert match.group(1) == name
+
+
+def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.2 review (S3): a drifted spec named by a DIFFERENT project
+    than the one being landed is handled by the same generic
+    ``name.partition("/")`` string logic as an own-project spec -- this
+    covers that already-correct path rather than leaving it proven only by
+    inspection."""
+    findings = (
+        _SurfaceFinding(
+            "drift",
+            "other-project/spec-zeta: src/a.py changed but the spec's "
+            "memlog did not move — reconcile the spec, then "
+            "--write-baseline --spec other-project/spec-zeta",
+            "src/a.py",
+        ),
+    )
+    _install_fake_spec_surface(monkeypatch, findings)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.2",
+        key=normalize("53-2-example"),
+        run_id=None,
+        vcs=vcs,
+        process=process,
+    )
+    assert outcome.refuse is False
+    assert outcome.finding is not None
+    assert outcome.finding.code == "MRS-DISP-047"
+    assert "other-project/spec-zeta" in outcome.finding.message
+
+    stamp_calls = [c for c in process.calls if "spec_surface_check.py" in c[0][1]]
+    assert len(stamp_calls) == 1
+    assert "other-project/spec-zeta" in stamp_calls[0][0]
+
+
 def test_reconcile_spec_surface_drift_refuses_foreign_drift(
     tmp_path: Path, monkeypatch
 ) -> None:
