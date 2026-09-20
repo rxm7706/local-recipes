@@ -122,3 +122,25 @@ with no code-level I/O.
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
+## Auto Run Result
+
+**Summary:** `AGENTS.md`, `CLAUDE.md`, and `.claude/skills/bmad-build-auto/SKILL.md` now name `marshal factory dispatch` (single story) / `marshal factory spin` (multi-story) as the default execution path for a story, and state what a bare `bmad-build-auto` invocation forgoes (the substrate/compression layers, the journal entry, the per-harness savings benchmark). No code, ledger, or CI-gate changes.
+
+**Files changed:**
+- `.claude/skills/bmad-build-auto/SKILL.md` — added a "Default execution path" paragraph after the render-command instructions.
+- `CLAUDE.md` — amended the `bmad-build`/`bmad-build-auto` Skill Reference row (inside the existing `governance-currency` ignore-block, markers untouched) with the same contrast.
+- `AGENTS.md` — amended Dream-first-workflow item 3 ("Autonomy") in place with the same contrast, preserving the existing item numbering that `docs/dreams/library-catalog-manifest-sync.md` and `docs/dreams/pyforge-marshal.md` cross-reference.
+- This spec file — added `## Code Map` / `## Tasks & Acceptance` / `## Spec Change Log` / `## Review Triage Log` / `## Design Notes`, a `deferred:` frontmatter entry, and the frontmatter lifecycle fields (`baseline_revision`, `followup_review_recommended`, `status`).
+
+**Review findings breakdown** (2026-09-20 pass, 5 findings, all from the Blind Hunter layer — Edge Case Hunter and Verification Gap Reviewer reported none; the Intent Alignment Auditor's descriptive report raised no separate finding):
+- Patched (3, all `low`): the `deferred:` frontmatter entry for the out-of-scope advisory detector (previously prose-only); the Code Map's `spin` story citation (corrected from 22.1/22.7 to 3.3, its actual docstring citation); the Design Notes' test-coverage sentence (named `test_instruction_surface_parity.py` instead of claiming no such test exists, and clarified it doesn't cover this story's specific phrasing).
+- Rejected (2, both `false`): a claimed governance-currency ignore-block detection asymmetry between CLAUDE.md and AGENTS.md — refuted, since that detector doesn't pattern-match this story's phrasing in either file; a claimed missing default-execution-path note on `bmad-build/SKILL.md` — refuted, since `marshal factory dispatch`/`spin` wrap `bmad-build-auto` sessions specifically, not `bmad-build`, so that sibling skill has no analogous gap.
+- No `intent_gap` or `bad_spec` findings; no `defer`-routed findings.
+- Process note: the 3 patches were applied directly rather than by re-engaging the step-03 subagent, since all three were self-contained edits to this spec file's own supporting sections (Code Map/Design Notes/`deferred:`) rather than to the three doc files the subagent had authored — re-engagement would have been redundant.
+
+**Follow-up review recommendation:** `false`. All patched entries were `low` severity (none `high`, fewer than two `medium`), so no follow-up pass is warranted.
+
+**Verification performed:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8329 passed, 1 skipped, 12 deselected, exit 0 (re-run after patches). `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped, exit 0 (re-run after patches). Both read directly from exit code, never through a pipe.
+
+**Residual risks:** None identified beyond the deferred advisory-detector capability (recorded in frontmatter `deferred:`), which is explicitly out of scope for this docs-only story.
