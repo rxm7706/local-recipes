@@ -149,6 +149,24 @@ def test_compute_glass_reading_refused_when_dashboard_extra_not_importable(monke
     assert "not installed" in reading.message
 
 
+def test_compute_glass_reading_refused_when_the_module_itself_refuses(monkeypatch):
+    """Distinct from the extra-not-importable case above: the `[dashboard]`
+    extra IS installed, but `read_latest_corridor_load` refuses internally
+    (e.g. Django settings unconfigured) -- `compute_glass_reading` must pass
+    that refusal through unchanged, never raise."""
+    import pyforge.steward.dashboard.glass_query as glass_query_module
+
+    monkeypatch.setattr(
+        glass_query_module,
+        "read_latest_corridor_load",
+        lambda *, direction: {"status": "refused", "direction": direction, "message": "settings unconfigured"},
+    )
+    reading = compute_glass_reading(direction="inbound")
+    assert reading.status == "refused"
+    assert reading.state is None
+    assert reading.message == "settings unconfigured"
+
+
 # -- dashboard/glass_query.py's own refusal branches --
 #
 # These call `read_latest_corridor_load` directly (not through
