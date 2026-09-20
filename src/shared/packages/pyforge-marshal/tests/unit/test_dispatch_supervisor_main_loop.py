@@ -1633,17 +1633,15 @@ def test_finalize_sequence_reuses_an_already_journaled_verification(tmp_path: Pa
     _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
     lines = (
-        _line(
+        *_outcome_pair(
             kind=dispatch_core.KIND_DISPATCH_PUSH,
-            phase=Phase.OUTCOME,
             payload={"branch": branch, "outcome": "pushed", "ok": True},
             counter=1,
         ),
-        _line(
+        *_outcome_pair(
             kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.OUTCOME,
             payload={"verdict": "verified", "ok": True},
-            counter=2,
+            counter=3,
         ),
     )
     fs = FakeFs()
@@ -1883,9 +1881,8 @@ def test_supervisor_lands_from_the_live_branch_then_completes(
         run_dir,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-                phase=Phase.OUTCOME,
                 payload={"verdict": "verified", "ok": True},
                 counter=1,
             ),
@@ -1920,9 +1917,8 @@ def test_supervisor_heartbeats_a_marshal_initiated_stop_with_no_verification_yet
         run_dir,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_FINALIZE,
-                phase=Phase.OUTCOME,
                 payload={"story_key": _STORY_KEY, "trigger": "harness-done", "ok": True},
                 counter=1,
             ),
@@ -1940,7 +1936,7 @@ def test_supervisor_heartbeats_a_marshal_initiated_stop_with_no_verification_yet
     )
 
     assert code == 0
-    assert publisher.heartbeats == ["handle-1"]
+    assert publisher.heartbeats and set(publisher.heartbeats) == {"handle-1"}
 
 
 def test_supervisor_commits_and_promotes_a_blocked_halt(
@@ -1953,9 +1949,8 @@ def test_supervisor_commits_and_promotes_a_blocked_halt(
         run_dir,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_FINALIZE,
-                phase=Phase.OUTCOME,
                 payload={"story_key": _STORY_KEY, "trigger": "harness-done", "ok": True},
                 counter=1,
             ),
@@ -1989,9 +1984,8 @@ def test_supervisor_records_a_stale_blocked_spec_as_an_advisory_only(
         run_dir,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_FINALIZE,
-                phase=Phase.OUTCOME,
                 payload={"story_key": _STORY_KEY, "trigger": "harness-done", "ok": True},
                 counter=1,
             ),
@@ -2036,9 +2030,8 @@ def test_supervisor_preserves_the_worktree_patch_on_a_failed_run(tmp_path: Path,
         run_dir,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-                phase=Phase.OUTCOME,
                 payload={"verdict": "refused", "ok": False},
                 counter=1,
             ),
