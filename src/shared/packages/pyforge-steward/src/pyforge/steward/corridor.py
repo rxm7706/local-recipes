@@ -286,7 +286,8 @@ def load_extract(
                 "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
             )
 
-    # so only now does the transport need to be declared and on.
+    # Only now (past the slice/signer gate, when it applies) does the
+    # transport need to be declared and on.
     decl = config.transport(transport)
     declared = ", ".join(t.name for t in config.transports) or "(none declared)"
     if decl is None:
