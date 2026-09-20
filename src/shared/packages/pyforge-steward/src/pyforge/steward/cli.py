@@ -40,7 +40,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
-# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill),
+# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill;
+#   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export).
 DUTIES: tuple[str, ...] = (
@@ -83,7 +84,9 @@ _HELP = {
     ),
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
-        "batch sha + waybill; transports declared in corridor.yaml (Story 61.1)"
+        "batch sha + waybill; transports declared in corridor.yaml (Story 61.1); "
+        "outbound additionally requires --slice + --signer -- default deny "
+        "(Story 61.4)"
     ),
     "passport": (
         "vendor work-passport identity -- mints a FRESH UUID per inbound key, "
@@ -498,7 +501,15 @@ def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
     ``outbound``. ``--corridor``/``--json`` sit on the parent only — unlike
     ``catalog``'s before-and-after-the-verb UX, this story only needs them to
     parse in the conventional position, before the verb.
+
+    Story 61.4: ``outbound`` additionally takes ``--slice``/``--signer``.
+    Both default to ``""`` here (not argparse ``required=True``) so a
+    missing one is a normal duty-level "refused" outcome (the I/O Matrix's
+    "unsigned dump -> refused" row), never a hard usage error — the same
+    choice this story's default-deny gate makes inside ``corridor.py``.
     """
+    from .corridor import SIGNER_ROLE
+
     load_parser.add_argument(
         "--corridor",
         default=None,
@@ -510,9 +521,10 @@ def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
     )
     load_subs = load_parser.add_subparsers(dest="load_verb", metavar="{inbound,outbound}")
     for verb in ("inbound", "outbound"):
-        sub = load_subs.add_parser(
-            verb, help=f"load a {verb} extract, idempotent on batch sha + waybill"
-        )
+        help_text = f"load a {verb} extract, idempotent on batch sha + waybill"
+        if verb == "outbound":
+            help_text += " -- requires --slice + --signer (default deny, Story 61.4)"
+        sub = load_subs.add_parser(verb, help=help_text)
         sub.add_argument("--file", required=True, metavar="PATH", help="the extract file to load")
         sub.add_argument(
             "--waybill", required=True, metavar="LABEL", help="caller-supplied waybill label"
@@ -523,6 +535,23 @@ def _add_load_subparsers(load_parser: argparse.ArgumentParser) -> None:
             metavar="NAME",
             help="declared transport name in corridor.yaml (default: app-upload)",
         )
+        if verb == "outbound":
+            sub.add_argument(
+                "--slice",
+                dest="slice_name",
+                default="",
+                metavar="NAME",
+                help="the named slice this file carries -- required (default deny, Story 61.4)",
+            )
+            sub.add_argument(
+                "--signer",
+                default="",
+                metavar="NAME",
+                help=(
+                    f"the recorded {SIGNER_ROLE} who authorized this outbound slice "
+                    "-- required (default deny, Story 61.4)"
+                ),
+            )
 
 
 def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:

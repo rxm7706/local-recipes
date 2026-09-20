@@ -427,7 +427,7 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   committed state only; marshal 51.7's earlier halt was detected only because that session
   committed the blocked spec first). `fleet-picture` then shows the story `backlog` with no
   trace of why. **Decomposed 2026-09-20:** (7) → CAP-257 / Story 51.10 (hand-driven, same
-  PR); (8) → CAP-258 / Story 51.11 (dispatch after 51.7 lands — same supervisor hub file).
+  PR); (8) → CAP-258 / Story 51.11 (dispatch after 51.7 lands — same supervisor hub file). **Realized 2026-09-20:** 51.10–51.13 landed (#1534, #1540, #1537); Epic 51 closed with the marshal, doctor and steward lanes each showing their live run in `marshal watch`.
   **(9), found the moment (7) started returning data (01:25Z):** every live dispatch run reads
   *finished* in the watch. `marshal status` reports `dispatch_completion_verdict: live` for a
   running session (the real vocabulary is `live | completed | failed | stopped_externally`),

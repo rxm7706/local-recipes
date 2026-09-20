@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-09-20'
 status: 'done'
 baseline_revision: 'c8277c03c117ff4779d54a2ff9d900f519415971'
-final_revision: 'pending — the merge commit of the 51.13 PR'
+final_revision: '7c14d4cf134c694699870db12d33ae5558bd3ad7'
 review_loop_iteration: 1
 followup_review_recommended: false
 context: []
