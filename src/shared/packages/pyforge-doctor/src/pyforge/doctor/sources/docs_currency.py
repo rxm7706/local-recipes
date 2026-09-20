@@ -12,7 +12,11 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   ``kind: authored`` page: (a) when the page's OWN frontmatter declares
   ``sources:``/``verified:`` (the convention Story 30.1 seeded on 14
   pages), a named source whose git last-touch date postdates ``verified:``
-  is stale; (b) the page body is scanned for backticked ``bmad-*``/
+  is stale, and a named source with NO git history at all (never
+  committed -- a typo, or a path that moved) is flagged too, with a
+  distinct ``reason: "source not found in git history"`` rather than
+  being silently treated as current; (b) the page body is scanned for
+  backticked ``bmad-*``/
   ``skf-*`` skill names, ``scripts/``/``_bmad/``-rooted ``.py`` paths, and
   repo-relative paths under a real top-level directory that no longer
   resolve -- mirrors ``scripts/governance_currency_check.py``'s three
@@ -72,7 +76,12 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
-__all__ = ("gather", "load_map_yaml", "render_map_registry")
+__all__ = (
+    "gather",
+    "load_map_yaml",
+    "render_map_registry",
+    "splice_registry_section",
+)
 
 _CHECK_MAP_RENDER = "docs-currency-map-render"
 _CHECK_AUTHORED_STALE = "docs-currency-authored-stale"
@@ -165,19 +174,47 @@ def render_map_registry(pages: list[dict]) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
+def _find_registry_bounds(text: str) -> tuple[int, int] | None:
+    """Return ``(content_start, content_end)`` -- the index range strictly
+    between the begin/end markers -- or ``None`` when either marker is
+    absent. The ONE bounds-finder :func:`_extract_registry_section` (read
+    side, this module's own ``map-render`` check) and
+    :func:`splice_registry_section` (write side,
+    ``scripts/docs_map_render.py``) both call, so the two can never
+    independently drift on what counts as "the markers"."""
+    begin_idx = text.find(_REGISTRY_BEGIN)
+    if begin_idx == -1:
+        return None
+    begin_line_end = text.find("\n", begin_idx)
+    if begin_line_end == -1:
+        return None
+    end_idx = text.find(_REGISTRY_END, begin_line_end)
+    if end_idx == -1:
+        return None
+    return begin_line_end + 1, end_idx
+
+
 def _extract_registry_section(map_md_text: str) -> str | None:
     """Text strictly between the begin/end markers, or ``None`` when either
     marker is absent -- itself a mismatch, per the story's own I/O matrix."""
-    begin_idx = map_md_text.find(_REGISTRY_BEGIN)
-    if begin_idx == -1:
+    bounds = _find_registry_bounds(map_md_text)
+    if bounds is None:
         return None
-    begin_line_end = map_md_text.find("\n", begin_idx)
-    if begin_line_end == -1:
+    start, end = bounds
+    return map_md_text[start:end]
+
+
+def splice_registry_section(map_md_text: str, replacement: str) -> str | None:
+    """Replace the text strictly between the begin/end markers with
+    ``replacement``; the write side's half of the same marker contract
+    :func:`_extract_registry_section` reads. Returns ``None`` when either
+    marker is absent -- the caller (``scripts/docs_map_render.py``) treats
+    that as an error, never a silent partial write."""
+    bounds = _find_registry_bounds(map_md_text)
+    if bounds is None:
         return None
-    end_idx = map_md_text.find(_REGISTRY_END, begin_line_end)
-    if end_idx == -1:
-        return None
-    return map_md_text[begin_line_end + 1 : end_idx]
+    start, end = bounds
+    return map_md_text[:start] + replacement + map_md_text[end:]
 
 
 def _check_map_render(target: Path, pages: list[dict]) -> Finding | None:
@@ -250,7 +287,19 @@ def _stale_sources(target: Path, frontmatter: dict) -> list[dict]:
         if not isinstance(source, str):
             continue
         touched = _git_last_touch_date(target, source)
-        if touched is not None and touched > verified_s:
+        if touched is None:
+            # A source with no git history at all (never committed -- a
+            # typo, or a path that moved) is a STRONGER signal than mere
+            # staleness; flag it too, rather than silently treating "we
+            # cannot prove it's stale" as "it's current".
+            stale.append(
+                {
+                    "source": source,
+                    "reason": "source not found in git history",
+                    "verified": verified_s,
+                }
+            )
+        elif touched > verified_s:
             stale.append(
                 {"source": source, "source_touched": touched, "verified": verified_s}
             )
