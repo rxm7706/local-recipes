@@ -33,6 +33,7 @@ if str(_PKG) not in sys.path:
     sys.path.insert(0, str(_PKG))
 
 from pyforge.marshal.coverage_gate import (
+    format_only_paths,
     STATIONS,
     evaluate_coverage_payload,
     package_root,
@@ -78,6 +79,28 @@ def _git_diff_names(base: str, head: str) -> list[str]:
             print(proc.stderr or proc.stdout or "git diff failed", flush=True)
             raise SystemExit(1)
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def _git_show(rev: str, path: str) -> str | None:
+    proc = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=REPO, check=False, capture_output=True, text=True)
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def _drop_format_only(paths: list[str], base: str, head: str) -> list[str]:
+    """Remove station source files whose AST did not change between ``base``
+    and ``head`` (steward Story 66.1, 2026-09-20): a formatting-only edit is
+    not a touched module, so the floor measures code changes, not the
+    formatter. Diffs against the merge-base, the same three-dot semantics as
+    ``_git_diff_names``. Added / deleted / unparseable files stay touched.
+    """
+    proc = subprocess.run(["git", "merge-base", base, head], cwd=REPO, check=False, capture_output=True, text=True)
+    merge_base = proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
+    candidates = [p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"]
+    pairs = {p: (_git_show(merge_base, p), _git_show(head, p)) for p in candidates}
+    skipped = format_only_paths(pairs)
+    if skipped:
+        print(f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)", flush=True)
+    return [p for p in paths if p not in skipped]
 
 
 def _suite_test_paths(root: Path, suite: str) -> list[Path]:
@@ -256,6 +279,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
     else:
         paths = _git_diff_names(_normalize_base(args.base), args.head)
+        paths = _drop_format_only(paths, _normalize_base(args.base), args.head)
 
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths))

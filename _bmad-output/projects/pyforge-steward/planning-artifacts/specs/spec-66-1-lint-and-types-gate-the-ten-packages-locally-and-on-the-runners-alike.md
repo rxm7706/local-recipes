@@ -69,11 +69,13 @@ Ledger status (do not edit the ledger): `done`.
   - `[medium]` `[patch]` mypy run by package NAME (`-p pyforge.<station>` over `mypy_path = src`), never `mypy src`: each station is also an editable install on `sys.path`, and crawling the directory made mypy see every module twice.
   - `[medium]` `[patch]` `scripts/lint_types.py` is the one runner; `guild-tasks` `ruff` / `ruff-format` / `ruff-format-fix` / `mypy` / `target-version-check` / `lint-types`; `.github/workflows/lint-types.yml` and `pr-preflight`'s first leg both run `pixi run --frozen -e pyforge-guild lint-types` verbatim; the workflow's setup-pixi pin registered in `pixi_version_registry.py` the day it was added.
 
+  - `[high]` `[patch]` Found by the pre-push hook's first live run: the touched-module coverage floor counted every reformatted file as touched (atlas: 16 modules under 80% from formatting alone). `pyforge.marshal.coverage_gate.ast_fingerprint` (imports and docstrings dropped from the AST dump) + `format_only_paths`; `scripts/coverage_gates_ci.py` drops files whose fingerprint equals the merge-base's before naming touched modules — the floor now measures code that changed, never the formatter. All eight station gates pass.
+
 ## Auto Run Result
 
 **Status:** done
 **Summary:** the ten `pyforge-*` packages are lint- and type-gated from one task set that CI and `pr-preflight` call verbatim; `src/platform`'s lane untouched.
 **Verification:** `pixi run --frozen -e pyforge-guild lint-types` exit 0 (ruff ×10 ok, ruff-format ×10 ok, mypy ×10 ok, target-version ok, precommit-config ok); `pyforge-station-tests` on the reformatted tree — see the PR body; `tests/scripts/test_lint_types_gate.py` 11 passed; `pixi-version-check` clean (19 sites).
 **Files changed:** see the Surface, plus every `.py` under the ten packages' `src/` and `tests/` (format + import sort) and the hand fixes named in the triage log.
-**Residual risks:** the mypy baseline is a ratchet — 110 module entries to tighten as modules are touched; E501 is off in favour of `ruff format`'s 120-column code width (290 legacy long strings/comments).
+**Residual risks:** a `.py` whose only change is an import is not measured by the floor (imports carry no behaviour); the mypy baseline is a ratchet — 110 module entries to tighten as modules are touched; E501 is off in favour of `ruff format`'s 120-column code width (290 legacy long strings/comments).
 **Follow-up review recommendation:** false

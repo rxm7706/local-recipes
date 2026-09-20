@@ -18,6 +18,7 @@ story work; this story ships the gate and the named-module failure surface.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -308,6 +309,68 @@ def touched_source_modules(paths: Iterable[str]) -> frozenset[str]:
             rel = rel[: -len("/__init__")]
         found.add(rel.replace("/", "."))
     return frozenset(found)
+
+
+def ast_fingerprint(source: str) -> str | None:
+    """A formatting-insensitive fingerprint of one Python source.
+
+    The ``ast.dump`` of the module after two normalisations: every ``import``
+    statement is dropped (at any nesting) and every docstring is dropped.
+    That makes the fingerprint invariant under exactly what a lint/format
+    landing changes -- ``ruff format`` (quotes, wrapping, trailing commas,
+    docstring indentation, PEP 758 ``except A, B:``), ``I001`` import sorting
+    and merging, ``F401`` unused-import removal, a type-only import under
+    ``TYPE_CHECKING`` -- none of which carries behaviour a coverage floor
+    should demand a test for. Any other statement-level change (a renamed
+    variable, a removed assignment, a new branch) moves it. ``None`` when the
+    source does not parse, so a caller treats an unparseable file as changed.
+
+    Steward Story 66.1 (2026-09-20): the first fleet-wide reformat made every
+    module "touched" by the name-only diff, and the touched-module coverage
+    floor measured the whole fleet at once. A gate that fires on formatting
+    measures the formatter, not the code.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+
+    def normalise(body: list[ast.stmt]) -> list[ast.stmt]:
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body = body[1:]
+        return [s for s in body if not isinstance(s, (ast.Import, ast.ImportFrom))]
+
+    for node in ast.walk(tree):
+        for field in ("body", "orelse", "finalbody"):
+            value = getattr(node, field, None)
+            if isinstance(value, list) and value and all(isinstance(s, ast.stmt) for s in value):
+                setattr(node, field, normalise(value))
+        if isinstance(node, ast.Try):
+            for handler in node.handlers:
+                handler.body = normalise(handler.body)
+    return ast.dump(tree, include_attributes=False)
+
+
+def format_only_paths(pairs: Mapping[str, tuple[str | None, str | None]]) -> frozenset[str]:
+    """Paths whose base and head sources share an :func:`ast_fingerprint`.
+
+    ``pairs`` maps a repo-relative path to ``(base_source, head_source)``;
+    a missing side (``None``: added or deleted file) or an unparseable side
+    is never format-only.
+    """
+    out: set[str] = set()
+    for path, (base, head) in pairs.items():
+        if base is None or head is None:
+            continue
+        fb, fh = ast_fingerprint(base), ast_fingerprint(head)
+        if fb is not None and fb == fh:
+            out.add(path)
+    return frozenset(out)
 
 
 def filter_percents(
