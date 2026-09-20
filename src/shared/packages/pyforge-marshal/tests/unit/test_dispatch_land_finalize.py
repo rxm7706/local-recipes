@@ -519,7 +519,7 @@ def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_
         lambda *args, **kwargs: True,
     )
 
-    def _fake_intake(process, root, project_slug):
+    def _fake_intake(process, fs, vcs, root, project_slug):
         seen["intake_args"] = (root, project_slug)
         return Finding(code="MRS-DISP-047", severity=Severity.ERROR, message="forced for test")
 
@@ -565,7 +565,7 @@ def test_finalize_stays_green_when_intake_returns_no_finding(
         lambda *args, **kwargs: True,
     )
 
-    def _fake_intake(process, root, project_slug):
+    def _fake_intake(process, fs, vcs, root, project_slug):
         seen["called"] = True
         return None
 
