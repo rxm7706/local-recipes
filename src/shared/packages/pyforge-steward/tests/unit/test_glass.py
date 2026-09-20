@@ -200,13 +200,15 @@ def test_render_glass_table_handles_a_refused_reading(fmt):
     """Blind Hunter (review pass 1): the `reading.state or "refused"` /
     `reading.waybill or ""` fallbacks must actually render, not just exist."""
     table = render_glass_table({"standup": _refused_reading(), "shipped": _fresh_reading()}, fmt)
-    assert "refused" in table
+    assert "None" not in table
     if fmt == "csv":
         rows = list(csv.reader(io.StringIO(table)))
         assert rows[1][2] == "refused"
         assert rows[1][3] == ""
     else:
-        assert "| Standup | inbound | refused |  |" in table
+        lines = table.splitlines()
+        cells = [c.strip() for c in lines[2].split("|")][1:-1]
+        assert cells == ["Standup", "inbound", "refused", "", "", _refused_reading().message]
 
 
 def test_render_glass_table_markdown_escapes_pipe_and_newline_in_waybill():
