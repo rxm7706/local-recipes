@@ -400,7 +400,6 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
     worktree = tmp_path / "wt"
     worktree.mkdir()
     story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
-    respaced_guard = " ".join(_SURFACE_RECONCILE_COMMAND.split(" ", 1))
     respaced_guard = _SURFACE_RECONCILE_COMMAND.replace(" ", "  ", 1)
     effective, _ = policy.compose(
         project_slug="pyforge-marshal",
