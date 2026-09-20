@@ -104,6 +104,7 @@ def dispatch_terminal_dead_tail(live_row: dict) -> bool:
     if live_row.get("dispatch_completion_verdict") not in (
         "failed",
         "stopped_externally",
+        "blocked",
     ):
         return False
     return live_row.get("dispatch_phase") is None

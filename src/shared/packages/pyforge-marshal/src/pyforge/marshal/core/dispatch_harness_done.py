@@ -25,6 +25,7 @@ _FRONTMATTER_DELIMITER = "---"
 _STATUS_KEY = "status:"
 _FOLLOWUP_KEY = "followup_review_recommended:"
 _BLOCKING_CONDITION_KEY = "blocking_condition:"
+_BASELINE_REVISION_KEY = "baseline_revision:"
 _BARE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 _TRUTHY = frozenset({"true", "yes", "1"})
 
@@ -32,6 +33,10 @@ _TRUTHY = frozenset({"true", "yes", "1"})
 # universal -- some specs only carry the frontmatter scalar above, others
 # only a body line (optionally bold-wrapping the value, never the label).
 _BLOCKING_CONDITION_BODY_RE = re.compile(r"(?im)^blocking condition:\s*(.+)$")
+
+# Story 51.11: mirrors ``supervisor/intent_gap_preserve.py``'s own
+# ``_AUTO_RUN_HEADING_RE`` -- a different module, same heading convention.
+_AUTO_RUN_HEADING_RE = re.compile(r"^##\s+Auto Run Result\s*$", re.MULTILINE)
 
 _BANNER_PREFIX = "<!--"
 _BANNER_SUFFIX = "-->"
@@ -147,6 +152,24 @@ def parse_blocking_condition(text: str) -> str | None:
         return None
     found = matches[-1].group(1).strip().replace("*", "").strip()
     return found or None
+
+
+def parse_baseline_revision(text: str) -> str | None:
+    """The spec's own ``baseline_revision:`` frontmatter scalar (Story
+    51.11, CAP-258) -- the run a ``blocked`` halt's Auto Run Result was
+    written against, so a stale ``blocked`` spec left over from an earlier
+    dispatch pass on this same story is never misattributed to the run
+    reading it now (Never bullet 3)."""
+    return _frontmatter_scalar(text, _BASELINE_REVISION_KEY)
+
+
+def has_auto_run_result(text: str) -> bool:
+    """True when the spec body carries an ``## Auto Run Result`` heading
+    (Story 51.11) -- mirrors ``supervisor/intent_gap_preserve.py``'s own
+    heading match. A bare ``status: blocked`` with no such section is not
+    enough signal that the harness itself (rather than a hand edit)
+    produced this halt."""
+    return _AUTO_RUN_HEADING_RE.search(text) is not None
 
 
 def land_fail_operator_message(

@@ -1133,6 +1133,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # bmad-build-auto without an operator decision. The SAME ERROR tier as
     # MRS-DISP-040 above (the sibling `done`-status CAP-4-only refusal).
     "MRS-DISP-045": Verdict.ERROR,
+    # Story 51.11 (CAP-258): stale blocked-spec baseline mismatch --
+    # advisory only, never blocks the exit classification.
+    "MRS-DISP-046": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

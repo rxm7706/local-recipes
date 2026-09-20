@@ -126,6 +126,38 @@ def test_derive_supervision_state_unsupervised_live() -> None:
     assert state.completion_verdict == DispatchSessionVerdict.LIVE
 
 
+def test_derive_supervision_state_blocked_is_terminal_not_relive() -> None:
+    """Story 51.11 (CAP-258): a committed ``blocked`` verdict must not be
+    re-derived from fresh git facts -- without the fix, a dead session with
+    committed wip (``has_git_progress`` True) would re-derive as LIVE and
+    fleet tooling would think the run is still unsupervised-live."""
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="51-11-test",
+        session_pid=42,
+        model=None,
+        launched_at=datetime.now(timezone.utc),
+        worktree_path="/wt",
+        baseline_head_sha="abc",
+        supervisor_pid=99,
+        completion_verdict="blocked",
+    )
+    git = DispatchGitFacts(
+        baseline_head_sha="abc",
+        current_head_sha="def",
+        changed_paths=("spec-51-11.md",),
+        branch_merged=False,
+        story_merged_on_main=False,
+    )
+    state = derive_supervision_state(
+        journal=journal,
+        session_alive=False,
+        supervisor_alive=False,
+        git=git,
+    )
+    assert state.completion_verdict == DispatchSessionVerdict.BLOCKED
+    assert state.unsupervised_live is False
+
+
 def test_reconcile_unsupervised_verdict_from_git_merge() -> None:
     git = DispatchGitFacts(
         baseline_head_sha="abc",

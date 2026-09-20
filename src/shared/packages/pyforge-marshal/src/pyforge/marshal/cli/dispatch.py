@@ -916,6 +916,10 @@ def resolve_dispatch_session_verdict(
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
         DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
+        # Story 51.11 (CAP-258): an already-committed `blocked` verdict must
+        # not be re-derived from fresh git facts, which would re-introduce
+        # the exact bug this story fixes (stale facts read STOPPED_EXTERNALLY).
+        DispatchSessionVerdict.BLOCKED.value,
     }:
         return DispatchSessionVerdict(journal.completion_verdict)
     from ..core.dispatch_supervisor_state import landing_journal_indicates_complete

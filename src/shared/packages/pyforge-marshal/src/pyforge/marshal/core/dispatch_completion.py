@@ -18,6 +18,11 @@ class DispatchSessionVerdict(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     STOPPED_EXTERNALLY = "stopped_externally"
+    #: Story 51.11 (CAP-258): the session halted on its own tracked spec's
+    #: ``status: blocked`` (with an Auto Run Result matching this run's own
+    #: baseline) but exited before committing that halt -- distinct from
+    #: ``STOPPED_EXTERNALLY``, which never inspects spec content.
+    BLOCKED = "blocked"
 
 
 @dataclass(frozen=True)
