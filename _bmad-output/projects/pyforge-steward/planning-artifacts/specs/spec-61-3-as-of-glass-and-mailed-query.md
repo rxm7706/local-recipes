@@ -2,7 +2,7 @@
 title: '61.3: As-of glass and mailed query'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 1
 followup_review_recommended: false
 context: []
