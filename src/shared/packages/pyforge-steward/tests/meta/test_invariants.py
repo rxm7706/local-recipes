@@ -472,6 +472,27 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         encoding="utf-8"
     ), "the sanctioned lazy reach into passport_mint is expected to exist"
 
+    # Story 61.3's glass.py added a fourth sanctioned lazy reach, into
+    # dashboard/glass_query.py — same shape, same narrower claim pinned.
+    glass_module = ast.parse((steward_dir / "glass.py").read_text(encoding="utf-8"))
+    glass_top_level: list[str] = []
+    for node in glass_module.body:
+        if isinstance(node, ast.Import):
+            glass_top_level += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            glass_top_level.append(node.module)
+    banned_glass_top_level = [
+        name for name in glass_top_level
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
+    ]
+    assert not banned_glass_top_level, (
+        f"glass.py imports {banned_glass_top_level} at module level -- the "
+        f"dashboard extra may only be reached lazily, inside compute_glass_reading"
+    )
+    assert "pyforge.steward.dashboard.glass_query" in (steward_dir / "glass.py").read_text(
+        encoding="utf-8"
+    ), "the sanctioned lazy reach into glass_query is expected to exist"
+
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
     """Review pass 3: the guard above SKIPS everything under `dashboard/`, so
@@ -569,6 +590,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
         "cache.py",
         "consumers.py",
         "corridor_load.py",
+        "glass_query.py",
         "models.py",
         "passport_mint.py",
         "passport_sync.py",

@@ -58,9 +58,19 @@ from django.contrib.admin.sites import AdminSite  # noqa: E402
 from django.test import RequestFactory  # noqa: E402
 
 from pyforge.steward.dashboard.admin import AuditEntryAdmin, WorkPassportAdmin  # noqa: E402
-from pyforge.steward.dashboard.models import AuditAction, AuditEntry, WorkPassport  # noqa: E402
+from pyforge.steward.dashboard.models import (  # noqa: E402
+    AuditAction,
+    AuditEntry,
+    CorridorLoad,
+    WorkPassport,
+)
 from pyforge.steward.dashboard.passport_sync import sync_work_passports_db  # noqa: E402
-from pyforge.steward.dashboard.views_htmx import backlog_htmx_view  # noqa: E402
+from pyforge.steward.dashboard.views_htmx import (  # noqa: E402
+    backlog_htmx_view,
+    shipped_htmx_view,
+    standup_htmx_view,
+)
+from pyforge.steward.glass import EMPTY_FILE_SHA256  # noqa: E402
 from pyforge.steward.sprint_ledger_query import WorkPassportItem  # noqa: E402
 
 _EPICS_MD = """## Epic 1: Fixture Epic
@@ -103,9 +113,27 @@ def env_root(fixture_root: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _clean_db():
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
+    CorridorLoad.objects.all().delete()
     yield
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
+    CorridorLoad.objects.all().delete()
+
+
+def _create_corridor_row(*, waybill: str, batch_sha: str, direction: str = "inbound", days_ago: int = 0) -> CorridorLoad:
+    """Story 61.3 fixture helper: `loaded_at` is `auto_now_add`, so an
+    "earlier day" row needs a queryset-level `.update()` (bypasses
+    `auto_now_add`'s save-time behavior), mirroring `test_glass.py`."""
+    from datetime import datetime, timedelta, timezone
+
+    row = CorridorLoad.objects.create(
+        direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload"
+    )
+    if days_ago:
+        earlier = datetime.now(timezone.utc) - timedelta(days=days_ago)
+        CorridorLoad.objects.filter(pk=row.pk).update(loaded_at=earlier)
+        row.refresh_from_db()
+    return row
 
 
 def _story(**overrides) -> WorkPassportItem:
@@ -213,6 +241,65 @@ def test_backlog_htmx_view_reads_root_from_settings_before_env(fixture_root: Pat
     monkeypatch.setattr(settings, "PYFORGE_REPO_ROOT", str(fixture_root), raising=False)
     body = backlog_htmx_view(RequestFactory().get("/dashboard/backlog/")).content.decode("utf-8")
     assert "Found <strong>3</strong>" in body
+
+
+def test_standup_and_shipped_htmx_views_render_fresh() -> None:
+    _create_corridor_row(waybill="WB-FRESH", batch_sha="a" * 64)
+    for view in (standup_htmx_view, shipped_htmx_view):
+        res = view(RequestFactory().get("/dashboard/glass/"))
+        assert res.status_code == 200
+        assert res["Cache-Control"] == "no-store"
+        body = res.content.decode("utf-8")
+        assert ">FRESH<" in body
+        assert "WB-FRESH" in body
+
+
+def test_standup_and_shipped_htmx_views_render_stale() -> None:
+    _create_corridor_row(waybill="WB-STALE", batch_sha="b" * 64, days_ago=2)
+    for view in (standup_htmx_view, shipped_htmx_view):
+        body = view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+        assert ">STALE<" in body
+        assert "WB-STALE" in body
+
+
+def test_standup_and_shipped_htmx_views_render_failed() -> None:
+    _create_corridor_row(waybill="WB-EMPTY", batch_sha=EMPTY_FILE_SHA256)
+    for view in (standup_htmx_view, shipped_htmx_view):
+        body = view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+        assert ">FAILED<" in body
+        assert "WB-EMPTY" in body
+
+
+def test_standup_and_shipped_htmx_views_render_unborn() -> None:
+    for view in (standup_htmx_view, shipped_htmx_view):
+        body = view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+        assert ">UNBORN<" in body
+        assert "Waybill: <code>-</code>" in body
+
+
+def test_standup_and_shipped_htmx_views_render_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "pyforge.steward.dashboard.glass_query", None)
+    for view in (standup_htmx_view, shipped_htmx_view):
+        body = view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+        assert ">REFUSED<" in body
+
+
+def test_standup_and_shipped_views_share_the_identical_inbound_reading_labels_only_differ() -> None:
+    """Review pass 1 amendment (2026-09-19): both views read
+    `compute_glass_reading(direction="inbound")` -- the SAME reading -- and
+    differ only in their title/dom_id label text."""
+    _create_corridor_row(waybill="WB-SHARED", batch_sha="c" * 64)
+    standup_body = standup_htmx_view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+    shipped_body = shipped_htmx_view(RequestFactory().get("/dashboard/glass/")).content.decode("utf-8")
+
+    for body in (standup_body, shipped_body):
+        assert "WB-SHARED" in body
+        assert ">FRESH<" in body
+
+    assert "Standup — any news from the vendor?" in standup_body
+    assert "id=\"glass-standup\"" in standup_body
+    assert "Shipped — what testers can currently rely on" in shipped_body
+    assert "id=\"glass-shipped\"" in shipped_body
 
 
 def test_backlog_htmx_view_records_one_load_audit_row(env_root: Path) -> None:
