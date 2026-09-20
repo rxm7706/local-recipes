@@ -58,9 +58,14 @@ from django.contrib.admin.sites import AdminSite  # noqa: E402
 from django.test import RequestFactory  # noqa: E402
 
 from pyforge.steward.dashboard.admin import AuditEntryAdmin, WorkPassportAdmin  # noqa: E402
-from pyforge.steward.dashboard.models import AuditAction, AuditEntry, WorkPassport  # noqa: E402
+from pyforge.steward.dashboard.models import AuditAction, AuditEntry, CorridorLoad, WorkPassport  # noqa: E402
 from pyforge.steward.dashboard.passport_sync import sync_work_passports_db  # noqa: E402
-from pyforge.steward.dashboard.views_htmx import backlog_htmx_view  # noqa: E402
+from pyforge.steward.dashboard.views_htmx import (  # noqa: E402
+    backlog_htmx_view,
+    shipped_htmx_view,
+    standup_htmx_view,
+)
+from pyforge.steward.glass import EMPTY_FILE_SHA256  # noqa: E402
 from pyforge.steward.sprint_ledger_query import WorkPassportItem  # noqa: E402
 
 _EPICS_MD = """## Epic 1: Fixture Epic
@@ -103,9 +108,11 @@ def env_root(fixture_root: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _clean_db():
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
+    CorridorLoad.objects.all().delete()
     yield
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
+    CorridorLoad.objects.all().delete()
 
 
 def _story(**overrides) -> WorkPassportItem:
