@@ -103,3 +103,25 @@ def is_mechanical_conflict_path(path: str) -> bool:
 def unknown_conflict_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
     return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p)))
+
+
+# --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------
+
+
+def blocked_twin_promotion_text(
+    *, primary_text: str | None, worktree_text: str
+) -> str | None:
+    """Text to write onto the primary's tracked copy of a story spec when a
+    dispatch worktree halts ``blocked`` with its commit uncommitted (Story
+    51.11), or ``None`` when no write is needed.
+
+    The promoted twin is byte-identical to the worktree's own blocked spec
+    — the same story's tracked spec at two physical paths (Story 51.7's
+    dispatch-branch/primary split) — never independently reconstructed.
+    Returns ``None`` when the primary copy is unreadable (``primary_text``
+    is ``None``: nothing to overwrite) or already carries this exact text
+    (idempotent — a re-run promotes nothing a second time).
+    """
+    if primary_text is None or primary_text == worktree_text:
+        return None
+    return worktree_text
