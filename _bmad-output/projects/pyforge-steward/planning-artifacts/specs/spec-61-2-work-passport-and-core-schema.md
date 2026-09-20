@@ -2,7 +2,7 @@
 title: '61.2: Work passport and core schema'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -174,6 +174,140 @@ passport with a vendor one).
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py src/shared/packages/pyforge-steward/tests/meta/test_invariants.py -q` -- expected: all pass, including `test_the_shipped_migration_matches_the_model` and `test_no_module_outside_dashboard_imports_dashboard_django_or_channels`.
 - `PYTHONPATH=src/shared/packages/pyforge-steward/src python -m pyforge.steward.cli passport mint --vendor-id acme --jira-key PROJ-1` -- like `load inbound` (61.1), this verb needs a configured `DJANGO_SETTINGS_MODULE`, which a bare shell in this sandbox does not have; expected here is a clean refusal (`passport mint: DJANGO_SETTINGS_MODULE is unset...`, exit 1), never a raised `ImportError`/traceback -- confirmed identical to `load inbound`'s own behavior under the same bare invocation. The real ORM path (`status: minted`, a persisted row) is exercised and passes under the test suite's migrated in-memory SQLite database (`test_passport_mint.py`), which is where this duty is actually verified end-to-end.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` -- expected: `passport.py` and `dashboard/passport_mint.py` at or above the station's coverage floor.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change.** `WorkPassport` (Story 65.1's model) gains a nullable
+`vendor_id` column and a new `steward passport mint` CLI duty (the 22nd duty) that mints a
+vendor Work Passport: always a fresh, randomly generated UUID, never a lookup-by-key — the
+same `vendor_id` + `jira_key` combination mints two distinct, never-merged rows every time
+it is called, satisfying the I/O Matrix's one scenario directly. `mint_vendor_passport`
+(django-free, `passport.py`) validates its inputs (a non-blank `vendor_id`, at least one
+non-blank nickname) and reaches the ORM half (`dashboard/passport_mint.py::record_vendor_passport`)
+through the same dynamic `importlib.import_module` idiom `corridor.load_extract` established
+in Story 61.1 — refusing, never raising, when the `[dashboard]` extra is absent. CAP-140
+("work passport and frozen core schema") is now fully realized: identity is a minted UUID,
+Jira keys and GitHub numbers are stored only as nicknames, and `vendor_id` lives on the schema
+as this story's Boundaries required. The pre-existing internal-mint path
+(`sprint_ledger_query.py`'s deterministic `uuid5`-keyed BMAD-story passports) is untouched and
+unaffected by the new nullable column. No wiring into `corridor.py`/`CorridorLoad` was added —
+that story's declared surface is "the existing Postgres join store" only, and no extract-file
+row format is specified anywhere in this Spec for a later story to build the corridor-to-mint
+connection against.
+
+**Files changed.**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/models.py` — added
+  `WorkPassport.vendor_id` (nullable/blank, indexed `CharField`); reworded the class docstring
+  (CAP-140 now fully realized, no longer "61.2 remains the story of record").
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/migrations/0004_workpassport_vendor_id.py`
+  (NEW) — generated (not hand-written) via a disposable `makemigrations` script, zero drift
+  against `test_the_shipped_migration_matches_the_model`.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/passport_mint.py` (NEW) —
+  `record_vendor_passport()` (always `uuid.uuid4()`, never `.filter().first()`), `_refused()`
+  echoing every identifying field (`vendor_id`, `jira_key`, `github_item_id`, `title`) mirroring
+  `corridor_load.py`'s precedent, lazy `import django` never at module top.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py` (NEW) —
+  `PassportMintError`, `mint_vendor_passport()` (validates, strips `vendor_id` before storage,
+  treats a whitespace-only nickname as absent, dynamic dashboard reach), `_mint_result()`
+  (one unified `--json`/payload-shape helper across every duty branch, applying Story 61.1's own
+  review lesson from the start), `PassportDuty` (bare refuses — mirrors `RestoreDuty`, not
+  `LoadDuty`, since there is no config to report read-only).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/admin.py` — extended
+  `WorkPassportAdmin.list_display`/`list_filter`/`search_fields` with `vendor_id`.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — registered the 22nd duty
+  `passport` (`DUTIES`, `_HELP`, `build_parser` elif-chain + new `_add_passport_subparsers`,
+  `resolve_duty`).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py` — module-split
+  docstring names `passport_mint.py` as a third lazy-django-import dashboard module.
+- `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` (NEW, 23 tests) — full
+  coverage of `mint_vendor_passport`, `record_vendor_passport`, `PassportDuty`, CLI parsing, the
+  I/O Matrix's same-key-two-mints scenario, the two whitespace-normalization fixes from review,
+  the `title` round-trip, and the blank-`vendor_id` path exercised through the duty layer.
+- `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` — duty count 21 → 22, tuple
+  updated, bare-invocation exclusion list gains `"passport"`.
+- `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` — `len(DUTIES)` 21 → 22.
+- `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py` —
+  `WorkPassportAdmin` assertions extended to `list_filter`/`search_fields`, not just
+  `list_display` (review finding).
+- `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` — added the `passport.py`
+  lazy-dashboard-reach AST assertion and the `passport_mint.py` module-split entry.
+- This spec — planned, reviewed, triaged, patched.
+
+**Review findings breakdown** (14 findings from four layers; every row in `## Review Triage Log`).
+- Patches applied — 6 triage entries: **medium 1** (`mint_vendor_passport` validated `vendor_id`
+  with `.strip()` but stored the un-stripped value, fragmenting the "v1 is one vendor" invariant
+  under a padded-argument trigger), **low 5** (`WorkPassportAdmin.list_filter`/`search_fields`
+  untested despite gaining `vendor_id`; `record_vendor_passport`'s success payload omitted
+  `title`; the blank-`vendor_id` error path untested through the duty layer; `_refused()` dropped
+  `jira_key`/`github_item_id`/`title` unlike `corridor_load.py`'s precedent; a whitespace-only
+  nickname passed the "at least one nickname" check). High 0.
+- Rejected (2, `false`): "`sprint-status-ledger.yaml` not updated" — the dev-loop spec status and
+  the ledger status are intentionally decoupled tracks per AGENTS.md (identical to 61.1's own
+  litigated finding); "`_HELP['passport']`'s phrasing reads as a dedupe guarantee" — the same help
+  string's own second clause ("never merges by Jira key or GitHub number") resolves the ambiguity
+  the isolated first half appeared to raise.
+- Rejected (4, `low`, not worth the complexity or explicitly out of scope): the Design Notes'
+  citation of the pre-diff docstring wording going stale (rejected outright — its only fix is
+  editing this build's spec); the `except (DataError, IntegrityError)` set not also catching
+  `InterfaceError`/`InternalError`/`NotSupportedError` (identical, already-shipped set to
+  `corridor_load.py`'s, and the outer duty-boundary catch-all still prevents an escape); three
+  near-identical AST-scan blocks in `test_invariants.py` not sharing a helper (replicates Story
+  61.1's own already-reviewed pattern; a proper fix would touch two other stories' existing
+  blocks); `record_vendor_passport` leaving `station`/`story_id` at their empty-string defaults
+  (the exact, explicitly documented trade-off in this spec's own Design Notes, not an oversight).
+- Deferred (1, `low`): this PR needs the `maintenance` label at open time (non-`recipes/` paths
+  only) — a PR-mechanics step for whoever opens the PR, not a code or spec defect; recorded in
+  frontmatter `deferred`.
+- No `intent_gap` or `bad_spec` entries. The Intent Alignment Auditor's report (strictly
+  descriptive per its own brief) named several readings this diff's design choices exceed the
+  letter of the intent-contract on (requiring at least one nickname; treating "v1 is one vendor"
+  as descriptive rather than code-enforced; the I/O Matrix's sole test holding `vendor_id`
+  constant across both mints rather than varying it) — each is a defensible, harmless design
+  choice within the stated Boundaries (Simplicity First: no vendor registry/allow-list is
+  specified anywhere in this Spec's declared surface to validate against, and the constant-vendor
+  test is the *stronger* demonstration of the never-merge rule, not a weaker one). No unresolved,
+  multiple-reading ambiguity was found.
+
+**Follow-up review recommendation: `false`** — first pass; patched entries by verdict: high 0,
+medium 1, low 5. Per the computation rule, a first pass needs a patched `high` or two-or-more
+patched `medium` entries to recommend a follow-up; this pass had one medium and five low patches,
+so the work is treated as converged.
+
+**Verification performed.**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` (the dispatch's configured verify,
+  real env), before and after the patch pass: 1496 passed / 4 skipped → **1499 passed, 4 skipped**
+  after patches (independently re-run by this orchestrator, not just the implementation
+  subagent's own report).
+- `pixi run -e pyforge-steward pyforge-steward-coverage-gate`: OK both passes; `passport.py` 96%,
+  `dashboard/passport_mint.py` 92% (both patch passes), well above the 80% floor; 26/26 touched
+  modules ≥ 80%.
+- Manual CLI smoke check (`PYTHONPATH=... python -m pyforge.steward.cli passport mint --vendor-id
+  acme --jira-key PROJ-1`): confirmed to refuse identically to the already-shipped `load inbound`
+  duty under the same bare-shell invocation (no `DJANGO_SETTINGS_MODULE` configured) — corrected
+  this spec's own Verification section to state that accurately rather than an unreachable
+  "exit 0" expectation, since this duty (like `load inbound`) needs a configured Django project.
+- Matrix Test Audit: the I/O Matrix's one row ("same Jira key two rooms | two inbound rows | two
+  UUIDs; keys are nicknames") is covered by `test_record_vendor_passport_identical_repeat_creates_two_distinct_rows`,
+  independently confirmed present and passing in both full-suite verification runs above.
+- Diff read in full by this orchestrator, twice (pre- and post-patch), not merely summarized from
+  the implementation subagent's report, per step-03/04's "judge against the diff" instruction.
+
+**Residual risks.**
+- The `maintenance` PR label (deferred above) — mechanical, owed at PR-open time.
+- No ledger/PR mechanics were run: `sprint-status-ledger.yaml` still reads `backlog` for
+  `61-2-work-passport-and-core-schema` (ledger promotion via `sprint-ledger-sync` and any
+  PR/label mechanics are a separate step, per AGENTS.md, from this single-story `bmad-build-auto`
+  dispatch); no `pr-preflight`/shared-surface station suite was run since this branch touches
+  only `pyforge-steward`'s own tree and no `pixi.toml`/`pyforge-core` shared surface.
+- No wiring exists yet from an actual uploaded vendor extract file's individual rows into
+  `passport mint` calls — that requires a file format this Spec never specifies, and is left to
+  whichever later story (61.3/61.4/61.5, or a dedicated follow-on) defines it.
+- `vendor_id` remains an unvalidated free-form string (no registry/allow-list) — the documented,
+  deliberate v1 scope per this spec's Design Notes; a second vendor arriving would need no schema
+  change, only a new caller-supplied value.
 
 ## Note — 2026-09-19
 
