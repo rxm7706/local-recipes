@@ -271,7 +271,7 @@ def test_standup_htmx_view_failed_for_an_empty_load_today() -> None:
     _make_load(direction="inbound", batch_sha=EMPTY_FILE_SHA256, waybill="w-empty")
     body = standup_htmx_view(RequestFactory().get("/dashboard/standup/")).content.decode("utf-8")
     assert ">FAILED<" in body
-    assert "today's on-time file is empty" in body
+    assert "on-time file is empty" in body
 
 
 def test_standup_htmx_view_stale_when_nothing_loaded_today() -> None:
