@@ -239,6 +239,14 @@ def load_extract(
             f"unknown direction {direction!r}; must be one of {DIRECTIONS!r}"
         )
 
+    # The gate applies to `outbound` only -- normalize here, before either
+    # value is used anywhere below (a record call or the returned outcome),
+    # so an inbound caller passing stray slice/signer values never has them
+    # persisted or echoed back.
+    if direction != "outbound":
+        slice_name = ""
+        signer = ""
+
     import importlib
 
     try:
@@ -275,12 +283,14 @@ def load_extract(
     # deny an outbound create with no named slice or no recorded signer,
     # BEFORE the transport is even checked.
     if direction == "outbound":
-        if not slice_name or not slice_name.strip():
+        slice_name = (slice_name or "").strip()
+        signer = (signer or "").strip()
+        if not slice_name:
             raise CorridorLoadError(
                 "an outbound load requires a named slice -- default deny "
                 "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
             )
-        if not signer or not signer.strip():
+        if not signer:
             raise CorridorLoadError(
                 f"an outbound load requires a recorded {SIGNER_ROLE} -- default deny "
                 "(Story 61.4, spec-work-passports-dated-extracts CAP-4)"
