@@ -71,3 +71,30 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
   - `[false]` `[reject]` intent-alignment: the "we do not PAT into their org" boundary is satisfied only by omission, with no explicit test asserting the absence of new credential code — refuted: independently verified (grep + trace) that no new outbound network/credential/PAT code exists anywhere in the diff.
   - `[false]` `[reject]` intent-alignment: the diff's default-deny also covers "no slice" in addition to the Matrix's sole "no signer" row — not a defect; broader coverage than the single specified row is not a bad outcome.
 
+## Auto Run Result
+
+**Summary:** `steward load outbound` (Story 61.1) now default-denies unless the caller supplies both a named `--slice` and a recorded `--signer`; both are persisted on the existing `CorridorLoad` row and read back verbatim on an idempotent repeat, never re-validated or re-signed. `inbound` loads are unaffected. No new outbound transport or vendor-side authentication was added — this reuses the same declared `corridor.yaml` transports as inbound, per the "the vendor loads our file — we do not PAT into their org" boundary.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/corridor.py` — `load_extract` gains the outbound default-deny gate (`slice_name`/`signer` required, non-outbound directions normalized to blank, values stripped before validation/persistence); `LoadDuty` threads `--slice`/`--signer` through and quotes them in the CLI summary; `SIGNER_ROLE` constant added.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — `--slice`/`--signer` added to the `load outbound` subparser only, defaulting to `""` (a missing one is a duty-level refusal, not a usage error).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/models.py` — `CorridorLoad` gains blank-default `slice_name`/`signer` fields.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/migrations/0005_corridorload_signer_corridorload_slice_name.py` — new migration for the two fields.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/corridor_load.py` — `record_corridor_load` persists/returns `slice_name`/`signer` on every branch, reading back the originally recorded values on an idempotent hit.
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/admin.py` — `CorridorLoadAdmin` surfaces the two new fields in `list_display`/`search_fields`.
+- `src/shared/packages/pyforge-steward/tests/unit/test_corridor.py` — new coverage for the gate (missing slice, missing signer, whitespace-only variants of both, happy path, idempotent-repeat preserves original signer/slice, inbound unaffected) plus updated pre-existing tests.
+
+**Review findings breakdown** (full detail in the Review Triage Log above, pass dated 2026-09-20):
+- **Patched (5 entries, applied and re-verified):** `load_extract` now zeros `slice_name`/`signer` for non-outbound directions; the gate strips both values before validating/persisting them (closes a whitespace-padding-bypasses-audit-fidelity defect independently found by two review layers); a misleading test docstring about check ordering was corrected; two missing whitespace-only test cases were added; the CLI summary now quotes `slice=`/`signer=` values.
+- **Deferred:** none — every non-patched finding was rejected outright (below), not deferred.
+- **Rejected (7 findings):** no over-length test for the new `CharField`s (unlikely to be hit, generic `DataError` handling already covers it, no such convention is universal in this model); missing `db_index` on the two new admin-searchable fields (no demonstrated need, would need a speculative new migration); a doubled-period typo in this spec's own Binding line (fixing it would mean editing this build's spec, which is rejected by standing rule, and it predates this diff); four intent-alignment divergence claims (jira-csv/github-json/static-dossier exporters as an alternate "unsigned dump" surface; the gate's lack of coupling to an actual file transfer; the unvalidated free-text slice name; the unauthenticated signer) refuted respectively by this spec's own Binding section ("Surface: outbound loader"), the intent's own "no PAT into vendor org" boundary, the Approach text's plain wording, and the owning Dream's operator ruling 5; plus one claim that broader-than-specified test coverage is itself a problem (it is not).
+
+**Follow-up review recommendation:** `false`. This pass patched one `medium` entry and four `low` entries — no `high`, and fewer than two `medium` — so per the first-pass threshold this has converged.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` (the spec's declared verify command), read via exit code: pass 1 (pre-patch) `0`, 1552 passed/4 skipped; pass 2 (post-patch) `0`, 1554 passed/4 skipped.
+- Matrix Test Audit: the I/O matrix's sole row ("unsigned dump / no signer / refused") is covered by `test_load_extract_outbound_without_signer_raises` and `test_load_duty_outbound_without_signer_fails`, both of which ran and passed in both verification passes.
+- Full diff traced end-to-end by two independent review layers (edge-case-hunter, verification-gap) with no unresolved verification gaps reported.
+
+**Residual risks:** none rated `high`/`medium` and unresolved. The rejected items above (no dedicated over-length test, no DB index on the two new searchable fields) are named, low-severity, and speculative rather than demonstrated.
+
