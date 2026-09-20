@@ -54,6 +54,7 @@ from . import (
     capability_effect,
     chain,
     deps,
+    docs_currency,
     docs_shelf,
     factory,
     capability_ledger,
@@ -133,8 +134,14 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     Source.CHAIN_SPRAWL.value: one_chain.gather_chain_sprawl,
     Source.FR_WITHOUT_CAP.value: one_chain.gather_fr_without_cap,
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
-    # Diátaxis quadrants -- missing link FAIL, unmapped page WARN.
+    # Diátaxis quadrants -- missing link FAIL, unmapped page FAIL (promoted
+    # by Story 30.2).
     Source.DOCS_MAP_HYGIENE.value: docs_map_hygiene.gather,
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render
+    # (docs/MAP.md's generated Page registry section), authored-page
+    # staleness, and skill-dir hygiene -- same shape as DOCS_MAP_HYGIENE
+    # above, warn-only, fail-open.
+    Source.DOCS_CURRENCY.value: docs_currency.gather,
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list; same shape as
     # GENERAL_DOCS_CONSISTENCY above.

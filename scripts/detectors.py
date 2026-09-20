@@ -268,6 +268,10 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # in live-proof-surfaces.md gets an advisory finding naming it -- reads
     # only the tracked catalog + a git diff, offline, deterministic.
     ("live-proof-surface", "live-proof-surface-check"),
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render
+    # (docs/MAP.md), authored-page staleness, skill-dir hygiene -- offline,
+    # deterministic, beside docs-map-hygiene above.
+    ("docs-currency", "docs-currency-check"),
 )
 
 
