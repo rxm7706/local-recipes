@@ -93,7 +93,8 @@
             "fr-without-cap",
             "docs-map-hygiene",
             "docs-shelf-occupancy",
-            "live-proof-surface"
+            "live-proof-surface",
+            "docs-currency"
           ]
         },
         "check": { "type": "string" },

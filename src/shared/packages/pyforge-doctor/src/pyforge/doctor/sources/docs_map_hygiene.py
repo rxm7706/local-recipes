@@ -12,9 +12,13 @@ Two checks, one Finding per class:
 
 * ``missing`` -- a ``.md`` link in MAP.md that resolves under ``docs/`` but
   does not exist on disk -> ``FAIL`` (a broken map is never acceptable).
-* ``unmapped`` -- a quadrant page not linked from MAP.md -> ``WARN``
-  (warn-first, the doctor CAP-62 posture; promotion to FAIL is a later
-  story).
+* ``unmapped`` -- a quadrant page not linked from MAP.md -> ``FAIL``
+  (promoted from WARN by Story 30.2 / CAP-84: once ``docs/MAP.md`` carries
+  the generated ``## Page registry`` section -- one link per
+  ``docs/map.yaml`` page -- MAP.md's own link set already equals
+  map.yaml's page set, so a quadrant page absent from MAP.md is, by
+  construction, also absent from map.yaml; the comparison target in this
+  module needed no change).
 
 Section index pages -- a ``README.md`` directly inside a quadrant directory
 -- are exempt from ``unmapped``; deeper ``README.md`` files (e.g.
@@ -116,7 +120,7 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
             Finding(
                 source=Source.DOCS_MAP_HYGIENE,
                 check=_CHECK_ID,
-                status=DoctorStatus.WARN,
+                status=DoctorStatus.FAIL,
                 message=(
                     f"{len(unmapped)} quadrant page(s) under docs/ are not"
                     " linked from docs/MAP.md"
@@ -145,8 +149,9 @@ def gather(target: Path) -> tuple[Finding, ...]:
     """Docs MAP.md hygiene gather -- Story 30.1 / spec-pyforge-doctor CAP-83.
 
     ``missing`` (broken MAP link under ``docs/``) is FAIL; ``unmapped``
-    (quadrant page absent from MAP.md) is WARN. Degrades to one WARN on any
-    exception rather than crashing the dispatcher.
+    (quadrant page absent from MAP.md) is FAIL (promoted from WARN by
+    Story 30.2 / CAP-84 -- see module docstring). Degrades to one WARN on
+    any exception rather than crashing the dispatcher.
     """
     return degrade_on_exception(
         Source.DOCS_MAP_HYGIENE,

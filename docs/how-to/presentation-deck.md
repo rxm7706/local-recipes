@@ -55,6 +55,8 @@ a deck about the deck engine.
 
 ---
 
+<!-- governance-currency:ignore-start (every src/... path from here to the end of this parameterized workflow doc is relative to ONE deliverable's own repo layout, presentations/<slug>/src/..., never this monorepo's root src/ -- the dead-reference heuristic cannot tell the two apart; docs-currency Story 30.2) -->
+
 ## How to use this spec
 
 1. **Fill the Parameters block** with the new deck's real values (topic, title,
@@ -96,8 +98,9 @@ built, and shipped).
 
 When a Claude Code session has the **`claude-design` MCP server** connected
 (`/design-login`), the boundary is crossed by tools, not downloads — the Dream
-behind this: **`docs/dreams/design-code-bridge.md`** (piloted with the Marshal
-deck). The loop:
+behind this: **`docs/dreams/pyforge-herald.md`** (absorbed the former
+`design-code-bridge` Dream 2026-08-08; piloted with the Marshal deck). The
+loop:
 
 1. **Seed (repo → Design):** author or update the contract-compliant starter
    `.dc.html` locally; **prove it** (`npm run extract` + `npm run build`); then
@@ -809,3 +812,5 @@ theme — so a new persona deck should scaffold from **`pyforge-atlas` or
   `pyforge-atlas_infographic_deck-2026-07-23.pptx` (`marp --pptx`, Chrome-backed)
   so it now carries the full **§ Standard export set** (6 companions), matching
   `pyforge-warden`.
+
+<!-- governance-currency:ignore-end -->

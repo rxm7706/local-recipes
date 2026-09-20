@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py
   - pixi.toml
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # PyForge Station Cheat Sheet

@@ -62,7 +62,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `conda-smithy` | python + conda-smithy + shellcheck                    | Recipe linting only (`lint` task) |
 | `vuln-db`      | python + vuln-db                                      | AppThreat multi-source CVE DB + SBOM work (kept out of local-recipes to stay lean) |
 | `gcloud`       | python + gcloud-sdk                                   | One-time `gcloud auth application-default login`; linux/macOS only |
-| `pyforge-warden`| pyforge-warden (no-default-feature)                  | Lean env for the built `pyforge-warden` package (`src/shared/packages/pyforge-warden` path dep -> conda pkg + run-deps + pytest; test-oracles py-rattler / py-rattler-build / conda-build). Multi-axis dependency-compliance gate; CLI `warden` (`warden-scan` task), gate `pyforge-warden-test`. Spec: `docs/specs/pyforge-warden.md` |
+| `pyforge-warden`| pyforge-warden (no-default-feature)                  | Lean env for the built `pyforge-warden` package (`src/shared/packages/pyforge-warden` path dep -> conda pkg + run-deps + pytest; test-oracles py-rattler / py-rattler-build / conda-build). Multi-axis dependency-compliance gate; CLI `warden` (`warden-scan` task), gate `pyforge-warden-test`. Spec: `archive/docs/specs/pyforge-warden.md` |
 | `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build + **kedro-viz** + duckdb-server on linux-64 — the CAP-19 HTTP/Arrow face, raised only by the `query-plane-boot` task). Loop worktrees materialize THIS env; gates: `kedro-test`, `kedro-catalog-check`, `dagster-dryrun`, `viz` |
 | `pyforge-herald`| pyforge-herald (no-default-feature)                  | Lean env for the built `pyforge-herald` package (`src/shared/packages/pyforge-herald` path dep -> conda pkg + **mcp** run-dep + pytest/hatchling/python-build). Herald is the Design<->Code bridge; `mcp` is its Story-1.2 primary transport. Spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/` |
 | `pyforge-doctor`| pyforge-doctor (no-default-feature)                  | Lean env for the built `pyforge-doctor` package (`src/shared/packages/pyforge-doctor` path dep -> conda pkg + pytest/hatchling/python-build). Fleet-health station. Spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/` |
@@ -79,7 +79,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (`marshal seed` verbs) via **copier** (NFR-C2, `>=9.17,<10`); `import-linter` enforces AD-3/AD-4 as build-breaking contracts. Tasks: `pyforge-marshal-test`, `pyforge-marshal-build{,-conda,-dist}`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
 | `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
 | `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1 + 56.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`/`django-debug-toolbar`) ONTO `python-agent-platform` — one env for the full local Tier-1 baseline including `config.settings.local`, zero containers or managed services. |
-| `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
+| `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`archive/docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 | `bmad-suite-full`| bmad-suite-full (no-default-feature)                | **linux-64 only.** CAP-4 greenfield one-pin proof env (`spec-bmad-suite-metapackage`, story 39.4): composes only `bmad-suite` (>=2026.9.1, SelfExplainML) + a minimal `python` floor — solver smoke without pulling the fat `local-recipes` graph. Not composed into `local-recipes`, which keeps its own 11 explicit `bmad-*` pins for pipeline-truth / doctor drift granularity. Docs: `install-matrix.md`'s Greenfield one-pin section. |
 
 ### Version pins agents must respect (don't fight the resolver)
@@ -654,7 +654,9 @@ in `CLAUDE.md` and `_bmad-output/`.
 
 - **bmad-method** (>=6.12.0) — core installer/CLI: agents (PM, architect, dev, …),
   planning workflows (PRD → architecture → epics → stories), dev execution. 6.10+
+  <!-- governance-currency:ignore-start (bmad-dev-auto is the pre-6.11 name of bmad-build-auto, cited historically for what 6.10 added) -->
   gains `bmad-dev-auto`.
+  <!-- governance-currency:ignore-end -->
 - **bmad-loop** (>=0.11.1) — deterministic "ralph-loop" orchestrator with TUI; spawns
   coding-agent sessions in tmux (hence tmux below; Linux/macOS only, Windows via WSL).
 - **bmad-builder** (>=2.2.2) — build custom BMAD modules.
@@ -668,7 +670,9 @@ in `CLAUDE.md` and `_bmad-output/`.
   0.2.0 line from `main` — npm/tag 0.1.0 lack `score`. Bin is `eval-quality`, not `bmad-eval-quality`.
   Pinned in the linux-64 / osx-arm64 target tables only: SelfExplainML has just the `__unix`
   noarch variant (the `__win` one needs a Windows build), so win-64 skips it like skill-forge.
+  <!-- governance-currency:ignore-start (bmad-method-wds-expansion is quoted because it was retired) -->
   (`bmad-method-wds-expansion` retired 2026-09-05: upstream deprecated, folded into BMM as `bmad-ux`.)
+  <!-- governance-currency:ignore-end -->
 - **bmad-utility-skills** (>=2.0.0) — 10 maintainer utility skills.
 - **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (22 skills).
 - **bmad-manticore** (>=3.1.0.dev0) — brain dump → a rendered, graphics-rich video in
@@ -946,9 +950,12 @@ depending on them without adding them first:
   `local-recipes`; see § 3.)
 - **bmalph, bmad-autopilot** — BMAD-adjacent
   tools parked (unix-only or superseded by bmad-loop). (`mybmad-dashboard` is NOT
-  parked — it is live in the `bmad-ui` env; see § 12. `bmad-story-automator` is
+  parked — it is live in the `bmad-ui` env; see § 12.
+  <!-- governance-currency:ignore-start (bmad-story-automator is quoted because it was retired) -->
+  `bmad-story-automator` is
   gone entirely: retired upstream in favor of bmad-loop, recipe removed
   2026-08-21.)
+  <!-- governance-currency:ignore-end -->
 - **claude-mem, aichat** — parked agent-tooling candidates. (caveman, headroom-ai,
   codegraph, and ppt-master are NO LONGER parked — all live; caveman/headroom-ai
   unblocked 2026-08-30, see § 10.)

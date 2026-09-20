@@ -18,7 +18,7 @@ means something different for each surface:
 |---|---|---|
 | **Guildhall dashboard** (`docs/dashboard/`) | **Yes — the only thing CI deploys** | GitHub Pages, `https://rxm7706.github.io/local-recipes/`, via `.github/workflows/dashboard.yml` |
 | Feedstocks / conda packages | **No** | No feedstock-creation workflow exists in this repo; `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
-| The **platform** Helm chart (`src/platform/deploy/charts/platform/`) | **Yes, but human-triggered** | Deploys the Django platform (web/worker/beat/consumers, Postgres, Redis, optional Keycloak) via manual `helm install` or the `workflow_dispatch`-only `.github/workflows/platform-deploy.yml` against a Warden-verified digest — never automatic on push. See `src/platform/deploy/README.md` and §§ 7-8 below |
+| The **platform** Helm chart (`src/platform/deploy/charts/platform/`) | **Yes, but human-triggered** | Deploys the Django platform (web/worker/beat/consumers, Postgres, Redis, optional Keycloak) via manual `helm install` or the `workflow_dispatch`-only `.github/workflows/platform-deploy.yml` against a Warden-verified digest — never automatic on push. See `docs/explanation/platform-deployment-architecture.md` and §§ 7-8 below |
 | Other containers (root `Containerfile`, the two `src/platform/compose/*/Containerfile` sidecars) | **No — built and gate-checked in CI only** | The root Guild `Containerfile` and the sidecar Containerfiles are built by `.github/workflows/pyforge-station-tests.yml` / `platform-ci.yml` and run through `scripts/container-gates` (secrets-scan, volumes), but nothing pushes or runs them as a deployed service — CI build-time verification, not deployment |
 | `helm/lasuite-docs/values.yaml` | **No** | A values override with no chart and no apply step — a design/intent artifact, unreferenced by any in-repo code path |
 | `conf/base/knowledge.yml` | **No** | Config for the `sentinel` wiki agent (`src/sentinel/`); unreferenced by any deploy path |
@@ -487,7 +487,7 @@ Full rotation procedures (ordered steps, dual-key assertion overlap, DB role
 coordination) live in
 `src/shared/packages/pyforge-steward/docs/keys-runbook.md`. Platform deploy
 details and the manual `kubectl create secret` quick-start are in
-`src/platform/deploy/README.md`.
+`docs/explanation/platform-deployment-architecture.md`.
 
 ### 7.1 Developer profile — age + steward keys
 

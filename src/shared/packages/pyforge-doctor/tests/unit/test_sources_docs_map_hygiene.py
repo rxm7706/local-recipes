@@ -4,8 +4,9 @@ Covers the story I/O matrix against temp fixture trees only -- never the
 live ``docs/`` tree. Scope under test: the four Diátaxis quadrants
 (``docs/tutorials``, ``docs/how-to``, ``docs/reference``,
 ``docs/explanation``) vs the links in ``docs/MAP.md``; ``missing`` is FAIL,
-``unmapped`` is WARN, quadrant-level ``README.md`` index pages are exempt,
-and MAP.md § "Outside this map" layers are never scanned.
+``unmapped`` is FAIL (promoted from WARN by Story 30.2 / CAP-84),
+quadrant-level ``README.md`` index pages are exempt, and MAP.md §
+"Outside this map" layers are never scanned.
 """
 
 from __future__ import annotations
@@ -69,13 +70,13 @@ def test_all_green_emits_one_ok_with_mapped_count(tmp_path: Path):
     assert finding.evidence["page_count"] == 4
 
 
-def test_unmapped_quadrant_page_emits_one_warn_naming_it(tmp_path: Path):
+def test_unmapped_quadrant_page_emits_one_fail_naming_it(tmp_path: Path):
     docs = _green_tree(tmp_path)
     _write_page(docs, "how-to/detect-concurrent-agent-activity.md")
     _write_page(docs, "reference/sync-jira-github-workflow-templates/README.md")
 
     finding = _only(docs_map_hygiene.gather(tmp_path))
-    assert finding.status == DoctorStatus.WARN
+    assert finding.status == DoctorStatus.FAIL
     assert finding.evidence["class"] == "unmapped"
     # Sorted; a deeper README.md is NOT exempt -- only quadrant-level ones.
     assert finding.evidence["paths"] == [
@@ -113,7 +114,7 @@ def test_missing_and_unmapped_together_emit_one_finding_per_class(tmp_path: Path
     _write_map(docs, "tutorials/getting-started.md", "how-to/gone.md")
 
     findings = docs_map_hygiene.gather(tmp_path)
-    assert [f.status for f in findings] == [DoctorStatus.FAIL, DoctorStatus.WARN]
+    assert [f.status for f in findings] == [DoctorStatus.FAIL, DoctorStatus.FAIL]
     assert findings[0].evidence == {"class": "missing", "paths": ["how-to/gone.md"]}
     assert findings[1].evidence["class"] == "unmapped"
     assert "explanation/orphan.md" in findings[1].evidence["paths"]
