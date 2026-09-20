@@ -11,3 +11,10 @@ uv run --no-cache "{project-root}/_bmad/scripts/render_skill.py" --project-root 
 
 - On success, read and follow the one absolute `workflow.md` instruction printed to stdout.
 - On failure (including `uv` being unavailable), report the command output and HALT. Do not run any workflow source directly.
+
+**Default execution path.** `marshal factory dispatch` (single story) or `marshal factory spin`
+(multi-story) is the default way to run this skill — both launch it under marshal governance in
+an isolated worktree, journaled and benchmarked. Invoking this skill bare, as here, is sanctioned
+but unmeasured: it forgoes the shared substrate/compression layers dispatch wires up, the journal
+entry a supervised run writes, and the per-harness savings benchmark that reads that journal. Use
+bare invocation only when a dispatch/spin session isn't available.

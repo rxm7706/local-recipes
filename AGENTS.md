@@ -295,9 +295,13 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
    no matter who does the work (Claude, Cursor, Gemini, Devin, Copilot, a human, or any agentic
    framework). BMAD specs track status in the framework; legacy `docs/specs/*.md` track it in
    `status:` frontmatter.
-3. **Autonomy.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch `docs/dreams/`, run `bmad-spec`
-   on a new Dream, and drive the build unattended — so "a Dream is written" can trigger "BMAD
-   creates the spec" with no human in the loop.
+3. **Autonomy, and the measured front door.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch
+   `docs/dreams/`, run `bmad-spec` on a new Dream, and drive the build unattended — so "a Dream is
+   written" can trigger "BMAD creates the spec" with no human in the loop. The default way to run
+   a story is `marshal factory dispatch` (single story) or `marshal factory spin` (multi-story):
+   both journal the run and benchmark it against the shared substrate/compression layers.
+   Invoking `bmad-build-auto` bare is a sanctioned but unmeasured path — it forgoes those layers,
+   the journal entry, and the per-harness savings benchmark that reads it.
 4. **Gap-closure and realization work are not exempt.** Closing a realization gap, realizing a
    capability, or fixing an effort whose stories already exist still starts with a **Dream seed**
    (`status: dreamt`, an owning station, Kinships to every chain it binds) and `bmad-spec`
