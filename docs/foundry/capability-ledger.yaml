@@ -4049,6 +4049,12 @@ capabilities:
     heading: "three front doors, one engine"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-150
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the ledger query answers done / running / next in one call"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1

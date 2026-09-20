@@ -101,6 +101,19 @@ Drift — orphaned between stations.
   temp dir at the pinned SHA by an opt-in task and never vendored. #28 stands
   at `CHANGES_REQUESTED`, 39 commits, mergeable, no LICENSE on `main` yet; the
   accepted-risk ledger entry stays open with today's date.
+- **2026-09-20 — Proposed: the ledger query answers "what is done, what is running, what is
+  next" in one call.** Asked at 08:00Z on the third drain: "the full list of epics and
+  stories by station, with what's completed, running and queued next." Today that is three
+  commands and a hand-written script: `fleet-picture` (totals), `sprint-ledger-query`
+  (every story's status) and `marshal watch --fleet` (what is live, per dispatch clone) —
+  and *queued next* (a `backlog` story whose `Deps:` are all `done`) is a column nowhere,
+  though 65.1 already ships the logic as `get_runnable_backlog()` for Marshal. The ask: a
+  `next` field on every story — `done` / `running` / `ready` / `waits on S-x.y` / `blocked`
+  — with `--ready` and `--running` filters, per-station ready/running counts in the
+  summary, and the `running` fact taken from marshal's own CLI (`marshal watch --fleet
+  --format json`, correct since marshal 51.10–51.13 tonight), never from steward parsing
+  marshal's journal; when marshal is unreachable the column reads `?` with one WARN, fail-open.
+  Owner: steward (the engine is CAP-146..149's). → CAP-150 / Story 65.2, the next steward slot.
 - **2026-09-19 — Proposed and shipped the same day (PR #1507, a parallel session): the
   estate sprint-ledger query engine.** One engine (`pyforge.steward.sprint_ledger_query`)
   over every station's TRACKED `sprint-status-ledger.yaml` + `epics.md` — presets and

@@ -699,7 +699,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_pixi_currency.py": "a63522c082fa2ab4b00e0c847f178a1bd06e0c5a",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py": "cf274795254ee26a6826c5c707a86dd72644ee9f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py": "147877ac90c8019430507859e411d2e59b7a2458",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "ffd01df7bd2fa0f19007136bf14466dc5f43373e",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py": "1fe5f87d0af8cb6dcb8a83022baa21af033bc5d7",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": "16b4e0cd8478f8f4d452780fa670e41c8fc84982",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": "21d0669309ac33ba2f79b90260bfbb4b3e51296c",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": "7e448b0eb921f53ed914b2720b4f4eab3cc45cbc",
@@ -708,7 +708,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "9dc633f681aadb2725d8bd66117068bc53762edb"
+  "memlog": "05af376216e1b0b6086f1a353d7f8309db99a84f"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3065,7 +3065,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py": "fa23a4e3b3d1c1e61cf84b6886fd3cc21593819c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pixi_currency.py": "3d9ed6aa45688f2bde4757dc95ec6ecdf9860613",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/platform_policy.py": "7dcf6aa67967f984ce3a37250e9dfc5308730f21",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "6678ebaddce98d2d77f3897d109b199068e080db",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "6bb0035d03c06ff4fbe857a91f960afd02f64840",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py": "fe061fce39ca5e85b5693512f7600835b552fc33",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/__init__.py": "3907e36b301bd8f1ae866c8754b1d9fac7b5f4b2",
@@ -3421,7 +3421,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "592dc667a919fb695f7d79e64a3d10a537231afd"
+  "memlog": "cd0f479a9e15cfd7f095756ae3fa5ec19b7972af"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5550,7 +5550,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "be769d86ee91bfd8967503fde6e2246147e53fdd"
+  "memlog": "722b5f186b73156cd533e0b9bc3fb79a8396a873"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
