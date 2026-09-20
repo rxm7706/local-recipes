@@ -345,7 +345,17 @@ def _reconcile_spec_surface_drift(
         )
 
     by_spec: dict[str, set[str]] = {}
+    no_baseline: set[str] = set()
     for finding in surface_findings:
+        if finding.check == "no-baseline":
+            # Story 53.2 review (B2/E1): a spec with no stamped baseline
+            # entry has no per-file drift breakdown to diff against
+            # `changed` at all -- collected separately so it can be
+            # failed closed below rather than silently skipped.
+            match = _SPEC_SURFACE_NAME_RE.search(finding.message)
+            if match:
+                no_baseline.add(match.group(1))
+            continue
         if finding.check not in ("drift", "drift-presumed"):
             continue
         match = _SPEC_SURFACE_NAME_RE.search(finding.message)
@@ -354,7 +364,7 @@ def _reconcile_spec_surface_drift(
             continue
         by_spec.setdefault(match.group(1), set()).add(path)
 
-    if not by_spec:
+    if not by_spec and not no_baseline:
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
     try:
@@ -374,6 +384,20 @@ def _reconcile_spec_surface_drift(
 
     foreign: dict[str, set[str]] = {}
     own: dict[str, set[str]] = {}
+    for name in no_baseline:
+        # Story 53.2 review (B2/E1): fail closed rather than silently
+        # skip. A never-baselined spec cannot be split into own/foreign
+        # paths (no per-file drift to diff), so only refuse when this
+        # branch actually touched that spec's own tracked folder --
+        # an unrelated repo-wide never-baselined spec stays none of this
+        # landing's business, same as zero-overlap drift below.
+        project, _, spec_dir = name.partition("/")
+        spec_prefix = (
+            f"_bmad-output/projects/{project}/planning-artifacts/specs/{spec_dir}/"
+        )
+        touched = {p for p in changed if p.startswith(spec_prefix)}
+        if touched:
+            foreign[name] = touched
     for name, paths in by_spec.items():
         overlap = paths & changed
         if not overlap:
@@ -397,9 +421,10 @@ def _reconcile_spec_surface_drift(
                 code="MRS-DISP-048",
                 severity=Severity.ERROR,
                 message=(
-                    f"spec-surface drift on {head_branch!r} names path(s) this "
-                    f"branch did not change — foreign drift, refusing to land "
-                    f"rather than absorb it into a scoped stamp: {detail}"
+                    f"spec-surface drift on {head_branch!r} cannot be safely "
+                    f"reconciled — foreign drift, or a spec with no stamped "
+                    f"baseline to diff against — refusing to land rather than "
+                    f"absorb it into a scoped stamp: {detail}"
                 ),
             ),
             refuse=True,
@@ -416,7 +441,6 @@ def _reconcile_spec_surface_drift(
     memlog_script = worktree / "_bmad" / "scripts" / "memlog.py"
     stamp_script = worktree / "scripts" / "spec_surface_check.py"
     run_note = f" (run {run_id})" if run_id else ""
-    committed_paths: list[Path] = []
     for name, paths in sorted(own.items()):
         project, _, spec_dir = name.partition("/")
         memlog_path = (
@@ -442,6 +466,8 @@ def _reconcile_spec_surface_drift(
                     "event",
                     "--text",
                     text,
+                    "--by",
+                    "marshal",
                 ],
                 cwd=worktree,
             )
@@ -472,7 +498,33 @@ def _reconcile_spec_surface_drift(
                 ),
                 refuse=True,
             )
-        committed_paths.append(memlog_path.relative_to(worktree))
+        # Story 53.2 review (B4/E2): commit each spec's memlog append as
+        # soon as it succeeds, rather than batching every spec's commit
+        # until the end -- a later spec's failure then refuses the
+        # landing without leaving an earlier spec's already-successful
+        # append as an uncommitted working-tree edit a retry could
+        # silently under-commit (doctor reads on-disk text regardless of
+        # commit state, so a retry would see the earlier spec as already
+        # clean and never re-touch, and therefore never re-commit, it).
+        try:
+            vcs.commit_paths(
+                worktree,
+                (memlog_path.relative_to(worktree),),
+                f"marshal: reconcile spec-surface drift for {key} ({name})",
+            )
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit the spec-surface reconcile memlog "
+                        f"for {name} on {head_branch!r}: {exc} — refusing "
+                        "to land"
+                    ),
+                ),
+                refuse=True,
+            )
 
     stamp_argv = [sys.executable, str(stamp_script), "--write-baseline"]
     for name in sorted(own):
@@ -504,12 +556,10 @@ def _reconcile_spec_surface_drift(
             ),
             refuse=True,
         )
-    committed_paths.append(Path("scripts") / ".spec-surface-baseline.json")
-
     try:
         vcs.commit_paths(
             worktree,
-            tuple(committed_paths),
+            (Path("scripts") / ".spec-surface-baseline.json",),
             f"marshal: reconcile spec-surface drift for {key}",
         )
         vcs.push(git_repo_root, head_branch)
