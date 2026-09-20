@@ -15,7 +15,6 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-from pyforge.steward.glass import GlassReading, compute_glass_reading
 from pyforge.steward.sprint_ledger_query import SprintLedgerQueryEngine
 
 _STATION_RE = re.compile(r"[A-Za-z0-9_-]+")
@@ -127,56 +126,6 @@ def backlog_htmx_view(request: Any) -> Any:
       </table>
     </div>
     """
-    response = HttpResponse(fragment, content_type="text/html")
-    response["Cache-Control"] = "no-store"
-    return response
-
-
-_GLASS_BADGE_CLS = {
-    "fresh": "background:#238636;color:#fff",
-    "stale": "background:#9e6a03;color:#fff",
-    "failed": "background:#da3633;color:#fff",
-}
-
-
-def _render_glass_fragment(reading: GlassReading, title: str, dom_id: str) -> str:
-    """One state badge (fresh/stale/failed green/amber/red, refused/unborn
-    grey -- mirrors `backlog_htmx_view`'s inline `badge_cls` dict idiom) plus
-    the cited waybill and `loaded_at`. Pure string-building -- every
-    interpolated field is HTML-escaped, same discipline `backlog_htmx_view`
-    already applies (`waybill` is caller-supplied free text per 61.1)."""
-    esc = html.escape
-    state_label = reading.state or "refused"
-    badge_cls = _GLASS_BADGE_CLS.get(reading.state, "background:#6e7681;color:#fff")
-    message_html = f'<div style="color:#8b949e">{esc(reading.message)}</div>' if reading.message else ""
-    return f"""
-    <div id="{esc(dom_id)}" class="htmx-fade-in">
-      <div style="margin-bottom:0.5rem"><strong>{esc(title)}</strong></div>
-      <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;{badge_cls}">{esc(state_label.upper())}</span>
-      <div>Waybill: <code>{esc(reading.waybill or '-')}</code></div>
-      <div>Loaded at: <code>{esc(reading.loaded_at or '-')}</code></div>
-      {message_html}
-    </div>
-    """
-
-
-def standup_htmx_view(request: Any) -> Any:
-    """Render the HTMX fragment for "any news from the vendor?" (inbound)."""
-    from django.http import HttpResponse
-
-    reading = compute_glass_reading(direction="inbound")
-    fragment = _render_glass_fragment(reading, "Standup — any news from the vendor?", "standup-glass")
-    response = HttpResponse(fragment, content_type="text/html")
-    response["Cache-Control"] = "no-store"
-    return response
-
-
-def shipped_htmx_view(request: Any) -> Any:
-    """Render the HTMX fragment for what WE have sent (outbound)."""
-    from django.http import HttpResponse
-
-    reading = compute_glass_reading(direction="outbound")
-    fragment = _render_glass_fragment(reading, "Shipped", "shipped-glass")
     response = HttpResponse(fragment, content_type="text/html")
     response["Cache-Control"] = "no-store"
     return response

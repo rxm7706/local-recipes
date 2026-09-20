@@ -58,14 +58,9 @@ from django.contrib.admin.sites import AdminSite  # noqa: E402
 from django.test import RequestFactory  # noqa: E402
 
 from pyforge.steward.dashboard.admin import AuditEntryAdmin, WorkPassportAdmin  # noqa: E402
-from pyforge.steward.dashboard.models import AuditAction, AuditEntry, CorridorLoad, WorkPassport  # noqa: E402
+from pyforge.steward.dashboard.models import AuditAction, AuditEntry, WorkPassport  # noqa: E402
 from pyforge.steward.dashboard.passport_sync import sync_work_passports_db  # noqa: E402
-from pyforge.steward.dashboard.views_htmx import (  # noqa: E402
-    backlog_htmx_view,
-    shipped_htmx_view,
-    standup_htmx_view,
-)
-from pyforge.steward.glass import EMPTY_FILE_SHA256  # noqa: E402
+from pyforge.steward.dashboard.views_htmx import backlog_htmx_view  # noqa: E402
 from pyforge.steward.sprint_ledger_query import WorkPassportItem  # noqa: E402
 
 _EPICS_MD = """## Epic 1: Fixture Epic
@@ -108,11 +103,9 @@ def env_root(fixture_root: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _clean_db():
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
-    CorridorLoad.objects.all().delete()
     yield
     WorkPassport.objects.all().delete()
     AuditEntry.objects.all().delete()
-    CorridorLoad.objects.all().delete()
 
 
 def _story(**overrides) -> WorkPassportItem:
@@ -233,72 +226,6 @@ def test_backlog_htmx_view_records_one_load_audit_row(env_root: Path) -> None:
     backlog_htmx_view(RequestFactory().get("/dashboard/backlog/"))
     anonymous = AuditEntry.objects.order_by("-id").first()
     assert (anonymous.actor, anonymous.role, anonymous.row_count) == ("anonymous", None, 3)
-
-
-# --- as-of glass HTMX views (Story 61.3) ---
-
-
-def _make_load(*, direction: str, batch_sha: str, waybill: str = "w-1") -> CorridorLoad:
-    return CorridorLoad.objects.create(
-        direction=direction, batch_sha=batch_sha, waybill=waybill, transport="app-upload"
-    )
-
-
-def _backdate(row: CorridorLoad, when) -> None:
-    """Bypass `auto_now_add` (which only fires on `.save()`) with a bare
-    `.update()`, so a fixture row can be planted on an earlier UTC date."""
-    CorridorLoad.objects.filter(pk=row.pk).update(loaded_at=when)
-
-
-def test_standup_htmx_view_unborn_before_first_waybill() -> None:
-    res = standup_htmx_view(RequestFactory().get("/dashboard/standup/"))
-    assert res.status_code == 200
-    assert res["Cache-Control"] == "no-store"
-    body = res.content.decode("utf-8")
-    assert ">UNBORN<" in body
-    assert "Waybill: <code>-</code>" in body
-
-
-def test_standup_htmx_view_fresh_for_a_nonempty_load_today() -> None:
-    _make_load(direction="inbound", batch_sha="a" * 64, waybill="<w-fresh> & co")
-    body = standup_htmx_view(RequestFactory().get("/dashboard/standup/")).content.decode("utf-8")
-    assert ">FRESH<" in body
-    assert "&lt;w-fresh&gt; &amp; co" in body
-    assert "<w-fresh>" not in body
-
-
-def test_standup_htmx_view_failed_for_an_empty_load_today() -> None:
-    _make_load(direction="inbound", batch_sha=EMPTY_FILE_SHA256, waybill="w-empty")
-    body = standup_htmx_view(RequestFactory().get("/dashboard/standup/")).content.decode("utf-8")
-    assert ">FAILED<" in body
-    assert "on-time file is empty" in body
-
-
-def test_standup_htmx_view_stale_when_nothing_loaded_today() -> None:
-    import datetime
-
-    row = _make_load(direction="inbound", batch_sha="b" * 64, waybill="w-yesterday")
-    _backdate(row, datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1))
-    body = standup_htmx_view(RequestFactory().get("/dashboard/standup/")).content.decode("utf-8")
-    assert ">STALE<" in body
-    assert "w-yesterday" in body
-
-
-def test_standup_htmx_view_refused_when_dashboard_extra_not_importable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(sys.modules, "pyforge.steward.dashboard.glass_query", None)
-    body = standup_htmx_view(RequestFactory().get("/dashboard/standup/")).content.decode("utf-8")
-    assert ">REFUSED<" in body
-
-
-def test_shipped_htmx_view_renders_outbound_direction() -> None:
-    _make_load(direction="outbound", batch_sha="c" * 64, waybill="w-shipped")
-    res = shipped_htmx_view(RequestFactory().get("/dashboard/shipped/"))
-    assert res.status_code == 200
-    assert res["Cache-Control"] == "no-store"
-    body = res.content.decode("utf-8")
-    assert ">FRESH<" in body
-    assert "w-shipped" in body
-    assert "Shipped" in body
 
 
 # --- passport sync ---

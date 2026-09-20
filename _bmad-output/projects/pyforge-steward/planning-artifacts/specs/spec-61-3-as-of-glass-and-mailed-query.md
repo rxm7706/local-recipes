@@ -3,7 +3,7 @@ title: '61.3: As-of glass and mailed query'
 type: 'feature'
 created: '2026-09-16'
 status: 'in-review'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
@@ -255,7 +255,10 @@ bare-output entries) read the SAME inbound reading and differ only in label.
   trailing comment with `+ glass (Story 61.3)`.
 - `tests/unit/test_dashboard_admin_and_htmx.py`: add `standup_htmx_view`/`shipped_htmx_view` cases
   mirroring `backlog_htmx_view`'s `RequestFactory` pattern — assert escaped waybill, the state
-  badge, `Cache-Control: no-store`, and coverage across `fresh`/`stale`/`failed`/`unborn`/`refused`.
+  badge, `Cache-Control: no-store`. **Both** views need the full `fresh`/`stale`/`failed`/`unborn`/`refused`
+  matrix (review pass 1, Blind Hunter: `shipped_htmx_view` originally got only one case) — plus one
+  case proving both views render identically from the same inbound fixture, differing only in the
+  `title`/`dom_id` label text.
 - `tests/meta/test_invariants.py`'s `test_no_module_outside_dashboard_imports_dashboard_django_or_channels`
   (~line 344-473): add a **4th** sanctioned-reach block for `glass.py` -> `"pyforge.steward.dashboard.glass_query"`,
   copying the existing `corridor.py`/`passport.py` blocks' shape exactly.
@@ -307,6 +310,11 @@ bare-output entries) read the SAME inbound reading and differ only in label.
   (standup + shipped) in the requested format — the companion doc's "mailed/export of last waybill
   (CSV or markdown) | plugin, available" made real as a switchable, off-by-default plugin, matching
   `corridor.yaml`'s own on/off-transport precedent.
+- **(Added 2026-09-19, bad_spec amendment)** Given the same inbound `CorridorLoad` state in any of
+  `unborn`/`fresh`/`stale`/`failed`/`refused`, when both `standup_htmx_view` and `shipped_htmx_view`
+  (or `GlassDuty`'s bare `standup`/`shipped` entries) render it, then both report the identical
+  `state`/`waybill`/`loaded_at` — they differ only in label text, never in the direction read or
+  the computed state — per the Dream's "shipped shelf from the last inbound extract."
 
 ## Spec Change Log
 
