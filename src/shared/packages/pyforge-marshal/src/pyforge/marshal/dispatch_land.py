@@ -8,6 +8,7 @@ FR-187 subject, Story 4.1 spec promotion, Epic 15 ledger). Lives outside
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 import tempfile
