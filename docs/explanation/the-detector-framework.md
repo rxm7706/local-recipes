@@ -4,7 +4,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - docs/reference/judgement-vocabulary.md
   - docs/dreams/fidelity-enforcement.md
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # The Detector Framework

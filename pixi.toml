@@ -1131,8 +1131,16 @@ description = "Detector: human-facing documentation identity contradictions (Sto
 cmd = "python -m pyforge.doctor.sources general-docs-consistency"
 
 [feature.guild-tasks.tasks.docs-map-hygiene-check]
-description = "Detector: docs/MAP.md alignment with the four Diátaxis quadrants it governs — docs/tutorials, docs/how-to, docs/reference, docs/explanation (Story 30.1, spec-pyforge-doctor CAP-83). A MAP link to a missing page under docs/ is FAIL; a quadrant page not linked from MAP.md is WARN (warn-first). Quadrant README.md index pages are exempt; MAP.md's own 'Outside this map' layers are never scanned. Read-only, fail-open."
+description = "Detector: docs/MAP.md alignment with the four Diátaxis quadrants it governs — docs/tutorials, docs/how-to, docs/reference, docs/explanation (Story 30.1, spec-pyforge-doctor CAP-83). A MAP link to a missing page under docs/ is FAIL; a quadrant page not linked from MAP.md is FAIL too (promoted from WARN by Story 30.2, spec-pyforge-doctor CAP-84, once docs/MAP.md's generated Page registry section links every docs/map.yaml page). Quadrant README.md index pages are exempt; MAP.md's own 'Outside this map' layers are never scanned. Read-only, fail-open."
 cmd = "python -m pyforge.doctor.sources docs-map-hygiene"
+
+[feature.guild-tasks.tasks.docs-currency-check]
+description = "Detector: docs/map.yaml is the registry, docs/MAP.md's generated Page registry section is its render (Story 30.2, spec-pyforge-doctor CAP-84). Three warn-first checks: map-render (MAP.md's generated section byte-matches a fresh render of docs/map.yaml), authored-page-stale (a kind: authored page's own sources:/verified: frontmatter has fallen behind a named source's git last-touch, or the page body cites a backticked skill/script/path token that no longer resolves), skill-dir-hygiene (a stray non-layout file inside a bmad-*/pyforge-*/skf-* skill directory). Read-only, fail-open — a missing/invalid docs/map.yaml degrades to one WARN, never FAIL, never a crash. Contract: spec-30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page."
+cmd = "python -m pyforge.doctor.sources docs-currency"
+
+[feature.guild-tasks.tasks.docs-map-render]
+description = "Mutator: regenerates docs/MAP.md's generated '## Page registry' section from docs/map.yaml — the only sanctioned way to edit the content between the docs-map:registry:begin/docs-map:registry:end markers (Story 30.2, spec-pyforge-doctor CAP-84). Run after editing docs/map.yaml, or after docs-currency-check reports the section stale."
+cmd = "python scripts/docs_map_render.py"
 
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."

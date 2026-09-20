@@ -43,7 +43,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 | workflow | trigger | what it does | why you care |
 |---|---|---|---|
-| **`staged-recipes-linter.yml`** | `pull_request` (opened, synchronize, reopened, labeled, unlabeled) | Runs `scripts/linter.py` | **The PR gate.** See *The two always-on gates* below. |
+| **`staged-recipes-linter.yml`** | `pull_request` (opened, synchronize, reopened, labeled, unlabeled) | Runs `.github/workflows/scripts/linter.py` | **The PR gate.** See *The two always-on gates* below. |
 | **`dashboard.yml`** | `push` to main, `schedule`, dispatch | Regenerates `data.js` from git history + live detectors, deploys to Pages | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the lean `pyforge-ci` env with `--locked`. |
 | **`linter_issue_comment.yml`** | `issue_comment` — **only** when the body contains `please rerun linter` or `/rerun-linter` | Re-requests the linter check suite | Re-lint without pushing. Rarely needed: toggling any label re-triggers the linter too. |
 
@@ -57,7 +57,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 ---
 
-## The two always-on gates (`scripts/linter.py`)
+## The two always-on gates (`.github/workflows/scripts/linter.py`)
 
 CLAUDE.md's PR rules are not convention — they are these code paths; see CLAUDE.md
 § *Critical Rule — PR CI gates* for the actionable commands.
@@ -77,6 +77,7 @@ Check #2 validates recipe placement (`recipes/<name>/<recipe>.yaml`, not
 All five had been **deleted upstream**, some years ago. We carried them because a
 fork keeps whatever existed at fork time; nothing re-syncs deletions.
 
+<!-- governance-currency:ignore-start (deleted-workflow table cites now-removed upstream paths, quoted because they were deleted) -->
 | file | deleted upstream | upstream's reason | why it was safe here |
 |---|---|---|---|
 | `correct_directory.yml` | 2024-09-15 | *"feat: unify staged-recipes linting"* | Fully subsumed by `linter.py` check #2. |
@@ -84,12 +85,15 @@ fork keeps whatever existed at fork time; nothing re-syncs deletions.
 | `create_feedstocks.yml` | 2025-04-18 | moved to `conda-forge/admin-requests` (#29757) | Hard-gated `if: github.repository == 'conda-forge/staged-recipes'` → a permanent no-op here. Its `*/10 * * * *` cron still queued and skipped ~144 runs/day. |
 | `automate-review-labels.yml` | 2026-04-14 | plain delete | Labels PRs by `@conda-forge/<team>` pings. No such teams apply to a personal fork; it "succeeded" 100/100 by matching nothing. |
 | `tokens.yml.notused` | — | — | Already disabled by filename. |
+<!-- governance-currency:ignore-end -->
 
+<!-- governance-currency:ignore-start (orphaned scripts, quoted because they were removed) -->
 Also removed as orphans: `scripts/create_feedstocks`, `scripts/create_feedstocks.py`,
 `scripts/print_tokens.py`, `scripts/linter_make_comment.py` (referenced by no
 workflow, and it hardcoded *both* `{owner}/staged-recipes` and
 `conda-forge/staged-recipes`), and `.github/workflows/README.md` (mermaid diagrams
 documenting only `automate-review-labels`).
+<!-- governance-currency:ignore-end -->
 
 **The result is that `.github/workflows/` now matches upstream's shape** —
 `staged-recipes-linter` + `linter_issue_comment` + `scripts/` — plus the four

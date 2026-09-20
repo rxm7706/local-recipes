@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-doctor:docs-map-schema",
+  "title": "DocsMap",
+  "description": "Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml's own schema -- the machine registry docs/MAP.md's generated Page registry section renders from. One entry per page under the four Diataxis quadrant directories docs/MAP.md governs. sources/stamp are reserved for kind: generated pages (Story 30.3); an authored page's staleness signal comes from that page's OWN frontmatter sources:/verified:, never duplicated here.",
+  "type": "object",
+  "required": ["schema_version", "pages"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/page" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "page": {
+      "type": "object",
+      "required": ["path", "quadrant", "owner", "kind"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "docs/-relative path, e.g. how-to/pixi-tasks.md."
+        },
+        "quadrant": {
+          "enum": ["tutorials", "how-to", "reference", "explanation"]
+        },
+        "owner": {
+          "type": "string",
+          "description": "Station slug (e.g. doctor) or fleet."
+        },
+        "kind": {
+          "enum": ["generated", "authored", "pointer"]
+        },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "kind: generated only (Story 30.3) -- the inputs a generator derives the page from."
+        },
+        "stamp": {
+          "type": "object",
+          "properties": {
+            "derived_at": { "type": "string" },
+            "tree": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

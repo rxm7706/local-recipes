@@ -18,10 +18,15 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   resolve -- mirrors ``scripts/governance_currency_check.py``'s three
   regexes and its ``_resolves_as_identifier``/existence-check logic,
   duplicated here deliberately (``pyforge.doctor`` cannot import from the
-  top-level ``scripts/`` tree). One Finding per page that triggers
-  either/both evidence kinds; a page with neither frontmatter nor a dead
-  reference is silently fine (coverage grows incrementally, per the
-  story's own Design Notes).
+  top-level ``scripts/`` tree). A page's body has the SAME
+  ``<!-- governance-currency:ignore-start (reason) -->`` /
+  ``<!-- governance-currency:ignore-end -->`` escape hatch honored
+  (reused verbatim, not a second marker convention -- ``test-charter.md``
+  already carries live instances of it for exactly this class of
+  deliberate historical citation, predating this story). One Finding per
+  page that triggers either/both evidence kinds; a page with neither
+  frontmatter nor a dead reference is silently fine (coverage grows
+  incrementally, per the story's own Design Notes).
 * ``skill-dir-hygiene`` (``docs-currency-skill-dir-hygiene``) -- a stray
   file inside a managed ``bmad-*``/``pyforge-*``/``skf-*`` skill
   directory.
@@ -97,6 +102,13 @@ _SCRIPT_RE = re.compile(r"`((?:scripts|_bmad)/[A-Za-z0-9._/-]+\.py)`")
 _PATH_RE = re.compile(
     r"`((?:docs|src|recipes|_bmad-output|\.github|\.claude)/[A-Za-z0-9._/-]+)`"
 )
+
+# Same escape hatch as scripts/governance_currency_check.py, reused verbatim
+# (one marker convention repo-wide, not a second `docs-currency:ignore-*`
+# one) -- a deliberate historical citation ("quoted because it was
+# removed") wraps in this, never a heuristic.
+_IGNORE_START = re.compile(r"<!--\s*governance-currency:ignore-start")
+_IGNORE_END = re.compile(r"<!--\s*governance-currency:ignore-end")
 
 # The externally-regenerated skill-directory prefixes (module docstring).
 _MANAGED_SKILL_PREFIXES = ("bmad-", "pyforge-", "skf-")
@@ -277,7 +289,27 @@ def _resolves_as_identifier(target: Path, name: str, pixi_ids: frozenset[str]) -
     return name in pixi_ids
 
 
+def _strip_ignored(text: str) -> str:
+    """Blank out ``governance-currency:ignore-start/end``-marked regions,
+    preserving line count (so offsets stay meaningful) -- verbatim port of
+    ``scripts/governance_currency_check.py``'s own helper."""
+    out: list[str] = []
+    skipping = False
+    for line in text.splitlines():
+        if _IGNORE_START.search(line):
+            skipping = True
+            out.append("")
+            continue
+        if _IGNORE_END.search(line):
+            skipping = False
+            out.append("")
+            continue
+        out.append("" if skipping else line)
+    return "\n".join(out)
+
+
 def _dead_references(target: Path, text: str) -> list[str]:
+    text = _strip_ignored(text)
     pixi_ids = _pixi_identifiers(target)
     dead: list[str] = []
     seen: set[str] = set()

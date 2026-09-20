@@ -140,6 +140,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.DOCS_MAP_HYGIENE: "docs_map_hygiene.py",  # Story 30.1 (spec-pyforge-doctor CAP-83)
     Source.DOCS_SHELF_OCCUPANCY: "docs_shelf.py",  # Story 23.7 (spec-pyforge-doctor CAP-54)
     Source.LIVE_PROOF_SURFACE: "live_proof_surfaces.py",  # Story 26.1 (spec-pyforge-doctor CAP-77)
+    Source.DOCS_CURRENCY: "docs_currency.py",  # Story 30.2 (spec-pyforge-doctor CAP-84)
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
