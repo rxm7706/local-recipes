@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-19'   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
+updated: '2026-09-20'   # Epic 30 appended (spec-pyforge-doctor CAP-83/CAP-84, PRD FR-17; Story 30.1 done via PR #1529). Prior 2026-09-18: Epic 27 appended (spec-pyforge-doctor CAP-78); Stories 27.2/27.3/27.5 added later the same day (CAP-79/CAP-80; 27.5 supersedes 27.3's landed-empty intent gap; 27.4 is a reserved hole, key poisoned by its own mint branch name). Prior 2026-09-17
 currency_review: 'Reviewed 2026-09-17 (one-chain doctor fold) — spec-pyforge-doctor
   reminted CAP-1..76; epics stay 1..25 sequential; story slugs reminted through sprint_plan._slug.
   No blocked keys flipped. Reviewed 2026-09-14, later the same day (Epic 24 added
@@ -2247,10 +2247,10 @@ advisory Doctor Finding.
 
 ### Story 26.1: A touched live-proof-only surface gets an advisory Doctor finding naming it
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-77
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-77 (companion refined 2026-09-20: `Surface globs` column; zero false positives on the live tree is a testable gate)
 **Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/live_proof_surfaces.py` (new —
 parses `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md`'s
-table into a `(station, surface, path_globs, how_to_prove, cost)` list), `models.py` (`Source` enum gains
+table into a `(station, surface, surface_globs, how_to_prove, cost)` list — matching reads the companion's hand-authored `Surface globs` column and nothing else; amended 2026-09-20 after run `…8f2b958e` blocked on an intent gap: the keyword fallback for path-less rows produced three false positives against the live tree), `models.py` (`Source` enum gains
 `LIVE_PROOF_SURFACE`, extending the closed taxonomy AD-3 already governs — one new member, never an open
 string), `report-schema.json` (enum extended additively), `__main__.py` (DISPATCH + REGISTRY entry),
 `scripts/detectors.py` (a `detectors-ci` row, matching CAP-77's own constraint that the finding is always
