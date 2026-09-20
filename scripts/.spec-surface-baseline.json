@@ -514,12 +514,12 @@
    "docs/explanation/one-chain-lock-and-mop.md": "dcde234d1bbe05c517a984f63331dea6476540c7",
    "docs/explanation/platform-deployment-architecture.md": "1b48bedfce5c25f4805003ca9d23e5e6e6ae8fc2",
    "docs/explanation/platform-requirements.md": "bb7f077ee900ffc4e4202feac13c98c36307ef71",
-   "docs/explanation/pyforge-ecosystem-architecture.md": "31d326e2fe2693c0014e8b558c02abd617e955e9",
+   "docs/explanation/pyforge-ecosystem-architecture.md": "122a6f6256268f7083f33400730c31414e5ad512",
    "docs/explanation/pyforge-estate-overview.md": "ce965e6f5c3b45d0e8ff81274f01a11668e2ad43",
    "docs/explanation/the-detector-framework.md": "98dc2feec2dfe1203eb9ef8b0804afc2c9adac75",
-   "docs/explanation/the-tier-model-and-data-flow.md": "a3e8c59fdb33c1eae8502f3adee87ee8d53dd6a5",
+   "docs/explanation/the-tier-model-and-data-flow.md": "4a7c751f930af3b40a747464f6e60898bbce1a75",
    "docs/how-to/README.md": "76e7d4c3aba051af870e126bb6ed7d2ccd0bd825",
-   "docs/how-to/ai-engine-operations.md": "bb7bc4235b8763304b5c76d42b10b20bf2f06343",
+   "docs/how-to/ai-engine-operations.md": "bd641e3c9bac1fd7844919e846dc9ed8c120b889",
    "docs/how-to/air-gapped-mirror-setup.md": "6863f9df663f3c2de6772907a750249e5a71fc68",
    "docs/how-to/antigravity-developer-startup.md": "9eca5611249dff7eb8d546c0501063d245cd6c18",
    "docs/how-to/detect-concurrent-agent-activity.md": "b64945dc5f8e830e12fdde014f5e137b7ef1b7a6",
@@ -530,7 +530,7 @@
    "docs/how-to/github-actions-recipe-ci.md": "c9fdf96e110baa00068ee29da54e5e32ed4f8898",
    "docs/how-to/manage-worktrees-with-bmad.md": "6adc29670139258805fccc49c073c30bf6440545",
    "docs/how-to/manticore-studio.md": "708c32a464cd31bd9e118dd88dd186927399983b",
-   "docs/how-to/monitor-the-fleet.md": "939da339515d3845ca1ecbe9710ce1fdbb59e6d3",
+   "docs/how-to/monitor-the-fleet.md": "53afcc4d134127b3b770b225371b4062d9edc5c3",
    "docs/how-to/ocp-cluster-bringup.md": "f775b91267f07ab3e31f83b26edf7df8257b353f",
    "docs/how-to/one-chain-station-ops.md": "9e4997a0f6c4d5c718e404b6fa62b3b7e9f2f4d2",
    "docs/how-to/pixi-tasks.md": "47a528e555d089c3987e07e70169b13870afba66",
@@ -539,13 +539,13 @@
    "docs/how-to/reconcile-spec-surface.md": "f9cf25fd5f8adb36331a3c90aad489c6cd661035",
    "docs/how-to/restore-operations.md": "ebbb11136874de3f415d0c023949f63bbc4d2589",
    "docs/how-to/run-and-understand-detectors.md": "0556f0c7bf1c2acefd4b588a69c0fef084e2d998",
-   "docs/how-to/station-cli-operations.md": "f217a578c9f040c4110b3c30e59599530356f480",
+   "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5e96a3bbd5d6707576a87bc3f2c04e3dbc806e1d",
    "docs/how-to/troubleshooting-recipe-builds.md": "4c029ebd50084d47dc00bbd80aaad2372fbaa754",
    "docs/map.yaml": "42579ae23dc7f4c5d17b2d49df37a01b43ba5fb8",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "85b4d0d4dd4cb85f640d492c8cfad832e2ad2e20",
-   "docs/tutorials/local-platform-development.md": "6bc35c55266f8c662bbb1a3a1c9138716d794a7e",
+   "docs/tutorials/local-platform-development.md": "c6acf468d653c6698bb8a1a0d7f675351cf72f8f",
    "scripts/chain_currency_sweep_check.py": "76cdaf490ca548714b4a9b33320ffaae440c766c",
    "scripts/deferred_work_check.py": "1e95096d8f1be2aceb37559ee4c5c81049571aae",
    "scripts/deferred_work_intake.py": "5c1904530ae65a883647b3fecd1bf90e6960670c",
@@ -563,6 +563,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py": "72eb59e0fc15e2b12732878b806a4dc01056263a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/registry.py": "ebd7f8bbcb7e0624a5a857eb5a23d0cbd077d229",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py": "7274adb48b0037d170da0699cfa905ebfec4a3f0",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/docs-map-schema.json": "d2a48c134e99b140e2ff1a25028a65149af3eaad",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json": "4146296116f9271c5ce0d607cf309de29cf385dc",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/fleet_surface.py": "49d47414ca52970bcfa40ac6f65cffa705f72af7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/hooks.py": "ab9a98dc835c6d374970dca9dc7771fdf04fe25a",
@@ -712,7 +713,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "aacb49e9971a6bbcbc35ef2b75d5642e9b9d270d"
+  "memlog": "c8e54187a46081a4adf585d406fa30b97821ee0f"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2633,10 +2634,10 @@
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
-   ".gitignore": "7e87e191a4303f7b6eeb67fa8ac98e54996873f1",
-   "pixi.toml": "dac37f1a393b8f6fb5c08719091650f7bfb8c241"
+   ".gitignore": "001664d5e4c9326d3a8212151d0492e9356b420d",
+   "pixi.toml": "9df792f45269a398a45a1ca5b0ce2440447ad7d1"
   },
-  "memlog": "63dba77758c3595eaaec87f439faaccdf5f85145"
+  "memlog": "e3ab372ee3176ff4b0724f0bc340cf8e237b79fc"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {},
@@ -3040,6 +3041,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py": "72eb59e0fc15e2b12732878b806a4dc01056263a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/registry.py": "ebd7f8bbcb7e0624a5a857eb5a23d0cbd077d229",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py": "7274adb48b0037d170da0699cfa905ebfec4a3f0",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/docs-map-schema.json": "d2a48c134e99b140e2ff1a25028a65149af3eaad",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json": "4146296116f9271c5ce0d607cf309de29cf385dc",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/fleet_surface.py": "49d47414ca52970bcfa40ac6f65cffa705f72af7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/hooks.py": "ab9a98dc835c6d374970dca9dc7771fdf04fe25a",
@@ -3426,7 +3428,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "b378063c0aa8b05cc418364e2623e0035d5db185"
+  "memlog": "23ccd9dd8260364ffc2309cf6dd7066567f5ed7c"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
