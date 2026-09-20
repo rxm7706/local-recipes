@@ -282,7 +282,174 @@ with the flag off (default) -> `ok=False`, summary names the flag; export with
 
 ## Spec Change Log
 
+### 2026-09-19 — bad_spec amendment (review pass 1, grouped finding: Blind Hunter #2 + Intent Alignment Auditor)
+
+**Triggering finding:** the Code Map's "Views" section and the Design Notes' "Two views, one
+glass" bullet assigned `shipped_htmx_view` to `compute_glass_reading(direction="outbound")`,
+reasoning "shipped (outbound: what WE have sent)". This is wrong: `docs/dreams/work-passports-dated-extracts.md:45`
+states plainly "Testers pull a **shipped** shelf from the last **inbound** extract, not from a
+hunt in a private repo," and `spec-pyforge-steward CAP-141`'s own success text reads
+"testers see shipped-from-last-inbound." Both source "shipped" from the INBOUND corridor. The
+word "outbound" in this Epic belongs exclusively to **Story 61.4** ("Signed outbound slice",
+`spec-work-passports-dated-extracts CAP-4`, `epics.md` Story 61.4) — a distinct, gated,
+named-signer mechanism this story must not preempt or collide with by reusing the same
+`CorridorLoad.direction` value for an unrelated purpose.
+
+**What was amended:** the Code Map's "Views" section and the Design Notes' "Two views, one
+glass" bullet, below, corrected to: both `standup_htmx_view` and `shipped_htmx_view` read
+`compute_glass_reading(direction="inbound")` — the same reading, two labeled perspectives for
+two audiences (a daily-standup status vs. a testers'-shelf framing), not two directions. The
+Tasks & Acceptance section gained an explicit "shipped" Acceptance Criterion (previously every
+AC was phrased only in terms of standup/inbound — Blind Hunter #8, folded into this same
+amendment since it is the same underlying under-specification).
+
+**Known-bad state avoided:** a "shipped" view that would have perpetually read `"unborn"` in
+practice (nothing in this Epic's stories other than 61.4 ever populates an `outbound`
+`CorridorLoad` row for this purpose) while silently claiming kinship with Story 61.4's future,
+differently-gated outbound mechanism — a genuine "second source of truth" collision the
+intent-contract's own Never-boundary exists to prevent, just not the one originally suspected.
+
+**KEEP instructions (must survive re-derivation):** the `glass.py` module shape (`GlassError`,
+`GlassReading`, `GLASS_STATES`, the unborn/fresh/stale/failed state machine and its
+empty-file-by-hash detection via `EMPTY_FILE_SHA256`, `render_glass_table` CSV/markdown,
+`FLAG_GLASS_EXPORT`-gated `GlassDuty` reusing `sprint_ledger_query.eval_flag`); `dashboard/glass_query.py`'s
+`read_latest_corridor_load()` (direction-agnostic, unchanged — the bug was in which direction a
+caller passed, not in this function); the CLI wiring shape (23rd duty `glass`, `_add_glass_subparsers`,
+unified `_glass_result` json/payload helper); the dynamic `importlib.import_module` dashboard-reach
+idiom; the AST-guard and module-split meta-test additions; the bulk of `test_glass.py`'s coverage
+(only the "shipped"/outbound-specific fixtures need to become inbound-specific, e.g. the module
+no longer needs a distinct "shipped reads outbound" test — replace with "both views share one
+inbound reading"). Re-derive `standup_htmx_view`/`shipped_htmx_view` and their tests to both use
+`direction="inbound"`, with labels distinguishing the two audiences.
+
 ## Review Triage Log
+
+### 2026-09-19 — Review pass
+
+- verdicts: 17 findings — high 2, medium 1, low 11, false 3, maybe-false 0
+- findings:
+  - `[false]` (Blind Hunter) `sprint-status-ledger.yaml`/`epics.md` still read `backlog` for
+    `61-3-as-of-glass-and-mailed-query` despite this diff landing the implementation. Refuted:
+    per this repo's own convention (AGENTS.md) and 61.1/61.2's own identical, already-litigated
+    findings, the spec's internal dev-loop `status` and the ledger's story status are two
+    intentionally decoupled tracks — ledger promotion happens via a separate `sprint-ledger-sync`
+    step at landing time, never automatically during dev.
+  - `[high]` `[bad_spec]` (Blind Hunter, grouped with Intent Alignment Auditor below — same
+    defect) `shipped_htmx_view`/the Code Map assign "shipped" to `direction="outbound"`
+    ("what WE have sent"), contradicting the Dream's explicit "Testers pull a shipped shelf from
+    the last **inbound** extract" and CAP-141's own "testers see shipped-from-last-inbound"; also
+    collides with Story 61.4's own, distinct "outbound" territory. Verified directly against
+    `docs/dreams/work-passports-dated-extracts.md:45` and `epics.md` Story 61.4. Action: see
+    Spec Change Log amendment above; code reverted and re-derived.
+  - `[low]` `[reject]` (Blind Hunter, grouped with Edge Case Hunter below — same defect)
+    `render_glass_table(readings, fmt)` indexes `readings["standup"]`/`["shipped"]` directly,
+    raising a bare `KeyError` for any other dict shape, inconsistent with the function's own
+    `GlassError` convention one line earlier for a bad `fmt`. Rejected: unlikely in everyday use
+    (the sole caller, `GlassDuty.run()`'s `export` branch, always constructs this dict correctly)
+    and the fix (a key-existence guard) is more than a direct correction — meets both prongs of
+    the low-rejection rule.
+  - `[low]` `[reject]` (Blind Hunter) `GlassDuty.run()`'s final `else` branch (unknown
+    `glass_verb`) is unreachable via the CLI — `_add_glass_subparsers` registers only `export`
+    under `dest="glass_verb"`, so argparse itself rejects any other verb before `run()` is
+    called — and untested. Rejected: matches 61.1/61.2's own already-litigated identical
+    "defensive/outer branch untested" findings (unlikely to be met in everyday use — only
+    reachable via a hand-built `Namespace` bypassing the CLI parser, not how any real caller
+    invokes a duty); the station coverage floor cited as at-risk is not actually violated
+    (`glass.py` measured 93% against an 80% floor).
+  - `[low]` `[patch→moot]` (Blind Hunter) `GLASS_STATES` is declared but never referenced except
+    in a docstring; the four literal state strings used across `compute_glass_reading`'s branches
+    could silently drift from it. Verified: real but purely cosmetic (nothing validates against
+    `GLASS_STATES` at runtime, so drift would not break behavior, only accuracy). Action would be
+    a small test asserting the four literals are members of `GLASS_STATES` — moot this pass: a
+    `bad_spec` finding exists below, so this patch is deferred to the re-derivation.
+  - `[low]` `[patch→moot]` (Blind Hunter) No test renders `render_glass_table` with a `"refused"`
+    `GlassReading` (the export path's `reading.state or "refused"` / `reading.waybill or ""`
+    fallbacks are unexercised). Verified real by reading `test_render_glass_table_*`. Moot this
+    pass (bad_spec exists); re-derivation should add this case alongside the corrected
+    standup/shipped tests.
+  - `[low]` `[patch→moot]` (Blind Hunter) `shipped_htmx_view` gets only one test (`fresh`) versus
+    `standup_htmx_view`'s full `fresh`/`stale`/`failed`/`unborn`/`refused` matrix, short of the
+    Code Map's own stated plan. Verified real by reading `test_dashboard_admin_and_htmx.py`.
+    Subsumed by the bad_spec re-derivation above (the "shipped" view's tests are being rewritten
+    to match the corrected `direction="inbound"` reading and should gain the same state matrix
+    `standup_htmx_view` already has).
+  - `[low]` `[bad_spec]` (Blind Hunter) Every Acceptance Criterion is phrased exclusively in terms
+    of "standup"/inbound; none states an equivalent criterion for "shipped"/outbound (or, after
+    correction, shipped/inbound), even though `compute_glass_reading` is shared and symmetric.
+    Verified real by reading the spec's own `## Tasks & Acceptance`. Folded into the same
+    Spec Change Log amendment as the grouped `high` finding above (same root cause: "shipped" was
+    under-specified in this spec from the start) — a new AC for "shipped" is added there rather
+    than as a separate loopback.
+  - `[low]` `[patch→moot]` (Blind Hunter) In `compute_glass_reading`, `reference_now` is computed
+    from `now` before the naive-`now` check runs, so a naive `now` is briefly bound before being
+    rejected on the very next line — harmless today, but a fragile validate-after-use ordering.
+    Verified: no actual bad outcome occurs (the raise fires immediately after, before
+    `reference_now` is used for anything). Low, moot this pass; a two-line reorder during
+    re-derivation is free to include but not required.
+  - `[false]` (Blind Hunter) The spec's own Code Map pseudocode for `compute_glass_reading` omits
+    the exact `datetime.fromisoformat(...).astimezone(...)` mechanism the shipped code uses, and
+    `## Spec Change Log` was empty despite this "divergence." Refuted: the Code Map is explicitly
+    agent-guiding pseudocode/investigation notes (per this project's own `spec-template.md`
+    header comment), not literal exact code — implementation-detail refinement during step-03 is
+    expected, not a spec defect. `## Spec Change Log` is documented as populated only by a
+    step-04 `bad_spec` loopback (which had not yet occurred when this finding was filed), so its
+    emptiness before this pass's own loopback was correct, not evidence of anything.
+  - `[low]` `[reject]` (Edge Case Hunter) `glass.py`'s date comparison assumes `loaded_at` is
+    always timezone-aware; a hypothetical Django project configured with `USE_TZ=False` would
+    make it naive, and `.astimezone(timezone.utc)` on a naive value silently assumes host-local
+    time rather than raising. Rejected: every `settings.configure(...)` call across this
+    package's own test suite and established convention sets `USE_TZ=True` unconditionally
+    (Django's own post-4.0 default too), so an adopter would need to deliberately misconfigure
+    against every existing precedent in this package; the fix (a defensive naive-`loaded_at`
+    guard) adds a new guard — meets both prongs of the low-rejection rule.
+  - `[low]` `[reject]` (Edge Case Hunter, grouped with Blind Hunter above — same defect) Same
+    `render_glass_table` unguarded-dict-access claim as Blind Hunter's finding above; same
+    refutation and rejection.
+  - `[low]` `[reject]` (Edge Case Hunter) `dashboard/glass_query.py`'s ORM-error catch
+    (`DataError, OperationalError, ProgrammingError`) does not also catch
+    `InterfaceError`/`IntegrityError`/`InternalError`. Rejected on the same grounds as 61.1's own
+    identical, already-litigated finding against `corridor_load.py`'s equivalent catch: widening
+    the exception set without a demonstrated real trigger is more than the smallest fix, and the
+    risk profile (an uncaught ORM exception surfacing as a 500 from an HTMX view with no
+    try/except) is identical to this same file's own pre-existing, unremediated
+    `backlog_htmx_view` — not a regression this story introduces.
+  - `[false]` (Edge Case Hunter) `read_latest_corridor_load` does not validate `direction` before
+    querying, so an invalid direction could be masked as `found=False`/"unborn" instead of
+    surfacing a caller bug. Refuted: this function's sole production caller,
+    `compute_glass_reading`, already validates `direction in DIRECTIONS` and raises `GlassError`
+    before ever calling `read_latest_corridor_load` — an invalid direction can never reach this
+    function through the sanctioned path; only test code calls it directly, always with a valid
+    direction.
+  - `[low]` `[patch→moot]` (Edge Case Hunter) The markdown export branch of `render_glass_table`
+    does not escape `|` or newlines in caller-supplied `waybill`/`message` text (unlike the CSV
+    branch, which `csv.writer` already escapes safely for free) — a waybill containing either
+    would corrupt the exported table's column structure. Verified real: `waybill` is established
+    (Story 61.1) as free-form, caller-supplied text with no character restriction. Moot this pass
+    (bad_spec exists); action for re-derivation: escape `|`/newlines in the markdown branch's cell
+    values.
+  - `[medium]` `[patch→moot]` (Verification Gap Reviewer, pre-verified) No test forces a
+    `status="refused"` reading through `GlassDuty.run()` itself (every `GlassDuty` test in
+    `test_glass.py` runs inside the file's fully Django-configured context, and `test_cli.py`'s
+    `test_each_duty_dispatches_and_succeeds` explicitly excludes `"glass"`), so `_direction_ok`'s
+    `reading.status == "ok"` guard is unexercised at the duty level — a plausible future
+    simplification of `_direction_ok` (dropping that guard) would make `GlassDuty` silently report
+    `ok=True` for a completely unreachable data source, and nothing in the suite would catch it.
+    Accepted as filed (verification-gap findings arrive pre-verified). Moot this pass (bad_spec
+    exists); action for re-derivation: add a `GlassDuty`-level test that forces a refusal (mirror
+    `test_compute_glass_reading_refused_when_dashboard_extra_not_importable`'s technique) and
+    asserts `result.ok is False`.
+  - `[high]` `[bad_spec]` (Intent Alignment Auditor, grouped with Blind Hunter above — same
+    defect) Independently, reading the diff against the Dream's own text, the auditor identified
+    the identical divergence: "shipped" is implemented as `direction="outbound"` ("what WE have
+    sent"), while the Dream states "Testers pull a shipped shelf from the last inbound extract" —
+    the opposite source. Same verification and same action as the grouped Blind Hunter row above.
+- Intent Alignment Auditor's broader report also noted two other, non-actionable divergences it
+  explicitly framed as reasonable/self-documented rather than defects: (1) "stale" generalizes the
+  I/O Matrix's literal "yesterday" example to "any non-today load" — already explicitly documented
+  and justified in this spec's own Design Notes; (2) "mailed" narrows to "export only, no send" —
+  already explicitly documented and justified in this spec's own Design Notes, citing Story 61.1's
+  established "email is an empty slot until enabled" scope. Neither is logged as a separate
+  finding above since the auditor did not file either as an unresolved gap.
 
 ## Design Notes
 
