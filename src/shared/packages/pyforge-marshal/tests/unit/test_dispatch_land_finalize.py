@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
+from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
