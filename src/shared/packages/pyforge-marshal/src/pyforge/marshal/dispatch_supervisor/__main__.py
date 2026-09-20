@@ -25,7 +25,12 @@ from ..core.dispatch_completion import (
     has_git_progress,
     is_spec_only_narration,
 )
-from ..core.dispatch_harness_done import parse_blocking_condition, parse_spec_status
+from ..core.dispatch_harness_done import (
+    has_auto_run_result,
+    parse_baseline_revision,
+    parse_blocking_condition,
+    parse_spec_status,
+)
 from ..core.supervise import resolve_terminal_session_verdict
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
