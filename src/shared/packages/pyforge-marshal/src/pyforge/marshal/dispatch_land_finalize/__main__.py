@@ -33,9 +33,63 @@ from pyforge.marshal.core.model import Finding, Severity
 # own `_LAND_*_KIND` constants (a different writer namespace entirely).
 _FINALIZE_RESYNC_KIND = "dispatch-land-finalize-resync"
 
+#: `deferred_work_intake.py`'s own `--project` flag takes the SHORT slug
+#: (`_project_slug_map` strips this prefix) -- never the full
+#: `_bmad-output/projects/<slug>` directory name.
+_PROJECT_SLUG_PREFIX = "pyforge-"
+
+
+def _run_deferred_work_intake(
+    process: ProcessPort, root: Path, project_slug: str
+) -> Finding | None:
+    """Story 53.2 (spec-pyforge-marshal CAP-261b): promote this landing's
+    story spec's own frontmatter ``deferred:`` entries into the project's
+    tracked ``deferred-work-ledger.md`` via ``scripts/deferred_work_intake.py
+    --fix`` -- the hand-driven gap that script's own module docstring names
+    (bmad-loop's harvest only covers loop runs, never a dispatch land).
+
+    Returns ``None`` on a clean or no-op intake run. Never blocking -- the
+    PR has already merged by the time this runs, so an intake refusal (e.g.
+    a deferral with no resolvable ``location:``) is journaled through the
+    same non-gating ``MRS-DISP-047`` tier ``_reconcile_spec_surface_drift``
+    (``dispatch_land.py``) uses, never silently dropped, and never a second
+    landing refusal this far past the merge."""
+    short_slug = project_slug.removeprefix(_PROJECT_SLUG_PREFIX)
+    try:
+        result = process.run(
+            [
+                sys.executable,
+                str(root / "scripts" / "deferred_work_intake.py"),
+                "--fix",
+                "--project",
+                short_slug,
+            ],
+            cwd=root,
+        )
+    except ProcessError as exc:
+        return Finding(
+            code="MRS-DISP-047",
+            severity=Severity.WARN,
+            message=f"deferred-work intake could not run for {short_slug!r}: {exc}",
+        )
+    if result.returncode == 0:
+        return None
+    detail = (result.stderr or result.stdout or "").strip()
+    return Finding(
+        code="MRS-DISP-047",
+        severity=Severity.WARN,
+        message=(
+            f"deferred-work intake refused (exit {result.returncode}) for "
+            f"{short_slug!r}: {detail}"
+        ),
+    )
+
 
 def finalize_dispatch_land(
-    project_slug: str, story_key: str, worktree: Path | None = None
+    project_slug: str,
+    story_key: str,
+    worktree: Path | None = None,
+    process: ProcessPort | None = None,
 ) -> int:
     """Run the post-merge finalize sequence for ``story_key``.
 
@@ -46,6 +100,7 @@ def finalize_dispatch_land(
     root = repo_root()
     fs = LocalFs()
     vcs = GitVcs()
+    process = process if process is not None else PosixProcess()
     try:
         key = normalize(story_key)
     except MalformedStoryKeyError as exc:
@@ -138,6 +193,9 @@ def finalize_dispatch_land(
         resynced = False
     else:
         resynced = _resync_home_branch(vcs, True, "merge", root, root, "main", "main", findings)
+    intake_finding = _run_deferred_work_intake(process, root, project_slug)
+    if intake_finding is not None:
+        findings.append(intake_finding)
     deploy_run.write(
         findings,
         kind=_FINALIZE_RESYNC_KIND,
