@@ -253,7 +253,7 @@ development_status:
   61-1-corridor-transports-upload-default: done
   61-2-work-passport-and-core-schema: done
   61-3-as-of-glass-and-mailed-query: done
-  61-4-signed-outbound-slice: backlog
+  61-4-signed-outbound-slice: done
   61-5-quarantine-mint-then-reject: backlog
   62-1-the-catalog-names-eight-measures-and-their-states: done
   62-2-add-switch-and-archive-without-a-rewrite: backlog
