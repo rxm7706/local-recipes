@@ -3,7 +3,7 @@ title: '51.11: A session that halts blocked with its verdict uncommitted is a bl
 type: 'fix'
 created: '2026-09-20'
 updated: '2026-09-20'
-status: 'done'
+status: 'in-review'
 baseline_revision: 'c8277c03c117ff4779d54a2ff9d900f519415971'
 review_loop_iteration: 0
 followup_review_recommended: true
