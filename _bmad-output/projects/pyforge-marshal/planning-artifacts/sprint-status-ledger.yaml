@@ -287,7 +287,7 @@ development_status:
   51-8-the-banner-skip-family-is-complete: done
   51-9-the-campaign-reads-the-ledger-it-just-promoted-re-mint-of-51-3: done
   51-10-the-watch-s-marshal-status-probe-is-executable-and-proven-against-the-real-interpreter: done
-  51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: backlog
+  51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop: done
   51-12-a-dispatch-only-checkout-still-has-fleet-rows: done
   52-1-the-six-accumulated-violations-are-cleared: done
   52-2-the-conformance-suite-is-a-pr-gate: done
