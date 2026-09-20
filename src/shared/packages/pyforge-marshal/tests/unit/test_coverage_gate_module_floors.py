@@ -1,6 +1,11 @@
 """Per-module coverage floors (marshal Story 53.2 landing, 2026-09-20): a
 dated, story-bound exception for one module that can only lower the
-station floor, is never anonymous, and is named on the gate's OK line."""
+station floor, is never anonymous, and is named on the gate's OK line.
+
+The mechanism stays; the one exception it was built for does not. Story 53.3
+covered ``dispatch_supervisor.__main__`` to the fleet floor and deleted its
+entry, so the live file now holds none and the test that pinned that entry's
+presence is retired with it -- what is pinned here instead is the absence."""
 
 from __future__ import annotations
 
@@ -92,7 +97,12 @@ def test_evaluate_coverage_payload_reads_the_exceptions_from_the_thresholds_file
     assert not ok and "pyforge.marshal.small" in message
 
 
-def test_the_live_file_names_the_supervisor_exception_with_its_story() -> None:
-    floors = load_module_floors()
-    entry = floors["pyforge.marshal.dispatch_supervisor.__main__"]
-    assert entry.unit == 35.0 and entry.story == "53-3-the-supervisor-entrypoint-reaches-the-floor" and entry.until
+def test_the_live_file_holds_no_module_exception() -> None:
+    """Story 53.3: marshal carries no named coverage debt.
+
+    The supervisor entry point is covered to the fleet floor by
+    ``tests/unit/test_dispatch_supervisor_main_loop.py``, so its Story 53.2
+    exception is gone and no other module has taken its place. A new entry
+    here is a deliberate, reviewable act -- never a silent one.
+    """
+    assert load_module_floors() == {}
