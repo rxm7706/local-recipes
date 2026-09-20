@@ -4,6 +4,7 @@ type: dream
 owner: mason
 status: archived
 archived-reason: folded-into-station-dream
+sibling-acknowledged: 87487b9ccd6b251dba8dec4d8ccbf140ff8bfbd76ee80b4e0f9ff940d2136ad4
 ---
 
 > **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `django-accelerator-framework`).

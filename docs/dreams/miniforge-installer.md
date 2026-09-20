@@ -4,6 +4,7 @@ type: dream
 owner: mason
 status: archived
 archived-reason: folded-into-station-dream
+sibling-acknowledged: 7b55342fd8cdec52c87c7ce086b99ed4456e705930f6740f13aec4d8122d460b
 ---
 
 > **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `miniforge-installer`).

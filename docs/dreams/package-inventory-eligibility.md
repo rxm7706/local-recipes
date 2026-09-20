@@ -4,6 +4,7 @@ type: dream
 owner: warden
 status: archived
 archived-reason: folded-into-station-dream
+sibling-acknowledged: 141f93799f88b44c3476ccbc36a787a6431f9b4e25030a9b0f14a426d9577ef2
 ---
 
 > **Consolidated into [[pyforge-warden]]** on 2026-09-17 (one-chain-per-station warden fold; folded from `package-inventory-eligibility`).

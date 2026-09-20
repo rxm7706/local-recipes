@@ -1,11 +1,20 @@
-"""Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3).
+"""Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3; Story 29.1).
 
 Diffs shared Dream filenames between this repo's ``docs/dreams/`` and the one
-named sibling PyForge tree (``OpenTeams-WFT-CDO/mgmt-wf-python-modernization``)
-on status, owner, content-hash, and title. Warn-only, fail-open without a token
-or when the sibling is unreachable — but unreachable paths emit an explicit
-``sibling-dreams-unreachable`` finding rather than silence. Never stores sibling
-prose — fingerprints only.
+named sibling PyForge tree (``openteams-ai/mgmt-wf-python-modernization`` —
+formerly ``OpenTeams-WFT-CDO/mgmt-wf-python-modernization``, which GitHub now
+only 301-redirects) on status, owner, content-hash, and title. Warn-only,
+fail-open without a token or when the sibling is unreachable — but unreachable
+paths emit an explicit ``sibling-dreams-unreachable`` finding rather than
+silence. Never stores sibling prose — fingerprints only.
+
+A local Dream may carry a ``sibling-acknowledged: <hash>`` frontmatter line
+(Story 29.1 / CAP-82) recording the sibling ``content_hash`` an operator has
+already reviewed and accepted for that Dream (e.g. expected fold fallout).
+While the sibling's current hash still equals the acknowledged one, the Dream
+stays silent even if it diverges on other axes; the moment the sibling's hash
+moves, the finding re-fires naming both hashes. The acknowledgement lives on
+the LOCAL Dream only and records a hash, never sibling content.
 """
 
 from __future__ import annotations
@@ -13,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -24,12 +34,27 @@ from . import degrade_on_exception
 
 __all__ = ("gather",)
 
-_SIBLING_OWNER = "OpenTeams-WFT-CDO"
+_SIBLING_OWNER = "openteams-ai"
 _SIBLING_REPO = "mgmt-wf-python-modernization"
 _SIBLING_DREAMS_PATH = "docs/dreams"
 _SIBLING_FETCH_TOTAL_BUDGET_SECONDS = 10.0
 _API_BASE = f"https://api.github.com/repos/{_SIBLING_OWNER}/{_SIBLING_REPO}/contents"
 _COMPARED_AXES = ("status", "owner", "content_hash", "title")
+
+
+class _SiblingHTTPError(Exception):
+    """A sibling fetch failed with a real HTTP status (Story 29.1).
+
+    Raised only for ``urllib.error.HTTPError`` — every other transport
+    failure still falls open to ``_fetch_sibling_fingerprints`` returning
+    ``None`` (unchanged from Story 16.1), so existing fail-open behavior for
+    non-HTTP failures (timeouts, connection errors, malformed payloads) is
+    untouched.
+    """
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = status_code
 
 
 def gather(target: Path) -> tuple[Finding, ...]:
@@ -50,7 +75,10 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         return _unreachable_finding(
             "no operator token (set GH_TOKEN or GITHUB_TOKEN to reach sibling)"
         )
-    sibling = _fetch_sibling_fingerprints(token)
+    try:
+        sibling = _fetch_sibling_fingerprints(token)
+    except _SiblingHTTPError as exc:
+        return _unreachable_finding(f"sibling dreams fetch failed: HTTP {exc.status_code}")
     if sibling is None:
         return _unreachable_finding("sibling dreams fetch failed")
     return _diff_shared_slugs(local, sibling)
@@ -98,6 +126,20 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
         return None
     status = data.get("status")
     owner = data.get("owner")
+    # Local-only bookkeeping (Story 29.1): a hash the operator has already
+    # reviewed and accepted for THIS Dream's sibling counterpart. Harmless to
+    # read off a sibling fingerprint too -- siblings never declare it, and
+    # nothing reads this key on the sibling side. A real sha256 hex digest is
+    # a str, but an all-digit one YAML-parses as an int -- coerce numeric
+    # scalars back to their literal text instead of silently discarding them
+    # as "no acknowledgement" (still fails toward extra warn noise, never
+    # toward silence, either way).
+    ack_raw = data.get("sibling-acknowledged")
+    ack = (
+        str(ack_raw)
+        if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool)
+        else ack_raw
+    )
     # Body = everything after the closing fence line (UTF-8). Empty body →
     # sha256 of b"".
     marker = "\n---\n"
@@ -111,6 +153,7 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
         "status": status.strip() if isinstance(status, str) else "",
         "owner": owner.strip() if isinstance(owner, str) else "",
         "content_hash": hashlib.sha256(body_bytes).hexdigest(),
+        "sibling_acknowledged": ack.strip() if isinstance(ack, str) else "",
     }
 
 
@@ -136,13 +179,22 @@ def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
 
 
 def _fetch_sibling_fingerprints(token: str) -> dict[str, dict[str, str]] | None:
-    """List + fetch sibling dreams; return None on any failure (fail-open)."""
+    """List + fetch sibling dreams; return None on any failure (fail-open).
+
+    Raises ``_SiblingHTTPError`` for a real HTTP error response (e.g. a 404
+    under a moved/renamed owner) so ``_gather`` can name the status in its
+    ``sibling-dreams-unreachable`` finding (Story 29.1). Every other failure
+    (timeout, connection error, malformed payload) still returns ``None``,
+    unchanged from Story 16.1.
+    """
     try:
         listing = _http_json(
             f"{_API_BASE}/{_SIBLING_DREAMS_PATH}",
             token,
             timeout=_SIBLING_FETCH_TOTAL_BUDGET_SECONDS,
         )
+    except urllib.error.HTTPError as exc:
+        raise _SiblingHTTPError(exc.code) from exc
     except Exception:  # noqa: BLE001 -- fail-open
         return None
     if not isinstance(listing, list):
@@ -161,6 +213,8 @@ def _fetch_sibling_fingerprints(token: str) -> dict[str, dict[str, str]] | None:
             text = _http_text(
                 download, token, timeout=_SIBLING_FETCH_TOTAL_BUDGET_SECONDS
             )
+        except urllib.error.HTTPError as exc:
+            raise _SiblingHTTPError(exc.code) from exc
         except Exception:  # noqa: BLE001 -- fail-open per file / overall
             return None
         fp = _parse_dream_fingerprint(text)
@@ -207,14 +261,23 @@ def _diff_shared_slugs(
         axes = [axis for axis in _COMPARED_AXES if left[axis] != right[axis]]
         if not axes:
             continue
+        sibling_hash = right["content_hash"]
+        ack = left.get("sibling_acknowledged", "")
+        if ack and ack == sibling_hash:
+            # Acknowledged at the current sibling hash: silence this Dream
+            # entirely (Story 29.1), regardless of which axes still differ.
+            continue
+        message = f"sibling dream {slug!r} diverges on " + ", ".join(axes)
+        if ack:
+            message += f" (acknowledged hash {ack} no longer matches current {sibling_hash})"
+        elif left["status"] == "archived":
+            message += " (archived)"
         findings.append(
             Finding(
                 source=Source.SIBLING_DREAMS_DRIFT,
                 check="sibling-dreams-drift",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"sibling dream {slug!r} diverges on " + ", ".join(axes)
-                ),
+                message=message,
                 evidence={
                     "slug": slug,
                     "axes": axes,
@@ -225,7 +288,8 @@ def _diff_shared_slugs(
                     "local_owner": left["owner"],
                     "sibling_owner": right["owner"],
                     "local_content_hash": left["content_hash"],
-                    "sibling_content_hash": right["content_hash"],
+                    "sibling_content_hash": sibling_hash,
+                    "sibling_acknowledged": ack,
                 },
             )
         )

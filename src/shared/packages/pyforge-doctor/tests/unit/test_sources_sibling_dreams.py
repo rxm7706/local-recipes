@@ -1,10 +1,12 @@
-"""Unit tests for ``sources.sibling_dreams`` (Story 16.1 / CAP-1; re-key 21.3)."""
+"""Unit tests for ``sources.sibling_dreams`` (Story 16.1 / CAP-1; re-key 21.3;
+Story 29.1)."""
 
 from __future__ import annotations
 
 import hashlib
 import io
 import json as _json
+import urllib.error
 import urllib.request as _urlreq
 from pathlib import Path
 
@@ -381,3 +383,187 @@ def test_local_fingerprints_skip_unusable_files(tmp_path: Path):
     _write_local_dream(dreams, "good", title="Good", status="dreamt", owner="doctor")
     (dreams / "bad.md").write_text("no frontmatter", encoding="utf-8")
     assert list(sibling_dreams._local_fingerprints(tmp_path)) == ["good"]
+
+
+# --- sibling-acknowledged (Story 29.1 / CAP-82) --------------------------
+
+
+def test_parse_dream_fingerprint_coerces_all_digit_ack_to_string():
+    # An all-digit sha256-shaped value YAML-parses as an int; review-caught
+    # edge case (Story 29.1 patch) -- must not be silently discarded.
+    fp = sibling_dreams._parse_dream_fingerprint(
+        "---\ntitle: T\nsibling-acknowledged: 1234567890\n---\nbody\n"
+    )
+    assert fp is not None
+    assert fp["sibling_acknowledged"] == "1234567890"
+
+
+def test_parse_dream_fingerprint_drops_non_scalar_ack():
+    fp = sibling_dreams._parse_dream_fingerprint(
+        "---\ntitle: T\nsibling-acknowledged: true\n---\nbody\n"
+    )
+    assert fp is not None
+    assert fp["sibling_acknowledged"] == ""
+
+
+def _write_local_dream_with_ack(
+    dreams: Path,
+    slug: str,
+    *,
+    title: str,
+    status: str,
+    owner: str,
+    ack: str,
+    body: str = "local body\n",
+) -> None:
+    dreams.mkdir(parents=True, exist_ok=True)
+    text = (
+        f"---\ntitle: {title}\nstatus: {status}\nowner: {owner}\n"
+        f"sibling-acknowledged: {ack}\n---\n{body}"
+    )
+    (dreams / f"{slug}.md").write_text(text, encoding="utf-8")
+
+
+def test_sibling_acknowledged_hash_match_silences_the_dream(tmp_path: Path, monkeypatch):
+    dreams = tmp_path / "docs" / "dreams"
+    sibling_fp = _fingerprint(title="Miniforge", status="dreamt", owner="mason")
+    _write_local_dream_with_ack(
+        dreams,
+        "miniforge-installer",
+        title="Miniforge",
+        status="archived",
+        owner="mason",
+        ack=sibling_fp["content_hash"],
+    )
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+    monkeypatch.setattr(
+        sibling_dreams,
+        "_fetch_sibling_fingerprints",
+        lambda token: {"miniforge-installer": sibling_fp},
+    )
+    # Diverges on status AND content_hash — acknowledgement silences it anyway.
+    assert sibling_dreams.gather(tmp_path) == ()
+
+
+def test_sibling_acknowledged_hash_mismatch_refires_naming_both_hashes(
+    tmp_path: Path, monkeypatch
+):
+    dreams = tmp_path / "docs" / "dreams"
+    sibling_fp = _fingerprint(title="Miniforge", status="dreamt", owner="mason")
+    stale_hash = "deadbeef" * 8  # a hex-looking (non-numeric) stale hash
+    _write_local_dream_with_ack(
+        dreams,
+        "miniforge-installer",
+        title="Miniforge",
+        status="archived",
+        owner="mason",
+        ack=stale_hash,
+    )
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+    monkeypatch.setattr(
+        sibling_dreams,
+        "_fetch_sibling_fingerprints",
+        lambda token: {"miniforge-installer": sibling_fp},
+    )
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f.check == "sibling-dreams-drift"
+    assert stale_hash in f.message
+    assert sibling_fp["content_hash"] in f.message
+    assert f.evidence["sibling_acknowledged"] == stale_hash
+    assert f.evidence["sibling_content_hash"] == sibling_fp["content_hash"]
+
+
+def test_archived_dream_without_ack_names_archived_in_message(tmp_path: Path, monkeypatch):
+    dreams = tmp_path / "docs" / "dreams"
+    _write_local_dream(
+        dreams,
+        "pixi-container-image",
+        title="Pixi container",
+        status="archived",
+        owner="mason",
+    )
+    sibling_fp = _fingerprint(title="Pixi container", status="dreamt", owner="mason")
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+    monkeypatch.setattr(
+        sibling_dreams,
+        "_fetch_sibling_fingerprints",
+        lambda token: {"pixi-container-image": sibling_fp},
+    )
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    assert "archived" in findings[0].message
+    assert findings[0].evidence["sibling_acknowledged"] == ""
+
+
+def test_non_archived_dream_without_ack_omits_archived_from_message(
+    tmp_path: Path, monkeypatch
+):
+    dreams = tmp_path / "docs" / "dreams"
+    _write_local_dream(
+        dreams, "pixi-container-image", title="Pixi container", status="dreamt", owner="mason"
+    )
+    sibling_fp = _fingerprint(title="Pixi container", status="specified", owner="mason")
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+    monkeypatch.setattr(
+        sibling_dreams,
+        "_fetch_sibling_fingerprints",
+        lambda token: {"pixi-container-image": sibling_fp},
+    )
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    assert "archived" not in findings[0].message
+
+
+# --- renamed sibling owner (Story 29.1) -----------------------------------
+
+
+def test_sibling_owner_points_to_openteams_ai():
+    assert sibling_dreams._SIBLING_OWNER == "openteams-ai"
+    assert sibling_dreams._API_BASE == (
+        "https://api.github.com/repos/openteams-ai/mgmt-wf-python-modernization/contents"
+    )
+
+
+# --- HTTP status surfaced on an unreachable sibling (Story 29.1) ---------
+
+
+def test_fetch_sibling_fingerprints_raises_http_error_with_status(monkeypatch):
+    url = f"{sibling_dreams._API_BASE}/{sibling_dreams._SIBLING_DREAMS_PATH}"
+    err = urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+    _stub_urlopen(monkeypatch, {url: err})
+    with pytest.raises(sibling_dreams._SiblingHTTPError) as exc_info:
+        sibling_dreams._fetch_sibling_fingerprints("tok")
+    assert exc_info.value.status_code == 404
+
+
+def test_fetch_sibling_fingerprints_raises_http_error_on_file_fetch(monkeypatch):
+    url = f"{sibling_dreams._API_BASE}/{sibling_dreams._SIBLING_DREAMS_PATH}"
+    file_url = "https://raw.test/a.md"
+    err = urllib.error.HTTPError(file_url, 403, "Forbidden", hdrs=None, fp=None)
+    _stub_urlopen(monkeypatch, {url: _listing("a.md"), file_url: err})
+    with pytest.raises(sibling_dreams._SiblingHTTPError) as exc_info:
+        sibling_dreams._fetch_sibling_fingerprints("tok")
+    assert exc_info.value.status_code == 403
+
+
+def test_gather_reports_http_status_on_fetch_failure(tmp_path: Path, monkeypatch):
+    dreams = tmp_path / "docs" / "dreams"
+    _write_local_dream(
+        dreams,
+        "developer-machine-bootstrap",
+        title="Bootstrap",
+        status="specified",
+        owner="steward",
+    )
+    monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
+
+    def _raise(token):
+        raise sibling_dreams._SiblingHTTPError(404)
+
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", _raise)
+    findings = sibling_dreams.gather(tmp_path)
+    assert len(findings) == 1
+    assert findings[0].check == "sibling-dreams-unreachable"
+    assert "HTTP 404" in findings[0].message

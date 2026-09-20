@@ -132,6 +132,11 @@ forward. That dream is archived; this one is the real record.
   `openteams-ai/mgmt-wf-python-modernization`; `sibling_dreams.py` hard-codes the old owner and
   works only while GitHub keeps redirecting. Decomposed the same day as **CAP-82 / Epic 29 /
   Story 29.1** (doctor `DW-OPS-2026-09-19-6` carries the six as the acceptance fixture).
+  **Shipped 2026-09-20:** Story 29.1 landed — `sibling_dreams.py` honours `sibling-acknowledged:
+  <hash>` (whole-Dream suppression on hash match, re-fires naming both hashes otherwise, `archived`
+  named in the no-acknowledgement case) and `_SIBLING_OWNER` now points at `openteams-ai`. All six
+  Dreams carry their landing-day acknowledgement; live re-verification: zero `sibling-dreams-drift`
+  findings, exit 0. `DW-OPS-2026-09-19-6` closed.
 - **2026-09-18 (night)** — **Proposed: a frontmatter reader that stops at the
   first `---` it sees.** `sources/chain.py::_frontmatter_parse` splits a spec on
   the first `---` *anywhere in the file*, not on a line-anchored fence. Marshal

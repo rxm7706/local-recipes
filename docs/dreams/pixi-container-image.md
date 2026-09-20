@@ -4,6 +4,7 @@ type: dream
 owner: mason
 status: archived
 archived-reason: folded-into-station-dream
+sibling-acknowledged: 9170468bf18362d74c4bc4444ec7e8cf263386555083344054d5f46577b1ba7c
 ---
 
 > **Consolidated into [[pyforge-mason]]** on 2026-09-17 (one-chain-per-station mason fold; folded from `pixi-container-image`).
