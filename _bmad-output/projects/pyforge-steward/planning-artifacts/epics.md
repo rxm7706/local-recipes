@@ -4246,7 +4246,7 @@ As a fleet operator asking what is completed, running and queued next by station
 I want every story the query engine returns to carry a `next` field, with `--ready` / `--running` filters and per-station ready/running counts in the summary,
 So that `sprint-ledger-query -- --unimplemented --format table` is the one command, instead of `fleet-picture` + `sprint-ledger-query` + `marshal watch` + a hand-written join.
 
-**Type:** feature • **Effort:** S • **Deps:** S-65.1 • **FR/AD:** spec-pyforge-steward CAP-150 • operator ask 2026-09-20 08:00Z; re-opens Epic 65 (operator's choice over a new epic)
+**Type:** feature • **Effort:** S • **Deps:** S-65.1 • **FR/AD:** spec-pyforge-steward CAP-150 • operator ask 2026-09-20 08:00Z; added to the closed Epic 65 by the operator's choice — the `epic-65` key stays `done` (`ledger-regression` forbids moving a done key), this story is a `backlog` row beneath it
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py` (`next` on the story item — `done` / `running` / `ready` /
 `waits on S-x.y[, …]` / `blocked` / `?`; `--ready`, `--running` on the existing `ledger-query` duty — no new duty, duty-count invariants
 unchanged; the running fact from `marshal watch --fleet --format json` via `pyforge.core.process`, one call per query, fail-open to `?` +
