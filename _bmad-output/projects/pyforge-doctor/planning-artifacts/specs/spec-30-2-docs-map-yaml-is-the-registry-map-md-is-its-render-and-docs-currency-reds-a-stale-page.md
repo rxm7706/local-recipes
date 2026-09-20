@@ -2,7 +2,7 @@
 title: '30.2: docs/map.yaml is the registry, MAP.md is its render, and `docs-currency` reds a stale page'
 type: 'feature'
 created: '2026-09-20'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'fa54e525cbf28e49e6975799390866e996ca0e59'
 review_loop_iteration: 0
 followup_review_recommended: false
