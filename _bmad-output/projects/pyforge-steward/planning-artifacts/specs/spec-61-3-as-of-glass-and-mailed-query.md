@@ -2,13 +2,14 @@
 title: '61.3: As-of glass and mailed query'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
 deferred: []
 declared_low_risk: false
+baseline_revision: 'dfddf7be04329995ca1b53819b49638f3d8b7ef6'
 ---
 
 <intent-contract>
