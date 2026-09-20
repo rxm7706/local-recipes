@@ -1025,6 +1025,7 @@ def _run_and_journal_landing(
         worktree=worktree,
         repo_root=repo_root,
         verification_verdict=verification_verdict,
+        run_id=run_id,
         effective=effective,
         fs=fs,
         vcs=vcs,
