@@ -570,8 +570,11 @@ def is_valid_spec_text(text: str | None) -> bool:
 
 # The `status:` VALUE, not merely the key `is_valid_spec_text` proves exists
 # (Story 51.7/CAP-255) -- an optionally quoted bare token, mirroring
-# `core/dispatch.py`'s own `_DIFFICULTY_RE` value-capture convention.
-_STATUS_VALUE_RE = re.compile(r"^status:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$")
+# `core/dispatch.py`'s own `_DIFFICULTY_RE` value-capture convention. The
+# opening quote is captured and back-referenced at the close (review
+# finding) so a mismatched pair (`status: 'done"`) does not parse -- open
+# and close must be the same character, or both absent.
+_STATUS_VALUE_RE = re.compile(r"^status:\s*(['\"]?)([A-Za-z0-9_-]+)\1\s*$")
 
 #: A `status: done` string, the one value `corroborated_merged_story_keys`
 #: treats as landing evidence.
@@ -603,7 +606,7 @@ def read_spec_status(text: str | None) -> str | None:
     for line in frontmatter.splitlines():
         match = _STATUS_VALUE_RE.match(line.strip())
         if match is not None:
-            return match.group(1)
+            return match.group(2)
     return None
 
 

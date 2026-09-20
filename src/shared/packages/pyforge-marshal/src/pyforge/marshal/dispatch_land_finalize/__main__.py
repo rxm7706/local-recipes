@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from pyforge.marshal.adapters.fs_local import LocalFs
-from pyforge.marshal.adapters.vcs_git import GitVcs
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.config import repo_root
 from pyforge.marshal.cli.deploy import (
     _DeployRun,
@@ -21,7 +21,9 @@ from pyforge.marshal.cli.deploy import (
     _scan_promotions,
 )
 from pyforge.marshal.cli.land import _promote_sprint_ledger, _resync_home_branch
-from pyforge.marshal.core.identity import MalformedStoryKeyError, normalize
+from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core import promotion
+from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 
 # Story 51.9 (re-mint of 51.3): distinct journal-kind namespace for this
@@ -54,6 +56,39 @@ def finalize_dispatch_land(
     scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs, worktree=worktree)
     findings.extend(scan.findings)
     if scan.plan is not None and scan.plan.to_promote:
+
+        def _spec_status_for(candidate_key: StoryKey) -> str | None:
+            # Story 51.7/CAP-255: `_scan_promotions` (cli/deploy.py) still
+            # classifies durability through the uncorroborated
+            # `merged_story_keys` -- untouched deliberately, per this
+            # story's own Binding. Re-gate its `to_promote` output HERE,
+            # against the same `origin/main`-anchored spec-status
+            # corroboration `dispatch_land`/`dispatch_supervisor` already
+            # apply, so a mint/fallout/fix PR's station-branch merge can no
+            # longer promote a Tier-3 spec that was never actually landed.
+            # Fails closed (never corroborates) on any git read failure.
+            try:
+                spec_text = dispatch_core.spec_text_at_ref(
+                    vcs, root, project_slug, str(candidate_key)
+                )
+            except VcsCommandError:
+                return None
+            return promotion.read_spec_status(spec_text)
+
+        corroborated = promotion.corroborated_merged_story_keys(
+            scan.combined_subjects,
+            scan.template,
+            project_slug,
+            spec_status_for=_spec_status_for,
+        )
+        to_promote = tuple(
+            candidate
+            for candidate in scan.plan.to_promote
+            if candidate.story_key in corroborated
+        )
+    else:
+        to_promote = ()
+    if to_promote:
         specs_dir = (
             root
             / "_bmad-output"
@@ -63,7 +98,7 @@ def finalize_dispatch_land(
             / "specs"
         )
         _execute_promotion_plan(
-            scan.plan.to_promote,
+            to_promote,
             project_slug=project_slug,
             fs=fs,
             vcs=vcs,
