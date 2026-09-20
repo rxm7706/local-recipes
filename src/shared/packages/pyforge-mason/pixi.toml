@@ -38,8 +38,8 @@ python = ">=3.12"
 packaging = "*"
 pyyaml = ">=6.0.3"         # Story 4.4: engines/condalock.py imports `yaml` at module scope, on cli.py's own import path (cli -> environment -> engines.condalock) -- without this the built .conda installs without PyYAML and `mason` raises ModuleNotFoundError before parsing argv (mirrors pyforge-doctor/pixi.toml's identical line and its identical reason; matches pyproject.toml's own `PyYAML>=6.0.3` and the root pixi.toml pin). NOT satisfied incidentally by conda-lock's own PyYAML dependency: that is an engine run-dep, not an import guarantee.
 pixi = ">=0.80.0,<0.81"   # keep in step with the root requires-pixi floor — this package-level run-dep is NOT in pixi_version_registry.py's 17 sites (recurrence, 2026-09-11: the <0.78 ceiling pinned the mason env's own pixi at 0.77.1 while requires-pixi had moved to >=0.80.0, failing mason's self-hosting build test the same way the 2026-08-21 incident did); still not registered there -- the registry's "floor"-kind sites match a bare `>=VERSION` literal, but this line's ceiling (`<0.81`) would ALSO need to track the master version's next minor, a growth rule the registry doesn't generalize today
-twine = ">=7.0.0,<7.1"
-conda-lock = ">=4.0.2,<4.1"
-python-build = ">=1.5.0,<1.6"
-gh = ">=2.97.0,<2.98"
+twine = ">=7.0.0"   # 2026-09-20: unreasoned ceiling removed (operator ruling: never cap without a reason); floor kept
+conda-lock = ">=4.0.2"   # 2026-09-20: unreasoned ceiling removed (operator ruling: never cap without a reason); floor kept
+python-build = ">=1.6.0"       # 2026-09-20 (steward Story 63.5, the pyforge-foundry-full union env): the old <1.6 cap conflicted with the >=1.6.0 floors pyforge-ci / pyforge-core / pyforge-testing-kit / local-recipes pin; the union solve surfaced it. Floor only -- no reasoned ceiling (operator ruling: never cap without a reason).
+gh = ">=2.97.0"   # 2026-09-20: unreasoned ceiling removed (operator ruling: never cap without a reason); floor kept
 pyforge-core = { path = "../pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError

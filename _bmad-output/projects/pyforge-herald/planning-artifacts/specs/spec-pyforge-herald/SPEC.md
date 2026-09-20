@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: '2026-09-18'
+updated: '2026-09-20'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - docs/dreams/deck-family-currency.md
@@ -332,6 +332,9 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-50 — the second `sync-all` run is proven unchanged on a real deck** ← spec-pyforge-herald CAP-50 (ready 2026-09-18)
   - **intent:** The idempotency promise of `herald deck sync-all` is a recorded, repeatable, one-command live proof against a seeded deck with real Design credentials and real tracked state — not a fake-only test plus a memory.
   - **success:** An opt-in task (`HERALD_LIVE_SYNC_PROOF=1`, never in the default gate, listed in doctor's `live-proof-surfaces.md`) runs `sync-all --slug <seeded deck>` twice against live Design and asserts the second report is all-`unchanged` with zero git and zero Design writes, writing the two reports and the etag/tree stamps to `.herald/sync-proof/<slug>/`; run once by the operator on 2026-09-1x with the artifacts committed as the story's evidence; DW-FU-23-6 closes citing that run.
+- **CAP-51 — the deck pipeline runs from the Guild env** ← spec-pyforge-herald CAP-51 (ready 2026-09-20)
+  - **intent:** `deck_pipeline.py`'s `DeckExporter` and `sync_all.py`'s `FactsRefresher` / trio step shell `pixi run -e pyforge-guild deck-export | deck-facts | deck-trio` (registered in `guild-tasks` with their deps in `pyforge-guild` — steward 63.6), never `-e local-recipes`; the pipeline's fakes and the live sync proof keep their shapes.
+  - **success:** no `-e local-recipes` string remains in `pyforge-herald/src`; `test_deck_pipeline`'s argv assertions read the Guild env; `deck-sync-proof`'s opt-in live run still passes; steward 63.6's meta-test lists no herald offender; `pyforge-herald-test` green.
 
 ## Fold provenance
 

@@ -116,6 +116,12 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-20 (later) — Herald's deck pipeline runs from the Guild env, not the recipe factory.**
+  `deck_pipeline.py` and `sync_all.py` shell `pixi run -e local-recipes deck-export | deck-facts |
+  deck-trio`; only `pyforge-guild` exists at runtime (operator ruling, steward Dream 2026-09-20
+  later). The three tasks move into `guild-tasks` with their deps in `pyforge-guild` (steward
+  63.6 owns the env side) and herald's shell-outs name `-e pyforge-guild`. → CAP-51 / Story 25.1
+  (Epic 25, new — 24 is `done`).
 - **2026-09-20 — Proposed: the docs site matches BMAD-METHOD's pattern, so their skills and
   workflows apply unchanged.** Operator ask 09:55Z: *"design our docs and docs deployment to
   GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their patterns,

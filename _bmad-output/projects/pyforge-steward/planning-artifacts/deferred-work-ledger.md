@@ -4615,7 +4615,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   evidence: 2026-09-20 in `../local-recipes-wt-agents-md-mod` (station envs only): steward 1577 passed / 1 failed on that test; the same test passes on the main checkout at the same tree. Found on the fleet PR #1551's shared-surface run.
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
   severity: low
-  status: open
+  status: done
+  verified: 2026-09-20 — resolved by steward Story 63.5 in the same PR (#1551): `bmad-eval-quality` pinned in `[feature.pyforge-steward.dependencies]`, lock re-solved, `test_wired_column_agrees_with_live_pipeline_truth_for_every_row` passes in a station-envs-only worktree (1578 passed). The `suite.py:714` fallback itself is Story 63.6's to remove.
   raised: 2026-09-20 — Owner: steward (suite adoption register, Story 45.1's pin). Not caused by #1551; recorded at shutdown rather than folded in (a `pixi.toml` dep change is its own lane).
 
 ### DW-OPS-2026-09-19-5: `.gitignore:740` is an unanchored `data/` pattern — it swallows every `data/` directory in the tree, including packaged JSON schemas that must ship (two `git add -f` so far); worktree hygiene pass pending for 17 merged sibling/agent worktrees

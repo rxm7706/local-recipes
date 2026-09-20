@@ -64,6 +64,8 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("docsite-check.yml setup-pixi", ".github/workflows/docsite-check.yml",  # herald 24.2's PR lane (2026-09-18) sat unregistered at v0.80.0 through the 0.81.0 bump (2026-09-20) -- found by a grep sweep, the registry's own recurring failure mode
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("platform-ci.yml setup-pixi (4 jobs)", ".github/workflows/platform-ci.yml",  # PR #1043: four jobs sat on 0.77.0 unregistered while requires-pixi said >=0.78.0
           r"pixi-version: v" + _PIXI_VERSION, hits=4, kind="exact"),
     _site("platform-deploy.yml setup-pixi", ".github/workflows/platform-deploy.yml",

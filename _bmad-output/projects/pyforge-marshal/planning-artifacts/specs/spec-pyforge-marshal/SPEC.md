@@ -1016,6 +1016,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-262 — the dispatched Claude session is launched with the instruction-file mode pinned** ← spec-pyforge-marshal CAP-262 (ready 2026-09-20)
   - **intent:** the claude harness profile's launch argv passes `--settings` with the `agents-md` mod's option inline (`{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}`), so a dispatched `claude -p` session loads nested `AGENTS.md` files (the atlas child) regardless of the operator's user settings; older Claude Code ignores an unknown plugin option and still reads `AGENTS.md` through `CLAUDE.md`'s import, so the pin is harmless below 2.1.277.
   - **success:** `render_dispatch_argv` for the claude profile yields `--settings` followed by JSON whose `pluginConfigs.agents-md@builtin.options.instructionFiles` is `claude-md-and-agents-md`; `{prompt}` still appears exactly once; the wire-wrapped launch keeps the same tokens; authcheck and model translation unchanged; `pyforge-marshal-test` green. Surface half: `spec-pyforge-scribe:CAP-29`.
+- **CAP-263 — marshal's shell-outs name the Guild env** ← spec-pyforge-marshal CAP-263 (ready 2026-09-20)
+  - **intent:** `cli/watch.py`'s bmad-loop list/status probes, `core/gate.py`'s `platform-ci-local` verify line and `adapters/scribe_cli.py`'s fallback bin dirs reach their commands through `-e pyforge-guild` (bmad-loop is marshal's own run-dep, already in the Guild), never `-e local-recipes` and never `.pixi/envs/local-recipes`; the watch's fake-port tests assert the Guild argv.
+  - **success:** no `-e local-recipes` / `envs/local-recipes` string remains in `pyforge-marshal/src`; the watch, gate and scribe-CLI tests pass with the Guild argv; steward 63.6's meta-test lists no marshal offender; `pyforge-marshal-test` green.
 
 ## Constraints
 

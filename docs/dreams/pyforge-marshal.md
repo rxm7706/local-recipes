@@ -462,6 +462,12 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   depends on the operator's machine for whether nested `AGENTS.md` files (the atlas child) load.
   The launch pins it: the claude harness profile passes `--settings` with the mode inline. →
   CAP-262 / Story 46.11 (hand-driven the same morning; scribe 19.3 owns the surface side).
+  **(11), 10:15Z:** `cli/watch.py` shells `pixi run -e local-recipes bmad-loop list|status`,
+  `core/gate.py` names `-e local-recipes platform-ci-local`, and `adapters/scribe_cli.py` falls
+  back to `.pixi/envs/local-recipes/bin` — but `local-recipes` is the recipe factory, not a
+  runtime; only `pyforge-guild` exists where marshal runs (operator ruling, steward Dream
+  2026-09-20 later). bmad-loop is marshal's own run-dep. → CAP-263 / Story 46.12 (the steward
+  side is 63.6).
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

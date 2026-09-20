@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 48  # 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 300  # 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-18"   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
+updated: "2026-09-20"   # Epic 50 appended (spec-pyforge-marshal CAP-244..248, the landing self-drives; 48/49 reserved holes). Prior 2026-09-15: Epic 45 appended (spec-bmad-cursor-interactive-routing CAP-1 closed / CAP-2..4 decompose). Prior 2026-09-14: Epic 43 / Story 43.1; retroactive Epics 37-41; prior stamp 2026-09-09
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -6156,6 +6156,19 @@ So that nested `AGENTS.md` files (the atlas child) load in every dispatched sess
 **Then** `render_dispatch_argv` yields `--settings` followed by JSON whose `pluginConfigs.agents-md@builtin.options.instructionFiles` is `claude-md-and-agents-md`; `{prompt}` appears exactly once; the wire-wrapped launch keeps the same tokens
 **And** an older Claude Code ignores the unknown plugin option and still reads `AGENTS.md` through the import — the pin is harmless below 2.1.277
 **Outcome (2026-09-20):** done, hand-driven — see the tracked spec's Auto Run Result.
+
+### Story 46.12: Marshal's shell-outs name the Guild env
+
+As a fleet operator running marshal where only `pyforge-guild` exists,
+I want the watch's bmad-loop probes, the gate's verify line and the scribe-CLI fallback to reach their commands through `-e pyforge-guild`,
+So that marshal never depends on the recipe factory's 10 GB environment being installed beside it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-263 • Dream item (11); the env side is steward 63.6
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py` (`list_runs` / `run_status` argv → `-e pyforge-guild`), `core/gate.py:646` (`platform-ci-local` line), `adapters/scribe_cli.py:77-78` (fallback bin dirs), `tests/unit/test_watch.py` (argv assertions), related gate / scribe-CLI tests.
+**Given** `cli/watch.py` shells `pixi run -e local-recipes bmad-loop list|status` although bmad-loop is marshal's own run-dep and present in `pyforge-guild`
+**When** every argv names `-e pyforge-guild` and no `.pixi/envs/local-recipes` path remains
+**Then** the watch's fake-port tests assert the Guild argv; `grep -rn 'local-recipes' pyforge-marshal/src` finds only prose; steward 63.6's guard lists no marshal offender
+**And** `pyforge-marshal-test` green; the live watch on this host still names the running dispatch
 
 ## Epic 47: The review bot remembers the correction you gave two weeks ago (spec-marshal-recall-in-the-loop CAP-1..4)
 
