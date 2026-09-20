@@ -2,7 +2,8 @@
 title: '26.1: A touched live-proof-only surface gets an advisory Doctor finding naming it'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '9d4704e7211189ea7648fb8d468ee544a3bc4f9d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
