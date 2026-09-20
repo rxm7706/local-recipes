@@ -1386,6 +1386,22 @@ class TestDeriveDispatchPhase:
         )
         assert status.derive_dispatch_phase(facts) is None
 
+    def test_blocked_with_dead_tail_is_not_verifying(self):
+        """Story 51.11 (CAP-258): a `blocked` completion verdict with a dead
+        tail must resolve None like `failed`/`stopped_externally`, not fall
+        through to the final `return "verifying"` -- else fleet-picture would
+        show a self-halted blocked story as perpetually verifying."""
+        facts = status.FleetHomeFacts(
+            slug="pyforge-marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="51-11-example",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="blocked",
+        )
+        assert status.derive_dispatch_phase(facts) is None
+
     def test_none_without_dispatch_story(self):
         facts = status.FleetHomeFacts(slug="marshal", branch="loop/pyforge-marshal", has_run=False)
         assert status.derive_dispatch_phase(facts) is None
@@ -1422,6 +1438,22 @@ class TestDeriveDispatchStrandedWork:
         assert signal["kind"] == "unpushed-branch"
         assert signal["ref"] == self._BRANCH
         assert signal["story"] == self._STORY
+
+    def test_blocked_verdict_dead_tail_surfaces_stranded_work(self):
+        """Story 51.11 (CAP-258): a `blocked` completion verdict is a
+        terminal dead-tail case too -- the tuple gap would have made this
+        silently return None (no stranded-work signal) instead."""
+        facts = self._terminal_facts(dispatch_completion_verdict="blocked")
+        unpushed = {
+            self._BRANCH: {
+                "files": 3,
+                "stat": "3 files changed",
+                "remedy": f"git push origin {self._BRANCH}",
+            }
+        }
+        signal = status.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed)
+        assert signal is not None
+        assert signal["kind"] == "unpushed-branch"
 
     def test_live_tail_does_not_surface_stranded_work(self):
         facts = self._terminal_facts(dispatch_supervisor_alive=True)
