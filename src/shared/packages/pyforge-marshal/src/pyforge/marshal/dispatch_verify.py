@@ -14,6 +14,7 @@ from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessPort
 
+from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.dispatch_verification import reclassify_pre_existing_gate_findings
@@ -100,6 +101,30 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
     return found
 
 
+def _verify_commands_with_surface_guard(
+    effective: EffectivePolicy,
+) -> tuple[str, ...]:
+    """Story 53.1 (spec-53-1, CAP-261a): the S-13.7 guard, appended to a
+    dispatch session's own effective verify commands the SAME way
+    ``harness_bmadloop.render_policy_toml`` appends it to a loop home's
+    ``verify.commands`` -- one constant
+    (``adapters.harness_bmadloop._SURFACE_RECONCILE_COMMAND``), two
+    adapters. De-duplicated first so an operator who already declared the
+    guard in a station's ``marshal-policy.toml`` (never the intended path --
+    see that constant's own docstring, "derive, don't declare") still runs
+    it exactly once.
+
+    Unlike the loop adapter, this is not a rendered file an operator can
+    read before a run starts -- it is folded in at USE time, right before
+    the commands actually execute and before ``check_spec_binding`` sees
+    them, so a dispatch session is gated on the guard exactly like a loop
+    session even though nothing in ``marshal-policy.toml`` ever declares
+    it."""
+    verify = [c for c in effective.verify_commands.value if c != _SURFACE_RECONCILE_COMMAND]
+    verify.append(_SURFACE_RECONCILE_COMMAND)
+    return tuple(verify)
+
+
 def run_verify_commands_only(
     effective: EffectivePolicy, *, process: ProcessPort, worktree: Path
 ) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
@@ -181,7 +206,7 @@ def evaluate_dispatch_verification(
         "scope": "dispatch-worktree",
     }
 
-    commands = effective.verify_commands.value
+    commands = _verify_commands_with_surface_guard(effective)
     command_reports: list[dict[str, object]] = []
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
