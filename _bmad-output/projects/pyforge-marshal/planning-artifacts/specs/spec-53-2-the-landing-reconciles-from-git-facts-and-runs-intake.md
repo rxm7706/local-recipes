@@ -10,7 +10,61 @@ context:
   - '{project-root}/src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py'
   - '{project-root}/scripts/spec_surface_reconcile.py'
   - '{project-root}/scripts/deferred_work_intake.py'
-deferred: []
+deferred:
+  - summary: >-
+      The reconcile's own memlog + baseline-stamp commit is never re-run
+      through a merge-tree preview before `forge.merge_pr`.
+    evidence: |-
+      `_refuse_via_merge_tree_preview` (dispatch_land.py:846-871) validates
+      only the pre-reconcile tree; `_reconcile_spec_surface_drift`'s own
+      commit (memlog + baseline JSON, pushed at dispatch_land.py:873-899) is
+      never re-checked before `forge.merge_pr` at line ~938, verified by
+      tracing the call order at dispatch_land.py:830-935. The correct fix
+      (re-run the preview after a successful reconcile) is a second
+      expensive preview invocation; the reconcile only ever touches
+      `.memlog.md`/`.spec-surface-baseline.json`, never runtime code, so
+      practical risk is low, and re-scoping the preview call is beyond this
+      story's Approach.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:846-935
+    severity: medium
+  - summary: >-
+      `_reconcile_spec_surface_drift`'s in-process `sys.path.insert` +
+      doctor import can serve a stale, first-imported doctor module across
+      serial dispatches in the long-lived supervisor.
+    evidence: |-
+      The `sys.path.insert` + `from pyforge.doctor.sources.chain import
+      gather_spec_surface` import (dispatch_land.py ~297-301) runs
+      in-process inside the long-lived `dispatch_supervisor`, unlike
+      `scripts/spec_surface_reconcile.py`'s identical pattern, which always
+      runs as a fresh subprocess (that script's own docstring requires
+      "ZERO environment" and is invoked per-call). A supervisor spanning a
+      doctor-code deployment across serial dispatches would keep using the
+      first-imported, now-stale module via `sys.modules` caching. The proper
+      fix needs either subprocess-based invocation or explicit `importlib`
+      reload handling, both larger than a direct correction; the risk
+      window (a supervisor process outliving a doctor deploy) is narrow.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:297-301
+    severity: medium
+  - summary: >-
+      Doctor's per-path drift collapse keeps only the lowest-rank,
+      alphabetically-first co-governing spec's row, so a second co-governor
+      drifted on the identical path stays invisible to the reconcile.
+    evidence: |-
+      `pyforge.doctor.sources.chain._drift_findings`'s `per_path` collapse
+      (chain.py:1965-1974, `rows.sort(key=lambda row: (row[0], row[1]));
+      ... rows[0]`) keeps exactly one winning spec per path.
+      `_reconcile_spec_surface_drift` can only see and act on this already-
+      collapsed output, so the second co-governor's drift on that exact path
+      stays unreconciled on `main` until a later pass. Doctor's
+      `sources/chain.py` is explicitly read-only per this story's own
+      Boundaries, and the only story-side fix (loop reconcile-and-restamp
+      until `gather_spec_surface` reports fully clean) is a real scope
+      expansion beyond a single-pass reconcile.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:1965-1974
+    severity: high
 declared_low_risk: false
 ---
 
