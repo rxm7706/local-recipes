@@ -265,7 +265,7 @@ development_status:
   46-4-wire-auto-resolves-against-the-declared-wrapper: done
   46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency: backlog
   46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: backlog
-  46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: backlog
+  46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: backlog
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
