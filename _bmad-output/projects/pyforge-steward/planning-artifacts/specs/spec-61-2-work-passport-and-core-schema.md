@@ -7,7 +7,16 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
-deferred: []
+deferred:
+  - summary: >-
+      This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+    evidence: |-
+      Diff touches only `_bmad-output/**` and `src/shared/packages/**`, no `recipes/**`.
+      CLAUDE.md / AGENTS.md require `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`
+      for any such PR. No PR exists yet from this single-story dev dispatch.
+    location: >-
+      PR mechanics (not a file)
+    severity: low
 declared_low_risk: false
 baseline_revision: 'b338a1c7b968255480f18d70cd5e45e6f9b1f681'
 ---
@@ -127,6 +136,27 @@ passport with a vendor one).
 - Given the bare `steward passport` invocation (no verb), when it runs, then it returns `ok=False` naming that a verb is required, without touching Django/the database.
 - Given `pyforge-steward[dashboard]` is not installed (django not importable), when `steward passport mint ...` runs, then `mint_vendor_passport` returns `status: "refused"` (never a raised `ImportError` escaping the duty boundary).
 - Given an existing internal-mint `WorkPassport` row created by `sprint_ledger_query.py`'s ledger sync (no `vendor_id`), when the migration and this story's code land, then that row is unaffected (`vendor_id` reads `None`) and still round-trips through `sync_work_passports_db`.
+
+## Spec Change Log
+
+## Review Triage Log
+
+### 2026-09-19 — Review pass
+- verdicts: 14 findings — high 0, medium 1, low 11, false 2, maybe-false 0
+- findings:
+  - `[false]` (Blind Hunter) `sprint-status-ledger.yaml` still reads `backlog` for `61-2-work-passport-and-core-schema` with no ledger update in the diff. Refuted: per this repo's own convention (AGENTS.md) and 61.1's own identical, already-litigated finding, the spec's internal dev-loop `status` and the ledger's story status are two intentionally decoupled tracks — ledger promotion happens via a separate `sprint-ledger-sync` step, never automatically during dev.
+  - `[low]` `[reject]` (Blind Hunter) This spec's own Design Notes cites the pre-diff `WorkPassport` docstring wording ("61.2 remains the story of record and builds on it") as the dated rationale for building on the existing model, and this diff rewords that docstring — the citation now describes a historical, not current, docstring state. Rejected per this workflow's own rule: a finding whose only fix is editing this build's spec is rejected outright; the citation still correctly attributes the parent Spec's CAP-140 ruling (unchanged by this diff) that actually drove the decision.
+  - `[false]` (Blind Hunter) `_HELP["passport"]`'s "mints a FRESH UUID per inbound key" could be misread as a uniqueness/dedupe guarantee. Refuted: the same help string's second clause, in the identical diff hunk, reads "...never merges by Jira key or GitHub number (Story 61.2)" — read as the one string it is, the clarifying clause resolves the ambiguity the isolated first half appeared to raise.
+  - `[low]` `[patch]` (Blind Hunter + Verification Gap Reviewer, grouped — identical claim) `WorkPassportAdmin.list_filter`/`search_fields` gained `"vendor_id"` but no test asserts either tuple (only `list_display` is asserted), unlike the sibling `CorridorLoadAdmin`, whose own test does assert both. Verified: `test_work_passport_model_and_admin` in `test_dashboard_admin_and_htmx.py` only checks `list_display`. Action: extend that test to assert `list_filter` and `search_fields` include `vendor_id`, mirroring `CorridorLoadAdmin`'s precedent.
+  - `[low]` `[patch]` (Blind Hunter) `record_vendor_passport`'s success return dict omits `title` even though it is accepted and persisted, and no test reads `row.title` back. Verified: the `return {"status": "minted", ...}` block and every `test_record_vendor_passport_*` test confirm this. Action: add `"title": title` to the return dict and assert the persisted `row.title` in the existing happy-path tests.
+  - `[low]` `[patch]` (Blind Hunter) The blank-`vendor_id` `PassportMintError` path is tested only by calling `mint_vendor_passport` directly, never through `PassportDuty.run()`'s own try/except-to-`DutyResult` conversion (unlike the "neither key" case, which is tested at both levels). Verified by reading `test_passport_mint.py`: no `test_passport_duty_mint_blank_vendor_id_fails`. Action: add that test.
+  - `[low]` `[reject]` (Blind Hunter) `test_invariants.py`'s three near-identical AST-parsing blocks (`sprint_ledger_query.py`, `corridor.py`, now `passport.py`) duplicate rather than share a parametrized helper. Rejected: this diff's block replicates the exact pattern Story 61.1 already added and 61.1's own review did not flag; extracting a shared helper now would mean touching the other two, unrelated stories' existing blocks too — more than this story's smallest fix, and unlikely to cause real harm (test correctness, not DRY-ness, is what's load-bearing here).
+  - `[low]` `[patch]` (Blind Hunter) `passport_mint.py`'s `_refused()` returns only `status`/`vendor_id`/`message`, dropping `jira_key`/`github_item_id`/`title`, unlike `corridor_load.py`'s `_refused()`, which echoes every identifying field it was given. Verified by reading both helpers. Action: echo `jira_key`, `github_item_id`, and `title` in `passport_mint.py`'s `_refused()` too.
+  - `[low]` `[defer]` (Blind Hunter) This PR touches only `_bmad-output/**` and `src/shared/packages/**`, no `recipes/**`, so it needs the `maintenance` label at PR open time per CLAUDE.md/AGENTS.md. Deferred: this is a PR-mechanics step for whoever opens the PR, not a code or spec defect — no PR exists yet from this single-story dev dispatch (same posture as 61.1's own "no ledger/PR mechanics were run" residual note).
+  - `[low]` `[reject]` (Edge Case Hunter) `record_vendor_passport`'s `except (DataError, IntegrityError)` does not also catch `InterfaceError`/`InternalError`/`NotSupportedError`. Verified the exception set is byte-for-byte identical to `corridor_load.record_corridor_load`'s own already-shipped, already-reviewed set, and that an escaping exception is still caught by `PassportDuty.run()`'s outer `except Exception` duty boundary (AD-8 holds; the caller gets a generic "passport failed: ..." rather than a structured `error` payload). Rejected on the same grounds 61.1's identical outer-catch-all finding was rejected: unlikely in everyday use, and widening the except clause without a demonstrated real trigger is more than the smallest fix.
+  - `[medium]` `[patch]` (Edge Case Hunter) `mint_vendor_passport` validates `vendor_id` with `.strip()` but passes the un-stripped value through to `record_vendor_passport`, so `"  acme  "` and `"acme"` mint as two different, never-matching vendor identities — verified by reading the validation-then-passthrough code directly. This can fragment the intent-contract's "Always: vendor_id is on inbound rows; v1 is one vendor" invariant under a realistic trigger (a copy-pasted CLI argument). Action: pass `vendor_id.strip()` through to `record_vendor_passport`.
+  - `[low]` `[patch]` (Edge Case Hunter) The "at least one nickname" check (`if not jira_key and not github_item_id`) treats a whitespace-only string (e.g. `" "`) as a valid nickname, since it is non-empty. Verified by reading the check. Action: check `(jira_key or "").strip()` / `(github_item_id or "").strip()` instead.
+  - `[low]` `[reject]` (Edge Case Hunter) `record_vendor_passport` never sets `station`/`story_id`, so a vendor passport's `__str__` and admin ordering render with empty leading segments. Rejected: this is the exact, explicitly documented trade-off in this spec's own Design Notes ("a vendor passport's `story_id`/`station`/... fields are meaningless... simply left at their empty-string... defaults") — the suggested fix (a fabricated sentinel like `station="vendor"`) would invent data the intent never asked for, for a purely cosmetic `__str__`/ordering effect.
 
 ## Design Notes
 
