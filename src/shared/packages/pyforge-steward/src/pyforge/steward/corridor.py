@@ -424,7 +424,7 @@ class LoadDuty:
                     f"sha={outcome.batch_sha[:12]} via {outcome.transport}"
                 )
                 if verb == "outbound":
-                    text += f" slice={outcome.slice_name} signer={outcome.signer}"
+                    text += f' slice="{outcome.slice_name}" signer="{outcome.signer}"'
                 return _load_result(True, text, payload, as_json=as_json)
             if outcome.status == "error":
                 text = f"load {verb}: data error: {outcome.message}"

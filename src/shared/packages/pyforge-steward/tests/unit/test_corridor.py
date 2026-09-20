@@ -232,8 +232,9 @@ def test_load_extract_repeat_with_declared_off_transport_is_still_idempotent():
 
 def test_load_extract_outbound_without_slice_name_raises():
     """The I/O Matrix's one required scenario: no signer/slice -> refused.
-    Exercised here as the `slice_name` half, raised before the dashboard
-    extra or the transport declaration are ever consulted."""
+    Exercised here as the `slice_name` half. The dashboard-extra import and
+    the idempotency probe both run (and succeed) before this gate fires --
+    only the transport-declared check runs after it."""
     with pytest.raises(CorridorLoadError, match="named slice"):
         load_extract(
             direction="outbound",
@@ -245,6 +246,23 @@ def test_load_extract_outbound_without_slice_name_raises():
             signer="operator",
         )
     assert CorridorLoad.objects.filter(waybill="w-outbound-no-slice").count() == 0
+
+
+def test_load_extract_outbound_with_whitespace_only_slice_name_raises():
+    """Symmetric with the blank-signer whitespace case below: a
+    regression dropping `.strip()` from the slice_name half of the gate
+    would let this through."""
+    with pytest.raises(CorridorLoadError, match="named slice"):
+        load_extract(
+            direction="outbound",
+            batch_sha="m2" + "a" * 62,
+            waybill="w-outbound-whitespace-slice",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="   ",
+            signer="operator",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-whitespace-slice").count() == 0
 
 
 def test_load_extract_outbound_without_signer_raises():
@@ -259,6 +277,23 @@ def test_load_extract_outbound_without_signer_raises():
             signer="   ",
         )
     assert CorridorLoad.objects.filter(waybill="w-outbound-no-signer").count() == 0
+
+
+def test_load_extract_outbound_with_blank_signer_raises():
+    """Symmetric with the whitespace-only-slice_name case above: a
+    regression dropping the blank (empty-string) check from the signer
+    half of the gate would let this through."""
+    with pytest.raises(CorridorLoadError, match="signer"):
+        load_extract(
+            direction="outbound",
+            batch_sha="n2" + "a" * 62,
+            waybill="w-outbound-blank-signer",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="vendor-findings",
+            signer="",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-blank-signer").count() == 0
 
 
 def test_load_extract_outbound_with_slice_and_signer_records_them():
@@ -505,8 +540,8 @@ def test_load_duty_outbound_with_slice_and_signer_succeeds(tmp_path):
     assert result.details["status"] == "loaded"
     assert result.details["slice_name"] == "vendor-findings"
     assert result.details["signer"] == "operator"
-    assert "slice=vendor-findings" in result.summary
-    assert "signer=operator" in result.summary
+    assert 'slice="vendor-findings"' in result.summary
+    assert 'signer="operator"' in result.summary
 
 
 def test_load_duty_waybill_over_length_cap_fails(tmp_path):
