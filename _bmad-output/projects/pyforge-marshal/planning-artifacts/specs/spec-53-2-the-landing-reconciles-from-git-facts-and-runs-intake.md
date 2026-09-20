@@ -2,7 +2,8 @@
 title: '53.2: The landing reconciles from git facts and runs intake'
 type: 'feature'
 created: '2026-09-20'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '7f5584a2e49412b4fe9ee000d8f8b1760d024c4b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
