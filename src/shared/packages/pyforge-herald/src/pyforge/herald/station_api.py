@@ -18,8 +18,7 @@ class _LazyWebhookASGI:
 
     async def __call__(self, scope, receive, send) -> None:
         if self._inner is None:
-            from pyforge.herald import webhook
-            from pyforge.herald import webhook_host
+            from pyforge.herald import webhook, webhook_host
 
             self._inner = webhook_host.build_application(
                 webhook_host._resolve_repo_root(),

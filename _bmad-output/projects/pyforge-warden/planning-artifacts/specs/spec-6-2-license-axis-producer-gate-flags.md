@@ -2,7 +2,7 @@
 title: 'Story 6.2: License axis producer + gate flags (Axis 3)'
 type: 'feature'
 created: '2026-07-18'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: true
 context: []
@@ -238,3 +238,7 @@ Status: done
 **Verification:** full suite re-run by the orchestrating session (1463 passed, `pixi run --frozen -e pyforge-warden pyforge-warden-test`); every pre-patch failure mode and post-patch behavior live-verified at the CLI (see § Follow-up review pass verification). `git status`/`git diff --stat` re-checked: changed-file scope matches the Code Map delta exactly; `pixi.lock` still carries zero diff.
 
 **Residual risks:** the 4 new deferred entries (lockfile edge, installed-version misattribution, cross-manifest selection arbitrariness, allow-side compound decomposition) plus the prior pass's 6 remain open in `deferred-work.md`. A known residual inside a patch: a bare `GPL` INSIDE a compound expression (`MIT OR GPL`) still rides the alias table — the guarded bare-label case is the dominant real-world shape. `followup_review_recommended` stays `true`: this pass again changed compliance-critical matching semantics (deny/WITH expansion, LicenseRef acceptance, config hard-validation) at a volume where one more independent pass would still add value; convergence is real but not yet complete (9 → 11 patches, though highs narrowed from five core-algorithm defects to two edge-surface ones).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `6-2-license-axis-producer-gate-flags: done`).

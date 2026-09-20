@@ -67,18 +67,14 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
         dimensions={
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "is_actionable": Dimension(expr=metrics.is_actionable),
-            "staleness_age_days": Dimension(
-                expr=lambda t: metrics.staleness_age_days(t, now)
-            ),
+            "staleness_age_days": Dimension(expr=lambda t: metrics.staleness_age_days(t, now)),
             "adoption_stage": Dimension(expr=metrics.adoption_stage),
         },
         measures={
             "package_count": Measure(expr=lambda t: t.conda_name.count()),
             # count of matching rows → 0 (not NULL) over an empty table: sum(CASE…) is
             # NULL on 0 rows, so fill_null(0) restores the legacy count-of-matches semantics.
-            "actionable_count": Measure(
-                expr=lambda t: metrics.is_actionable(t).ifelse(1, 0).sum().fill_null(0)
-            ),
+            "actionable_count": Measure(expr=lambda t: metrics.is_actionable(t).ifelse(1, 0).sum().fill_null(0)),
             "downloads_total": Measure(expr=lambda t: t.downloads_total.sum()),
             "downloads_30d": Measure(expr=lambda t: t.downloads_30d.sum()),
         },
@@ -112,15 +108,9 @@ def build_feedstock_health_model(table: Any) -> SemanticModel:
         measures={
             "feedstock_count": Measure(expr=lambda t: t.feedstock_name.count()),
             # count of matching rows → 0 (not NULL) over an empty table (see packages).
-            "ci_red_count": Measure(
-                expr=lambda t: metrics.ci_red(t).ifelse(1, 0).sum().fill_null(0)
-            ),
-            "open_prs_count": Measure(
-                expr=lambda t: metrics.has_open_prs(t).ifelse(1, 0).sum().fill_null(0)
-            ),
-            "open_issues_count": Measure(
-                expr=lambda t: metrics.has_open_issues(t).ifelse(1, 0).sum().fill_null(0)
-            ),
+            "ci_red_count": Measure(expr=lambda t: metrics.ci_red(t).ifelse(1, 0).sum().fill_null(0)),
+            "open_prs_count": Measure(expr=lambda t: metrics.has_open_prs(t).ifelse(1, 0).sum().fill_null(0)),
+            "open_issues_count": Measure(expr=lambda t: metrics.has_open_issues(t).ifelse(1, 0).sum().fill_null(0)),
         },
     )
 
@@ -180,9 +170,7 @@ def build_estate_cache_model(table: Any) -> SemanticModel:
     )
 
 
-def join_packages_by_maintainer(
-    packages: SemanticModel, package_maintainers: SemanticModel
-) -> Any:
+def join_packages_by_maintainer(packages: SemanticModel, package_maintainers: SemanticModel) -> Any:
     """Declare the packages ⋈ maintainer relationship as a BSL semantic join.
 
     Returns the join whose dimensions include ``maintainer`` and whose measures include
@@ -194,9 +182,7 @@ def join_packages_by_maintainer(
     maintainers — the long-form ``package_maintainers`` is the many side keyed on
     ``conda_name``.
     """
-    return package_maintainers.join_many(
-        packages, left_on="conda_name", right_on="conda_name"
-    )
+    return package_maintainers.join_many(packages, left_on="conda_name", right_on="conda_name")
 
 
 # ===========================================================================
@@ -601,9 +587,7 @@ def build_identity_workbook_model(table: Any) -> SemanticModel:
         },
         measures={
             "package_count": Measure(expr=lambda t: t.core_python_package_name.count()),
-            "artifactory_downloads_total": Measure(
-                expr=lambda t: t.artifactory_downloads.sum().fill_null(0)
-            ),
+            "artifactory_downloads_total": Measure(expr=lambda t: t.artifactory_downloads.sum().fill_null(0)),
         },
     )
 
@@ -640,9 +624,7 @@ def _identity_filled(t: Any, col: str) -> Any:
     return (t[col].fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
 
 
-def build_identity_complete_export_model(
-    table: Any, *, gist_columns: tuple[str, ...] | None = None
-) -> SemanticModel:
+def build_identity_complete_export_model(table: Any, *, gist_columns: tuple[str, ...] | None = None) -> SemanticModel:
     """Per-package identity complete export (Story 23.5 grain) for gist aggregates.
 
     Declares the dimensions/measures the identity gist renderer queries — every
@@ -653,42 +635,30 @@ def build_identity_complete_export_model(
     measures: dict[str, Measure] = {
         "identity_row_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
         "has_issue_count": Measure(
-            expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "")
-            .ifelse(1, 0)
-            .sum()
-            .fill_null(0)
+            expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
         ),
         "feedstock_count": Measure(
-            expr=lambda t: (t[feedstock_col].fill_null("") != "")
-            .ifelse(1, 0)
-            .sum()
-            .fill_null(0)
+            expr=lambda t: (t[feedstock_col].fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
         ),
         "local_recipe_count": Measure(
-            expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "")
-            .ifelse(1, 0)
-            .sum()
-            .fill_null(0)
+            expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
         ),
         "staged_pr_count": Measure(
-            expr=lambda t: (t.Staged_Recipes_PR_URL.fill_null("") != "")
-            .ifelse(1, 0)
-            .sum()
-            .fill_null(0)
+            expr=lambda t: (t.Staged_Recipes_PR_URL.fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
         ),
         "build_success_count": Measure(
             expr=lambda t: (_identity_status(t) == "success").ifelse(1, 0).sum().fill_null(0)
         ),
         "build_skipped_count": Measure(
-            expr=lambda t: _identity_status(t)
-            .isin(["build-clean-test-blocked", "blocked-missing-ortools"])
-            .ifelse(1, 0)
-            .sum()
-            .fill_null(0)
+            expr=lambda t: (
+                _identity_status(t)
+                .isin(["build-clean-test-blocked", "blocked-missing-ortools"])
+                .ifelse(1, 0)
+                .sum()
+                .fill_null(0)
+            )
         ),
-        "build_failed_count": Measure(
-            expr=lambda t: (_identity_status(t) == "failed").ifelse(1, 0).sum().fill_null(0)
-        ),
+        "build_failed_count": Measure(expr=lambda t: (_identity_status(t) == "failed").ifelse(1, 0).sum().fill_null(0)),
     }
     if gist_columns:
         for col in gist_columns:
@@ -705,28 +675,22 @@ def build_identity_complete_export_model(
             "identity_source": Dimension(expr=lambda t: t.identity_source.fill_null("")),
             "Local_Build_Status": Dimension(expr=_identity_status),
             "has_openteams_issue": Dimension(
-                expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "")
-                .ifelse("yes", "no")
+                expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "").ifelse("yes", "no")
             ),
-            "has_feedstock": Dimension(
-                expr=lambda t: (t[feedstock_col].fill_null("") != "").ifelse("yes", "no")
-            ),
-            "has_local_recipe": Dimension(
-                expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "").ifelse("yes", "no")
-            ),
+            "has_feedstock": Dimension(expr=lambda t: (t[feedstock_col].fill_null("") != "").ifelse("yes", "no")),
+            "has_local_recipe": Dimension(expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "").ifelse("yes", "no")),
             "has_staged_pr": Dimension(
                 expr=lambda t: (t.Staged_Recipes_PR_URL.fill_null("") != "").ifelse("yes", "no")
             ),
             "is_pypi": Dimension(
                 expr=lambda t: (
-                    (t.primary_type.fill_null("") == "pypi")
-                    | t.primary_purl.fill_null("").startswith("pkg:pypi/")
+                    (t.primary_type.fill_null("") == "pypi") | t.primary_purl.fill_null("").startswith("pkg:pypi/")
                 ).ifelse("yes", "no")
             ),
             "is_cf": Dimension(
-                expr=lambda t: (
-                    (t[feedstock_col].fill_null("") != "") | (t.conda_purl.fill_null("") != "")
-                ).ifelse("yes", "no")
+                expr=lambda t: ((t[feedstock_col].fill_null("") != "") | (t.conda_purl.fill_null("") != "")).ifelse(
+                    "yes", "no"
+                )
             ),
         },
         measures=measures,
@@ -764,12 +728,8 @@ def build_identity_export_snapshot_model(table: Any) -> SemanticModel:
         },
         measures={
             "package_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
-            "primary_purl_coverage_count": Measure(
-                expr=lambda t: _identity_filled(t, "primary_purl")
-            ),
-            "openteams_issue_url_coverage_count": Measure(
-                expr=lambda t: _identity_filled(t, "OpenTeams_Issue_URL")
-            ),
+            "primary_purl_coverage_count": Measure(expr=lambda t: _identity_filled(t, "primary_purl")),
+            "openteams_issue_url_coverage_count": Measure(expr=lambda t: _identity_filled(t, "OpenTeams_Issue_URL")),
         },
     )
 

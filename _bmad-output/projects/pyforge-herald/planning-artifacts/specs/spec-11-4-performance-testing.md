@@ -129,3 +129,16 @@ static site's real load time), so the investment would not even answer the quest
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `b7f89a2d40` (2026-08-22, "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"); also `b513e29aee` (2026-08-22, "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"); also `7c7fcf8fd8` (2026-08-21, "steward: Story 11.4 - spec done, final_revision stamped"). Ledger row `11-4-performance-testing: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `scripts/.spec-surface-baseline.json`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

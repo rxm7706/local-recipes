@@ -181,16 +181,17 @@ def grade(findings: Sequence[Finding]) -> GradeResult:
         group = by_source[source]
         if any(_is_gather_failure(f) for f in group):
             incomplete_axes.append(source.value)
-            axis_scores.append(
-                AxisScore(axis=source.value, ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE)
-            )
+            axis_scores.append(AxisScore(axis=source.value, ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE))
             continue
         ok = sum(1 for f in group if f.status is DoctorStatus.OK)
         warn = sum(1 for f in group if f.status is DoctorStatus.WARN)
         fail = sum(1 for f in group if f.status is DoctorStatus.FAIL)
         axis_scores.append(
             AxisScore(
-                axis=source.value, ok=ok, warn=warn, fail=fail,
+                axis=source.value,
+                ok=ok,
+                warn=warn,
+                fail=fail,
                 grade=_axis_grade(ok, warn, fail),
             )
         )
@@ -199,18 +200,12 @@ def grade(findings: Sequence[Finding]) -> GradeResult:
         return GradeResult(
             grade=Grade.INCOMPLETE,
             axis_scores=tuple(axis_scores),
-            reason=(
-                "gather did not complete for axis(es): "
-                f"{', '.join(sorted(incomplete_axes))}"
-            ),
+            reason=(f"gather did not complete for axis(es): {', '.join(sorted(incomplete_axes))}"),
         )
 
     worst = max(axis_scores, key=lambda axis: _GRADE_SEVERITY[axis.grade])
     return GradeResult(
         grade=worst.grade,
         axis_scores=tuple(axis_scores),
-        reason=(
-            f"composite = worst of {len(axis_scores)} axis grade(s); "
-            f"{worst.axis} scored {worst.grade.value}"
-        ),
+        reason=(f"composite = worst of {len(axis_scores)} axis grade(s); {worst.axis} scored {worst.grade.value}"),
     )

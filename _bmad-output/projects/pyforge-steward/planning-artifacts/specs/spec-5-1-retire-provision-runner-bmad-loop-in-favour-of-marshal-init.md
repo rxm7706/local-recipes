@@ -84,3 +84,15 @@ by finding that script, which is unrelated to running it. AD-5 amended in **Stew
 own** ARCHITECTURE-SPINE (the AC's explicit requirement), not only in Marshal's chain.
 Suite 197 → 198.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `da3f0afb9a` (2026-08-08, "steward 5.1: retire `provision --runner bmad-loop` in favour of `marshal init`"); also `18a5ac49f0` (2026-08-08, "doctor: split Story 5.1 — the source shipped, the wiring did not"); also `bbd4b9f891` (2026-08-07, "herald: Story 5.1 — push regenerated exports with etag guard (CAP-5)"). Ledger row `5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `src/shared/packages/pyforge-steward/tests/conformance/test_provision_runner.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

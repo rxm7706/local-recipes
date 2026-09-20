@@ -62,9 +62,7 @@ CONFIG_PRECEDENCE = FIXTURES / "config_precedence"
 
 
 def load_schema() -> dict:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -137,9 +135,7 @@ def test_clean_fixture_is_green(capsys):
     assert document["errors"] == []
     assert err == ""  # diagnostics are stderr-only; a green run needs none
     assert document["inventory_count"] == 2
-    assert document["resolved_scan_set"] == [
-        {"path": "pyproject.toml", "kind": "pyproject.toml"}
-    ]
+    assert document["resolved_scan_set"] == [{"path": "pyproject.toml", "kind": "pyproject.toml"}]
 
 
 def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
@@ -195,16 +191,12 @@ def test_sentinel_fixture_never_false_greens(capsys):
     license_findings = [f for f in document["findings"] if f["axis"] == "license"]
     currency_findings = [f for f in document["findings"] if f["axis"] == "currency"]
     assert all(f["id"].startswith("indeterminate:") for f in vuln_findings)
-    assert {f["id"] for f in license_findings} == {
-        "license:unknown:leftpad@unspecified"
-    }
+    assert {f["id"] for f in license_findings} == {"license:unknown:leftpad@unspecified"}
     assert {f["id"] for f in currency_findings} == {
         "currency:unknown:leftpad@unspecified",
         "currency:unknown:requests@unspecified",
     }
-    assert len(vuln_findings) + len(license_findings) + len(currency_findings) == len(
-        document["findings"]
-    )
+    assert len(vuln_findings) + len(license_findings) + len(currency_findings) == len(document["findings"])
     assert document["errors"] == []
     assert err == ""
     # Both withhold reasons are exercised by the fixture's two deps.
@@ -238,9 +230,7 @@ def test_sentinel_fixture_hygiene_axis_is_not_applicable(capsys):
     assert by_axis["vulnerability"]["deps_total"] == 2
 
 
-@pytest.mark.parametrize(
-    "mode", [(), ("--deterministic",)], ids=["default", "deterministic"]
-)
+@pytest.mark.parametrize("mode", [(), ("--deterministic",)], ids=["default", "deterministic"])
 @pytest.mark.parametrize("fixture", [CLEAN, SENTINEL], ids=["clean", "sentinel"])
 def test_twice_run_stdout_is_byte_identical(capsys, fixture, mode):
     rc_one, out_one, _ = run_scan(capsys, fixture, *mode)
@@ -277,9 +267,7 @@ def test_empty_dir_is_not_applicable(capsys, tmp_path):
 
 
 def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
-    (tmp_path / "pyproject.toml").write_text(
-        "[project\nname = 'broken", encoding="utf-8"
-    )
+    (tmp_path / "pyproject.toml").write_text("[project\nname = 'broken", encoding="utf-8")
     rc, out, err = run_scan(capsys, tmp_path)
     document = parse_report(out)  # the report IS still emitted, schema-valid
     assert rc == 2
@@ -293,9 +281,7 @@ def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
     # verdict.compose's deterministic tie-break (smallest (axis, finding_id);
     # both share AXIS_INGESTION) picks config-parse, since "config-parse" <
     # "unparsable-manifest" lexically.
-    assert document["status"]["driver"]["finding_id"].startswith(
-        "error:config-parse:"
-    )
+    assert document["status"]["driver"]["finding_id"].startswith("error:config-parse:")
     assert {e["kind"] for e in document["errors"]} == {
         "config-parse",
         "unparsable-manifest",
@@ -341,9 +327,7 @@ def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     failure, so the driver's axis is "ingestion" either way (never a
     blanket vulnerability default); config-parse wins the deterministic
     tie-break (see test_malformed_toml_still_emits_an_error_report above)."""
-    (tmp_path / "pyproject.toml").write_text(
-        "[project\nname = 'broken", encoding="utf-8"
-    )
+    (tmp_path / "pyproject.toml").write_text("[project\nname = 'broken", encoding="utf-8")
     rc, out, _ = run_scan(capsys, tmp_path)
     document = parse_report(out)  # schema-valid despite the dangling driver
     assert rc == 2
@@ -477,9 +461,7 @@ class FindingAndErrorEngine:
         )
 
 
-def test_findings_only_engine_surfaces_its_finding_and_never_greens(
-    capsys, monkeypatch
-):
+def test_findings_only_engine_surfaces_its_finding_and_never_greens(capsys, monkeypatch):
     """THE false-green seam row: an engine returning findings WITHOUT errors
     is publicly reachable via ``register_engine`` today, and a
     finding-carrying report must never compose ``clean`` (C0c). Story 1.3
@@ -533,15 +515,11 @@ def test_crashing_engine_factory_still_emits_the_report(capsys, monkeypatch):
     (error,) = document["errors"]
     assert error["kind"] == "engine-unavailable"
     assert "factory blew up at instantiation" in error["message"]
-    assert document["status"]["driver"]["finding_id"].startswith(
-        "error:engine-unavailable:"
-    )
+    assert document["status"]["driver"]["finding_id"].startswith("error:engine-unavailable:")
     assert err != ""
 
 
-def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
-    capsys, tmp_path
-):
+def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(capsys, tmp_path):
     """Hostile nesting overflows tomllib's recursive parser with
     RecursionError (not TOMLDecodeError): still a structurally-broken
     manifest — unparsable-manifest, report emitted, error exit; never a
@@ -550,9 +528,7 @@ def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
     the same file for [tool.pyforge-warden] (config.py mirrors extract/
     pyproject.py's own hostile-input guard), so a config-parse error rides
     alongside the pre-existing unparsable-manifest one -- neither crashes."""
-    (tmp_path / "pyproject.toml").write_text(
-        "x = " + "[" * 8000 + "]" * 8000 + "\n", encoding="utf-8"
-    )
+    (tmp_path / "pyproject.toml").write_text("x = " + "[" * 8000 + "]" * 8000 + "\n", encoding="utf-8")
     rc, out, err = run_scan(capsys, tmp_path)
     document = parse_report(out)
     assert rc == 2
@@ -575,9 +551,7 @@ def test_errors_only_engine_yields_an_error_report(capsys, monkeypatch):
     assert rc == 2
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "error"
-    assert document["status"]["driver"]["finding_id"] == (
-        "error:engine-execution-failed:errors-only"
-    )
+    assert document["status"]["driver"]["finding_id"] == ("error:engine-execution-failed:errors-only")
     assert [e["kind"] for e in document["errors"]] == ["engine-execution-failed"]
     assert document["findings"] == []
 
@@ -590,9 +564,7 @@ def test_erroring_engine_still_surfaces_its_findings(capsys, monkeypatch):
     document = parse_report(out)
     assert rc == 2
     assert document["status"]["value"] == "error"
-    assert [e["kind"] for e in document["errors"]] == [
-        "engine-output-unparseable"
-    ]
+    assert [e["kind"] for e in document["errors"]] == ["engine-output-unparseable"]
     assert "hygiene:DEP002:requests" in {f["id"] for f in document["findings"]}
 
 
@@ -617,9 +589,7 @@ def test_crashing_engine_still_emits_the_report(capsys, monkeypatch):
     (error,) = document["errors"]
     assert error["kind"] == "engine-execution-failed"
     assert "engine blew up mid-run" in error["message"]
-    assert document["status"]["driver"]["finding_id"] == (
-        "error:engine-execution-failed:crashing"
-    )
+    assert document["status"]["driver"]["finding_id"] == ("error:engine-execution-failed:crashing")
     assert err != ""
 
 
@@ -648,9 +618,7 @@ def test_two_engines_failing_on_different_axes_both_surface(capsys, monkeypatch)
     assert any(e["owner"] == "crashing" for e in document["errors"])
 
 
-def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
-    capsys, tmp_path
-):
+def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(capsys, tmp_path):
     """D2(c) (Story 1.9): a manifest that PARSES but yields zero components/
     findings/errors is ambiguous/partial discovery, never a silent
     not-applicable — the previous 1.2-era not-applicable/exit-0 reading for
@@ -685,9 +653,7 @@ def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
         assert block["resolution_depth"] is None  # coverage: none
 
 
-def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(
-    capsys, tmp_path
-):
+def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(capsys, tmp_path):
     """``--allow-empty`` downgrades D2(c)'s exit to 0 while ``status`` stays
     ``indeterminate`` (never ``clean``) — the flag only widens the exit
     projection, never the verdict itself."""
@@ -734,9 +700,7 @@ def test_deptry_missing_dependency_blocks_by_default(capsys):
     assert rc == 1
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "policy-violation"
-    finding = _one_hygiene_finding(
-        document, "hygiene:DEP001:totally_absent_pkg_xyz"
-    )
+    finding = _one_hygiene_finding(document, "hygiene:DEP001:totally_absent_pkg_xyz")
     assert finding["subject"] == "totally_absent_pkg_xyz"
     driver = document["status"]["driver"]
     assert driver["axis"] == "hygiene"
@@ -847,9 +811,7 @@ def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
     rc, out, err = run_scan(capsys, DEPTRY_UNUSED)
     document = parse_report(out)
     assert rc == 0
-    with_frontdoor_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
-    }
+    with_frontdoor_ids = {f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE}
 
     text, error, _exit_code = _engine_env(
         lambda output_path: ["deptry", ".", "-o", output_path, "--no-ansi"],
@@ -865,9 +827,7 @@ def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
     assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
 
 
-def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
-    capsys, tmp_path
-):
+def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(capsys, tmp_path):
     """Follow-up review (2026-07-16), real deptry, no mocks:
     ``--requirements-files`` REPLACES deptry's own native default
     requirements source (``requirements.txt``) rather than merging with it
@@ -879,16 +839,12 @@ def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
     requirements.txt therefore false-DEP001'd all its pip-declared deps.
     The scan root's requirements.txt is now re-appended to the flag's
     comma-list; same no-skip-guard convention as the no-op test above."""
-    (tmp_path / "environment.yml").write_text(
-        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
-    )
+    (tmp_path / "environment.yml").write_text("dependencies:\n  - numpy=1.20\n", encoding="utf-8")
     (tmp_path / "requirements.txt").write_text("requests\n", encoding="utf-8")
     (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
     rc, out, _err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    hygiene_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
-    }
+    hygiene_ids = {f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE}
     # requests is declared by the project's OWN requirements.txt -- merged,
     # so no false DEP001; numpy (declared via the conda front-door, never
     # imported) still surfaces deptry's real signal for this fixture.
@@ -896,9 +852,7 @@ def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
     assert "hygiene:DEP002:numpy" in hygiene_ids
 
 
-def test_deptry_frontdoor_merges_config_declared_requirements_files(
-    capsys, tmp_path
-):
+def test_deptry_frontdoor_merges_config_declared_requirements_files(capsys, tmp_path):
     """Second review pass (2026-07-16), real deptry, no mocks: deptry's
     requirements source is its ``[tool.deptry].requirements_files`` config
     when declared -- the flag REPLACES that setting too, not just the
@@ -907,9 +861,7 @@ def test_deptry_frontdoor_merges_config_declared_requirements_files(
     live: bare ``deptry .`` green, with the flag red). The configured list
     is now what gets re-appended; same no-skip-guard convention as the
     other real-deptry tests."""
-    (tmp_path / "environment.yml").write_text(
-        "dependencies:\n  - numpy=1.20\n", encoding="utf-8"
-    )
+    (tmp_path / "environment.yml").write_text("dependencies:\n  - numpy=1.20\n", encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
         '[tool.deptry]\nrequirements_files = ["reqs/base.txt"]\n',
         encoding="utf-8",
@@ -919,9 +871,7 @@ def test_deptry_frontdoor_merges_config_declared_requirements_files(
     (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
     rc, out, _err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    hygiene_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
-    }
+    hygiene_ids = {f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE}
     # requests is declared by the config-declared reqs/base.txt -- merged,
     # so no false DEP001; numpy (declared via the conda front-door, never
     # imported) still surfaces deptry's real signal.
@@ -1101,17 +1051,13 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     # withhold -- both must coexist on the same package name.
     _one_hygiene_finding(document, "hygiene:DEP002:leftpad")
     indeterminate_finding_id = "indeterminate:no-version:leftpad"
-    matches = [
-        f for f in document["findings"] if f["id"] == indeterminate_finding_id
-    ]
+    matches = [f for f in document["findings"] if f["id"] == indeterminate_finding_id]
     assert len(matches) == 1
     assert matches[0]["axis"] == "vulnerability"
     # leftpad is not an installed package -> license axis withholds it too
     # (requests resolves to a deterministic, pinned resolvable license --
     # Fix 9 -- so it contributes no license finding).
-    license_matches = [
-        f for f in document["findings"] if f["id"] == "license:unknown:leftpad@unspecified"
-    ]
+    license_matches = [f for f in document["findings"] if f["id"] == "license:unknown:leftpad@unspecified"]
     assert len(license_matches) == 1
     assert license_matches[0]["axis"] == "license"
     # Story 6.3: leftpad has no resolved version -> currency:unknown: too
@@ -1119,11 +1065,7 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     # endoflife.date snapshot -- tests/conftest.py's autouse
     # _currency_ambient_feed_env fixture -- so it contributes no currency
     # finding).
-    currency_matches = [
-        f
-        for f in document["findings"]
-        if f["id"] == "currency:unknown:leftpad@unspecified"
-    ]
+    currency_matches = [f for f in document["findings"] if f["id"] == "currency:unknown:leftpad@unspecified"]
     assert len(currency_matches) == 1
     assert currency_matches[0]["axis"] == "currency"
     assert len(document["findings"]) == 5
@@ -1200,9 +1142,7 @@ def test_currency_axis_produces_a_real_warn_capped_finding_end_to_end(capsys):
         assert finding["currency"]["verdict"] == "unknown"
 
 
-def test_currency_axis_python_runtime_eol_finding_round_trips_through_the_schema(
-    monkeypatch, capsys, tmp_path
-):
+def test_currency_axis_python_runtime_eol_finding_round_trips_through_the_schema(monkeypatch, capsys, tmp_path):
     """The ``!``-prefixed Python-runtime ``currency:<reason>:!python-
     runtime@<ver>`` finding shape was previously only exercised via direct
     unit calls to ``currency_findings()`` (tests/unit/test_currency.py) --
@@ -1259,9 +1199,7 @@ def test_currency_gating_is_false_when_the_axis_never_ran(capsys, tmp_path):
     assert by_axis["currency"]["gating"] is False
 
 
-@pytest.mark.parametrize(
-    "flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]]
-)
+@pytest.mark.parametrize("flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]])
 def test_currency_gating_is_true_when_the_axis_actually_ran(capsys, flag):
     """The contrasting case, parametrized over all three gate flags: a real
     scan where the currency engine DID run reports gating=true."""
@@ -1273,9 +1211,7 @@ def test_currency_gating_is_true_when_the_axis_actually_ran(capsys, flag):
     assert by_axis["currency"]["gating"] is True
 
 
-@pytest.mark.parametrize(
-    "flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]]
-)
+@pytest.mark.parametrize("flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]])
 def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
     """The core AC that survives Story 6.5: the PRODUCER's output
     (currency_findings()'s ids/verdicts/tiers) is identical -- compared as
@@ -1295,9 +1231,7 @@ def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
     # _currency_block (module level, Story 6.5 section) owns the shared
     # producer-findings filter + its wall-clock-robustness rationale.
     assert _currency_block(document_unconfigured) == _currency_block(document_gated)
-    by_axis_unconfigured = {
-        block["axis"]: block for block in document_unconfigured["coverage"]
-    }
+    by_axis_unconfigured = {block["axis"]: block for block in document_unconfigured["coverage"]}
     by_axis_gated = {block["axis"]: block for block in document_gated["coverage"]}
     assert by_axis_unconfigured["currency"]["gating"] is False
     assert by_axis_gated["currency"]["gating"] is True
@@ -1364,24 +1298,18 @@ def test_invalid_spdx_deny_licenses_flag_is_a_clean_config_error_not_a_crash(cap
 
 
 def _clean_cycle(version: str) -> list[dict[str, str]]:
-    return [
-        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
-    ]
+    return [{"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}]
 
 
 def _eol_cycle(version: str) -> list[dict[str, str]]:
-    return [
-        {"cycle": version, "releaseDate": "2015-01-01", "eol": "2016-01-01", "latest": version}
-    ]
+    return [{"cycle": version, "releaseDate": "2015-01-01", "eol": "2016-01-01", "latest": version}]
 
 
 def _behind_cycles(version: str, *, behind: int) -> list[dict[str, str]]:
     """A cycle array whose ``version`` cycle is ``behind`` releases behind
     the newest entry, all still supported -- resolves to an over-lag
     (SUPPORTED, lag=behind) finding."""
-    cycles = [
-        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
-    ]
+    cycles = [{"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}]
     for index in range(behind):
         newer = f"999.{index}"
         cycles.append(
@@ -1402,11 +1330,7 @@ def _currency_block(document: dict) -> list:
     # active gate) is not producer output, so excluding it keeps the two-mode
     # producer-invariance assertion true regardless of wall-clock age.
     return sorted(
-        (
-            f
-            for f in document["findings"]
-            if f["axis"] == "currency" and f["id"].startswith("currency:")
-        ),
+        (f for f in document["findings"] if f["axis"] == "currency" and f["id"].startswith("currency:")),
         key=lambda f: f["id"],
     )
 
@@ -1445,9 +1369,7 @@ def test_currency_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path,
 
     # The producer's own output is identical across the two modes.
     assert _currency_block(doc_unconfigured) == _currency_block(doc_gated)
-    assert {f["id"] for f in _currency_block(doc_unconfigured)} == {
-        f"currency:eol:!python-runtime@{runtime_version}"
-    }
+    assert {f["id"] for f in _currency_block(doc_unconfigured)} == {f"currency:eol:!python-runtime@{runtime_version}"}
     # Only the rung/status/exit escalate.
     assert doc_unconfigured["status"]["value"] == "warn"
     assert rc_unconfigured == 0
@@ -1465,8 +1387,7 @@ def test_license_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, 
     project = tmp_path / "proj"
     project.mkdir()
     (project / "pyproject.toml").write_text(
-        '[project]\nname = "lic-fixture"\nversion = "1.0.0"\n'
-        'dependencies = ["mysterylib==1.0.0"]\n',
+        '[project]\nname = "lic-fixture"\nversion = "1.0.0"\ndependencies = ["mysterylib==1.0.0"]\n',
         encoding="utf-8",
     )
     feed = tmp_path / "feed"
@@ -1483,9 +1404,7 @@ def test_license_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, 
     doc_gated = parse_report(out_gated)
 
     assert _license_block(doc_unconfigured) == _license_block(doc_gated)
-    assert {f["id"] for f in _license_block(doc_unconfigured)} == {
-        "license:unknown:mysterylib@1.0.0"
-    }
+    assert {f["id"] for f in _license_block(doc_unconfigured)} == {"license:unknown:mysterylib@1.0.0"}
     assert doc_unconfigured["status"]["value"] == "warn"
     assert rc_unconfigured == 0
     assert doc_gated["status"]["value"] == "indeterminate"
@@ -1523,18 +1442,14 @@ def test_warn_only_with_warn_as_error_still_exits_nonzero(capsys):
     assert doc_on_ramp["status"]["value"] == "warn"
     assert rc_on_ramp == 0
 
-    rc_both, out_both, _ = run_scan(
-        capsys, RECIPE_COMMON, "--warn-only", "--warn-as-error"
-    )
+    rc_both, out_both, _ = run_scan(capsys, RECIPE_COMMON, "--warn-only", "--warn-as-error")
     doc_both = parse_report(out_both)
     assert doc_both["status"]["value"] == "warn"
     assert doc_both["exit_code"] == 1
     assert rc_both == 1
 
 
-def test_max_lag_two_mode_diff_enforces_the_numeric_threshold(
-    monkeypatch, tmp_path, capsys
-):
+def test_max_lag_two_mode_diff_enforces_the_numeric_threshold(monkeypatch, tmp_path, capsys):
     """Story 6.5 AC (--max-lag, E2E): the SAME over-lag runtime finding
     composes policy-violation/exit 1 when its lag EXCEEDS N and stays
     warn/exit 0 at N (visible, not blocking) -- proves the config ->
@@ -1570,18 +1485,14 @@ def test_max_lag_two_mode_diff_enforces_the_numeric_threshold(
     # Identical producer output across both thresholds -- only rungs/exit
     # differ (the two-mode invariant, now for the numeric gate).
     assert _currency_block(doc_over) == _currency_block(doc_at)
-    assert {f["id"] for f in _currency_block(doc_over)} == {
-        f"currency:over-lag:!python-runtime@{runtime_version}"
-    }
+    assert {f["id"] for f in _currency_block(doc_over)} == {f"currency:over-lag:!python-runtime@{runtime_version}"}
     assert doc_over["status"]["value"] == "policy-violation"  # lag 2 > 1
     assert rc_over == 1
     assert doc_at["status"]["value"] == "warn"  # lag 2 == 2: not over
     assert rc_at == 0
 
 
-def test_stale_bundled_registry_under_active_gate_forces_indeterminate(
-    monkeypatch, capsys
-):
+def test_stale_bundled_registry_under_active_gate_forces_indeterminate(monkeypatch, capsys):
     """Story 6.5 AC (NFR-S9, E2E): a stale bundled LTS registry under an
     active currency gate mints a whole-axis
     ``indeterminate:currency-registry-stale`` finding forcing status
@@ -1613,9 +1524,7 @@ def test_stale_bundled_registry_without_a_gate_changes_nothing(monkeypatch, caps
     rc, out, err = run_scan(capsys, CLEAN)
     document = parse_report(out)
     finding_ids = {f["id"] for f in document["findings"]}
-    assert not any(
-        fid.startswith("indeterminate:currency-registry-") for fid in finding_ids
-    )
+    assert not any(fid.startswith("indeterminate:currency-registry-") for fid in finding_ids)
     assert document["status"]["value"] == "clean"
     assert rc == 0
 
@@ -1819,9 +1728,7 @@ def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path
     unparsable-manifest -- see test_malformed_toml_still_emits_an_error_
     report), so this now carries two error lines, sorted by (kind, owner,
     message) -- "config-parse" < "unparsable-manifest" lexically."""
-    (tmp_path / "pyproject.toml").write_text(
-        "[project\nname = 'broken", encoding="utf-8"
-    )
+    (tmp_path / "pyproject.toml").write_text("[project\nname = 'broken", encoding="utf-8")
     rc = main(["scan", str(tmp_path)])
     captured = capsys.readouterr()
     assert rc == 2
@@ -1834,9 +1741,7 @@ def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path
     assert lines[3].startswith("  [error:unparsable-manifest] extract -- ")
 
 
-def test_json_format_stays_pure_under_a_chatty_engine_and_a_pseudo_tty(
-    capsys, monkeypatch
-):
+def test_json_format_stays_pure_under_a_chatty_engine_and_a_pseudo_tty(capsys, monkeypatch):
     """NFR-I3 regression (spec's I/O matrix, Story 1.8): ``test_deptry_
     output_never_leaks_onto_our_streams`` above already proves a chatty
     real engine (DEPTRY_UNUSED) never contaminates stdout under an

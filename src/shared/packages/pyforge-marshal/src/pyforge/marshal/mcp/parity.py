@@ -101,7 +101,7 @@ def tools_by_cli_verb(
             continue
         try:
             verb = tool_cli_verb(spec)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if verb is None:
             continue
@@ -221,6 +221,4 @@ def assert_cli_tool_parity(
     if not findings:
         return
     lines = [f"{f.code}: {f.detail}" for f in findings]
-    raise AssertionError(
-        "CLI ⇄ tool parity gate failed (FR-155):\n  - " + "\n  - ".join(lines)
-    )
+    raise AssertionError("CLI ⇄ tool parity gate failed (FR-155):\n  - " + "\n  - ".join(lines))

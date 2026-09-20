@@ -67,8 +67,7 @@ KIND_FRAME = "frame"
 VERBS: tuple[str, ...] = ("check", "list", "render", "pointers")
 
 UPSTREAM_REGISTRY_SCHEMA_URL = (
-    "https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/"
-    "registry/registry-schema.yaml"
+    "https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml"
 )
 
 
@@ -148,8 +147,7 @@ def _load_yaml_mapping(document_path: Path, *, what: str) -> dict[str, Any]:
         document = {}
     if not isinstance(document, dict):
         raise CatalogConfigError(
-            f"{document_path}: top-level document must be a mapping, got "
-            f"{type(document).__name__}"
+            f"{document_path}: top-level document must be a mapping, got {type(document).__name__}"
         )
     return document
 
@@ -157,9 +155,7 @@ def _load_yaml_mapping(document_path: Path, *, what: str) -> dict[str, Any]:
 def _require_str(document_path: Path, mapping: dict[str, Any], key: str, where: str) -> str:
     value = mapping.get(key)
     if not isinstance(value, str) or not value.strip():
-        raise CatalogConfigError(
-            f"{document_path}: '{where}.{key}' is required and must be a non-empty string"
-        )
+        raise CatalogConfigError(f"{document_path}: '{where}.{key}' is required and must be a non-empty string")
     return value.strip()
 
 
@@ -168,21 +164,15 @@ def _normalize_state(document_path: Path, raw: object, where: str) -> str:
     if isinstance(raw, bool):
         raw = STATE_ON if raw else STATE_OFF
     if not isinstance(raw, str) or raw.strip() not in STATES:
-        raise CatalogConfigError(
-            f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}"
-        )
+        raise CatalogConfigError(f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}")
     return raw.strip()
 
 
-def _parse_decls(
-    document_path: Path, section: object, section_name: str, factory: type
-) -> tuple[Any, ...]:
+def _parse_decls(document_path: Path, section: object, section_name: str, factory: type) -> tuple[Any, ...]:
     if section is None:
         section = {}
     if not isinstance(section, dict):
-        raise CatalogConfigError(
-            f"{document_path}: {section_name!r} section must be a mapping"
-        )
+        raise CatalogConfigError(f"{document_path}: {section_name!r} section must be a mapping")
     decls = []
     for name, body in section.items():
         # A bare `on:` / `yes:` key parses to a YAML boolean; it is not a name.
@@ -237,18 +227,12 @@ def load_config(path: str | Path) -> CatalogConfig:
 
     store = catalog.get("edit_store")
     if not isinstance(store, dict):
-        raise CatalogConfigError(
-            f"{document_path}: 'catalog.edit_store' section missing or not a mapping"
-        )
+        raise CatalogConfigError(f"{document_path}: 'catalog.edit_store' section missing or not a mapping")
     kind = _require_str(document_path, store, "kind", "catalog.edit_store")
     if kind != "git":
-        raise CatalogConfigError(
-            f"{document_path}: 'catalog.edit_store.kind' = {kind!r}; git is the edit store"
-        )
+        raise CatalogConfigError(f"{document_path}: 'catalog.edit_store.kind' = {kind!r}; git is the edit store")
     dedicated = store.get("dedicated_repo")
-    if dedicated is not None and (
-        not isinstance(dedicated, str) or _github_owner_repo(dedicated) != dedicated.strip()
-    ):
+    if dedicated is not None and (not isinstance(dedicated, str) or _github_owner_repo(dedicated) != dedicated.strip()):
         raise CatalogConfigError(
             f"{document_path}: 'catalog.edit_store.dedicated_repo' must be null or an "
             f"owner/repo string, got {dedicated!r}"
@@ -271,11 +255,7 @@ def load_config(path: str | Path) -> CatalogConfig:
         edit_store=edit_store,
         backends=backends,
         sources=sources,
-        display_name=(
-            display_name.strip()
-            if isinstance(display_name, str) and display_name.strip()
-            else name
-        ),
+        display_name=(display_name.strip() if isinstance(display_name, str) and display_name.strip() else name),
         description=description.strip() if isinstance(description, str) else "",
     )
 
@@ -442,9 +422,7 @@ class EstateListingsSource(CatalogSourcePlugin):
                 raise CatalogConfigError(f"{path}: modules[{index}] must be a mapping")
             name = row.get("name")
             if not isinstance(name, str) or not name.strip():
-                raise CatalogConfigError(
-                    f"{path}: modules[{index}].name is required and must be a non-empty string"
-                )
+                raise CatalogConfigError(f"{path}: modules[{index}].name is required and must be a non-empty string")
             tier = row.get("trust_tier")
             if tier is None:
                 tier = TIER_UNVERIFIED
@@ -476,12 +454,10 @@ def _read_recipe_about(repo: Path, package: str) -> dict[str, str]:
     """Fail-open ``recipes/<package>/recipe.yaml`` ``about`` strings (mirrors
     ``suite.read_recipe_version``: never raises)."""
     try:
-        data = yaml.safe_load(
-            (repo / "recipes" / package / "recipe.yaml").read_text(encoding="utf-8")
-        )
+        data = yaml.safe_load((repo / "recipes" / package / "recipe.yaml").read_text(encoding="utf-8"))
         about = data["about"]
         return {k: v for k, v in about.items() if isinstance(v, str)}
-    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+    except OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError:
         return {}
 
 
@@ -501,9 +477,7 @@ class WieldedSuiteSource(CatalogSourcePlugin):
                 continue
             about = _read_recipe_about(ctx.repo_root, pkg.name)
             repository = f"https://github.com/{pkg.github_repo}" if pkg.github_repo else None
-            code = pkg.module_code or (
-                pkg.wire_bmad_config_keys[0] if pkg.wire_bmad_config_keys else None
-            )
+            code = pkg.module_code or (pkg.wire_bmad_config_keys[0] if pkg.wire_bmad_config_keys else None)
             rows.append(
                 Listing(
                     name=pkg.name,
@@ -514,9 +488,7 @@ class WieldedSuiteSource(CatalogSourcePlugin):
                     repository=repository,
                     version=read_recipe_version(ctx.repo_root, pkg.name),
                     code=code,
-                    install_hint=(
-                        f"steward provision --module {code}" if code else f"pixi add {pkg.name}"
-                    ),
+                    install_hint=(f"steward provision --module {code}" if code else f"pixi add {pkg.name}"),
                     link=about.get("homepage") or repository,
                 )
             )
@@ -690,7 +662,7 @@ def _github_owner_repo(repository: str | None) -> str | None:
     text = repository.strip()
     for prefix in ("https://github.com/", "http://github.com/", "github.com/"):
         if text.startswith(prefix):
-            text = text[len(prefix):]
+            text = text[len(prefix) :]
             break
     else:
         if "://" in text:
@@ -721,9 +693,7 @@ class CatalogEngine:
     ) -> None:
         self.repo_root = Path(repo_root)
         self.config = config
-        self.catalog_dir = (
-            Path(catalog_dir) if catalog_dir is not None else self.repo_root / CATALOG_RELATIVE
-        )
+        self.catalog_dir = Path(catalog_dir) if catalog_dir is not None else self.repo_root / CATALOG_RELATIVE
         self.sources = SourceRegistry()
         self.backends = BackendRegistry()
         for source in default_sources():
@@ -771,11 +741,7 @@ class CatalogEngine:
                 findings.append(CatalogFinding("config-source", f"sources.{decl.name}", str(exc)))
                 continue
             except Exception as exc:  # noqa: BLE001 — a source must never abort check
-                findings.append(
-                    CatalogFinding(
-                        "config-source", f"sources.{decl.name}", f"{type(exc).__name__}: {exc}"
-                    )
-                )
+                findings.append(CatalogFinding("config-source", f"sources.{decl.name}", f"{type(exc).__name__}: {exc}"))
                 continue
             for row in rows:
                 if not row.source:
@@ -1000,11 +966,7 @@ class CatalogEngine:
         if not listing_findings:
             findings.extend(self._drift_of(listings))
 
-        slots = tuple(
-            decl.name
-            for decl in (*self.config.backends, *self.config.sources)
-            if decl.state != STATE_ON
-        )
+        slots = tuple(decl.name for decl in (*self.config.backends, *self.config.sources) if decl.state != STATE_ON)
         store = self.config.edit_store
         return CatalogReport(
             catalog={
@@ -1050,9 +1012,7 @@ class CatalogEngine:
             "catalog_dir": str(abs_dir),
             "custom_source": f"bmad-method install --custom-source {quoted_dir}",
             "extra_known_marketplaces": {
-                "extraKnownMarketplaces": {
-                    name: {"source": {"source": "directory", "path": rel_dir}}
-                }
+                "extraKnownMarketplaces": {name: {"source": {"source": "directory", "path": rel_dir}}}
             },
             "claude_plugin_add": f"/plugin marketplace add {quoted_dir}",
             "codex_plugin_add": (
@@ -1220,10 +1180,6 @@ class CatalogDuty:
             }
             return DutyResult(
                 ok=False,
-                summary=(
-                    _json_text(payload).rstrip("\n")
-                    if as_json
-                    else f"catalog {verb} failed: {message}"
-                ),
+                summary=(_json_text(payload).rstrip("\n") if as_json else f"catalog {verb} failed: {message}"),
                 details=payload,
             )

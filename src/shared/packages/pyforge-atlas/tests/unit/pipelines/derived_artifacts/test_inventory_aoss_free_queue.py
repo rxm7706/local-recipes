@@ -16,9 +16,7 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS}}
-_AOSS_FREE_QUEUE_REASON = (
-    "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
-)
+_AOSS_FREE_QUEUE_REASON = "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
 
 
 def _write_aoss_free_queue_ref(
@@ -57,9 +55,7 @@ def _run_both(
     core_packages_enumerated = pd.DataFrame([{"conda_name": n} for n in cf_names])
     pypi_universe = pd.DataFrame([{"pypi_name": n} for n in pypi_names])
     pypi_conda_mapping = pd.DataFrame(columns=["pypi_name"])
-    enterprise_jfrog_consumption = pd.DataFrame(
-        [{"core_python_package_name": n} for n in universe_jfrog]
-    )
+    enterprise_jfrog_consumption = pd.DataFrame([{"core_python_package_name": n} for n in universe_jfrog])
     enterprise_conda_maintainers = pd.DataFrame(
         [
             {
@@ -85,9 +81,7 @@ def _run_both(
     cf_or_pm = {norm_pkg(n) for n in cf_names}
     pypi_verified = {norm_pkg(n): True for n in pypi_names}
     aoss_free = {norm_pkg(n) for n in aoss_names}
-    aoss_free_candidates = {
-        pkg for pkg in aoss_free if pypi_verified.get(pkg, False) and pkg not in cf_or_pm
-    }
+    aoss_free_candidates = {pkg for pkg in aoss_free if pypi_verified.get(pkg, False) and pkg not in cf_or_pm}
     must_keep = {norm_pkg(n) for n in universe_jfrog} | {norm_pkg(n) for n in universe_conda}
 
     with tempfile.TemporaryDirectory() as tmp:

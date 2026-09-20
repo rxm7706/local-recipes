@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from pyforge.mason.airgap_contract import (
     AIRGAP_CONTRACT,
     SUPPORTED_DISTRIBUTABLES,

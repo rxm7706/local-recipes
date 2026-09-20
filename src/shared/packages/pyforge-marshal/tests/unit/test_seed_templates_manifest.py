@@ -22,6 +22,7 @@ from collections import Counter
 from importlib import resources
 
 import pytest
+
 from pyforge.marshal.seed.derive.adapters import ADAPTER_COMPOSITION
 from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_findings
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, load_manifest
@@ -46,9 +47,7 @@ EXPECTED_CLASS_COUNTS = {
 # e.g. `"copied-managed"`), not the enum member itself -- derived from
 # `EXPECTED_CLASS_COUNTS` above rather than a second hand-typed pin, so the
 # two numbers cannot drift apart.
-EXPECTED_COVERAGE_COUNTS = {
-    artifact_class.value: count for artifact_class, count in EXPECTED_CLASS_COUNTS.items()
-}
+EXPECTED_COVERAGE_COUNTS = {artifact_class.value: count for artifact_class, count in EXPECTED_CLASS_COUNTS.items()}
 
 # The spec's Always bullet: exactly 7 never-write patterns.
 EXPECTED_NEVER_WRITE = (
@@ -149,11 +148,7 @@ def test_no_two_materialized_entries_share_a_rendered_path(manifest):
     """Proves the two deliberate dedups hold: `.gitignore` and `CLAUDE.md`
     each appear as exactly one manifest row, not one per class the PRD's
     prose happened to mention them under."""
-    rendered_paths = [
-        entry.path
-        for entry in manifest.entries
-        if entry.artifact_class is not ArtifactClass.REFERENCED
-    ]
+    rendered_paths = [entry.path for entry in manifest.entries if entry.artifact_class is not ArtifactClass.REFERENCED]
     duplicates = sorted(path for path, count in Counter(rendered_paths).items() if count > 1)
     assert duplicates == [], f"paths claimed by more than one entry: {duplicates}"
 
@@ -168,12 +163,9 @@ def test_only_referenced_entries_use_the_unrendered_path_sentinel(manifest):
     offenders = [
         entry.id
         for entry in manifest.entries
-        if entry.path == _UNRENDERED_PATH
-        and entry.artifact_class is not ArtifactClass.REFERENCED
+        if entry.path == _UNRENDERED_PATH and entry.artifact_class is not ArtifactClass.REFERENCED
     ]
-    assert offenders == [], (
-        f"only referenced entries may use the {_UNRENDERED_PATH!r} sentinel path: {offenders}"
-    )
+    assert offenders == [], f"only referenced entries may use the {_UNRENDERED_PATH!r} sentinel path: {offenders}"
 
 
 @pytest.mark.parametrize("path", [".gitignore", "CLAUDE.md"])
@@ -214,9 +206,7 @@ def test_every_hybrid_region_has_a_matching_non_empty_body_file(manifest):
     (see `verbs/adopt.py`'s own module docstring)."""
     files_root = resources.files("pyforge.marshal.seed.templates") / "files"
     hybrid_entries = [
-        entry
-        for entry in manifest.entries
-        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
+        entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
     ]
     assert hybrid_entries, "expected at least one hybrid-managed-region entry"
 
@@ -234,8 +224,7 @@ def test_every_hybrid_region_has_a_matching_non_empty_body_file(manifest):
                 f"seed/templates/files/{region.name}.md.j2 (or .gitignore.j2)"
             )
             assert len(existing) == 1, (
-                f"{entry.id}: region {region.name!r} matches more than one body "
-                f"file candidate: {existing}"
+                f"{entry.id}: region {region.name!r} matches more than one body file candidate: {existing}"
             )
             body_text = existing[0].read_text(encoding="utf-8")
             assert body_text.strip(), f"{entry.id}: region {region.name!r} body file is empty"
@@ -305,12 +294,8 @@ def test_applies_to_scoping_matches_the_spec(manifest):
     exemption depends on (Design Notes) -- nothing else in the schema marks
     which entries are exempt from the never-write globs their own paths sit
     inside. Pin the non-`both` sets so a flip cannot pass silently."""
-    init_only = {
-        entry.id for entry in manifest.entries if entry.applies_to is AppliesTo.INIT
-    }
-    adopt_only = {
-        entry.id for entry in manifest.entries if entry.applies_to is AppliesTo.ADOPT
-    }
+    init_only = {entry.id for entry in manifest.entries if entry.applies_to is AppliesTo.INIT}
+    adopt_only = {entry.id for entry in manifest.entries if entry.applies_to is AppliesTo.ADOPT}
     assert init_only == EXPECTED_INIT_ONLY_ENTRY_IDS
     assert adopt_only == EXPECTED_ADOPT_ONLY_ENTRY_IDS
 
@@ -322,9 +307,7 @@ def test_unclassified_deferred_entries_have_real_non_generic_rationale(manifest)
     "not a stub"."""
     placeholders = {"todo", "tbd", "n/a", "unknown", "-"}
     deferred_entries = [
-        entry
-        for entry in manifest.entries
-        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED
+        entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED
     ]
     assert len(deferred_entries) == EXPECTED_CLASS_COUNTS[ArtifactClass.UNCLASSIFIED_DEFERRED]
     for entry in deferred_entries:
@@ -353,9 +336,7 @@ def test_no_entry_uses_legacy_of(manifest):
 
 
 def test_referenced_entries_all_use_the_unrendered_path_sentinel(manifest):
-    referenced_entries = [
-        entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED
-    ]
+    referenced_entries = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED]
     assert len(referenced_entries) == EXPECTED_CLASS_COUNTS[ArtifactClass.REFERENCED]
     for entry in referenced_entries:
         assert entry.path == _UNRENDERED_PATH
@@ -398,9 +379,5 @@ def test_referenced_pins_match_the_live_environment_exactly(manifest):
         "bmad-method-wds-expansion": ">=0.4.3",
         "bmad-module-template": ">=0.1.0",
     }
-    actual = {
-        entry.id: entry.pin
-        for entry in manifest.entries
-        if entry.artifact_class is ArtifactClass.REFERENCED
-    }
+    actual = {entry.id: entry.pin for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED}
     assert actual == expected

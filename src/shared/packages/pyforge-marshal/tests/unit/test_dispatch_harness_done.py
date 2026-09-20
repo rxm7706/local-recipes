@@ -13,9 +13,7 @@ from pyforge.marshal.core.dispatch_harness_done import (
 
 
 def test_parse_status_done_and_followup_false() -> None:
-    text = (
-        "---\nstatus: done\nfollowup_review_recommended: false\n---\n# spec\n"
-    )
+    text = "---\nstatus: done\nfollowup_review_recommended: false\n---\n# spec\n"
     assert parse_spec_status(text) == "done"
     assert followup_review_recommended(text) is False
     assert blocks_harness_relaunch(parse_spec_status(text), False) is True
@@ -88,14 +86,8 @@ def test_blank_line_with_no_banner_still_returns_none() -> None:
 
 
 def test_parse_baseline_revision_reads_frontmatter_scalar() -> None:
-    text = (
-        "---\nstatus: blocked\nbaseline_revision: "
-        "'c8277c03c117ff4779d54a2ff9d900f519415971'\n---\n"
-    )
-    assert (
-        parse_baseline_revision(text)
-        == "c8277c03c117ff4779d54a2ff9d900f519415971"
-    )
+    text = "---\nstatus: blocked\nbaseline_revision: 'c8277c03c117ff4779d54a2ff9d900f519415971'\n---\n"
+    assert parse_baseline_revision(text) == "c8277c03c117ff4779d54a2ff9d900f519415971"
 
 
 def test_parse_baseline_revision_missing_is_none() -> None:

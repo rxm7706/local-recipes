@@ -170,3 +170,16 @@ validate`) has no way to do that if export is buried inside publish.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `bf15d5366e` (2026-08-12, "steward: add server-side export authorization gate (Story 9.4, CAP-5)"); also `4a3872d1dd` (2026-08-08, "herald: Story 9.4 — Success web archive (static-JSON-snapshot pattern)"). Ledger row `9-4-implement-success-web-archive: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/export.py`, `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py`, `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_export.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

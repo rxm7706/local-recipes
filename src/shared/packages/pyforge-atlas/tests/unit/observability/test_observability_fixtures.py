@@ -321,7 +321,7 @@ def test_deepcopy_preserves_injected_backends_no_otel_ol_asymmetry():
     hooks, exporter, events = _direct_hooks()
     dup = copy.deepcopy(hooks)
     assert dup._provider is hooks._provider  # shared by reference (survives the copy)
-    assert dup._ol is hooks._ol              # symmetric — both backends survive
+    assert dup._ol is hooks._ol  # symmetric — both backends survive
     # the copy actually EMITS to the shared injected backends (no silent OTel drop):
     n = node(_double, inputs="raw_in", outputs="mid", name="dup_node")
     dup.before_pipeline_run({}, None, None)

@@ -110,9 +110,7 @@ class Actuation:
                     "pr_url": outcome.pr_url,
                     "detail": outcome.detail,
                 }
-                for outcome in sorted(
-                    self.outcomes, key=lambda outcome: outcome.finding_id
-                )
+                for outcome in sorted(self.outcomes, key=lambda outcome: outcome.finding_id)
             ],
         }
 
@@ -179,8 +177,7 @@ def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
     """The PR body: the finding id + a report excerpt (id, message, severity,
     advisory) + the recommended action. No computed target version."""
     lines = [
-        "Opened by warden's opt-in fix-PR actuator (post-verdict; the scan's "
-        "status and exit code are unchanged).",
+        "Opened by warden's opt-in fix-PR actuator (post-verdict; the scan's status and exit code are unchanged).",
         "",
         f"Finding: {finding.id}",
         f"Axis: {finding.axis}",
@@ -261,15 +258,10 @@ def resolve_forge(
     source = env if env is not None else os.environ
     token = source.get("GITHUB_TOKEN") or source.get("GH_TOKEN")
     if not token:
-        raise ForgeResolutionError(
-            "no forge token in the environment (set GITHUB_TOKEN or GH_TOKEN)"
-        )
+        raise ForgeResolutionError("no forge token in the environment (set GITHUB_TOKEN or GH_TOKEN)")
     repo = source.get("GITHUB_REPOSITORY")
     if not repo or "/" not in repo:
-        raise ForgeResolutionError(
-            "no forge repo slug in the environment (set GITHUB_REPOSITORY to "
-            "'owner/name')"
-        )
+        raise ForgeResolutionError("no forge repo slug in the environment (set GITHUB_REPOSITORY to 'owner/name')")
     api_url = source.get("GITHUB_API_URL") or _DEFAULT_API_URL
     return token, repo, api_url.rstrip("/")
 
@@ -281,9 +273,7 @@ class GitHubForgeClient:
     ``Request(url, headers=...)`` + ``urlopen(..., timeout=...)  # noqa: S310``
     shape; no third-party HTTP dependency."""
 
-    def __init__(
-        self, token: str, repo: str, api_url: str, *, timeout: int = 30
-    ) -> None:
+    def __init__(self, token: str, repo: str, api_url: str, *, timeout: int = 30) -> None:
         self._token = token
         self._repo = repo
         self._owner = repo.split("/", 1)[0]
@@ -291,9 +281,7 @@ class GitHubForgeClient:
         self._timeout = timeout
 
     @classmethod
-    def from_env(
-        cls, env: Mapping[str, str] | None = None
-    ) -> GitHubForgeClient:
+    def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubForgeClient:
         token, repo, api_url = resolve_forge(env)
         return cls(token, repo, api_url)
 
@@ -317,9 +305,7 @@ class GitHubForgeClient:
         }
         if data is not None:
             headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(
-            url, data=data, headers=headers, method=method
-        )
+        request = urllib.request.Request(url, data=data, headers=headers, method=method)
         # The sole authorized egress: mark it so the test harness's carve-out
         # permits the loopback connect, and reset it the instant the call
         # returns (deny is the default again immediately after).
@@ -402,9 +388,7 @@ class GitHubForgeClient:
                 return str(url)
         # A 2xx with no url is not a real success -- fail loudly rather than
         # record an ``opened`` outcome carrying no evidence of the PR.
-        raise ForgeResponseError(
-            "the forge accepted the PR open but returned no url"
-        )
+        raise ForgeResponseError("the forge accepted the PR open but returned no url")
 
 
 def run_actuator(
@@ -488,8 +472,7 @@ def run_actuator(
                     action=proposal.action,
                     subject=proposal.subject,
                     status="skipped",
-                    detail="a remediation branch already exists (prior "
-                    "actuation; its PR may be closed)",
+                    detail="a remediation branch already exists (prior actuation; its PR may be closed)",
                 )
             )
         except Exception as exc:  # noqa: BLE001 -- a failed open NEVER raises

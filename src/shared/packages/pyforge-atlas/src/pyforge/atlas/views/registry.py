@@ -225,7 +225,4 @@ def get_view(name: str) -> View:
     for view in STATIC_VIEWS:
         if view.name == name:
             return view
-    raise KeyError(
-        f"unknown static view {name!r}; known views: "
-        f"{', '.join(v.name for v in STATIC_VIEWS)}"
-    )
+    raise KeyError(f"unknown static view {name!r}; known views: {', '.join(v.name for v in STATIC_VIEWS)}")

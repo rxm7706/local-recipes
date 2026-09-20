@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import deck_pipeline, stamps, state
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.stamps import Stamp, read_stamp, write_stamp
@@ -21,9 +22,7 @@ from pyforge.herald.stamps import Stamp, read_stamp, write_stamp
 
 def _init_git_repo(root: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=root, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
     subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
     (root / "README.md").write_text("scratch repo\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
@@ -171,8 +170,7 @@ def test_read_stamp_of_a_sidecar_with_an_unknown_field_raises_herald_error(
     surfacing as a bug)."""
     artifact = tmp_path / "out.pptx"
     (tmp_path / "out.pptx.stamp.json").write_text(
-        '{"tree": "abc", "etag": null, "derived_at": "2026-01-01T00:00:00+00:00", '
-        '"extra": "surprise"}',
+        '{"tree": "abc", "etag": null, "derived_at": "2026-01-01T00:00:00+00:00", "extra": "surprise"}',
         encoding="utf-8",
     )
 
@@ -180,9 +178,7 @@ def test_read_stamp_of_a_sidecar_with_an_unknown_field_raises_herald_error(
         read_stamp(artifact)
 
 
-def test_write_stamp_wraps_a_failed_replace_as_herald_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_write_stamp_wraps_a_failed_replace_as_herald_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _init_git_repo(tmp_path)
     artifact = tmp_path / "out.pptx"
     artifact.write_bytes(b"binary")
@@ -195,9 +191,7 @@ def test_write_stamp_wraps_a_failed_replace_as_herald_error(
         write_stamp(artifact, repo_root=tmp_path, slug="pyforge-demo")
 
 
-def test_read_stamp_wraps_an_unreadable_sidecar_as_herald_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_read_stamp_wraps_an_unreadable_sidecar_as_herald_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     artifact = tmp_path / "out.pptx"
     (tmp_path / "out.pptx.stamp.json").write_text("{}", encoding="utf-8")
 
@@ -217,9 +211,7 @@ def test_write_stamp_writes_atomically_leaving_no_temp_file(tmp_path: Path):
     write_stamp(artifact, repo_root=tmp_path, slug="pyforge-demo")
 
     leftovers = [
-        p.name
-        for p in tmp_path.iterdir()
-        if p.name not in {"README.md", "out.pptx", "out.pptx.stamp.json", ".git"}
+        p.name for p in tmp_path.iterdir() if p.name not in {"README.md", "out.pptx", "out.pptx.stamp.json", ".git"}
     ]
     assert leftovers == []
 
@@ -234,9 +226,7 @@ def test_prototype_artifact_key_mirrors_deck_pipelines_constant():
     assert stamps._PROTOTYPE_ARTIFACT_KEY == deck_pipeline.PROTOTYPE_ARTIFACT_KEY
 
 
-def test_write_stamp_wraps_a_hung_git_call_as_herald_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_write_stamp_wraps_a_hung_git_call_as_herald_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """``_git`` must not block forever on lock contention or a
     network-mounted ``.git`` -- mirrors the bounded-subprocess pattern
     ``deck_pipeline._PixiPartialDeckExporter`` already applies to its own

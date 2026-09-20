@@ -14,9 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-_SCRIPT_PATH = (
-    Path(__file__).resolve().parents[2] / "scripts" / "export_progress_snapshot.py"
-)
+_SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "export_progress_snapshot.py"
 
 
 def _load_module():
@@ -47,9 +45,7 @@ def test_export_progress_snapshot_writes_every_record(tmp_path):
     )
 
     out_dir = tmp_path / "out"
-    out_path = export_progress_snapshot.export_progress_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    out_path = export_progress_snapshot.export_progress_snapshot(repo_root=repo_root, out_dir=out_dir)
 
     assert out_path == out_dir / "progress.json"
     payload = json.loads(out_path.read_text(encoding="utf-8"))
@@ -61,9 +57,7 @@ def test_export_progress_snapshot_writes_every_record(tmp_path):
 def test_export_progress_snapshot_creates_out_dir(tmp_path):
     repo_root = tmp_path / "repo"
     out_dir = tmp_path / "does" / "not" / "exist" / "yet"
-    out_path = export_progress_snapshot.export_progress_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    out_path = export_progress_snapshot.export_progress_snapshot(repo_root=repo_root, out_dir=out_dir)
     assert out_path.exists()
     assert json.loads(out_path.read_text(encoding="utf-8")) == []
 
@@ -83,9 +77,7 @@ def test_main_writes_and_prints(tmp_path, capsys):
     )
     out_dir = tmp_path / "out"
 
-    rc = export_progress_snapshot.main(
-        ["--repo-root", str(repo_root), "--out-dir", str(out_dir)]
-    )
+    rc = export_progress_snapshot.main(["--repo-root", str(repo_root), "--out-dir", str(out_dir)])
     assert rc == 0
     out = capsys.readouterr().out
     assert str(out_dir / "progress.json") in out

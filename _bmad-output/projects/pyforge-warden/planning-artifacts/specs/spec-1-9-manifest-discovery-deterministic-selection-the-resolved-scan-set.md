@@ -2,7 +2,7 @@
 title: 'Story 1.9: Manifest discovery, deterministic selection & the resolved scan set'
 type: 'feature'
 created: '2026-07-17'
-status: 'draft'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -88,3 +88,17 @@ warnings: [oversized]
 
 **Commands:**
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `1-9-manifest-discovery-deterministic-selection-the-resolved-scan-set: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `draft` → `done` (ledger row `1-9-manifest-discovery-deterministic-selection-the-resolved-scan-set: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

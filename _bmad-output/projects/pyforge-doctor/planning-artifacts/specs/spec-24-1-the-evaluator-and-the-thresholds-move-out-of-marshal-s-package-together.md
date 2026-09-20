@@ -1,5 +1,5 @@
 ---
-title: '24.1: The evaluator and the thresholds move out of marshal's package, together'
+title: '24.1: The evaluator and the thresholds move out of marshal''s package, together'
 type: 'feature'
 created: '2026-09-16'
 status: 'ready'

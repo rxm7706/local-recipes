@@ -36,9 +36,7 @@ class Page:
     def __post_init__(self) -> None:
         for field_name, value in (("path", self.path), ("label", self.label)):
             if not isinstance(value, str):
-                raise TypeError(
-                    f"Page.{field_name} must be a string, got {type(value).__name__}"
-                )
+                raise TypeError(f"Page.{field_name} must be a string, got {type(value).__name__}")
             if not value.strip():
                 raise ValueError(
                     f"Page.{field_name} must not be empty or whitespace-only — "
@@ -71,8 +69,7 @@ class Page:
                 )
             if not role.strip():
                 raise ValueError(
-                    f"Page.roles[{index}] must not be empty or "
-                    f"whitespace-only — an unnamed role can never match"
+                    f"Page.roles[{index}] must not be empty or whitespace-only — an unnamed role can never match"
                 )
             if role != role.strip():
                 raise ValueError(
@@ -104,10 +101,7 @@ def build_navigation(role: str | None, pages: Sequence[Page]) -> tuple[Page, ...
     if role is None:
         return ()
     if not isinstance(pages, Sequence):
-        raise TypeError(
-            f"build_navigation requires pages to be a Sequence[Page], got "
-            f"{type(pages).__name__}"
-        )
+        raise TypeError(f"build_navigation requires pages to be a Sequence[Page], got {type(pages).__name__}")
     # Materialized once: `pages` is typed `Sequence[Page]`, but a caller
     # passing a one-shot iterator would pass the type-check loop below and
     # then find it already exhausted by the time the membership pass runs,

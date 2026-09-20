@@ -1,7 +1,7 @@
 ---
 title: 'Story C2 (4.2): Integrate `kedro-viz` + expose a pixi task'
 type: 'feature'
-status: shipped
+status: done
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -160,3 +160,17 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `29720ea3e9` (2026-08-07, "herald: Story 4.2 -- idle backoff"); also `be4ecc879e` (2026-08-07, "steward: Story 4.2 — The declared ceiling is one command away"); also `48b2aed041` (2026-08-07, "doctor: Story 4.2 — persistent fleet-health surface"). Ledger row `4-2-integrate-kedro-viz-expose-a-pixi-task: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-2-idle-backoff.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `4-2-integrate-kedro-viz-expose-a-pixi-task: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

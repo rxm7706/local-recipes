@@ -115,7 +115,8 @@ class PyForgeStationClient:
         )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
-                return response.read()
+                payload: bytes = response.read()
+                return payload
         except urllib.error.URLError as exc:
             raise StationClientError from exc
 
@@ -135,7 +136,8 @@ def urllib_request(
     )
     try:
         with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
-            return response.read()
+            payload: bytes = response.read()
+            return payload
     except urllib.error.URLError as exc:
         raise StationClientError from exc
 

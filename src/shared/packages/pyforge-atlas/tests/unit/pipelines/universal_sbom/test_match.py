@@ -37,10 +37,10 @@ def _core():
     # conda_name, latest_version (cf), upstream_version (fixture supplies it, DW-B7-1)
     return pd.DataFrame(
         [
-            {"conda_name": "numpy", "latest_version": "1.26.0", "upstream_version": "1.26.0"},   # CURRENT
+            {"conda_name": "numpy", "latest_version": "1.26.0", "upstream_version": "1.26.0"},  # CURRENT
             {"conda_name": "requests", "latest_version": "2.31.0", "upstream_version": "2.32.0"},  # UPDATE-FEEDSTOCK
-            {"conda_name": "rich", "latest_version": "13.7.0", "upstream_version": "13.7.0"},     # UPDATE-PIN
-            {"conda_name": "noversion", "latest_version": None, "upstream_version": None},        # UNKNOWN (no cf version)
+            {"conda_name": "rich", "latest_version": "13.7.0", "upstream_version": "13.7.0"},  # UPDATE-PIN
+            {"conda_name": "noversion", "latest_version": None, "upstream_version": None},  # UNKNOWN (no cf version)
         ]
     )
 
@@ -60,7 +60,11 @@ def test_all_six_buckets_reproduced_on_a_fixture_inventory():
     case (flask) is present in the full pypi_universe but unmatched to conda."""
     components = [
         {"name": "numpy", "version": "1.26.0", "purl": "pkg:conda/numpy@1.26.0?channel=conda-forge"},  # CURRENT
-        {"name": "requests", "version": "2.31.0", "purl": "pkg:conda/requests@2.31.0?channel=conda-forge"},  # UPDATE-FEEDSTOCK
+        {
+            "name": "requests",
+            "version": "2.31.0",
+            "purl": "pkg:conda/requests@2.31.0?channel=conda-forge",
+        },  # UPDATE-FEEDSTOCK
         {"name": "rich", "version": "13.0.0", "purl": "pkg:conda/rich@13.0.0?channel=conda-forge"},  # UPDATE-PIN
         {"name": "noversion", "version": "1.0", "purl": "pkg:conda/noversion@1.0?channel=conda-forge"},  # UNKNOWN
         {"name": "flask", "version": None, "purl": "pkg:pypi/flask"},  # ADD (pypi in universe, unmatched)

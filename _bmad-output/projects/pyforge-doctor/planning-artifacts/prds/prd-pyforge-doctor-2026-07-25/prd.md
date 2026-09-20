@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-19'
+updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-19
 status: final
 currency_review: 'Reviewed 2026-09-19 — chain-currency sweep after PR #1529 (doctor Story
   30.1). research/documentation-currency-and-repeatable-refresh-2026-09-19.md post-dated the
@@ -857,3 +857,14 @@ sign). It is minted here, not decomposed directly, because the capability is Doc
 (FR-15's "home for every detector judging another station's artifact" applied to the docs
 shelf), not a sibling Spec's. Epic 30 is its decomposition; the FR-inventory boundary paragraph
 in § Currency reconciliation — 2026-08-26 is amended to name it.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this PRD. `updated:` bumped to record that the
+check ran.*

@@ -142,11 +142,7 @@ def test_estate_cache_page_is_bsl_driven(write_parquet):
     )
     got = dash_data.load_estate_cache(path)
     table = models.duckdb_table_from_parquet(path)
-    expected = (
-        models.build_estate_cache_model(table)
-        .query(dimensions=["sku"], measures=["units_total"])
-        .execute()
-    )
+    expected = models.build_estate_cache_model(table).query(dimensions=["sku"], measures=["units_total"]).execute()
     pd.testing.assert_frame_equal(
         got.sort_values("sku").reset_index(drop=True),
         expected.sort_values("sku").reset_index(drop=True),
@@ -231,9 +227,20 @@ def test_present_but_untyped_parquet_degrades_not_crash(write_parquet):
     # 0-row, object-typed columns (no pyarrow schema) → the crash the migration's typed
     # schemas avoid, but a first sparse store could hit.
     untyped = pd.DataFrame(
-        {c: pd.Series([], dtype="object") for c in
-         ("conda_name", "latest_status", "feedstock_archived", "latest_conda_upload",
-          "downloads_total", "downloads_30d", "latest_upload_age_days", "releases_30d", "total_versions")}
+        {
+            c: pd.Series([], dtype="object")
+            for c in (
+                "conda_name",
+                "latest_status",
+                "feedstock_archived",
+                "latest_conda_upload",
+                "downloads_total",
+                "downloads_30d",
+                "latest_upload_age_days",
+                "releases_30d",
+                "total_versions",
+            )
+        }
     )
     path = write_parquet(untyped, "untyped_packages")
     st = dash_data.load_staleness(path, now=NOW)
@@ -420,9 +427,7 @@ def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
     contract must hold identically."""
     no_bsl_ids = {"behind-upstream", "whodepends"}
     shell_ids = no_bsl_ids | {
-        p.id
-        for p in app.PAGE_INVENTORY
-        if p.kind in {"bsl-shell", "report-artifact", "live-scan-artifact"}
+        p.id for p in app.PAGE_INVENTORY if p.kind in {"bsl-shell", "report-artifact", "live-scan-artifact"}
     }
     seen = set()
     for page in dashboard.pages:
@@ -447,21 +452,54 @@ def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
 # --------------------------------------------------------------------------- #
 
 _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
-    "cve-watcher": (dash_data.load_cve_watcher, ["conda_name", "severity", "since_days", "vuln_kev_affecting_current", "then_count", "now_count", "delta"]),
+    "cve-watcher": (
+        dash_data.load_cve_watcher,
+        ["conda_name", "severity", "since_days", "vuln_kev_affecting_current", "then_count", "now_count", "delta"],
+    ),
     "version-downloads": (dash_data.load_version_downloads, ["conda_name", "version", "upload_date", "downloads"]),
-    "release-cadence": (dash_data.load_release_cadence, ["conda_name", "trend_label", "release_count_30d", "release_count_90d", "release_count_365d"]),
-    "find-alternative": (dash_data.load_find_alternative, ["archived_name", "candidate_name", "adoption_stage", "similarity_score", "downloads_total"]),
-    "scan-project": (dash_data.load_scan_project, ["conda_name", "severity", "license_spdx", "fix_available", "scan_status", "finding_count"]),
-    "env-inspect": (dash_data.load_env_inspect, ["conda_name", "license_spdx", "non_permissive_flag", "vuln_critical", "vuln_high"]),
-    "distribution-breakdown": (dash_data.load_distribution_breakdown, ["conda_name", "facet", "bucket", "python_min_bump_status", "downloads_90d"]),
+    "release-cadence": (
+        dash_data.load_release_cadence,
+        ["conda_name", "trend_label", "release_count_30d", "release_count_90d", "release_count_365d"],
+    ),
+    "find-alternative": (
+        dash_data.load_find_alternative,
+        ["archived_name", "candidate_name", "adoption_stage", "similarity_score", "downloads_total"],
+    ),
+    "scan-project": (
+        dash_data.load_scan_project,
+        ["conda_name", "severity", "license_spdx", "fix_available", "scan_status", "finding_count"],
+    ),
+    "env-inspect": (
+        dash_data.load_env_inspect,
+        ["conda_name", "license_spdx", "non_permissive_flag", "vuln_critical", "vuln_high"],
+    ),
+    "distribution-breakdown": (
+        dash_data.load_distribution_breakdown,
+        ["conda_name", "facet", "bucket", "python_min_bump_status", "downloads_90d"],
+    ),
     "export-purls": (dash_data.load_export_purls, ["artifact_name", "regenerated_at", "row_count"]),
-    "mapping-gap": (dash_data.load_mapping_gap, ["conda_name", "classification", "match_source", "match_confidence", "gap_count"]),
+    "mapping-gap": (
+        dash_data.load_mapping_gap,
+        ["conda_name", "classification", "match_source", "match_confidence", "gap_count"],
+    ),
     "universe-sbom": (dash_data.load_universe_sbom, ["component_purl", "slice", "with_vulns_count"]),
-    "inventory-match": (dash_data.load_inventory_match, ["conda_name", "bucket", "freshness_percentile", "match_confidence", "row_count"]),
+    "inventory-match": (
+        dash_data.load_inventory_match,
+        ["conda_name", "bucket", "freshness_percentile", "match_confidence", "row_count"],
+    ),
     "add-handoff": (dash_data.load_add_handoff, ["conda_name", "readiness", "license_blocker", "row_count"]),
-    "library-futures": (dash_data.load_library_futures, ["package_name", "futures_tier", "py314_readiness", "futures_score"]),
-    "recommend-2027": (dash_data.load_recommend_2027, ["package_name", "futures_tier", "lts_status", "eol_date", "futures_score"]),
-    "lts-registry-gap": (dash_data.load_lts_registry_gap, ["product_name", "tier", "matched_conda_name", "candidate_count"]),
+    "library-futures": (
+        dash_data.load_library_futures,
+        ["package_name", "futures_tier", "py314_readiness", "futures_score"],
+    ),
+    "recommend-2027": (
+        dash_data.load_recommend_2027,
+        ["package_name", "futures_tier", "lts_status", "eol_date", "futures_score"],
+    ),
+    "lts-registry-gap": (
+        dash_data.load_lts_registry_gap,
+        ["product_name", "tier", "matched_conda_name", "candidate_count"],
+    ),
     "cwe-seed-gap": (dash_data.load_cwe_seed_gap, ["cwe_id", "tier", "suggested_category", "package_impact_count"]),
     "spdx-schema-gap": (dash_data.load_spdx_schema_gap, ["license_id", "tier", "package_usage_count"]),
     "license-map-gap": (dash_data.load_license_map_gap, ["license_raw", "tier", "suggested_spdx", "package_count"]),

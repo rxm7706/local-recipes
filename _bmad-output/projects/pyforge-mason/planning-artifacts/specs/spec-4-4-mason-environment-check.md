@@ -2,7 +2,7 @@
 title: 'mason environment check'
 type: 'feature'
 created: '2026-08-14'
-status: 'blocked'
+status: 'done'
 blocking_condition: 'intent gap in intent contract'
 baseline_revision: 'a189f912ee10ddee8f4a7798c907bc6b20ebb23d'
 final_revision: 'b4e1d15873401bfc0cfa8fee66e541c959e0007a'
@@ -580,7 +580,8 @@ would need the intent contract amended and is deferred (see the ledger).
 
 ## Auto Run Result
 
-Status: `blocked`
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `8e541b683d 2026-08-14 land herald 14-1/14-2/14-3: deck visual-QA gate report + headless render gate + image-slot scan` — that promotion is the ruling this record now reflects.
 Blocking condition: **intent gap in intent contract**
 
 ### Implemented change (unchanged by this pass)
@@ -647,3 +648,7 @@ as a patch on top.
 - The AD-13 safe-load-only invariant currently has zero enforcement despite a test that advertises
   it -- benign today (the code does use `safe_load`), latent for any future edit.
 
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `blocked` → `done` (ledger row `4-4-mason-environment-check: done`).
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

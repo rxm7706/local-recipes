@@ -14,9 +14,12 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_OK, main
 from pyforge.steward.deploy import (
     _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH,
+)
+from pyforge.steward.deploy import (
     build_dashboard,
     commit_and_push_dashboard,
     dashboard_diff,
@@ -66,9 +69,9 @@ def test_no_diff_produces_zero_commits_run_twice(tmp_path):
 
     # A build that writes the exact same content the committed tree already has.
     same_cmd = [
-        sys.executable, "-c",
-        "from pathlib import Path; "
-        "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
+        sys.executable,
+        "-c",
+        "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
     ]
 
     for _ in range(2):
@@ -84,9 +87,9 @@ def test_a_real_diff_produces_exactly_one_commit_containing_only_the_changed_fil
     before = _commit_count(work)
 
     changed_cmd = [
-        sys.executable, "-c",
-        "from pathlib import Path; "
-        "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 2};\\n')",
+        sys.executable,
+        "-c",
+        "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 2};\\n')",
     ]
     build_dashboard(cwd=work, cmd=changed_cmd)
     diff_text = dashboard_diff(cwd=work)
@@ -99,9 +102,7 @@ def test_a_real_diff_produces_exactly_one_commit_containing_only_the_changed_fil
     assert changed_files == ["docs/dashboard/data.js"]
 
     # Pushed: the bare origin's main now points at the same SHA.
-    origin_head = _git(
-        "rev-parse", "refs/heads/main", cwd=tmp_path / "origin.git"
-    ).stdout.strip()
+    origin_head = _git("rev-parse", "refs/heads/main", cwd=tmp_path / "origin.git").stdout.strip()
     assert origin_head == sha
 
 
@@ -113,9 +114,9 @@ def test_deploy_dashboard_via_cli_reconciles_a_real_diff(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (
-            sys.executable, "-c",
-            "from pathlib import Path; "
-            "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 3};\\n')",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 3};\\n')",
         ),
     )
 
@@ -133,9 +134,9 @@ def test_deploy_dashboard_via_cli_is_a_zero_commit_noop_when_nothing_changed(tmp
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
         (
-            sys.executable, "-c",
-            "from pathlib import Path; "
-            "Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('docs/dashboard/data.js').write_text('window.DASHBOARD_DATA = {v: 1};\\n')",
         ),
     )
 
@@ -181,9 +182,7 @@ def test_commit_and_push_never_sweeps_in_an_unrelated_staged_file(tmp_path):
     ride along into the dashboard commit."""
     work = _make_repo_with_origin(tmp_path)
 
-    (work / "docs" / "dashboard" / "data.js").write_text(
-        "window.DASHBOARD_DATA = {v: 2};\n"
-    )
+    (work / "docs" / "dashboard" / "data.js").write_text("window.DASHBOARD_DATA = {v: 2};\n")
     (work / "secret.txt").write_text("unrelated, pre-staged content\n")
     _git("add", "--", "secret.txt", cwd=work)
 
@@ -208,9 +207,7 @@ def test_commit_and_push_refuses_before_committing_on_a_detached_head(tmp_path):
     head_sha = _git("rev-parse", "HEAD", cwd=work).stdout.strip()
     _git("checkout", "--detach", head_sha, cwd=work)
 
-    (work / "docs" / "dashboard" / "data.js").write_text(
-        "window.DASHBOARD_DATA = {v: 2};\n"
-    )
+    (work / "docs" / "dashboard" / "data.js").write_text("window.DASHBOARD_DATA = {v: 2};\n")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         commit_and_push_dashboard(cwd=work)
@@ -237,9 +234,7 @@ def test_a_stuck_unpushed_commit_is_retried_and_pushed_on_the_next_run(tmp_path,
     # ahead of origin, exactly like a live push failure would leave it).
     origin_url = _git("remote", "get-url", "origin", cwd=work).stdout.strip()
     _git("remote", "remove", "origin", cwd=work)
-    (work / "docs" / "dashboard" / "data.js").write_text(
-        "window.DASHBOARD_DATA = {v: 2};\n"
-    )
+    (work / "docs" / "dashboard" / "data.js").write_text("window.DASHBOARD_DATA = {v: 2};\n")
     _git("add", "-A", cwd=work)
     _git("commit", "-m", "dashboard: refresh status (simulated stuck commit)", cwd=work)
     stuck_sha = _git("rev-parse", "HEAD", cwd=work).stdout.strip()
@@ -251,9 +246,7 @@ def test_a_stuck_unpushed_commit_is_retried_and_pushed_on_the_next_run(tmp_path,
 
     assert pushed_sha == stuck_sha
     assert _commit_count(work) == before + 1  # no duplicate commit
-    origin_head = _git(
-        "rev-parse", "refs/heads/main", cwd=tmp_path / "origin.git"
-    ).stdout.strip()
+    origin_head = _git("rev-parse", "refs/heads/main", cwd=tmp_path / "origin.git").stdout.strip()
     assert origin_head == stuck_sha
 
 

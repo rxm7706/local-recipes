@@ -8,8 +8,8 @@ the pure per-command classification core, driven entirely by SYNTHETIC
 from __future__ import annotations
 
 import pytest
-
 from pyforge.core.process import ProcessResult
+
 from pyforge.marshal.core import findings, gate, policy, verdict
 from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
@@ -166,9 +166,7 @@ def test_classify_outcome_rejects_a_failure_code_whose_status_is_ok():
     Verified live before the fix (`MRS-GATE-004` -> verdict `warn` ->
     "status 'ok' but at least one finding has severity 'error'")."""
     with pytest.raises(ValueError, match="classifies to 'warn'"):
-        gate.classify_outcome(
-            "cmd", None, failure_code="MRS-GATE-004", failure_reason="reason"
-        )
+        gate.classify_outcome("cmd", None, failure_code="MRS-GATE-004", failure_reason="reason")
 
 
 def test_classify_outcome_rejects_an_unregistered_failure_code():
@@ -176,18 +174,14 @@ def test_classify_outcome_rejects_an_unregistered_failure_code():
     guard closes the unregistered-code hole too -- failing at the caller
     rather than downstream in `compute_verdict`."""
     with pytest.raises(UnregisteredFindingCodeError):
-        gate.classify_outcome(
-            "cmd", None, failure_code="MRS-NOPE-999", failure_reason="reason"
-        )
+        gate.classify_outcome("cmd", None, failure_code="MRS-NOPE-999", failure_reason="reason")
 
 
 def test_classify_outcome_still_accepts_the_two_documented_launch_failures():
     """The guard must not narrow the real contract: both codes `cli/gate.py`
     actually passes still classify normally."""
     for code in ("MRS-GATE-002", "MRS-GATE-003"):
-        report, finding = gate.classify_outcome(
-            "cmd", None, failure_code=code, failure_reason="reason"
-        )
+        report, finding = gate.classify_outcome("cmd", None, failure_code=code, failure_reason="reason")
         assert report["resolvable"] is False
         assert finding is not None
         assert finding.code == code
@@ -199,9 +193,7 @@ def test_classify_outcome_still_accepts_the_two_documented_launch_failures():
 def test_classify_doc_only_declaration_declared_and_no_changes_passes():
     """Doc-only declared, no worktree changes: the exemption this function
     exists for -- passes with no finding."""
-    report, finding = gate.classify_doc_only_declaration(
-        declared_doc_only=True, has_uncommitted_changes=False
-    )
+    report, finding = gate.classify_doc_only_declaration(declared_doc_only=True, has_uncommitted_changes=False)
     assert finding is None
     assert report == {"declared_doc_only": True, "has_uncommitted_changes": False}
 
@@ -209,9 +201,7 @@ def test_classify_doc_only_declaration_declared_and_no_changes_passes():
 def test_classify_doc_only_declaration_declared_and_has_changes_passes():
     """Doc-only declared, worktree HAS changes: nothing to suppress -- still
     passes with no finding."""
-    report, finding = gate.classify_doc_only_declaration(
-        declared_doc_only=True, has_uncommitted_changes=True
-    )
+    report, finding = gate.classify_doc_only_declaration(declared_doc_only=True, has_uncommitted_changes=True)
     assert finding is None
     assert report == {"declared_doc_only": True, "has_uncommitted_changes": True}
 
@@ -220,9 +210,7 @@ def test_classify_doc_only_declaration_undeclared_and_no_changes_fails_mrs_gate_
     """NOT declared doc-only, no worktree changes: the one combination
     indistinguishable from a story that silently failed to do its work --
     the only failing branch, reporting the new MRS-GATE-006 finding."""
-    report, finding = gate.classify_doc_only_declaration(
-        declared_doc_only=False, has_uncommitted_changes=False
-    )
+    report, finding = gate.classify_doc_only_declaration(declared_doc_only=False, has_uncommitted_changes=False)
     assert report == {"declared_doc_only": False, "has_uncommitted_changes": False}
     assert finding is not None
     assert finding.code == "MRS-GATE-006"
@@ -234,9 +222,7 @@ def test_classify_doc_only_declaration_undeclared_and_no_changes_fails_mrs_gate_
 def test_classify_doc_only_declaration_undeclared_and_has_changes_passes():
     """NOT declared doc-only, worktree HAS changes: an ordinary story --
     nothing to flag, passes with no finding."""
-    report, finding = gate.classify_doc_only_declaration(
-        declared_doc_only=False, has_uncommitted_changes=True
-    )
+    report, finding = gate.classify_doc_only_declaration(declared_doc_only=False, has_uncommitted_changes=True)
     assert finding is None
     assert report == {"declared_doc_only": False, "has_uncommitted_changes": True}
 
@@ -254,21 +240,13 @@ def test_classify_doc_only_declaration_pass_never_suppresses_an_independent_scop
     proof does not depend on Story 2.3 existing.
     """
     synthetic_code = "MRS-TST-201"
-    monkeypatch.setattr(
-        findings, "REGISTERED_CODES", frozenset({synthetic_code})
-    )
-    monkeypatch.setattr(
-        verdict, "_CLASSIFY_TABLE", {synthetic_code: Verdict.SCOPE_VIOLATION}
-    )
+    monkeypatch.setattr(findings, "REGISTERED_CODES", frozenset({synthetic_code}))
+    monkeypatch.setattr(verdict, "_CLASSIFY_TABLE", {synthetic_code: Verdict.SCOPE_VIOLATION})
 
-    _, doc_only_finding = gate.classify_doc_only_declaration(
-        declared_doc_only=True, has_uncommitted_changes=False
-    )
+    _, doc_only_finding = gate.classify_doc_only_declaration(declared_doc_only=True, has_uncommitted_changes=False)
     assert doc_only_finding is None
 
-    scope_violation_finding = Finding(
-        code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched"
-    )
+    scope_violation_finding = Finding(code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched")
     result = verdict.compute_verdict([scope_violation_finding])
     assert result is Verdict.SCOPE_VIOLATION
 
@@ -301,15 +279,11 @@ def test_classify_doc_only_declaration_failure_and_an_independent_scope_violatio
         {**verdict._CLASSIFY_TABLE, synthetic_code: Verdict.SCOPE_VIOLATION},
     )
 
-    _, doc_only_finding = gate.classify_doc_only_declaration(
-        declared_doc_only=False, has_uncommitted_changes=False
-    )
+    _, doc_only_finding = gate.classify_doc_only_declaration(declared_doc_only=False, has_uncommitted_changes=False)
     assert doc_only_finding is not None
     assert doc_only_finding.code == "MRS-GATE-006"
 
-    scope_violation_finding = Finding(
-        code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched"
-    )
+    scope_violation_finding = Finding(code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched")
     result = verdict.compute_verdict([doc_only_finding, scope_violation_finding])
     assert result is Verdict.GATE_FAILED
 
@@ -474,9 +448,7 @@ def test_check_spec_binding_never_classifies_warn():
 
 
 def test_classify_review_tier_declared_and_small_diff_is_low():
-    report = gate.classify_review_tier(
-        declared_low_risk=True, changed_files=("a.py", "b.py")
-    )
+    report = gate.classify_review_tier(declared_low_risk=True, changed_files=("a.py", "b.py"))
     assert report == {
         "tier": "low",
         "declared_low_risk": True,
@@ -488,9 +460,7 @@ def test_classify_review_tier_declared_and_wide_diff_is_standard():
     """A bare declaration on a wide diff is not evidence of low risk --
     the AND-gate's own asymmetry from `classify_doc_only_declaration`'s
     OR-gate."""
-    report = gate.classify_review_tier(
-        declared_low_risk=True, changed_files=tuple(f"f{i}.py" for i in range(10))
-    )
+    report = gate.classify_review_tier(declared_low_risk=True, changed_files=tuple(f"f{i}.py" for i in range(10)))
     assert report["tier"] == "standard"
 
 
@@ -502,9 +472,7 @@ def test_classify_review_tier_undeclared_and_small_diff_is_standard():
 
 
 def test_classify_review_tier_undeclared_and_wide_diff_is_standard():
-    report = gate.classify_review_tier(
-        declared_low_risk=False, changed_files=tuple(f"f{i}.py" for i in range(10))
-    )
+    report = gate.classify_review_tier(declared_low_risk=False, changed_files=tuple(f"f{i}.py" for i in range(10)))
     assert report["tier"] == "standard"
 
 
@@ -512,18 +480,14 @@ def test_classify_review_tier_boundary_at_exactly_three_changed_files_is_low():
     """The AND-gate's own `<= 3` boundary: exactly 3 changed files, declared
     low-risk, still tiers `"low"` -- the spec's own `_LOW_RISK_MAX_CHANGED_
     FILES` threshold is inclusive, not exclusive."""
-    report = gate.classify_review_tier(
-        declared_low_risk=True, changed_files=("a.py", "b.py", "c.py")
-    )
+    report = gate.classify_review_tier(declared_low_risk=True, changed_files=("a.py", "b.py", "c.py"))
     assert report["tier"] == "low"
 
 
 def test_classify_review_tier_boundary_at_four_changed_files_is_standard():
     """One past the `<= 3` boundary tiers `"standard"` -- guards the exact
     threshold against an off-by-one mutation (e.g. `<= 3` becoming `<= 4`)."""
-    report = gate.classify_review_tier(
-        declared_low_risk=True, changed_files=("a.py", "b.py", "c.py", "d.py")
-    )
+    report = gate.classify_review_tier(declared_low_risk=True, changed_files=("a.py", "b.py", "c.py", "d.py"))
     assert report["tier"] == "standard"
 
 

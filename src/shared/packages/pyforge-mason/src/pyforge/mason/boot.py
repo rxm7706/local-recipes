@@ -76,9 +76,7 @@ class SqliteIndexStore:
         return int(row[0])
 
     def keys(self) -> tuple[str, ...]:
-        rows = self._conn.execute(
-            "SELECT artifact_key FROM mason_index ORDER BY artifact_key"
-        ).fetchall()
+        rows = self._conn.execute("SELECT artifact_key FROM mason_index ORDER BY artifact_key").fetchall()
         return tuple(str(r[0]) for r in rows)
 
 
@@ -106,9 +104,7 @@ class NaiveAppendStore:
         return int(row[0])
 
     def keys(self) -> tuple[str, ...]:
-        rows = self._conn.execute(
-            "SELECT artifact_key FROM mason_index ORDER BY artifact_key"
-        ).fetchall()
+        rows = self._conn.execute("SELECT artifact_key FROM mason_index ORDER BY artifact_key").fetchall()
         return tuple(str(r[0]) for r in rows)
 
 

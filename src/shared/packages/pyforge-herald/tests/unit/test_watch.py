@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import PullResult
 from pyforge.herald.errors import AuthError, HeraldError
@@ -49,9 +50,7 @@ class FakeWatchTransport:
 
     def read_file(self, *, project_id, path, if_none_match=None, offset=None, limit=None):
         self._call_count += 1
-        self.calls.append(
-            {"project_id": project_id, "path": path, "if_none_match": if_none_match}
-        )
+        self.calls.append({"project_id": project_id, "path": path, "if_none_match": if_none_match})
         if self._fail_after is not None and self._call_count > self._fail_after:
             raise self._fail_with
         answer = self._answers[project_id]
@@ -132,9 +131,7 @@ def test_each_poll_is_etag_only_and_unchanged_polls_never_pull(tmp_path: Path):
     body), and never triggers a pull."""
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     pull = FakePull()
     sleep, sleep_calls = _no_sleep_calls()
 
@@ -162,9 +159,7 @@ def test_consecutive_unchanged_polls_perform_zero_writes(tmp_path: Path):
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
     before = state.read(state_path, "pyforge-warden")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     pull = FakePull()
     sleep, _ = _no_sleep_calls()
 
@@ -226,9 +221,7 @@ def test_interval_below_the_floor_is_clamped_to_30s(tmp_path: Path):
     honored as given."""
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     events: list[WatchEvent] = []
     sleep, _ = _no_sleep_calls()
 
@@ -255,9 +248,7 @@ def test_interval_above_the_idle_backoff_cap_is_clamped_to_600s(tmp_path: Path):
     The ceiling clamp applies immediately, at loop entry."""
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     events: list[WatchEvent] = []
     sleep, _ = _no_sleep_calls()
 
@@ -280,9 +271,7 @@ def test_interval_above_the_idle_backoff_cap_is_clamped_to_600s(tmp_path: Path):
 def test_a_default_interval_request_is_left_at_60s(tmp_path: Path):
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     events: list[WatchEvent] = []
     sleep, _ = _no_sleep_calls()
 
@@ -306,9 +295,7 @@ def test_ten_consecutive_unchanged_polls_double_the_interval(tmp_path: Path):
     poll interval."""
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     events: list[WatchEvent] = []
     sleep, _ = _no_sleep_calls()
 
@@ -335,9 +322,7 @@ def test_idle_backoff_never_exceeds_the_ten_minute_cap(tmp_path: Path):
     never exceed ``IDLE_BACKOFF_CAP``, however many idle polls accumulate."""
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
-    transport = FakeWatchTransport(
-        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
-    )
+    transport = FakeWatchTransport(answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)})
     events: list[WatchEvent] = []
     sleep, _ = _no_sleep_calls()
 

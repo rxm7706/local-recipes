@@ -110,3 +110,16 @@ warnings: []
 This closes Epic 1 (Keys — Credential Lifecycle): all 7 stories done (1.1-1.7). Per this session's own instructions, `epic-1` is flipped to `done` in `sprint-status.yaml` now that all four remaining stories (1.4-1.7) are complete.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `967913f640` (2026-08-07, "steward: sprint ledger sync — Epic 1 (Stories 1.4-1.7) done"); also `531e29d697` (2026-08-07, "steward: Story 1.7 — retiring a credential leaves a record, not a silent gap"). Ledger row `1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

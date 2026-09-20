@@ -49,3 +49,16 @@ Type / Effort / Deps: change / S / —.
 ## Source
 
 Contract recovered from `epics.md` Story 13.1 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `22a76e3bd2` (2026-08-08, "marshal 13.1 + 13.2: the spec-surface gate becomes clearable and trustworthy"). Ledger row `13-1-a-baseline-can-be-stamped-for-one-spec: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/.memlog.md`, `docs/dashboard/data.js`, `scripts/spec_surface_check.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

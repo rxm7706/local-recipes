@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
-
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -31,14 +30,22 @@ from ..core.dispatch_harness_done import (
     parse_blocking_condition,
     parse_spec_status,
 )
-from ..core.supervise import resolve_terminal_session_verdict
-from ..core.worktree_checkpoint import (
-    commit_worktree_checkpoint,
-    should_checkpoint_on_idle,
-)
+from ..core.dispatch_landing import DispatchLandingVerdict, blocked_twin_promotion_text
 from ..core.dispatch_preserve import (
     failed_patch_path,
     relative_preserve_ref,
+)
+from ..core.dispatch_push import may_push_dispatch_branch_before_verify
+from ..core.dispatch_supervisor_finalize import (
+    classify_finalize_trigger,
+    finalize_attempt_journaled,
+    supervisor_should_finalize_harness_work,
+)
+from ..core.dispatch_supervisor_state import (
+    landing_journal_indicates_complete,
+    should_retry_stuck_land,
+    should_terminalize_verify_refusal,
+    supervisor_should_exit,
 )
 from ..core.dispatch_survival import (
     build_timing_record,
@@ -50,39 +57,31 @@ from ..core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
-from ..core.dispatch_landing import DispatchLandingVerdict, blocked_twin_promotion_text
-from ..core.dispatch_push import may_push_dispatch_branch_before_verify
-from ..core.dispatch_supervisor_state import (
-    landing_journal_indicates_complete,
-    should_retry_stuck_land,
-    should_terminalize_verify_refusal,
-    supervisor_should_exit,
-)
-from ..core.dispatch_supervisor_finalize import (
-    classify_finalize_trigger,
-    finalize_attempt_journaled,
-    supervisor_should_finalize_harness_work,
-)
-from ..core.publish import dispatch_complete_result, shape_dispatch_publish
-from ..core.model import Finding, Severity
+from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
-    JournalEntryId,
     LAND_FINDINGS_FIELD,
-    Phase,
     SCOPE_VIOLATION_ADVISORIES_FIELD,
+    JournalEntryId,
+    Phase,
     build_entry,
     fold,
     prepare_for_write,
     prepare_for_write_offloading_fields,
     sidecar_texts_for_lines,
 )
-from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
+from ..core.model import Finding, Severity
+from ..core.publish import dispatch_complete_result, shape_dispatch_publish
+from ..core.supervise import resolve_terminal_session_verdict
+from ..core.worktree_checkpoint import (
+    commit_worktree_checkpoint,
+    should_checkpoint_on_idle,
+)
+from ..dispatch_land import execute_dispatch_land
 from ..dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
 )
-from ..dispatch_land import execute_dispatch_land
 from ..ports.fs import FsPort
 from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
@@ -116,9 +115,7 @@ def _append_entry(
     offload_fields: frozenset[str] | None = None,
 ) -> None:
     if offload_fields:
-        prepared = prepare_for_write_offloading_fields(
-            entry, offload_fields=offload_fields
-        )
+        prepared = prepare_for_write_offloading_fields(entry, offload_fields=offload_fields)
     else:
         prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
@@ -288,9 +285,7 @@ def _journal_dispatch_preserve(
     return counter
 
 
-def _load_known_story_keys(
-    fs: FsPort, *, repo_root: Path, project_slug: str
-) -> frozenset[StoryKey]:
+def _load_known_story_keys(fs: FsPort, *, repo_root: Path, project_slug: str) -> frozenset[StoryKey]:
     """Every ``StoryKey`` ``project_slug``'s OWN tracked ledger already
     knows about (Story 35.1,
     spec-marshal-templated-merge-subject-cross-project-collision CAP-1) --
@@ -304,12 +299,7 @@ def _load_known_story_keys(
     (excludes everything from the templated shape) rather than the
     dangerous one (trusting everything, today's bug)."""
     ledger_path = (
-        repo_root
-        / "_bmad-output"
-        / "projects"
-        / project_slug
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
+        repo_root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "sprint-status-ledger.yaml"
     )
     text = fs.read_text(ledger_path)
     if text is None:
@@ -392,9 +382,7 @@ def gather_dispatch_git_facts(
         # mint/fallout/fix PR merges it ready/backlog, not done. Fails
         # closed (never corroborates) on any git read failure.
         try:
-            spec_text = dispatch_core.spec_text_at_ref(
-                vcs, repo_root, project_slug, str(candidate_key)
-            )
+            spec_text = dispatch_core.spec_text_at_ref(vcs, repo_root, project_slug, str(candidate_key))
         except VcsCommandError:
             return None
         return promotion_core.read_spec_status(spec_text)
@@ -540,23 +528,24 @@ def _worktree_story_spec(
     if spec_path is None:
         return None, None
     try:
-        worktree_spec_path = dispatch_core.relocated_spec_path(
-            spec_path, repo_root, worktree
-        )
+        worktree_spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError:
         return None, None
     text = fs.read_text(worktree_spec_path)
     try:
-        relative = str(
-            worktree_spec_path.resolve().relative_to(worktree.resolve())
-        )
+        relative = str(worktree_spec_path.resolve().relative_to(worktree.resolve()))
     except ValueError:
         relative = None
     return relative, text
 
 
 def _spec_land_block_reason(
-    *, fs: FsPort, repo_root: Path, slug: str, story_key: str, worktree: Path,
+    *,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
     git_facts: DispatchGitFacts,
 ) -> str | None:
     """Non-``None`` when the worktree spec blocks verify/land (Story 51.4).
@@ -567,18 +556,19 @@ def _spec_land_block_reason(
     ever rewrote its own spec's ``ready -> in-progress`` flip).
     """
     spec_relative_path, spec_text = _worktree_story_spec(
-        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
     )
     if spec_text is None:
         return None
     if not (
-        parse_spec_status(spec_text) == "blocked"
-        or is_spec_only_narration(git_facts.changed_paths, spec_relative_path)
+        parse_spec_status(spec_text) == "blocked" or is_spec_only_narration(git_facts.changed_paths, spec_relative_path)
     ):
         return None
-    return parse_blocking_condition(spec_text) or (
-        "harness produced no changes beyond the tracked spec"
-    )
+    return parse_blocking_condition(spec_text) or ("harness produced no changes beyond the tracked spec")
 
 
 def _journal_dispatch_blocked(
@@ -654,7 +644,11 @@ def _blocked_halt_reason(
       baseline to verify against).
     """
     _, spec_text = _worktree_story_spec(
-        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
     )
     if spec_text is None or parse_spec_status(spec_text) != "blocked":
         return None, False
@@ -665,9 +659,7 @@ def _blocked_halt_reason(
         return None, False
     if baseline != git_facts.baseline_head_sha:
         return None, True
-    reason = parse_blocking_condition(spec_text) or (
-        "harness halted on its own tracked spec's status: blocked"
-    )
+    reason = parse_blocking_condition(spec_text) or ("harness halted on its own tracked spec's status: blocked")
     return reason, False
 
 
@@ -722,9 +714,7 @@ def _commit_and_journal_blocked_halt(
     except VcsCommandError:
         return counter, False
     patch_paths = _attempted_change_patch_paths(worktree)
-    paths_to_commit = tuple(Path(path) for path in changed) + tuple(
-        p.relative_to(worktree) for p in patch_paths
-    )
+    paths_to_commit = tuple(Path(path) for path in changed) + tuple(p.relative_to(worktree) for p in patch_paths)
     if not paths_to_commit:
         return counter, False
     try:
@@ -771,9 +761,7 @@ def _promote_blocked_twin(
     if spec_path is None:
         return
     try:
-        worktree_spec_path = dispatch_core.relocated_spec_path(
-            spec_path, repo_root, worktree
-        )
+        worktree_spec_path = dispatch_core.relocated_spec_path(spec_path, repo_root, worktree)
     except ValueError:
         return
     try:
@@ -786,15 +774,13 @@ def _promote_blocked_twin(
         primary_text = fs.read_text(spec_path)
     except FsError:
         return
-    promoted = blocked_twin_promotion_text(
-        primary_text=primary_text, worktree_text=worktree_text
-    )
+    promoted = blocked_twin_promotion_text(primary_text=primary_text, worktree_text=worktree_text)
     if promoted is None:
         return
     try:
         canonical_root = dispatch_core.canonical_repo_root(repo_root)
         relative = spec_path.resolve().relative_to(canonical_root)
-    except (ValueError, OSError):
+    except ValueError, OSError:
         return
     try:
         vcs.commit_paths_onto_remote_tip(
@@ -873,7 +859,7 @@ def _run_supervisor_finalize_sequence(
             baseline_head_sha=git_facts.baseline_head_sha,
             merge_subject_template=merge_subject_template,
         )
-    except (VcsCommandError, ValueError):
+    except VcsCommandError, ValueError:
         pass
 
     if not _dispatch_push_already_journaled(folded, run_id):
@@ -1149,15 +1135,8 @@ def _land_or_journal_block(
     )
 
 
-def _session_awaits_verification(
-    session_alive: bool, git: DispatchGitFacts
-) -> bool:
-    return (
-        not session_alive
-        and has_git_progress(git)
-        and not git.branch_merged
-        and not git.story_merged_on_main
-    )
+def _session_awaits_verification(session_alive: bool, git: DispatchGitFacts) -> bool:
+    return not session_alive and has_git_progress(git) and not git.branch_merged and not git.story_merged_on_main
 
 
 def _run_and_journal_dispatch_push(
@@ -1186,8 +1165,7 @@ def _run_and_journal_dispatch_push(
         )
     except VcsCommandError as exc:
         print(
-            f"dispatch supervisor: cannot resolve branch before push for "
-            f"{run_id!r}: {exc}",
+            f"dispatch supervisor: cannot resolve branch before push for {run_id!r}: {exc}",
             file=sys.stderr,
         )
         return counter
@@ -1225,10 +1203,7 @@ def _run_and_journal_dispatch_push(
         outcome_payload["finding"] = Finding(
             code="MRS-DISP-037",
             severity=Severity.WARN,
-            message=(
-                f"pre-verify dispatch push failed for branch {head_branch!r}: "
-                f"{failed_message}"
-            ),
+            message=(f"pre-verify dispatch push failed for branch {head_branch!r}: {failed_message}"),
         ).to_json_dict()
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
@@ -1282,9 +1257,7 @@ def _run_and_journal_verification(
         process=process,
         vcs=vcs,
     )
-    verification_verdict = judge_dispatch_verification(
-        DispatchVerificationInput(findings=envelope.findings)
-    )
+    verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)
     # Story 28.15 (CAP-17): a `warn`-mode scope-violation advisory never
     # becomes `failed` above (it classifies Verdict.WARN, ok-status) -- so
@@ -1374,10 +1347,7 @@ def run_dispatch_supervisor(
         return 0
     folded = _fold_dispatch_journal(fs, run_dir, text)
     launch_entries = folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH)
-    if not any(
-        entry.run_id == run_id and entry.phase in (Phase.INTENT, Phase.OUTCOME)
-        for entry in launch_entries
-    ):
+    if not any(entry.run_id == run_id and entry.phase in (Phase.INTENT, Phase.OUTCOME) for entry in launch_entries):
         print(
             f"dispatch supervisor: no dispatch-launch for run {run_id!r}; exiting inert",
             file=sys.stderr,
@@ -1409,8 +1379,12 @@ def run_dispatch_supervisor(
         except FsError:
             pass
 
-    _publisher = publisher if publisher is not None else HostPublisher(
-        on_finding=_journal_publish_finding,
+    _publisher = (
+        publisher
+        if publisher is not None
+        else HostPublisher(
+            on_finding=_journal_publish_finding,
+        )
     )
 
     attach_entry = build_entry(
@@ -1458,7 +1432,11 @@ def run_dispatch_supervisor(
     # threaded into every terminal-verdict read so a diff collapsing to just
     # this file is judged as no progress, not live/stopped-externally work.
     spec_relative_path, _initial_spec_text = _worktree_story_spec(
-        fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree,
+        fs=fs,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
     )
 
     while True:
@@ -1518,16 +1496,13 @@ def run_dispatch_supervisor(
                 spec_relative_path=spec_relative_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
-        if (
-            supervisor_should_finalize_harness_work(
-                session_alive=session_alive,
-                git=git_facts,
-                session_log=session_log,
-                verification_verdict=v_outcome,
-                landing_complete=landing_done,
-            )
-            and not finalize_attempt_journaled(folded, run_id)
-        ):
+        if supervisor_should_finalize_harness_work(
+            session_alive=session_alive,
+            git=git_facts,
+            session_log=session_log,
+            verification_verdict=v_outcome,
+            landing_complete=landing_done,
+        ) and not finalize_attempt_journaled(folded, run_id):
             counter, _finalize_ok = _run_supervisor_finalize_sequence(
                 fs=fs,
                 vcs=vcs,
@@ -1560,7 +1535,7 @@ def run_dispatch_supervisor(
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
                 )
-            except (VcsCommandError, ValueError):
+            except VcsCommandError, ValueError:
                 pass
             landing_done = _landing_succeeded(folded, run_id)
             if landing_done:
@@ -1598,9 +1573,7 @@ def run_dispatch_supervisor(
                     or should_retry_stuck_land(
                         verification_verdict=v_outcome,
                         story_merged_on_main=git_facts.story_merged_on_main,
-                        landing_journaled=_landing_already_journaled(
-                            folded, run_id
-                        ),
+                        landing_journaled=_landing_already_journaled(folded, run_id),
                         stuck_land_ticks=stuck_land_ticks,
                     )
                 ):
@@ -1642,7 +1615,7 @@ def run_dispatch_supervisor(
                             session_log=session_log,
                             spec_relative_path=spec_relative_path,
                         )
-                    except (VcsCommandError, ValueError):
+                    except VcsCommandError, ValueError:
                         pass
             if verdict == DispatchSessionVerdict.LIVE:
                 heartbeat = build_entry(
@@ -1724,7 +1697,7 @@ def run_dispatch_supervisor(
                     session_log=session_log,
                     spec_relative_path=spec_relative_path,
                 )
-            except (VcsCommandError, ValueError):
+            except VcsCommandError, ValueError:
                 pass
 
         stale_blocked_finding: dict[str, object] | None = None
@@ -1768,7 +1741,7 @@ def run_dispatch_supervisor(
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
                         )
-                    except (VcsCommandError, ValueError):
+                    except VcsCommandError, ValueError:
                         pass
                     _promote_blocked_twin(
                         fs=fs,

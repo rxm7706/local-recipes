@@ -26,14 +26,7 @@ from pyforge.marshal.core.identity import MalformedStoryKeyError
 from pyforge.marshal.core.model import Verdict
 from pyforge.marshal.core.policy import REDACTED_SENTINEL
 
-_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "schemas"
-    / "gate-record.json"
-)
+_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "gate-record.json"
 
 
 def _schema() -> dict[str, object]:
@@ -209,9 +202,7 @@ def test_short_hyphenated_value_starting_with_sk_is_not_over_redacted():
     """The separator-tolerant pattern's 40-character floor exists so an
     ordinary hyphenated value that merely STARTS with `sk-` survives."""
     ordinary = "sk-test-selector"
-    assert json.loads(to_redacted({"command": f"pytest -k {ordinary}"}).text) == {
-        "command": f"pytest -k {ordinary}"
-    }
+    assert json.loads(to_redacted({"command": f"pytest -k {ordinary}"}).text) == {"command": f"pytest -k {ordinary}"}
 
 
 def test_token_shaped_mapping_key_is_redacted():
@@ -425,8 +416,7 @@ def test_build_gate_record_rejects_malformed_command_entries(entry):
         # resolvable but with no returncode -- ran, yet no exit code
         {"command": "pytest -q", "resolvable": True, "returncode": None},
     ],
-    ids=["unresolvable-with-returncode", "unresolvable-stdout", "unresolvable-stderr",
-         "resolvable-without-returncode"],
+    ids=["unresolvable-with-returncode", "unresolvable-stdout", "unresolvable-stderr", "resolvable-without-returncode"],
 )
 def test_build_gate_record_rejects_self_contradictory_command_entries(entry):
     """Regression (follow-up review finding, verified live): the schema
@@ -459,9 +449,7 @@ def test_build_gate_record_accepts_classify_outcome_s_own_two_shapes():
     assert record["commands"] == _valid_commands()
 
 
-@pytest.mark.parametrize(
-    "bogus", ["yesterday afternoon", "2026-08-03T00:00:00+05:00", "2026-08-03"]
-)
+@pytest.mark.parametrize("bogus", ["yesterday afternoon", "2026-08-03T00:00:00+05:00", "2026-08-03"])
 def test_schema_rejects_a_timestamp_build_gate_record_would_reject(bogus):
     """Regression (follow-up review finding, verified live): `timestamp` was a
     bare `"type": "string"`, so the durable, $id-bearing contract green-lit
@@ -479,9 +467,7 @@ def test_schema_rejects_a_timestamp_build_gate_record_would_reject(bogus):
         jsonschema.validate(instance=record, schema=_schema())
 
 
-@pytest.mark.parametrize(
-    "good", ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"]
-)
+@pytest.mark.parametrize("good", ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"])
 def test_schema_accepts_every_utc_form_build_gate_record_accepts(good):
     record = build_gate_record(
         story_key="2.6",
@@ -721,9 +707,7 @@ def test_schema_scope_check_verdict_enum_matches_the_verdict_vocabulary():
     schema against its own frozen list)."""
     enum_values = _schema()["properties"]["scope_check_verdict"]["enum"]
     assert None in enum_values
-    assert sorted(v for v in enum_values if v is not None) == sorted(
-        member.value for member in Verdict
-    )
+    assert sorted(v for v in enum_values if v is not None) == sorted(member.value for member in Verdict)
 
 
 @pytest.mark.parametrize(

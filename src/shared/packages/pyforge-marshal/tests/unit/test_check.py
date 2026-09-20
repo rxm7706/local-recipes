@@ -11,6 +11,7 @@ import argparse
 import json
 
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.cli import check as check_cli
 from pyforge.marshal.core import policy as policy_core
 from pyforge.marshal.core.context import MarshalContext
@@ -70,9 +71,7 @@ def test_clean_repo_is_a_clean_verdict(capsys):
     process = _FakeProcess(
         run_result=ProcessResult(
             returncode=0,
-            stdout=json.dumps(
-                {"registry": [], "results": [_detector("dream_chain_check", "pass")]}
-            ),
+            stdout=json.dumps({"registry": [], "results": [_detector("dream_chain_check", "pass")]}),
             stderr="",
         )
     )
@@ -112,9 +111,7 @@ def test_a_detector_reporting_unknown_registers_mrs_check_004_unevaluable(capsys
     process = _FakeProcess(
         run_result=ProcessResult(
             returncode=2,
-            stdout=json.dumps(
-                {"registry": [], "results": [_detector("flaky_check", "unknown")]}
-            ),
+            stdout=json.dumps({"registry": [], "results": [_detector("flaky_check", "unknown")]}),
             stderr="",
         )
     )
@@ -170,9 +167,7 @@ def test_subprocess_launch_failure_registers_mrs_check_001_warn_never_fabricated
 
 
 def test_unparseable_json_output_registers_mrs_check_001(capsys):
-    process = _FakeProcess(
-        run_result=ProcessResult(returncode=0, stdout="not json", stderr="")
-    )
+    process = _FakeProcess(run_result=ProcessResult(returncode=0, stdout="not json", stderr=""))
     check_cli.run_check(_args(), process=process)
 
     payload = _payload(capsys)
@@ -181,9 +176,7 @@ def test_unparseable_json_output_registers_mrs_check_001(capsys):
 
 def test_malformed_json_shape_registers_mrs_check_001(capsys):
     process = _FakeProcess(
-        run_result=ProcessResult(
-            returncode=0, stdout=json.dumps({"unexpected": "shape"}), stderr=""
-        )
+        run_result=ProcessResult(returncode=0, stdout=json.dumps({"unexpected": "shape"}), stderr="")
     )
     check_cli.run_check(_args(), process=process)
 
@@ -247,9 +240,7 @@ def test_format_json_and_text_carry_the_same_data(capsys):
     process = _FakeProcess(
         run_result=ProcessResult(
             returncode=0,
-            stdout=json.dumps(
-                {"registry": [], "results": [_detector("dream_chain_check", "pass")]}
-            ),
+            stdout=json.dumps({"registry": [], "results": [_detector("dream_chain_check", "pass")]}),
             stderr="",
         )
     )
@@ -259,9 +250,7 @@ def test_format_json_and_text_carry_the_same_data(capsys):
     process2 = _FakeProcess(
         run_result=ProcessResult(
             returncode=0,
-            stdout=json.dumps(
-                {"registry": [], "results": [_detector("dream_chain_check", "pass")]}
-            ),
+            stdout=json.dumps({"registry": [], "results": [_detector("dream_chain_check", "pass")]}),
             stderr="",
         )
     )

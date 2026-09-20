@@ -187,9 +187,7 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
     for path in paths:
         fields, body, err = parse_frame_markdown(path)
         if err is not None or fields is None:
-            report.findings.append(
-                FrameFinding(path=path, code="parse", message=err or "parse failed")
-            )
+            report.findings.append(FrameFinding(path=path, code="parse", message=err or "parse failed"))
             continue
         report.frames.append(FrameDoc(path=path, fields=fields, body=body))
         for key in REQUIRED_FIELDS:
@@ -208,10 +206,7 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
                 FrameFinding(
                     path=path,
                     code="type",
-                    message=(
-                        f"type must begin with the word 'frame' (v0.3 draft), "
-                        f"got {type_val!r}"
-                    ),
+                    message=(f"type must begin with the word 'frame' (v0.3 draft), got {type_val!r}"),
                 )
             )
         for key in SEQUENCE_FIELDS:
@@ -240,9 +235,7 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
             FrameFinding(
                 path=root,
                 code="company",
-                message=(
-                    f"company Frame with identifier {COMPANY_IDENTIFIER!r} is required"
-                ),
+                message=(f"company Frame with identifier {COMPANY_IDENTIFIER!r} is required"),
             )
         )
         return report
@@ -284,8 +277,7 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
             continue
         resolved = [_resolve_inherit(ref, doc.path, by_identifier) for ref in refs]
         if not any(
-            parent is not None
-            and str(parent.fields.get("identifier", "")).strip() == COMPANY_IDENTIFIER
+            parent is not None and str(parent.fields.get("identifier", "")).strip() == COMPANY_IDENTIFIER
             for parent in resolved
         ):
             report.findings.append(
@@ -293,8 +285,7 @@ def preflight_frames(repo_root: Path, *, frames_root: Path | None = None) -> Fra
                     path=doc.path,
                     code="inherits",
                     message=(
-                        f"station Frame inherits {refs!r} but none resolve to "
-                        f"the company Frame {COMPANY_IDENTIFIER!r}"
+                        f"station Frame inherits {refs!r} but none resolve to the company Frame {COMPANY_IDENTIFIER!r}"
                     ),
                 )
             )

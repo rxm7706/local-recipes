@@ -139,9 +139,7 @@ _MERGED_EVIDENCE_PHRASES: tuple[str, ...] = (
 _PR_REFERENCE_RE = re.compile(r"/pull/\d+|#\d+")
 
 
-def is_already_landed_self_refusal(
-    *, changed_path_count: int, session_log: str | None
-) -> bool:
+def is_already_landed_self_refusal(*, changed_path_count: int, session_log: str | None) -> bool:
     """Did this failed dispatch refuse itself over already-merged work? (50.1).
 
     Two independent facts must agree: the campaign's OWN git observation
@@ -159,10 +157,7 @@ def is_already_landed_self_refusal(
     lowered = session_log.lower()
     if any(phrase in lowered for phrase in _MERGED_EVIDENCE_PHRASES):
         return True
-    return any(
-        "merged" in line and _PR_REFERENCE_RE.search(line)
-        for line in lowered.splitlines()
-    )
+    return any("merged" in line and _PR_REFERENCE_RE.search(line) for line in lowered.splitlines())
 
 
 class FleetCampaignMode(StrEnum):
@@ -190,15 +185,12 @@ def parse_campaign_mode(raw: str | None) -> FleetCampaignMode:
     named = ", ".join(CAMPAIGN_MODES)
     if raw is None or not str(raw).strip():
         raise InvalidCampaignModeError(
-            f"campaign mode is required: pass --mode with one of {named} "
-            "-- a fleet drain never defaults to a mode"
+            f"campaign mode is required: pass --mode with one of {named} -- a fleet drain never defaults to a mode"
         )
     try:
         return FleetCampaignMode(str(raw).strip())
     except ValueError as exc:
-        raise InvalidCampaignModeError(
-            f"unknown campaign mode {raw!r}: expected one of {named}"
-        ) from exc
+        raise InvalidCampaignModeError(f"unknown campaign mode {raw!r}: expected one of {named}") from exc
 
 
 class FleetBlockClass(StrEnum):
@@ -358,9 +350,7 @@ def latest_fleet_campaign_run_id(repo_root: Path) -> str | None:
     runs = fleet_runs_dir(repo_root)
     if not runs.is_dir():
         return None
-    candidates = sorted(
-        entry.name for entry in runs.iterdir() if entry.is_dir() and entry.name != "campaign"
-    )
+    candidates = sorted(entry.name for entry in runs.iterdir() if entry.is_dir() and entry.name != "campaign")
     return candidates[-1] if candidates else None
 
 
@@ -419,13 +409,7 @@ class ParsedStoryDeps:
 
 def station_epics_paths(repo_root: Path, slug: str) -> tuple[Path, ...]:
     """Every epics-family doc for ``slug`` that can carry a ``**Deps:**`` field."""
-    planning = (
-        canonical_repo_root(repo_root)
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-    )
+    planning = canonical_repo_root(repo_root) / "_bmad-output" / "projects" / slug / "planning-artifacts"
     if not planning.is_dir():
         return ()
     # The glob stays: it also matches chain-scoped epics (this station's own
@@ -450,9 +434,7 @@ def parse_epics_dependencies(epics_text: str) -> dict[StoryKey, ParsedStoryDeps]
     headings = list(_STORY_HEADING_RE.finditer(epics_text))
     out: dict[StoryKey, ParsedStoryDeps] = {}
     for index, match in enumerate(headings):
-        block_end = (
-            headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
-        )
+        block_end = headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
         block = epics_text[match.end() : block_end]
         declaring = _story_key_from_dep_num(int(match.group("pe")), match.group("pn"))
         if declaring is None:
@@ -595,9 +577,7 @@ def station_backlog(
     return apply_order_override(raw_backlog, None)
 
 
-def apply_order_override(
-    backlog: Sequence[str], override: Sequence[str] | None
-) -> tuple[str, ...]:
+def apply_order_override(backlog: Sequence[str], override: Sequence[str] | None) -> tuple[str, ...]:
     """Override entries first (in override order), then the rest by story key.
 
     The override file is hand-maintained, so a repeated key is a plausible
@@ -630,9 +610,7 @@ def parse_story_sequence(raw: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in str(raw).split(",") if part.strip())
 
 
-def unresolved_story_sequence_keys(
-    stories: Sequence[str], backlog: Sequence[str]
-) -> tuple[str, ...]:
+def unresolved_story_sequence_keys(stories: Sequence[str], backlog: Sequence[str]) -> tuple[str, ...]:
     """Which caller-supplied ``--stories`` entries are NOT eligible to
     dispatch (Story 22.11, FR-193 CAP-10).
 
@@ -664,9 +642,7 @@ def unresolved_story_sequence_keys(
     return tuple(unresolved)
 
 
-def explicit_story_backlog(
-    statuses: Iterable[tuple[str, str]], stories: Sequence[str]
-) -> tuple[str, ...]:
+def explicit_story_backlog(statuses: Iterable[tuple[str, str]], stories: Sequence[str]) -> tuple[str, ...]:
     """The caller's own ``--stories`` sequence, filtered to not-yet-``done``
     (Story 22.11, FR-193 CAP-10) -- the effective backlog for a
     ``dispatch --stories`` campaign.
@@ -783,9 +759,7 @@ def plan_station_queue(
     if not ordered:
         return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.DRAINED)
     if mode is FleetCampaignMode.LEAVE_ONE and len(ordered) <= max(0, leave_remaining):
-        return StationQueuePlan(
-            slug=slug, backlog=ordered, outcome=StationQueueOutcome.LEFT_REMAINING
-        )
+        return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.LEFT_REMAINING)
     skipped: list[tuple[str, str]] = []
     for story in ordered:
         declared_reason = declared.get(story)
@@ -857,8 +831,7 @@ def unresolved_stations(
     return tuple(
         result
         for result in results
-        if result.status in TERMINAL_STATION_STATUSES
-        and result.status is not StationCycleStatus.DRAINED
+        if result.status in TERMINAL_STATION_STATUSES and result.status is not StationCycleStatus.DRAINED
     )
 
 
@@ -887,9 +860,7 @@ def _surface_known(surface: tuple[str, ...] | None) -> bool:
     return surface is not None
 
 
-def _pairwise_disjoint(
-    left: tuple[str, ...] | None, right: tuple[str, ...] | None
-) -> bool:
+def _pairwise_disjoint(left: tuple[str, ...] | None, right: tuple[str, ...] | None) -> bool:
     if left is None or right is None:
         return False
     return not find_declared_surface_overlaps(left, right)
@@ -914,9 +885,7 @@ def build_wave_batch(
     if cap <= 1:
         if not ready:
             return WaveBatch(wave_id=wave_id, members=(), max_parallel=cap)
-        return WaveBatch(
-            wave_id=wave_id, members=(ready[0],), max_parallel=cap
-        )
+        return WaveBatch(wave_id=wave_id, members=(ready[0],), max_parallel=cap)
     members: list[str] = []
     refused: list[WaveRefused] = []
     for story in ready:
@@ -930,17 +899,13 @@ def build_wave_batch(
         blocked = False
         for member in members:
             member_surface = surfaces.get(member)
-            if deps_graph is not None and story_transitively_depends_on(
-                story, member, deps_graph
-            ):
+            if deps_graph is not None and story_transitively_depends_on(story, member, deps_graph):
                 refused.append(WaveRefused(story=story, reason="dep-unmet"))
                 blocked = True
                 break
             if not _pairwise_disjoint(surface, member_surface):
                 overlap = find_declared_surface_overlaps(surface, member_surface)
-                paths = tuple(
-                    f"{left} ∩ {right}" for left, right in overlap
-                )
+                paths = tuple(f"{left} ∩ {right}" for left, right in overlap)
                 refused.append(
                     WaveRefused(
                         story=story,
@@ -977,8 +942,5 @@ def render_cycle_summary(results: Sequence[StationCycleResult]) -> str:
     lines: list[str] = []
     for result in results:
         story = result.story or "—"
-        lines.append(
-            f"  {result.slug:<18} {result.status.value:<18} "
-            f"remaining={result.remaining:<4} story={story}"
-        )
+        lines.append(f"  {result.slug:<18} {result.status.value:<18} remaining={result.remaining:<4} story={story}")
     return "\n".join(lines)

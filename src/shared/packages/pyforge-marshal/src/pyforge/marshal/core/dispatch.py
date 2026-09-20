@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import fnmatch
 import re
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path, PurePath
@@ -126,14 +125,7 @@ def canonical_repo_root(repo_root: Path) -> Path:
 
 
 def planning_specs_dir(repo_root: Path, slug: str) -> Path:
-    return (
-        canonical_repo_root(repo_root)
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "planning-artifacts"
-        / "specs"
-    )
+    return canonical_repo_root(repo_root) / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
 
 
 def dispatch_runs_dir(repo_root: Path, slug: str) -> Path:
@@ -230,8 +222,7 @@ def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Pat
         relative = spec.relative_to(root)
     except ValueError as exc:
         raise ValueError(
-            f"spec_path {str(spec)!r} is neither under worktree "
-            f"{str(wt)!r} nor repo root {str(root)!r}"
+            f"spec_path {str(spec)!r} is neither under worktree {str(wt)!r} nor repo root {str(root)!r}"
         ) from exc
     return wt / relative
 
@@ -256,9 +247,7 @@ def expected_story_spec_glob(repo_root: Path, slug: str, story: str) -> str | No
     return f"{rel_specs.as_posix()}/spec-{render_filename_slug(key)}-*.md"
 
 
-_DIFFICULTY_RE = re.compile(
-    r"^difficulty:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$", re.MULTILINE
-)
+_DIFFICULTY_RE = re.compile(r"^difficulty:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$", re.MULTILINE)
 
 
 def read_declared_difficulty(spec_text: str) -> str | None:
@@ -266,12 +255,8 @@ def read_declared_difficulty(spec_text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def resolve_dispatch_model(
-    policy: EffectivePolicy, *, difficulty: str | None
-) -> str | None:
-    model, _, _, _ = resolve_dispatch_model_with_retry_escalation(
-        policy, difficulty=difficulty
-    )
+def resolve_dispatch_model(policy: EffectivePolicy, *, difficulty: str | None) -> str | None:
+    model, _, _, _ = resolve_dispatch_model_with_retry_escalation(policy, difficulty=difficulty)
     return model
 
 
@@ -293,9 +278,7 @@ def resolve_dispatch_model_with_retry_escalation(
         should_dispatch_retry_escalate,
     )
 
-    resolution = resolve_tier_launch(
-        policy, difficulty, allow_unmapped_fallback=True
-    )
+    resolution = resolve_tier_launch(policy, difficulty, allow_unmapped_fallback=True)
     dev_model = resolution.resolved_models.get("dev")
     base_model: str | None
     if isinstance(dev_model, str) and dev_model:
@@ -312,9 +295,7 @@ def resolve_dispatch_model_with_retry_escalation(
 
     seed = policy.seed_view()
     max_dev_field = seed.get("max_dev_attempts")
-    max_dev_attempts = (
-        max_dev_field.value if max_dev_field is not None else 2
-    )
+    max_dev_attempts = max_dev_field.value if max_dev_field is not None else 2
     if not isinstance(max_dev_attempts, int) or isinstance(max_dev_attempts, bool):
         max_dev_attempts = 2
 
@@ -391,11 +372,7 @@ def dispatch_worktree_branch(slug: str, story_key: str) -> str:
     components. Ordinary inputs (``pyforge-marshal``, ``22.9``) render
     unchanged.
     """
-    return (
-        f"{_DISPATCH_BRANCH_PREFIX}"
-        f"/{_safe_ref_segment(slug, 'project')}"
-        f"/{_safe_ref_segment(story_key, 'story')}"
-    )
+    return f"{_DISPATCH_BRANCH_PREFIX}/{_safe_ref_segment(slug, 'project')}/{_safe_ref_segment(story_key, 'story')}"
 
 
 def legacy_dispatch_worktree_branch(story_key: str) -> str:
@@ -470,11 +447,9 @@ def format_legacy_branch_refusal(
 ) -> str:
     """The land-first refusal for an unattributable legacy branch (22.9)."""
     where = (
-        f"is checked out at {str(checked_out_at)!r}, which is not this "
-        "station's dispatch worktree"
+        f"is checked out at {str(checked_out_at)!r}, which is not this station's dispatch worktree"
         if checked_out_at is not None
-        else "still exists with work that predates station-scoped branch "
-        "names and cannot be attributed to a station"
+        else "still exists with work that predates station-scoped branch names and cannot be attributed to a station"
     )
     return (
         f"legacy dispatch branch {legacy_branch!r} {where} — refusing to "
@@ -517,17 +492,11 @@ def resolve_dispatch_branch(
         return DispatchBranchResolution(branch=branch, resolved=branch)
 
     legacy_branch = legacy_dispatch_worktree_branch(story_key)
-    expected = (
-        worktree
-        if worktree is not None
-        else dispatch_worktree_path(repo_root, slug, story_key)
-    )
+    expected = worktree if worktree is not None else dispatch_worktree_path(repo_root, slug, story_key)
     legacy_worktree = vcs.worktree_path_for_branch(repo_root, legacy_branch)
     if legacy_worktree is not None:
         if _same_path(legacy_worktree, expected):
-            return DispatchBranchResolution(
-                branch=branch, resolved=legacy_branch, legacy=True
-            )
+            return DispatchBranchResolution(branch=branch, resolved=legacy_branch, legacy=True)
         return DispatchBranchResolution(
             branch=branch,
             refusal=format_legacy_branch_refusal(
@@ -555,11 +524,7 @@ def dispatch_worktree_path(repo_root: Path, slug: str, story_key: str) -> Path:
     # one against the other to attribute a legacy branch.
     safe_slug = _safe_ref_segment(slug, "project")
     safe_key = _safe_ref_segment(story_key, "story")
-    return (
-        canonical_repo_root(repo_root)
-        / _WORKTREES_DIRNAME
-        / f"{_DISPATCH_WORKTREE_PREFIX}{safe_slug}-{safe_key}"
-    )
+    return canonical_repo_root(repo_root) / _WORKTREES_DIRNAME / f"{_DISPATCH_WORKTREE_PREFIX}{safe_slug}-{safe_key}"
 
 
 def sanitize_worktree_name(repo_root: Path, slug: str, story_key: str) -> str:

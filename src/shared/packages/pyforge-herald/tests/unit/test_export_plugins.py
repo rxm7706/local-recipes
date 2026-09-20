@@ -39,9 +39,7 @@ from pyforge.herald.exporters import (
     register_default_export_plugins,
 )
 
-_PYPROJECT = (
-    Path(__file__).resolve().parents[2] / "pyproject.toml"
-)
+_PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 
 
 def _registry_with_defaults() -> PluginRegistry:
@@ -71,9 +69,7 @@ def _recording_backends() -> tuple[dict[str, list[str]], dict[str, Any]]:
 def test_default_plugins_register_the_three_format_ids():
     registry = _registry_with_defaults()
     ids = sorted(
-        getattr(plugin, "format_id")
-        for plugin in registry.plugins
-        if plugin.hook_spec == DECK_EXPORT_HOOK_SPEC_NAME
+        getattr(plugin, "format_id") for plugin in registry.plugins if plugin.hook_spec == DECK_EXPORT_HOOK_SPEC_NAME
     )
     assert ids == sorted(DEFAULT_EXPORT_FORMATS)
     assert all(plugin.owner == "herald" for plugin in registry.plugins)
@@ -86,9 +82,7 @@ def test_around_for_one_format_runs_only_the_matching_plugin():
         "backends": backends,
         "exported": [],
     }
-    _registry_with_defaults().invoke(
-        "around", context, spec_name=DECK_EXPORT_HOOK_SPEC_NAME
-    )
+    _registry_with_defaults().invoke("around", context, spec_name=DECK_EXPORT_HOOK_SPEC_NAME)
     assert ran["called"] == [FORMAT_MARP]
     assert context["exported"] == [FORMAT_MARP]
 
@@ -193,9 +187,7 @@ def test_successful_marp_around_records_export_not_a_warden_verdict():
         "backends": backends,
         "exported": [],
     }
-    _registry_with_defaults().invoke(
-        "around", context, spec_name=DECK_EXPORT_HOOK_SPEC_NAME
-    )
+    _registry_with_defaults().invoke("around", context, spec_name=DECK_EXPORT_HOOK_SPEC_NAME)
     assert context["exported"] == [FORMAT_MARP]
     assert ran["called"] == [FORMAT_MARP]
     assert "verdict" not in context

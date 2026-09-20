@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-09-20'   # RE-STAMPED 2026-09-20: chain-currency cascade (spec -> PRD -> spine) after Stories 61.1–61.3 landed. § Currency reconciliation — 2026-09-20 appended. No AD added, changed or removed. Prior 2026-09-17: cascade after the one-chain fold remint.
+updated: '2026-09-20'   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (spec -> PRD -> spine) after Stories 61.1–61.3 landed. § Currency reconciliation — 2026-09-20 appended. No AD added, changed or removed. Prior 2026-09-17: cascade after the one-chain fold remint.
 currency_review: "Reviewed 2026-09-17 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-17 re-stamp reconciled the one-chain fold remint (spec-pyforge-steward CAP-1..145). Kernel AD-1..9 and the four-duty CLI package boundary are unchanged; absorbed architecture stays on pointer-folder companion spines. No AD added or altered. Reviewed 2026-09-08 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-08 re-stamp reconciled spec-pyforge-steward's 2026-09-08 memlog motion (the `_persona_mentions` test-helper precision + scan-breadth fix in tests/meta/test_adoption_register.py) and the sibling Story 43.7 authoring (re-homing mason DW-13-2-2's dbgpt-sidecar Celery REST round-trip and SQLite metadata-store validation on Python 3.14, orphaned when Story 43.6 closed done without doing it). Neither touches this spine: the first hardens how an existing obligation is verified in a test, the second decomposes pap:CAP-5/CAP-6 on the platform-image surface, which sits outside this spine's FR-1..18 CLI-package scope — the same boundary Epics 9-38 sit outside. No AD added or altered; no duty module, port or adapter changed. Reviewed 2026-09-05 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-05 re-stamp reconciled spec-pyforge-steward's two 2026-09-05 memlog motions (post-merge follow-up-review landing PR #1056; bmad-suite 2026.9.5 roster change) and the new spec-bmad-eval-quality / Epic 45 — all either inside an existing adapter (suite.py gains the `cli` install class + one probe branch, no new duty module) or outside this spine's FR-1..18 CLI-package scope (recipes, suite manifest); no AD changed. Reviewed 2026-09-02 — chain-currency (prd→arch cascade): the steward PRD's 2026-09-02 re-stamp reconciled spec-pyforge-steward's 2026-09-01 sharded-path landing (no CAP/AD change) and the same-day red-team correct-courses on the unifying chain (Epics 40–43, which bind the unifying spine's AD-7/8/10/15 and add one interpreter AD via Story 43.5 — none of AD-1..9 here change). No AD added or altered. Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
 sources:
@@ -2099,3 +2099,14 @@ query (61.3) are decompositions of `spec-work-passports-dated-extracts` (CAP-141
 `dashboard/` extra boundary this spine already fixes (the `[dashboard]` split, `importlib`-reach
 rule, `DutyResult` evidence). **No AD added, changed or removed.** `updated:` bumped to record the
 cascade.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*

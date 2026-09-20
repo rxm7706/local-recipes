@@ -40,9 +40,7 @@ _EXEMPT_RELATIVE_PATHS = frozenset({Path("cli_bridge.py")})
 
 def _package_modules() -> list[Path]:
     return sorted(
-        path
-        for path in PACKAGE_DIR.rglob("*.py")
-        if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
+        path for path in PACKAGE_DIR.rglob("*.py") if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
     )
 
 
@@ -51,9 +49,7 @@ def _parse(path: Path) -> ast.Module:
 
 
 def _is_os_shell_out_name(name: str) -> bool:
-    return name in ("system", "popen") or name.startswith(
-        ("spawn", "exec", "posix_spawn")
-    )
+    return name in ("system", "popen") or name.startswith(("spawn", "exec", "posix_spawn"))
 
 
 def _subprocess_violations(tree: ast.Module) -> list[int]:
@@ -70,23 +66,15 @@ def _subprocess_violations(tree: ast.Module) -> list[int]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "subprocess" or alias.name.startswith(
-                    "subprocess."
-                ):
+                if alias.name == "subprocess" or alias.name.startswith("subprocess."):
                     violations.append(node.lineno)
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
             if module == "subprocess" or module.startswith("subprocess."):
                 violations.append(node.lineno)
-            elif module == "os" and any(
-                _is_os_shell_out_name(alias.name) for alias in node.names
-            ):
+            elif module == "os" and any(_is_os_shell_out_name(alias.name) for alias in node.names):
                 violations.append(node.lineno)
-        elif (
-            isinstance(node, ast.Attribute)
-            and isinstance(node.value, ast.Name)
-            and node.value.id == "subprocess"
-        ):
+        elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "subprocess":
             violations.append(node.lineno)
         elif (
             isinstance(node, ast.Attribute)
@@ -105,8 +93,7 @@ def test_package_scan_surface_is_not_empty():
 
 def test_cli_bridge_module_exists():
     assert (PACKAGE_DIR / "cli_bridge.py").is_file(), (
-        "expected pyforge/doctor/cli_bridge.py -- the sanctioned subprocess "
-        "site (Story 2.1, AD-5) is missing"
+        "expected pyforge/doctor/cli_bridge.py -- the sanctioned subprocess site (Story 2.1, AD-5) is missing"
     )
 
 
@@ -129,9 +116,7 @@ def test_cli_bridge_itself_calls_subprocess():
     """Non-vacuous proof: the sanctioned site actually uses subprocess (so
     this guard is testing a real narrowing, not an accidentally-unused
     permission)."""
-    violations = _subprocess_violations(
-        _parse(PACKAGE_DIR / "cli_bridge.py")
-    )
+    violations = _subprocess_violations(_parse(PACKAGE_DIR / "cli_bridge.py"))
     assert violations, "cli_bridge.py does not call subprocess at all"
 
 

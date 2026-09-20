@@ -20,6 +20,7 @@ import dataclasses
 import json
 
 import pytest
+
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.model.manifest import ArtifactClass
 from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint, SkippedArtifact
@@ -415,9 +416,7 @@ def test_skipped_artifact_from_json_dict_raises_value_error_for_a_non_string_fie
 
 @pytest.mark.parametrize("field_name", ["artifact_id", "target_path", "pattern"])
 @pytest.mark.parametrize("blank", ["", "   ", "\t"])
-def test_skipped_artifact_from_json_dict_raises_value_error_for_a_blank_field(
-    field_name, blank
-):
+def test_skipped_artifact_from_json_dict_raises_value_error_for_a_blank_field(field_name, blank):
     """All three fields are identifiers a human READS out of ``plan.json``
     -- the artifact id, the path it names, and the ``--skip`` glob
     responsible -- so a blank one renders as an empty line in the artifact

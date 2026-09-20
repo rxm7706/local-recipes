@@ -62,9 +62,7 @@ def test_exit_code_always_in_guarded_domain(argv, capsys):
 
 
 def test_keyboard_interrupt_during_parsing_returns_exit_sigint():
-    with patch(
-        "argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt
-    ):
+    with patch("argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt):
         assert main([]) == EXIT_SIGINT
 
 
@@ -73,9 +71,7 @@ def test_keyboard_interrupt_during_check_dispatch_returns_exit_sigint():
     # Ctrl-C during dispatch -- not just during argument parsing -- must
     # also return EXIT_SIGINT rather than escape main() as a raw
     # KeyboardInterrupt (main() never raises -- see its own docstring).
-    with patch(
-        "pyforge.doctor.__main__._run_check", side_effect=KeyboardInterrupt
-    ):
+    with patch("pyforge.doctor.__main__._run_check", side_effect=KeyboardInterrupt):
         assert main(["check"]) == EXIT_SIGINT
 
 

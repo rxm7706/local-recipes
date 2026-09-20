@@ -33,7 +33,7 @@ def test_reintroduced_data_js_fails(tmp_path: Path) -> None:
 
 def test_reintroduced_pixi_task_fails(tmp_path: Path) -> None:
     (tmp_path / "pixi.toml").write_text(
-        "[feature.local-recipes.tasks.dashboard-gen]\ncmd = \"true\"\n",
+        '[feature.local-recipes.tasks.dashboard-gen]\ncmd = "true"\n',
         encoding="utf-8",
     )
     findings = board.gather_dashboard_drift(tmp_path)

@@ -116,6 +116,30 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-09-20 (later) — Herald's deck pipeline runs from the Guild env, not the recipe factory.**
+  `deck_pipeline.py` and `sync_all.py` shell `pixi run -e local-recipes deck-export | deck-facts |
+  deck-trio`; only `pyforge-guild` exists at runtime (operator ruling, steward Dream 2026-09-20
+  later). The three tasks move into `guild-tasks` with their deps in `pyforge-guild` (steward
+  63.6 owns the env side) and herald's shell-outs name `-e pyforge-guild`. → CAP-51 / Story 25.1
+  (Epic 25, new — 24 is `done`).
+- **2026-09-20 — Proposed: the docs site matches BMAD-METHOD's pattern, so their skills and
+  workflows apply unchanged.** Operator ask 09:55Z: *"design our docs and docs deployment to
+  GitHub Pages to match what BMAD-METHOD itself does, so that we can reuse their patterns,
+  skills and workflows."* What upstream does (verified, MIT): content stays in `docs/` (Diátaxis
+  quadrants + `index.md`), `docs-site/` is Astro + Starlight reading `docs/` through a symlink,
+  `sidebar.order` frontmatter with `validate-links` / `validate-sidebar` / `fix-links` scripts,
+  hand-authored inlined SVG diagrams, and one `.github/workflows/docs.yaml` that builds with
+  `npm ci` + `npm run build` and ships `build/site` through `upload-pages-artifact` →
+  `deploy-pages`. What we have: this station's `docsite/` (dossier + infographics, Jinja2) and
+  the Kedro-Viz dashboard sharing one Pages artifact via `dashboard.yml`; doctor's `docs/MAP.md`
+  and, since 30.2, `docs/map.yaml`; no site for the shelf itself. Done ahead, because the
+  `bmad-os-diataxis` skill reads it: `docs/_STYLE_GUIDE.md` vendored verbatim with provenance.
+  Research: `planning-artifacts/research/docs-site-bmad-method-pattern-2026-09-20.md` — six
+  decisions for `bmad-spec` (owner: herald for site + deploy, doctor's `map.yaml` as the sidebar
+  source; one Pages artifact with the dossier and dashboard mounted beneath the Starlight site;
+  Node via pixi; content moves nothing; validators become detectors; re-vendor never fork).
+  **Kinships:** doctor 30.x (`map.yaml` ↔ `sidebar.order`), scribe 19.3 (instruction docs),
+  `dashboard.yml`'s deploy-pages race note. Status: **seed** — `bmad-spec` next session.
 - **2026-09-18** — **Epic 23 drained to zero; what its four landings deferred.**
   The Design sync loop is real: 23.1 (`deck status` enumerates the whole account,
   PR #1459), 23.2 (every presentation twinned, three design systems mirrored

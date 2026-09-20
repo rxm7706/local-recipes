@@ -42,6 +42,13 @@ covers-dreams:
   - docs/dreams/work-passports-dated-extracts.md
 surface:
   - src/shared/packages/pyforge-steward/**
+  - scripts/lint_types.py
+  - scripts/target_version_check.py
+  - scripts/precommit_config_check.py
+  - scripts/commit_msg_hook.py
+  - scripts/pre_push_preflight.sh
+  - .pre-commit-config.yaml
+  - .github/workflows/lint-types.yml
   - scripts/llms_full_check.py
   - docs/reference/library-llms-full.md
   - .steward/budget.yaml
@@ -572,6 +579,18 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-150 — the ledger query answers done / running / next in one call** ← spec-pyforge-steward CAP-150 (ready 2026-09-20)
   - **intent:** every story the engine returns carries a `next` field — `done`, `running` (a live dispatch or loop run is on it), `ready` (backlog with every declared dependency done — `get_runnable_backlog()`'s predicate), `waits on S-x.y[, …]` (naming the unmet deps), `blocked`, or `?` (running fact unavailable); `--ready` / `--running` filter to those values; the summary carries per-station ready and running counts; table/markdown/json carry the column. The running fact is read from marshal's own CLI (`marshal watch --fleet --format json` through the `pyforge.core` process primitive, one call per query) — steward never parses marshal's journal and never imports `pyforge.marshal`; when marshal is absent or the call fails, `running` reads `?` with one WARN (fail-open, CAP-15's posture); the fact is the current checkout's (marshal's Tier-3 is per clone — documented in `--help`).
   - **success:** `sprint-ledger-query -- --unimplemented --format table` reproduces the 2026-09-20 08:00Z hand-composed view from a fixture of those ledgers, epics and a recorded watch payload; `--ready` equals `get_runnable_backlog()` exactly; `--running` equals the watch payload's running rows; unreachable marshal → `?` + WARN, exit unchanged; the `bmad-sprint-ledger-query` skill documents the column and the two filters; `pyforge-steward-test` green; duty-count invariants unchanged (flags on the existing duty, no new one).
+- **CAP-151 — `pyforge-foundry-full`: the fleet's whole dependency closure is one locked artifact** ← spec-pyforge-steward CAP-151 (shipped 2026-09-20, Story 63.5)
+  - **intent:** `pixi.toml` declares `pyforge-foundry-full` = the union of every PyForge feature (python, pyforge-guild, guild-tasks, pyforge-core, pyforge-testing-kit, the eight stations), `no-default-feature` — never the runtime (that is `pyforge-guild`), never the recipe factory (`local-recipes`), never installed by default; it exists so every station-only extra resolves together or the lock refuses, and a station's own env carries what its code wields (`bmad-eval-quality` in `pyforge-steward`).
+  - **success:** `pixi lock` solves `pyforge-foundry-full` on linux-64, osx-arm64-min and win-64 and the lock carries it; `llms-full-check` clean; `pyforge-station-tests` green on the lock; the first solve's findings (mason's `python-build` window, warden's `py-rattler` floor) fixed at their owners with the reason recorded; `DW-OPS-2026-09-20-1` resolved.
+- **CAP-152 — no station code assumes the `local-recipes` environment at runtime** ← spec-pyforge-steward CAP-152 (ready 2026-09-20)
+  - **intent:** only `pyforge-guild` exists at runtime; every task a station shells to (`bmad-loop list|status`, `deck-export`, `deck-facts`, `deck-trio`, `platform-ci-local`, `wasm-build`, the bmad-builder / TEA share dirs steward provisions from) is reachable from `pyforge-guild` — registered in `guild-tasks` with its deps in the `pyforge-guild` feature — and a meta-test in the steward suite reds any `-e local-recipes` shell-out or `.pixi/envs/local-recipes` path in any station's `src/`.
+  - **success:** the meta-test lists zero offenders once marshal 46.12 and herald 25.1 land (steward's own `provision.py` / `upgrade.py` / `suite.py` fixed in this story); `pixi run -e pyforge-guild <task>` works for every shelled task; `pyforge-guild`'s size delta reported against the Dream's minimal-default intent; `pyforge-station-tests` green.
+- **CAP-153 — lint and types gate the ten `pyforge-*` packages, locally and on the runners alike** ← spec-pyforge-steward CAP-153 (ready 2026-09-20)
+  - **intent:** every `src/shared/packages/pyforge-*/pyproject.toml` carries `[tool.ruff]` and `[tool.mypy]` on py314 targets (mypy strict for `pyforge-core`); repo-level `ruff`, `ruff-format` and `mypy` tasks in `[feature.guild-tasks.tasks]` run them over all ten packages from `pyforge-guild`; a target-version registry check (like `pixi-version-check`) reds a package whose target drifts from the interpreter; one CI lane runs exactly those tasks and `pr-preflight` gains the same leg, so local and runner cannot diverge.
+  - **success:** `pixi run -e pyforge-guild ruff` / `ruff-format` / `mypy` exit 0 on `main`; the CI lane and the `pr-preflight` leg invoke the same tasks; a deliberately planted violation in any package reds both; `src/platform`'s own `platform-ci` lane unchanged.
+- **CAP-154 — the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose** ← spec-pyforge-steward CAP-154 (ready 2026-09-20)
+  - **intent:** `.pre-commit-config.yaml` at the repo root with a `commit-msg` hook that refuses `Co-Authored-By:` and AI-attribution trailers, and a `pre-push` hook that runs `pixi run -e pyforge-guild pr-preflight` (opt-out only by an explicit env var, journaled; `dispatch/*` branches are supervisor-gated and skip it, journaled); `steward setup` / `initrepo` install it through the existing hooks step (`bootstrap._run_pre_commit_install`, waiting on this file since Story 17.2); a CI check reds a missing file or a missing hook.
+  - **success:** a commit carrying `Co-Authored-By:` is refused locally with the rule named; a push from a branch whose `pr-preflight` is red is refused; the two `TODO:` lines in `AGENTS.md`'s managed block retire under bmad-project-context ground 2 in the same landing.
 
 ## Constraints
 

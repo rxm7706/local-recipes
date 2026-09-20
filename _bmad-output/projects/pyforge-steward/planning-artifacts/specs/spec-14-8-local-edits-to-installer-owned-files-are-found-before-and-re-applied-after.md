@@ -60,3 +60,15 @@ conflicts flagged with the hunk saved beside the report, never resolved by takin
 a bare `.bak` restore — **And** the fixture replaying 2026-09-06's seven files ends with six
 clean merges and one flagged conflict (step-01 `done` routing) (failure-modes.md trap 16).
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d6758c7978` (2026-09-06, "fix(steward): CAP-8 follow-up review pass — merge-conflict labels, stale-sibling cleanup, package-shape valida"); also `297689f8d6` (2026-09-06, "feat(steward): CAP-8 — local edits to installer-owned files are found before and re-applie"). Ledger row `14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/SPEC.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py`, `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py`, `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py`, `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

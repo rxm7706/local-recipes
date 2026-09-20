@@ -86,3 +86,16 @@ warnings: []
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 161 passed (full Epic 3 suite; this story's own share is `test_provision_verify.py`'s 9 tests).
 - **Live verification (real, not faked):** `steward provision --verify` was run against this repo's REAL, checked-out `environment.yaml` and `pixi.toml` (this worktree's state, no `pixi.toml` edits made during this Epic 3 session) -- output: `provision --verify: environment.yaml is in sync with pixi.toml`, exit 0, matching this session's own `git status` (no `pixi.toml` changes in this session's diff, so the real gate correctly reports clean).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8344d21bd3` (2026-08-07, "steward: sync sprint-status ledger — Epic 3 done (Stories 3.1-3.4)"); also `ee77f7ffb5` (2026-08-07, "steward: Story 3.4 — the environment.yaml sync gate is one command away, not a remembered "); also `5403ab5e52` (2026-08-07, "doctor: Story 3.4 — doctor diagnose --target … --prescribe CLI wiring, --json"). Ledger row `3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

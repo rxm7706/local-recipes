@@ -24,9 +24,7 @@ def test_budget_check_always_reports_not_configured_with_no_ceiling_declared(tmp
     assert rc != EXIT_FAILED
 
 
-def test_budget_check_always_reports_not_configured_even_with_a_ceiling_declared(
-    tmp_path, monkeypatch
-):
+def test_budget_check_always_reports_not_configured_even_with_a_ceiling_declared(tmp_path, monkeypatch):
     monkeypatch.setattr("pyforge.steward.budget.repo_root", lambda: tmp_path)
     main(["budget", "set", "--cap", "1500usd/month"])
 

@@ -61,3 +61,16 @@ during dev/review. For the actual landing record, see `spec-deck-family-lockstep
 - Part 2 of CAP-1 (21-1 is part 1, the Infographic head)
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `e91c220927` (2026-08-29, "atlas: sync sprint-status-ledger + epics.md -- Story 21.2 done"); also `f20492af73` (2026-08-29, "atlas: remove cf_atlas.db seeds from production datasets (Story 21.2)"); also `6949c2f084` (2026-08-23, "feat(marshal): Story 21.2 orchestrated Full/minimal chain regeneration"). Ledger row `21-2-deck-trio-derives-the-infographic-deck-from-the-standalone: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`, `_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

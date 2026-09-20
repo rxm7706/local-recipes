@@ -13,8 +13,7 @@ from pyforge.mason.resolve import STEP_CWD_WALK, ResolvedCfeRoot, resolve_cfe_ro
 _VALIDATE_RECIPE = "validate_recipe.py"
 _SUBMIT_PR = "submit_pr.py"
 _VALIDATE_RECIPE_CANNED_STDOUT = (
-    '{"passed": true, "errors": [], "warnings": [], "info": [], '
-    '"rattler_lint_ran": true}\n'
+    '{"passed": true, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": true}\n'
 )
 _SUBMIT_PR_CANNED_STDOUT = (
     '{"success": true, "recipe": "example-recipe", '
@@ -22,10 +21,7 @@ _SUBMIT_PR_CANNED_STDOUT = (
     '"pr_url": "https://github.com/example/example/pull/1", '
     '"message": "PR created: https://github.com/example/example/pull/1"}\n'
 )
-_CLEAN_ENV = {
-    key: value for key, value in os.environ.items()
-    if not key.startswith("MASON_FIXTURE_")
-}
+_CLEAN_ENV = {key: value for key, value in os.environ.items() if not key.startswith("MASON_FIXTURE_")}
 """The ambient environment with any `MASON_FIXTURE_*` leakage stripped --
 used by every "default canned output" assertion below so a stray env var set
 in the runner's shell can never silently override an expected default."""
@@ -37,11 +33,15 @@ def _script_path(fake_cfe_root, name):
 
 def _run(script_path, env=_CLEAN_ENV):
     return subprocess.run(
-        [sys.executable, str(script_path)], capture_output=True, text=True, env=env,
+        [sys.executable, str(script_path)],
+        capture_output=True,
+        text=True,
+        env=env,
     )
 
 
 # --- I/O & Edge-Case Matrix ------------------------------------------------
+
 
 def test_default_canned_stdout_and_exit_zero(fake_cfe_root):
     """Stub invoked with no env overrides: stdout is exactly the script's

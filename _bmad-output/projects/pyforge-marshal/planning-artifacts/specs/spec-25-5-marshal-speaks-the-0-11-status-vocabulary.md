@@ -2,7 +2,7 @@
 title: 'Marshal speaks the 0.11 status vocabulary'
 type: 'feature'
 created: '2026-08-22'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'f0c695758cbc926ce013a4229b0192935981f5f8'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -105,3 +105,17 @@ State precedence: escalation-pause > parked > finished/unsupervised — a park "
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `88125c8c03` (2026-08-22, "Merge pull request #612 from rxm7706/marshal/25-5-status-vocabulary"). Ledger row `25-5-marshal-speaks-the-0-11-status-vocabulary: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_awaiting_operator.py`, `.claude/skills/conda-forge-expert/tests/meta/test_loop_stall_check_awaiting_operator.py`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-adaptive-model-tiering/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-horizontal-run-concurrency/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `pixi.toml`, `scripts/.spec-surface-baseline.json`, `scripts/fleet_picture.py`, `scripts/loop_stall_check.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` (+7 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `25-5-marshal-speaks-the-0-11-status-vocabulary: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

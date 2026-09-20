@@ -171,9 +171,7 @@ _OSV_ECOSYSTEM_DIR: dict[Ecosystem, str] = {
 
 # NFR-S6 purity guard: a manifest-derived name/version must be exactly this
 # token shape to be written into the synthesized osv input file.
-_SAFE_TOKEN_CHARS = frozenset(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
-)
+_SAFE_TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-")
 
 _OWNER = "osv-scanner"
 
@@ -188,9 +186,7 @@ def resolve_cache_dir(*, env: Mapping[str, str] | None = None) -> str | None:
     return cache_dir if cache_dir else None
 
 
-def db_zip_path(
-    cache_dir: str | Path, ecosystem: Ecosystem = Ecosystem.PYPI
-) -> Path | None:
+def db_zip_path(cache_dir: str | Path, ecosystem: Ecosystem = Ecosystem.PYPI) -> Path | None:
     """The on-disk ``all.zip`` path osv-scanner itself would load for
     ``ecosystem`` under ``cache_dir`` — ``None`` for an ecosystem this v1
     module has no osv-dir mapping for (never a lowercase-enum-derived
@@ -236,21 +232,15 @@ def _is_valid_osv_advisory(record: object, osv_ecosystem: str) -> bool:
         if not isinstance(name, str) or not name:
             continue
         versions = entry.get("versions")
-        has_versions = isinstance(versions, list) and any(
-            isinstance(v, str) and v for v in versions
-        )
+        has_versions = isinstance(versions, list) and any(isinstance(v, str) and v for v in versions)
         ranges = entry.get("ranges")
-        has_ranges = isinstance(ranges, list) and any(
-            isinstance(r, dict) and r.get("events") for r in ranges
-        )
+        has_ranges = isinstance(ranges, list) and any(isinstance(r, dict) and r.get("events") for r in ranges)
         if has_versions or has_ranges:
             return True
     return False
 
 
-def _db_has_valid_advisory(
-    zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI
-) -> bool:
+def _db_has_valid_advisory(zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI) -> bool:
     """The decision record § 4 CONTENT pre-flight: ``True`` only when
     ``zip_path`` exists, opens as a zip, and holds >=1 entry that parses as
     JSON and satisfies ``_is_valid_osv_advisory`` for ``ecosystem``. A
@@ -284,7 +274,7 @@ def _db_has_valid_advisory(
                     continue
                 if _is_valid_osv_advisory(record, osv_ecosystem):
                     return True
-    except (OSError, zipfile.BadZipFile):
+    except OSError, zipfile.BadZipFile:
         return False
     return False
 
@@ -306,11 +296,7 @@ def _is_safe_token(value: str) -> bool:
     """NFR-S6: exactly the ``[A-Za-z0-9._-]+`` token shape AND not leading
     with ``-`` (a pip-option-injection shape even though ``-`` is itself in
     the allowed charset)."""
-    return (
-        bool(value)
-        and not value.startswith("-")
-        and all(char in _SAFE_TOKEN_CHARS for char in value)
-    )
+    return bool(value) and not value.startswith("-") and all(char in _SAFE_TOKEN_CHARS for char in value)
 
 
 def _synthesize_requirements(components: Sequence[Component]) -> SynthesizedInput:
@@ -341,9 +327,7 @@ def _synthesize_requirements(components: Sequence[Component]) -> SynthesizedInpu
             lines.append(f"{identity.name}=={identity.version}")
         else:
             excluded.append(component)
-    return SynthesizedInput(
-        lines=tuple(sorted(set(lines))), excluded=tuple(excluded)
-    )
+    return SynthesizedInput(lines=tuple(sorted(set(lines))), excluded=tuple(excluded))
 
 
 def _indeterminate_finding(reason: str, component: Component, message: str) -> Finding:
@@ -356,16 +340,9 @@ def _indeterminate_finding(reason: str, component: Component, message: str) -> F
     # finding (the aggregate verdict stays honest via the redundant
     # per-component match-level rung, but per-component traceability in
     # `findings[]` would be lost — never acceptable for a waivable finding).
-    version_segment = (
-        _sanitize_id_segment(component.version)
-        if component.version
-        else "unspecified"
-    )
+    version_segment = _sanitize_id_segment(component.version) if component.version else "unspecified"
     return Finding(
-        id=(
-            f"indeterminate:{reason}:"
-            f"{_sanitize_id_segment(component.name)}@{version_segment}"
-        ),
+        id=(f"indeterminate:{reason}:{_sanitize_id_segment(component.name)}@{version_segment}"),
         axis=AXIS_VULNERABILITY,
         message=message,
         subject=component.name,
@@ -687,9 +664,7 @@ def name_level_critical_advisory_ids(
                     continue
                 if not isinstance(record, dict):
                     continue
-                if not _advisory_targets_pypi_name(
-                    record, osv_ecosystem, target, ecosystem
-                ):
+                if not _advisory_targets_pypi_name(record, osv_ecosystem, target, ecosystem):
                     continue
                 vector = _advisory_top_level_cvss_v3_vector(record)
                 if vector is None:
@@ -702,14 +677,12 @@ def name_level_critical_advisory_ids(
                 record_id = record.get("id")
                 if isinstance(record_id, str) and record_id:
                     matches.add(record_id)
-    except (OSError, zipfile.BadZipFile):
+    except OSError, zipfile.BadZipFile:
         return ()
     return tuple(sorted(matches))
 
 
-def name_level_critical_cve_finding(
-    component: Component, advisory_ids: Sequence[str]
-) -> Finding:
+def name_level_critical_cve_finding(component: Component, advisory_ids: Sequence[str]) -> Finding:
     """FR13's name-level enrichment: a mapped-but-unversioned component
     (resolved ``pypi_identity``, ``version=None``) whose name carries >=1
     CRITICAL advisory in the offline DB at SOME version. ADDS this finding
@@ -741,9 +714,7 @@ def _own_severity_raw(vuln_record: object) -> str | None:
     return score if isinstance(score, str) and score else None
 
 
-def _extract_fixed_version(
-    vuln_record: object, *, pkg_name: str, pkg_ecosystem: str | None
-) -> str | None:
+def _extract_fixed_version(vuln_record: object, *, pkg_name: str, pkg_ecosystem: str | None) -> str | None:
     """Story 5.1 (AC1): the FIRST well-formed ``fixed`` version event found
     in ``vuln_record``'s own ``affected[].ranges[].events[]`` — walked in
     document order (``affected`` entries, then each entry's ``ranges``,
@@ -836,9 +807,7 @@ def _findings_for_package(
         return []
     pkg_version = package.get("version")
     raw_pkg_ecosystem = package.get("ecosystem")
-    pkg_ecosystem = (
-        raw_pkg_ecosystem if isinstance(raw_pkg_ecosystem, str) else None
-    )
+    pkg_ecosystem = raw_pkg_ecosystem if isinstance(raw_pkg_ecosystem, str) else None
     groups = package_entry.get("groups")
     if not isinstance(groups, list):
         return []
@@ -853,9 +822,7 @@ def _findings_for_package(
 
     name_segment = _sanitize_id_segment(pkg_name)
     version_segment = (
-        _sanitize_id_segment(pkg_version)
-        if isinstance(pkg_version, str) and pkg_version
-        else "unspecified"
+        _sanitize_id_segment(pkg_version) if isinstance(pkg_version, str) and pkg_version else "unspecified"
     )
 
     findings: list[tuple[Finding, tuple[str, ...], str | None]] = []
@@ -867,20 +834,13 @@ def _findings_for_package(
             continue
         tier = _cvss_score_to_tier(group.get("max_severity"))
         raw_aliases = group.get("aliases")
-        aliases = (
-            tuple(a for a in raw_aliases if isinstance(a, str) and a)
-            if isinstance(raw_aliases, list)
-            else ()
-        )
+        aliases = tuple(a for a in raw_aliases if isinstance(a, str) and a) if isinstance(raw_aliases, list) else ()
         for advisory_id in ids:
             if not isinstance(advisory_id, str) or not advisory_id:
                 continue
             vuln_record = vuln_by_id.get(advisory_id)
             severity_raw = _own_severity_raw(vuln_record)
-            finding_id = (
-                f"vuln:{_sanitize_id_segment(advisory_id)}:"
-                f"{name_segment}@{version_segment}"
-            )
+            finding_id = f"vuln:{_sanitize_id_segment(advisory_id)}:{name_segment}@{version_segment}"
             try:
                 finding = Finding(
                     id=finding_id,
@@ -895,9 +855,7 @@ def _findings_for_package(
                 # crash the parse — drop the single malformed entry.
                 continue
             candidates = tuple(dict.fromkeys((advisory_id, *aliases)))
-            fixed_version = _extract_fixed_version(
-                vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem
-            )
+            fixed_version = _extract_fixed_version(vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem)
             findings.append((finding, candidates, fixed_version))
     return findings
 
@@ -964,7 +922,7 @@ def parse_osv_output(raw: str) -> OsvParse:
         )
     try:
         document = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
+    except json.JSONDecodeError, ValueError:
         return OsvParse(
             findings=(),
             errors=(
@@ -982,10 +940,7 @@ def parse_osv_output(raw: str) -> OsvParse:
                 ErrorRecord(
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
                     owner=_OWNER,
-                    message=(
-                        "osv-scanner output is not a JSON object "
-                        f"(got {type(document).__name__})"
-                    ),
+                    message=(f"osv-scanner output is not a JSON object (got {type(document).__name__})"),
                 ),
             ),
         )
@@ -1006,9 +961,7 @@ def parse_osv_output(raw: str) -> OsvParse:
         if not isinstance(packages, list):
             continue
         for package_entry in packages:
-            for finding, candidates, fixed_version in _findings_for_package(
-                package_entry
-            ):
+            for finding, candidates, fixed_version in _findings_for_package(package_entry):
                 if finding.id not in by_id:
                     by_id[finding.id] = finding
                     candidates_by_id[finding.id] = candidates
@@ -1018,15 +971,9 @@ def parse_osv_output(raw: str) -> OsvParse:
     return OsvParse(
         findings=ordered,
         errors=(),
-        kev_candidates=MappingProxyType(
-            {finding.id: candidates_by_id[finding.id] for finding in ordered}
-        ),
+        kev_candidates=MappingProxyType({finding.id: candidates_by_id[finding.id] for finding in ordered}),
         fixed_versions=MappingProxyType(
-            {
-                finding.id: fixed_version_by_id[finding.id]
-                for finding in ordered
-                if finding.id in fixed_version_by_id
-            }
+            {finding.id: fixed_version_by_id[finding.id] for finding in ordered if finding.id in fixed_version_by_id}
         ),
     )
 
@@ -1092,9 +1039,7 @@ def kev_stale_finding(*, unavailable: bool) -> Finding:
 # --- Story 6.7 (FR: --min-epss): FIRST.org EPSS enrichment -------------------
 
 
-def epss_match(
-    candidates: Sequence[str], scores: Mapping[str, tuple[float, float]]
-) -> tuple[float, float] | None:
+def epss_match(candidates: Sequence[str], scores: Mapping[str, tuple[float, float]]) -> tuple[float, float] | None:
     """Return the ``(score, percentile)`` pair for the first of
     ``candidates`` (``OsvParse.kev_candidates``' SAME shape — a finding's own
     ``advisory_id`` followed by its group's raw ``aliases``) present in
@@ -1128,10 +1073,7 @@ def epss_stale_finding(*, unavailable: bool) -> Finding:
     detail = (
         "unavailable (absent, unreadable, or content-corrupt)"
         if unavailable
-        else (
-            "stale (its snapshot is older than "
-            f"{DEFAULT_FEED_MAX_AGE_DAYS} days) or future-dated"
-        )
+        else (f"stale (its snapshot is older than {DEFAULT_FEED_MAX_AGE_DAYS} days) or future-dated")
     )
     return Finding(
         id=f"indeterminate:epss-data-{reason}:epss-feed",
@@ -1167,9 +1109,7 @@ DEFAULT_VULN_SEVERITY_POLICY: Mapping[SeverityTier, Status] = MappingProxyType(
 )
 
 
-def status_for_severity_tier(
-    tier: SeverityTier, *, policy: Mapping[SeverityTier, Status] | None = None
-) -> Status:
+def status_for_severity_tier(tier: SeverityTier, *, policy: Mapping[SeverityTier, Status] | None = None) -> Status:
     """The status for a CVSS severity tier under ``policy`` (Story 3.1:
     ``config.py``'s ``EffectiveConfig.vuln_severity_policy``, threaded by
     ``DefaultPolicy``) — ``DEFAULT_VULN_SEVERITY_POLICY`` when ``policy`` is
@@ -1232,11 +1172,7 @@ def vuln_rung(
     )
     if fail_on_kev and finding.kev is True:
         status = Status.POLICY_VIOLATION
-    if (
-        min_epss is not None
-        and finding.epss is not None
-        and finding.epss.score >= min_epss
-    ):
+    if min_epss is not None and finding.epss is not None and finding.epss.score >= min_epss:
         status = Status.POLICY_VIOLATION
     return (
         status,

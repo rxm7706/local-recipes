@@ -179,3 +179,15 @@ def fit_text(text, width_emu, height_emu, *, max_pt, min_pt) -> FittedText:
 **Manual checks (if no CLI):**
 - Open the Warden-appendix acceptance output in real PowerPoint at least once during review and confirm every persona card's text is visible with no visual overflow or clipping -- the Pillow-based measurement is a strong proxy but not a substitute for the real target application (mirrors Story 15.1's own documented caveat).
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `7a698babbb` (2026-09-11, "pyforge-mason Story 15.2: advance brief_mirrored_through to 90537c2391"); also `ea75f98fb1` (2026-09-11, "pyforge-mason Story 15.2: append review triage log and finalize spec"); also `4a69168555` (2026-09-11, "pyforge-mason Story 15.2: advance brief_mirrored_through to 2fca30c6b0"). Ledger row `15-2-dense-content-renders-as-shapes-that-fit: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

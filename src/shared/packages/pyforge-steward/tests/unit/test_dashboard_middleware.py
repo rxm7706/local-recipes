@@ -12,7 +12,9 @@ import pytest
 
 from pyforge.steward.dashboard.declarations import TrustedIngress
 from pyforge.steward.dashboard.middleware import (
-    AmbiguousIdentityHeaderError, DashboardIdentityMiddleware, UntrustedIngressError,
+    AmbiguousIdentityHeaderError,
+    DashboardIdentityMiddleware,
+    UntrustedIngressError,
 )
 
 TRUSTED = TrustedIngress(
@@ -26,10 +28,7 @@ def _scope(client_host, headers=(), **extra):
     scope = {
         "type": "http",
         "client": (client_host, 54321),
-        "headers": [
-            (name.lower().encode("latin-1"), value.encode("latin-1"))
-            for name, value in headers
-        ],
+        "headers": [(name.lower().encode("latin-1"), value.encode("latin-1")) for name, value in headers],
     }
     scope.update(extra)
     return scope
@@ -42,6 +41,7 @@ async def _receive():
 def _fake_send(events):
     async def send(event):
         events.append(event)
+
     return send
 
 
@@ -50,6 +50,7 @@ def _fake_app(calls):
         calls.append(scope)
         await send({"type": "http.response.start", "status": 200, "headers": []})
         await send({"type": "http.response.body", "body": b"ok"})
+
     return app
 
 
@@ -120,8 +121,10 @@ def test_a_duplicated_identity_header_is_refused_before_any_send():
     scope = _scope(
         "10.0.0.1",
         headers=[
-            ("X-Forwarded-User", "eve"), ("X-Forwarded-Role", "admin"),
-            ("X-Forwarded-User", "alice"), ("X-Forwarded-Role", "viewer"),
+            ("X-Forwarded-User", "eve"),
+            ("X-Forwarded-Role", "admin"),
+            ("X-Forwarded-User", "alice"),
+            ("X-Forwarded-Role", "viewer"),
         ],
     )
 
@@ -145,7 +148,8 @@ def test_a_duplicated_role_header_is_refused_even_from_a_trusted_peer():
         "10.0.0.1",
         headers=[
             ("X-Forwarded-User", "alice"),
-            ("X-Forwarded-Role", "admin"), ("X-Forwarded-Role", "viewer"),
+            ("X-Forwarded-Role", "admin"),
+            ("X-Forwarded-Role", "viewer"),
         ],
     )
 
@@ -210,8 +214,10 @@ def test_an_upstream_planted_identity_is_cleared_not_inherited():
     calls: list[dict] = []
     middleware = DashboardIdentityMiddleware(_fake_app(calls), TRUSTED)
     scope = _scope(
-        "203.0.113.9", headers=[],
-        dashboard_identity="planted", dashboard_role="admin",
+        "203.0.113.9",
+        headers=[],
+        dashboard_identity="planted",
+        dashboard_role="admin",
     )
 
     asyncio.run(middleware(scope, _receive, _fake_send(events)))
@@ -244,16 +250,16 @@ def test_a_planted_identity_is_cleared_on_the_refusal_paths_too(peer, headers):
     calls: list[dict] = []
     middleware = DashboardIdentityMiddleware(_fake_app(calls), TRUSTED)
     scope = _scope(
-        peer, headers=headers,
-        dashboard_identity="planted-admin", dashboard_role="admin",
+        peer,
+        headers=headers,
+        dashboard_identity="planted-admin",
+        dashboard_role="admin",
     )
 
     with pytest.raises(UntrustedIngressError):
         asyncio.run(middleware(scope, _receive, _fake_send(events)))
 
-    assert "dashboard_identity" not in scope, (
-        "a refused request must not leave a planted identity on the scope"
-    )
+    assert "dashboard_identity" not in scope, "a refused request must not leave a planted identity on the scope"
     assert "dashboard_role" not in scope
     assert events == []
 

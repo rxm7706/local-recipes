@@ -2,7 +2,7 @@
 title: 'Fixed-source audit track — reuse the CAP-2 classifier against a declared candidate list (S-13.4, FR-67/CAP-4)'
 type: 'feature'
 created: '2026-08-10'
-status: shipped
+status: done
 baseline_revision: '7680ca54a6d3df3daa30c3293beb86819120f946'
 final_revision: 'a4919b1a13a3d0893a31f52ed0fedcce96299849'
 review_loop_iteration: 0
@@ -315,3 +315,7 @@ localized patch set (1 medium + 2 low, all confined to one new function and its 
 fully addressed and verified; the two defers are well-understood, already-documented,
 low-urgency classifier-seam limitations, not open questions about this diff's own
 correctness.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `12-4-fixed-source-audit-track-fr-67: done`).

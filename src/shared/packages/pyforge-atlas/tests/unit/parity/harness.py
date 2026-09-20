@@ -91,9 +91,14 @@ NODE_REGISTRY: dict[str, tuple] = {
     "track_registry_versions": (
         vcs_nodes.track_registry_versions,
         [
-            "vcs_registry_npm_raw", "vcs_registry_cran_raw", "vcs_registry_cpan_raw",
-            "vcs_registry_luarocks_raw", "vcs_registry_crates_raw",
-            "vcs_registry_rubygems_raw", "vcs_registry_maven_raw", "vcs_registry_nuget_raw",
+            "vcs_registry_npm_raw",
+            "vcs_registry_cran_raw",
+            "vcs_registry_cpan_raw",
+            "vcs_registry_luarocks_raw",
+            "vcs_registry_crates_raw",
+            "vcs_registry_rubygems_raw",
+            "vcs_registry_maven_raw",
+            "vcs_registry_nuget_raw",
         ],
         ["vcs_registry_versions"],
     ),
@@ -223,9 +228,7 @@ def run_fixture(path: Path) -> None:
 
     expected = spec["expected"]
     for out_name, actual in zip(output_names, outputs):
-        assert out_name in expected, (
-            f"{path.name}: fixture 'expected' is missing declared output {out_name!r}"
-        )
+        assert out_name in expected, f"{path.name}: fixture 'expected' is missing declared output {out_name!r}"
         exp_records = expected[out_name]
         exp = _to_frame(exp_records)
         # B4 (DW-B1-1 part b): the TIGHTENED diff — column-SET equality both

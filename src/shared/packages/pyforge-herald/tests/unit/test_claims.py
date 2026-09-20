@@ -18,6 +18,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
+
 from pyforge.herald import claims, errors
 from pyforge.herald import evidence as evidence_mod
 
@@ -138,13 +139,9 @@ def test_publish_updates_status_and_timestamps(tmp_path):
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://ok", label="tests")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://ok", label="tests")],
     )
-    published = claims.publish(
-        path, claim.id, thesis="Shipped it", validate=_fake_validator({"https://ok"})
-    )
+    published = claims.publish(path, claim.id, thesis="Shipped it", validate=_fake_validator({"https://ok"}))
     assert published.status == "published"
     assert published.thesis == "Shipped it"
     assert published.published_at is not None
@@ -157,14 +154,10 @@ def test_publish_propagates_a_broken_evidence_link_and_writes_nothing(tmp_path):
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="tests")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="tests")],
     )
     with pytest.raises(errors.EvidenceLinkError):
-        claims.publish(
-            path, claim.id, thesis="Shipped it", validate=_fake_validator(set())
-        )
+        claims.publish(path, claim.id, thesis="Shipped it", validate=_fake_validator(set()))
     # Unchanged on disk -- still draft.
     assert claims.read_one(path, claim.id).status == "draft"
 
@@ -184,9 +177,7 @@ def test_publish_names_every_broken_evidence_link_not_just_the_first(tmp_path):
         ],
     )
     with pytest.raises(errors.EvidenceLinkError) as exc_info:
-        claims.publish(
-            path, claim.id, thesis="Shipped it", validate=_fake_validator(set())
-        )
+        claims.publish(path, claim.id, thesis="Shipped it", validate=_fake_validator(set()))
     message = str(exc_info.value)
     assert "https://bad1" in message
     assert "https://bad2" in message
@@ -216,9 +207,7 @@ def test_publish_with_a_new_thesis_preserves_the_old_one_in_edit_history(tmp_pat
     claims_list = claims.read_all(path)
     claims_list[0] = seeded
     claims._write_all(path, claims_list)
-    published = claims.publish(
-        path, claim.id, thesis="Revised thesis", validate=_fake_validator(set())
-    )
+    published = claims.publish(path, claim.id, thesis="Revised thesis", validate=_fake_validator(set()))
     assert published.thesis == "Revised thesis"
     assert len(published.edit_history) == 1
     assert published.edit_history[0].thesis == "Original thesis"
@@ -228,9 +217,7 @@ def test_list_claims_filters_by_status(tmp_path):
     path = tmp_path / "herald.db"
     draft = claims.create(path, project_name="warden")
     published = claims.create(path, project_name="marshal")
-    claims.publish(
-        path, published.id, thesis="Shipped", validate=_fake_validator(set())
-    )
+    claims.publish(path, published.id, thesis="Shipped", validate=_fake_validator(set()))
     only_drafts = claims.list_claims(path, status="draft")
     assert [c.id for c in only_drafts] == [draft.id]
 
@@ -248,9 +235,7 @@ def test_list_claims_filters_by_date_range_and_excludes_unset_dates(tmp_path):
     stored = claims.read_all(path)
     stored = [replace(c, shipped_date=None) if c.id == unset.id else c for c in stored]
     claims._write_all(path, stored)
-    result = claims.list_claims(
-        path, date_range=(dt.date(2026, 8, 1), dt.date(2026, 8, 31))
-    )
+    result = claims.list_claims(path, date_range=(dt.date(2026, 8, 1), dt.date(2026, 8, 31)))
     assert [c.id for c in result] == [in_range.id]
 
 
@@ -294,9 +279,7 @@ def test_revalidate_all_shares_one_timestamp(tmp_path):
         is_valid = True
 
     fixed_now = datetime(2026, 8, 8, tzinfo=UTC)
-    updated = claims.revalidate_all(
-        path, validate=lambda url: _Result(), now=lambda: fixed_now
-    )
+    updated = claims.revalidate_all(path, validate=lambda url: _Result(), now=lambda: fixed_now)
     timestamps = {item.validated_at for c in updated for item in c.evidence}
     assert timestamps == {fixed_now.isoformat()}
 
@@ -357,9 +340,7 @@ def test_snapshot_only_includes_matching_status(tmp_path):
     path = tmp_path / "herald.db"
     claims.create(path, project_name="draft-one")
     published = claims.create(path, project_name="published-one")
-    claims.publish(
-        path, published.id, thesis="Shipped", validate=_fake_validator(set())
-    )
+    claims.publish(path, published.id, thesis="Shipped", validate=_fake_validator(set()))
     result = claims.snapshot(path, status="published")
     assert [entry["id"] for entry in result] == [published.id]
 
@@ -402,11 +383,7 @@ def test_notice_type_evidence_is_a_valid_evidence_type(tmp_path):
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1")],
     )
     assert claim.evidence[0].type == "notice"
     assert claim.evidence[0].url == "auth-api-v1"
@@ -420,19 +397,13 @@ def test_publish_never_http_validates_notice_type_evidence(tmp_path):
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1")],
     )
 
     def _validate_that_always_raises(url):
         raise errors.EvidenceLinkError(f"Evidence link broken: {url}.")
 
-    published = claims.publish(
-        path, claim.id, thesis="Shipped it", validate=_validate_that_always_raises
-    )
+    published = claims.publish(path, claim.id, thesis="Shipped it", validate=_validate_that_always_raises)
     assert published.status == "published"
     assert published.evidence[0].validated is True
 
@@ -443,9 +414,7 @@ def test_revalidate_never_http_validates_notice_type_evidence(tmp_path):
         path,
         project_name="warden",
         evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            ),
+            claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1"),
             claims.Evidence(type="test_results", url="https://ok", label="tests"),
         ],
     )
@@ -469,21 +438,13 @@ def test_referenced_by_claims_finds_claims_citing_a_notice(tmp_path):
     citing = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1")],
     )
     claims.create(path, project_name="marshal")  # no evidence -- not a match
     claims.create(
         path,
         project_name="mason",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="other-component", label="notice: other-component"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="other-component", label="notice: other-component")],
     )
     result = claims.referenced_by_claims(path, "auth-api-v1")
     assert [c.id for c in result] == [citing.id]
@@ -579,9 +540,7 @@ def test_publish_never_holds_the_lock_during_network_validation(tmp_path):
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://ok", label="tests")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://ok", label="tests")],
     )
     observed: list[bool] = []
 
@@ -606,9 +565,7 @@ def test_revalidate_all_never_holds_the_lock_during_network_validation(tmp_path)
     claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://ok", label="tests")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://ok", label="tests")],
     )
     observed: list[bool] = []
 
@@ -636,9 +593,7 @@ def test_revalidate_all_scopes_validation_results_per_claim_not_globally(tmp_pat
     would end up with the SECOND call's outcome) and PASSES against the
     per-claim-scoped ``validated_by_claim`` fix."""
     path = tmp_path / "herald.db"
-    shared_evidence = claims.Evidence(
-        type="test_results", url="https://ci.example/run-1", label="CI run"
-    )
+    shared_evidence = claims.Evidence(type="test_results", url="https://ci.example/run-1", label="CI run")
     claims.create(path, project_name="alpha", evidence=[shared_evidence])
     claims.create(path, project_name="beta", evidence=[shared_evidence])
 
@@ -665,9 +620,7 @@ def test_revalidate_all_scopes_validation_results_per_claim_not_globally(tmp_pat
     assert by_project["beta"].evidence[0].validated is False
 
 
-def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
-    tmp_path, monkeypatch
-):
+def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(tmp_path, monkeypatch):
     """Story 13.1 pass-3 regression: ``publish()`` re-read the fresh claims
     state inside the lock but never re-checked ``status`` against it before
     unconditionally overwriting -- two concurrent ``publish()`` calls on the
@@ -703,9 +656,7 @@ def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
     def publisher(thesis: str) -> None:
         barrier.wait(timeout=5)
         try:
-            result = claims.publish(
-                path, claim.id, thesis=thesis, validate=_fake_validator(set())
-            )
+            result = claims.publish(path, claim.id, thesis=thesis, validate=_fake_validator(set()))
         except errors.ClaimStateError as exc:
             with results_lock:
                 state_errors.append(exc)
@@ -727,8 +678,7 @@ def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
 
     assert len(results) == 1, "exactly one concurrent publish() must succeed"
     assert len(state_errors) == 1, (
-        "the other concurrent publish() must raise ClaimStateError, not "
-        "silently overwrite the first's published state"
+        "the other concurrent publish() must raise ClaimStateError, not silently overwrite the first's published state"
     )
     assert results[0].status == "published"
     # The claim on disk matches the ONE successful call's thesis -- never
@@ -737,9 +687,7 @@ def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
     assert stored.thesis == results[0].thesis
 
 
-def test_revalidate_all_does_not_stamp_updated_at_on_a_claim_it_never_validated(
-    tmp_path, monkeypatch
-):
+def test_revalidate_all_does_not_stamp_updated_at_on_a_claim_it_never_validated(tmp_path, monkeypatch):
     """Story 13.1 pass-3 regression: ``revalidate_all``'s locked loop
     stamped ``updated_at`` on EVERY claim in the fresh in-lock read, even
     one absent from the pre-lock ``validated_by_claim`` map (created
@@ -796,9 +744,7 @@ def test_revalidate_all_does_not_stamp_updated_at_on_a_claim_it_never_validated(
         is_valid = True
 
     fixed_now = datetime(2026, 8, 8, tzinfo=UTC)
-    updated = claims.revalidate_all(
-        path, validate=lambda url: _Result(), now=lambda: fixed_now
-    )
+    updated = claims.revalidate_all(path, validate=lambda url: _Result(), now=lambda: fixed_now)
 
     by_id = {c.id: c for c in updated}
     assert by_id["concurrent-claim"].updated_at == original_updated_at
@@ -819,9 +765,7 @@ def test_revalidate_all_does_not_stamp_updated_at_on_a_claim_it_never_validated(
 # positional carry that replaced it -- each FAILS against the value-keyed
 # shape and PASSES against the positional one.
 
-_DUPLICATE_EVIDENCE = claims.Evidence(
-    type="test_results", url="https://ci.example/run-1", label="CI run"
-)
+_DUPLICATE_EVIDENCE = claims.Evidence(type="test_results", url="https://ci.example/run-1", label="CI run")
 
 
 class _LinkResult:
@@ -924,9 +868,7 @@ def test_revalidate_all_keeps_duplicate_evidence_entries_outcomes_distinct(tmp_p
     assert [e.validated for e in claims.read_all(path)[0].evidence] == [True, False]
 
 
-def test_publish_refuses_when_a_concurrent_writer_changed_evidence(
-    tmp_path, monkeypatch
-):
+def test_publish_refuses_when_a_concurrent_writer_changed_evidence(tmp_path, monkeypatch):
     """Story 13.1 pass-4 regression: ``publish``'s contract is that a broken
     link blocks the publish and nothing is written. The discard-stale rule
     (right for ``revalidate``, whose job is to RECORD breakage) would instead
@@ -945,9 +887,7 @@ def test_publish_refuses_when_a_concurrent_writer_changed_evidence(
     claim = claims.create(
         path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://ok", label="tests")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://ok", label="tests")],
     )
     original_read_all = claims.read_all
     call_count = 0
@@ -1039,9 +979,7 @@ def test_revalidate_does_not_stamp_updated_at_when_every_result_was_discarded(
         # Stand in for a concurrent writer landing between the unlocked
         # validation and the locked re-read.
         stored = claims.read_all(claims_path)
-        stored[0] = replace(
-            stored[0], evidence=(replace(ev, label="changed by someone else"),)
-        )
+        stored[0] = replace(stored[0], evidence=(replace(ev, label="changed by someone else"),))
         claims._write_all(claims_path, stored)
         return _ok(url)
 
@@ -1078,9 +1016,7 @@ def test_revalidate_all_does_not_stamp_updated_at_when_every_result_was_discarde
 
     def validate_then_mutate(url: str):
         stored = claims.read_all(claims_path)
-        stored[0] = replace(
-            stored[0], evidence=(replace(ev, label="changed by someone else"),)
-        )
+        stored[0] = replace(stored[0], evidence=(replace(ev, label="changed by someone else"),))
         claims._write_all(claims_path, stored)
         return _ok(url)
 
@@ -1103,12 +1039,8 @@ def test_revalidate_all_refuses_duplicate_claim_ids(tmp_path):
     silently corrupting one of them."""
     claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
-    claims.create(
-        claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "same-id"
-    )
-    claims.create(
-        claims_path, project_name="two", evidence=(ev,), id_factory=lambda: "same-id"
-    )
+    claims.create(claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "same-id")
+    claims.create(claims_path, project_name="two", evidence=(ev,), id_factory=lambda: "same-id")
 
     with pytest.raises(errors.HeraldError, match="duplicate claim ids"):
         claims.revalidate_all(claims_path, validate=_ok)
@@ -1127,9 +1059,7 @@ def test_publish_does_not_revert_a_concurrently_changed_thesis(tmp_path):
     evidence-focused fix did not cover."""
     claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
-    claims.create(
-        claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
-    )
+    claims.create(claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1")
     stored = claims.read_all(claims_path)
     stored[0] = replace(stored[0], thesis="thesis-old")
     claims._write_all(claims_path, stored)
@@ -1149,9 +1079,7 @@ def test_publish_does_not_revert_a_concurrently_changed_thesis(tmp_path):
         now=_fixed_now("2026-08-10T00:00:00+00:00"),
     )
 
-    assert published.thesis == "thesis-new", (
-        "published the pre-validation thesis over a concurrent writer's newer one"
-    )
+    assert published.thesis == "thesis-new", "published the pre-validation thesis over a concurrent writer's newer one"
     assert [v.thesis for v in published.edit_history] == [], (
         "filed the NEWER thesis into edit_history as if it were superseded"
     )
@@ -1186,9 +1114,7 @@ def test_publish_refuses_when_a_concurrent_writer_clears_the_thesis(tmp_path):
     with the same message rather than persist ``thesis=None``."""
     claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
-    claims.create(
-        claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
-    )
+    claims.create(claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1")
     stored = claims.read_all(claims_path)
     stored[0] = replace(stored[0], thesis="thesis-old")
     claims._write_all(claims_path, stored)
@@ -1374,9 +1300,7 @@ def test_revalidate_still_stamps_updated_at_for_a_claim_with_no_evidence(tmp_pat
         now=_fixed_now("2020-01-01T00:00:00+00:00"),
     )
 
-    out = claims.revalidate(
-        claims_path, "id-1", now=_fixed_now("2026-08-10T00:00:00+00:00")
-    )
+    out = claims.revalidate(claims_path, "id-1", now=_fixed_now("2026-08-10T00:00:00+00:00"))
 
     assert out.updated_at == "2026-08-10T00:00:00+00:00"
 
@@ -1392,9 +1316,7 @@ def test_revalidate_all_refuses_a_duplicate_id_written_during_validation(tmp_pat
     path the guard did not cover."""
     claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
-    claims.create(
-        claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "id-1"
-    )
+    claims.create(claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "id-1")
 
     def validate_then_clone_the_claim(url: str):
         concurrent = claims.read_all(claims_path)

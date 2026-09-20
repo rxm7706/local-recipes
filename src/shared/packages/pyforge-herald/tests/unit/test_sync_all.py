@@ -15,8 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from pyforge.herald import sync_all as sync_all_module
+
 from pyforge.herald import stamps, state
+from pyforge.herald import sync_all as sync_all_module
 from pyforge.herald.deck_pipeline import (
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
@@ -28,7 +29,6 @@ from pyforge.herald.sync_all import (
     PixiDeckDeriver,
     PixiFactsRefresher,
     PixiSitePublisher,
-    SyncAllReport,
     _run_bounded,
     sync_all,
 )
@@ -181,14 +181,10 @@ def _init_committed_git_repo(tmp_path: Path) -> None:
     ``_write_proof``) needs a real ``HEAD`` to name as the proof report's
     tree ref."""
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
     subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
     subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
-    subprocess.run(
-        ["git", "commit", "-q", "-m", "init", "--allow-empty"], cwd=tmp_path, check=True
-    )
+    subprocess.run(["git", "commit", "-q", "-m", "init", "--allow-empty"], cwd=tmp_path, check=True)
 
 
 def _seams(**overrides):
@@ -215,9 +211,7 @@ _UNCHANGED_PROTOTYPE = FileRead(path="x", etag="E1", body=None, unchanged=True)
 def test_sync_all_skips_a_deck_directory_with_no_bridge_state(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
 
-    report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     assert len(report.decks) == 1
     deck = report.decks[0]
@@ -234,9 +228,7 @@ def test_sync_all_reports_a_seeded_but_never_pulled_deck_distinctly(tmp_path: Pa
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden")  # etags={} -- seeded, nothing tracked
 
-    report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     deck = report.decks[0]
     assert deck.skipped_reason is not None
@@ -269,14 +261,10 @@ def test_sync_all_reports_pulled_when_the_prototype_etag_moved(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>new</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>new</html>", unchanged=False)
     )
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     deck = report.decks[0]
     assert deck.pulled == (PROTOTYPE_ARTIFACT_KEY,)
@@ -289,9 +277,7 @@ def test_sync_all_reports_nothing_pulled_when_the_etag_did_not_move(tmp_path: Pa
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     deck = report.decks[0]
     assert deck.pulled == ()
@@ -306,10 +292,7 @@ def _proof_report_files(deck_proof_dir: Path) -> list[Path]:
     """``report-*.json``, excluding the ``.stamp.json`` sidecars -- a bare
     ``glob("report-*.json")`` also matches ``report-<ts>.json.stamp.json``
     (its filename still ends in ``.json``)."""
-    return sorted(
-        p for p in deck_proof_dir.glob("report-*.json")
-        if not p.name.endswith(".stamp.json")
-    )
+    return sorted(p for p in deck_proof_dir.glob("report-*.json") if not p.name.endswith(".stamp.json"))
 
 
 def test_sync_all_writes_a_proof_report_and_stamp_when_a_deck_changed(
@@ -319,14 +302,15 @@ def test_sync_all_writes_a_proof_report_and_stamp_when_a_deck_changed(
     _init_committed_git_repo(tmp_path)
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>new</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>new</html>", unchanged=False)
     )
     proof_dir = tmp_path / "proof"
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        proof_dir=proof_dir,
         **_seams(),
     )
 
@@ -355,7 +339,10 @@ def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
     proof_dir = tmp_path / "proof"
 
     first = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        proof_dir=proof_dir,
         **_seams(),
     )
     first_files = _proof_report_files(proof_dir / "pyforge-warden")
@@ -365,7 +352,10 @@ def test_sync_all_second_proof_run_writes_a_distinctly_named_unchanged_report(
     assert first_stamp is not None
 
     second = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, proof_dir=proof_dir,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        proof_dir=proof_dir,
         **_seams(),
     )
 
@@ -403,8 +393,12 @@ def test_sync_all_dry_run_with_proof_dir_still_writes_a_proof_report(tmp_path: P
     proof_dir = tmp_path / "proof"
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
-        proof_dir=proof_dir, **_seams(),
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        dry_run=True,
+        proof_dir=proof_dir,
+        **_seams(),
     )
 
     deck = report.decks[0]
@@ -422,7 +416,8 @@ def test_sync_all_never_pulls_an_export_tracked_key(tmp_path: Path):
     all."""
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(
-        tmp_path, "pyforge-warden",
+        tmp_path,
+        "pyforge-warden",
         etags={"export:pyforge-warden-infographic-standalone-2026-09-01.html": "h1"},
     )
     transport = FakeSyncTransport()
@@ -436,22 +431,15 @@ def test_sync_all_reports_pulled_for_a_marp_source_key(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="# new deck source", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="# new deck source", unchanged=False)
     )
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     deck = report.decks[0]
     assert deck.pulled == ("marp:deck",)
     assert "pulled" in deck.labels()
-    written = (
-        tmp_path / "presentations" / "pyforge-warden" / "src" / "marp"
-        / "pyforge-warden-deck-2026-09-18.md"
-    )
+    written = tmp_path / "presentations" / "pyforge-warden" / "src" / "marp" / "pyforge-warden-deck-2026-09-18.md"
     assert written.read_text(encoding="utf-8") == "# new deck source"
 
 
@@ -467,13 +455,13 @@ def test_sync_all_reports_overwrote_local_when_a_dirty_pulled_file_is_clobbered(
     prototype_path.write_text("<html>local edit</html>", encoding="utf-8")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>design edit</html>", unchanged=False)
     )
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(edit_detector=FakeEditDetector(dirty_paths=(prototype_path,))),
     )
 
@@ -493,7 +481,9 @@ def test_sync_all_does_not_report_overwrote_local_when_the_pull_was_unchanged(
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(edit_detector=FakeEditDetector(dirty_paths=(prototype_path,))),
     )
 
@@ -508,13 +498,13 @@ def test_sync_all_does_not_report_overwrote_local_for_a_clean_local_file(
     (deck_dir / "project" / "PyForge Warden.dc.html").write_text("x", encoding="utf-8")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>design edit</html>", unchanged=False)
     )
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(edit_detector=FakeEditDetector(dirty_paths=())),
     )
 
@@ -526,18 +516,12 @@ def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
 ):
     deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
     (deck_dir / "src" / "marp").mkdir(parents=True)
-    bundle_path = (
-        deck_dir / "src" / "marp" / "pyforge-warden-infographic-standalone-2026-09-18.html"
-    )
+    bundle_path = deck_dir / "src" / "marp" / "pyforge-warden-infographic-standalone-2026-09-18.html"
     bundle_path.write_text("<html>local edit</html>", encoding="utf-8")
-    _seed_state(
-        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"}
-    )
+    _seed_state(tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"})
     filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
-        ),
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>design edit</html>", unchanged=False),
         # The pulled bundle lands at the same path push's own export
         # discovery matches -- prove=True always runs, so its read-back
         # must agree or push_exports raises ReadBackMismatchError instead
@@ -546,7 +530,9 @@ def test_sync_all_reports_overwrote_local_for_a_dirty_standalone_bundle_file(
     )
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(edit_detector=FakeEditDetector(dirty_paths=(bundle_path,))),
     )
 
@@ -564,14 +550,10 @@ def test_sync_all_uses_one_frozen_now_for_the_whole_deck_sync(tmp_path: Path):
     play."""
     deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
     (deck_dir / "src" / "marp").mkdir(parents=True)
-    _seed_state(
-        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"}
-    )
+    _seed_state(tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "E1"})
     filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>new</html>", unchanged=False
-        ),
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>new</html>", unchanged=False),
         rendered_bytes={filename: b"<html>new</html>"},
     )
     ticking_values = iter(
@@ -582,7 +564,9 @@ def test_sync_all_uses_one_frozen_now_for_the_whole_deck_sync(tmp_path: Path):
     )
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(now=lambda: next(ticking_values)),
     )
 
@@ -592,9 +576,7 @@ def test_sync_all_uses_one_frozen_now_for_the_whole_deck_sync(tmp_path: Path):
     assert (deck_dir / "src" / "marp" / filename).is_file()
     # The second, later-dated `now()` value was never consumed -- proof
     # `now` was resolved exactly once for this deck's whole sync pass.
-    assert list(ticking_values) == [
-        datetime(2026, 9, 19, 0, 0, 1, tzinfo=timezone.utc)
-    ]
+    assert list(ticking_values) == [datetime(2026, 9, 19, 0, 0, 1, tzinfo=timezone.utc)]
 
 
 # --- refresh / derive / push composition + ordering -------------------------
@@ -632,7 +614,8 @@ def test_sync_all_calls_refresh_then_derive_after_pull_and_before_push(
             read_file_answers=_UNCHANGED_PROTOTYPE,
             rendered_bytes={filename: b"<html>v1</html>"},
         ),
-        slug="pyforge-warden", repo_root=tmp_path,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(facts_refresher=OrderedRefresher(), deriver=OrderedDeriver()),
     )
 
@@ -645,7 +628,8 @@ def test_sync_all_reports_overrode_count_from_the_refresher(tmp_path: Path):
 
     report = sync_all(
         FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
-        slug="pyforge-warden", repo_root=tmp_path,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(facts_refresher=FakeFactsRefresher(overrode=3)),
     )
 
@@ -661,7 +645,8 @@ def test_sync_all_reports_derived_from_the_deriver(tmp_path: Path):
 
     report = sync_all(
         FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
-        slug="pyforge-warden", repo_root=tmp_path,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(deriver=FakeDeriver(changed=True)),
     )
 
@@ -684,7 +669,9 @@ def test_sync_all_pushes_a_new_export_file_and_reports_it(tmp_path: Path):
             read_file_answers=_UNCHANGED_PROTOTYPE,
             rendered_bytes={filename: b"<html>v1</html>"},
         ),
-        slug="pyforge-warden", repo_root=tmp_path, **_seams()
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        **_seams(),
     )
 
     deck = report.decks[0]
@@ -704,9 +691,7 @@ def test_sync_all_prove_proves_a_pushed_file(tmp_path: Path):
         rendered_bytes={filename: b"<html>v1</html>"},
     )
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, **_seams())
 
     deck = report.decks[0]
     assert deck.proven == (filename,)
@@ -725,7 +710,8 @@ def test_sync_all_publishes_once_when_a_deck_changed_and_marks_it_published(
 
     report = sync_all(
         FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
-        slug="pyforge-warden", repo_root=tmp_path,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(deriver=FakeDeriver(changed=True), site_publisher=publisher),
     )
 
@@ -742,7 +728,9 @@ def test_sync_all_does_not_publish_when_nothing_changed(tmp_path: Path):
     publisher = FakeSitePublisher()
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(site_publisher=publisher),
     )
 
@@ -760,7 +748,9 @@ def test_sync_all_publishes_once_for_multiple_decks(tmp_path: Path):
     publisher = FakeSitePublisher()
 
     report = sync_all(
-        transport, slug=None, repo_root=tmp_path,
+        transport,
+        slug=None,
+        repo_root=tmp_path,
         **_seams(deriver=FakeDeriver(changed=True), site_publisher=publisher),
     )
 
@@ -787,7 +777,8 @@ def test_sync_all_isolates_one_decks_failure_from_the_rest(tmp_path: Path):
 
     report = sync_all(
         FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE),
-        slug=None, repo_root=tmp_path,
+        slug=None,
+        repo_root=tmp_path,
         **_seams(facts_refresher=FlakyRefresher()),
     )
 
@@ -809,18 +800,16 @@ def test_sync_all_preserves_pulled_facts_when_a_tail_step_fails(tmp_path: Path):
     prototype_path.write_text("<html>local edit</html>", encoding="utf-8")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>design edit</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>design edit</html>", unchanged=False)
     )
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(
             edit_detector=FakeEditDetector(dirty_paths=(prototype_path,)),
-            facts_refresher=FakeFactsRefresher(
-                fails=HeraldError("deck-facts --refresh failed: boom")
-            ),
+            facts_refresher=FakeFactsRefresher(fails=HeraldError("deck-facts --refresh failed: boom")),
         ),
     )
 
@@ -856,16 +845,14 @@ def test_sync_all_publish_failure_still_returns_every_decks_report(tmp_path: Pat
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(
-        read_file_answers=FileRead(
-            path="x", etag="E2", body="<html>new</html>", unchanged=False
-        )
+        read_file_answers=FileRead(path="x", etag="E2", body="<html>new</html>", unchanged=False)
     )
-    publisher = FakeSitePublisher(
-        fails=HeraldError("site publish failed: template error")
-    )
+    publisher = FakeSitePublisher(fails=HeraldError("site publish failed: template error"))
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(site_publisher=publisher),
     )
 
@@ -881,15 +868,16 @@ def test_sync_all_publish_failure_still_returns_every_decks_report(tmp_path: Pat
 def test_sync_all_dry_run_never_calls_any_write_capable_seam(tmp_path: Path):
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
-    transport = FakeSyncTransport(
-        read_file_answers=FileRead(path="x", etag="E2", body="new", unchanged=False)
-    )
+    transport = FakeSyncTransport(read_file_answers=FileRead(path="x", etag="E2", body="new", unchanged=False))
     refresher = FakeFactsRefresher()
     deriver = FakeDeriver()
     publisher = FakeSitePublisher()
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        dry_run=True,
         **_seams(facts_refresher=refresher, deriver=deriver, site_publisher=publisher),
     )
 
@@ -909,9 +897,7 @@ def test_sync_all_dry_run_reports_unchanged_when_the_etag_did_not_move(tmp_path:
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams())
 
     deck = report.decks[0]
     assert deck.would_sync is False
@@ -926,7 +912,8 @@ def test_sync_all_dry_run_skips_export_tracked_keys(tmp_path: Path):
     exactly this key and reported ``failed`` instead of ``unchanged``)."""
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(
-        tmp_path, "pyforge-warden",
+        tmp_path,
+        "pyforge-warden",
         etags={
             PROTOTYPE_ARTIFACT_KEY: "E1",
             "export:pyforge-warden-infographic-standalone-2026-09-01.html": "h1",
@@ -934,9 +921,7 @@ def test_sync_all_dry_run_skips_export_tracked_keys(tmp_path: Path):
     )
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
 
-    report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams()
-    )
+    report = sync_all(transport, slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams())
 
     deck = report.decks[0]
     assert deck.error is None
@@ -959,7 +944,10 @@ def test_sync_all_dry_run_reports_a_conflict_as_failed_not_would_sync(tmp_path: 
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
 
     report = sync_all(
-        ConflictTransport(), slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
+        ConflictTransport(),
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        dry_run=True,
         **_seams(),
     )
 
@@ -974,7 +962,10 @@ def test_sync_all_dry_run_still_reports_an_unseeded_deck_as_skipped(tmp_path: Pa
     _make_deck_dir(tmp_path, "pyforge-warden")
 
     report = sync_all(
-        FakeSyncTransport(), slug="pyforge-warden", repo_root=tmp_path, dry_run=True,
+        FakeSyncTransport(),
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        dry_run=True,
         **_seams(),
     )
 
@@ -995,7 +986,9 @@ def test_sync_all_second_run_reports_unchanged_with_zero_write_calls(tmp_path: P
     publisher = FakeSitePublisher()
 
     report = sync_all(
-        transport, slug="pyforge-warden", repo_root=tmp_path,
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         **_seams(facts_refresher=refresher, deriver=deriver, site_publisher=publisher),
     )
 
@@ -1021,7 +1014,12 @@ def test_deck_sync_report_labels_combine_additively():
         published=True,
     )
     assert report.labels() == (
-        "pulled", "overwrote-local", "overrode", "derived", "pushed", "proven",
+        "pulled",
+        "overwrote-local",
+        "overrode",
+        "derived",
+        "pushed",
+        "proven",
         "published",
     )
 
@@ -1041,14 +1039,18 @@ def test_run_bounded_raises_on_nonzero_exit_with_a_tail(tmp_path: Path):
     with pytest.raises(HeraldError, match="exited 1"):
         _run_bounded(
             ["python", "-c", "import sys; print('boom', file=sys.stderr); sys.exit(1)"],
-            cwd=tmp_path, timeout=30, what="test step",
+            cwd=tmp_path,
+            timeout=30,
+            what="test step",
         )
 
 
 def test_run_bounded_raises_on_missing_executable(tmp_path: Path):
     with pytest.raises(HeraldError, match="could not run"):
         _run_bounded(
-            ["definitely-not-a-real-binary-xyz123"], cwd=tmp_path, timeout=30,
+            ["definitely-not-a-real-binary-xyz123"],
+            cwd=tmp_path,
+            timeout=30,
             what="test step",
         )
 
@@ -1056,15 +1058,15 @@ def test_run_bounded_raises_on_missing_executable(tmp_path: Path):
 def test_run_bounded_raises_on_timeout(tmp_path: Path):
     with pytest.raises(HeraldError, match="exceeded"):
         _run_bounded(
-            ["python", "-c", "import time; time.sleep(5)"], cwd=tmp_path, timeout=0.05,
+            ["python", "-c", "import time; time.sleep(5)"],
+            cwd=tmp_path,
+            timeout=0.05,
             what="test step",
         )
 
 
 def test_run_bounded_returns_the_completed_process_on_success(tmp_path: Path):
-    completed = _run_bounded(
-        ["python", "-c", "print('ok')"], cwd=tmp_path, timeout=30, what="test step"
-    )
+    completed = _run_bounded(["python", "-c", "print('ok')"], cwd=tmp_path, timeout=30, what="test step")
     assert completed.stdout.strip() == "ok"
 
 
@@ -1074,9 +1076,7 @@ def test_run_bounded_returns_the_completed_process_on_success(tmp_path: Path):
 
 def _init_git_repo(repo_root: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=repo_root, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo_root, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_root, check=True)
     subprocess.run(["git", "config", "user.name", "Test"], cwd=repo_root, check=True)
 
 
@@ -1140,16 +1140,15 @@ def test_pixi_facts_refresher_parses_the_refreshed_count(monkeypatch):
 def test_pixi_facts_refresher_returns_zero_when_the_summary_line_is_absent(
     monkeypatch,
 ):
-    monkeypatch.setattr(
-        sync_all_module.subprocess, "run", lambda cmd, **kw: _FakeCompleted(stdout="")
-    )
+    monkeypatch.setattr(sync_all_module.subprocess, "run", lambda cmd, **kw: _FakeCompleted(stdout=""))
 
     assert PixiFactsRefresher().refresh(slug="pyforge-warden", repo_root=Path(".")) == 0
 
 
 def test_pixi_facts_refresher_raises_on_a_nonzero_exit(monkeypatch):
     monkeypatch.setattr(
-        sync_all_module.subprocess, "run",
+        sync_all_module.subprocess,
+        "run",
         lambda cmd, **kw: _FakeCompleted(returncode=1, stderr="boom"),
     )
 
@@ -1169,9 +1168,7 @@ class _NoopExporter:
         return None
 
 
-def test_pixi_deck_deriver_skips_deck_trio_when_no_poster_is_present(
-    monkeypatch, tmp_path: Path
-):
+def test_pixi_deck_deriver_skips_deck_trio_when_no_poster_is_present(monkeypatch, tmp_path: Path):
     calls: list[list[str]] = []
 
     def fake_run(cmd, **kwargs):
@@ -1188,14 +1185,10 @@ def test_pixi_deck_deriver_skips_deck_trio_when_no_poster_is_present(
     assert all("deck-trio" not in c for c in calls)
 
 
-def test_pixi_deck_deriver_calls_deck_trio_when_a_poster_is_present(
-    monkeypatch, tmp_path: Path
-):
+def test_pixi_deck_deriver_calls_deck_trio_when_a_poster_is_present(monkeypatch, tmp_path: Path):
     project_dir = tmp_path / "presentations" / "pyforge-warden" / "project"
     project_dir.mkdir(parents=True)
-    (project_dir / "PyForge Warden Infographic standalone.html").write_text(
-        "x", encoding="utf-8"
-    )
+    (project_dir / "PyForge Warden Infographic standalone.html").write_text("x", encoding="utf-8")
     calls: list[list[str]] = []
 
     def fake_run(cmd, **kwargs):
@@ -1223,16 +1216,17 @@ def test_pixi_deck_deriver_detects_a_changed_export_fingerprint(tmp_path: Path):
             # Simulate `deck-export` rewriting the export file.
             export_path.write_text("<html>v2</html>", encoding="utf-8")
 
-    changed = PixiDeckDeriver(
-        exporter_factory=lambda slug, repo_root: _RewritingExporter()
-    ).derive(slug="pyforge-warden", repo_root=tmp_path)
+    changed = PixiDeckDeriver(exporter_factory=lambda slug, repo_root: _RewritingExporter()).derive(
+        slug="pyforge-warden", repo_root=tmp_path
+    )
 
     assert changed is True
 
 
 def test_pixi_site_publisher_raises_on_a_nonzero_exit(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(
-        sync_all_module.subprocess, "run",
+        sync_all_module.subprocess,
+        "run",
         lambda cmd, **kw: _FakeCompleted(returncode=1, stderr="template error"),
     )
 
@@ -1241,8 +1235,6 @@ def test_pixi_site_publisher_raises_on_a_nonzero_exit(monkeypatch, tmp_path: Pat
 
 
 def test_pixi_site_publisher_succeeds_silently(monkeypatch, tmp_path: Path):
-    monkeypatch.setattr(
-        sync_all_module.subprocess, "run", lambda cmd, **kw: _FakeCompleted()
-    )
+    monkeypatch.setattr(sync_all_module.subprocess, "run", lambda cmd, **kw: _FakeCompleted())
 
     PixiSitePublisher().publish(repo_root=tmp_path)  # must not raise

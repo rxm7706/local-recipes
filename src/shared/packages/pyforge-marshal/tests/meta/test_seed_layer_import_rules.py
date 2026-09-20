@@ -111,9 +111,7 @@ def _imported_modules(tree: ast.AST, package: str) -> set[str]:
 
 def _forbidden_hits(modules: set[str], forbidden: tuple[str, ...]) -> list[str]:
     return sorted(
-        module
-        for module in modules
-        if any(module == layer or module.startswith(f"{layer}.") for layer in forbidden)
+        module for module in modules if any(module == layer or module.startswith(f"{layer}.") for layer in forbidden)
     )
 
 
@@ -163,8 +161,7 @@ def test_detect_never_imports_apply_or_engine(module_path: Path):
         _DETECT_FORBIDDEN,
     )
     assert not hits, (
-        f"{_module_id(module_path)} imports forbidden module(s): {hits} "
-        "-- detect must never import apply/engine"
+        f"{_module_id(module_path)} imports forbidden module(s): {hits} -- detect must never import apply/engine"
     )
 
 
@@ -173,9 +170,7 @@ def test_fs_imports_only_errors_from_the_seed_package():
     tree = ast.parse(fs_path.read_text(encoding="utf-8"), filename=str(fs_path))
     modules = _imported_modules(tree, _package_for(fs_path))
     seed_imports = sorted(
-        module
-        for module in modules
-        if module == "pyforge.marshal.seed" or module.startswith("pyforge.marshal.seed.")
+        module for module in modules if module == "pyforge.marshal.seed" or module.startswith("pyforge.marshal.seed.")
     )
     assert seed_imports == ["pyforge.marshal.seed.errors"], (
         f"seed/fs.py must import only seed.errors from the package, saw: {seed_imports}"

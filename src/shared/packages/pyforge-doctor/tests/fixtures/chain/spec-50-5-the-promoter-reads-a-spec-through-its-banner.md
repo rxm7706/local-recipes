@@ -149,7 +149,7 @@ def _skip_leading_banner(text: str) -> str:
     end = text.find("-->", len("<!--"))
     if end == -1:
         return text
-    return text[end + len("-->"):].lstrip()
+    return text[end + len("-->") :].lstrip()
 ```
 
 ## Auto Run Result

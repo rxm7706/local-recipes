@@ -266,14 +266,10 @@ def _read_source(path: Path) -> str:
         return path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise AssertionError(
-            f"{path}: unreadable ({exc}); the AD-3 sole-caller guard cannot "
-            "AST-scan this file"
+            f"{path}: unreadable ({exc}); the AD-3 sole-caller guard cannot AST-scan this file"
         ) from exc
     except UnicodeDecodeError as exc:
-        raise AssertionError(
-            f"{path}: not valid UTF-8; the AD-3 sole-caller guard cannot "
-            "AST-scan this file"
-        ) from exc
+        raise AssertionError(f"{path}: not valid UTF-8; the AD-3 sole-caller guard cannot AST-scan this file") from exc
 
 
 def _parse_source(source: str, path: Path) -> ast.Module:
@@ -281,8 +277,7 @@ def _parse_source(source: str, path: Path) -> ast.Module:
         return ast.parse(source, filename=str(path))
     except SyntaxError as exc:
         raise AssertionError(
-            f"{path}: invalid Python syntax; the AD-3 sole-caller guard "
-            "cannot AST-scan this file"
+            f"{path}: invalid Python syntax; the AD-3 sole-caller guard cannot AST-scan this file"
         ) from exc
 
 
@@ -322,11 +317,7 @@ def _parse_cfe_script_filenames(cfe_path: Path) -> frozenset[str]:
         target_name: str | None = None
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             target_name = node.target.id
-        elif (
-            isinstance(node, ast.Assign)
-            and len(node.targets) == 1
-            and isinstance(node.targets[0], ast.Name)
-        ):
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
             target_name = node.targets[0].id
 
         if target_name == "_CFE_SCRIPTS" and isinstance(node.value, ast.Dict):
@@ -470,11 +461,7 @@ def _joined_segment_text(node: ast.expr) -> str | None:
     `""` for the latter made the stated contract false and collected every
     ordinary arithmetic `total / count` in the tree as a "path build")."""
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
-        segments = [
-            text
-            for side in (node.left, node.right)
-            if (text := _segment_text(side)) is not None
-        ]
+        segments = [text for side in (node.left, node.right) if (text := _segment_text(side)) is not None]
         return "/".join(segments) if segments else None
 
     if _is_join_call(node):
@@ -518,17 +505,12 @@ def _outermost_join_nodes(tree: ast.AST) -> list[ast.expr]:
     `/` chain's LEFT operand, so a right-nested chain or a join call nested
     inside another one was still reported twice)."""
     nested_ids = {
-        id(child)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.expr)
-        for child in _segment_child_nodes(node)
+        id(child) for node in ast.walk(tree) if isinstance(node, ast.expr) for child in _segment_child_nodes(node)
     }
     return [
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.expr)
-        and id(node) not in nested_ids
-        and _joined_segment_text(node) is not None
+        if isinstance(node, ast.expr) and id(node) not in nested_ids and _joined_segment_text(node) is not None
     ]
 
 
@@ -567,9 +549,7 @@ def _joined_path_texts_in(nodes: list[ast.expr]) -> list[str]:
     return texts
 
 
-def _scan_file(
-    path: Path, is_allowlisted_for_path: bool, cfe_script_filenames: frozenset[str]
-) -> list[Violation]:
+def _scan_file(path: Path, is_allowlisted_for_path: bool, cfe_script_filenames: frozenset[str]) -> list[Violation]:
     tree = _parse_source(_read_source(path), path)
 
     violations: list[Violation] = []
@@ -582,24 +562,16 @@ def _scan_file(
                 violations.append(Violation(path, node.lineno, CATEGORY_CFE_SCRIPT, text))
         elif isinstance(node, ast.Call) and _is_subprocess_spawn_call(node.func):
             arg_nodes = [*node.args, *(kw.value for kw in node.keywords)]
-            arg_values = _string_constants_in(arg_nodes) + _joined_path_texts_in(
-                arg_nodes
-            )
+            arg_values = _string_constants_in(arg_nodes) + _joined_path_texts_in(arg_nodes)
             for value in arg_values:
-                if _names_a_cfe_path(value) or any(
-                    name in value for name in cfe_script_filenames
-                ):
-                    violations.append(
-                        Violation(path, node.lineno, CATEGORY_SUBPROCESS_ARG, value)
-                    )
+                if _names_a_cfe_path(value) or any(name in value for name in cfe_script_filenames):
+                    violations.append(Violation(path, node.lineno, CATEGORY_SUBPROCESS_ARG, value))
 
     if not is_allowlisted_for_path:
         for node in _outermost_join_nodes(tree):
             joined = _joined_segment_text(node)
             if joined is not None and _names_a_cfe_path(joined):
-                violations.append(
-                    Violation(path, node.lineno, CATEGORY_CFE_PATH, joined)
-                )
+                violations.append(Violation(path, node.lineno, CATEGORY_CFE_PATH, joined))
 
     return violations
 
@@ -609,17 +581,13 @@ def _scan_tree(root: Path, cfe_script_filenames: frozenset[str]) -> list[Violati
     `cfe.py` directly inside it -- the one module this guard does not
     police."""
     excluded = (root / _CFE_MODULE_NAME).resolve()
-    allowlisted_for_path = {
-        (root / rel).resolve() for rel in _ALLOWLISTED_CFE_PATH_RELATIVE_PATHS
-    }
+    allowlisted_for_path = {(root / rel).resolve() for rel in _ALLOWLISTED_CFE_PATH_RELATIVE_PATHS}
     violations: list[Violation] = []
     for path in sorted(root.rglob("*.py")):
         resolved = path.resolve()
         if resolved == excluded:
             continue
-        violations.extend(
-            _scan_file(path, resolved in allowlisted_for_path, cfe_script_filenames)
-        )
+        violations.extend(_scan_file(path, resolved in allowlisted_for_path, cfe_script_filenames))
     return violations
 
 
@@ -628,13 +596,10 @@ def _scan_tree(root: Path, cfe_script_filenames: frozenset[str]) -> list[Violati
 
 def test_no_unallowlisted_cfe_reference_outside_cfe_py():
     # Guard the guard: a stale PKG_ROOT would make this pass vacuously.
-    assert PKG_ROOT.is_dir(), (
-        f"AD-3 sole-caller guard is scanning nothing -- package root moved? {PKG_ROOT}"
-    )
+    assert PKG_ROOT.is_dir(), f"AD-3 sole-caller guard is scanning nothing -- package root moved? {PKG_ROOT}"
     script_filenames = _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME)
     assert script_filenames, (
-        "cfe.py's _CFE_SCRIPTS table parsed to zero script filenames -- has it "
-        "moved or been renamed?"
+        "cfe.py's _CFE_SCRIPTS table parsed to zero script filenames -- has it moved or been renamed?"
     )
 
     violations = _scan_tree(PKG_ROOT, script_filenames)
@@ -642,9 +607,7 @@ def test_no_unallowlisted_cfe_reference_outside_cfe_py():
     assert not violations, (
         "AD-3: only cfe.py may reference a CFE path, a CFE script filename, or "
         "spawn a process against one; found:\n"
-        + "\n".join(
-            f"  {v.path}:{v.lineno} [{v.category}] {v.detail!r}" for v in violations
-        )
+        + "\n".join(f"  {v.path}:{v.lineno} [{v.category}] {v.detail!r}" for v in violations)
     )
 
 
@@ -655,9 +618,7 @@ def test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs():
     suite green). Pins the membership to AD-3's two named carve-outs and
     proves each is still live: the file exists and still holds the CFE path
     it was exempted for."""
-    assert _ALLOWLISTED_CFE_PATH_RELATIVE_PATHS == frozenset(
-        {Path("resolve.py"), Path("errors.py")}
-    ), (
+    assert _ALLOWLISTED_CFE_PATH_RELATIVE_PATHS == frozenset({Path("resolve.py"), Path("errors.py")}), (
         "AD-3 carves out exactly two files (resolve.py's _CFE_MARKER and "
         "errors.py's guidance echo); changing this set widens the seam this "
         "guard exists to hold closed"
@@ -673,11 +634,7 @@ def test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs():
         # (`Path('.claude') / 'scripts' / 'conda-forge-expert'`) the guard
         # would have reported its still-live exemption dead -- and the
         # obvious repair to that failure is deleting a live carve-out.
-        held_paths = [
-            v
-            for v in _scan_file(path, False, frozenset())
-            if v.category == CATEGORY_CFE_PATH
-        ]
+        held_paths = [v for v in _scan_file(path, False, frozenset()) if v.category == CATEGORY_CFE_PATH]
         assert held_paths, (
             f"stale carve-out: {relative_path} no longer contains a CFE path, so "
             "its AD-3 exemption is dead and should be deleted rather than left "
@@ -696,10 +653,16 @@ def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     `github_updater.py`, the table's ninth and tenth entries."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
         {
-            "validate_recipe.py", "submit_pr.py", "recipe-generator.py",
-            "native-build.sh", "build-locally.py", "failure_analyzer.py",
-            "recipe_optimizer.py", "vulnerability_scanner.py",
-            "recipe_updater.py", "github_updater.py",
+            "validate_recipe.py",
+            "submit_pr.py",
+            "recipe-generator.py",
+            "native-build.sh",
+            "build-locally.py",
+            "failure_analyzer.py",
+            "recipe_optimizer.py",
+            "vulnerability_scanner.py",
+            "recipe_updater.py",
+            "github_updater.py",
         }
     )
 
@@ -714,7 +677,8 @@ def test_detector_fires_on_a_cfe_path_outside_the_allowlist(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'MARKER = ".claude/scripts/conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = ".claude/scripts/conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -728,7 +692,8 @@ def test_detector_permits_the_real_marker_in_resolve_and_errors(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "resolve.py").write_text(
-        '_CFE_MARKER = ".claude/scripts/conda-forge-expert"\n', encoding="utf-8",
+        '_CFE_MARKER = ".claude/scripts/conda-forge-expert"\n',
+        encoding="utf-8",
     )
     (root / "errors.py").write_text(
         '_MESSAGE = "... below a directory containing .claude/scripts/conda-forge-expert/."\n',
@@ -750,7 +715,8 @@ def test_allowlist_is_matched_by_path_not_bare_filename(tmp_path):
     nested = root / "engines"
     nested.mkdir()
     (nested / "resolve.py").write_text(
-        'MARKER = ".claude/scripts/conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = ".claude/scripts/conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -774,8 +740,7 @@ def test_detector_fires_on_a_subprocess_call_with_a_cfe_argument(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import subprocess\n"
-        'subprocess.run(["python", "validate_recipe.py"])\n',
+        'import subprocess\nsubprocess.run(["python", "validate_recipe.py"])\n',
         encoding="utf-8",
     )
 
@@ -792,8 +757,7 @@ def test_detector_fires_on_an_os_system_call_with_a_cfe_argument(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\n"
-        'os.system("python .claude/scripts/conda-forge-expert/validate_recipe.py")\n',
+        'import os\nos.system("python .claude/scripts/conda-forge-expert/validate_recipe.py")\n',
         encoding="utf-8",
     )
 
@@ -809,8 +773,7 @@ def test_detector_fires_on_a_subprocess_call_even_inside_an_allowlisted_file(tmp
     root = tmp_path / "mason"
     root.mkdir()
     (root / "resolve.py").write_text(
-        "import subprocess\n"
-        'subprocess.run(["python", ".claude/scripts/conda-forge-expert/validate_recipe.py"])\n',
+        'import subprocess\nsubprocess.run(["python", ".claude/scripts/conda-forge-expert/validate_recipe.py"])\n',
         encoding="utf-8",
     )
 
@@ -825,8 +788,7 @@ def test_detector_fires_on_a_bare_imported_subprocess_call_form(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from subprocess import run\n"
-        'run(["python", "submit_pr.py"])\n',
+        'from subprocess import run\nrun(["python", "submit_pr.py"])\n',
         encoding="utf-8",
     )
 
@@ -865,9 +827,7 @@ def test_detector_fires_on_an_os_path_join_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os.path\n"
-        "\n"
-        "CFE_DIR = os.path.join('.claude', 'scripts', 'conda-forge-expert')\n",
+        "import os.path\n\nCFE_DIR = os.path.join('.claude', 'scripts', 'conda-forge-expert')\n",
         encoding="utf-8",
     )
 
@@ -883,17 +843,13 @@ def test_segment_join_detection_honours_the_two_entry_allowlist(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "resolve.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        "_CFE_MARKER = Path('.claude') / 'scripts' / 'conda-forge-expert'\n",
+        "from pathlib import Path\n\n_CFE_MARKER = Path('.claude') / 'scripts' / 'conda-forge-expert'\n",
         encoding="utf-8",
     )
     nested = root / "engines"
     nested.mkdir()
     (nested / "resolve.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        "_MARKER = Path('.claude') / 'scripts' / 'conda-forge-expert'\n",
+        "from pathlib import Path\n\n_MARKER = Path('.claude') / 'scripts' / 'conda-forge-expert'\n",
         encoding="utf-8",
     )
 
@@ -909,11 +865,7 @@ def test_segment_join_detection_does_not_flag_an_unrelated_path_build(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        "\n"
-        "def find(base):\n"
-        "    return base / '.claude' / 'settings.json'\n",
+        "from pathlib import Path\n\n\ndef find(base):\n    return base / '.claude' / 'settings.json'\n",
         encoding="utf-8",
     )
 
@@ -951,9 +903,7 @@ def test_detector_fires_on_a_joinpath_call(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        'MARKER = Path(".claude").joinpath("scripts", "conda-forge-expert")\n',
+        'from pathlib import Path\n\nMARKER = Path(".claude").joinpath("scripts", "conda-forge-expert")\n',
         encoding="utf-8",
     )
 
@@ -968,9 +918,7 @@ def test_detector_fires_on_a_starred_join_argument(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os.path\n"
-        "\n"
-        'CFE_DIR = os.path.join(*(".claude", "scripts", "conda-forge-expert"))\n',
+        'import os.path\n\nCFE_DIR = os.path.join(*(".claude", "scripts", "conda-forge-expert"))\n',
         encoding="utf-8",
     )
 
@@ -1010,9 +958,7 @@ def test_single_argument_path_constructor_is_not_treated_as_a_join(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        'SETTINGS = Path(".claude") / "settings.json"\n',
+        'from pathlib import Path\n\nSETTINGS = Path(".claude") / "settings.json"\n',
         encoding="utf-8",
     )
 
@@ -1029,7 +975,8 @@ def test_detector_fires_on_a_case_variant_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'MARKER = ".Claude\\\\Scripts\\\\conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = ".Claude\\\\Scripts\\\\conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -1042,7 +989,8 @@ def test_detector_fires_on_a_dot_segment_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'MARKER = ".claude/./scripts/conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = ".claude/./scripts/conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -1077,9 +1025,7 @@ def test_detector_fires_on_a_script_name_hoisted_into_a_module_constant(tmp_path
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\n"
-        '\n_CMD = "python validate_recipe.py --json"\n'
-        "\n\ndef go():\n    return os.system(_CMD)\n",
+        'import os\n\n_CMD = "python validate_recipe.py --json"\n\n\ndef go():\n    return os.system(_CMD)\n',
         encoding="utf-8",
     )
 
@@ -1130,9 +1076,7 @@ def test_detector_fires_on_a_doubled_separator_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "from pathlib import Path\n"
-        "\n"
-        'MARKER = Path(".claude/") / "scripts" / "conda-forge-expert"\n',
+        'from pathlib import Path\n\nMARKER = Path(".claude/") / "scripts" / "conda-forge-expert"\n',
         encoding="utf-8",
     )
 
@@ -1205,8 +1149,7 @@ def test_detector_fires_on_a_script_name_inside_a_shell_command_string(tmp_path)
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import os\n"
-        '\nos.system("python validate_recipe.py --json /tmp/recipe")\n',
+        'import os\n\nos.system("python validate_recipe.py --json /tmp/recipe")\n',
         encoding="utf-8",
     )
 
@@ -1221,7 +1164,8 @@ def test_detector_fires_on_a_backslash_spelled_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'MARKER = ".claude\\\\scripts\\\\conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = ".claude\\\\scripts\\\\conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -1235,9 +1179,7 @@ def test_a_utf8_bom_file_is_scanned_not_reported_as_unparseable(tmp_path):
     it."""
     root = tmp_path / "mason"
     root.mkdir()
-    (root / "sneaky.py").write_bytes(
-        b'\xef\xbb\xbfMARKER = ".claude/scripts/conda-forge-expert"\n'
-    )
+    (root / "sneaky.py").write_bytes(b'\xef\xbb\xbfMARKER = ".claude/scripts/conda-forge-expert"\n')
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
 
@@ -1250,7 +1192,8 @@ def test_detector_fires_on_a_bytes_literal_cfe_path(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        'MARKER = b".claude/scripts/conda-forge-expert"\n', encoding="utf-8",
+        'MARKER = b".claude/scripts/conda-forge-expert"\n',
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -1297,7 +1240,8 @@ def test_clean_synthetic_module_produces_zero_matches(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "clean.py").write_text(
-        "def helper(x):\n    return x + 1\n", encoding="utf-8",
+        "def helper(x):\n    return x + 1\n",
+        encoding="utf-8",
     )
 
     violations = _scan_tree(root, _SCRIPT_FILENAMES)
@@ -1341,8 +1285,7 @@ def test_parse_cfe_script_filenames_fails_loudly_on_a_non_literal_value(tmp_path
     root.mkdir()
     fake_cfe = root / "cfe.py"
     fake_cfe.write_text(
-        "SOME_NAME = 'x.py'\n"
-        "_CFE_SCRIPTS: dict[str, str] = {'validate_recipe': SOME_NAME}\n",
+        "SOME_NAME = 'x.py'\n_CFE_SCRIPTS: dict[str, str] = {'validate_recipe': SOME_NAME}\n",
         encoding="utf-8",
     )
 
@@ -1355,7 +1298,7 @@ def test_parse_cfe_script_filenames_fails_loudly_on_a_duplicated_table(tmp_path)
     root.mkdir()
     fake_cfe = root / "cfe.py"
     fake_cfe.write_text(
-        "_CFE_SCRIPTS = {'a': 'a.py'}\n" "_CFE_SCRIPTS = {'b': 'b.py'}\n",
+        "_CFE_SCRIPTS = {'a': 'a.py'}\n_CFE_SCRIPTS = {'b': 'b.py'}\n",
         encoding="utf-8",
     )
 

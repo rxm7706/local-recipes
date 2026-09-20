@@ -80,7 +80,6 @@ from ..adapters.fs_local import LocalFs
 from ..core import policy
 from ..core.verdict import EXIT_OK
 from ..ports.fs import FsPort
-from .config import PROJECT_POLICY_RELPATH, REPO_POLICY_DEFAULTS_RELPATH
 from ..seed.detect.findings import Severity
 from ..seed.detect.kit import KitCheck
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
@@ -92,16 +91,17 @@ from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
 from ..seed.verbs.adopt import run_adopt as _run_adopt_verb
 from ..seed.verbs.check import CheckReport
 from ..seed.verbs.check import run_check as _run_check_verb
-from ..seed.verbs.kit import KitAction, KitResult, timeout_note
-from ..seed.verbs.kit import run_kit as _run_kit_verb
-from ..seed.verbs.init import InitResult
-from ..seed.verbs.init import run_init as _run_init_verb
 from ..seed.verbs.explain import render_explain_text
 from ..seed.verbs.explain import run_explain as _run_explain_verb
+from ..seed.verbs.init import InitResult
+from ..seed.verbs.init import run_init as _run_init_verb
+from ..seed.verbs.kit import KitAction, KitResult, timeout_note
+from ..seed.verbs.kit import run_kit as _run_kit_verb
 from ..seed.verbs.update import UpdateResult
 from ..seed.verbs.update import run_update as _run_update_verb
 from ..seed.verbs.version import render_version_text
 from ..seed.verbs.version import run_version as _run_version_verb
+from .config import PROJECT_POLICY_RELPATH, REPO_POLICY_DEFAULTS_RELPATH
 
 # The severity groups a text report renders, in the fixed order the spec's
 # own "matching bmad_drift_check.py's report shape" bullet requires:
@@ -154,10 +154,7 @@ def _resolve_repo_root(raw: str | None) -> Path:
     if not candidate.is_dir():
         raise UsageError(
             f"--repo-root {str(candidate)!r} does not resolve to an existing directory",
-            remedy=(
-                "pass an existing directory to --repo-root, or omit it to check the"
-                " current working directory"
-            ),
+            remedy=("pass an existing directory to --repo-root, or omit it to check the current working directory"),
         )
     return candidate
 
@@ -192,7 +189,7 @@ def _read_toml_or_empty(path: Path) -> Mapping[str, object]:
     try:
         with open(path, "rb") as handle:
             payload = tomllib.load(handle)
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+    except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
         return {}
     return payload if isinstance(payload, Mapping) else {}
 
@@ -217,7 +214,7 @@ def _resolve_project_slug(repo_root: Path, explicit: str | None) -> str:
     marker = repo_root / _ACTIVE_PROJECT_MARKER_RELPATH
     try:
         return marker.read_text(encoding="utf-8").strip()
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return ""
 
 
@@ -240,16 +237,10 @@ def resolve_context_layers(repo_root: Path, explicit_slug: str | None) -> dict[s
     repo_defaults = _read_toml_or_empty(repo_root / _REPO_DEFAULTS_RELPATH)
     project: Mapping[str, object] = {}
     if slug and policy._is_valid_project_slug(slug):
-        project = _read_toml_or_empty(
-            repo_root / _PROJECT_POLICY_RELPATH.format(slug=slug)
-        )
-        effective, _ = policy.compose(
-            project_slug=slug, repo_defaults=repo_defaults, project=project, flags={}
-        )
+        project = _read_toml_or_empty(repo_root / _PROJECT_POLICY_RELPATH.format(slug=slug))
+        effective, _ = policy.compose(project_slug=slug, repo_defaults=repo_defaults, project=project, flags={})
     else:
-        effective, _ = policy.compose(
-            project_slug="", repo_defaults=repo_defaults, project={}, flags={}
-        )
+        effective, _ = policy.compose(project_slug="", repo_defaults=repo_defaults, project={}, flags={})
     return policy.resolve_context_layers(effective)
 
 
@@ -469,14 +460,10 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
                 " installation, not a problem with the repository being checked"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see docstring.
         wrapped = InternalError(
@@ -486,9 +473,7 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     _emit_success(
@@ -518,7 +503,7 @@ def _real_confirm() -> bool:
     waiting for input nobody can supply."""
     try:
         response = input("Apply this plan? [y/N] ")
-    except (EOFError, KeyboardInterrupt):
+    except EOFError, KeyboardInterrupt:
         return False
     return response.strip().lower() in {"y", "yes"}
 
@@ -558,10 +543,7 @@ def _render_plan_text(plan: Plan) -> str:
     if plan.skipped:
         lines.append(f"skipped ({len(plan.skipped)}):")
         for skipped in plan.skipped:
-            lines.append(
-                f"  {skipped.artifact_id} ({skipped.target_path}):"
-                f" matched --skip {skipped.pattern!r}"
-            )
+            lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): matched --skip {skipped.pattern!r}")
     return "\n".join(lines)
 
 
@@ -616,14 +598,10 @@ def run_adopt(
                 " installation, not a problem with the repository being adopted"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -633,9 +611,7 @@ def run_adopt(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     status: str
@@ -730,14 +706,10 @@ def run_init(
                 " installation, not a problem with the directory being initialized"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -747,9 +719,7 @@ def run_init(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     _emit_success(
@@ -793,10 +763,7 @@ def _render_update_plan_text(plan: Plan) -> str:
                     " offered by a migration; not applied without --include-seeded"
                 )
             else:
-                lines.append(
-                    f"  {skipped.artifact_id} ({skipped.target_path}):"
-                    f" matched --skip {skipped.pattern!r}"
-                )
+                lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): matched --skip {skipped.pattern!r}")
     return "\n".join(lines)
 
 
@@ -854,14 +821,10 @@ def run_update(
                 " installation, not a problem with the repository being updated"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -871,9 +834,7 @@ def run_update(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     status: str
@@ -886,9 +847,7 @@ def run_update(
     elif result.applied is not None:
         status = "applied"
         if result.applied:
-            lines.append(
-                f"update: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}"
-            )
+            lines.append(f"update: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
         else:
             lines.append("update: plan was empty; nothing to apply.")
     else:
@@ -904,9 +863,7 @@ def run_update(
             "plan": _plan_result_dict(result.plan),
             "applied": list(result.applied) if result.applied is not None else None,
             "declined": result.declined,
-            "referenced_dep_findings": [
-                finding.to_json_dict() for finding in result.referenced_dep_findings
-            ],
+            "referenced_dep_findings": [finding.to_json_dict() for finding in result.referenced_dep_findings],
         },
         text="\n".join(lines),
     )
@@ -927,8 +884,11 @@ def _render_kit_result_text(result: KitResult) -> str:
     # table -- an operator reading "applied" for a step that can block for
     # minutes deserves the number, and one whose layers are all off does not
     # need the noise.
-    if any(outcome.item_id == "codegraph-index" for outcome in result.outcomes
-           if outcome.action in (KitAction.APPLIED, KitAction.PLANNED, KitAction.FAILED)):
+    if any(
+        outcome.item_id == "codegraph-index"
+        for outcome in result.outcomes
+        if outcome.action in (KitAction.APPLIED, KitAction.PLANNED, KitAction.FAILED)
+    ):
         lines.append(f"  note: {timeout_note()}")
     for outcome in result.outcomes:
         lines.append(f"  [{outcome.action.value}] {outcome.item_id}: {outcome.detail}")
@@ -988,9 +948,7 @@ def run_kit(
                 " installation, not a problem with the loop home being provisioned"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="kit", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="kit", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
         _print_seed_error(exc, verb="kit", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
@@ -1003,9 +961,7 @@ def run_kit(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="kit", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="kit", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     _emit_success(
@@ -1034,14 +990,10 @@ def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " installation, not a problem with the query"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -1051,9 +1003,7 @@ def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     _emit_success(
@@ -1083,14 +1033,10 @@ def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " installation"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(
-            exc, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(exc, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -1100,9 +1046,7 @@ def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(
-            wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
-        )
+        _print_seed_error(wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
         return wrapped.exit_code
 
     _emit_success(
@@ -1338,8 +1282,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         "explain",
         help="Explain a manifest artifact's class, rationale, and update behavior.",
         description=(
-            "Story 11.6: read-only lookup by artifact id or repo path; hybrid entries"
-            " include region names and anchors."
+            "Story 11.6: read-only lookup by artifact id or repo path; hybrid entries include region names and anchors."
         ),
     )
     explain_parser.add_argument(

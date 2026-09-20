@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from pyforge.core.errors import PyforgeError
 
 from pyforge.atlas.semantic import models
-from pyforge.core.errors import PyforgeError
 from pyforge.atlas.semantic.query_helpers import bsl_query
 
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
@@ -148,7 +148,12 @@ GIST_SCHEMA: tuple[tuple[str, str, str, str], ...] = (
     ),
     ("Verification_Timestamp_UTC", "datetime", "yes", "ISO 8601 UTC generation time for this snapshot."),
     ("Priority_Bucket_Description", "string", "yes", "Human description of `P`."),
-    ("Priority_Source", "string", "no", "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …)."),
+    (
+        "Priority_Source",
+        "string",
+        "no",
+        "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …).",
+    ),
     ("Priority_Reason", "string", "no", "Short reason for this `P`."),
     ("JFROG_risk_level", "enum", "no", "`HIGH` | `MEDIUM` | `LOW` | `NO_DATA`."),
     ("JFROG_latest_vuln_count", "int", "no", "Basilisk latest-version known vulnerability count."),
@@ -229,11 +234,36 @@ TITLE_STOP = {
 
 EXTERNAL_SOURCE_SPECS: tuple[tuple[str, str, str, str], ...] = (
     ("Anaconda Dist 2026.x", "raw/discovery_anaconda_dist_2026x_raw", "HTML 2026.x table", "639 (Anaaconda-Dist)"),
-    ("Anaconda main", "primary/core_channeldata_raw/core_channeldata_raw.parquet", "pkgs/main channeldata.json", "5,458 (Anaconda-Main)"),
-    ("conda-forge", "primary/core_channeldata_raw/core_channeldata_raw.parquet", "conda-forge channeldata.json", "33,875 (Conda-Forge)"),
-    ("Basilisk /v1/packages", "raw/discovery_basilisk_packages_raw/discovery_basilisk_packages_raw.parquet", "api.basilisk.prefix.dev", "33,853 (Basilisk)"),
-    ("AOSS free Python", "conf/base/seeds/discovery_aoss_free_python_seed.json", "docs #python list", "1,474 (GAOSS-Free)"),
-    ("AOSS premium Python", "raw/discovery_aoss_premium_python_raw/discovery_aoss_premium_python_raw.parquet", "Wayback Python <ul>", "2,114 (GAOSS-Premium)"),
+    (
+        "Anaconda main",
+        "primary/core_channeldata_raw/core_channeldata_raw.parquet",
+        "pkgs/main channeldata.json",
+        "5,458 (Anaconda-Main)",
+    ),
+    (
+        "conda-forge",
+        "primary/core_channeldata_raw/core_channeldata_raw.parquet",
+        "conda-forge channeldata.json",
+        "33,875 (Conda-Forge)",
+    ),
+    (
+        "Basilisk /v1/packages",
+        "raw/discovery_basilisk_packages_raw/discovery_basilisk_packages_raw.parquet",
+        "api.basilisk.prefix.dev",
+        "33,853 (Basilisk)",
+    ),
+    (
+        "AOSS free Python",
+        "conf/base/seeds/discovery_aoss_free_python_seed.json",
+        "docs #python list",
+        "1,474 (GAOSS-Free)",
+    ),
+    (
+        "AOSS premium Python",
+        "raw/discovery_aoss_premium_python_raw/discovery_aoss_premium_python_raw.parquet",
+        "Wayback Python <ul>",
+        "2,114 (GAOSS-Premium)",
+    ),
 )
 
 
@@ -312,8 +342,7 @@ def _data_root_from_export(export_path: Path) -> Path:
 
 def _records_from_frame(df: pd.DataFrame) -> list[dict[str, str]]:
     return [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
-        for row in df.to_dict(orient="records")
+        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()} for row in df.to_dict(orient="records")
     ]
 
 
@@ -561,9 +590,9 @@ def _render_identity_catalog(
         key = _filled_key(col)
         fills[col] = _scalar_measure(model, key)
 
-    ts = (rows[0].get("Verification_Timestamp_UTC") if rows else "") or datetime.now(
-        timezone.utc
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ts = (rows[0].get("Verification_Timestamp_UTC") if rows else "") or datetime.now(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
     for row in rows:
         row["Verification_Timestamp_UTC"] = ts
     sha = _file_sha256(export_path)
@@ -620,9 +649,7 @@ def _render_identity_catalog(
         if p not in success_by_p_type:
             continue
         lines.append(f"  {p}:")
-        for rtype in list(RECIPE_TYPE_ORDER) + sorted(
-            k for k in success_by_p_type[p] if k not in RECIPE_TYPE_ORDER
-        ):
+        for rtype in list(RECIPE_TYPE_ORDER) + sorted(k for k in success_by_p_type[p] if k not in RECIPE_TYPE_ORDER):
             n = success_by_p_type[p].get(rtype, 0)
             if n:
                 lines.append(f"    {rtype}: {n}")
@@ -695,9 +722,9 @@ def _render_dashboards(
     repo_root: Path,
 ) -> str:
     n = len(records)
-    ts = (records[0].get("Verification_Timestamp_UTC") if records else "") or datetime.now(
-        timezone.utc
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ts = (records[0].get("Verification_Timestamp_UTC") if records else "") or datetime.now(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
     sha = _file_sha256(export_path)
 
     p_df = _query_counts(model, ["P"])
@@ -741,9 +768,7 @@ def _render_dashboards(
     dir_types = load_local_recipe_type(repo_root / "recipes")
     noarch_types = {"noarch-python", "noarch-generic"}
     type_status: dict[str, Counter] = defaultdict(Counter)
-    by_p_kind: dict[str, dict[str, Counter]] = defaultdict(
-        lambda: {"noarch": Counter(), "other": Counter()}
-    )
+    by_p_kind: dict[str, dict[str, Counter]] = defaultdict(lambda: {"noarch": Counter(), "other": Counter()})
     for r in records:
         rtype = row_recipe_type(r, dir_types)
         st = r.get("Local_Build_Status") or "blank"
@@ -756,7 +781,9 @@ def _render_dashboards(
         bucket_n = p_counts.get(p, 0)
         if not bucket_n:
             continue
-        p_model_slice = _query_counts(model, ["P", "has_feedstock", "has_staged_pr", "has_local_recipe", "Local_Build_Status"])
+        p_model_slice = _query_counts(
+            model, ["P", "has_feedstock", "has_staged_pr", "has_local_recipe", "Local_Build_Status"]
+        )
         bucket = p_model_slice[p_model_slice["P"] == p]
         fs = sum(int(r["identity_row_count"]) for _, r in bucket[bucket["has_feedstock"] == "yes"].iterrows())
         needs_p = bucket_n - fs
@@ -766,11 +793,7 @@ def _render_dashboards(
             if r["has_feedstock"] == "no" and r["has_staged_pr"] == "no"
         )
         local = sum(int(r["identity_row_count"]) for _, r in bucket[bucket["has_local_recipe"] == "yes"].iterrows())
-        g = sum(
-            int(r["identity_row_count"])
-            for _, r in bucket.iterrows()
-            if r["Local_Build_Status"] == "success"
-        )
+        g = sum(int(r["identity_row_count"]) for _, r in bucket.iterrows() if r["Local_Build_Status"] == "success")
         sk = sum(
             int(r["identity_row_count"])
             for _, r in bucket.iterrows()
@@ -1068,9 +1091,7 @@ def _jfrog_map_section(records: list[dict[str, str]], jfrog_path: Path | None) -
     def is_pypi(row: dict[str, str] | None) -> bool:
         if not row:
             return False
-        return (row.get("primary_type") or "") == "pypi" or (
-            row.get("primary_purl") or ""
-        ).startswith("pkg:pypi/")
+        return (row.get("primary_type") or "") == "pypi" or (row.get("primary_purl") or "").startswith("pkg:pypi/")
 
     def is_cf(row: dict[str, str] | None) -> bool:
         if not row:
@@ -1099,10 +1120,7 @@ def _jfrog_map_section(records: list[dict[str, str]], jfrog_path: Path | None) -
                     jr.get("packaging_tier") or "",
                 ]
             )
-        on_cf = bool(
-            ident_row
-            and (ident_row.get("Conda-Forge_FeedStock_URL") or ident_row.get("conda_purl"))
-        )
+        on_cf = bool(ident_row and (ident_row.get("Conda-Forge_FeedStock_URL") or ident_row.get("conda_purl")))
         has_pr = bool(ident_row and ident_row.get("Staged_Recipes_PR_URL"))
         if ident_row and not on_cf and not has_pr:
             need_pr.append((jr, ident_row))
@@ -1123,12 +1141,8 @@ def _jfrog_map_section(records: list[dict[str, str]], jfrog_path: Path | None) -
     board_gap = []
     for k, jr in jfrog_by.items():
         ident_row = ident.get(k)
-        if is_pypi(ident_row) and not is_cf(ident_row) and ident_row and not ident_row.get(
-            "OpenTeams_Issue_URL"
-        ):
-            board_gap.append(
-                [jr.get("name") or k, f"{_as_int(jr.get('artifactory_downloads') or '0')}"]
-            )
+        if is_pypi(ident_row) and not is_cf(ident_row) and ident_row and not ident_row.get("OpenTeams_Issue_URL"):
+            board_gap.append([jr.get("name") or k, f"{_as_int(jr.get('artifactory_downloads') or '0')}"])
     board_gap.sort(key=lambda r: (-_as_int(r[1]), r[0].lower()))
 
     return [

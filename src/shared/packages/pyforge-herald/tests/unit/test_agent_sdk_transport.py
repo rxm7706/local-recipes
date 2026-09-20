@@ -70,9 +70,7 @@ class FakeLauncher:
         return canned
 
     def tool_calls(self) -> list[str]:
-        return [
-            tools[0].removeprefix(ALLOWED_TOOL_PREFIX) for _prompt, tools in self.calls
-        ]
+        return [tools[0].removeprefix(ALLOWED_TOOL_PREFIX) for _prompt, tools in self.calls]
 
 
 @pytest.fixture
@@ -129,9 +127,7 @@ def test_constructing_the_transport_spawns_no_process(monkeypatch):
 
 
 def test_get_design_prompt_maps_to_the_get_claude_design_prompt_tool(fake_launcher):
-    transport, launcher = _transport(
-        fake_launcher, {"get_claude_design_prompt": _ok("PROMPT BODY")}
-    )
+    transport, launcher = _transport(fake_launcher, {"get_claude_design_prompt": _ok("PROMPT BODY")})
     prompt = transport.get_design_prompt(design_system_id="ds")
     assert prompt == "PROMPT BODY"
     assert launcher.tool_calls() == ["get_claude_design_prompt"]
@@ -141,9 +137,7 @@ def test_get_design_prompt_maps_to_the_get_claude_design_prompt_tool(fake_launch
 def test_each_call_grants_exactly_one_allowlisted_tool(fake_launcher):
     """FR-22: the allowlist is scoped to the single tool being called, never
     the whole claude-design surface."""
-    transport, launcher = _transport(
-        fake_launcher, {"create_project": _ok('{"project_id":"p","url":"u"}')}
-    )
+    transport, launcher = _transport(fake_launcher, {"create_project": _ok('{"project_id":"p","url":"u"}')})
     transport.create_project(name="X")
     _prompt, allowed = launcher.calls[0]
     assert allowed == [f"{ALLOWED_TOOL_PREFIX}create_project"]
@@ -152,11 +146,7 @@ def test_each_call_grants_exactly_one_allowlisted_tool(fake_launcher):
 def test_create_project_marshals_name_and_design_system_id(fake_launcher):
     transport, launcher = _transport(
         fake_launcher,
-        {
-            "create_project": _ok(
-                '{"project_id": "p-1", "url": "https://claude.ai/design/p/p-1"}'
-            )
-        },
+        {"create_project": _ok('{"project_id": "p-1", "url": "https://claude.ai/design/p/p-1"}')},
     )
     ref = transport.create_project(name="PyForge X deck", design_system_id="ds")
     assert ref.project_id == "p-1"
@@ -190,9 +180,7 @@ def test_finalize_plan_unknown_scope_refused_before_any_call(fake_launcher):
 
 
 def test_finalize_plan_returns_no_plan_token_raises(fake_launcher):
-    transport, _ = _transport(
-        fake_launcher, {"finalize_plan": _ok('{"base_etags": {}}')}
-    )
+    transport, _ = _transport(fake_launcher, {"finalize_plan": _ok('{"base_etags": {}}')})
     with pytest.raises(TransportCallError):
         transport.finalize_plan(project_id="p", writes=["x"])
 
@@ -220,18 +208,14 @@ def test_copy_files_requires_if_match_or_leaf_if_match(fake_launcher):
 
 def test_copy_files_accepts_leaf_if_match(fake_launcher):
     transport, launcher = _transport(fake_launcher, {"copy_files": _ok("{}")})
-    transport.copy_files(
-        project_id="p", files=[{"dest": "d/", "leaf_if_match": {"d/x": "0"}}]
-    )
+    transport.copy_files(project_id="p", files=[{"dest": "d/", "leaf_if_match": {"d/x": "0"}}])
     assert launcher.tool_calls() == ["copy_files"]
 
 
 def test_write_files_requires_if_match_for_every_entry(fake_launcher):
     transport, launcher = _transport(fake_launcher)
     with pytest.raises(UnconditionalWriteError):
-        transport.write_files(
-            project_id="p", files=[{"path": "a", "if_match": "0"}, {"path": "b"}]
-        )
+        transport.write_files(project_id="p", files=[{"path": "a", "if_match": "0"}, {"path": "b"}])
     assert launcher.calls == []
 
 
@@ -277,12 +261,7 @@ def test_read_file_body_is_not_sanitized_content_exemption(fake_launcher):
     body = f"a legitimate deck mentioning {TOKENIZED_PREVIEW_HOST} in prose"
     transport, _ = _transport(
         fake_launcher,
-        {
-            "read_file": _ok(
-                f'<untrusted-project-content path="p" etag="E1">\n{body}\n'
-                "</untrusted-project-content>"
-            )
-        },
+        {"read_file": _ok(f'<untrusted-project-content path="p" etag="E1">\n{body}\n</untrusted-project-content>')},
     )
     read = transport.read_file(project_id="p", path="p")
     assert read.body == body
@@ -312,8 +291,7 @@ def test_list_files_returns_listed_files(fake_launcher):
         fake_launcher,
         {
             "list_files": _ok(
-                '{"files": [{"path": "support.js", "etag": "E1", "size": 5}, '
-                '{"path": "Deck.dc.html", "etag": "E2"}]}'
+                '{"files": [{"path": "support.js", "etag": "E1", "size": 5}, {"path": "Deck.dc.html", "etag": "E2"}]}'
             )
         },
     )
@@ -344,8 +322,7 @@ def test_list_projects_returns_project_summaries(fake_launcher):
         fake_launcher,
         {
             "list_projects": _ok(
-                '[{"id": "p-1", "name": "PyForge Warden deck", '
-                '"url": "https://claude.ai/design/p/p-1"}]'
+                '[{"id": "p-1", "name": "PyForge Warden deck", "url": "https://claude.ai/design/p/p-1"}]'
             )
         },
     )
@@ -391,11 +368,7 @@ def test_relay_prompt_sanitizes_a_tokenized_argument():
 def test_missing_marker_raises_transport_unreachable(fake_launcher):
     transport, _ = _transport(
         fake_launcher,
-        {
-            "get_claude_design_prompt": AgentLaunchResult(
-                stdout="no markers here", failed=False
-            )
-        },
+        {"get_claude_design_prompt": AgentLaunchResult(stdout="no markers here", failed=False)},
     )
     with pytest.raises(TransportUnreachableError):
         transport.get_design_prompt()
@@ -411,11 +384,7 @@ def test_echoed_prompt_before_the_real_answer_is_not_mistaken_for_it(fake_launch
     exact prompt sent for this call is known, so a leading echo of it is
     stripped before searching."""
     echoed_prompt = _relay_prompt(GET_DESIGN_PROMPT_TOOL, {})
-    stdout = (
-        echoed_prompt
-        + "\n"
-        + "<<<HERALD_TOOL_RESULT>>>the real design prompt<<<END_HERALD_TOOL_RESULT>>>"
-    )
+    stdout = echoed_prompt + "\n" + "<<<HERALD_TOOL_RESULT>>>the real design prompt<<<END_HERALD_TOOL_RESULT>>>"
     transport, _ = _transport(
         fake_launcher,
         {GET_DESIGN_PROMPT_TOOL: AgentLaunchResult(stdout=stdout, failed=False)},
@@ -434,9 +403,7 @@ def test_both_markers_present_raises_transport_unreachable(fake_launcher):
 
 
 def test_error_marker_raises_transport_call_error(fake_launcher):
-    transport, _ = _transport(
-        fake_launcher, {"read_file": _tool_error("read file: file not found")}
-    )
+    transport, _ = _transport(fake_launcher, {"read_file": _tool_error("read file: file not found")})
     with pytest.raises(TransportCallError, match="file not found"):
         transport.read_file(project_id="p", path="missing")
 
@@ -444,11 +411,7 @@ def test_error_marker_raises_transport_call_error(fake_launcher):
 def test_launcher_failure_raises_transport_unreachable(fake_launcher):
     transport, _ = _transport(
         fake_launcher,
-        {
-            "get_claude_design_prompt": AgentLaunchResult(
-                stdout="", failed=True, detail="claude: command not found"
-            )
-        },
+        {"get_claude_design_prompt": AgentLaunchResult(stdout="", failed=True, detail="claude: command not found")},
     )
     with pytest.raises(TransportUnreachableError, match="command not found"):
         transport.get_design_prompt()
@@ -465,11 +428,7 @@ def test_launcher_failure_raises_transport_unreachable(fake_launcher):
 def test_launcher_failure_naming_auth_denial_raises_auth_error(fake_launcher, detail):
     transport, _ = _transport(
         fake_launcher,
-        {
-            "get_claude_design_prompt": AgentLaunchResult(
-                stdout="", failed=True, detail=detail
-            )
-        },
+        {"get_claude_design_prompt": AgentLaunchResult(stdout="", failed=True, detail=detail)},
     )
     with pytest.raises(AuthError):
         transport.get_design_prompt()

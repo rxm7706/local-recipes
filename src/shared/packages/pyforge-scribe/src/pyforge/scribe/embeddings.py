@@ -17,10 +17,41 @@ EMBEDDING_DIM = 32
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _STOPWORDS = frozenset(
     {
-        "a", "an", "the", "did", "do", "does", "we", "i", "is", "are", "was",
-        "were", "to", "of", "in", "on", "for", "and", "or", "why", "what",
-        "when", "how", "this", "that", "it", "be", "have", "has", "had",
-        "with", "at", "by", "from", "our",
+        "a",
+        "an",
+        "the",
+        "did",
+        "do",
+        "does",
+        "we",
+        "i",
+        "is",
+        "are",
+        "was",
+        "were",
+        "to",
+        "of",
+        "in",
+        "on",
+        "for",
+        "and",
+        "or",
+        "why",
+        "what",
+        "when",
+        "how",
+        "this",
+        "that",
+        "it",
+        "be",
+        "have",
+        "has",
+        "had",
+        "with",
+        "at",
+        "by",
+        "from",
+        "our",
     }
 )
 _CONCEPTS = {
@@ -35,11 +66,7 @@ _CONCEPTS = {
 
 
 def _tokens(text: str) -> list[str]:
-    return [
-        token
-        for token in _TOKEN_RE.findall(text.lower())
-        if token not in _STOPWORDS and len(token) > 1
-    ]
+    return [token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOPWORDS and len(token) > 1]
 
 
 def _bucket(concept: str) -> int:

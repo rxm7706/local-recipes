@@ -171,9 +171,7 @@ def emit_static_site(
             if schema is None:
                 schema = _schema_of(table)
             sha, size = _sha256_and_size(root / rel)
-            chunks.append(
-                {"path": rel, "rows": len(chunk_df), "bytes": size, "sha256": sha}
-            )
+            chunks.append({"path": rel, "rows": len(chunk_df), "bytes": size, "sha256": sha})
 
         manifest_datasets[name] = {
             "row_count": n_rows,
@@ -187,9 +185,7 @@ def emit_static_site(
         "datasets": manifest_datasets,
     }
     # sort_keys + trailing newline => byte-stable manifest across two identical emits.
-    (root / MANIFEST_NAME).write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    (root / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
 

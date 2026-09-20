@@ -122,8 +122,7 @@ def _resolve_repo_root(env: Mapping[str, str] | None = None) -> Path:
     value = source.get(REPO_ROOT_ENV_VAR)
     if not value or not value.strip():
         raise HeraldError(
-            f"{REPO_ROOT_ENV_VAR} is not set -- the webhook host needs a repo "
-            f"root to write .herald/herald.db under"
+            f"{REPO_ROOT_ENV_VAR} is not set -- the webhook host needs a repo root to write .herald/herald.db under"
         )
     return Path(value)
 
@@ -166,9 +165,7 @@ def _wrap(
             await send(message)
 
         try:
-            await asyncio.wait_for(
-                inner(scope, receive, tracking_send), timeout=timeout_seconds
-            )
+            await asyncio.wait_for(inner(scope, receive, tracking_send), timeout=timeout_seconds)
         except TimeoutError:
             # `inner`'s own last-resort guard (webhook.py's "Uncaught
             # exceptions" section) catches every exception ITS `app()` can
@@ -240,7 +237,5 @@ def __getattr__(name: str) -> webhook.ASGIApp:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     global _application
     if _application is None:
-        _application = build_application(
-            _resolve_repo_root(), webhook.resolve_webhook_secret()
-        )
+        _application = build_application(_resolve_repo_root(), webhook.resolve_webhook_secret())
     return _application

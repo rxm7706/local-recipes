@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from pyforge.herald import auth, cli, evidence
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -40,15 +41,9 @@ def _load_script(name: str, relative_path: str):
     return module
 
 
-export_web_snapshot = _load_script(
-    "export_web_snapshot_epic11", "scripts/export_web_snapshot.py"
-)
-export_notices_snapshot = _load_script(
-    "export_notices_snapshot_epic11", "scripts/export_notices_snapshot.py"
-)
-export_progress_snapshot = _load_script(
-    "export_progress_snapshot_epic11", "scripts/export_progress_snapshot.py"
-)
+export_web_snapshot = _load_script("export_web_snapshot_epic11", "scripts/export_web_snapshot.py")
+export_notices_snapshot = _load_script("export_notices_snapshot_epic11", "scripts/export_notices_snapshot.py")
+export_progress_snapshot = _load_script("export_progress_snapshot_epic11", "scripts/export_progress_snapshot.py")
 
 
 @pytest.fixture(autouse=True)
@@ -102,9 +97,7 @@ def test_all_three_moments_end_to_end(tmp_path, capsys):
 
     rc = cli.main(["progress", "--json"])
     assert rc == 0
-    progress_lines = [
-        json.loads(line) for line in capsys.readouterr().out.splitlines() if line
-    ]
+    progress_lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line]
     assert len(progress_lines) == 1
     assert progress_lines[0]["station"] == "warden"
     assert progress_lines[0]["shipped_capabilities"] == ["Harness Policy Gate"]
@@ -143,9 +136,7 @@ def test_all_three_moments_end_to_end(tmp_path, capsys):
 
     rc = cli.main(["success", "--repo-root", str(repo_root), "--json", "list"])
     assert rc == 0
-    claim_lines = [
-        json.loads(line) for line in capsys.readouterr().out.splitlines() if line
-    ]
+    claim_lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line]
     assert len(claim_lines) == 1
     assert claim_lines[0]["id"] == claim_id
     assert claim_lines[0]["status"] == "published"
@@ -184,17 +175,13 @@ def test_all_three_moments_end_to_end(tmp_path, capsys):
 
     # export_progress_snapshot.py (Story 13.3, replacing sync-progress.mjs)
     out_dir = tmp_path / "web-out"
-    progress_out = export_progress_snapshot.export_progress_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    progress_out = export_progress_snapshot.export_progress_snapshot(repo_root=repo_root, out_dir=out_dir)
     synced_progress = json.loads(progress_out.read_text(encoding="utf-8"))
     assert synced_progress
     assert synced_progress[0]["station"] == "warden"
 
     # export_web_snapshot.py's export_success_snapshot (Story 9.4)
-    success_out = export_web_snapshot.export_success_snapshot(
-        repo_root=repo_root, out_dir=out_dir
-    )
+    success_out = export_web_snapshot.export_success_snapshot(repo_root=repo_root, out_dir=out_dir)
     exported_claims = json.loads(success_out.read_text(encoding="utf-8"))
     assert exported_claims
     assert exported_claims[0]["id"] == claim_id

@@ -24,6 +24,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import ProvisionDuty, provision_module
 
@@ -54,7 +55,7 @@ _MODULE_HELP_CSV = (
     "configure,,anytime,,,false,{project-root}/_bmad,config.yaml\n"
 )
 
-_SKILL_RELATIVE_PATH = Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup")
+_SKILL_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills/bmad-bmb-setup")
 
 
 def _write_bmb_skill(root: Path) -> Path:
@@ -67,9 +68,9 @@ def _write_bmb_skill(root: Path) -> Path:
 
 
 # ── Story 46.4: the five real bmad-builder skills under `skills_source_dir`
-# (`.pixi/envs/local-recipes/share/bmad-builder/skills/`) ───────────────────
+# (`.pixi/envs/pyforge-guild/share/bmad-builder/skills/`) ───────────────────
 
-_SKILLS_SOURCE_RELATIVE_PATH = Path(".pixi/envs/local-recipes/share/bmad-builder/skills")
+_SKILLS_SOURCE_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills")
 
 _SIBLING_BUILDER_SKILL_NAMES = (
     "bmad-agent-builder",
@@ -528,7 +529,7 @@ def test_provision_module_missing_backend_dir_names_the_path_and_the_pixi_fix(tm
 
     assert result.ok is False
     assert "bmad-bmb-setup" in result.summary
-    assert "pixi install -e local-recipes" in result.summary
+    assert "pixi install -e pyforge-guild" in result.summary
 
 
 def test_provision_module_missing_backend_dir_via_cli_is_a_duty_failure_not_a_crash(tmp_path, monkeypatch):
@@ -618,9 +619,7 @@ def test_provision_module_takes_precedence_over_verify_and_list():
     if-chain)."""
     duty = ProvisionDuty()
 
-    result = duty.run(
-        _full_namespace(module="nope", list=True, verify=True)
-    )
+    result = duty.run(_full_namespace(module="nope", list=True, verify=True))
 
     assert result.ok is False
     assert "nope" in result.summary  # --module's own handling ran, not --verify's/--list's
@@ -649,7 +648,9 @@ def test_provision_module_mid_chain_failure_names_already_wrote_config_section(t
 
     assert result.ok is False
     assert "No data rows found in source" in result.summary
-    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    assert (
+        "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    )
     assert "INCOMPLETE" in result.summary
 
 
@@ -673,7 +674,10 @@ def test_provision_module_mid_chain_failure_with_json_names_already_wrote_config
     assert result.ok is False
     payload = json.loads(result.summary)
     assert "No data rows found in source" in payload["error"]
-    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in payload["error"]
+    assert (
+        "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above"
+        in payload["error"]
+    )
 
 
 def test_provision_module_first_script_failure_names_nothing_written(tmp_path, monkeypatch):
@@ -697,9 +701,7 @@ def test_provision_module_first_script_failure_names_nothing_written(tmp_path, m
     assert "already wrote" not in result.summary
 
 
-def test_provision_module_bmb_retry_after_first_script_failure_does_not_self_collide(
-    tmp_path, monkeypatch
-):
+def test_provision_module_bmb_retry_after_first_script_failure_does_not_self_collide(tmp_path, monkeypatch):
     """Review finding: an earlier draft copied bmb's five skill directories
     BEFORE the merge-config.py/merge-help-csv.py subprocess calls. If those
     calls then failed, the freshly-copied skill dirs were left behind with
@@ -774,7 +776,9 @@ def test_provision_module_output_dir_runtime_error_after_both_scripts_land_names
 
     assert result.ok is False
     assert "already exists and is not a directory" in result.summary
-    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    assert (
+        "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    )
     assert "INCOMPLETE" in result.summary
 
 
@@ -840,9 +844,7 @@ def test_provision_module_full_success_verification_gate_passes_with_realistic_f
     assert (tmp_path / "_bmad" / "config.yaml").is_file()
 
 
-def test_provision_module_failure_against_an_already_installed_module_does_not_claim_incomplete(
-    tmp_path, monkeypatch
-):
+def test_provision_module_failure_against_an_already_installed_module_does_not_claim_incomplete(tmp_path, monkeypatch):
     """Review-pass regression: `bmb` was already fully provisioned by an
     earlier, successful run (`_bmad/config.yaml` already has a `bmb:`
     section BEFORE this run starts). This run's own `merge-config.py` call

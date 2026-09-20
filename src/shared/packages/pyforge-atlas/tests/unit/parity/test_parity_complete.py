@@ -79,6 +79,4 @@ def test_harness_build_completes_at_b3():
     assert len(parity_surface) == 27  # + flag_tier3_channels (Story 23.1)
 
     missing = parity_surface - set(NODE_REGISTRY)
-    assert not missing, (
-        f"parity harness NODE_REGISTRY is missing pipeline nodes: {missing}"
-    )
+    assert not missing, f"parity harness NODE_REGISTRY is missing pipeline nodes: {missing}"

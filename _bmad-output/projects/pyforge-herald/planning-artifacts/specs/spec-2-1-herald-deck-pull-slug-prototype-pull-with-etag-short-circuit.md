@@ -202,3 +202,16 @@ this epic's naming-convention assumptions (finding 3 especially) against real De
 User decision (2026-08-07): merge on the existing mocked-transport coverage (392 tests) now rather
 than hold the branch, given the blocker is environmental (credential availability), not a code
 defect the tests could have caught.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `2221e12892` (2026-09-18, "Rename scribe Story 2.1 spec to match the ledger key"); also `87a7d3e60f` (2026-08-07, "herald: sync sprint-status ledger — Epic 2 done (Stories 2.1-2.4)"); also `a0ef150159` (2026-08-07, "herald: Story 2.1 — herald deck pull <slug> with etag short-circuit"). Ledger row `2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-2-1-graphstore-port-flat-file-v1-adapter.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

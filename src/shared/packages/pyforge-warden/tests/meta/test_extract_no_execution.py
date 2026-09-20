@@ -114,9 +114,7 @@ FORBIDDEN_OS_MEMBERS = frozenset(
 FORBIDDEN_BUILTIN_CALLS = frozenset({"eval", "exec", "compile", "__import__"})
 # Subprocess-without-``subprocess``: asyncio's subprocess API and the
 # process-pool executor spawn processes without any denylisted import.
-FORBIDDEN_ASYNCIO_MEMBERS = frozenset(
-    {"create_subprocess_exec", "create_subprocess_shell"}
-)
+FORBIDDEN_ASYNCIO_MEMBERS = frozenset({"create_subprocess_exec", "create_subprocess_shell"})
 FORBIDDEN_BARE_CALLS = FORBIDDEN_ASYNCIO_MEMBERS | {"ProcessPoolExecutor"}
 # NFR-S2 static backstop: the parse zone has NO legitimate network use.
 # Top-level match, so ``urllib.parse`` is denied with the rest of urllib —
@@ -145,9 +143,7 @@ FORBIDDEN_NETWORK_MODULES = frozenset(
 )
 # Modules whose star import would bind forbidden members as bare names the
 # call-site checks cannot see.
-STAR_IMPORT_DENIED = (
-    FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES | {"os", "builtins", "asyncio"}
-)
+STAR_IMPORT_DENIED = FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES | {"os", "builtins", "asyncio"}
 
 
 def _extract_modules() -> list[Path]:
@@ -184,32 +180,21 @@ def _violations(tree: ast.Module) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name.split(".")[0] in (
-                    FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES
-                ):
+                if alias.name.split(".")[0] in (FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES):
                     found.append(f"import {alias.name} (line {node.lineno})")
-                elif alias.name == "asyncio.subprocess" or alias.name.startswith(
-                    "asyncio.subprocess."
-                ):
+                elif alias.name == "asyncio.subprocess" or alias.name.startswith("asyncio.subprocess."):
                     # The canonical stdlib spelling of the asyncio
                     # subprocess API: the submodule import itself is the
                     # capability.
                     found.append(f"import {alias.name} (line {node.lineno})")
         elif isinstance(node, ast.ImportFrom):
             top = (node.module or "").split(".")[0]
-            if (
-                any(alias.name == "*" for alias in node.names)
-                and top in STAR_IMPORT_DENIED
-            ):
+            if any(alias.name == "*" for alias in node.names) and top in STAR_IMPORT_DENIED:
                 # A star import binds forbidden members as bare names the
                 # call-site checks cannot see: denied wholesale.
-                found.append(
-                    f"from {node.module} import * (line {node.lineno})"
-                )
+                found.append(f"from {node.module} import * (line {node.lineno})")
             if top in FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES:
-                found.append(
-                    f"from {node.module} import ... (line {node.lineno})"
-                )
+                found.append(f"from {node.module} import ... (line {node.lineno})")
             elif top == "os":
                 found.extend(
                     f"from os import {alias.name} (line {node.lineno})"
@@ -224,9 +209,7 @@ def _violations(tree: ast.Module) -> list[str]:
                 )
             elif top == "yaml":
                 found.extend(
-                    f"from yaml import load (line {node.lineno})"
-                    for alias in node.names
-                    if alias.name == "load"
+                    f"from yaml import load (line {node.lineno})" for alias in node.names if alias.name == "load"
                 )
             elif top == "asyncio":
                 found.extend(
@@ -240,48 +223,31 @@ def _violations(tree: ast.Module) -> list[str]:
                 )
             elif top == "concurrent":
                 found.extend(
-                    f"from {node.module} import {alias.name} "
-                    f"(line {node.lineno})"
+                    f"from {node.module} import {alias.name} (line {node.lineno})"
                     for alias in node.names
                     if alias.name == "ProcessPoolExecutor"
                 )
         elif isinstance(node, ast.Call):
             func = node.func
-            if isinstance(func, ast.Name) and func.id in (
-                FORBIDDEN_BUILTIN_CALLS | FORBIDDEN_BARE_CALLS
-            ):
+            if isinstance(func, ast.Name) and func.id in (FORBIDDEN_BUILTIN_CALLS | FORBIDDEN_BARE_CALLS):
                 found.append(f"{func.id}() call (line {node.lineno})")
             elif isinstance(func, ast.Attribute):
                 # ProcessPoolExecutor fires through ANY base, chained
                 # attribute access included (concurrent.futures.
                 # ProcessPoolExecutor(...)).
                 if func.attr == "ProcessPoolExecutor":
-                    found.append(
-                        f"ProcessPoolExecutor() call (line {node.lineno})"
-                    )
-                elif (
-                    func.attr in FORBIDDEN_ASYNCIO_MEMBERS
-                    and _attr_root(func) in asyncio_names
-                ):
+                    found.append(f"ProcessPoolExecutor() call (line {node.lineno})")
+                elif func.attr in FORBIDDEN_ASYNCIO_MEMBERS and _attr_root(func) in asyncio_names:
                     # Chain-rooted: covers both asyncio.create_subprocess_*
                     # and the canonical asyncio.subprocess.create_subprocess_*
                     # spelling (any alias of asyncio as the root).
-                    found.append(
-                        f"asyncio.{func.attr}() call (line {node.lineno})"
-                    )
+                    found.append(f"asyncio.{func.attr}() call (line {node.lineno})")
                 elif isinstance(func.value, ast.Name):
                     base = func.value.id
                     if base in os_names and func.attr in FORBIDDEN_OS_MEMBERS:
-                        found.append(
-                            f"os.{func.attr}() call (line {node.lineno})"
-                        )
-                    elif (
-                        base in builtins_names
-                        and func.attr in FORBIDDEN_BUILTIN_CALLS
-                    ):
-                        found.append(
-                            f"builtins.{func.attr}() call (line {node.lineno})"
-                        )
+                        found.append(f"os.{func.attr}() call (line {node.lineno})")
+                    elif base in builtins_names and func.attr in FORBIDDEN_BUILTIN_CALLS:
+                        found.append(f"builtins.{func.attr}() call (line {node.lineno})")
                     elif base in yaml_names and func.attr == "load":
                         found.append(f"yaml.load() call (line {node.lineno})")
     return found
@@ -300,10 +266,7 @@ def test_extract_zone_exists_and_is_scanned():
 def test_extract_module_has_no_execution_primitives(module_path: Path):
     tree = ast.parse(module_path.read_text(encoding="utf-8"), str(module_path))
     violations = _violations(tree)
-    assert not violations, (
-        f"{module_path.name} violates the no-execution zone (NFR-S1): "
-        f"{violations}"
-    )
+    assert not violations, f"{module_path.name} violates the no-execution zone (NFR-S1): {violations}"
 
 
 def test_detector_fires_on_forbidden_imports():
@@ -345,9 +308,7 @@ def test_detector_fires_on_builtins_bound_attribute_calls():
     builtins module fire."""
     assert _violations(ast.parse("import builtins\nbuiltins.eval('x')\n"))
     assert _violations(ast.parse("import builtins as b\nb.exec('x')\n"))
-    assert _violations(
-        ast.parse("import builtins\nbuiltins.compile('x', '<s>', 'exec')\n")
-    )
+    assert _violations(ast.parse("import builtins\nbuiltins.compile('x', '<s>', 'exec')\n"))
     assert _violations(ast.parse("import builtins\nbuiltins.__import__('os')\n"))
     assert not _violations(ast.parse("import builtins\nbuiltins.len([])\n"))
 
@@ -405,29 +366,14 @@ def test_detector_fires_on_subprocess_without_subprocess():
     """asyncio's subprocess API and ProcessPoolExecutor spawn processes
     without any denylisted import — bare, from-imported, aliased, and
     chained-attribute forms all fire."""
-    assert _violations(
-        ast.parse("import asyncio\nasyncio.create_subprocess_exec(x)\n")
-    )
-    assert _violations(
-        ast.parse("import asyncio as aio\naio.create_subprocess_shell(x)\n")
-    )
-    assert _violations(
-        ast.parse("from asyncio import create_subprocess_exec\n")
-    )
+    assert _violations(ast.parse("import asyncio\nasyncio.create_subprocess_exec(x)\n"))
+    assert _violations(ast.parse("import asyncio as aio\naio.create_subprocess_shell(x)\n"))
+    assert _violations(ast.parse("from asyncio import create_subprocess_exec\n"))
     assert _violations(ast.parse("create_subprocess_exec(x)\n"))
-    assert _violations(
-        ast.parse("from concurrent.futures import ProcessPoolExecutor\n")
-    )
+    assert _violations(ast.parse("from concurrent.futures import ProcessPoolExecutor\n"))
     assert _violations(ast.parse("ProcessPoolExecutor()\n"))
-    assert _violations(
-        ast.parse(
-            "import concurrent.futures\n"
-            "concurrent.futures.ProcessPoolExecutor()\n"
-        )
-    )
-    assert not _violations(
-        ast.parse("from concurrent.futures import ThreadPoolExecutor\n")
-    )
+    assert _violations(ast.parse("import concurrent.futures\nconcurrent.futures.ProcessPoolExecutor()\n"))
+    assert not _violations(ast.parse("from concurrent.futures import ThreadPoolExecutor\n"))
     assert not _violations(ast.parse("import asyncio\nasyncio.run(main())\n"))
 
 
@@ -436,28 +382,12 @@ def test_detector_fires_on_asyncio_subprocess_submodule_forms():
     submodule import itself and the chained-attribute call — must fire
     (previously only the top-level asyncio attribute forms did)."""
     assert _violations(ast.parse("import asyncio.subprocess\n"))
-    assert _violations(
-        ast.parse(
-            "import asyncio\nasyncio.subprocess.create_subprocess_exec(x)\n"
-        )
-    )
-    assert _violations(
-        ast.parse(
-            "import asyncio.subprocess\n"
-            "asyncio.subprocess.create_subprocess_exec(x)\n"
-        )
-    )
+    assert _violations(ast.parse("import asyncio\nasyncio.subprocess.create_subprocess_exec(x)\n"))
+    assert _violations(ast.parse("import asyncio.subprocess\nasyncio.subprocess.create_subprocess_exec(x)\n"))
     assert _violations(ast.parse("from asyncio import subprocess\n"))
     assert _violations(ast.parse("from asyncio import subprocess as asp\n"))
-    assert _violations(
-        ast.parse(
-            "import asyncio as aio\n"
-            "aio.subprocess.create_subprocess_shell(x)\n"
-        )
-    )
-    assert not _violations(
-        ast.parse("import asyncio\nasyncio.get_event_loop()\n")
-    )
+    assert _violations(ast.parse("import asyncio as aio\naio.subprocess.create_subprocess_shell(x)\n"))
+    assert not _violations(ast.parse("import asyncio\nasyncio.get_event_loop()\n"))
 
 
 def test_detector_fires_on_star_imports_of_sensitive_modules():

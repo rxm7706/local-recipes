@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
+
 from pyforge.core.dispatch import (
     EXIT_NOT_FOUND,
     EXIT_USAGE,
@@ -45,9 +46,7 @@ MAP = {
 
 
 def test_dispatch_argv_forwards_noun_and_verb():
-    assert dispatch_argv(
-        ["pyforge", "steward", "keys", "list"], script_map=MAP
-    ) == ["steward", "keys", "list"]
+    assert dispatch_argv(["pyforge", "steward", "keys", "list"], script_map=MAP) == ["steward", "keys", "list"]
 
 
 def test_dispatch_argv_unknown_station_raises():
@@ -101,9 +100,4 @@ def test_primary_console_script_skips_mcp_extra():
 
 
 def test_primary_console_script_prefers_dist_name_for_atlas():
-    assert (
-        primary_console_script(
-            "pyforge-atlas", {"pyforge-atlas": "pyforge.atlas.__main__:main"}
-        )
-        == "pyforge-atlas"
-    )
+    assert primary_console_script("pyforge-atlas", {"pyforge-atlas": "pyforge.atlas.__main__:main"}) == "pyforge-atlas"

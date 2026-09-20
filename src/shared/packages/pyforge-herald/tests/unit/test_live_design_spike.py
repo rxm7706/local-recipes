@@ -65,8 +65,7 @@ def test_primary_mcp_path_reaches_claude_design_from_a_plain_process():
     # would sail past a mere "is it a string" check.
     assert prompt != REDACTED
     assert len(prompt) > 1000, (
-        "the design-system prompt came back suspiciously short -- "
-        "something replaced it wholesale"
+        "the design-system prompt came back suspiciously short -- something replaced it wholesale"
     )
     # NFR-04 for a prose payload is "no LIVE tokenized URL", not "never
     # names the host": the real prompt names it exactly once, in the rule

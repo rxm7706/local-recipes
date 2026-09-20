@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 
 import pytest
+
 from pyforge.herald import auth, cli, notices
 
 
@@ -75,9 +76,7 @@ def test_close_without_operator_role_is_refused(capsys, monkeypatch, tmp_path):
 def test_archive_without_operator_role_is_refused(capsys, monkeypatch, tmp_path):
     _author(monkeypatch, tmp_path, extra=["--publish"])
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "viewer:tok")
-    assert (
-        cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 1
-    )
+    assert cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 1
     assert "unauthorized" in capsys.readouterr().err
 
 
@@ -92,9 +91,7 @@ def test_read_commands_never_check_auth(capsys, monkeypatch, tmp_path):
 # --- author / publish / close / list / get / archive happy paths -------
 
 
-def test_author_creates_a_draft_and_confirmation_declined_writes_nothing(
-    capsys, monkeypatch, tmp_path
-):
+def test_author_creates_a_draft_and_confirmation_declined_writes_nothing(capsys, monkeypatch, tmp_path):
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: False)
     assert _author(monkeypatch, tmp_path) == 0
     out = capsys.readouterr().out
@@ -170,9 +167,7 @@ def test_list_status_draft_flag(monkeypatch, tmp_path, capsys):
     assert [n["component"] for n in payload] == ["auth-api-v1"]
 
 
-def test_json_flag_works_both_before_and_after_the_list_subcommand(
-    monkeypatch, tmp_path, capsys
-):
+def test_json_flag_works_both_before_and_after_the_list_subcommand(monkeypatch, tmp_path, capsys):
     """Regression: `--json`/`--date-range`/`--station` were only attached
     to the `notice` parser itself, not `notice list`'s own sub-subparser
     -- `herald notice list --json` (the natural, expected order) failed
@@ -222,9 +217,7 @@ def test_archive_rename_then_get_follows_redirect(monkeypatch, tmp_path, capsys)
         )
         == 0
     )
-    assert (
-        cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 0
-    )
+    assert cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 0
     capsys.readouterr()
     assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
@@ -241,19 +234,13 @@ def test_get_shows_referenced_by_claims_backlink(monkeypatch, tmp_path, capsys):
     claim = claims.create(
         tmp_path / claims.DEFAULT_CLAIMS_PATH,
         project_name="warden",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1")],
     )
     capsys.readouterr()
 
     assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
-    assert payload["referenced_by_claims"] == [
-        {"id": claim.id, "project_name": "warden", "status": "draft"}
-    ]
+    assert payload["referenced_by_claims"] == [{"id": claim.id, "project_name": "warden", "status": "draft"}]
 
     assert cli.main(["notice", "get", "auth-api-v1"]) == 0
     text = capsys.readouterr().out
@@ -261,9 +248,7 @@ def test_get_shows_referenced_by_claims_backlink(monkeypatch, tmp_path, capsys):
     assert claim.id in text
 
 
-def test_get_referenced_by_claims_empty_when_no_claim_cites_it(
-    monkeypatch, tmp_path, capsys
-):
+def test_get_referenced_by_claims_empty_when_no_claim_cites_it(monkeypatch, tmp_path, capsys):
     _author(monkeypatch, tmp_path, extra=["--publish"])
     capsys.readouterr()
     assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
@@ -285,11 +270,7 @@ def test_get_backlink_survives_rename(monkeypatch, tmp_path, capsys):
     claim = claims.create(
         tmp_path / claims.DEFAULT_CLAIMS_PATH,
         project_name="warden",
-        evidence=[
-            claims.Evidence(
-                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
-            )
-        ],
+        evidence=[claims.Evidence(type="notice", url="auth-api-v1", label="notice: auth-api-v1")],
     )
     capsys.readouterr()
 
@@ -315,17 +296,15 @@ def test_get_backlink_survives_rename(monkeypatch, tmp_path, capsys):
         )
         == 0
     )
-    assert (
-        cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 0
-    )
+    assert cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 0
     capsys.readouterr()
 
     for name in ("auth-api-v1", "auth-api-v2"):
         assert cli.main(["notice", "--json", "get", name]) == 0
         payload = json.loads(capsys.readouterr().out.strip())
-        assert payload["referenced_by_claims"] == [
-            {"id": claim.id, "project_name": "warden", "status": "draft"}
-        ], f"backlink missing when querying by {name!r}"
+        assert payload["referenced_by_claims"] == [{"id": claim.id, "project_name": "warden", "status": "draft"}], (
+            f"backlink missing when querying by {name!r}"
+        )
 
 
 # --- interactive prompting for missing author fields --------------------
@@ -339,9 +318,7 @@ def test_author_prompts_for_missing_fields(monkeypatch, tmp_path, capsys):
     function, not ``builtins.input``, since the default is captured once
     at def time)."""
     monkeypatch.chdir(tmp_path)
-    answers = iter(
-        ["deprecation", "prompted-component", "what text", "why text", "mig text", ""]
-    )
+    answers = iter(["deprecation", "prompted-component", "what text", "why text", "mig text", ""])
     monkeypatch.setattr(cli, "_prompt", lambda *_a, **_k: next(answers))
     assert cli.main(["notice", "author"]) == 0
     out = capsys.readouterr().out

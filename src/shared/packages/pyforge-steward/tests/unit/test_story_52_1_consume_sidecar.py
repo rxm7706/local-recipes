@@ -8,20 +8,16 @@ from pathlib import Path
 import pytest
 
 from pyforge.steward.provision import (
-    ProvisionDuty,
     _SKIPPED_MODULES,
     _SUPPORTED_MODULES,
+    ProvisionDuty,
     provision_module,
 )
 
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
 )
-LIFECYCLE_SPEC = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-lifecycle/SPEC.md"
-)
+LIFECYCLE_SPEC = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/SPEC.md"
 
 
 def _repo_root() -> Path:
@@ -73,9 +69,7 @@ def test_lifecycle_nongoals_name_authoring_tool_and_consume_sidecar() -> None:
     assert "status: absorbed" in stub
     assert "absorbed-into: spec-pyforge-steward" in stub
     parent = (
-        root
-        / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-        / "spec-pyforge-steward/SPEC.md"
+        root / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/" / "spec-pyforge-steward/SPEC.md"
     ).read_text(encoding="utf-8")
     register = (root / REGISTER_RELATIVE).read_text(encoding="utf-8")
     corpus = parent + "\n" + register

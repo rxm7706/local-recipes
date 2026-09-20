@@ -136,3 +136,16 @@ warnings: []
 **Follow-up review recommendation: false** -- all four findings are isolated to `commit_and_push_dashboard`'s own write sequence and the shared exception-formatting boundary, each covered by a dedicated new test proving the fix; no new design questions opened.
 
 **Re-verification (2026-08-07, after all four patches):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- **126 passed** (122 pre-review-pass baseline + 4 new tests; one of the four review tests -- the status "ahead of origin" note -- lives in and is counted under Story 2.4's own spec).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `471e214840` (2026-08-07, "herald: Story 2.2 — --commit opt-in flag on herald deck pull"); also `a65962b2bb` (2026-08-07, "scribe: Story 2.2 — nightly compile from named tool surfaces"); also `0ae1a7797c` (2026-08-07, "doctor: Story 2.2 — cve and abandonment watch axes"). Ledger row `2-2-nothing-happens-unless-something-actually-changed: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_pull.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -127,3 +127,16 @@ not just to inputs this module's own writers can produce.
 green, unmodified).
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d50fa325b1` (2026-08-08, "herald: Story 10.1/10.3/10.6 — notice storage, redirects, lifecycle"). Ledger row `10-3-notice-archive-redirects: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/notices.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_notices.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

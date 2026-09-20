@@ -148,9 +148,7 @@ def test_live_repeatable_fields_are_sequences() -> None:
 
 def test_live_station_frames_inherit_the_company_frame() -> None:
     report = preflight_frames(_repo_root())
-    company = next(
-        d for d in report.frames if d.fields["identifier"] == COMPANY_IDENTIFIER
-    )
+    company = next(d for d in report.frames if d.fields["identifier"] == COMPANY_IDENTIFIER)
     assert company.fields.get("inherits") in (None, [], "")
     stations = [d for d in report.frames if d.fields["identifier"] != COMPANY_IDENTIFIER]
     assert len(stations) == 8
@@ -171,9 +169,7 @@ def test_missing_required_field_fails(tmp_path: Path) -> None:
     broken.write_text(text.replace("maintainer:\n  - herald\n", ""), encoding="utf-8")
     report = preflight_frames(tmp_path)
     assert not report.ok
-    assert any(
-        f.code == "missing-field" and "maintainer" in f.message for f in report.findings
-    )
+    assert any(f.code == "missing-field" and "maintainer" in f.message for f in report.findings)
 
 
 @pytest.mark.parametrize("field", SCALAR_REQUIRED)
@@ -210,9 +206,7 @@ def test_scalar_repeatable_field_is_reported(tmp_path: Path, field: str) -> None
     finding = next(f for f in report.findings if f.code == "scalar-repeatable")
     assert field in finding.message
     # ...and the scalar did not break resolution: no inherits/identity finding.
-    assert not any(
-        f.code in {"inherits", "company", "unexpected-identifier"} for f in report.findings
-    )
+    assert not any(f.code in {"inherits", "company", "unexpected-identifier"} for f in report.findings)
 
 
 def test_station_without_inherits_fails(tmp_path: Path) -> None:
@@ -491,7 +485,9 @@ def test_fetch_pinned_checkout_without_git_raises(tmp_path: Path, monkeypatch: p
         frames_mod.fetch_pinned_checkout(pin, tmp_path / "co")
 
 
-def test_main_upstream_check_flag_routes_and_returns_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+def test_main_upstream_check_flag_routes_and_returns_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
     monkeypatch.setattr(frames_mod, "upstream_check", lambda repo_root: (EXIT_FAIL, "stand-in report"))
     assert main(["--repo", str(tmp_path), "--upstream-check"]) == EXIT_FAIL
     assert "stand-in report" in capsys.readouterr().out

@@ -11,6 +11,7 @@ not the real wrapper's subprocess-delegation one). Invocable as
 `[interpreter, script, *extra_argv]`; extra argv (`--dry-run`, etc.) is
 ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -18,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"success": true, "updated": true, "new_version": "9.9.9", '
-        '"message": "Recipe updated successfully."}'
-    ))
+    sys.exit(
+        _stub_support.emit(
+            '{"success": true, "updated": true, "new_version": "9.9.9", "message": "Recipe updated successfully."}'
+        )
+    )

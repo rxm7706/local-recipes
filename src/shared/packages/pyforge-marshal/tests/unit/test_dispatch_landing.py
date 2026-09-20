@@ -7,6 +7,7 @@ import types
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
@@ -46,15 +47,9 @@ def test_union_sprint_ledger_maps_done_beats_backlog() -> None:
 
 
 def test_may_attempt_only_when_verified_and_not_merged() -> None:
-    assert may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.VERIFIED, story_merged_on_main=False
-    )
-    assert not may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.REFUSED, story_merged_on_main=False
-    )
-    assert not may_attempt_dispatch_landing(
-        DispatchVerificationVerdict.VERIFIED, story_merged_on_main=True
-    )
+    assert may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=False)
+    assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.REFUSED, story_merged_on_main=False)
+    assert not may_attempt_dispatch_landing(DispatchVerificationVerdict.VERIFIED, story_merged_on_main=True)
 
 
 def test_merge_subject_is_marshal_native_with_policy_template() -> None:
@@ -64,14 +59,10 @@ def test_merge_subject_is_marshal_native_with_policy_template() -> None:
         flags={},
     )
     template = effective.merge_subject_template.value
-    story_key = normalize(
-        "22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native"
-    )
+    story_key = normalize("22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native")
     subject = render_merge_subject(story_key, template, "pyforge-marshal")
     assert merge_subject_is_marshal_native(subject, template, "pyforge-marshal")
-    native = promotion.marshal_native_merged_keys(
-        (subject,), template, "pyforge-marshal"
-    )
+    native = promotion.marshal_native_merged_keys((subject,), template, "pyforge-marshal")
     assert story_key in native
 
 
@@ -100,13 +91,9 @@ class FakeVcs:
 
     def commit_subjects(self, repo_root: Path, ref: str):
         if self._merged:
-            effective, _ = policy.compose(
-                project_slug="pyforge-marshal", project={}, flags={}
-            )
+            effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
             key = normalize("22-4-example")
-            subject = render_merge_subject(
-                key, effective.merge_subject_template.value, "pyforge-marshal"
-            )
+            subject = render_merge_subject(key, effective.merge_subject_template.value, "pyforge-marshal")
             return (subject,)
         return ()
 
@@ -255,9 +242,7 @@ class _RecordingForge(FakeForge):
         return None
 
 
-def test_reconcile_spec_surface_drift_noop_when_no_drift_findings(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_noop_when_no_drift_findings(tmp_path: Path, monkeypatch) -> None:
     """No 'drift'/'drift-presumed' findings at all -- nothing to reconcile,
     no side effects."""
     _install_fake_spec_surface(monkeypatch, ())
@@ -280,17 +265,14 @@ def test_reconcile_spec_surface_drift_noop_when_no_drift_findings(
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_skips_unrelated_pre_existing_drift(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_skips_unrelated_pre_existing_drift(tmp_path: Path, monkeypatch) -> None:
     """A spec's drift with ZERO overlap against this branch's own changed
     files is pre-existing and unrelated -- not this landing's to reconcile
     or refuse on."""
     findings = (
         _SurfaceFinding(
             "drift",
-            "path drifted — reconcile the spec, then --write-baseline "
-            "--spec pyforge-marshal/spec-unrelated",
+            "path drifted — reconcile the spec, then --write-baseline --spec pyforge-marshal/spec-unrelated",
             "some/unrelated/file.py",
         ),
     )
@@ -314,9 +296,7 @@ def test_reconcile_spec_surface_drift_skips_unrelated_pre_existing_drift(
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_no_baseline_spec_this_branch_touched(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_no_baseline_spec_this_branch_touched(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (B2/E1): a spec with no stamped baseline has no
     per-file drift breakdown to diff against ``changed`` at all -- fail
     closed rather than silently skip it, but only when this branch actually
@@ -328,18 +308,14 @@ def test_reconcile_spec_surface_drift_refuses_no_baseline_spec_this_branch_touch
         (
             _SurfaceFinding(
                 "no-baseline",
-                "pyforge-marshal/spec-gamma: run --write-baseline "
-                "--spec pyforge-marshal/spec-gamma",
+                "pyforge-marshal/spec-gamma: run --write-baseline --spec pyforge-marshal/spec-gamma",
                 "",
             ),
         ),
     )
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    touched = (
-        "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/"
-        "spec-gamma/spec-gamma.md"
-    )
+    touched = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-gamma/spec-gamma.md"
     vcs = _ReconcileVcs(changed=(touched,))
     process = FakeProcess()
     outcome = _reconcile_spec_surface_drift(
@@ -370,8 +346,7 @@ def test_reconcile_spec_surface_drift_skips_no_baseline_spec_this_branch_did_not
         (
             _SurfaceFinding(
                 "no-baseline",
-                "pyforge-marshal/spec-gamma: run --write-baseline "
-                "--spec pyforge-marshal/spec-gamma",
+                "pyforge-marshal/spec-gamma: run --write-baseline --spec pyforge-marshal/spec-gamma",
                 "",
             ),
         ),
@@ -395,9 +370,7 @@ def test_reconcile_spec_surface_drift_skips_no_baseline_spec_this_branch_did_not
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(tmp_path: Path, monkeypatch) -> None:
     """The 2026-09-20 fixture shape: own drift spans more than one
     co-governing spec -- each gets its own memlog append, one scoped stamp
     names every drifted spec, the reconcile is committed and pushed, and a
@@ -405,14 +378,12 @@ def test_reconcile_spec_surface_drift_reconciles_own_drift_across_specs(
     findings = (
         _SurfaceFinding(
             "drift",
-            "path drifted — reconcile the spec, then --write-baseline "
-            "--spec pyforge-marshal/spec-alpha",
+            "path drifted — reconcile the spec, then --write-baseline --spec pyforge-marshal/spec-alpha",
             "src/a.py",
         ),
         _SurfaceFinding(
             "drift-presumed",
-            "path presumed drifted — confirm it was reconciled, then "
-            "--write-baseline --spec pyforge-marshal/spec-beta",
+            "path presumed drifted — confirm it was reconciled, then --write-baseline --spec pyforge-marshal/spec-beta",
             "src/b.py",
         ),
     )
@@ -487,9 +458,7 @@ def test_spec_surface_name_re_matches_doctor_message_formats() -> None:
         assert match.group(1) == name
 
 
-def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (S3): a drifted spec named by a DIFFERENT project
     than the one being landed is handled by the same generic
     ``name.partition("/")`` string logic as an own-project spec -- this
@@ -528,9 +497,7 @@ def test_reconcile_spec_surface_drift_reconciles_cross_project_co_governor(
     assert "other-project/spec-zeta" in stamp_calls[0][0]
 
 
-def test_reconcile_spec_surface_drift_refuses_foreign_drift(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_foreign_drift(tmp_path: Path, monkeypatch) -> None:
     """A spec's drift names a path this branch did NOT change -- foreign
     drift is refused (MRS-DISP-048) naming the foreign path, never absorbed
     into a scoped stamp, and nothing is committed or pushed."""
@@ -568,9 +535,7 @@ def test_reconcile_spec_surface_drift_refuses_foreign_drift(
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(tmp_path: Path, monkeypatch) -> None:
     """The memlog append subprocess runs but refuses (locked file, missing
     frontmatter, ...) -- refused (MRS-DISP-048), never silently skipped,
     nothing stamped or committed."""
@@ -611,9 +576,7 @@ def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_when_memlog_process_errors(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_when_memlog_process_errors(tmp_path: Path, monkeypatch) -> None:
     """The memlog append subprocess fails to even launch -- refused
     (MRS-DISP-048), same as a non-zero exit."""
     findings = (
@@ -642,9 +605,7 @@ def test_reconcile_spec_surface_drift_refuses_when_memlog_process_errors(
     assert vcs.committed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_when_per_spec_commit_fails(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_when_per_spec_commit_fails(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (V2): the per-spec memlog commit (inside the
     B4/E2 loop) raising ``VcsCommandError`` refuses the landing
     (MRS-DISP-048) naming the spec, rather than proceeding to the stamp
@@ -684,9 +645,7 @@ def test_reconcile_spec_surface_drift_refuses_when_per_spec_commit_fails(
     assert vcs.pushed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_when_stamp_subprocess_exits_nonzero(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_when_stamp_subprocess_exits_nonzero(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (V2): a non-zero exit from the scoped
     ``spec_surface_check.py --write-baseline`` stamp refuses the landing
     (MRS-DISP-048), after the per-spec memlog append/commit already
@@ -730,9 +689,7 @@ def test_reconcile_spec_surface_drift_refuses_when_stamp_subprocess_exits_nonzer
     assert vcs.pushed == []
 
 
-def test_reconcile_spec_surface_drift_refuses_when_final_push_fails(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_refuses_when_final_push_fails(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (V2): the final baseline-stamp commit succeeds
     but the push to ``head_branch`` raises ``VcsCommandError`` -- refused
     (MRS-DISP-048), never treated as a landed reconcile."""
@@ -769,9 +726,7 @@ def test_reconcile_spec_surface_drift_refuses_when_final_push_fails(
     assert vcs.pushed == []
 
 
-def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_push(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_push(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (V2): the reconcile committed and pushed onto
     ``head_branch`` (a non-refusing MRS-DISP-047), but re-resolving the
     branch's tip afterward raises ``VcsCommandError`` -- refused
@@ -816,9 +771,7 @@ def test_execute_dispatch_land_refuses_when_resolve_ref_fails_after_reconcile_pu
     assert forge.merge_calls == []
 
 
-def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(tmp_path: Path, monkeypatch) -> None:
     """`pyforge.doctor` is not importable at all here (no fake module
     installed, and this package's own pixi env doesn't ship it) -- this is
     the exact path a real dispatch worktree never hits (always a full
@@ -847,9 +800,7 @@ def test_reconcile_spec_surface_drift_degrades_when_doctor_unreachable(
     assert outcome.finding.code == "MRS-DISP-047"
 
 
-def test_execute_dispatch_land_reconciles_own_drift_before_merging(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_execute_dispatch_land_reconciles_own_drift_before_merging(tmp_path: Path, monkeypatch) -> None:
     """End-to-end: a landing whose branch left drift on its OWN governed
     files reconciles it before ``forge.merge_pr`` -- and the sha handed to
     ``forge.merge_pr`` (and reported in the envelope) is the POST-reconcile
@@ -893,9 +844,7 @@ def test_execute_dispatch_land_reconciles_own_drift_before_merging(
     assert vcs.pushed.count("dispatch/pyforge-marshal/22.4") == 2
 
 
-def test_execute_dispatch_land_refuses_on_foreign_spec_surface_drift(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_execute_dispatch_land_refuses_on_foreign_spec_surface_drift(tmp_path: Path, monkeypatch) -> None:
     """End-to-end: foreign drift on a shared spec refuses the landing
     (MRS-DISP-048) and never reaches ``forge.merge_pr``."""
     _install_fake_spec_surface(
@@ -1117,10 +1066,7 @@ def test_execute_dispatch_land_advances_main_when_merge_tree_clean_and_github_di
 def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
-    ledger_rel = (
-        "_bmad-output/projects/pyforge-marshal/planning-artifacts/"
-        "sprint-status-ledger.yaml"
-    )
+    ledger_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     vcs = HealCapableVcs(
         conflict_paths=(ledger_rel,),
         main_ledger=_ledger_yaml(("28-19-x", "done")),
@@ -1406,9 +1352,7 @@ class MergeTreePreviewVcs(FakeVcs):
         self.merge_tree_write_calls.append((base, branch))
         return self.tree_oid
 
-    def add_worktree_for_tree(
-        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
-    ) -> None:
+    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
         self.add_worktree_for_tree_calls.append((home, tree_oid, parent))
         self.preview_home = home
         if self.add_worktree_raises:
@@ -1493,9 +1437,7 @@ def test_execute_dispatch_land_lands_when_merge_tree_preview_is_clean(
     worktree.mkdir()
     vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid")
     process = FakeProcess()
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
-    )
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={})
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="51-1-example",
@@ -1659,9 +1601,7 @@ def test_execute_dispatch_land_falls_back_to_rmtree_when_remove_worktree_raises(
     worktree.mkdir()
     vcs = MergeTreePreviewVcs(behind=3, tree_oid="preview-tree-oid", remove_worktree_raises=True)
     process = FakeProcess()
-    effective, _ = policy.compose(
-        project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={}
-    )
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={"verify_commands": ["true"]}, flags={})
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
         story_key="51-1-example",
@@ -1678,9 +1618,7 @@ def test_execute_dispatch_land_falls_back_to_rmtree_when_remove_worktree_raises(
     assert vcs.pruned_repo_roots == [tmp_path]
 
 
-def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_execute_dispatch_land_mutation_without_merge_tree_check_lands_green(tmp_path: Path, monkeypatch) -> None:
     """Mutation test: stubbing the merge-tree-preview check to a no-op makes
     the 50.4/27.5 fixture land GREEN -- proving THIS check, not some other
     mechanism, is what refuses it."""
@@ -1730,16 +1668,9 @@ def test_blocked_twin_promotion_text_promotes_differing_primary() -> None:
 
 
 def test_blocked_twin_promotion_text_none_when_unreadable_primary() -> None:
-    assert (
-        blocked_twin_promotion_text(
-            primary_text=None, worktree_text="---\nstatus: blocked\n---\n"
-        )
-        is None
-    )
+    assert blocked_twin_promotion_text(primary_text=None, worktree_text="---\nstatus: blocked\n---\n") is None
 
 
 def test_blocked_twin_promotion_text_none_when_already_matching() -> None:
     text = "---\nstatus: blocked\n---\n"
-    assert (
-        blocked_twin_promotion_text(primary_text=text, worktree_text=text) is None
-    )
+    assert blocked_twin_promotion_text(primary_text=text, worktree_text=text) is None

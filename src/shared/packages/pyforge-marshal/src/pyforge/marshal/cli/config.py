@@ -41,10 +41,10 @@ import argparse
 import json
 import os
 import sys
+import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
-import tomllib
 from pyforge.core.atomic_write import atomic_write_bytes
 from pyforge.core.errors import PyforgeError
 
@@ -377,14 +377,9 @@ def _parse_set_item(item: str) -> tuple[str, str]:
         # "list/mapping-typed" is a false statement about their own policy
         # vocabulary, and sends them looking for a type error that does not
         # exist.
-        reason = (
-            "the project-policy-only key"
-            if key in _PROJECT_POLICY_ONLY_KEYS
-            else "the list/mapping-typed key"
-        )
+        reason = "the project-policy-only key" if key in _PROJECT_POLICY_ONLY_KEYS else "the list/mapping-typed key"
         raise argparse.ArgumentTypeError(
-            f"--set cannot target {reason} {key!r}; "
-            "supply it via the --project-policy TOML layer"
+            f"--set cannot target {reason} {key!r}; supply it via the --project-policy TOML layer"
         )
     return key, raw_value
 
@@ -545,14 +540,10 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
         # `target_dir` (returns False) either way.
         target_path = target_dir / f"policy-{effective_policy.content_hash}.json"
         payload = _policy_fields_payload(effective_policy)
-        expected_bytes = (
-            json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        ).encode("utf-8")
+        expected_bytes = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
         if target_path.exists():
             if not target_path.is_file():
-                raise PolicyIOError(
-                    f"cannot materialize policy: {target_path} exists and is not a file"
-                )
+                raise PolicyIOError(f"cannot materialize policy: {target_path} exists and is not a file")
             if target_path.read_bytes() != expected_bytes:
                 raise PolicyIOError(
                     f"cannot materialize policy: {target_path} already exists "
@@ -634,9 +625,7 @@ def run_config(args: argparse.Namespace) -> int:
     # `is not None`, never `or` -- an explicit `--project ""` must win over
     # BMAD_ACTIVE_PROJECT (Python truthiness would otherwise treat an empty
     # flag value as "omitted" and silently fall through to the env var).
-    project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
-    )
+    project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
     # `--project-policy` is read BEFORE compose() -- a read failure here
     # means compose() never ran with real project data, so it reruns with an
@@ -700,9 +689,7 @@ def run_config(args: argparse.Namespace) -> int:
             except PolicyIOError as exc:
                 findings = (*findings, exc.finding)
         else:
-            materialize_skipped = (
-                "composition carried error-severity findings; nothing was written"
-            )
+            materialize_skipped = "composition carried error-severity findings; nothing was written"
 
     # The OPERATOR path to the harness projection. Story 1.10 untracked and
     # gitignored `.bmad-loop/policy.toml` and shipped `write_policy_toml`, but
@@ -742,9 +729,7 @@ def run_config(args: argparse.Namespace) -> int:
                     ),
                 )
             try:
-                harness_policy_path = write_policy_toml(
-                    effective, args.write_harness_policy
-                )
+                harness_policy_path = write_policy_toml(effective, args.write_harness_policy)
             except HarnessPolicyWriteError as exc:
                 # Reuses MRS-POLICY-004, whose registered meaning is exactly
                 # this: "a CLI-boundary I/O step fails (an unwritable
@@ -754,10 +739,7 @@ def run_config(args: argparse.Namespace) -> int:
                 # would be a second concept for one condition.
                 findings = (*findings, PolicyIOError(str(exc)).finding)
         else:
-            harness_policy_skipped = (
-                "composition carried error-severity findings; the harness policy "
-                "was not written"
-            )
+            harness_policy_skipped = "composition carried error-severity findings; the harness policy was not written"
 
     data: dict[str, object] = {
         "policy": _policy_fields_payload(effective),
@@ -773,9 +755,7 @@ def run_config(args: argparse.Namespace) -> int:
         data["harness_policy_skipped"] = harness_policy_skipped
 
     verdict_value = compute_verdict(findings)
-    envelope = build_envelope(
-        command="config", verdict=verdict_value, data=data, findings=findings
-    )
+    envelope = build_envelope(command="config", verdict=verdict_value, data=data, findings=findings)
 
     # flush=True is load-bearing, not stylistic: with stdout piped or
     # redirected it is BLOCK-buffered, so a plain print() never touches the
@@ -831,7 +811,7 @@ def _suppress_downstream_pipe_close() -> None:
         return
     try:
         os.dup2(devnull, sys.stdout.fileno())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         # A stdout with no usable fd has no shutdown flush to protect;
         # io.UnsupportedOperation is a ValueError.
         pass

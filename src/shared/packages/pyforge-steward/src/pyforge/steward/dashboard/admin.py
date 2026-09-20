@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.contrib import admin
+
 from pyforge.steward.dashboard.models import AuditEntry, CorridorLoad, WorkPassport
 
 

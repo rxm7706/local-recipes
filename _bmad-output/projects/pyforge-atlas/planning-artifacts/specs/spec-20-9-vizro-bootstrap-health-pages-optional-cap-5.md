@@ -2,7 +2,7 @@
 title: 'Vizro operator pages for bootstrap verification (Story 21.9, Epic 21, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'pending-verification'
 review_loop_iteration: 0
 context:
@@ -221,3 +221,17 @@ fixed; only the concrete filepath is TBD.
 - Open each of the 3 new pages against an empty `PYFORGE_ATLAS_DATA_ROOT` and confirm the
   legibility Card states the data gap honestly (mirrors the existing 19 BSL-shell pages'
   "renders empty until … materializes" note style).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `20-9-vizro-bootstrap-health-pages-optional-cap-5: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `20-9-vizro-bootstrap-health-pages-optional-cap-5: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

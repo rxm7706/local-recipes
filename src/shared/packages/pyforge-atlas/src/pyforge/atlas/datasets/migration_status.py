@@ -210,7 +210,7 @@ class _StaleAwareStatusSource(AbstractDataset):
             return None
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return None
         if not isinstance(raw, dict):
             return None
@@ -254,7 +254,7 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
             return None
         try:
             return json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return None
 
     def refresh(self, *, fetcher: Callable[[str], Any] | None = None) -> Any:
@@ -389,9 +389,7 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 any_failure = True
                 continue
             try:
-                self._atomic_write(
-                    self._partitions_dir / self._partition_filename(name), json.dumps(payload)
-                )
+                self._atomic_write(self._partitions_dir / self._partition_filename(name), json.dumps(payload))
             except (OSError, TypeError, ValueError) as exc:  # write failure → keep last-good.
                 logger.warning("migration detail write failed for %s, keeping last-good: %s", name, exc)
                 any_failure = True
@@ -417,7 +415,7 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 continue
             try:
                 out[path.stem] = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):  # a corrupt partition is skipped, not fatal (AD-13).
+            except OSError, ValueError:  # a corrupt partition is skipped, not fatal (AD-13).
                 logger.warning("migration detail partition unreadable, skipping: %s", path)
                 continue
         return out

@@ -15,6 +15,15 @@ from pathlib import Path
 
 import pytest
 from kedro.framework.hooks import specs as kedro_hook_specs
+from pyforge.core.hooks import (
+    ENTRY_POINT_GROUP,
+    DummyPlugin,
+    HookSpec,
+    PluginError,
+    PluginRegistry,
+    SecondVerdictError,
+    publish_verdict,
+)
 
 from pyforge.atlas.admission import RunAdmissionHooks
 from pyforge.atlas.cap18 import (
@@ -37,15 +46,6 @@ from pyforge.atlas.hooks import ProjectHooks
 from pyforge.atlas.observability import AtlasObservabilityHooks
 from pyforge.atlas.settings import HOOKS
 from pyforge.atlas.validation import DataValidationHooks
-from pyforge.core.hooks import (
-    ENTRY_POINT_GROUP,
-    DummyPlugin,
-    HookSpec,
-    PluginError,
-    PluginRegistry,
-    SecondVerdictError,
-    publish_verdict,
-)
 
 MEMBER_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = MEMBER_DIR.parents[3]
@@ -59,6 +59,7 @@ _ATLAS_PR_GATE = re.compile(
     r"|(pyforge[-_]atlas[-_].*verdict)",
     re.IGNORECASE,
 )
+
 
 def _kedro_spec_classes() -> dict[str, type]:
     found: dict[str, type] = {}
@@ -92,11 +93,7 @@ def _atlas_hook_impl_methods() -> set[tuple[str, str]]:
                     continue
                 if any(
                     (isinstance(d, ast.Name) and d.id == "hook_impl")
-                    or (
-                        isinstance(d, ast.Call)
-                        and isinstance(d.func, ast.Name)
-                        and d.func.id == "hook_impl"
-                    )
+                    or (isinstance(d, ast.Call) and isinstance(d.func, ast.Name) and d.func.id == "hook_impl")
                     for d in item.decorator_list
                 ):
                     found.add((node.name, item.name))
@@ -118,12 +115,7 @@ def test_every_kedro_spec_method_is_mapped_or_na_with_reason():
     bad_mapped = [
         f"{row.kedro_spec}.{row.kedro_method}"
         for row in KEDRO_HOOK_MAP
-        if row.mapped()
-        and (
-            row.fr43_point not in {"before", "after"}
-            or not row.hook_spec
-            or not row.backends
-        )
+        if row.mapped() and (row.fr43_point not in {"before", "after"} or not row.hook_spec or not row.backends)
     ]
     assert not bad_na, f"N/A rows missing a reason: {bad_na}"
     assert not bad_mapped, f"mapped rows incomplete: {bad_mapped}"
@@ -158,9 +150,7 @@ def test_every_atlas_hook_impl_appears_on_the_map():
     missing = impls - listed
     extra_backends = listed - impls
     assert not missing, f"@hook_impl not on KEDRO_HOOK_MAP: {sorted(missing)}"
-    assert not extra_backends, (
-        f"KEDRO_HOOK_MAP backends claim impls that are absent: {sorted(extra_backends)}"
-    )
+    assert not extra_backends, f"KEDRO_HOOK_MAP backends claim impls that are absent: {sorted(extra_backends)}"
     for row in KEDRO_HOOK_MAP:
         if not row.backends:
             continue
@@ -176,9 +166,7 @@ def test_around_is_explicitly_na():
 
 
 def test_default_plugins_load_from_entry_points_and_invoke_before_after():
-    discovered = {
-        ep.name: ep.value for ep in entry_points(group=ENTRY_POINT_GROUP)
-    }
+    discovered = {ep.name: ep.value for ep in entry_points(group=ENTRY_POINT_GROUP)}
     for name, target in (
         ("atlas-catalog-ttl", "pyforge.atlas.cap18:CatalogTtlPlugin"),
         ("atlas-pipeline-observability", "pyforge.atlas.cap18:PipelineObservabilityPlugin"),
@@ -279,6 +267,4 @@ def test_no_atlas_job_publishes_a_pr_gate_beside_warden():
     for name in _pixi_atlas_task_names(pixi):
         if _ATLAS_PR_GATE.search(name):
             hits.append(f"pixi task {name}")
-    assert not hits, (
-        "atlas must not publish a pipeline PR pass/fail beside Warden: " + "; ".join(hits)
-    )
+    assert not hits, "atlas must not publish a pipeline PR pass/fail beside Warden: " + "; ".join(hits)

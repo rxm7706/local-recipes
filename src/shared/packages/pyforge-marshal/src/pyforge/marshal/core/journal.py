@@ -93,6 +93,7 @@ from .egress import redact_raw_text
 from .identity import StoryKey, normalize
 from .model import Finding, Severity
 
+
 # AD-28's three-valued phase vocabulary. The earlier two-valued set forced
 # gate verdicts, story transitions, and other non-outcome facts into
 # `outcome`, which then required a mandatory `intent_id` that does not exist
@@ -192,10 +193,7 @@ def mint_run_id(slug: str, utc_compact: str, random_token: str) -> str:
             f"YYYYMMDDTHHMMSSmmmZ (e.g. '20260803T054512123Z'), got {utc_compact!r}"
         )
     if not isinstance(random_token, str) or not _RANDOM_TOKEN_PATTERN.match(random_token):
-        raise ValueError(
-            "random_token must be a non-empty lowercase-alphanumeric str, "
-            f"got {random_token!r}"
-        )
+        raise ValueError(f"random_token must be a non-empty lowercase-alphanumeric str, got {random_token!r}")
     return f"{slug}-{utc_compact}-{random_token}"
 
 
@@ -223,11 +221,7 @@ class JournalEntryId:
                 f"writer_id must match {_WRITER_ID_PATTERN.pattern!r} "
                 f"(non-empty, filesystem-safe), got {self.writer_id!r}"
             )
-        if (
-            not isinstance(self.counter, int)
-            or isinstance(self.counter, bool)
-            or self.counter < 0
-        ):
+        if not isinstance(self.counter, int) or isinstance(self.counter, bool) or self.counter < 0:
             raise ValueError(f"counter must be a non-negative int, got {self.counter!r}")
 
 
@@ -303,16 +297,13 @@ class JournalEntry:
         if self.story is not None and not isinstance(self.story, StoryKey):
             raise ValueError(f"story must be a StoryKey or None, got {self.story!r}")
         if self.intent_id is not None and not isinstance(self.intent_id, JournalEntryId):
-            raise ValueError(
-                f"intent_id must be a JournalEntryId or None, got {self.intent_id!r}"
-            )
+            raise ValueError(f"intent_id must be a JournalEntryId or None, got {self.intent_id!r}")
 
         if self.phase is Phase.OUTCOME and self.intent_id is None:
             raise ValueError("intent_id is required when phase is Phase.OUTCOME")
         if self.phase is not Phase.OUTCOME and self.intent_id is not None:
             raise ValueError(
-                f"intent_id must be absent when phase is {self.phase.value!r} "
-                "-- mandatory only for phase: outcome"
+                f"intent_id must be absent when phase is {self.phase.value!r} -- mandatory only for phase: outcome"
             )
 
         if not isinstance(self.payload, Mapping):
@@ -333,9 +324,7 @@ class JournalEntry:
         # (sorted or not) in agreement, and gives a clear ValueError instead
         # of a crash two functions away from the actual cause.
         if not all(isinstance(key, str) for key in copied_payload):
-            raise ValueError(
-                f"payload keys must all be str, got {copied_payload!r}"
-            )
+            raise ValueError(f"payload keys must all be str, got {copied_payload!r}")
         try:
             json.dumps(copied_payload)
         except (TypeError, ValueError) as exc:
@@ -417,10 +406,7 @@ class PreparedWrite:
         if not isinstance(self.line, str):
             raise ValueError(f"line must be a str, got {self.line!r}")
         if (self.sidecar_relative_path is None) != (self.sidecar_content is None):
-            raise ValueError(
-                "sidecar_relative_path and sidecar_content must be both None "
-                "or both set together"
-            )
+            raise ValueError("sidecar_relative_path and sidecar_content must be both None or both set together")
 
 
 def _sidecar_path_for(entry_id: JournalEntryId) -> str:
@@ -458,14 +444,11 @@ def sidecar_refs_from_lines(lines: Sequence[str]) -> tuple[str, ...]:
     refs: list[str] = []
     seen: set[str] = set()
     for line in lines:
-        if (
-            '"sidecar_ref"' not in line
-            and SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF not in line
-        ):
+        if '"sidecar_ref"' not in line and SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF not in line:
             continue
         try:
             document = json.loads(line)
-        except (ValueError, TypeError, RecursionError):
+        except ValueError, TypeError, RecursionError:
             continue
         if not isinstance(document, Mapping):
             continue
@@ -510,7 +493,7 @@ def resolve_scope_violation_advisories_from_payload(
         return ()
     try:
         parsed = json.loads(blob)
-    except (ValueError, TypeError, RecursionError):
+    except ValueError, TypeError, RecursionError:
         return ()
     if not isinstance(parsed, Mapping):
         return ()
@@ -749,15 +732,9 @@ class FoldResult:
             ("orphaned_outcomes", self.orphaned_outcomes),
         ):
             if not all(isinstance(item, JournalEntry) for item in value):
-                raise ValueError(
-                    f"{field_name} must contain only JournalEntry instances, "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"{field_name} must contain only JournalEntry instances, got {value!r}")
         if not all(isinstance(item, QuarantinedRecord) for item in self.quarantined):
-            raise ValueError(
-                "quarantined must contain only QuarantinedRecord instances, "
-                f"got {self.quarantined!r}"
-            )
+            raise ValueError(f"quarantined must contain only QuarantinedRecord instances, got {self.quarantined!r}")
         # AD-28's total order is a property of this TYPE, not just of what
         # `fold` happens to build: both `by_kind` and `for_story` advertise
         # their results "in `entries`'s own AD-28 total order", and a
@@ -891,9 +868,7 @@ class FoldResult:
         if not isinstance(seed, tuple) or not all(isinstance(path, str) for path in seed):
             raise TypeError(f"seed must be a tuple of str, got {seed!r}")
 
-        live: dict[str, FrozenPath] = {
-            path: FrozenPath(path=path, story_key=None) for path in seed if path
-        }
+        live: dict[str, FrozenPath] = {path: FrozenPath(path=path, story_key=None) for path in seed if path}
         for entry in self.entries:
             if entry.kind == KIND_FREEZE_DECLARED:
                 path = entry.payload.get("path")
@@ -981,9 +956,7 @@ def fold(
             entry = _parse_entry(raw_line, sidecars)
         except _SidecarUnresolved as exc:
             story, kind = _best_effort_recover(raw_line)
-            quarantined.append(
-                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc))
-            )
+            quarantined.append(_quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc)))
         except (ValueError, TypeError, RecursionError) as exc:
             # RecursionError too (review finding, verified live): `json.loads`
             # on an adversarially/corruptly deep-nested line or sidecar blob
@@ -992,9 +965,7 @@ def fold(
             # bad line must never abort the whole fold" guarantee this
             # function's docstring makes, for a distinct exception type.
             story, kind = _best_effort_recover(raw_line)
-            quarantined.append(
-                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc))
-            )
+            quarantined.append(_quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc)))
         else:
             parsed.append(entry)
 
@@ -1014,9 +985,7 @@ def fold(
             orphaned_outcomes.append(entry)
 
     open_intents = tuple(
-        entry
-        for entry in parsed
-        if entry.phase is Phase.INTENT and entry.id not in matched_intent_ids
+        entry for entry in parsed if entry.phase is Phase.INTENT and entry.id not in matched_intent_ids
     )
 
     return FoldResult(
@@ -1156,14 +1125,10 @@ def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEn
         # -- a LINE parse failure -- defeating the exact discrimination the
         # two codes exist to make. The failure domain is the sidecar either
         # way, so it belongs to MRS-JOURNAL-002.
-        raise _SidecarUnresolved(
-            f"sidecar blob {ref!r} resolved to an invalid payload: {exc}"
-        ) from exc
+        raise _SidecarUnresolved(f"sidecar blob {ref!r} resolved to an invalid payload: {exc}") from exc
 
 
-def _scope(
-    story: StoryKey | None, kind: str | None
-) -> tuple[StoryKey | None, str | None]:
+def _scope(story: StoryKey | None, kind: str | None) -> tuple[StoryKey | None, str | None]:
     """AD-30's explicit widening rule: a quarantined line's scope is the
     ``(story, kind)`` pair ONLY when BOTH recover; either missing widens to
     ``(None, None)`` -- the whole run. No partial-recovery heuristic exists
@@ -1205,7 +1170,7 @@ def _best_effort_recover(raw_line: object) -> tuple[StoryKey | None, str | None]
     ("Exceeds the limit (4300 digits) for integer string conversion")."""
     try:
         document = json.loads(raw_line)
-    except (ValueError, TypeError, RecursionError):
+    except ValueError, TypeError, RecursionError:
         return None, None
     if not isinstance(document, Mapping):
         return None, None
@@ -1215,7 +1180,7 @@ def _best_effort_recover(raw_line: object) -> tuple[StoryKey | None, str | None]
     if isinstance(raw_story, str):
         try:
             story = normalize(raw_story)
-        except (ValueError, TypeError, RecursionError):
+        except ValueError, TypeError, RecursionError:
             # The SAME full triple as the re-parse above and as `fold`'s own
             # loop -- not the narrower `MalformedStoryKeyError` (review
             # finding, verified live). `normalize` documents that one class,
@@ -1265,15 +1230,11 @@ def _quarantine(
         raw=raw_line,
         story=story,
         kind=kind,
-        finding=Finding(
-            code=code, severity=Severity.ERROR, message=message, path=redact_raw_text(raw_line)
-        ),
+        finding=Finding(code=code, severity=Severity.ERROR, message=message, path=redact_raw_text(raw_line)),
     )
 
 
-def intent_reconciles(
-    intent_payload: Mapping[str, object], evidence: Mapping[str, object]
-) -> bool:
+def intent_reconciles(intent_payload: Mapping[str, object], evidence: Mapping[str, object]) -> bool:
     """The reconciliation-evidence classification (Story 4.6, AD-6 x AD-21 x
     AD-28): pure, caller-gathered evidence in, ``bool`` out (AD-4) -- the
     CLI layer gathers ``evidence`` via ``VcsPort``/``ForgePort`` (a

@@ -48,6 +48,7 @@ from typing import Any, Protocol
 
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.hooks import HookSpec, PluginError
+
 from pyforge.scribe.models import GraphNode
 
 GRAPHSTORE_HOOK_SPEC = HookSpec(name="pyforge.scribe.graph_store", owner="scribe")
@@ -129,8 +130,7 @@ class FlatFileGraphStore:
             return
         document = json.loads(raw)
         self._nodes = {
-            node_id: GraphNode.model_validate(payload)
-            for node_id, payload in document.get("nodes", {}).items()
+            node_id: GraphNode.model_validate(payload) for node_id, payload in document.get("nodes", {}).items()
         }
         raw_compiled = document.get("compiled_at")
         if isinstance(raw_compiled, str) and raw_compiled:
@@ -157,9 +157,7 @@ class FlatFileGraphStore:
         existing = self._nodes.get(node_id)
         if existing is None:
             raise ValueError(f"cannot invalidate unknown node id {node_id!r} -- upsert it first")
-        self._nodes[node_id] = existing.model_copy(
-            update={"valid_until": ended_at, "superseded_by": superseded_by}
-        )
+        self._nodes[node_id] = existing.model_copy(update={"valid_until": ended_at, "superseded_by": superseded_by})
 
     def query_by_citation(self, citation: str) -> list[GraphNode]:
         return [node for node in self._nodes.values() if node.citation == citation]
@@ -187,17 +185,12 @@ class FlatFileGraphStore:
         later `commit()` to trip over).
         """
         document: dict[str, Any] = {
-            "nodes": {
-                node_id: json.loads(node.model_dump_json())
-                for node_id, node in sorted(self._nodes.items())
-            }
+            "nodes": {node_id: json.loads(node.model_dump_json()) for node_id, node in sorted(self._nodes.items())}
         }
         if self.compiled_at is not None:
             document["compiled_at"] = self.compiled_at.isoformat()
         with _locked(self.store_path):
-            atomic_write_text(
-                self.store_path, json.dumps(document, indent=2, sort_keys=True) + "\n"
-            )
+            atomic_write_text(self.store_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
 
 
 @contextlib.contextmanager

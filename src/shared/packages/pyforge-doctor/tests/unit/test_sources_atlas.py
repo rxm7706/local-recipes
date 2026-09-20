@@ -94,9 +94,7 @@ def test_mcp_success_never_calls_cli_runner():
     def cli_runner_should_not_run(script_path, args):
         raise AssertionError("CLI fallback must not run when MCP succeeds")
 
-    findings = gather(
-        "staleness", mcp_caller=_mcp_ok(), cli_runner=cli_runner_should_not_run
-    )
+    findings = gather("staleness", mcp_caller=_mcp_ok(), cli_runner=cli_runner_should_not_run)
     assert len(findings) == 2
 
 
@@ -127,9 +125,7 @@ def test_keyboard_interrupt_during_mcp_call_propagates_not_swallowed():
     never be treated as "no MCP client available"."""
 
     def cli_runner_should_not_run(script_path, args):
-        raise AssertionError(
-            "CLI fallback must not run for a propagated KeyboardInterrupt"
-        )
+        raise AssertionError("CLI fallback must not run for a propagated KeyboardInterrupt")
 
     with pytest.raises(KeyboardInterrupt):
         gather(
@@ -163,11 +159,7 @@ def test_mcp_transport_is_bounded_by_the_timeout_argument(monkeypatch):
     monkeypatch.setattr(stdio_module, "stdio_client", _HangingStdioClient)
 
     with pytest.raises(TimeoutError):
-        asyncio.run(
-            _call_mcp_async(
-                Path("/nonexistent"), "staleness_report", {}, timeout=0.05
-            )
-        )
+        asyncio.run(_call_mcp_async(Path("/nonexistent"), "staleness_report", {}, timeout=0.05))
 
 
 def test_mcp_non_list_payload_falls_back_to_cli():
@@ -195,12 +187,10 @@ def test_mcp_and_cli_paths_are_field_for_field_equivalent():
 
     assert len(via_mcp) == len(via_cli)
     mcp_dicts = sorted(
-        (f.source.value, f.check, f.status.value, f.message, tuple(sorted(f.evidence.items())))
-        for f in via_mcp
+        (f.source.value, f.check, f.status.value, f.message, tuple(sorted(f.evidence.items()))) for f in via_mcp
     )
     cli_dicts = sorted(
-        (f.source.value, f.check, f.status.value, f.message, tuple(sorted(f.evidence.items())))
-        for f in via_cli
+        (f.source.value, f.check, f.status.value, f.message, tuple(sorted(f.evidence.items()))) for f in via_cli
     )
     assert mcp_dicts == cli_dicts
 
@@ -228,9 +218,7 @@ def test_cli_unparseable_json_degrades_to_one_fail_finding_no_exception():
     findings = gather(
         "staleness",
         mcp_caller=_mcp_raises(ConnectionError("simulated: server unreachable")),
-        cli_runner=_cli_raises(
-            CliBridgeError("script.py produced unparseable JSON on stdout")
-        ),
+        cli_runner=_cli_raises(CliBridgeError("script.py produced unparseable JSON on stdout")),
     )
 
     assert len(findings) == 1

@@ -122,10 +122,7 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
         if candidate.is_symlink():
             # Visibly present but its target is missing: found-but-refused,
             # never "nothing existed".
-            raise OSError(
-                f"{kind} in {target} is a dangling symlink; "
-                "manifest state undeterminable"
-            ) from exc
+            raise OSError(f"{kind} in {target} is a dangling symlink; manifest state undeterminable") from exc
         try:
             target_result = target.stat()
         except FileNotFoundError:
@@ -133,14 +130,10 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
             # gate (TOCTOU) or never existed (direct API caller) — claim
             # neither as fact.
             raise OSError(
-                f"scan target {target} vanished mid-scan or never existed; "
-                "manifest state undeterminable"
+                f"scan target {target} vanished mid-scan or never existed; manifest state undeterminable"
             ) from exc
         if not stat.S_ISDIR(target_result.st_mode):
-            raise OSError(
-                f"scan target {target} is no longer a directory; manifest "
-                "state undeterminable"
-            ) from exc
+            raise OSError(f"scan target {target} is no longer a directory; manifest state undeterminable") from exc
         return None
     if not stat.S_ISREG(result.st_mode):
         raise OSError(
@@ -151,9 +144,7 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
     return ScannedManifest(path=kind, kind=kind)
 
 
-def _visit_directory(
-    directory: Path, root: Path, manifests: list[ScannedManifest]
-) -> None:
+def _visit_directory(directory: Path, root: Path, manifests: list[ScannedManifest]) -> None:
     """Run the per-kind stat-honesty check (``_discover_one``, unchanged)
     against ``directory``, appending every hit to ``manifests`` with its
     path rewritten relative to ``root`` when ``directory`` is not ``root``
@@ -212,9 +203,7 @@ def discover(target: Path) -> tuple[ScannedManifest, ...]:
         # walk instead.
         raise exc
 
-    for dirpath, dirnames, filenames in os.walk(
-        target, topdown=True, onerror=_reraise, followlinks=False
-    ):
+    for dirpath, dirnames, filenames in os.walk(target, topdown=True, onerror=_reraise, followlinks=False):
         current = Path(dirpath)
         dirnames[:] = sorted(name for name in dirnames if name != ".git")
         for name in dirnames:

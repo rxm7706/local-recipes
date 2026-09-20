@@ -42,3 +42,16 @@ deferred: []
 ## Verification
 
 `pixi run -e python-agent-platform -- pytest src/platform/tests/test_estate_dsn_is_plane.py src/platform/dbgpt_integration/tests.py -q`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `bddffa21f4` (2026-08-26, "Merge pull request #870 from rxm7706/steward/34-4-agents-cannot-reach-oltp"). Ledger row `34-4-agents-cannot-reach-oltp: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-4-agents-cannot-reach-oltp.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/platform/config/estate_dsn.py`, `src/platform/config/settings/base.py`, `src/platform/dbgpt_integration/tasks.py`, `src/platform/tests/test_estate_dsn_is_plane.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

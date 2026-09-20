@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 170
+# stories: 176
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -93,13 +93,13 @@ development_status:
   27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: done
   28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes: done
   29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current: done
-  30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true: done
-  30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: backlog
-  30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: backlog
   3-1-partition-findings-by-actionability-fr-6-ad-4: done
   3-2-rank-the-actionable-partition-fr-7-ad-4: done
   3-3-root-cause-naming-fr-8: done
   3-4-doctor-diagnose-target-prescribe-cli-wiring-json-fr-9: done
+  30-1-the-map-is-enforced-within-its-scope-the-stubs-are-gone-and-the-new-pages-are-true: done
+  30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: done
+  30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: backlog
   4-1-health-scoring-fr-10: done
   4-2-persistent-fleet-health-surface-fr-11: done
   4-3-adoption-tracking-watch-axis-fr-12: done
@@ -162,22 +162,22 @@ development_status:
   epic-21-retrospective: optional
   epic-22: done
   epic-22-retrospective: optional
-  epic-23: backlog
+  epic-23: done
   epic-23-retrospective: optional
   epic-24: backlog
   epic-24-retrospective: optional
   epic-25: done
   epic-25-retrospective: optional
-  epic-26: backlog
+  epic-26: done
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
-  epic-29: backlog
-  epic-30: in-progress
+  epic-29: done
   epic-3: done
   epic-3-retrospective: optional
+  epic-30: in-progress
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

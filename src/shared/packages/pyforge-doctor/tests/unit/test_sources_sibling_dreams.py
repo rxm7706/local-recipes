@@ -33,9 +33,7 @@ def _dream_text(*, title: str, status: str, owner: str, body: str = "body\n") ->
 
 
 def _fingerprint(*, title: str, status: str, owner: str, body: str = "body\n") -> dict[str, str]:
-    parsed = sibling_dreams._parse_dream_fingerprint(
-        _dream_text(title=title, status=status, owner=owner, body=body)
-    )
+    parsed = sibling_dreams._parse_dream_fingerprint(_dream_text(title=title, status=status, owner=owner, body=body))
     assert parsed is not None
     return parsed
 
@@ -95,9 +93,7 @@ def test_shared_filenames_report_live_divergence_shape(tmp_path: Path, monkeypat
         )
 
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
-    monkeypatch.setattr(
-        sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling
-    )
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling)
 
     findings = sibling_dreams.gather(tmp_path)
     assert len(findings) == 1
@@ -127,9 +123,7 @@ def test_owner_axis_drift_emits_warn(tmp_path: Path, monkeypatch):
         )
 
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
-    monkeypatch.setattr(
-        sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling
-    )
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling)
 
     findings = sibling_dreams.gather(tmp_path)
     assert len(findings) == 1
@@ -150,9 +144,7 @@ def test_agreeing_shared_filenames_emit_nothing(tmp_path: Path, monkeypatch):
         )
 
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
-    monkeypatch.setattr(
-        sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling
-    )
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling)
     assert sibling_dreams.gather(tmp_path) == ()
 
 
@@ -188,9 +180,7 @@ def test_unreachable_sibling_emits_unreachable(tmp_path: Path, monkeypatch):
         owner="steward",
     )
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
-    monkeypatch.setattr(
-        sibling_dreams, "_fetch_sibling_fingerprints", lambda token: None
-    )
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", lambda token: None)
     findings = sibling_dreams.gather(tmp_path)
     assert len(findings) == 1
     assert findings[0].check == "sibling-dreams-unreachable"
@@ -211,9 +201,7 @@ def test_filename_match_title_diff_reports_title_axis(tmp_path: Path, monkeypatc
     )
 
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
-    monkeypatch.setattr(
-        sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling
-    )
+    monkeypatch.setattr(sibling_dreams, "_fetch_sibling_fingerprints", lambda token: sibling)
 
     findings = sibling_dreams.gather(tmp_path)
     assert len(findings) == 1
@@ -260,7 +248,6 @@ def test_missing_dreams_dir_is_silent(tmp_path: Path, monkeypatch):
 # it one without a single real request.
 
 
-
 class _FakeResp(io.BytesIO):
     def __enter__(self):
         return self
@@ -290,19 +277,26 @@ def _stub_urlopen(monkeypatch, routes: dict[str, bytes | Exception]):
 def _listing(*names: str) -> bytes:
     return _json.dumps(
         [{"name": n, "download_url": f"https://raw.test/{n}"} for n in names]
-        + [{"name": "notes.txt", "download_url": "https://raw.test/notes.txt"},
-           {"name": "no-url.md"}, "garbage", {"name": 7, "download_url": "x"}]
+        + [
+            {"name": "notes.txt", "download_url": "https://raw.test/notes.txt"},
+            {"name": "no-url.md"},
+            "garbage",
+            {"name": 7, "download_url": "x"},
+        ]
     ).encode()
 
 
 def test_fetch_sibling_fingerprints_happy_path_skips_non_dreams(monkeypatch):
     url = f"{sibling_dreams._API_BASE}/{sibling_dreams._SIBLING_DREAMS_PATH}"
-    calls = _stub_urlopen(monkeypatch, {
-        url: _listing("a.md", "b.md", "broken.md"),
-        "https://raw.test/a.md": _dream_text(title="A", status="specified", owner="steward").encode(),
-        "https://raw.test/b.md": _dream_text(title="B", status="realized", owner="marshal", body="").encode(),
-        "https://raw.test/broken.md": b"no frontmatter at all",
-    })
+    calls = _stub_urlopen(
+        monkeypatch,
+        {
+            url: _listing("a.md", "b.md", "broken.md"),
+            "https://raw.test/a.md": _dream_text(title="A", status="specified", owner="steward").encode(),
+            "https://raw.test/b.md": _dream_text(title="B", status="realized", owner="marshal", body="").encode(),
+            "https://raw.test/broken.md": b"no frontmatter at all",
+        },
+    )
     out = sibling_dreams._fetch_sibling_fingerprints("tok")
     assert out is not None
     assert set(out) == {"a", "b"}  # broken.md parsed to None and was dropped
@@ -321,10 +315,13 @@ def test_fetch_sibling_fingerprints_fails_open_on_non_list_and_on_file_error(mon
     url = f"{sibling_dreams._API_BASE}/{sibling_dreams._SIBLING_DREAMS_PATH}"
     _stub_urlopen(monkeypatch, {url: b'{"message": "Not Found"}'})
     assert sibling_dreams._fetch_sibling_fingerprints("tok") is None
-    _stub_urlopen(monkeypatch, {
-        url: _listing("a.md"),
-        "https://raw.test/a.md": OSError("boom"),
-    })
+    _stub_urlopen(
+        monkeypatch,
+        {
+            url: _listing("a.md"),
+            "https://raw.test/a.md": OSError("boom"),
+        },
+    )
     assert sibling_dreams._fetch_sibling_fingerprints("tok") is None
 
 
@@ -348,13 +345,13 @@ def test_http_helpers_send_bearer_and_decode(monkeypatch):
 @pytest.mark.parametrize(
     "text",
     [
-        "",                                   # no lines
-        "# not frontmatter\n",                # first line not a fence
-        "---\ntitle: x\n",                    # no closing fence
-        "---\ntitle: [unclosed\n---\n",       # yaml error
-        "---\n- a\n- b\n---\n",               # not a mapping
-        "---\nstatus: dreamt\n---\n",         # no title
-        "---\ntitle: '  '\n---\n",            # blank title
+        "",  # no lines
+        "# not frontmatter\n",  # first line not a fence
+        "---\ntitle: x\n",  # no closing fence
+        "---\ntitle: [unclosed\n---\n",  # yaml error
+        "---\n- a\n- b\n---\n",  # not a mapping
+        "---\nstatus: dreamt\n---\n",  # no title
+        "---\ntitle: '  '\n---\n",  # blank title
     ],
 )
 def test_parse_dream_fingerprint_rejects_unusable_text(text):
@@ -391,17 +388,13 @@ def test_local_fingerprints_skip_unusable_files(tmp_path: Path):
 def test_parse_dream_fingerprint_coerces_all_digit_ack_to_string():
     # An all-digit sha256-shaped value YAML-parses as an int; review-caught
     # edge case (Story 29.1 patch) -- must not be silently discarded.
-    fp = sibling_dreams._parse_dream_fingerprint(
-        "---\ntitle: T\nsibling-acknowledged: 1234567890\n---\nbody\n"
-    )
+    fp = sibling_dreams._parse_dream_fingerprint("---\ntitle: T\nsibling-acknowledged: 1234567890\n---\nbody\n")
     assert fp is not None
     assert fp["sibling_acknowledged"] == "1234567890"
 
 
 def test_parse_dream_fingerprint_drops_non_scalar_ack():
-    fp = sibling_dreams._parse_dream_fingerprint(
-        "---\ntitle: T\nsibling-acknowledged: true\n---\nbody\n"
-    )
+    fp = sibling_dreams._parse_dream_fingerprint("---\ntitle: T\nsibling-acknowledged: true\n---\nbody\n")
     assert fp is not None
     assert fp["sibling_acknowledged"] == ""
 
@@ -417,10 +410,7 @@ def _write_local_dream_with_ack(
     body: str = "local body\n",
 ) -> None:
     dreams.mkdir(parents=True, exist_ok=True)
-    text = (
-        f"---\ntitle: {title}\nstatus: {status}\nowner: {owner}\n"
-        f"sibling-acknowledged: {ack}\n---\n{body}"
-    )
+    text = f"---\ntitle: {title}\nstatus: {status}\nowner: {owner}\nsibling-acknowledged: {ack}\n---\n{body}"
     (dreams / f"{slug}.md").write_text(text, encoding="utf-8")
 
 
@@ -445,9 +435,7 @@ def test_sibling_acknowledged_hash_match_silences_the_dream(tmp_path: Path, monk
     assert sibling_dreams.gather(tmp_path) == ()
 
 
-def test_sibling_acknowledged_hash_mismatch_refires_naming_both_hashes(
-    tmp_path: Path, monkeypatch
-):
+def test_sibling_acknowledged_hash_mismatch_refires_naming_both_hashes(tmp_path: Path, monkeypatch):
     dreams = tmp_path / "docs" / "dreams"
     sibling_fp = _fingerprint(title="Miniforge", status="dreamt", owner="mason")
     stale_hash = "deadbeef" * 8  # a hex-looking (non-numeric) stale hash
@@ -497,13 +485,9 @@ def test_archived_dream_without_ack_names_archived_in_message(tmp_path: Path, mo
     assert findings[0].evidence["sibling_acknowledged"] == ""
 
 
-def test_non_archived_dream_without_ack_omits_archived_from_message(
-    tmp_path: Path, monkeypatch
-):
+def test_non_archived_dream_without_ack_omits_archived_from_message(tmp_path: Path, monkeypatch):
     dreams = tmp_path / "docs" / "dreams"
-    _write_local_dream(
-        dreams, "pixi-container-image", title="Pixi container", status="dreamt", owner="mason"
-    )
+    _write_local_dream(dreams, "pixi-container-image", title="Pixi container", status="dreamt", owner="mason")
     sibling_fp = _fingerprint(title="Pixi container", status="specified", owner="mason")
     monkeypatch.setattr(sibling_dreams, "_operator_token", lambda: "tok")
     monkeypatch.setattr(

@@ -7,7 +7,7 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: "2026-09-17"   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
+updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
 currency_review: "Reviewed 2026-09-17 — one-chain mason fold cascade (Spec and PRD re-dated 2026-09-17). No AD added, changed or removed. Prior review 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
@@ -742,3 +742,18 @@ is an architectural fact, even though the decision was not this spine's to make.
 ## Currency reconciliation — 2026-09-17
 
 one-chain mason fold 2026-09-17: Spec reminted CAP-1..29; ADs unchanged. No new architecture decision.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `spec-pyforge-mason`'s `.memlog.md` moved 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve) while this document sat at 2026-09-17. `prd→arch` cascade — no AD added, changed or removed. `updated:` bumped to record that the check ran.*
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this spine. `updated:` bumped to record that the
+check ran.*

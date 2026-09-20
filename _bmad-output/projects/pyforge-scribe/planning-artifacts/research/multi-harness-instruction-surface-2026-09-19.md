@@ -2,6 +2,7 @@
 doc_type: research
 project: pyforge-scribe
 date: 2026-09-19
+updated: 2026-09-20
 status: current
 subject: How every agent harness discovers this repo's instructions, memory and skills — and what a multi-agent estate should do about it
 triggered_by: PR #1513 review (a parallel session's AGENTS.md / GEMINI.md governance PR)
@@ -146,3 +147,22 @@ was done or claimed here; it is Dream item (10) and needs an operator with a Dev
 - Devin: AGENTS.md — https://docs.devin.ai/onboard-devin/agents-md.md ; Knowledge — https://docs.devin.ai/onboard-devin/knowledge-onboarding.md ; environment — https://docs.devin.ai/onboard-devin/environment.md ; advanced (MultiDevin) — https://docs.devin.ai/work-with-devin/advanced-capabilities.md ; repo setup — https://docs.devin.ai/tutorial-library/repo-setup.md ; index — https://docs.devin.ai/llms.txt
 - BMAD-METHOD: project context — https://docs.bmad-method.org/existing-codebases/set-and-maintain-project-context/ ; multi-agent discussions — https://docs.bmad-method.org/customize/run-multi-agent-discussions/ ; repo — https://github.com/bmad-code-org/BMAD-METHOD
 - Agent Skills standard and `gh skill` — https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/ ; https://docs.github.com/en/copilot/concepts/agents/about-agent-skills ; https://code.visualstudio.com/docs/agent-customization/agent-skills
+
+## 7. Addendum — 2026-09-20: Claude Code's built-in `agents-md` mod (2.1.277+)
+
+Verified against the mod's README and source (`anthropics/claude-code` → `mods/agents-md`), the
+2026-09-19 MindStudio write-up, and the strings embedded in this host's installed binary
+(`~/.local/share/claude/versions/2.1.278`: `AGENTS_NAMES = ["AGENTS.md", ".claude/AGENTS.md"]`,
+`CLAUDE_NAMES = ["CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md"]`, the four mode strings and
+the `instructionFiles` / `projectInstructions` keys).
+
+| Fact | Consequence for this repo |
+|---|---|
+| Shipped in 2.1.277 (2026-09-18); unavailable on Bedrock / Vertex / Foundry. | The `@AGENTS.md` import in `CLAUDE.md` stays the floor. `test_claude_md_imports_agents_md_as_a_bare_line` keeps it. |
+| Four modes via `instructionFiles`: `claude-md`, **`claude-md-or-agents-md` (default)**, `claude-md-and-agents-md`, `managed-only`. Legacy key `projectInstructions` (`claude` / `agents-fallback` / `both` / `none`). | — |
+| Default mode: a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` anywhere from the root down to the cwd "leaves the whole project to the engine, and the plugin stays out." | In this repo the mod does nothing by default — §2's finding F-1 ("Claude Code reads AGENTS.md only through the import") was exactly right for the default mode, and stays right for every runtime below 2.1.277. |
+| `claude-md-and-agents-md`: every `AGENTS.md` loads beside `CLAUDE.md`, deduped by path then content — "a file `CLAUDE.md` already `@`-imports … is not loaded a second time"; nested `AGENTS.md` files attach on `Read` of files beneath them. | The only way `src/shared/packages/pyforge-atlas/AGENTS.md` (the atlas child, Story 19.1's Children rule) ever reaches Claude Code. The root import is not double-loaded. This is the mode this repo pins. |
+| The option is read from `~/.claude/settings.json`, `--settings`, or managed settings — "Project's `.claude/settings.json` is not read for plugin options." | The pin cannot live in the repo. Operators: user settings (`/config` → "Project instructions"). Dispatched sessions: marshal's claude harness profile passes it via `--settings` (Story 46.11, `spec-pyforge-marshal:CAP-262`). `scripts/claude_instruction_mode_check.py` (runtime scope) warns when the host is below 2.1.277 or not pinned. |
+| Known limits (README): nested files attach on text `Read` only; not restored after compaction; `--add-dir` directories contribute no `AGENTS.md`; `@` imports outside the working directory need the same approval as `CLAUDE.md`'s. | Documented in `AGENTS.md`'s Claude Code row; no repo change. |
+
+**Decisions (operator, 09:35Z–09:50Z):** keep `CLAUDE.md` (import vehicle + Claude-only addenda such as 46.8's "Interactive session path"); pin `claude-md-and-agents-md` for every Claude runtime we drive; state version + mode in the harness table; collapse the one duplicate the H2 guard missed (`CLAUDE.md` "Behavioral Guidelines" ↔ `AGENTS.md` "Behavioural guidelines (every harness)") and make the guard compare normalised headings; repoint `.claude/settings.json`'s `customInstructions` at `AGENTS.md`. → `spec-pyforge-scribe` CAP-29 / Story 19.3; `spec-pyforge-marshal:CAP-262` / Story 46.11.

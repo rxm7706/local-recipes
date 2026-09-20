@@ -183,9 +183,9 @@ def test_isolation_other_project_untouched(tmp_path: Path):
         write_ledger=_write,
     )
     assert beta_ledger.read_text(encoding="utf-8") == beta_before
-    alpha_text = (
-        tmp_path / "_bmad-output/projects/alpha/planning-artifacts/sprint-status-ledger.yaml"
-    ).read_text(encoding="utf-8")
+    alpha_text = (tmp_path / "_bmad-output/projects/alpha/planning-artifacts/sprint-status-ledger.yaml").read_text(
+        encoding="utf-8"
+    )
     assert "1-2-new: backlog" in alpha_text
     assert "9-9-b" not in alpha_text
 
@@ -235,10 +235,8 @@ def test_find_orphans_empty_when_dreams_present(tmp_path: Path):
 from pyforge.marshal.core.chain_regen import (
     FULL_CHAIN_PHASES,
     MINIMAL_SKIP_PHASES,
-    OrchestratedPhaseOutcome,
     apply_orphans_hook,
     apply_preserved_code_statuses,
-    find_orphans,
     ledger_file,
     load_journal,
     parse_ledger_statuses,
@@ -514,14 +512,7 @@ def test_apply_orphans_default_leaves_disk(tmp_path: Path):
 
 def test_apply_orphans_deletes_spec_folder_only(tmp_path: Path):
     orphan_dir = _seed_orphan_spec(tmp_path)
-    epics = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "epics.md"
-    )
+    epics = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
     dream = tmp_path / "docs" / "dreams" / "demo.md"
     report = run_orchestrated_chain(
         root=tmp_path,
@@ -671,8 +662,6 @@ def test_stage_without_apply_does_not_delete(tmp_path: Path):
     assert "spec-orphan" not in staged or orphan_dir.is_dir()
 
 
-
-
 # ---------------------------------------------------------------------------
 # Story 21.3 — CAP-2 code-status preservation
 # ---------------------------------------------------------------------------
@@ -763,9 +752,7 @@ def test_preserve_survives_full_and_minimal_regen(tmp_path: Path):
             preserve_code_status=True,
         )
         assert report.status == "complete"
-        after = parse_ledger_statuses(
-            ledger_file(tmp_path, "acme").read_text(encoding="utf-8")
-        )
+        after = parse_ledger_statuses(ledger_file(tmp_path, "acme").read_text(encoding="utf-8"))
         assert after["1-1-demo"] == "done"
         assert after["1-2-wip"] == "in-progress"
         assert after["1-4-new"] == "backlog"
@@ -791,9 +778,7 @@ def test_preserve_opt_out_leaves_regenerated_statuses(tmp_path: Path):
     )
     assert report.status == "complete"
     assert report.preserve_code_status_hook is False
-    after = parse_ledger_statuses(
-        ledger_file(tmp_path, "acme").read_text(encoding="utf-8")
-    )
+    after = parse_ledger_statuses(ledger_file(tmp_path, "acme").read_text(encoding="utf-8"))
     assert after == regenerated
 
 
@@ -821,6 +806,7 @@ def test_preserve_default_true_and_never_auto_commits(tmp_path: Path):
             mode="minimal",
             auto_commit=True,
         )
+
 
 def test_cli_planning_help_registers():
     from pyforge.marshal.cli.main import _build_parser
@@ -869,9 +855,7 @@ class _ProjectTrackingInvoker(_RecordingInvoker):
         run_dir: Path,
     ) -> object:
         self.projects.append(project)
-        self.planning_paths.append(
-            root / "_bmad-output" / "projects" / project / "planning-artifacts"
-        )
+        self.planning_paths.append(root / "_bmad-output" / "projects" / project / "planning-artifacts")
         return super().invoke_planning_skill(
             skill,
             root=root,
@@ -946,9 +930,7 @@ def test_cap5_cli_parser_defaults_and_no_auto_commit_flag():
             for sub in action.choices.values():
                 for sub_action in getattr(sub, "_actions", ()):
                     option_strings.extend(sub_action.option_strings or ())
-                    if getattr(sub_action, "choices", None) and isinstance(
-                        sub_action.choices, dict
-                    ):
+                    if getattr(sub_action, "choices", None) and isinstance(sub_action.choices, dict):
                         for nested in sub_action.choices.values():
                             for na in getattr(nested, "_actions", ()):
                                 option_strings.extend(na.option_strings or ())
@@ -981,9 +963,7 @@ def test_cap5_cli_help_documents_parameters():
     assert planning_parser is not None
     regen_parser = None
     for action in planning_parser._actions:
-        if getattr(action, "choices", None) and "chain-regenerate" in (
-            action.choices or {}
-        ):
+        if getattr(action, "choices", None) and "chain-regenerate" in (action.choices or {}):
             regen_parser = action.choices["chain-regenerate"]
             break
     assert regen_parser is not None
@@ -1017,27 +997,15 @@ def test_cap5_chain_mode_flag_consistent_with_minimal():
         "docs/dreams/demo.md",
     ]
     assert resolve_chain_mode(parser.parse_args([*base, "--chain-mode", "full"])) == "full"
-    assert (
-        resolve_chain_mode(parser.parse_args([*base, "--chain-mode", "minimal"]))
-        == "minimal"
-    )
+    assert resolve_chain_mode(parser.parse_args([*base, "--chain-mode", "minimal"])) == "minimal"
     assert resolve_chain_mode(parser.parse_args([*base, "--minimal"])) == "minimal"
     # Agreeing flags OK.
-    assert (
-        resolve_chain_mode(
-            parser.parse_args([*base, "--minimal", "--chain-mode", "minimal"])
-        )
-        == "minimal"
-    )
+    assert resolve_chain_mode(parser.parse_args([*base, "--minimal", "--chain-mode", "minimal"])) == "minimal"
     with pytest.raises(ValueError, match="conflicts"):
-        resolve_chain_mode(
-            parser.parse_args([*base, "--minimal", "--chain-mode", "full"])
-        )
+        resolve_chain_mode(parser.parse_args([*base, "--minimal", "--chain-mode", "full"]))
 
 
-def test_cap5_cli_handler_chain_mode_minimal_reaches_orchestrator(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_cap5_cli_handler_chain_mode_minimal_reaches_orchestrator(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """``run_planning_chain_regenerate`` must honor ``--chain-mode minimal``."""
     from pyforge.marshal.cli.planning import run_planning_chain_regenerate
 
@@ -1064,9 +1032,7 @@ def test_cap5_cli_handler_chain_mode_minimal_reaches_orchestrator(
     assert regen["auto_commit"] is False
 
 
-def test_cap5_cli_handler_chain_mode_conflict_emits_finding(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_cap5_cli_handler_chain_mode_conflict_emits_finding(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Conflicting ``--minimal`` + ``--chain-mode full`` must not start a chain."""
     from pyforge.marshal.cli.planning import run_planning_chain_regenerate
 
@@ -1089,13 +1055,8 @@ def test_cap5_cli_handler_chain_mode_conflict_emits_finding(
     payload = json.loads(capsys.readouterr().out)
     assert "planning_chain_regeneration" not in payload.get("data", {})
     findings = payload.get("findings") or []
-    assert any(
-        f.get("code") == "MRS-CHAIN-001" and "conflicts" in f.get("message", "")
-        for f in findings
-    )
-    assert any(
-        f.get("path") == "flags: --minimal/--chain-mode" for f in findings
-    )
+    assert any(f.get("code") == "MRS-CHAIN-001" and "conflicts" in f.get("message", "") for f in findings)
+    assert any(f.get("path") == "flags: --minimal/--chain-mode" for f in findings)
 
 
 def test_cap5_two_project_slugs_same_workflow(tmp_path: Path):
@@ -1128,15 +1089,9 @@ def test_cap5_two_project_slugs_same_workflow(tmp_path: Path):
     for slug, planning in zip(invoker.projects, invoker.planning_paths, strict=True):
         assert planning.name == "planning-artifacts"
         assert slug in planning.parts
-        assert planning == (
-            tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
-        )
-    marshal_planning = (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
-    )
-    doctor_planning = (
-        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts"
-    )
+        assert planning == (tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts")
+    marshal_planning = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
+    doctor_planning = tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts"
     assert marshal_planning.is_dir() and doctor_planning.is_dir()
     assert marshal_planning != doctor_planning
     assert Path(reports[0].run_dir).is_relative_to(marshal_planning)
@@ -1166,13 +1121,7 @@ def test_cap5_harness_env_uses_bmad_active_never_switch(tmp_path: Path, monkeypa
     _seed_orchestrated(tmp_path, "pyforge-marshal")
     dream = tmp_path / "docs" / "dreams" / "demo.md"
     run_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-        / ".chain-regen"
-        / "cap5-test"
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / ".chain-regen" / "cap5-test"
     )
     run_dir.mkdir(parents=True)
     captured: dict[str, object] = {}
@@ -1207,10 +1156,7 @@ def test_cap5_harness_env_uses_bmad_active_never_switch(tmp_path: Path, monkeypa
     assert isinstance(argv, list)
     # Never launch bmad-switch as an argv token / executable.
     assert "bmad-switch" not in argv
-    assert not any(
-        str(part).endswith("/bmad-switch") or str(part).endswith("scripts/bmad-switch")
-        for part in argv
-    )
+    assert not any(str(part).endswith("/bmad-switch") or str(part).endswith("scripts/bmad-switch") for part in argv)
     assert argv[0] == "cursor"
     # Prompt forbids switch and names the physical station path.
     prompt = argv[-1] if argv else ""

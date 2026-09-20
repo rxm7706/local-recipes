@@ -4,6 +4,7 @@
 error) must reach ``fleet-picture``'s ATTENTION block, not just the journal --
 same isolation pattern as ``test_fleet_picture_attention_dispatch_refused.py``.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -20,9 +21,7 @@ _STORY = "53-2-landing-findings-coverage"
 
 
 def _load_fleet_picture():
-    spec = importlib.util.spec_from_file_location(
-        "fleet_picture_landing_findings_test", FLEET_PICTURE
-    )
+    spec = importlib.util.spec_from_file_location("fleet_picture_landing_findings_test", FLEET_PICTURE)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["fleet_picture_landing_findings_test"] = mod
     spec.loader.exec_module(mod)
@@ -30,13 +29,7 @@ def _load_fleet_picture():
 
 
 def _seed_marshal_ledger(repo: Path) -> None:
-    ledger_dir = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-    )
+    ledger_dir = repo / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
     ledger_dir.mkdir(parents=True)
     (ledger_dir / "sprint-status-ledger.yaml").write_text(
         "development_status:\n  epic-53: backlog\n  53-2-x: backlog\n",
@@ -100,19 +93,13 @@ def fleet():
     return _load_fleet_picture()
 
 
-def test_main_needs_names_a_refused_landing_error_finding(
-    fleet, monkeypatch, capsys, tmp_path
-):
+def test_main_needs_names_a_refused_landing_error_finding(fleet, monkeypatch, capsys, tmp_path):
     """MRS-DISP-048 (error) means the landing was refused -- a `needs` line."""
     rc = _run_main_with_live(
         fleet,
         monkeypatch,
         tmp_path,
-        _marshal_live_row(
-            landing_findings=[
-                {"code": "MRS-DISP-048", "severity": "error", "message": "refused"}
-            ]
-        ),
+        _marshal_live_row(landing_findings=[{"code": "MRS-DISP-048", "severity": "error", "message": "refused"}]),
     )
     out = capsys.readouterr().out
 
@@ -122,19 +109,13 @@ def test_main_needs_names_a_refused_landing_error_finding(
     assert "MRS-DISP-048" in out
 
 
-def test_main_watch_names_a_non_blocking_landing_warn_finding(
-    fleet, monkeypatch, capsys, tmp_path
-):
+def test_main_watch_names_a_non_blocking_landing_warn_finding(fleet, monkeypatch, capsys, tmp_path):
     """MRS-DISP-047 (warn) is FYI -- a `watch` line, never `needs`."""
     rc = _run_main_with_live(
         fleet,
         monkeypatch,
         tmp_path,
-        _marshal_live_row(
-            landing_findings=[
-                {"code": "MRS-DISP-047", "severity": "warn", "message": "reconciled"}
-            ]
-        ),
+        _marshal_live_row(landing_findings=[{"code": "MRS-DISP-047", "severity": "warn", "message": "reconciled"}]),
     )
     out = capsys.readouterr().out
 
@@ -145,9 +126,7 @@ def test_main_watch_names_a_non_blocking_landing_warn_finding(
 
 
 def test_main_silent_when_no_landing_findings(fleet, monkeypatch, capsys, tmp_path):
-    rc = _run_main_with_live(
-        fleet, monkeypatch, tmp_path, _marshal_live_row(landing_findings=[])
-    )
+    rc = _run_main_with_live(fleet, monkeypatch, tmp_path, _marshal_live_row(landing_findings=[]))
     out = capsys.readouterr().out
 
     assert rc == 0

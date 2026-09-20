@@ -220,20 +220,14 @@ def has_adjacent_python_source(target: Path) -> bool:
 # from ``vuln._is_safe_token``/``_SAFE_TOKEN_CHARS`` rather than imported
 # (see module docstring) — a security-relevant guard stays locally
 # auditable in each producing module.
-_SAFE_TOKEN_CHARS = frozenset(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
-)
+_SAFE_TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-")
 
 
 def _is_safe_token(value: str) -> bool:
     """NFR-S6: exactly the ``[A-Za-z0-9._-]+`` token shape AND not leading
     with ``-`` (a pip-option-injection shape even though ``-`` is itself in
     the allowed charset). Mirrors ``vuln._is_safe_token`` exactly."""
-    return (
-        bool(value)
-        and not value.startswith("-")
-        and all(char in _SAFE_TOKEN_CHARS for char in value)
-    )
+    return bool(value) and not value.startswith("-") and all(char in _SAFE_TOKEN_CHARS for char in value)
 
 
 def _is_valid_requirement_line(line: str) -> bool:
@@ -302,16 +296,9 @@ def _indeterminate_finding(reason: str, component: Component, message: str) -> F
     carries BOTH name and version for the same reason ``vuln.py``'s copy
     does: two components sharing a name but differing by version must not
     collide onto one finding id."""
-    version_segment = (
-        _sanitize_id_segment(component.version)
-        if component.version
-        else "unspecified"
-    )
+    version_segment = _sanitize_id_segment(component.version) if component.version else "unspecified"
     return Finding(
-        id=(
-            f"indeterminate:{reason}:"
-            f"{_sanitize_id_segment(component.name)}@{version_segment}"
-        ),
+        id=(f"indeterminate:{reason}:{_sanitize_id_segment(component.name)}@{version_segment}"),
         axis=AXIS_HYGIENE,
         message=message,
         subject=component.name,
@@ -379,9 +366,7 @@ def status_for_code(code: str) -> Status:
     return DEFAULT_HYGIENE_POLICY.get(code, Status.INDETERMINATE)
 
 
-def hygiene_rung(
-    finding: Finding, *, dep001_trusted: bool = True
-) -> tuple[Status, StatusDriver]:
+def hygiene_rung(finding: Finding, *, dep001_trusted: bool = True) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one hygiene finding.
 
     The DEP code is the id's middle segment (``hygiene:<code>:<subject>``);
@@ -441,7 +426,7 @@ def parse_deptry_output(raw: str) -> DeptryParse:
         )
     try:
         data = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
+    except json.JSONDecodeError, ValueError:
         return DeptryParse(
             findings=(),
             errors=(
@@ -462,10 +447,7 @@ def parse_deptry_output(raw: str) -> DeptryParse:
                 ErrorRecord(
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
                     owner=_OWNER,
-                    message=(
-                        "deptry output is not a JSON array "
-                        f"(got {type(data).__name__})"
-                    ),
+                    message=(f"deptry output is not a JSON array (got {type(data).__name__})"),
                 ),
             ),
             records_total=0,

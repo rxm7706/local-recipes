@@ -103,3 +103,16 @@ Dispatched with the diff file path only, no shared context. Two findings landed 
 **Re-verification (2026-08-07, after both patches):** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- **404 passed** (full suite).
 
 **Follow-up review recommendation (updated): false** -- both findings are narrow, each covered by a dedicated regression test.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `29720ea3e9` (2026-08-07, "herald: Story 4.2 -- idle backoff"); also `be4ecc879e` (2026-08-07, "steward: Story 4.2 — The declared ceiling is one command away"); also `48b2aed041` (2026-08-07, "doctor: Story 4.2 — persistent fleet-health surface"). Ledger row `4-2-persistent-fleet-health-surface-fr-11: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-2-idle-backoff.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

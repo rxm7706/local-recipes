@@ -114,10 +114,7 @@ def test_parse_success_signal_ignores_a_verification_heading_inside_a_deeper_sec
 
 
 def test_parse_success_signal_only_the_first_verification_section_is_used():
-    text = (
-        "## Verification\n\n**Commands:**\n- `first`\n\n"
-        "## Verification\n\n**Commands:**\n- `second`\n"
-    )
+    text = "## Verification\n\n**Commands:**\n- `first`\n\n## Verification\n\n**Commands:**\n- `second`\n"
     assert parse_success_signal(text) == ("first",)
 
 

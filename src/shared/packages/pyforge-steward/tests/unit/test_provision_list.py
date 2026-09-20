@@ -71,9 +71,7 @@ def test_provision_list_json_via_cli_emits_valid_json(tmp_path, monkeypatch, cap
     assert data["pyforge-steward"] == ["pyforge-steward"]
 
 
-def test_provision_list_json_on_malformed_pixi_toml_still_emits_valid_json(
-    tmp_path, monkeypatch, capsys
-):
+def test_provision_list_json_on_malformed_pixi_toml_still_emits_valid_json(tmp_path, monkeypatch, capsys):
     """Review finding: an error raised on ANY flag's path used to always
     render as plain text (`f"provision: {exc}"`), even when `--json` was
     passed -- `--list --json` against a malformed `pixi.toml` used to

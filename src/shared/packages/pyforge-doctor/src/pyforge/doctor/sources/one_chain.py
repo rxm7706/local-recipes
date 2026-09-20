@@ -70,7 +70,7 @@ _STATION_SPEC_RE = re.compile(r"^spec-pyforge-[a-z]+$")
 def _read_json(path: Path) -> dict | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except OSError, UnicodeDecodeError, json.JSONDecodeError:
         return None
     return data if isinstance(data, dict) else None
 
@@ -178,9 +178,7 @@ def prune_chain_sprawl_baseline(target: Path) -> tuple[dict | None, list[str]]:
 
 def gather_chain_sprawl(target: Path) -> tuple[Finding, ...]:
     """A new Dream or Spec folder without a declared exemption is a finding."""
-    return degrade_on_exception(
-        Source.CHAIN_SPRAWL, "chain-sprawl", lambda: _gather_chain_sprawl(target)
-    )
+    return degrade_on_exception(Source.CHAIN_SPRAWL, "chain-sprawl", lambda: _gather_chain_sprawl(target))
 
 
 def _gather_chain_sprawl(target: Path) -> tuple[Finding, ...]:
@@ -368,15 +366,16 @@ def _open_caps(project_dir: Path) -> tuple[set[str], list[str]]:
             continue
         try:
             text = spec_md.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         consulted.append(spec_md.parent.name)
         caps.update(f"CAP-{n}" for n in _CAP_RE.findall(text))
     return caps, consulted
 
 
-def snapshot_fr_baseline(target: Path, *, ruling_sha: str, only_project: str | None = None,
-                         existing: dict | None = None) -> dict:
+def snapshot_fr_baseline(
+    target: Path, *, ruling_sha: str, only_project: str | None = None, existing: dict | None = None
+) -> dict:
     """Per-station pre-rule FR population. With ``only_project`` set, every
     other station's entry is carried over from ``existing`` untouched -- a
     fold PR re-baselines its own station only."""
@@ -392,7 +391,7 @@ def snapshot_fr_baseline(target: Path, *, ruling_sha: str, only_project: str | N
         for prd in _prd_files(project_dir):
             try:
                 ids.update(_fr_ids_with_citation(prd.read_text(encoding="utf-8")))
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
         projects[slug] = sorted(ids, key=lambda s: (s.startswith("N"), int(s.split("-")[1])))
     return {
@@ -410,9 +409,7 @@ def snapshot_fr_baseline(target: Path, *, ruling_sha: str, only_project: str | N
 
 def gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
     """A product requirement minted after the rule date names its source CAP."""
-    return degrade_on_exception(
-        Source.FR_WITHOUT_CAP, "fr-without-cap", lambda: _gather_fr_without_cap(target)
-    )
+    return degrade_on_exception(Source.FR_WITHOUT_CAP, "fr-without-cap", lambda: _gather_fr_without_cap(target))
 
 
 def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
@@ -430,9 +427,7 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
                 evidence={"baseline": FR_BASELINE_REL.as_posix()},
             ),
         )
-    known: dict[str, set[str]] = {
-        k: set(v) for k, v in baseline["projects"].items() if isinstance(v, list)
-    }
+    known: dict[str, set[str]] = {k: set(v) for k, v in baseline["projects"].items() if isinstance(v, list)}
     findings: list[Finding] = []
     measured_new = 0
     pdir = target / _PROJECTS_REL
@@ -445,7 +440,7 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
         for prd in _prd_files(project_dir):
             try:
                 text = prd.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
             rel = prd.relative_to(target).as_posix()
             for fr, cited in _fr_ids_with_citation(text).items():

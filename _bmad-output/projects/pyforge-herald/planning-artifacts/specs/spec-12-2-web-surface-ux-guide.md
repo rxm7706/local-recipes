@@ -118,3 +118,16 @@ fully covered, just placed after the operational headline.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `79f9d309bb` (2026-09-10, "Merge latest main into Story 12.2 before landing"); also `d40afe0697` (2026-08-23, "feat(marshal): add local-recipes empty-plan oracle test (Story 12.2)"); also `e2fd67eb65` (2026-08-08, "herald: Story 12.2 — Web surface UX guide"). Ledger row `12-2-web-surface-ux-guide: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `AGENTS.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-43-7-sidecar-runtime-validation-on-python-3-14.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-44-13-memlog-fidelity.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `pixi.toml`, `scripts/memlog_fidelity_check.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

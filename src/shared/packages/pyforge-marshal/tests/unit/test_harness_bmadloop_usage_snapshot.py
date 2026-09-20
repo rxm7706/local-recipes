@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 from pyforge.marshal.ports.harness import UsageSnapshot
 
@@ -25,9 +26,7 @@ def harness() -> BmadLoopHarness:
     return BmadLoopHarness()
 
 
-def _write_state(
-    project: Path, run_id: str, *, tasks: dict[str, object], cache_read_weight: float = 0.1
-) -> Path:
+def _write_state(project: Path, run_id: str, *, tasks: dict[str, object], cache_read_weight: float = 0.1) -> Path:
     run_dir = project / ".bmad-loop" / "runs" / run_id
     run_dir.mkdir(parents=True)
     state = {
@@ -146,9 +145,7 @@ def test_usage_snapshot_reports_no_story_when_more_than_one_non_terminal_task(ha
 
 
 @pytest.mark.parametrize("empty_key", [None, ""])
-def test_usage_snapshot_never_attributes_a_tally_to_an_unnamed_story(
-    harness, tmp_path, empty_key
-):
+def test_usage_snapshot_never_attributes_a_tally_to_an_unnamed_story(harness, tmp_path, empty_key):
     """Review finding: the sole non-terminal task carrying a null or empty
     ``story_key`` published ``story_key=None`` beside a NON-``None``
     ``story_weighted_tokens`` -- exactly the shape ``UsageSnapshot``'s own
@@ -287,9 +284,7 @@ def test_usage_snapshot_returns_none_for_a_deeply_nested_document(harness, tmp_p
     as the case above)."""
     run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
     run_dir.mkdir(parents=True)
-    (run_dir / "state.json").write_text(
-        "[" * 200_000 + "]" * 200_000, encoding="utf-8"
-    )
+    (run_dir / "state.json").write_text("[" * 200_000 + "]" * 200_000, encoding="utf-8")
 
     assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
 

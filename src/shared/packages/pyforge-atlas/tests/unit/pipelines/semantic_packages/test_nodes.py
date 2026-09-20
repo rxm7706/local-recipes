@@ -29,9 +29,7 @@ def test_composes_the_declared_shape_with_real_joins():
     core_feedstock_attribution = pd.DataFrame(
         {"conda_name": ["a", "b", "c"], "feedstock_name": ["alpha", "beta", "beta"]}
     )
-    vcs_archived_feedstocks = pd.DataFrame(
-        {"feedstock_name": ["beta"], "archived": pd.array([1], dtype="Int64")}
-    )
+    vcs_archived_feedstocks = pd.DataFrame({"feedstock_name": ["beta"], "archived": pd.array([1], dtype="Int64")})
     core_downloads = pd.DataFrame(
         {
             "conda_name": ["a", "b"],
@@ -106,9 +104,7 @@ def test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_populati
     duplicate row) must not multiply the composed population -- one row per
     ``conda_name`` in, one row per ``conda_name`` out."""
     core_packages_enumerated = pd.DataFrame({"conda_name": ["a", "a"]})  # dup in the population itself
-    core_latest_status = pd.DataFrame(
-        {"conda_name": ["a", "a"], "latest_status": ["active", "active"]}
-    )
+    core_latest_status = pd.DataFrame({"conda_name": ["a", "a"], "latest_status": ["active", "active"]})
     out = compose_semantic_packages(
         core_packages_enumerated, core_latest_status, pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     )

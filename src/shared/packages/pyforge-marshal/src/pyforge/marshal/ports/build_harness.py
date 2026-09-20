@@ -87,9 +87,7 @@ class DispatchLaunchResult:
 
 
 class BuildHarnessPort(Protocol):
-    def binary_present(
-        self, preference: Sequence[str] = (), repo_root: Path | None = None
-    ) -> HarnessResolution:
+    def binary_present(self, preference: Sequence[str] = (), repo_root: Path | None = None) -> HarnessResolution:
         """Resolve the first ``preference`` profile whose binary exists (on
         ``PATH`` or in a profile-declared repo-root-relative fallback dir)
         AND whose declared authcheck passes (Story 22.8) -- binary presence

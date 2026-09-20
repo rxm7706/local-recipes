@@ -140,7 +140,7 @@ def probe_engine(name: str, binary: str) -> EngineStatus:
             timeout=_PROBE_TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, UnicodeDecodeError, subprocess.TimeoutExpired):
+    except OSError, UnicodeDecodeError, subprocess.TimeoutExpired:
         return EngineStatus(name=name, available=True, version=None)
 
     version = _stripped_or_none(completed.stdout) or _stripped_or_none(completed.stderr)
@@ -223,25 +223,35 @@ def _minor_range(floor: str, ceiling: str) -> SpecifierSet:
     return SpecifierSet(f">={floor},<{ceiling}")
 
 
-# Evidence-backed version ranges (spec Always boundary): one tested minor
-# wide (`>=X.Y.Z,<X.(Y+1)`, the repo-wide convention -- see pyforge-warden's
-# `DEPTRY_VERSION_RANGE`/`OSV_SCANNER_VERSION_RANGE`), never widened "to be
-# safe". Each constant must byte-for-byte mirror `pixi.toml`'s
-# `[package.run-dependencies]` entry for the same engine -- enforced by
-# `tests/meta/test_engine_version_range_sync.py`. Evidence, live-verified in
-# this environment: pixi 0.80.0 (2026-09-11 — build+ship self-hosting
-# integration tests green against it, after the workspace requires-pixi
-# bump to >=0.80.0 exposed the stale 0.77.x range; second recurrence of the
-# same failure mode as the 2026-08-21 incident this comment used to name),
-# twine 7.0.0, conda-lock 4.0.2, build (`pyproject-build` binary, conda
-# package `python-build`) 1.5.0, gh 2.97.0 (Story 3.7). These constants
-# exist for that sync guard alone -- `require_engine` below does NOT
-# consult them; see its own docstring for why.
+def _floor(floor: str) -> SpecifierSet:
+    """A floor-only range (``>=floor``), built by interpolation for the same
+    reason ``_minor_range`` is: an inline ``">=7.0.0"`` literal trips the AD-1
+    pin-constraint-shape guard, while ``floor`` alone is digits and dots.
+    Operator ruling 2026-09-20: engine ranges carry no ceiling without a written
+    reason -- the ``pyforge-foundry-full`` union solve showed a cap's cost."""
+    return SpecifierSet(f">={floor}")
+
+
+# Evidence-backed version FLOORS (spec Always boundary, amended 2026-09-20 by
+# operator ruling -- "never cap without a reason"): each constant must
+# byte-for-byte mirror `pixi.toml`'s `[package.run-dependencies]` entry for
+# the same engine -- enforced by `tests/meta/test_engine_version_range_sync.py`.
+# Until 2026-09-20 these were one-tested-minor windows (`>=X.Y.Z,<X.(Y+1)`);
+# the `pyforge-foundry-full` union env (steward Story 63.5) showed the cost:
+# `python-build <1.6` could not co-resolve with the `>=1.6.0` floors pyforge-ci
+# / pyforge-core / pyforge-testing-kit / local-recipes pin, so the fleet's own
+# dependency closure was unsolvable. Floors carry the evidence (live-verified:
+# pixi 0.80.0, twine 7.0.0, conda-lock 4.0.2, build 1.6.0, gh 2.97.0); a
+# ceiling is added only with a written reason -- `PIXI_VERSION_RANGE` keeps
+# its window because an in-env pixi ABOVE the workspace's own `requires-pixi`
+# line would parse a manifest the workspace has not tested (the reason is in
+# pixi.toml beside the pin). These constants exist for the sync guard alone --
+# `require_engine` below does NOT consult them; see its own docstring for why.
 PIXI_VERSION_RANGE = _minor_range("0.80.0", "0.81")
-TWINE_VERSION_RANGE = _minor_range("7.0.0", "7.1")
-CONDA_LOCK_VERSION_RANGE = _minor_range("4.0.2", "4.1")
-PYTHON_BUILD_VERSION_RANGE = _minor_range("1.5.0", "1.6")
-GH_VERSION_RANGE = _minor_range("2.97.0", "2.98")
+TWINE_VERSION_RANGE = _floor("7.0.0")
+CONDA_LOCK_VERSION_RANGE = _floor("4.0.2")
+PYTHON_BUILD_VERSION_RANGE = _floor("1.6.0")
+GH_VERSION_RANGE = _floor("2.97.0")
 
 
 def require_engine(name: str) -> str | None:

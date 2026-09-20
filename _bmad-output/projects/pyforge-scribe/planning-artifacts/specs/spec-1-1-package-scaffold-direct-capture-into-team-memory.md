@@ -2,7 +2,7 @@
 title: 'Package scaffold + direct capture into team memory (Story 1.1)'
 type: 'feature'
 created: '2026-07-25'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: true
 context: []
@@ -128,3 +128,16 @@ final_revision: '09c851f4c6'
 **Manual checks (if no CLI):**
 - Diff `.claude/memory/` after the smoke-test capture above to confirm the write boundary (nothing outside the tree changed).
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8a90d7025c` (2026-07-25, "mason + steward: record Story 1.1 in the spec memlogs; re-baseline surfaces"); also `c9c5b33930` (2026-07-25, "mason + steward: Story 1.1 — two stations reach code, chain 8/9 -> 9/9"). Ledger row `1-1-package-scaffold-direct-capture-into-team-memory: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `1-1-package-scaffold-direct-capture-into-team-memory: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

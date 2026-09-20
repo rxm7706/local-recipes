@@ -79,8 +79,7 @@ def test_full_composition_maps_all_twelve_keys_and_keeps_template_baseline_elsew
     assert doc["limits"]["max_review_cycles"] == 6
     assert doc["limits"]["max_followup_reviews"] == 7
     # S-13.7: the station's own commands, THEN the appended surface guard.
-    assert doc["verify"]["commands"] == [
-        "pytest -q", "ruff check .", _SURFACE_RECONCILE_COMMAND]
+    assert doc["verify"]["commands"] == ["pytest -q", "ruff check .", _SURFACE_RECONCILE_COMMAND]
     assert doc["scm"]["worktree_seed"] == [
         "_bmad-output/projects/acme/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -177,9 +176,7 @@ def test_render_is_byte_identical_across_separate_compositions_of_the_same_input
 
 
 def test_tier_batching_full_stage_set():
-    effective = _compose(
-        model_tier_map={"hard": {"dev": "opus", "review": "fable", "triage": "sonnet"}}
-    )
+    effective = _compose(model_tier_map={"hard": {"dev": "opus", "review": "fable", "triage": "sonnet"}})
     doc = tomllib.loads(render_policy_toml(effective, difficulty="hard"))
     assert doc["adapter"]["dev"]["model"] == "opus"
     assert doc["adapter"]["review"]["model"] == "fable"
@@ -370,9 +367,7 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     assert overridden.operator.enabled is False
     assert overridden.verify.stream_capture_kb == 0
 
-    deferred = bmad_loop_policy.loads(
-        render_policy_toml(_compose(review_on_timeout="defer"))
-    )
+    deferred = bmad_loop_policy.loads(render_policy_toml(_compose(review_on_timeout="defer")))
     assert deferred.review.on_timeout == "defer"
 
 
@@ -386,9 +381,7 @@ def test_enum_frozensets_mirror_the_installed_bmad_loop_vocabularies():
     bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
     from pyforge.marshal.core import policy as policy_module
 
-    assert policy_module._REVIEW_ON_TIMEOUT_MODES == frozenset(
-        bmad_loop_policy.REVIEW_ON_TIMEOUT_MODES
-    )
+    assert policy_module._REVIEW_ON_TIMEOUT_MODES == frozenset(bmad_loop_policy.REVIEW_ON_TIMEOUT_MODES)
     assert policy_module._REVIEW_ON_STATUS_CONTRADICTION_MODES == frozenset(
         bmad_loop_policy.REVIEW_ON_STATUS_CONTRADICTION_MODES
     )
@@ -422,9 +415,7 @@ def test_context_absent_renders_no_context_table():
 def test_context_declared_renders_all_five_layers():
     from pyforge.marshal.core import policy
 
-    effective = _compose(
-        context={"wire": {"enabled": True, "aggressiveness": "high"}}
-    )
+    effective = _compose(context={"wire": {"enabled": True, "aggressiveness": "high"}})
     doc = tomllib.loads(render_policy_toml(effective))
     resolved = policy.resolve_context_layers(effective)
     assert set(doc["context"]) == set(policy.CONTEXT_LAYER_NAMES)
@@ -575,9 +566,7 @@ def test_conventional_project_policy_path_lands_on_the_repo_root(tmp_path):
         "index is wrong and every project-policy lookup will miss"
     )
     p = config_cli.conventional_project_policy_path("pyforge-marshal")
-    assert p == root / (
-        "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    assert p == root / ("_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml")
 
 
 def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
@@ -586,10 +575,17 @@ def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
     that project's OWN verify command -- with no --project-policy passed."""
     from pyforge.marshal.cli.main import main
 
-    rc = main([
-        "config", "--project", "pyforge-marshal",
-        "--write-harness-policy", str(tmp_path), "--format", "json",
-    ])
+    rc = main(
+        [
+            "config",
+            "--project",
+            "pyforge-marshal",
+            "--write-harness-policy",
+            str(tmp_path),
+            "--format",
+            "json",
+        ]
+    )
     assert rc == 0, "a clean composition must exit 0"
 
     written = tmp_path / ".bmad-loop" / "policy.toml"
@@ -621,11 +617,19 @@ def test_cli_refuses_to_write_a_policy_from_an_error_composition(tmp_path):
     not determine the intent of must not become the harness's policy."""
     from pyforge.marshal.cli.main import main
 
-    rc = main([
-        "config", "--project", "pyforge-marshal",
-        "--set", "max_review_cycles=not-an-int",
-        "--write-harness-policy", str(tmp_path), "--format", "json",
-    ])
+    rc = main(
+        [
+            "config",
+            "--project",
+            "pyforge-marshal",
+            "--set",
+            "max_review_cycles=not-an-int",
+            "--write-harness-policy",
+            str(tmp_path),
+            "--format",
+            "json",
+        ]
+    )
     assert not (tmp_path / ".bmad-loop" / "policy.toml").exists(), (
         "a policy was written despite error-severity findings"
     )
@@ -646,10 +650,8 @@ def test_rendering_twice_does_not_duplicate_the_surface_guard():
     """`marshal config --write-harness-policy` is run repeatedly by design (every
     preflight, every loop-home refresh). A guard that accumulated on each render
     would have bmad-loop run the same check N times and grow the file forever."""
-    once = tomllib.loads(
-        render_policy_toml(_compose(verify_commands=["pytest -q"])))["verify"]["commands"]
-    twice = tomllib.loads(
-        render_policy_toml(_compose(verify_commands=list(once))))["verify"]["commands"]
+    once = tomllib.loads(render_policy_toml(_compose(verify_commands=["pytest -q"])))["verify"]["commands"]
+    twice = tomllib.loads(render_policy_toml(_compose(verify_commands=list(once))))["verify"]["commands"]
     assert twice.count(_SURFACE_RECONCILE_COMMAND) == 1, twice
     assert twice == once, "re-rendering an already-rendered policy must be a no-op"
 
@@ -709,9 +711,7 @@ def test_cli_write_harness_policy_warns_when_no_counterpart_exists(tmp_path):
     from pyforge.marshal.cli.main import main
 
     policy_toml = tmp_path / "project-policy.toml"
-    policy_toml.write_text(
-        'harness_preference = ["cursor", "devin"]\n', encoding="utf-8"
-    )
+    policy_toml.write_text('harness_preference = ["cursor", "devin"]\n', encoding="utf-8")
     home = tmp_path / "home"
     home.mkdir()
     import contextlib
@@ -719,11 +719,19 @@ def test_cli_write_harness_policy_warns_when_no_counterpart_exists(tmp_path):
 
     buffer = io.StringIO()
     with contextlib.redirect_stdout(buffer):
-        rc = main([
-            "config", "--project", "acme",
-            "--project-policy", str(policy_toml),
-            "--write-harness-policy", str(home), "--format", "json",
-        ])
+        rc = main(
+            [
+                "config",
+                "--project",
+                "acme",
+                "--project-policy",
+                str(policy_toml),
+                "--write-harness-policy",
+                str(home),
+                "--format",
+                "json",
+            ]
+        )
     assert rc == 0, "a WARN advisory must not block the render"
     payload = json_module.loads(buffer.getvalue())
     codes = [f["code"] for f in payload["findings"]]
@@ -803,9 +811,7 @@ def test_read_policy_adapter_and_model_reads_the_dev_model_override(tmp_path):
 def test_read_policy_adapter_and_model_falls_back_to_the_top_level_model(tmp_path):
     loop_dir = tmp_path / ".bmad-loop"
     loop_dir.mkdir()
-    (loop_dir / "policy.toml").write_text(
-        '[adapter]\nname = "claude"\nmodel = "sonnet"\n', encoding="utf-8"
-    )
+    (loop_dir / "policy.toml").write_text('[adapter]\nname = "claude"\nmodel = "sonnet"\n', encoding="utf-8")
     assert _read_policy_adapter_and_model(tmp_path) == ("claude", "sonnet")
 
 
@@ -845,9 +851,7 @@ def test_token_counts_from_task_coerces_missing_fields_to_zero():
 
 
 def test_token_counts_from_task_reads_all_four_fields():
-    tokens = _FakeTokens(
-        input_tokens=1, output_tokens=2, cache_read_tokens=3, cache_creation_tokens=4
-    )
+    tokens = _FakeTokens(input_tokens=1, output_tokens=2, cache_read_tokens=3, cache_creation_tokens=4)
     counts = _token_counts_from_task(_FakeTask(tokens=tokens))
     assert (counts.input_tokens, counts.output_tokens) == (1, 2)
     assert (counts.cache_read_tokens, counts.cache_creation_tokens) == (3, 4)
@@ -857,8 +861,10 @@ def _tokens(**overrides):
     from pyforge.marshal.core.model_cost import TokenCounts
 
     base = dict(
-        input_tokens=1_000_000, output_tokens=1_000_000,
-        cache_read_tokens=0, cache_creation_tokens=0,
+        input_tokens=1_000_000,
+        output_tokens=1_000_000,
+        cache_read_tokens=0,
+        cache_creation_tokens=0,
     )
     base.update(overrides)
     return TokenCounts(**base)

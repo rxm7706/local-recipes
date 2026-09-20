@@ -47,7 +47,7 @@ matching ``core/policy.py``'s closed-vocabulary discipline):
 - ``env``: extra child-environment entries the launch needs.
 - ``fallback_bin_dirs``: repo-root-relative directories probed when the
   binary is not on ``PATH`` (the pixi-env CLIs live in
-  ``.pixi/envs/local-recipes/bin``, invisible to a bare operator PATH).
+  ``.pixi/envs/pyforge-guild/bin``, invisible to a bare operator PATH).
 - ``verified`` / ``notes``: provenance, stated honestly -- ``true`` only for
   an invocation shape empirically smoke-tested against the real CLI.
 - ``wrapper`` (Story 28.2): the OPTIONAL wire-compression wrapper --
@@ -110,15 +110,15 @@ through to the next preference entry.
 
 from __future__ import annotations
 
+import hashlib
 import re
+import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
 
-import hashlib
-import tomllib
 from pyforge.core.errors import PyforgeError
 
 #: Where the packaged profiles live, relative to the ``pyforge.marshal``
@@ -152,9 +152,7 @@ def wire_port_for_worktree(worktree: Path) -> int:
     return _WIRE_PORT_BASE + (int(digest[:8], 16) % _WIRE_PORT_SPAN)
 
 
-def substitute_wire_port(
-    argv: Sequence[str], *, worktree: Path, wire_port: int | None = None
-) -> tuple[str, ...]:
+def substitute_wire_port(argv: Sequence[str], *, worktree: Path, wire_port: int | None = None) -> tuple[str, ...]:
     """Replace the ``{wire_port}`` placeholder in ``argv`` with a real port
     number (reusing Story 33.8's deterministic per-worktree derivation).
 
@@ -168,6 +166,7 @@ def substitute_wire_port(
     refused every launch with ``Error: Invalid value for '--port'``."""
     port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
     return tuple(token.replace(_WIRE_PORT_TOKEN, str(port)) for token in argv)
+
 
 #: A profile name is a filename stem and a policy-preference entry -- the
 #: same conservative shape a project slug takes, minus dots (a profile
@@ -391,9 +390,7 @@ def _require_str_list(
     items: list[str] = []
     for item in value:
         if not isinstance(item, str) or (item == "" and not allow_empty_items):
-            raise HarnessProfileError(
-                f"{source}: {key!r} entries must be non-empty strings, got {item!r}"
-            )
+            raise HarnessProfileError(f"{source}: {key!r} entries must be non-empty strings, got {item!r}")
         items.append(item)
     return tuple(items)
 
@@ -406,8 +403,7 @@ def _require_str_map(data: Mapping[str, object], key: str, source: str) -> dict[
     for map_key, map_value in value.items():
         if not isinstance(map_key, str) or map_key == "" or not isinstance(map_value, str):
             raise HarnessProfileError(
-                f"{source}: {key!r} entries must map non-empty strings to strings, "
-                f"got {map_key!r} -> {map_value!r}"
+                f"{source}: {key!r} entries must map non-empty strings to strings, got {map_key!r} -> {map_value!r}"
             )
         result[map_key] = map_value
     return result
@@ -421,9 +417,7 @@ def _require_clean_relpath(entry: str, key: str, source: str) -> str:
     than a second, drifting copy."""
     parts = entry.split("/")
     if entry.startswith("/") or any(part in ("", "..") for part in parts):
-        raise HarnessProfileError(
-            f"{source}: {key!r} entries must be clean relative paths, got {entry!r}"
-        )
+        raise HarnessProfileError(f"{source}: {key!r} entries must be clean relative paths, got {entry!r}")
     return entry
 
 
@@ -535,38 +529,27 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
     if not argv:
         raise HarnessProfileError(f"{source}: 'argv' must be a non-empty list")
     if argv.count(_PROMPT_TOKEN) != 1:
-        raise HarnessProfileError(
-            f"{source}: 'argv' must contain the {_PROMPT_TOKEN!r} token exactly once"
-        )
+        raise HarnessProfileError(f"{source}: 'argv' must contain the {_PROMPT_TOKEN!r} token exactly once")
     if argv.count(_MODEL_ARGS_TOKEN) > 1:
-        raise HarnessProfileError(
-            f"{source}: 'argv' may contain the {_MODEL_ARGS_TOKEN!r} token at most once"
-        )
+        raise HarnessProfileError(f"{source}: 'argv' may contain the {_MODEL_ARGS_TOKEN!r} token at most once")
     for token in argv:
         if _MODEL_ARGS_TOKEN in token and token != _MODEL_ARGS_TOKEN:
             raise HarnessProfileError(
-                f"{source}: {_MODEL_ARGS_TOKEN!r} must be a whole argv token, "
-                f"found embedded in {token!r}"
+                f"{source}: {_MODEL_ARGS_TOKEN!r} must be a whole argv token, found embedded in {token!r}"
             )
 
     model_args = _require_str_list(data, "model_args", source)
     if model_args and not any(_MODEL_TOKEN in token for token in model_args):
-        raise HarnessProfileError(
-            f"{source}: non-empty 'model_args' must mention the {_MODEL_TOKEN!r} token"
-        )
+        raise HarnessProfileError(f"{source}: non-empty 'model_args' must mention the {_MODEL_TOKEN!r} token")
     if _MODEL_ARGS_TOKEN in argv and not model_args:
-        raise HarnessProfileError(
-            f"{source}: 'argv' uses {_MODEL_ARGS_TOKEN!r} but 'model_args' is empty"
-        )
+        raise HarnessProfileError(f"{source}: 'argv' uses {_MODEL_ARGS_TOKEN!r} but 'model_args' is empty")
 
     authcheck_ok_pattern = _require_str(data, "authcheck_ok_pattern", source)
     if authcheck_ok_pattern:
         try:
             re.compile(authcheck_ok_pattern)
         except re.error as exc:
-            raise HarnessProfileError(
-                f"{source}: invalid 'authcheck_ok_pattern' regex: {exc}"
-            ) from exc
+            raise HarnessProfileError(f"{source}: invalid 'authcheck_ok_pattern' regex: {exc}") from exc
 
     fallback_bin_dirs = _require_str_list(data, "fallback_bin_dirs", source)
     for entry in fallback_bin_dirs:
@@ -580,9 +563,7 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
     wrapper: HarnessWrapper | None = None
     if wrapper_data is not None:
         if isinstance(wrapper_data, str) or not isinstance(wrapper_data, Mapping):
-            raise HarnessProfileError(
-                f"{source}: 'wrapper' must be a table, got {wrapper_data!r}"
-            )
+            raise HarnessProfileError(f"{source}: 'wrapper' must be a table, got {wrapper_data!r}")
         wrapper = parse_wrapper(wrapper_data, source=source)
         # The wrapper names the tool it launches (`headroom wrap claude --`)
         # and then resolves that name off PATH itself -- while wrapping
@@ -627,10 +608,7 @@ def _parse_profile_toml(text: str, *, source: str, expected_name: str) -> Harnes
         raise HarnessProfileError(f"{source}: not valid TOML: {exc}") from exc
     profile = parse_profile(data, source=source)
     if profile.name != expected_name:
-        raise HarnessProfileError(
-            f"{source}: profile name {profile.name!r} must equal the file stem "
-            f"{expected_name!r}"
-        )
+        raise HarnessProfileError(f"{source}: profile name {profile.name!r} must equal the file stem {expected_name!r}")
     return profile
 
 
@@ -645,9 +623,7 @@ def load_packaged_profiles() -> dict[str, HarnessProfile]:
             continue
         stem = entry.name[: -len(".toml")]
         text = entry.read_text(encoding="utf-8")
-        profiles[stem] = _parse_profile_toml(
-            text, source=f"packaged profile {entry.name}", expected_name=stem
-        )
+        profiles[stem] = _parse_profile_toml(text, source=f"packaged profile {entry.name}", expected_name=stem)
     return profiles
 
 
@@ -670,17 +646,13 @@ def load_profiles(
     for path in sorted(overlay_dir.glob("*.toml")):
         try:
             text = path.read_text(encoding="utf-8")
-            profiles[path.stem] = _parse_profile_toml(
-                text, source=f"overlay profile {path}", expected_name=path.stem
-            )
+            profiles[path.stem] = _parse_profile_toml(text, source=f"overlay profile {path}", expected_name=path.stem)
         except (OSError, UnicodeDecodeError, HarnessProfileError) as exc:
             errors.append(f"overlay profile {path} ignored: {exc}")
     return profiles, tuple(errors)
 
 
-def translate_model(
-    profile: HarnessProfile, model: str | None
-) -> tuple[str | None, str | None]:
+def translate_model(profile: HarnessProfile, model: str | None) -> tuple[str | None, str | None]:
     """Resolve marshal's policy model tier into THIS CLI's own spelling:
     ``(rendered_model, omitted_reason)``. Exactly one of the two is
     non-``None`` unless ``model`` is ``None`` (no tier resolved -- nothing
@@ -695,8 +667,7 @@ def translate_model(
         return mapped, None
     if profile.model_map:
         return None, (
-            f"model tier {model!r} has no entry in profile {profile.name!r}'s "
-            f"model_map -- model flags omitted"
+            f"model tier {model!r} has no entry in profile {profile.name!r}'s model_map -- model flags omitted"
         )
     if profile.model_passthrough:
         return model, None
@@ -719,9 +690,7 @@ _WIRE_AGGRESSIVENESS_ENV: Mapping[str, Mapping[str, str]] = {
 }
 
 
-def wire_env_for_aggressiveness(
-    base_env: Mapping[str, str], aggressiveness: str | None
-) -> dict[str, str]:
+def wire_env_for_aggressiveness(base_env: Mapping[str, str], aggressiveness: str | None) -> dict[str, str]:
     """Merge ``base_env`` with the rung-specific env ``aggressiveness`` names,
     when recognized. Unknown/``None`` returns ``dict(base_env)`` unchanged."""
     merged = dict(base_env)
@@ -800,10 +769,7 @@ def resolve_wire_wrap(
         )
         return WireWrap(
             applied=False,
-            reason=(
-                f"{detail} -- the wire-compression layer is off for this "
-                "launch and the session runs unwrapped"
-            ),
+            reason=(f"{detail} -- the wire-compression layer is off for this launch and the session runs unwrapped"),
             aggressiveness=aggressiveness,
         )
     if not wrapper.reversible:
@@ -893,9 +859,7 @@ def render_dispatch_argv(
         if token == _MODEL_ARGS_TOKEN:
             if rendered_model is None:
                 continue
-            argv.extend(
-                arg.replace(_MODEL_TOKEN, rendered_model) for arg in profile.model_args
-            )
+            argv.extend(arg.replace(_MODEL_TOKEN, rendered_model) for arg in profile.model_args)
             continue
         argv.append(_substitute_launch_token(token))
     return tuple(argv), rendered_model, omitted_reason

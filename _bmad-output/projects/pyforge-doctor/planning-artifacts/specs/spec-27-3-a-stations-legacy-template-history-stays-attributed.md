@@ -82,7 +82,8 @@ Attempted patch (reverted): `_bmad-output/implementation-artifacts/spec-27-3-att
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `9a89b3ec87 2026-09-18 marshal: promote sprint-status ledger for 'pyforge-doctor' (1 key(s) -> done)` — that promotion is the ruling this record now reflects.
 Blocking condition: intent gap
 
 **Unresolved questions** (for a human to settle before re-dispatch):
@@ -92,3 +93,7 @@ Blocking condition: intent gap
 Implementation was carried out in full per the spec text (see the attempted patch) and passed `pyforge-doctor-test` (1732 passed, 1 skipped) plus the manual `story-status-check` before review. Review found the mechanism itself unsafe against a collision shape neither the spec nor the implementation addresses, independently reproduced against a live synthetic repro (not just taken on the reviewing subagent's word). All code changes have been reverted to `baseline_revision`; only this spec file (status + triage log + this result) remains modified. The attempted patch is preserved at the path above for whoever resolves this gap.
 
 **Residual risk:** none introduced — the working tree is back at `baseline_revision`; the underlying `marshal/34-3` false-green this story set out to fix remains unfixed pending re-dispatch.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

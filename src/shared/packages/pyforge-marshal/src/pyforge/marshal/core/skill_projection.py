@@ -137,8 +137,7 @@ def plan_projection(
         )
 
     to_project = tuple(
-        TreeProjectionAction(tree=tree, adapters=tuple(sorted(desired_trees[tree])))
-        for tree in sorted(desired)
+        TreeProjectionAction(tree=tree, adapters=tuple(sorted(desired_trees[tree]))) for tree in sorted(desired)
     )
     to_remove = tuple(sorted(previously_projected_set - desired))
 

@@ -46,10 +46,10 @@ from vizro import Vizro
 from vizro.managers import data_manager
 from vizro.tables import dash_ag_grid
 
-from . import data as _data
-from . import factory_status as _fs
 from .. import provenance as _provenance
 from ..provenance import ProvenanceInfo
+from . import data as _data
+from . import factory_status as _fs
 
 # The D2 AC's live-confirmed-first consumer set (order preserved for determinism).
 LIVE_CONSUMER_CLIS = (
@@ -379,9 +379,7 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
 
 
-def _data_page(
-    page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo
-) -> vm.Page:
+def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo) -> vm.Page:
     """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
     key = f"data::{page.id}"
     data_manager[key] = loader
@@ -445,8 +443,7 @@ def _identity_workbook_page(
     lines.append("")
     lines.append(_provenance_line(provenance))
     external_rows = "\n".join(
-        f"| {src} | {count} | {via} | {legacy} |"
-        for src, count, via, legacy in _data.IDENTITY_WORKBOOK_EXTERNAL_COUNTS
+        f"| {src} | {count} | {via} | {legacy} |" for src, count, via, legacy in _data.IDENTITY_WORKBOOK_EXTERNAL_COUNTS
     )
     external_card = vm.Card(
         id=f"{page.id}--external",
@@ -488,9 +485,7 @@ def _identity_ops_page(
         key = f"data::{page.id}::{pane_id}"
         data_manager[key] = loader
         components.append(vm.Card(id=f"{page.id}--{pane_id}-hdr", text=f"### {heading}"))
-        components.append(
-            vm.AgGrid(id=f"{page.id}--{pane_id}-grid", figure=dash_ag_grid(key))
-        )
+        components.append(vm.AgGrid(id=f"{page.id}--{pane_id}-grid", figure=dash_ag_grid(key)))
     return vm.Page(id=page.id, title=page.title, components=components)
 
 
@@ -585,42 +580,24 @@ def build_dashboard(
     # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
     # a reason when absent — never a fabricated stamp).
     cve_watcher_provenance = _provenance.resolve_for_file(root / _data.VULN_HISTORY_PARQUET)
-    version_downloads_provenance = _provenance.resolve_for_file(
-        root / _data.VERSION_DOWNLOADS_PARQUET
-    )
+    version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
     release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
-    find_alternative_provenance = _provenance.resolve_for_file(
-        root / _data.ALTERNATIVE_CANDIDATES_PARQUET
-    )
+    find_alternative_provenance = _provenance.resolve_for_file(root / _data.ALTERNATIVE_CANDIDATES_PARQUET)
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
-    distribution_breakdown_provenance = _provenance.resolve_for_file(
-        root / _data.DISTRIBUTION_BREAKDOWN_PARQUET
-    )
-    export_purls_provenance = _provenance.resolve_for_file(
-        root / _data.PURL_EXPORT_MANIFEST_PARQUET
-    )
+    distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
+    export_purls_provenance = _provenance.resolve_for_file(root / _data.PURL_EXPORT_MANIFEST_PARQUET)
     mapping_gap_provenance = _provenance.resolve_for_file(root / _data.MAPPING_GAP_PARQUET)
-    universe_sbom_provenance = _provenance.resolve_for_file(
-        root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET
-    )
-    inventory_match_provenance = _provenance.resolve_for_file(
-        root / _data.INVENTORY_MATCH_LATEST_PARQUET
-    )
+    universe_sbom_provenance = _provenance.resolve_for_file(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET)
+    inventory_match_provenance = _provenance.resolve_for_file(root / _data.INVENTORY_MATCH_LATEST_PARQUET)
     add_handoff_provenance = _provenance.resolve_for_file(root / _data.ADD_HANDOFF_LATEST_PARQUET)
-    library_futures_provenance = _provenance.resolve_for_file(
-        root / _data.LIBRARY_FUTURES_LATEST_PARQUET
-    )
+    library_futures_provenance = _provenance.resolve_for_file(root / _data.LIBRARY_FUTURES_LATEST_PARQUET)
     recommend_2027_provenance = _provenance.resolve_for_file(root / _data.RECOMMEND_2027_PARQUET)
-    lts_registry_gap_provenance = _provenance.resolve_for_file(
-        root / _data.LTS_REGISTRY_GAP_PARQUET
-    )
+    lts_registry_gap_provenance = _provenance.resolve_for_file(root / _data.LTS_REGISTRY_GAP_PARQUET)
     cwe_seed_gap_provenance = _provenance.resolve_for_file(root / _data.CWE_SEED_GAP_PARQUET)
     spdx_schema_gap_provenance = _provenance.resolve_for_file(root / _data.SPDX_SCHEMA_GAP_PARQUET)
     license_map_gap_provenance = _provenance.resolve_for_file(root / _data.LICENSE_MAP_GAP_PARQUET)
-    identity_catalog_provenance = _provenance.resolve_for_file(
-        root / _data.IDENTITY_COMPLETE_EXPORT_PARQUET
-    )
+    identity_catalog_provenance = _provenance.resolve_for_file(root / _data.IDENTITY_COMPLETE_EXPORT_PARQUET)
     identity_workbook_complete = root / _data.IDENTITY_COMPLETE_EXPORT_PARQUET
     identity_workbook_enterprise = root / _data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET
     identity_workbook_provenance = _resolve_two_file_provenance(
@@ -631,15 +608,9 @@ def build_dashboard(
         identity_workbook_complete,
         identity_workbook_enterprise,
     )
-    bootstrap_index_health_provenance = _provenance.resolve_for_file(
-        root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
-    )
-    identity_export_snapshot_provenance = _provenance.resolve_for_file(
-        root / _data.IDENTITY_EXPORT_PARQUET
-    )
-    live_catalog_coverage_provenance = _provenance.resolve_for_file(
-        root / _data.LIVE_CATALOG_COVERAGE_PARQUET
-    )
+    bootstrap_index_health_provenance = _provenance.resolve_for_file(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET)
+    identity_export_snapshot_provenance = _provenance.resolve_for_file(root / _data.IDENTITY_EXPORT_PARQUET)
+    live_catalog_coverage_provenance = _provenance.resolve_for_file(root / _data.LIVE_CATALOG_COVERAGE_PARQUET)
 
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
@@ -726,9 +697,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["distribution-breakdown"],
-            lambda: _data.load_distribution_breakdown(
-                root / _data.DISTRIBUTION_BREAKDOWN_PARQUET
-            ),
+            lambda: _data.load_distribution_breakdown(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET),
             grounded=False,
             provenance=distribution_breakdown_provenance,
         ),
@@ -818,25 +787,19 @@ def build_dashboard(
         ),
         _data_page(
             by_id["bootstrap-index-health"],
-            lambda: _data.load_bootstrap_index_health(
-                root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
-            ),
+            lambda: _data.load_bootstrap_index_health(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET),
             grounded=False,
             provenance=bootstrap_index_health_provenance,
         ),
         _data_page(
             by_id["identity-export-snapshot"],
-            lambda: _data.load_identity_export_snapshot(
-                root / _data.IDENTITY_EXPORT_PARQUET
-            ),
+            lambda: _data.load_identity_export_snapshot(root / _data.IDENTITY_EXPORT_PARQUET),
             grounded=False,
             provenance=identity_export_snapshot_provenance,
         ),
         _data_page(
             by_id["live-catalog-coverage"],
-            lambda: _data.load_live_catalog_coverage(
-                root / _data.LIVE_CATALOG_COVERAGE_PARQUET
-            ),
+            lambda: _data.load_live_catalog_coverage(root / _data.LIVE_CATALOG_COVERAGE_PARQUET),
             grounded=False,
             provenance=live_catalog_coverage_provenance,
         ),

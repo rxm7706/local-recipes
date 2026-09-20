@@ -41,9 +41,7 @@ def _run_factory_checkpoint(
     process = process if process is not None else PosixProcess()
     findings: list[Finding] = []
 
-    dispatch_ctx = _load_latest_dispatch_context(
-        fs=fs, vcs=vcs, process=process, slug=slug
-    )
+    dispatch_ctx = _load_latest_dispatch_context(fs=fs, vcs=vcs, process=process, slug=slug)
     if dispatch_ctx is not None:
         repo_root, _run_dir, _run_id, journal, _policy = dispatch_ctx
         if journal.worktree_path is None or journal.story_key is None:
@@ -83,10 +81,7 @@ def _run_factory_checkpoint(
             Finding(
                 code="MRS-CHK-003",
                 severity=Severity.ERROR,
-                message=(
-                    f"no in-flight dispatch or spin worktree to checkpoint "
-                    f"for station {slug!r}"
-                ),
+                message=(f"no in-flight dispatch or spin worktree to checkpoint for station {slug!r}"),
             )
         )
         return exit_code_for(compute_verdict(tuple(findings)))

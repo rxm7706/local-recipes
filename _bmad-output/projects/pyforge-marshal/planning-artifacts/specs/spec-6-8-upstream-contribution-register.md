@@ -219,3 +219,16 @@ Dispatched with the diff file path only, no shared context.
 **Follow-up review recommendation (updated): false** -- narrow fix, covered by a dedicated regression test.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `4624f900f6` (2026-08-07, "marshal: sync sprint-status ledger — Epic 6 Stories 6.5-6.8 done"); also `8b9cefcb8f` (2026-08-07, "marshal: Story 6.8 — Upstream contribution register"). Ledger row `6-8-upstream-contribution-register: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

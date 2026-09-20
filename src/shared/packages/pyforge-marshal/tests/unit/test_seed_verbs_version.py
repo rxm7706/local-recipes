@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
@@ -36,9 +37,7 @@ def _manifest() -> Manifest:
 
 
 def _git(repo: Path, *args: str) -> None:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 

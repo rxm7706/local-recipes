@@ -154,9 +154,7 @@ def test_json_restores_the_callers_own_logging_floor(seed_catalog):
         logging.disable(logging.NOTSET)
 
 
-def test_table_shows_provenance_so_never_ingested_differs_from_no_match(
-    seed_catalog, seed_parquet_catalog, capsys
-):
+def test_table_shows_provenance_so_never_ingested_differs_from_no_match(seed_catalog, seed_parquet_catalog, capsys):
     """Follow-up review finding, Story 13.3 (verified live): table mode printed the
     rows alone, so "never ingested" and "your filters matched nothing" were both just
     `(no candidates)`, exit 0 -- and the staleness catalog.yml (this same story)
@@ -175,9 +173,7 @@ def test_table_shows_provenance_so_never_ingested_differs_from_no_match(
     assert "build_stamp=" in no_match and "shown=0" in no_match
 
 
-def test_table_shows_the_build_stamp_for_a_real_parquet_dataset(
-    seed_parquet_catalog, capsys
-):
+def test_table_shows_the_build_stamp_for_a_real_parquet_dataset(seed_parquet_catalog, capsys):
     """The other half of the catalog.yml claim: when the table IS materialized, the
     default human path prints its build_stamp."""
     seed_parquet_catalog(_FIXTURE_DF)
@@ -212,9 +208,7 @@ def test_a_closed_stdout_pipe_is_not_a_raw_traceback(seed_catalog, monkeypatch):
         assert main(argv) == 1, argv
 
 
-def test_a_buffered_broken_pipe_exits_1_and_spares_the_hosts_own_stdout_fd(
-    seed_catalog, monkeypatch
-):
+def test_a_buffered_broken_pipe_exits_1_and_spares_the_hosts_own_stdout_fd(seed_catalog, monkeypatch):
     """Two second-follow-up review findings at once, both verified live.
 
     1. The previous pass's broken-pipe fix was a NO-OP for the case it was written for.
@@ -235,9 +229,7 @@ def test_a_buffered_broken_pipe_exits_1_and_spares_the_hosts_own_stdout_fd(
     seed_catalog(_FIXTURE_DF)
     try:
         assert main(["--json"]) == 1
-        assert stat.S_ISFIFO(os.fstat(write_fd).st_mode), (
-            "the host's stdout descriptor was retargeted at /dev/null"
-        )
+        assert stat.S_ISFIFO(os.fstat(write_fd).st_mode), "the host's stdout descriptor was retargeted at /dev/null"
     finally:
         with contextlib.suppress(OSError):
             host_stdout.close()
@@ -298,8 +290,7 @@ def test_the_table_header_separates_never_ingested_from_filtered_out(seed_catalo
     qualified in, under a fresh build_stamp saying all was well."""
     fallback_shaped = pd.DataFrame(
         [
-            {**_FIXTURE_DF.iloc[0].to_dict(), "repo_full_name": name, "period": "all",
-             "source": "search_api_fallback"}
+            {**_FIXTURE_DF.iloc[0].to_dict(), "repo_full_name": name, "period": "all", "source": "search_api_fallback"}
             for name in ("alice/libfoo", "bob/rustcli")
         ]
     )

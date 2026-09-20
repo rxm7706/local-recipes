@@ -299,9 +299,7 @@ class VcsPort(Protocol):
         condition."""
         ...
 
-    def changed_files(
-        self, repo_root: Path, worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         """Story 2.3's frozen-surface scope check (AD-27): every repo-
         relative POSIX path ``worktree_path`` has touched relative to
         ``base`` -- the UNION of (a) ``git diff --name-only
@@ -319,9 +317,7 @@ class VcsPort(Protocol):
         repository, a corrupted repo)."""
         ...
 
-    def worktree_unified_patch(
-        self, worktree_path: Path, *, baseline_sha: str
-    ) -> str:
+    def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
         """Story 22.6: unified diff of all recoverable work in ``worktree_path``
         since ``baseline_sha`` — committed range plus working-tree overlay.
         Returns an empty string when there is nothing to preserve. Read-only.
@@ -447,9 +443,7 @@ class VcsPort(Protocol):
         than inventing a count."""
         ...
 
-    def merge_tree_conflict_paths(
-        self, repo_root: Path, base: str, branch: str
-    ) -> tuple[str, ...]:
+    def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str) -> tuple[str, ...]:
         """Story 28.20: ``git merge-tree`` conflict paths between ``base``
         and ``branch``, read-only. Returns an empty tuple when the merge
         tree is clean. Raises ``VcsCommandError`` on git failure."""
@@ -473,9 +467,7 @@ class VcsPort(Protocol):
         never an exception."""
         ...
 
-    def add_worktree_for_tree(
-        self, repo_root: Path, home: Path, tree_oid: str, *, parent: str
-    ) -> None:
+    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
         """Story 51.1: wraps ``tree_oid`` (typically ``merge_tree_write``'s
         own output) in a throwaway commit -- pinned ``user.name``/
         ``user.email``/``commit.gpgsign=false``, mirroring

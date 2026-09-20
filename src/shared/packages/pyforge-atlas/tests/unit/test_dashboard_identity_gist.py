@@ -316,22 +316,21 @@ def rendered_env(tmp_path: Path):
     recipes = root / "recipes"
     (recipes / "pkgalpha").mkdir(parents=True)
     (recipes / "pkgalpha" / "recipe.yaml").write_text(
-        "package:\n  name: pkgalpha\n  version: \"1.0.0\"\n\n"
+        'package:\n  name: pkgalpha\n  version: "1.0.0"\n\n'
         "build:\n  noarch: python\n\n"
         "extra:\n  cfe-local-build-status: success\n",
         encoding="utf-8",
     )
     (recipes / "pkgdelta").mkdir(parents=True)
     (recipes / "pkgdelta" / "recipe.yaml").write_text(
-        "package:\n  name: pkgdelta\n  version: \"2.0.0\"\n\n"
+        'package:\n  name: pkgdelta\n  version: "2.0.0"\n\n'
         "requirements:\n  build:\n    - {{ compiler('c') }}\n\n"
         "extra:\n  cfe-local-build-status: build-clean-test-blocked\n",
         encoding="utf-8",
     )
     (recipes / "pkgzeta").mkdir(parents=True)
     (recipes / "pkgzeta" / "recipe.yaml").write_text(
-        "package:\n  name: pkgzeta\n  version: \"3.0.0\"\n\n"
-        "extra:\n  cfe-local-build-status: failed\n",
+        'package:\n  name: pkgzeta\n  version: "3.0.0"\n\nextra:\n  cfe-local-build-status: failed\n',
         encoding="utf-8",
     )
 
@@ -423,9 +422,7 @@ def rendered_env(tmp_path: Path):
     )
     jfrog_rows.to_parquet(jfrog_path)
 
-    identity_md, dashboards_md = ig.render_identity_gist_markdown(
-        export_path, gist_id="gist123", repo_root=root
-    )
+    identity_md, dashboards_md = ig.render_identity_gist_markdown(export_path, gist_id="gist123", repo_root=root)
     return {
         "root": root,
         "export_path": export_path,

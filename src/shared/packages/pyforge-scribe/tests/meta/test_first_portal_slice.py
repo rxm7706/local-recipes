@@ -149,9 +149,9 @@ def test_submit_recall_runs_portal_client_call_and_returns_cited_results() -> No
     }
     assert results["text"] == "cited answer"
     assert results["citation"] == "memory.md:12"
-    results_html = (
-        _portal_root(_repo_root()) / "templates" / "scribe_portal" / "results.html"
-    ).read_text(encoding="utf-8")
+    results_html = (_portal_root(_repo_root()) / "templates" / "scribe_portal" / "results.html").read_text(
+        encoding="utf-8"
+    )
     rendered = results_html
     if results:
         rendered = rendered.replace("{{ results.text }}", str(results["text"]))
@@ -198,9 +198,7 @@ def test_portal_submits_recall_via_portal_client_only() -> None:
     assert "PortalClient" in views
     assert "submit_recall" in views
     helper = ast.parse((_portal_root(root) / "recall_submit.py").read_text(encoding="utf-8"))
-    assert any(
-        isinstance(node, ast.Attribute) and node.attr == "call" for node in ast.walk(helper)
-    )
+    assert any(isinstance(node, ast.Attribute) and node.attr == "call" for node in ast.walk(helper))
     assert '"recall"' in (views + (_portal_root(root) / "recall_submit.py").read_text(encoding="utf-8"))
     assert not _raw_http_imports(tree)
     assert not _pyforge_package_imports(tree)
@@ -208,9 +206,7 @@ def test_portal_submits_recall_via_portal_client_only() -> None:
     home = (_portal_root(root) / "templates" / "scribe_portal" / "home.html").read_text(
         encoding="utf-8",
     )
-    results = (
-        _portal_root(root) / "templates" / "scribe_portal" / "results.html"
-    ).read_text(encoding="utf-8")
+    results = (_portal_root(root) / "templates" / "scribe_portal" / "results.html").read_text(encoding="utf-8")
     assert 'name="query"' in home
     assert "scribe-recall-form" in home
     assert "hx-post" in home
@@ -237,15 +233,7 @@ def test_portal_tree_has_no_raw_http_or_pyforge_or_chrome_copy() -> None:
 def test_portal_job_and_cursor_rule_inherit_default_recall() -> None:
     root = _repo_root()
     job = (
-        root
-        / "src"
-        / "shared"
-        / "packages"
-        / "django-pyforge"
-        / "src"
-        / "django_pyforge"
-        / "assertion"
-        / "client.py"
+        root / "src" / "shared" / "packages" / "django-pyforge" / "src" / "django_pyforge" / "assertion" / "client.py"
     ).read_text(encoding="utf-8")
     assert '"--kind"' not in job and "'--kind'" not in job
     rule = (root / ".cursor" / "rules" / "scribe-recall.mdc").read_text(encoding="utf-8")

@@ -134,13 +134,10 @@ _THREE_REAL_SLIDES_PLAN = {
             "placeholders": {
                 "0": "The Design–Code bridge — realized",
                 "1": [
-                    "seed a Design project from the repo — Modernist-bound, "
-                    "runtime included",
+                    "seed a Design project from the repo — Modernist-bound, runtime included",
                     "design visually in Claude Design",
-                    "pull the prototype back — extract → build → export, "
-                    "zero downloads",
-                    "etags catch conflicts; the loop is specced as the "
-                    "herald CLI (5 CAPs)",
+                    "pull the prototype back — extract → build → export, zero downloads",
+                    "etags catch conflicts; the loop is specced as the herald CLI (5 CAPs)",
                 ],
             },
         },
@@ -165,9 +162,7 @@ def test_extract_spec_unset_placeholder_type_falls_back_to_unknown(monkeypatch):
     unreachable via the bundled default template (every one of its
     placeholders has an explicit type), so this pins the ``"UNKNOWN"``
     fallback with a constructed fake layout instead."""
-    fake_prs = _FakePresentation(
-        [_FakeLayout("Fake Layout", [_FakePlaceholder(idx=0, type_=None)])]
-    )
+    fake_prs = _FakePresentation([_FakeLayout("Fake Layout", [_FakePlaceholder(idx=0, type_=None)])])
     monkeypatch.setattr(pptx_pipeline, "_open_template", lambda path: fake_prs)
 
     spec = pptx_pipeline.extract_spec(Path("unused-template.pptx"))
@@ -238,9 +233,7 @@ def test_fill_template_unknown_placeholder_idx_raises(template_path: Path):
         pptx_pipeline.fill_template(template_path, plan)
 
 
-@pytest.mark.parametrize(
-    "value", [123, None, {"nested": "dict"}, [], [1, 2], ["ok", 3]]
-)
+@pytest.mark.parametrize("value", [123, None, {"nested": "dict"}, [], [1, 2], ["ok", 3]])
 def test_fill_template_malformed_placeholder_value_raises(template_path: Path, value):
     plan = {"slides": [{"layout": 0, "placeholders": {"0": value}}]}
     with pytest.raises(errors.InvalidContentPlanError):
@@ -324,18 +317,14 @@ def test_fill_template_produces_one_slide_per_entry_with_real_text(
 # === run_spec / run_fill (file-path orchestration) ===========================
 
 
-def test_run_spec_returns_spec_and_optionally_writes_json(
-    template_path: Path, tmp_path: Path
-):
+def test_run_spec_returns_spec_and_optionally_writes_json(template_path: Path, tmp_path: Path):
     spec = pptx_pipeline.run_spec(template_path)
     assert len(spec.layouts) == 11
 
     out_path = tmp_path / "spec.json"
     spec_written = pptx_pipeline.run_spec(template_path, out_path=out_path)
     assert out_path.is_file()
-    assert json.loads(out_path.read_text(encoding="utf-8")) == pptx_pipeline.spec_to_dict(
-        spec_written
-    )
+    assert json.loads(out_path.read_text(encoding="utf-8")) == pptx_pipeline.spec_to_dict(spec_written)
 
 
 def test_run_fill_missing_template_raises_and_writes_no_output(tmp_path: Path):
@@ -346,18 +335,14 @@ def test_run_fill_missing_template_raises_and_writes_no_output(tmp_path: Path):
     assert not out_path.exists()
 
 
-def test_run_fill_unreadable_content_plan_path_raises(
-    template_path: Path, tmp_path: Path
-):
+def test_run_fill_unreadable_content_plan_path_raises(template_path: Path, tmp_path: Path):
     out_path = tmp_path / "out.pptx"
     with pytest.raises(errors.InvalidContentPlanError):
         pptx_pipeline.run_fill(template_path, tmp_path / "no-such-plan.json", out_path)
     assert not out_path.exists()
 
 
-def test_run_fill_malformed_json_content_plan_raises(
-    template_path: Path, tmp_path: Path
-):
+def test_run_fill_malformed_json_content_plan_raises(template_path: Path, tmp_path: Path):
     plan_path = tmp_path / "content_plan.json"
     plan_path.write_text("{not valid json", encoding="utf-8")
     out_path = tmp_path / "out.pptx"
@@ -366,9 +351,7 @@ def test_run_fill_malformed_json_content_plan_raises(
     assert not out_path.exists()
 
 
-def test_run_fill_invalid_utf8_content_plan_raises_and_writes_no_output(
-    template_path: Path, tmp_path: Path
-):
+def test_run_fill_invalid_utf8_content_plan_raises_and_writes_no_output(template_path: Path, tmp_path: Path):
     """``UnicodeDecodeError`` is a ``ValueError`` subclass, not an
     ``OSError`` subclass -- a non-UTF-8 content plan must still raise the
     module's own ``InvalidContentPlanError``, not the raw stdlib
@@ -381,12 +364,8 @@ def test_run_fill_invalid_utf8_content_plan_raises_and_writes_no_output(
     assert not out_path.exists()
 
 
-def test_run_fill_unknown_placeholder_idx_writes_no_output_file(
-    template_path: Path, tmp_path: Path
-):
-    plan_path = _write_content_plan(
-        tmp_path, {"slides": [{"layout": 0, "placeholders": {"99": "nope"}}]}
-    )
+def test_run_fill_unknown_placeholder_idx_writes_no_output_file(template_path: Path, tmp_path: Path):
+    plan_path = _write_content_plan(tmp_path, {"slides": [{"layout": 0, "placeholders": {"99": "nope"}}]})
     out_path = tmp_path / "out.pptx"
     with pytest.raises(errors.InvalidContentPlanError):
         pptx_pipeline.run_fill(template_path, plan_path, out_path)
@@ -394,9 +373,7 @@ def test_run_fill_unknown_placeholder_idx_writes_no_output_file(
 
 
 def test_run_fill_writes_a_real_pptx_file(template_path: Path, tmp_path: Path):
-    plan_path = _write_content_plan(
-        tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi", "1": "There"}}]}
-    )
+    plan_path = _write_content_plan(tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi", "1": "There"}}]})
     out_path = tmp_path / "out.pptx"
     pptx_pipeline.run_fill(template_path, plan_path, out_path)
     assert out_path.is_file()
@@ -451,9 +428,7 @@ def test_rebalance_orphan_leaves_a_multi_word_last_line_untouched():
 
 
 def test_rebalance_orphan_leaves_a_single_line_untouched():
-    assert pptx_pipeline._rebalance_orphan(["only one line"], 12, 1000.0) == [
-        "only one line"
-    ]
+    assert pptx_pipeline._rebalance_orphan(["only one line"], 12, 1000.0) == ["only one line"]
 
 
 def test_rebalance_orphan_no_op_when_prior_line_has_only_one_word():
@@ -466,18 +441,14 @@ def test_rebalance_orphan_no_op_when_the_merge_does_not_fit_width():
 
 
 def test_fit_text_uses_max_pt_when_text_fits_comfortably():
-    fitted = pptx_pipeline.fit_text(
-        "hi", width_emu=5_000_000, height_emu=5_000_000, max_pt=24, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text("hi", width_emu=5_000_000, height_emu=5_000_000, max_pt=24, min_pt=6)
     assert fitted.font_size_pt == 24
     assert fitted.lines == ("hi",)
 
 
 def test_fit_text_shrinks_below_max_pt_to_fit_a_tight_box():
     long_text = "word " * 20
-    fitted = pptx_pipeline.fit_text(
-        long_text, width_emu=900_000, height_emu=900_000, max_pt=40, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text(long_text, width_emu=900_000, height_emu=900_000, max_pt=40, min_pt=6)
     height_budget_pt = (900_000 / 12700) * 0.9
     assert fitted.font_size_pt < 40
     assert len(fitted.lines) * fitted.font_size_pt * 1.2 <= height_budget_pt
@@ -488,9 +459,7 @@ def test_fit_text_extreme_overflow_renders_at_min_pt_without_raising():
     minimum font size still overflows the box -- renders at the minimum
     size anyway, no error, no crash."""
     huge_text = "word " * 500
-    fitted = pptx_pipeline.fit_text(
-        huge_text, width_emu=50_000, height_emu=50_000, max_pt=20, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text(huge_text, width_emu=50_000, height_emu=50_000, max_pt=20, min_pt=6)
     assert fitted.font_size_pt == 6
     assert len(fitted.lines) > 0
 
@@ -504,25 +473,18 @@ def test_fit_text_shrinks_an_unbreakable_token_to_fit_the_width():
     # A box tall enough that height alone would happily accept max_pt,
     # but only wide enough for the token at a much smaller size.
     width_emu = 700_000
-    fitted = pptx_pipeline.fit_text(
-        "1,247,392", width_emu=width_emu, height_emu=3_000_000, max_pt=54, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text("1,247,392", width_emu=width_emu, height_emu=3_000_000, max_pt=54, min_pt=6)
     width_budget_pt = (width_emu / 12700) * pptx_pipeline._FIT_SAFETY
     assert len(fitted.lines) == 1
     assert fitted.font_size_pt < 54
-    assert (
-        pptx_pipeline._load_font(fitted.font_size_pt).getlength(fitted.lines[0])
-        <= width_budget_pt
-    )
+    assert pptx_pipeline._load_font(fitted.font_size_pt).getlength(fitted.lines[0]) <= width_budget_pt
 
 
 def test_fit_text_falls_back_to_min_pt_when_a_token_cannot_fit_any_width():
     """The width axis must not break the "Extreme overflow" contract: a
     token too wide even at `min_pt` still renders best-effort at the
     floor rather than raising or looping."""
-    fitted = pptx_pipeline.fit_text(
-        "1,247,392", width_emu=300_000, height_emu=300_000, max_pt=54, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text("1,247,392", width_emu=300_000, height_emu=300_000, max_pt=54, min_pt=6)
     assert fitted.font_size_pt == 6
     assert fitted.lines == ("1,247,392",)
 
@@ -534,15 +496,10 @@ def test_fit_text_applies_the_safety_margin_to_width_as_well_as_height():
     measured with Pillow's regular face. It must therefore hold on the
     width axis, not only the height axis."""
     width_emu = 1_200_000
-    fitted = pptx_pipeline.fit_text(
-        "measured to fit", width_emu=width_emu, height_emu=5_000_000, max_pt=40, min_pt=6
-    )
+    fitted = pptx_pipeline.fit_text("measured to fit", width_emu=width_emu, height_emu=5_000_000, max_pt=40, min_pt=6)
     width_budget_pt = (width_emu / 12700) * pptx_pipeline._FIT_SAFETY
     for line in fitted.lines:
-        assert (
-            pptx_pipeline._load_font(fitted.font_size_pt).getlength(line)
-            <= width_budget_pt
-        )
+        assert pptx_pipeline._load_font(fitted.font_size_pt).getlength(line) <= width_budget_pt
 
 
 def test_lines_height_emu_matches_the_line_height_formula():
@@ -561,9 +518,7 @@ def _blank_slide():
 
 def test_add_card_creates_a_real_autoshape_with_theme_colors_and_real_text():
     _, slide = _blank_slide()
-    shape = pptx_pipeline.add_card(
-        slide, 0, 0, 2_000_000, 1_500_000, "A Title", "A body sentence."
-    )
+    shape = pptx_pipeline.add_card(slide, 0, 0, 2_000_000, 1_500_000, "A Title", "A body sentence.")
     assert shape.has_text_frame
     assert len(shape.text_frame.paragraphs) == 2
     assert "A Title" in shape.text_frame.text
@@ -588,9 +543,7 @@ def test_add_card_creates_a_real_autoshape_with_theme_colors_and_real_text():
 
 def test_add_metric_box_renders_a_large_value_line_above_a_small_label_line():
     _, slide = _blank_slide()
-    shape = pptx_pipeline.add_metric_box(
-        slide, 0, 0, 1_500_000, 900_000, "42%", "of findings resolved"
-    )
+    shape = pptx_pipeline.add_metric_box(slide, 0, 0, 1_500_000, 900_000, "42%", "of findings resolved")
     value_paragraph, label_paragraph = shape.text_frame.paragraphs
     value_run = value_paragraph.runs[0]
     label_run = label_paragraph.runs[0]
@@ -630,9 +583,7 @@ def test_add_table_gives_every_cell_one_font_size_and_a_distinct_header_row():
     header_run = header_cell.text_frame.paragraphs[0].runs[0]
     assert header_run.font.bold is True
     assert header_run.font.color.theme_color == pptx_pipeline.MSO_THEME_COLOR.BACKGROUND_1
-    assert (
-        header_cell.fill.fore_color.theme_color == pptx_pipeline.MSO_THEME_COLOR.ACCENT_1
-    )
+    assert header_cell.fill.fore_color.theme_color == pptx_pipeline.MSO_THEME_COLOR.ACCENT_1
 
     body_cell = table.cell(1, 0)
     body_run = body_cell.text_frame.paragraphs[0].runs[0]
@@ -658,15 +609,9 @@ def test_every_written_paragraph_pins_spacing_and_alignment():
     an added paragraph inherits the theme default, so an unpinned card
     would render a centred title over a left-aligned body."""
     _, slide = _blank_slide()
-    card = pptx_pipeline.add_card(
-        slide, 0, 0, 2_000_000, 1_500_000, "A Title", "A body sentence."
-    )
-    metric = pptx_pipeline.add_metric_box(
-        slide, 0, 0, 1_500_000, 900_000, "42%", "of findings resolved"
-    )
-    label = pptx_pipeline.add_section_label(
-        slide, 0, 0, 3_000_000, 400_000, "Act I"
-    )
+    card = pptx_pipeline.add_card(slide, 0, 0, 2_000_000, 1_500_000, "A Title", "A body sentence.")
+    metric = pptx_pipeline.add_metric_box(slide, 0, 0, 1_500_000, 900_000, "42%", "of findings resolved")
+    label = pptx_pipeline.add_section_label(slide, 0, 0, 3_000_000, 400_000, "Act I")
     table = pptx_pipeline.add_table(
         slide, 0, 0, 4_000_000, 1_500_000, (("Axis", "Signal"), ("Hygiene", "deptry"))
     ).table
@@ -712,9 +657,7 @@ def test_add_metric_box_label_never_renders_larger_than_its_value():
     narrow box must not end up smaller than the short label annotating
     it. Unclamped, this fixture renders a 9pt value under a 14pt label."""
     _, slide = _blank_slide()
-    shape = pptx_pipeline.add_metric_box(
-        slide, 0, 0, 600_000, 900_000, "1,247,392", "pkgs"
-    )
+    shape = pptx_pipeline.add_metric_box(slide, 0, 0, 600_000, 900_000, "1,247,392", "pkgs")
     value_run = shape.text_frame.paragraphs[0].runs[0]
     label_run = shape.text_frame.paragraphs[1].runs[0]
     assert value_run.font.size.pt >= label_run.font.size.pt
@@ -726,9 +669,7 @@ def test_add_metric_box_label_fits_the_height_left_by_its_value():
     the card's Warden acceptance check)."""
     _, slide = _blank_slide()
     height = 900_000
-    shape = pptx_pipeline.add_metric_box(
-        slide, 0, 0, 1_500_000, height, "42%", "of findings resolved this quarter"
-    )
+    shape = pptx_pipeline.add_metric_box(slide, 0, 0, 1_500_000, height, "42%", "of findings resolved this quarter")
     total_emu = 0
     for paragraph in shape.text_frame.paragraphs:
         line_count = paragraph.text.count("\x0b") + 1
@@ -743,10 +684,7 @@ def test_add_table_shrinks_to_its_own_per_row_height_budget():
     come back small enough that each cell's own text block fits one row."""
     _, slide = _blank_slide()
     width, height = 8_000_000, 2_000_000
-    rows = tuple(
-        (f"Row {index} axis label", f"a reasonably long signal description {index}")
-        for index in range(5)
-    )
+    rows = tuple((f"Row {index} axis label", f"a reasonably long signal description {index}") for index in range(5))
     graphic_frame = pptx_pipeline.add_table(slide, 0, 0, width, height, rows)
     table = graphic_frame.table
 
@@ -759,17 +697,12 @@ def test_add_table_shrinks_to_its_own_per_row_height_budget():
             line_count = paragraph.text.count("\x0b") + 1
             assert line_count * size_pt * 1.2 <= row_budget_pt
             for run in paragraph.runs:
-                assert (
-                    pptx_pipeline._load_font(int(size_pt)).getlength(run.text)
-                    <= width_budget_pt
-                )
+                assert pptx_pipeline._load_font(int(size_pt)).getlength(run.text) <= width_budget_pt
 
 
 def test_add_table_single_row_has_no_header():
     _, slide = _blank_slide()
-    graphic_frame = pptx_pipeline.add_table(
-        slide, 0, 0, 2_000_000, 500_000, (("only", "row"),)
-    )
+    graphic_frame = pptx_pipeline.add_table(slide, 0, 0, 2_000_000, 500_000, (("only", "row"),))
     cell = graphic_frame.table.cell(0, 0)
     assert cell.text_frame.paragraphs[0].runs[0].font.bold is False
 
@@ -780,12 +713,7 @@ def test_table_font_size_falls_back_to_min_pt_when_nothing_fits():
     the function still falls through to the shared minimum rather than
     raising or looping forever."""
     rows = (("This is a very long cell of text that will not fit", "b"),)
-    assert (
-        pptx_pipeline._table_font_size(
-            rows, cell_width_emu=50_000, cell_height_emu=50_000
-        )
-        == pptx_pipeline._MIN_PT
-    )
+    assert pptx_pipeline._table_font_size(rows, cell_width_emu=50_000, cell_height_emu=50_000) == pptx_pipeline._MIN_PT
 
 
 def test_add_section_label_renders_a_single_theme_colored_run():
@@ -825,9 +753,7 @@ def test_fill_template_card_shape_produces_real_text_runs(template_path: Path):
     prs = pptx_pipeline.fill_template(template_path, plan)
     assert len(prs.slides) == 1
     slide = prs.slides[0]
-    card = next(
-        s for s in slide.shapes if s.has_text_frame and "A Title" in s.text_frame.text
-    )
+    card = next(s for s in slide.shapes if s.has_text_frame and "A Title" in s.text_frame.text)
     assert "A body sentence." in card.text_frame.text
 
 
@@ -866,9 +792,7 @@ def test_fill_template_every_shape_type_produces_a_slide(template_path: Path, sh
     assert len(prs.slides) == 1
 
 
-def test_run_fill_shapes_produce_real_runs_no_pic_and_theme_colors_only(
-    template_path: Path, tmp_path: Path
-):
+def test_run_fill_shapes_produce_real_runs_no_pic_and_theme_colors_only(template_path: Path, tmp_path: Path):
     """Acceptance: the output .pptx's slide XML contains real <a:t> runs
     for every shape's text (no <p:pic> covering them), and every shape's
     fill/text color is a theme color reference (<a:schemeClr>), never a
@@ -943,9 +867,7 @@ def test_fill_template_shapes_not_a_list_raises(template_path: Path):
         pptx_pipeline.fill_template(template_path, plan)
 
 
-def test_fill_template_unknown_shape_type_raises_and_writes_no_output(
-    template_path: Path, tmp_path: Path
-):
+def test_fill_template_unknown_shape_type_raises_and_writes_no_output(template_path: Path, tmp_path: Path):
     plan_path = _write_content_plan(
         tmp_path,
         _shape_plan({"type": "chart", "left": 0, "top": 0, "width": 1, "height": 1}),
@@ -1028,9 +950,7 @@ def test_fill_template_table_rows_validation_raises(template_path: Path, rows):
         pptx_pipeline.fill_template(template_path, plan)
 
 
-def test_run_fill_invalid_table_rows_writes_no_output_file(
-    template_path: Path, tmp_path: Path
-):
+def test_run_fill_invalid_table_rows_writes_no_output_file(template_path: Path, tmp_path: Path):
     plan_path = _write_content_plan(
         tmp_path,
         _shape_plan(
@@ -1156,9 +1076,7 @@ def test_fill_template_placeholders_and_shapes_coexist_on_the_same_slide(
     slide = prs.slides[0]
     assert slide.placeholders[0].text_frame.text == "A Real Title"
     assert slide.placeholders[1].text_frame.text == "A Real Subtitle"
-    card = next(
-        s for s in slide.shapes if s.has_text_frame and "Card Title" in s.text_frame.text
-    )
+    card = next(s for s in slide.shapes if s.has_text_frame and "Card Title" in s.text_frame.text)
     assert "Card body text." in card.text_frame.text
 
 
@@ -1167,23 +1085,19 @@ def test_fill_template_placeholders_and_shapes_coexist_on_the_same_slide(
 _WARDEN_APPENDIX_PERSONAS = [
     (
         "CISO — provable risk posture",
-        "exploitability-prioritized findings (KEV/EPSS) and audit-grade, "
-        "reproducible evidence.",
+        "exploitability-prioritized findings (KEV/EPSS) and audit-grade, reproducible evidence.",
     ),
     (
         "Chief Dev Experience — a gate devs trust",
-        "runs locally first, one command, no false alarms — so it "
-        "doesn't cry wolf.",
+        "runs locally first, one command, no false alarms — so it doesn't cry wolf.",
     ),
     (
         "CIO — standardized & offline",
-        "one gate fleet-wide, deterministic and air-gap-ready for "
-        "regulated estates.",
+        "one gate fleet-wide, deterministic and air-gap-ready for regulated estates.",
     ),
     (
         "Chief Data & Analytics — the ML footprint, covered",
-        "conda / conda-forge coverage — the scientific / ML library "
-        "estate that stock PyPI-only tools never parse.",
+        "conda / conda-forge coverage — the scientific / ML library estate that stock PyPI-only tools never parse.",
     ),
 ]
 """The 4 real Appendix persona strings, transcribed verbatim (minus
@@ -1209,9 +1123,7 @@ def test_add_card_fits_the_warden_appendix_personas_within_card_height():
     slide = prs.slides.add_slide(prs.slide_layouts[6])
 
     for title, body in _WARDEN_APPENDIX_PERSONAS:
-        shape = pptx_pipeline.add_card(
-            slide, 0, 0, card_width_emu, card_height_emu, title, body
-        )
+        shape = pptx_pipeline.add_card(slide, 0, 0, card_width_emu, card_height_emu, title, body)
         total_height_pt = 0.0
         for paragraph in shape.text_frame.paragraphs:
             font_size_pt = paragraph.runs[0].font.size.pt
@@ -1253,9 +1165,7 @@ def test_deck_pptx_spec_missing_template_exits_1(tmp_path: Path, capsys):
 
 
 def test_deck_pptx_fill_writes_pptx(tmp_path: Path, capsys):
-    plan_path = _write_content_plan(
-        tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi", "1": "There"}}]}
-    )
+    plan_path = _write_content_plan(tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi", "1": "There"}}]})
     out_path = tmp_path / "out.pptx"
     exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
     assert exit_code == 0
@@ -1263,12 +1173,8 @@ def test_deck_pptx_fill_writes_pptx(tmp_path: Path, capsys):
     assert "wrote" in capsys.readouterr().out
 
 
-def test_deck_pptx_fill_unknown_placeholder_idx_exits_1_and_writes_nothing(
-    tmp_path: Path, capsys
-):
-    plan_path = _write_content_plan(
-        tmp_path, {"slides": [{"layout": 0, "placeholders": {"99": "nope"}}]}
-    )
+def test_deck_pptx_fill_unknown_placeholder_idx_exits_1_and_writes_nothing(tmp_path: Path, capsys):
+    plan_path = _write_content_plan(tmp_path, {"slides": [{"layout": 0, "placeholders": {"99": "nope"}}]})
     out_path = tmp_path / "out.pptx"
     exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
     assert exit_code == 1
@@ -1276,9 +1182,7 @@ def test_deck_pptx_fill_unknown_placeholder_idx_exits_1_and_writes_nothing(
     assert "InvalidContentPlanError" in capsys.readouterr().err
 
 
-def test_deck_pptx_fill_unknown_shape_type_exits_1_and_writes_nothing(
-    tmp_path: Path, capsys
-):
+def test_deck_pptx_fill_unknown_shape_type_exits_1_and_writes_nothing(tmp_path: Path, capsys):
     plan_path = _write_content_plan(
         tmp_path,
         _shape_plan({"type": "chart", "left": 0, "top": 0, "width": 1, "height": 1}),
@@ -1290,17 +1194,14 @@ def test_deck_pptx_fill_unknown_shape_type_exits_1_and_writes_nothing(
     assert "InvalidContentPlanError" in capsys.readouterr().err
 
 
-def test_deck_pptx_fill_missing_required_field_exits_1_and_writes_nothing(
-    tmp_path: Path, capsys
-):
+def test_deck_pptx_fill_missing_required_field_exits_1_and_writes_nothing(tmp_path: Path, capsys):
     """I/O matrix's "Missing required field" row, proven all the way
     through the CLI (mirroring the unknown-shape-type CLI test above) --
     not just at the in-memory `fill_template` level."""
     plan_path = _write_content_plan(
         tmp_path,
         _shape_plan(
-            {"type": "card", "left": 0, "top": 0, "width": 1_000_000, "height": 1_000_000,
-             "title": "x"}  # no "body"
+            {"type": "card", "left": 0, "top": 0, "width": 1_000_000, "height": 1_000_000, "title": "x"}  # no "body"
         ),
     )
     out_path = tmp_path / "out.pptx"
@@ -1310,18 +1211,13 @@ def test_deck_pptx_fill_missing_required_field_exits_1_and_writes_nothing(
     assert "InvalidContentPlanError" in capsys.readouterr().err
 
 
-def test_deck_pptx_fill_non_positive_shape_geometry_exits_1_and_writes_nothing(
-    tmp_path: Path, capsys
-):
+def test_deck_pptx_fill_non_positive_shape_geometry_exits_1_and_writes_nothing(tmp_path: Path, capsys):
     """I/O matrix's "Non-positive geometry" row, proven all the way
     through the CLI (mirroring the unknown-shape-type CLI test above) --
     not just at the in-memory `fill_template` level."""
     plan_path = _write_content_plan(
         tmp_path,
-        _shape_plan(
-            {"type": "section_label", "text": "x", "left": 0, "top": 0,
-             "width": 0, "height": 1_000_000}
-        ),
+        _shape_plan({"type": "section_label", "text": "x", "left": 0, "top": 0, "width": 0, "height": 1_000_000}),
     )
     out_path = tmp_path / "out.pptx"
     exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
@@ -1351,25 +1247,19 @@ def test_deck_pptx_fill_cli_handles_a_shapes_bearing_plan(tmp_path: Path, capsys
     assert "wrote" in capsys.readouterr().out
 
 
-def test_deck_pptx_subcommands_never_construct_an_mcp_transport(
-    monkeypatch, tmp_path: Path
-):
+def test_deck_pptx_subcommands_never_construct_an_mcp_transport(monkeypatch, tmp_path: Path):
     """Mirrors ``test_cli_deck_qa.py``'s regression: these subcommands are
     fully local/offline and must never reach Claude Design."""
 
     class _ExplodingTransport:
         def __init__(self, *args, **kwargs):
-            raise AssertionError(
-                "pptx-spec/pptx-fill must never construct McpTransport"
-            )
+            raise AssertionError("pptx-spec/pptx-fill must never construct McpTransport")
 
     monkeypatch.setattr(cli, "McpTransport", _ExplodingTransport)
 
     assert cli.main(["deck", "pptx-spec"]) == 0
 
-    plan_path = _write_content_plan(
-        tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi"}}]}
-    )
+    plan_path = _write_content_plan(tmp_path, {"slides": [{"layout": 0, "placeholders": {"0": "Hi"}}]})
     out_path = tmp_path / "out.pptx"
     assert cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)]) == 0
 
@@ -1377,9 +1267,7 @@ def test_deck_pptx_subcommands_never_construct_an_mcp_transport(
 # === the flagship round-trip proof ============================================
 
 
-def test_round_trip_three_real_slides_produce_genuinely_editable_text(
-    template_path: Path, tmp_path: Path
-):
+def test_round_trip_three_real_slides_produce_genuinely_editable_text(template_path: Path, tmp_path: Path):
     """Given the bundled default template and a content_plan.json built
     from 3 real slides transcribed from
     presentations/pyforge-herald/src/marp/pyforge-herald-deck-2026-07-24.md
@@ -1450,10 +1338,7 @@ def test_round_trip_three_real_slides_produce_genuinely_editable_text(
     assert round_tripped_path.is_file()
     round_tripped_prs = Presentation(str(round_tripped_path))
     round_tripped_text = "\n".join(
-        shape.text_frame.text
-        for slide in round_tripped_prs.slides
-        for shape in slide.shapes
-        if shape.has_text_frame
+        shape.text_frame.text for slide in round_tripped_prs.slides for shape in slide.shapes if shape.has_text_frame
     )
     for text in expected_strings:
         assert text in round_tripped_text

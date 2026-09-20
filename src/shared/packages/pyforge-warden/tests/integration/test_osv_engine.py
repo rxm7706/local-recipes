@@ -98,9 +98,7 @@ def _inventory(component_factory, *, version: str) -> ResolvedInventory:
     return ResolvedInventory(components=(component,), resolved_scan_set=(MANIFEST,))
 
 
-def test_vulnerable_pin_end_to_end_through_osv_engine(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_vulnerable_pin_end_to_end_through_osv_engine(monkeypatch, tmp_path, offline_cache, component_factory):
     """The Given/When/Then AC: a known-vulnerable pin against the 1.4
     fixture DB, run through PRODUCTION OsvEngine (not the spike runner) --
     the advisory + CVSS severity lands as a ``vuln:`` finding, coverage
@@ -113,9 +111,7 @@ def test_vulnerable_pin_end_to_end_through_osv_engine(
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"vuln:{FIXTURE_ADVISORY_ID}:{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}"
-    )
+    assert finding.id == (f"vuln:{FIXTURE_ADVISORY_ID}:{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}")
     assert finding.axis == AXIS_VULNERABILITY
     assert finding.subject == FIXTURE_PACKAGE
     assert finding.severity is not None
@@ -136,9 +132,7 @@ def test_vulnerable_pin_end_to_end_through_osv_engine(
     assert result.vuln_data.max_age_ok is True
 
 
-def test_clean_pin_end_to_end_through_osv_engine(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_clean_pin_end_to_end_through_osv_engine(monkeypatch, tmp_path, offline_cache, component_factory):
     """A pin OUTSIDE the seeded advisory's affected versions is genuinely
     clean: osv ran, consulted the real DB, found nothing -- no finding, but
     coverage + vuln_data still populate (the axis WAS consulted)."""
@@ -169,10 +163,7 @@ def test_db_absent_never_reports_clean(monkeypatch, tmp_path, component_factory)
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"indeterminate:offline-db-unavailable:"
-        f"{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}"
-    )
+    assert finding.id == (f"indeterminate:offline-db-unavailable:{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}")
     assert finding.axis == AXIS_VULNERABILITY
     assert result.coverage == ()  # coverage-skipped -- never a confident claim
     assert result.vuln_data is None
@@ -193,10 +184,7 @@ def test_db_present_but_empty_zip_never_reports_clean(monkeypatch, tmp_path, com
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"indeterminate:offline-db-unavailable:"
-        f"{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}"
-    )
+    assert finding.id == (f"indeterminate:offline-db-unavailable:{FIXTURE_PACKAGE}@{FIXTURE_VULNERABLE_VERSION}")
     assert result.coverage == ()
     assert result.vuln_data is None
 
@@ -233,17 +221,13 @@ def test_name_level_only_candidate_yields_the_critical_finding_without_a_subproc
         pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=None),
         indeterminate_reason=WithholdReason.RANGE_ONLY,
     )
-    inventory = ResolvedInventory(
-        components=(component,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(component,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 
     assert result.errors == ()
     (finding,) = result.findings
-    assert finding.id == (
-        f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified"
-    )
+    assert finding.id == (f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified")
     assert finding.axis == AXIS_VULNERABILITY
     assert finding.severity is None
     # A worry-list nudge, never real coverage -- and never a `vuln:` finding
@@ -296,9 +280,7 @@ def test_stale_db_forces_the_whole_axis_indeterminate_even_when_otherwise_clean(
 # genuinely stale, non-deterministically.
 
 
-def test_name_level_only_candidate_with_a_stale_db_merges_both_findings(
-    monkeypatch, tmp_path, component_factory
-):
+def test_name_level_only_candidate_with_a_stale_db_merges_both_findings(monkeypatch, tmp_path, component_factory):
     """Review finding, 2026-07-16: the class docstring promises the stale
     finding merges into every content-bearing result INCLUDING the
     name-level-only path (no exact-match candidates at all, so the
@@ -320,18 +302,13 @@ def test_name_level_only_candidate_with_a_stale_db_merges_both_findings(
         pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=None),
         indeterminate_reason=WithholdReason.RANGE_ONLY,
     )
-    inventory = ResolvedInventory(
-        components=(component,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(component,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 
     assert result.errors == ()
     finding_ids = {f.id for f in result.findings}
-    assert (
-        f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified"
-        in finding_ids
-    )
+    assert f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified" in finding_ids
     assert "indeterminate:vuln-data-stale:vuln-database" in finding_ids
     assert result.vuln_data is not None
     assert result.vuln_data.source == str(zip_path)
@@ -376,10 +353,7 @@ def test_purity_guard_excludes_everything_still_reports_name_level_and_staleness
     assert result.errors == ()
     finding_ids = {f.id for f in result.findings}
     assert "indeterminate:unsafe-identity:-rf@1.0" in finding_ids
-    assert (
-        f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified"
-        in finding_ids
-    )
+    assert f"indeterminate:name-level-critical-cve:{FIXTURE_PACKAGE}@unspecified" in finding_ids
     assert "indeterminate:vuln-data-stale:vuln-database" in finding_ids
     assert result.vuln_data is not None
     assert result.vuln_data.source == str(zip_path)
@@ -404,9 +378,7 @@ def test_real_scan_path_calls_the_version_check_immediately_before_osv_scanner(
     def spy_run(argv, **kwargs):
         calls.append(list(argv))
         if argv[:2] == ["osv-scanner", "--version"]:
-            return types.SimpleNamespace(
-                returncode=0, stdout=b"osv-scanner version: 2.4.0\n", stderr=b""
-            )
+            return types.SimpleNamespace(returncode=0, stdout=b"osv-scanner version: 2.4.0\n", stderr=b"")
         return real_run(argv, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", spy_run)
@@ -423,9 +395,7 @@ def test_real_scan_path_calls_the_version_check_immediately_before_osv_scanner(
     assert finding.id.startswith("vuln:")
 
 
-def test_out_of_range_version_never_invokes_the_real_osv_scan(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_out_of_range_version_never_invokes_the_real_osv_scan(monkeypatch, tmp_path, offline_cache, component_factory):
     """A newer, untested minor must fail loud via the EXISTING
     ENGINE_UNAVAILABLE kind -- and the real osv-scanner subprocess is never
     invoked."""
@@ -433,13 +403,8 @@ def test_out_of_range_version_never_invokes_the_real_osv_scan(
 
     def fake_run(argv, **kwargs):
         if argv[:2] == ["osv-scanner", "--version"]:
-            return types.SimpleNamespace(
-                returncode=0, stdout=b"osv-scanner version: 9.9.9\n", stderr=b""
-            )
-        pytest.fail(
-            "the real osv-scanner subprocess must never be invoked when "
-            "the version gate fails"
-        )
+            return types.SimpleNamespace(returncode=0, stdout=b"osv-scanner version: 9.9.9\n", stderr=b"")
+        pytest.fail("the real osv-scanner subprocess must never be invoked when the version gate fails")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     inventory = _inventory(component_factory, version=FIXTURE_VULNERABLE_VERSION)
@@ -485,9 +450,7 @@ def test_version_gate_failure_preserves_purity_guard_and_name_level_findings(
 
     def fake_run(argv, **kwargs):
         if argv[:2] == ["osv-scanner", "--version"]:
-            return types.SimpleNamespace(
-                returncode=0, stdout=b"osv-scanner version: 9.9.9\n", stderr=b""
-            )
+            return types.SimpleNamespace(returncode=0, stdout=b"osv-scanner version: 9.9.9\n", stderr=b"")
         pytest.fail("the real osv-scanner subprocess must never be invoked")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -499,13 +462,9 @@ def test_version_gate_failure_preserves_purity_guard_and_name_level_findings(
     safe = component_factory(
         name=FIXTURE_PACKAGE,
         version=FIXTURE_CLEAN_VERSION,
-        pypi_identity=PypiIdentity(
-            name=FIXTURE_PACKAGE, version=FIXTURE_CLEAN_VERSION
-        ),
+        pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=FIXTURE_CLEAN_VERSION),
     )
-    inventory = ResolvedInventory(
-        components=(unsafe, safe), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(unsafe, safe), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 
@@ -517,18 +476,13 @@ def test_version_gate_failure_preserves_purity_guard_and_name_level_findings(
     assert result.coverage == ()
 
 
-def test_zero_candidates_never_calls_the_version_check_or_osv(
-    monkeypatch, tmp_path
-):
+def test_zero_candidates_never_calls_the_version_check_or_osv(monkeypatch, tmp_path):
     """Skip regression: no vuln-matchable/name-level candidates at all --
     the version check never runs, matching pre-story behavior (osv-scanner
     was never invoked here either)."""
 
     def fake_run(argv, **kwargs):
-        pytest.fail(
-            "no subprocess call expected -- zero candidates never reaches "
-            "the version check or osv-scanner"
-        )
+        pytest.fail("no subprocess call expected -- zero candidates never reaches the version check or osv-scanner")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     inventory = ResolvedInventory(components=(), resolved_scan_set=(MANIFEST,))
@@ -539,9 +493,7 @@ def test_zero_candidates_never_calls_the_version_check_or_osv(
     assert result.errors == ()
 
 
-def test_db_unavailable_never_calls_the_version_check_or_osv(
-    monkeypatch, tmp_path, component_factory
-):
+def test_db_unavailable_never_calls_the_version_check_or_osv(monkeypatch, tmp_path, component_factory):
     """Skip regression: the DB content pre-flight fails BEFORE the version
     check is ever reached -- unchanged from pre-story (osv-scanner was
     never invoked on this path either)."""
@@ -549,8 +501,7 @@ def test_db_unavailable_never_calls_the_version_check_or_osv(
 
     def fake_run(argv, **kwargs):
         pytest.fail(
-            "no subprocess call expected -- a DB pre-flight failure never "
-            "reaches the version check or osv-scanner"
+            "no subprocess call expected -- a DB pre-flight failure never reaches the version check or osv-scanner"
         )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -563,19 +514,14 @@ def test_db_unavailable_never_calls_the_version_check_or_osv(
     assert result.coverage == ()
 
 
-def test_name_level_only_never_calls_the_version_check_or_osv(
-    monkeypatch, tmp_path, offline_cache, component_factory
-):
+def test_name_level_only_never_calls_the_version_check_or_osv(monkeypatch, tmp_path, offline_cache, component_factory):
     """Skip regression: a name-level-only scan (no exact-match candidates)
     never reaches the version check -- osv-scanner has no "any version"
     query mode, so this was never invoked here either, pre- or post-story."""
     monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(offline_cache))
 
     def fake_run(argv, **kwargs):
-        pytest.fail(
-            "no subprocess call expected -- name-level-only never reaches "
-            "the version check or osv-scanner"
-        )
+        pytest.fail("no subprocess call expected -- name-level-only never reaches the version check or osv-scanner")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     component = component_factory(
@@ -584,9 +530,7 @@ def test_name_level_only_never_calls_the_version_check_or_osv(
         pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=None),
         indeterminate_reason=WithholdReason.RANGE_ONLY,
     )
-    inventory = ResolvedInventory(
-        components=(component,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(component,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 
@@ -615,9 +559,7 @@ def test_purity_guard_excludes_everything_never_calls_the_version_check_or_osv(
         version="1.0",
         pypi_identity=PypiIdentity(name="-rf", version="1.0"),
     )
-    inventory = ResolvedInventory(
-        components=(unsafe,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(unsafe,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 

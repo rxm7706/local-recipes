@@ -83,3 +83,16 @@ close it.
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
 - 2026-09-01: status → `done` (ledger + PR #973); SCP cross-ref `sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `951eddb6b7` (2026-09-01, "Merge pull request #973 from rxm7706/dispatch/pyforge-marshal/28.4"). Ledger row `28-4-savings-telemetry-in-journals-and-status: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_savings_telemetry.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

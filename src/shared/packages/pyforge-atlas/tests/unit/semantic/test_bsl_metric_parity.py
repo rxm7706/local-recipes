@@ -25,7 +25,6 @@ import pytest
 from pyforge.atlas.semantic import models
 from pyforge.atlas.semantic.query_helpers import bsl_query
 
-
 # ===========================================================================
 # LEGACY ANCHORS — independent re-implementations of the legacy formulas.
 # These are COPIED from the legacy source; they must not import the BSL layer.
@@ -90,8 +89,20 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
     # null-age+0-versions unknown branch, and the `age or 99999` falsy-zero quirk).
     df = pd.DataFrame(
         {
-            "conda_name": ["silent", "declin", "bleed", "stable", "mature", "unknown",
-                           "b730", "b365", "zeroage", "twoRel", "newpkg", "nulltv_old"],
+            "conda_name": [
+                "silent",
+                "declin",
+                "bleed",
+                "stable",
+                "mature",
+                "unknown",
+                "b730",
+                "b365",
+                "zeroage",
+                "twoRel",
+                "newpkg",
+                "nulltv_old",
+            ],
             "latest_upload_age_days": pd.array(
                 [800, 400, 10, 100, 200, None, 730, 365, 0, 50, None, None],
                 dtype="Int64",
@@ -146,9 +157,7 @@ def test_staleness_age_days_matches_legacy(parquet_table):
     df = pd.DataFrame(
         {
             "conda_name": ["fresh", "old", "nullts", "zerots"],
-            "latest_conda_upload": pd.array(
-                [NOW - 5 * 86400, NOW - 900 * 86400, None, 0], dtype="Int64"
-            ),
+            "latest_conda_upload": pd.array([NOW - 5 * 86400, NOW - 900 * 86400, None, 0], dtype="Int64"),
             # unused-by-staleness columns present so the model builds:
             "latest_status": ["active"] * 4,
             "feedstock_archived": pd.array([0, 0, 0, 0], dtype="Int64"),
@@ -291,9 +300,7 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
         assert bool(issues[r["feedstock_name"]]) == exp, r["feedstock_name"]
 
     # counts agree with the row-level dimensions.
-    counts = model.query(
-        measures=["ci_red_count", "open_prs_count", "open_issues_count", "feedstock_count"]
-    ).execute()
+    counts = model.query(measures=["ci_red_count", "open_prs_count", "open_issues_count", "feedstock_count"]).execute()
     assert int(counts["ci_red_count"].iloc[0]) == 2  # failure + error
     assert int(counts["open_prs_count"].iloc[0]) == 1
     assert int(counts["open_issues_count"].iloc[0]) == 1
@@ -309,12 +316,21 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
 # schema (an all-empty object column would round-trip to a null type and break string
 # comparisons — a fixture artifact, not a model bug; real catalog Parquet is typed).
 _PACKAGES_EMPTY_DTYPES = {
-    "conda_name": "string", "latest_status": "string", "feedstock_archived": "Int64",
-    "latest_conda_upload": "Int64", "downloads_total": "Int64", "downloads_30d": "Int64",
-    "latest_upload_age_days": "Int64", "releases_30d": "Int64", "total_versions": "Int64",
+    "conda_name": "string",
+    "latest_status": "string",
+    "feedstock_archived": "Int64",
+    "latest_conda_upload": "Int64",
+    "downloads_total": "Int64",
+    "downloads_30d": "Int64",
+    "latest_upload_age_days": "Int64",
+    "releases_30d": "Int64",
+    "total_versions": "Int64",
 }
 _FHEALTH_EMPTY_DTYPES = {
-    "feedstock_name": "string", "ci_status": "string", "open_prs": "Int64", "open_issues": "Int64",
+    "feedstock_name": "string",
+    "ci_status": "string",
+    "open_prs": "Int64",
+    "open_issues": "Int64",
 }
 
 

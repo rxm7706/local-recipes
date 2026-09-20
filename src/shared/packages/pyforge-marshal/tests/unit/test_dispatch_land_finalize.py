@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
+
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
@@ -32,9 +33,7 @@ class _StubVcs:
 def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     """Read back the single ``_FINALIZE_RESYNC_KIND`` journal entry written
     under ``tmp_path``'s real (unstubbed) ``LocalFs`` for this test run."""
-    runs_dir = (
-        tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
-    )
+    runs_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
     run_dirs = list(runs_dir.iterdir())
     assert len(run_dirs) == 1
     lines = (run_dirs[0] / "journal.jsonl").read_text(encoding="utf-8").splitlines()
@@ -44,9 +43,7 @@ def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     return matches[0]
 
 
-def test_finalize_passes_base_main_to_isolated_promote(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_passes_base_main_to_isolated_promote(tmp_path: Path, monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class _Scan:
@@ -94,9 +91,7 @@ def test_finalize_passes_base_main_to_isolated_promote(
     assert seen["kwargs"]["base"] == "main"
 
 
-def test_finalize_forwards_worktree_to_scan_promotions(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_forwards_worktree_to_scan_promotions(tmp_path: Path, monkeypatch) -> None:
     """Story 51.2: the landing record follows the session's write, not the
     primary's directory. When a worktree is given, ``finalize_dispatch_land``
     must thread it into ``_scan_promotions`` so a spec written into the
@@ -190,9 +185,7 @@ def test_finalize_defaults_worktree_to_none(tmp_path: Path, monkeypatch) -> None
     assert seen["scan_kwargs"]["worktree"] is None
 
 
-def test_finalize_resyncs_the_primary_after_ledger_promotion(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_resyncs_the_primary_after_ledger_promotion(tmp_path: Path, monkeypatch) -> None:
     """Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` never touches
     the primary checkout's own working tree (CAP-5), so nothing else picked
     up that promotion either. `dispatch_land_finalize` must reuse
@@ -264,9 +257,7 @@ def test_finalize_resyncs_the_primary_after_ledger_promotion(
     assert entry["payload"]["resynced"] is True
 
 
-def test_finalize_skips_resync_on_a_dirty_primary(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_skips_resync_on_a_dirty_primary(tmp_path: Path, monkeypatch) -> None:
     """Story 51.9 (review pass 2026-09-19, Group 1): `_resync_home_branch`
     only checks SHA-match, never dirtiness -- a dirty checkout sitting
     exactly at local `main`'s own tip would pass that check unchanged and
@@ -352,10 +343,7 @@ class _FakeIntakeVcs:
         self.calls: list[dict] = []
 
     def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
-        self.calls.append(
-            {"repo_root": repo_root, "remote": remote, "ref": ref, "writes": writes,
-             "message": message}
-        )
+        self.calls.append({"repo_root": repo_root, "remote": remote, "ref": ref, "writes": writes, "message": message})
         if self.raises:
             from pyforge.marshal.adapters.vcs_git import VcsCommandError
 
@@ -393,9 +381,7 @@ def test_run_deferred_work_intake_refusal_returns_warn_finding(tmp_path: Path) -
 def test_run_deferred_work_intake_process_error_returns_warn_finding(tmp_path: Path) -> None:
     fs = LocalFs()
     vcs = _FakeIntakeVcs()
-    finding = _run_deferred_work_intake(
-        _RaisingIntakeProcess(), fs, vcs, tmp_path, "pyforge-doctor"
-    )
+    finding = _run_deferred_work_intake(_RaisingIntakeProcess(), fs, vcs, tmp_path, "pyforge-doctor")
     assert finding is not None
     assert finding.code == "MRS-DISP-047"
     assert finding.severity == Severity.WARN
@@ -412,12 +398,7 @@ def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
     restored to its pre-``--fix`` text -- never left dirty for the next
     finalize's ``has_uncommitted_changes`` gate to trip over."""
     tracked_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "deferred-work-ledger.md"
     )
     tracked_path.parent.mkdir(parents=True)
     tracked_path.write_text("# Deferred Work Ledger\n\nold entry\n", encoding="utf-8")
@@ -428,9 +409,7 @@ def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
 
         def run(self, tokens, *, cwd: Path):
             self.calls.append((list(tokens), cwd))
-            tracked_path.write_text(
-                "# Deferred Work Ledger\n\nold entry\n\nnew entry\n", encoding="utf-8"
-            )
+            tracked_path.write_text("# Deferred Work Ledger\n\nold entry\n\nnew entry\n", encoding="utf-8")
             return ProcessResult(returncode=0, stdout="", stderr="")
 
     process = _WritingProcess()
@@ -444,8 +423,7 @@ def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
     assert call["ref"] == "main"
     assert call["writes"] == (
         (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/"
-            "deferred-work-ledger.md",
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
             "# Deferred Work Ledger\n\nold entry\n\nnew entry\n",
         ),
     )
@@ -457,12 +435,7 @@ def test_run_deferred_work_intake_warns_when_publish_fails(tmp_path: Path) -> No
     """Story 53.2 review (B5): a failed publish to ``origin/main`` is a
     WARN, never a crash -- and the local working tree is still restored."""
     tracked_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "deferred-work-ledger.md"
     )
     tracked_path.parent.mkdir(parents=True)
     tracked_path.write_text("old\n", encoding="utf-8")
@@ -474,9 +447,7 @@ def test_run_deferred_work_intake_warns_when_publish_fails(tmp_path: Path) -> No
 
     fs = LocalFs()
     vcs = _FakeIntakeVcs(raises=True)
-    finding = _run_deferred_work_intake(
-        _WritingProcess(), fs, vcs, tmp_path, "pyforge-marshal"
-    )
+    finding = _run_deferred_work_intake(_WritingProcess(), fs, vcs, tmp_path, "pyforge-marshal")
     assert finding is not None
     assert finding.code == "MRS-DISP-047"
     assert finding.severity == Severity.WARN
@@ -532,9 +503,7 @@ def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_
     assert seen["intake_args"] == (tmp_path, "pyforge-steward")
 
 
-def test_finalize_stays_green_when_intake_returns_no_finding(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_stays_green_when_intake_returns_no_finding(tmp_path: Path, monkeypatch) -> None:
     """The common case: intake ran clean (or found nothing to promote) and
     returned ``None`` -- finalize must not append anything for it and must
     stay green."""
@@ -578,9 +547,7 @@ def test_finalize_stays_green_when_intake_returns_no_finding(
     assert seen["called"] is True
 
 
-def test_finalize_journals_the_intake_finding_into_the_resync_payload(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_journals_the_intake_finding_into_the_resync_payload(tmp_path: Path, monkeypatch) -> None:
     """Story 53.2 review (I2): the intake finding's serialized form must
     reach the ``_FINALIZE_RESYNC_KIND`` journal payload -- a WARN-severity
     intake refusal never blocks the return code, so without this the
@@ -628,9 +595,7 @@ def test_finalize_journals_the_intake_finding_into_the_resync_payload(
     }
 
 
-def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(tmp_path: Path, monkeypatch) -> None:
     """The common (no-op) case journals an explicit ``None``, not an
     absent key -- so a reader never has to distinguish "never ran" from
     "ran clean"."""

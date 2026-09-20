@@ -10,14 +10,7 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _AGENTS = _REPO_ROOT / "AGENTS.md"
-_GRAPHIFY = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "scribe"
-    / "extras"
-    / "graphify.py"
-)
+_GRAPHIFY = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "scribe" / "extras" / "graphify.py"
 
 _NAV_OWNER = "Marshal `codegraph`"
 _NAV_DB = "`.codegraph/codegraph.db`"

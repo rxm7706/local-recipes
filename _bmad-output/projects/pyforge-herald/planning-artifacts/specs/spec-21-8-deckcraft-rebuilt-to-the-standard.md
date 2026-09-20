@@ -114,3 +114,16 @@ gone.
 Story 21.8 is `done`. `sprint-status-ledger.yaml` updated to match; the gitignored Tier-3
 `implementation-artifacts/sprint-status.yaml` symlink does not exist in this worktree (same gap
 Story 21.4 hit) so only the tracked ledger twin was updated.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3304bc19b8` (2026-09-17, "Merge pull request #1415 from rxm7706/herald/21-8-deckcraft-rebuilt-standalone-fix"); also `13e4459692` (2026-09-17, "Merge pull request #1406 from rxm7706/herald/21-8-deckcraft-push-readback"). Ledger row `21-8-deckcraft-rebuilt-to-the-standard: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-8-deckcraft-rebuilt-to-the-standard.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `presentations/deckcraft/README.md`, `presentations/deckcraft/project/Deckcraft Infographic standalone.html`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

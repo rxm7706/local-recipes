@@ -24,6 +24,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.model.manifest import (
     ArtifactClass,
@@ -98,9 +99,7 @@ def format_plan_diff(actions: tuple[Action, ...]) -> str:
 def test_unclassified_deferred_exclusion_is_explicit_and_manifest_aligned():
     packaged = _load_packaged_manifest()
     deferred_in_manifest = {
-        entry.id
-        for entry in packaged.entries
-        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED
+        entry.id for entry in packaged.entries if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED
     }
     assert deferred_in_manifest == UNCLASSIFIED_DEFERRED_ARTIFACT_IDS
 
@@ -157,6 +156,7 @@ def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
     prior_plan_bytes = plan_path.read_bytes() if had_plan else None
 
     try:
+
         def _unreachable_confirm() -> bool:
             raise AssertionError("dry-run must not confirm")
 

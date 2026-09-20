@@ -130,9 +130,7 @@ class ArtifactoryAqlAdapter:
     ``transport``. Every non-2xx response becomes a clear :class:`ArtifactoryAqlError`.
     """
 
-    def __init__(
-        self, config: ArtifactoryConfig, *, transport: AqlTransport = _unconfigured_transport
-    ) -> None:
+    def __init__(self, config: ArtifactoryConfig, *, transport: AqlTransport = _unconfigured_transport) -> None:
         self._config = config
         self._transport = transport
 
@@ -141,8 +139,7 @@ class ArtifactoryAqlAdapter:
         resp = self._transport(AqlRequest(method=method, url=url, body=body))
         if not (200 <= resp.status_code < 300):
             raise ArtifactoryAqlError(
-                f"{method} {url} -> HTTP {resp.status_code}: {resp.body!r} "
-                "(Artifactory AQL call failed)"
+                f"{method} {url} -> HTTP {resp.status_code}: {resp.body!r} (Artifactory AQL call failed)"
             )
         return resp.body
 
@@ -158,9 +155,7 @@ class ArtifactoryAqlAdapter:
             )
         return list(repos)
 
-    def _fetch_raw_download_rows(
-        self, virtual_repo: str, backing_repos: list[str]
-    ) -> list[dict[str, Any]]:
+    def _fetch_raw_download_rows(self, virtual_repo: str, backing_repos: list[str]) -> list[dict[str, Any]]:
         result = self._call(
             "POST",
             "/api/search/aql",
@@ -168,9 +163,7 @@ class ArtifactoryAqlAdapter:
         )
         rows = result.get("results") if isinstance(result, dict) else None
         if not isinstance(rows, list):
-            raise ArtifactoryAqlError(
-                f"POST .../api/search/aql returned no 'results' list (body={result!r})"
-            )
+            raise ArtifactoryAqlError(f"POST .../api/search/aql returned no 'results' list (body={result!r})")
         return rows
 
     def fetch_download_rows(self, virtual_repo: str) -> list[DownloadRow]:
@@ -196,13 +189,10 @@ class ArtifactoryAqlAdapter:
             totals[key] = totals.get(key, 0) + count
 
         return [
-            DownloadRow(name=name, version=version, download_count=count)
-            for (name, version), count in totals.items()
+            DownloadRow(name=name, version=version, download_count=count) for (name, version), count in totals.items()
         ]
 
-    def _fetch_raw_consumption_rows(
-        self, virtual_repo: str, backing_repos: list[str]
-    ) -> list[dict[str, Any]]:
+    def _fetch_raw_consumption_rows(self, virtual_repo: str, backing_repos: list[str]) -> list[dict[str, Any]]:
         result = self._call(
             "POST",
             "/api/consumption/rollup",
@@ -210,9 +200,7 @@ class ArtifactoryAqlAdapter:
         )
         rows = result.get("results") if isinstance(result, dict) else None
         if not isinstance(rows, list):
-            raise ArtifactoryAqlError(
-                f"POST .../api/consumption/rollup returned no 'results' list (body={result!r})"
-            )
+            raise ArtifactoryAqlError(f"POST .../api/consumption/rollup returned no 'results' list (body={result!r})")
         return rows
 
     def fetch_consumption_rows(self, virtual_repo: str) -> list[ConsumptionRow]:
@@ -229,8 +217,7 @@ class ArtifactoryAqlAdapter:
                 name = str(row["name"])
             except (KeyError, TypeError) as exc:
                 raise ArtifactoryAqlError(
-                    f"malformed consumption row for {virtual_repo!r} -- expected "
-                    f"a 'name' field (row={row!r}): {exc}"
+                    f"malformed consumption row for {virtual_repo!r} -- expected a 'name' field (row={row!r}): {exc}"
                 ) from exc
             try:
                 platform_env = int(row.get("platform_env_count", 0))

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_push import may_push_dispatch_branch_before_verify
@@ -13,7 +14,6 @@ from pyforge.marshal.dispatch_supervisor.__main__ import (
     _dispatch_push_already_journaled,
     _run_and_journal_dispatch_push,
 )
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
 
 _STORY_KEY = "28.21"
 _BRANCH = dispatch_core.dispatch_worktree_branch("pyforge-marshal", _STORY_KEY)

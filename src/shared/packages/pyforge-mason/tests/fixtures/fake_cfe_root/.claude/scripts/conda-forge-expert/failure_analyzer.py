@@ -13,6 +13,7 @@ own convention, not the real wrapper's subprocess-delegation one). Invocable
 as `[interpreter, script, *extra_argv]`; extra argv (including a `logfile`
 positional) is ignored, never rejected.
 """
+
 import sys
 from pathlib import Path
 
@@ -20,26 +21,28 @@ sys.path.insert(0, str(Path(__file__).parent))
 import _stub_support  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(_stub_support.emit(
-        '{"success": true, "match_count": 1, '
-        '"error_class": "MODULE_NOT_FOUND_AT_TEST", "category": "PYTHON", '
-        '"diagnosis": "A Python module could not be imported during the test '
-        'phase. Either the package was not installed correctly or a test '
-        'dependency is missing.", '
-        '"matched_text": "ModuleNotFoundError: No module named \'example_pkg\'", '
-        '"suggestion": {"action": "add_to_list", '
-        '"path": "tests[0].requirements.run", "value": "example_pkg", '
-        '"comment": "Add the missing module\'s package to test run '
-        'requirements, or verify the package installs all __init__.py '
-        'files."}, '
-        '"all_matches": [{"error_class": "MODULE_NOT_FOUND_AT_TEST", '
-        '"category": "PYTHON", "diagnosis": "A Python module could not be '
-        'imported during the test phase. Either the package was not '
-        'installed correctly or a test dependency is missing.", '
-        '"matched_text": "ModuleNotFoundError: No module named '
-        '\'example_pkg\'", "suggestion": {"action": "add_to_list", '
-        '"path": "tests[0].requirements.run", "value": "example_pkg", '
-        '"comment": "Add the missing module\'s package to test run '
-        'requirements, or verify the package installs all __init__.py '
-        'files."}}]}'
-    ))
+    sys.exit(
+        _stub_support.emit(
+            '{"success": true, "match_count": 1, '
+            '"error_class": "MODULE_NOT_FOUND_AT_TEST", "category": "PYTHON", '
+            '"diagnosis": "A Python module could not be imported during the test '
+            "phase. Either the package was not installed correctly or a test "
+            'dependency is missing.", '
+            '"matched_text": "ModuleNotFoundError: No module named \'example_pkg\'", '
+            '"suggestion": {"action": "add_to_list", '
+            '"path": "tests[0].requirements.run", "value": "example_pkg", '
+            '"comment": "Add the missing module\'s package to test run '
+            "requirements, or verify the package installs all __init__.py "
+            'files."}, '
+            '"all_matches": [{"error_class": "MODULE_NOT_FOUND_AT_TEST", '
+            '"category": "PYTHON", "diagnosis": "A Python module could not be '
+            "imported during the test phase. Either the package was not "
+            'installed correctly or a test dependency is missing.", '
+            '"matched_text": "ModuleNotFoundError: No module named '
+            '\'example_pkg\'", "suggestion": {"action": "add_to_list", '
+            '"path": "tests[0].requirements.run", "value": "example_pkg", '
+            '"comment": "Add the missing module\'s package to test run '
+            "requirements, or verify the package installs all __init__.py "
+            'files."}}]}'
+        )
+    )

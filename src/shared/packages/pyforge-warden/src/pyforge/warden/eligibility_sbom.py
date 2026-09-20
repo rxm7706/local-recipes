@@ -82,9 +82,7 @@ def render_eligibility_cyclonedx(
     rendered = json.dumps(json.loads(rendered), indent=2, sort_keys=True) + "\n"
     error = _VALIDATOR.validate_str(rendered)
     if error is not None:
-        raise SbomValidationError(
-            f"eligibility CycloneDX failed 1.6 schema validation: {error}"
-        )
+        raise SbomValidationError(f"eligibility CycloneDX failed 1.6 schema validation: {error}")
     return rendered
 
 
@@ -110,9 +108,7 @@ def _build_component(result: EligibilityResult) -> CdxComponent:
     )
 
 
-def _identity_purl(
-    ecosystem: Ecosystem, name: str, version: str | None
-) -> PackageURL:
+def _identity_purl(ecosystem: Ecosystem, name: str, version: str | None) -> PackageURL:
     if ecosystem is Ecosystem.CONDA:
         return PackageURL(
             type="conda",

@@ -16,8 +16,7 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import build_identity_compl
 _REPO_ROOT = Path(__file__).resolve().parents[7]
 _SCRIPT_DIR = _REPO_ROOT / "scripts"
 _FIXTURE_JSON = (
-    _REPO_ROOT
-    / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+    _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
 )
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"identity_complete_export": {"verification_timestamp_utc": _FIXED_TS}}

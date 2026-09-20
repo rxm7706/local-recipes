@@ -105,24 +105,17 @@ class SourceRegistration:
 
     def __post_init__(self) -> None:
         if not isinstance(self.source, Source):
-            raise ValueError(
-                f"source must be a models.Source member, got {self.source!r}"
-            )
+            raise ValueError(f"source must be a models.Source member, got {self.source!r}")
         if not self.subject_station or not self.subject_station.strip():
             raise ValueError(
-                f"{self.source!r}: subject_station must be a non-empty "
-                f"station name, got {self.subject_station!r}"
+                f"{self.source!r}: subject_station must be a non-empty station name, got {self.subject_station!r}"
             )
         if not self.owning_station or not self.owning_station.strip():
             raise ValueError(
-                f"{self.source!r}: owning_station must be a non-empty "
-                f"station name, got {self.owning_station!r}"
+                f"{self.source!r}: owning_station must be a non-empty station name, got {self.owning_station!r}"
             )
         if self.scope not in _VALID_SCOPES:
-            raise ValueError(
-                f"{self.source!r}: scope must be one of "
-                f"{sorted(_VALID_SCOPES)}, got {self.scope!r}"
-            )
+            raise ValueError(f"{self.source!r}: scope must be one of {sorted(_VALID_SCOPES)}, got {self.scope!r}")
 
     def to_json_dict(self) -> dict[str, str]:
         """Serialize to the plain-dict shape ``scripts/detectors.py`` and any
@@ -528,6 +521,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # atlas, warden, guild-cross-station) gets an advisory finding naming it;
     # fleet subject (the catalog spans multiple stations, same rationale as
     # GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY above). Never FAIL.
+    SourceRegistration(
+        source=Source.DOCS_CURRENCY,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 30.2 (spec-pyforge-doctor CAP-84) -- sources/docs_currency.py.
+    # map-render / authored-page-stale / skill-dir-hygiene, beside
+    # DOCS_MAP_HYGIENE above; fleet subject (the general docs layer, same
+    # rationale as GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY). Never FAIL.
 )
 
 
@@ -601,10 +603,7 @@ def degrade_on_exception(
                 source=source,
                 check=check,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{check} could not be evaluated here — "
-                    f"{exc.__class__.__name__}: {exc}"
-                ),
+                message=(f"{check} could not be evaluated here — {exc.__class__.__name__}: {exc}"),
                 evidence={"exception": exc.__class__.__name__},
             ),
         )

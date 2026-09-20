@@ -63,3 +63,15 @@ block, and states the rented-model / owned-context tension
 do not become an eighth Lexicon word
 **Status:** done
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `5b5fc6c17a` (2026-09-20, "spec-53-1: review pass, patch guard omissions, finalize as done"). Ledger row `53-1-the-charter-carries-the-hub-vocabulary-map: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

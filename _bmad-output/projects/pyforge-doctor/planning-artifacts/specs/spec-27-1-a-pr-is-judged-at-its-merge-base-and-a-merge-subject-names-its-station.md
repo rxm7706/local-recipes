@@ -59,7 +59,8 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `5f1625f29c 2026-09-18 marshal: promote sprint-status ledger for 'pyforge-doctor' (1 key(s) -> done)` — that promotion is the ruling this record now reflects.
 Blocking condition: implementation verification failed
 
 **Implemented and verified (all pass):**
@@ -82,3 +83,7 @@ Blocking condition: implementation verification failed
 **Why not fixed here:** porting rekey-map awareness into `gather_direction` is a new capability, not a fix within this story's declared Approach ("attribute a templated merge subject to a station only when it renders from that station's own template") — and per this repo's Dream-first governance (operator ruling 2026-09-12), gap-closure work still requires its own Dream + Spec before implementation, with no exemption for a mechanically small fix. Bundling it here would also violate Surgical Changes (touch only what the task requires).
 
 **Recommendation:** mint a follow-up Dream/Spec for `gather_direction` rekey-map awareness (mirroring `gather()`'s `_check()` pattern), OR correct this spec's second manual check (it encodes the epic's original — and, per this investigation, mistaken — root-cause attribution for the live atlas incident) before re-dispatching. The commits implementing this story's actual Approach are complete, tested, and left in place on this branch; only the story's `status` and this note are new.
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

@@ -7,18 +7,10 @@ from pathlib import Path
 
 import duckdb
 import pytest
-from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME
-from pyforge.atlas.duckdb_writer import SecondWriterRefused
-from pyforge.atlas.duckdb_writer import connect_reader
-from pyforge.atlas.duckdb_writer import connect_writer
 
-WRITER_MODULE = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "atlas"
-    / "duckdb_writer.py"
-)
+from pyforge.atlas.duckdb_writer import ATLAS_DUCKDB_NAME, SecondWriterRefused, connect_reader, connect_writer
+
+WRITER_MODULE = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "atlas" / "duckdb_writer.py"
 
 
 def _atlas_path(tmp_path: Path) -> Path:

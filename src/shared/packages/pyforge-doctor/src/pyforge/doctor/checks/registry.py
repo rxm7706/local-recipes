@@ -66,18 +66,14 @@ class CheckSpec:
     name: str
 
 
-_ENGINE_CHECKS: tuple[CheckSpec, ...] = tuple(
-    CheckSpec(category="engines", name=name) for name in _ENGINE_CHECK_NAMES
-)
+_ENGINE_CHECKS: tuple[CheckSpec, ...] = tuple(CheckSpec(category="engines", name=name) for name in _ENGINE_CHECK_NAMES)
 
 # "env" (Story 1.4): a single hand-written check, env_hygiene.CHECK_NAME
 # imported rather than re-literaled here -- unlike _ENGINE_CHECK_NAMES
 # above, env_hygiene.py is an in-package sibling module with no external
 # tool to duplicate-and-drift-guard against, so importing its own name
 # constant is the direct, non-drifting source of truth.
-_ENV_CHECKS: tuple[CheckSpec, ...] = (
-    CheckSpec(category="env", name=env_hygiene.CHECK_NAME),
-)
+_ENV_CHECKS: tuple[CheckSpec, ...] = (CheckSpec(category="env", name=env_hygiene.CHECK_NAME),)
 
 # category -> its static CheckSpec catalog. "engines" (Story 1.2's warden
 # wrapper) and "env" (Story 1.4's env_hygiene detector) are registered; a
@@ -141,23 +137,12 @@ def gather_one(category: str, name: str, target: Path) -> Finding | None:
     # 2026-07-30.
     if category == "engines":
         return next(
-            (
-                finding
-                for finding in warden_source.gather(target)
-                if finding.check == name
-            ),
+            (finding for finding in warden_source.gather(target) if finding.check == name),
             None,
         )
     if category == "env":
         return next(
-            (
-                finding
-                for finding in env_hygiene.gather(target)
-                if finding.check == name
-            ),
+            (finding for finding in env_hygiene.gather(target) if finding.check == name),
             None,
         )
-    raise ValueError(
-        f"unsupported check category: {category!r} "
-        "(categories with a wired gather: 'engines', 'env')"
-    )
+    raise ValueError(f"unsupported check category: {category!r} (categories with a wired gather: 'engines', 'env')")

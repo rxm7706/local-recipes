@@ -146,18 +146,10 @@ def _default_mcp_server_script() -> Path:
 
 
 def _default_cli_script(script_name: str) -> Path:
-    return (
-        _default_repo_root()
-        / ".claude"
-        / "scripts"
-        / "conda-forge-expert"
-        / script_name
-    )
+    return _default_repo_root() / ".claude" / "scripts" / "conda-forge-expert" / script_name
 
 
-def _one_fail_finding(
-    source: Source, message: str, *, check: str = "doctor.sources.atlas"
-) -> Finding:
+def _one_fail_finding(source: Source, message: str, *, check: str = "doctor.sources.atlas") -> Finding:
     return Finding(
         source=source,
         check=check,
@@ -190,10 +182,7 @@ def _normalize_staleness_rows(rows: list[Any]) -> tuple[Finding, ...]:
         version = row.get("latest_conda_version")
         uploaded = row.get("uploaded_iso")
         age_days = row.get("age_days")
-        message = (
-            f"latest_conda_version={version!s} uploaded={uploaded!s} "
-            f"age_days={age_days!s}"
-        )
+        message = f"latest_conda_version={version!s} uploaded={uploaded!s} age_days={age_days!s}"
         findings.append(
             Finding(
                 source=Source.STALENESS_REPORT,
@@ -238,9 +227,7 @@ def _normalize_cve_rows(rows: list[Any], *, severity: str) -> tuple[Finding, ...
             Finding(
                 source=Source.CVE_WATCHER,
                 check=_row_check_name(row),
-                status=DoctorStatus.FAIL
-                if isinstance(delta, (int, float)) and delta > 0
-                else DoctorStatus.WARN,
+                status=DoctorStatus.FAIL if isinstance(delta, (int, float)) and delta > 0 else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row, severity=severity),
             )
@@ -248,9 +235,7 @@ def _normalize_cve_rows(rows: list[Any], *, severity: str) -> tuple[Finding, ...
     return tuple(findings)
 
 
-def _normalize_feedstock_health_rows(
-    rows: list[Any], *, filter_kind: str
-) -> tuple[Finding, ...]:
+def _normalize_feedstock_health_rows(rows: list[Any], *, filter_kind: str) -> tuple[Finding, ...]:
     """One ``Finding`` per ``feedstock_health`` row, tagged
     ``Source.FEEDSTOCK_HEALTH`` (Story 2.2 AC2, the "abandonment" axis's
     first sub-instrument). ``filter_kind == "bad"`` (cf-graph's own
@@ -276,9 +261,7 @@ def _normalize_feedstock_health_rows(
             Finding(
                 source=Source.FEEDSTOCK_HEALTH,
                 check=_row_check_name(row),
-                status=DoctorStatus.FAIL
-                if filter_kind == "bad"
-                else DoctorStatus.WARN,
+                status=DoctorStatus.FAIL if filter_kind == "bad" else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row, filter_kind=filter_kind),
             )
@@ -371,9 +354,7 @@ def _normalize_adoption_stage_rows(rows: list[Any]) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
-def _normalize_version_downloads_rows(
-    rows: list[Any], *, package: str
-) -> tuple[Finding, ...]:
+def _normalize_version_downloads_rows(rows: list[Any], *, package: str) -> tuple[Finding, ...]:
     """One ``Finding`` per ``version_downloads`` row, tagged
     ``Source.ADOPTION`` (Story 4.3 AC1's second sub-instrument). Rows carry
     NO package-identity field of their own (the underlying query is already
@@ -393,10 +374,7 @@ def _normalize_version_downloads_rows(
                 )
             )
             continue
-        message = (
-            f"version={row.get('version')!s} "
-            f"total_downloads={row.get('total_downloads')!s}"
-        )
+        message = f"version={row.get('version')!s} total_downloads={row.get('total_downloads')!s}"
         findings.append(
             Finding(
                 source=Source.ADOPTION,
@@ -438,18 +416,12 @@ async def _call_mcp_async(
     from mcp.client.stdio import StdioServerParameters, stdio_client
 
     async def _run() -> str:
-        params = StdioServerParameters(
-            command=sys.executable, args=[str(server_script_path)]
-        )
+        params = StdioServerParameters(command=sys.executable, args=[str(server_script_path)])
         async with stdio_client(params) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
-        text = "".join(
-            block.text
-            for block in result.content
-            if getattr(block, "type", "") == "text"
-        )
+        text = "".join(block.text for block in result.content if getattr(block, "type", "") == "text")
         if result.isError:
             raise RuntimeError(f"{tool_name} MCP tool returned an error: {text}")
         return text
@@ -482,13 +454,8 @@ def _call_mcp(
     except RuntimeError:
         pass  # no loop running: `asyncio.run` is free to make one
     else:
-        raise RuntimeError(
-            "the synchronous atlas MCP transport cannot run inside a live "
-            "event loop"
-        )
-    return asyncio.run(
-        _call_mcp_async(server_script_path, tool_name, arguments, timeout=timeout)
-    )
+        raise RuntimeError("the synchronous atlas MCP transport cannot run inside a live event loop")
+    return asyncio.run(_call_mcp_async(server_script_path, tool_name, arguments, timeout=timeout))
 
 
 # --- CLI fallback --------------------------------------------------------
@@ -523,9 +490,7 @@ def _extract_list_rows(payload: Any) -> list[Any]:
     """``staleness_report``/``feedstock_health``/``release_cadence`` all
     print a bare JSON list of rows."""
     if not isinstance(payload, list):
-        raise ValueError(
-            f"expected a JSON list of rows, got {type(payload).__name__}"
-        )
+        raise ValueError(f"expected a JSON list of rows, got {type(payload).__name__}")
     return payload
 
 
@@ -535,10 +500,7 @@ def _extract_cve_rows(payload: Any) -> list[Any]:
     this, per Story 2.1's own Design Notes precedent of never assuming a
     tool's JSON shape."""
     if not isinstance(payload, dict) or not isinstance(payload.get("rows"), list):
-        raise ValueError(
-            "expected a JSON object with a 'rows' list, got "
-            f"{type(payload).__name__}"
-        )
+        raise ValueError(f"expected a JSON object with a 'rows' list, got {type(payload).__name__}")
     return payload["rows"]
 
 
@@ -591,13 +553,11 @@ def _fetch_rows(
         rows = extract_rows(payload)
     except CliBridgeError as exc:
         raise _FetchFailed(
-            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI "
-            f"fallback failed ({exc!r})"
+            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI fallback failed ({exc!r})"
         ) from exc
     except Exception as exc:  # noqa: BLE001 -- degrade, never crash the verb
         raise _FetchFailed(
-            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI "
-            f"fallback failed unexpectedly ({exc!r})"
+            f"{tool_name} unavailable: MCP failed ({mcp_error!r}) and CLI fallback failed unexpectedly ({exc!r})"
         ) from exc
     return rows
 
@@ -715,9 +675,7 @@ def _gather_abandonment(
         except _FetchFailed as exc:
             findings.append(_one_fail_finding(Source.FEEDSTOCK_HEALTH, str(exc)))
         else:
-            findings.extend(
-                _normalize_feedstock_health_rows(rows, filter_kind=filter_kind)
-            )
+            findings.extend(_normalize_feedstock_health_rows(rows, filter_kind=filter_kind))
 
     cli_args = ["--json"]
     if target is not None:
@@ -846,9 +804,7 @@ def gather(
     failure). ``mcp_caller`` / ``cli_runner`` are the injectable unit-test
     seams; neither is used outside tests."""
     if axis not in _VALID_AXES:
-        raise ValueError(
-            f"unknown axis {axis!r}; expected one of {sorted(_VALID_AXES)}"
-        )
+        raise ValueError(f"unknown axis {axis!r}; expected one of {sorted(_VALID_AXES)}")
 
     server_script_path = server_script_path or _default_mcp_server_script()
 

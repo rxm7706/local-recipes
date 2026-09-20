@@ -113,10 +113,11 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
     path = target / PROJECTS_REL / project_slug / _MARSHAL_POLICY_SUFFIX
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+    except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
         return _MERGE_SUBJECT_TEMPLATE
     value = data.get("merge_subject_template")
     return value if isinstance(value, str) and value else _MERGE_SUBJECT_TEMPLATE
+
 
 # GitHub PR-merge subject shape retained only to extract the ``branch`` token
 # for ``land/<station>-<epic>-<seq>`` / ``bmad-loop/<run>/<key>`` recovery
@@ -177,9 +178,7 @@ def _loose_subject_key_match(
     # SUFFIXED sibling key "11-1a" (split-story convention, StoryKeyRef.
     # suffix), and a search for plain "11-1" would equally accept a subject
     # that actually names "11.1a" -- two genuinely different stories.
-    key_re = re.compile(
-        rf"(?<!\d){epic}[.\-]{seq}{re.escape(suffix)}(?![\da-zA-Z])"
-    )
+    key_re = re.compile(rf"(?<!\d){epic}[.\-]{seq}{re.escape(suffix)}(?![\da-zA-Z])")
     for item in subjects:
         subject = item[1] if isinstance(item, tuple) else item
         if station_re.search(subject) and key_re.search(subject):
@@ -244,12 +243,14 @@ def _keys_from_merge_subjects(
     for sha, subject in commits:
         parsers: list[Callable[[str], StoryKeyRef | None]] = []
         parsers.append(lambda s: parse_templated_merge_subject(s, template, project_slug))
-        parsers.extend((
-            lambda s: parse_github_pr_merge_subject(s, project_slug),
-            lambda s: parse_bmadloop_merge_subject(s, project_slug),
-            lambda s: parse_recovery_commit_subject(s, project_slug),
-            lambda s: _branch_name_fallback_key(s, project_slug),
-        ))
+        parsers.extend(
+            (
+                lambda s: parse_github_pr_merge_subject(s, project_slug),
+                lambda s: parse_bmadloop_merge_subject(s, project_slug),
+                lambda s: parse_recovery_commit_subject(s, project_slug),
+                lambda s: _branch_name_fallback_key(s, project_slug),
+            )
+        )
         for parser in parsers:
             key = parser(subject)
             if key is not None:
@@ -257,16 +258,16 @@ def _keys_from_merge_subjects(
                 break
         else:
             attribution = attribute_bare_merge(
-                subject, sha,
-                target=target, project_slug=project_slug,
-                known_keys=known_keys, cache=diff_cache,
+                subject,
+                sha,
+                target=target,
+                project_slug=project_slug,
+                known_keys=known_keys,
+                cache=diff_cache,
             )
             if attribution.key is not None:
                 keys.add(attribution.key)
-            elif (
-                attribution.diff_unreadable_sha is not None
-                and unreadable_diff_shas is not None
-            ):
+            elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
                 unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
@@ -306,16 +307,16 @@ def _keys_from_main_commits(
         # grammar and the branch-name fallback both miss -- see that
         # function's own docstring for the full rationale.
         attribution = attribute_bare_merge(
-            subject, sha,
-            target=target, project_slug=project_slug,
-            known_keys=known_keys, cache=diff_cache,
+            subject,
+            sha,
+            target=target,
+            project_slug=project_slug,
+            known_keys=known_keys,
+            cache=diff_cache,
         )
         if attribution.key is not None:
             keys.add(attribution.key)
-        elif (
-            attribution.diff_unreadable_sha is not None
-            and unreadable_diff_shas is not None
-        ):
+        elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
             unreadable_diff_shas.append((project_slug, attribution.diff_unreadable_sha))
     return frozenset(keys)
 
@@ -347,7 +348,7 @@ def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
     kwargs = {} if timeout is None else {"timeout": timeout}
     try:
         return run_git(target, list(args), **kwargs)
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
 
 
@@ -398,8 +399,7 @@ def _ledgers(target: Path) -> list[Path]:
     if not projects.is_dir():
         return []
     try:
-        return sorted(p / LEDGER_REL for p in projects.iterdir()
-                      if (p / LEDGER_REL).is_file())
+        return sorted(p / LEDGER_REL for p in projects.iterdir() if (p / LEDGER_REL).is_file())
     except OSError:
         return []
 
@@ -421,28 +421,32 @@ def gather(target: Path) -> tuple[Finding, ...]:
     ledgers = _ledgers(target)
 
     if not ledgers:
-        return (Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-inventory",
-            status=DoctorStatus.WARN,
-            message=(
-                f"no tracked sprint ledger found under {PROJECTS_REL}/*/{LEDGER_REL} "
-                f"— Marshal's durability guarantee cannot be evaluated here"
+        return (
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-inventory",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no tracked sprint ledger found under {PROJECTS_REL}/*/{LEDGER_REL} "
+                    f"— Marshal's durability guarantee cannot be evaluated here"
+                ),
+                evidence={"target": str(target), "ledgers": 0},
             ),
-            evidence={"target": str(target), "ledgers": 0},
-        ),)
+        )
 
     if _git(target, "rev-parse", "--git-dir") is None:
-        return (Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression",
-            status=DoctorStatus.WARN,
-            message=(
-                f"{len(ledgers)} tracked ledger(s) present but git is unavailable or "
-                f"{target} is not a repository — regression cannot be evaluated"
+        return (
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{len(ledgers)} tracked ledger(s) present but git is unavailable or "
+                    f"{target} is not a repository — regression cannot be evaluated"
+                ),
+                evidence={"target": str(target), "ledgers": len(ledgers)},
             ),
-            evidence={"target": str(target), "ledgers": len(ledgers)},
-        ),)
+        )
 
     total_lost = 0
     for ledger in ledgers:
@@ -460,85 +464,95 @@ def gather(target: Path) -> tuple[Finding, ...]:
             # nothing.
             listed = _git(target, "ls-tree", "--name-only", "HEAD", "--", rel)
             if listed and listed.strip():
-                findings.append(Finding(
+                findings.append(
+                    Finding(
+                        source=Source.MARSHAL_DURABILITY,
+                        check="ledger-unreadable",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"{project}: sprint ledger is committed but its blob at HEAD "
+                            f"could not be read — regression cannot be evaluated"
+                        ),
+                        evidence={"project": project, "path": rel},
+                    )
+                )
+                continue
+            findings.append(
+                Finding(
                     source=Source.MARSHAL_DURABILITY,
-                    check="ledger-unreadable",
+                    check="ledger-untracked",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"{project}: sprint ledger is committed but its blob at HEAD "
-                        f"could not be read — regression cannot be evaluated"
+                        f"{project}: sprint ledger exists on disk but is not committed — "
+                        f"CI and every fresh clone are blind to its completions"
                     ),
                     evidence={"project": project, "path": rel},
-                ))
-                continue
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-untracked",
-                status=DoctorStatus.WARN,
-                message=(
-                    f"{project}: sprint ledger exists on disk but is not committed — "
-                    f"CI and every fresh clone are blind to its completions"
-                ),
-                evidence={"project": project, "path": rel},
-            ))
+                )
+            )
             continue
 
         try:
             working = ledger.read_text(encoding="utf-8")
         except OSError as exc:
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-unreadable",
-                status=DoctorStatus.WARN,
-                message=f"{project}: sprint ledger could not be read ({exc})",
-                evidence={"project": project, "path": rel},
-            ))
+            findings.append(
+                Finding(
+                    source=Source.MARSHAL_DURABILITY,
+                    check="ledger-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=f"{project}: sprint ledger could not be read ({exc})",
+                    evidence={"project": project, "path": rel},
+                )
+            )
             continue
 
         before, after = _parse_statuses(committed), _parse_statuses(working)
-        lost = [
-            (k, v) for k, v in sorted(before.items())
-            if v in TERMINAL and after.get(k) not in TERMINAL
-        ]
+        lost = [(k, v) for k, v in sorted(before.items()) if v in TERMINAL and after.get(k) not in TERMINAL]
         if lost:
             total_lost += len(lost)
-            findings.append(Finding(
-                source=Source.MARSHAL_DURABILITY,
-                check="ledger-regression",
-                status=DoctorStatus.FAIL,
-                message=(
-                    f"{project}: {len(lost)} story(ies) un-finished relative to the "
-                    f"committed ledger — a completion that was durable is not any more"
-                ),
-                evidence={
-                    "project": project, "path": rel, "count": len(lost),
-                    "keys": [k for k, _ in lost[:20]],
-                    "remedy": f"git checkout HEAD -- {rel}",
-                },
-            ))
+            findings.append(
+                Finding(
+                    source=Source.MARSHAL_DURABILITY,
+                    check="ledger-regression",
+                    status=DoctorStatus.FAIL,
+                    message=(
+                        f"{project}: {len(lost)} story(ies) un-finished relative to the "
+                        f"committed ledger — a completion that was durable is not any more"
+                    ),
+                    evidence={
+                        "project": project,
+                        "path": rel,
+                        "count": len(lost),
+                        "keys": [k for k, _ in lost[:20]],
+                        "remedy": f"git checkout HEAD -- {rel}",
+                    },
+                )
+            )
 
     if not findings:
-        findings.append(Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression",
-            status=DoctorStatus.OK,
-            message=(
-                f"{len(ledgers)} tracked ledger(s) hold every completion they held at "
-                f"HEAD — no story un-finished"
-            ),
-            evidence={"ledgers": len(ledgers), "regressed": 0},
-        ))
+        findings.append(
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression",
+                status=DoctorStatus.OK,
+                message=(
+                    f"{len(ledgers)} tracked ledger(s) hold every completion they held at HEAD — no story un-finished"
+                ),
+                evidence={"ledgers": len(ledgers), "regressed": 0},
+            )
+        )
     elif total_lost:
-        findings.append(Finding(
-            source=Source.MARSHAL_DURABILITY,
-            check="ledger-regression-total",
-            status=DoctorStatus.FAIL,
-            message=(
-                f"{total_lost} completion(s) lost across "
-                f"{sum(1 for f in findings if f.check == 'ledger-regression')} ledger(s)"
-            ),
-            evidence={"lost": total_lost, "ledgers": len(ledgers)},
-        ))
+        findings.append(
+            Finding(
+                source=Source.MARSHAL_DURABILITY,
+                check="ledger-regression-total",
+                status=DoctorStatus.FAIL,
+                message=(
+                    f"{total_lost} completion(s) lost across "
+                    f"{sum(1 for f in findings if f.check == 'ledger-regression')} ledger(s)"
+                ),
+                evidence={"lost": total_lost, "ledgers": len(ledgers)},
+            )
+        )
     return tuple(findings)
 
 
@@ -638,9 +652,7 @@ def _harness_tasks(
     return out
 
 
-def gather_story_status(
-    target: Path, *, loop_root: Path | None = None
-) -> tuple[Finding, ...]:
+def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple[Finding, ...]:
     """Judge whether every ``done`` story in every station's Tier-3 sprint
     feed is backed by real landing evidence -- the library form of
     ``scripts/story_status_check.py``'s own ``main()``, minus the print/exit
@@ -750,13 +762,11 @@ def gather_story_status(
         # WITHIN a station, so a global set would let one station's malformed
         # `1-1-foo` be charged to another station's healthy `1-1-foo`.
         station_skipped: set[str] = set()
-        tasks = _harness_tasks(
-            loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files
-        )
+        tasks = _harness_tasks(loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files)
         earlier_spellings = reverse_map(rekey_maps.get(f"pyforge-{slug}", []))
         try:
             text = feed.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             # This drops a whole station from the audit. The OK Finding must
             # not then read as a confident green over a station it never
             # opened, so the caveat below names it. (Escalating to WARN and
@@ -792,7 +802,11 @@ def gather_story_status(
             # subject-only pre-27.5) -- the bare-form fallback needs it.
             if all_ref_commits is None and not all_ref_subjects_unavailable:
                 raw = _git(
-                    target, "log", "--format=%H%x00%s", "--all", timeout=60.0,
+                    target,
+                    "log",
+                    "--format=%H%x00%s",
+                    "--all",
+                    timeout=60.0,
                 )
                 if raw is None:
                     all_ref_subjects_unavailable = True
@@ -803,8 +817,11 @@ def gather_story_status(
                 continue
             if key_refs and all_ref_commits is not None:
                 merged_keys = _keys_from_merge_subjects(
-                    target, all_ref_commits, project_slug=project_slug,
-                    diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
+                    target,
+                    all_ref_commits,
+                    project_slug=project_slug,
+                    diff_cache=diff_cache,
+                    unreadable_diff_shas=unreadable_diff_shas,
                 )
                 if any(r in merged_keys for r in key_refs):
                     continue  # merge evidence found (under any spelling)
@@ -815,7 +832,11 @@ def gather_story_status(
             if key_ref is not None:
                 if main_commits is None and not main_commits_unavailable:
                     raw = _git(
-                        target, "log", "--format=%H%x00%s", "main", timeout=60.0,
+                        target,
+                        "log",
+                        "--format=%H%x00%s",
+                        "main",
+                        timeout=60.0,
                     )
                     if raw is None:
                         main_commits_unavailable = True
@@ -826,8 +847,11 @@ def gather_story_status(
                     continue
                 if main_commits is not None:
                     main_keys = _keys_from_main_commits(
-                        target, main_commits, project_slug=project_slug,
-                        diff_cache=diff_cache, unreadable_diff_shas=unreadable_diff_shas,
+                        target,
+                        main_commits,
+                        project_slug=project_slug,
+                        diff_cache=diff_cache,
+                        unreadable_diff_shas=unreadable_diff_shas,
                     )
                     if any(r in main_keys for r in key_refs):
                         continue  # hand-landed or recovery; grammar recognized
@@ -838,12 +862,22 @@ def gather_story_status(
                 # landings). Checked against both subject pools already
                 # fetched above -- no new git call.
                 if any(
-                    (all_ref_commits is not None and _loose_subject_key_match(
-                        all_ref_commits, station=slug, key_ref=r,
-                    ))
-                    or (main_commits is not None and _loose_subject_key_match(
-                        main_commits, station=slug, key_ref=r,
-                    ))
+                    (
+                        all_ref_commits is not None
+                        and _loose_subject_key_match(
+                            all_ref_commits,
+                            station=slug,
+                            key_ref=r,
+                        )
+                    )
+                    or (
+                        main_commits is not None
+                        and _loose_subject_key_match(
+                            main_commits,
+                            station=slug,
+                            key_ref=r,
+                        )
+                    )
                     for r in key_refs
                 ):
                     continue  # station+key co-occurrence found
@@ -854,10 +888,14 @@ def gather_story_status(
             # the container guard in `_harness_tasks` validates the task dict,
             # never the values inside it.
             if isinstance(phase, str) and phase in NOT_LANDED:
-                false_greens.append({
-                    "slug": slug, "key": key, "phase": phase,
-                    "defer_reason": task.get("defer_reason") or "",
-                })
+                false_greens.append(
+                    {
+                        "slug": slug,
+                        "key": key,
+                        "phase": phase,
+                        "defer_reason": task.get("defer_reason") or "",
+                    }
+                )
             else:
                 # A record exists, no landing evidence was found, and the
                 # harness does not say the story failed either. Not an
@@ -906,8 +944,7 @@ def gather_story_status(
                 message=(
                     f"{fg['slug']}/{fg['key']}: reads `done` in the sprint feed, "
                     f"but the harness says {fg['phase']!r} with no commit and no "
-                    f"merge commit anywhere"
-                    + (f" — {fg['defer_reason']}" if fg["defer_reason"] else "")
+                    f"merge commit anywhere" + (f" — {fg['defer_reason']}" if fg["defer_reason"] else "")
                 ),
                 evidence={**fg, "audited": audited},
             )

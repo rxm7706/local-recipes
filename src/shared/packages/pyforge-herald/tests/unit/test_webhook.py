@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from pyforge.herald import claims, progress, webhook
 from pyforge.herald.errors import HeraldError
 
@@ -41,14 +42,10 @@ def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
     """The signature over ``timestamp + "." + body`` -- the signed content
     ``webhook.verify_signature`` now expects (Story 13.6, closing
     DW-FU-13-4)."""
-    return "sha256=" + hmac.new(
-        secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    return "sha256=" + hmac.new(secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
 
 
-def _signed_headers(
-    secret: bytes, body: bytes, *, timestamp: str | None = None
-) -> list[tuple[bytes, bytes]]:
+def _signed_headers(secret: bytes, body: bytes, *, timestamp: str | None = None) -> list[tuple[bytes, bytes]]:
     """The ``X-Hub-Signature-256``/``X-Hub-Timestamp`` header pair a real
     producer would send -- the one helper every ASGI-level signed-request
     test below builds its ``scope["headers"]`` from."""
@@ -59,9 +56,7 @@ def _signed_headers(
     ]
 
 
-def _scope(
-    path: str, *, method: str = "POST", headers: list[tuple[bytes, bytes]] | None = None
-) -> dict[str, Any]:
+def _scope(path: str, *, method: str = "POST", headers: list[tuple[bytes, bytes]] | None = None) -> dict[str, Any]:
     return {"type": "http", "method": method, "path": path, "headers": headers or []}
 
 
@@ -93,15 +88,11 @@ class _Recorder:
 
     @property
     def status(self) -> int:
-        return next(
-            m["status"] for m in self.messages if m["type"] == "http.response.start"
-        )
+        return next(m["status"] for m in self.messages if m["type"] == "http.response.start")
 
     @property
     def json_body(self) -> Any:
-        body = b"".join(
-            m["body"] for m in self.messages if m["type"] == "http.response.body"
-        )
+        body = b"".join(m["body"] for m in self.messages if m["type"] == "http.response.body")
         return json.loads(body)
 
 
@@ -118,10 +109,7 @@ def test_verify_signature_accepts_a_valid_signature():
 def test_verify_signature_rejects_a_mismatched_signature():
     secret = b"shared-secret"
     body = b'{"station": "warden"}'
-    assert (
-        webhook.verify_signature(secret, body, "sha256=" + "0" * 64, _timestamp())
-        is False
-    )
+    assert webhook.verify_signature(secret, body, "sha256=" + "0" * 64, _timestamp()) is False
 
 
 def test_verify_signature_rejects_a_missing_header():
@@ -129,10 +117,7 @@ def test_verify_signature_rejects_a_missing_header():
 
 
 def test_verify_signature_rejects_a_header_with_no_sha256_prefix():
-    assert (
-        webhook.verify_signature(b"secret", b"body", "deadbeef", _timestamp())
-        is False
-    )
+    assert webhook.verify_signature(b"secret", b"body", "deadbeef", _timestamp()) is False
 
 
 # --- resolve_webhook_secret -----------------------------------------------
@@ -302,9 +287,7 @@ def test_handle_on_ship_retries_once_then_recovers(tmp_path: Path, monkeypatch):
     assert len(progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)) == 1
 
 
-def test_handle_on_ship_retry_exhausted_emits_one_alert_and_returns_500(
-    tmp_path: Path, monkeypatch, caplog
-):
+def test_handle_on_ship_retry_exhausted_emits_one_alert_and_returns_500(tmp_path: Path, monkeypatch, caplog):
     calls = 0
 
     def always_fails(*args, **kwargs):
@@ -315,9 +298,7 @@ def test_handle_on_ship_retry_exhausted_emits_one_alert_and_returns_500(
     monkeypatch.setattr(progress, "upsert", always_fails)
     sleeps: list[float] = []
     with caplog.at_level("ERROR", logger="pyforge.herald.webhook"):
-        result = webhook.handle_on_ship(
-            tmp_path, {"station": "warden"}, sleep=sleeps.append
-        )
+        result = webhook.handle_on_ship(tmp_path, {"station": "warden"}, sleep=sleeps.append)
     assert result.status == 500
     assert calls == 3
     assert sleeps == [1.0, 2.0]
@@ -340,9 +321,7 @@ def test_handle_on_pr_close_shipped_creates_a_draft_claim_matching_cli_create(
         "merged": True,
         "gates_passed": True,
         "project_name": "Marshal S-1.10",
-        "evidence": [
-            {"type": "test_results", "url": "https://ci.example/run/1", "label": "tests"}
-        ],
+        "evidence": [{"type": "test_results", "url": "https://ci.example/run/1", "label": "tests"}],
     }
     result = webhook.handle_on_pr_close(tmp_path, payload)
     assert result.status == 201
@@ -366,12 +345,8 @@ def test_handle_on_pr_close_with_no_evidence(tmp_path: Path):
     assert claim.evidence == ()
 
 
-@pytest.mark.parametrize(
-    ("merged", "gates_passed"), [(False, True), (True, False), (False, False)]
-)
-def test_handle_on_pr_close_not_shipped_is_a_202_no_op(
-    tmp_path: Path, merged: bool, gates_passed: bool
-):
+@pytest.mark.parametrize(("merged", "gates_passed"), [(False, True), (True, False), (False, False)])
+def test_handle_on_pr_close_not_shipped_is_a_202_no_op(tmp_path: Path, merged: bool, gates_passed: bool):
     payload = {"merged": merged, "gates_passed": gates_passed}
     result = webhook.handle_on_pr_close(tmp_path, payload)
     assert result.status == 202
@@ -423,9 +398,7 @@ def test_handle_on_pr_close_malformed_gate_fields_is_400_before_any_storage_call
         ),
     ],
 )
-def test_handle_on_pr_close_malformed_shipped_payload_is_400(
-    tmp_path: Path, extra: Mapping[str, Any], fragment: str
-):
+def test_handle_on_pr_close_malformed_shipped_payload_is_400(tmp_path: Path, extra: Mapping[str, Any], fragment: str):
     payload = {"merged": True, "gates_passed": True, **extra}
     result = webhook.handle_on_pr_close(tmp_path, payload)
     assert result.status == 400
@@ -454,9 +427,7 @@ def test_handle_on_pr_close_retries_once_then_recovers(tmp_path: Path, monkeypat
     assert len(claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 1
 
 
-def test_handle_on_pr_close_retry_exhausted_emits_one_alert_and_returns_500(
-    tmp_path: Path, monkeypatch, caplog
-):
+def test_handle_on_pr_close_retry_exhausted_emits_one_alert_and_returns_500(tmp_path: Path, monkeypatch, caplog):
     def always_fails(*args, **kwargs):
         raise HeraldError("boom")
 
@@ -503,9 +474,7 @@ def test_handle_on_pr_close_redelivery_is_idempotent_across_separate_http_calls(
     assert stored[0].id == first.body["claim_id"]
 
 
-def test_handle_on_pr_close_retry_is_idempotent_when_the_first_attempt_actually_committed(
-    tmp_path: Path, monkeypatch
-):
+def test_handle_on_pr_close_retry_is_idempotent_when_the_first_attempt_actually_committed(tmp_path: Path, monkeypatch):
     """Design Notes: `claims.id` has no schema-level uniqueness, so a naive
     retry that generated a fresh id per attempt (or blindly re-called
     `create`) would silently create a SECOND draft claim for one CI event
@@ -570,9 +539,7 @@ def test_asgi_app_valid_signed_on_ship_post_creates_a_progress_record(tmp_path: 
 def test_asgi_app_valid_signed_on_pr_close_post_creates_a_claim(tmp_path: Path):
     secret = b"shared-secret"
     app = webhook.create_app(tmp_path, secret)
-    body = json.dumps(
-        {"merged": True, "gates_passed": True, "project_name": "Marshal S-1.10"}
-    ).encode("utf-8")
+    body = json.dumps({"merged": True, "gates_passed": True, "project_name": "Marshal S-1.10"}).encode("utf-8")
     scope = _scope(
         webhook.ON_PR_CLOSE_PATH,
         headers=_signed_headers(secret, body),
@@ -638,9 +605,7 @@ def test_asgi_app_malformed_json_body_is_400(tmp_path: Path):
     assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
 
 
-def test_asgi_app_oversized_body_is_413_before_signature_check(
-    tmp_path: Path, monkeypatch
-):
+def test_asgi_app_oversized_body_is_413_before_signature_check(tmp_path: Path, monkeypatch):
     """The body-size cap is enforced BEFORE authentication -- an
     unauthenticated caller must not be able to force unbounded memory
     buffering just by streaming an oversized body. Proven the same way the
@@ -667,9 +632,7 @@ def test_asgi_app_oversized_body_is_413_before_signature_check(
     assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
 
 
-def test_asgi_app_unexpected_exception_is_a_500_not_an_uncaught_propagation(
-    tmp_path: Path, monkeypatch
-):
+def test_asgi_app_unexpected_exception_is_a_500_not_an_uncaught_propagation(tmp_path: Path, monkeypatch):
     """An ASGI app must always send a response. Anything other than the
     deliberately-handled cases (`_BodyTooLarge`, malformed JSON, each
     handler's own `errors.HeraldError` handling) is a bug this module did
@@ -724,9 +687,7 @@ def test_verify_signature_rejects_a_malformed_hex_half_without_raising(header: s
     assert webhook.verify_signature(b"secret", b"body", header, _timestamp()) is False
 
 
-def test_asgi_app_non_ascii_signature_is_401_not_a_500_with_an_alert(
-    tmp_path: Path, caplog
-):
+def test_asgi_app_non_ascii_signature_is_401_not_a_500_with_an_alert(tmp_path: Path, caplog):
     """The 401/500 distinction is the whole point: ERROR logging is this
     module's ONLY operator-alert channel, so an unauthenticated caller able
     to force one ERROR record per request could drown the real
@@ -874,9 +835,7 @@ def test_handle_on_pr_close_rejects_a_non_string_event_id(tmp_path: Path):
     assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
 
 
-def test_log_retry_exhausted_emits_valid_json_for_a_non_finite_payload_value(
-    tmp_path: Path, caplog
-):
+def test_log_retry_exhausted_emits_valid_json_for_a_non_finite_payload_value(tmp_path: Path, caplog):
     """`json.dumps` emits bare `NaN`/`Infinity` tokens, which RFC 8259 does
     not allow and strict consumers reject -- and `json.loads` accepts those
     literals on the way in, through any field `_problem_on_ship` does not
@@ -900,10 +859,7 @@ def test_asgi_app_duplicate_json_keys_are_400(tmp_path: Path):
     to the documents they read."""
     secret = b"shared-secret"
     app = webhook.create_app(tmp_path, secret)
-    body = (
-        b'{"merged": true, "gates_passed": false, "gates_passed": true,'
-        b' "project_name": "M"}'
-    )
+    body = b'{"merged": true, "gates_passed": false, "gates_passed": true, "project_name": "M"}'
     scope = _scope(
         webhook.ON_PR_CLOSE_PATH,
         headers=_signed_headers(secret, body),
@@ -955,9 +911,7 @@ def test_asgi_app_client_disconnect_mid_body_answers_nothing(tmp_path: Path, cap
     assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
 
 
-def test_asgi_app_send_failure_mid_response_does_not_start_a_second_response(
-    tmp_path: Path, caplog
-):
+def test_asgi_app_send_failure_mid_response_does_not_start_a_second_response(tmp_path: Path, caplog):
     """The last-resort guard had no "response already started" flag, so a
     send failure after `http.response.start` -- an ordinary mid-response
     client disconnect -- made it issue a SECOND `http.response.start`; the
@@ -1002,12 +956,8 @@ def test_verify_signature_accepts_an_uppercase_hex_signature():
     assert webhook.verify_signature(secret, body, lower, ts) is True
 
 
-@pytest.mark.parametrize(
-    "shipped_date", ["13/08/2026", "yesterday", "", "2026-13-45", "2026-08-13T10:00:00Z"]
-)
-def test_handle_on_pr_close_rejects_a_malformed_shipped_date(
-    tmp_path: Path, shipped_date: str
-):
+@pytest.mark.parametrize("shipped_date", ["13/08/2026", "yesterday", "", "2026-13-45", "2026-08-13T10:00:00Z"])
+def test_handle_on_pr_close_rejects_a_malformed_shipped_date(tmp_path: Path, shipped_date: str):
     """`claims.create` performs NO date validation, and `claims.list_claims`
     then calls `date.fromisoformat` on whatever was stored with no guard --
     so one such delivery made every subsequent `herald success list
@@ -1065,9 +1015,7 @@ def test_handle_on_pr_close_rejects_a_blank_event_id(tmp_path: Path):
         {"station": "warden", "shipped_capabilities": ["ok", "\ud800"]},
     ],
 )
-def test_handle_on_ship_rejects_an_unstorable_string_as_400(
-    tmp_path: Path, payload: Mapping[str, Any], caplog
-):
+def test_handle_on_ship_rejects_an_unstorable_string_as_400(tmp_path: Path, payload: Mapping[str, Any], caplog):
     """`json.loads` accepts a lone surrogate escape and hands back a `str`
     no UTF-8 encoder will take. Left to `progress.upsert`, it arrived as a
     `HeraldError` indistinguishable from a transient storage fault: 3
@@ -1095,9 +1043,7 @@ def test_handle_on_ship_rejects_an_unstorable_string_as_400(
         },
     ],
 )
-def test_handle_on_pr_close_rejects_an_unstorable_string_as_400(
-    tmp_path: Path, extra: Mapping[str, Any], caplog
-):
+def test_handle_on_pr_close_rejects_an_unstorable_string_as_400(tmp_path: Path, extra: Mapping[str, Any], caplog):
     """The same close on the claim side -- and here it never even reached
     the retry helper: `_claim_id_for` feeds these values to `uuid.uuid5`,
     which encodes UTF-8, so the `UnicodeEncodeError` escaped as a plain
@@ -1129,9 +1075,7 @@ def test_handle_on_ship_stores_the_station_stripped(tmp_path: Path):
         assert webhook.handle_on_ship(tmp_path, {"station": station}).status == 201
     stored = progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)
     assert [r.station for r in stored] == ["warden"]
-    assert progress.latest_for_station(
-        tmp_path / progress.DEFAULT_PROGRESS_PATH, "warden"
-    ) is not None
+    assert progress.latest_for_station(tmp_path / progress.DEFAULT_PROGRESS_PATH, "warden") is not None
 
 
 def test_create_app_rejects_a_str_secret(tmp_path: Path):
@@ -1176,9 +1120,7 @@ def test_asgi_app_declines_a_websocket_scope_instead_of_returning_silently(
     assert [m["type"] for m in recorder.messages] == ["websocket.close"]
 
 
-def test_asgi_app_deeply_nested_json_is_400_not_a_500_with_an_alert(
-    tmp_path: Path, caplog
-):
+def test_asgi_app_deeply_nested_json_is_400_not_a_500_with_an_alert(tmp_path: Path, caplog):
     """`[` x 100_000 is only 200 KB -- well under `MAX_BODY_BYTES`, so it
     passes the 413 gate and the HMAC check, then blows the stack in
     `json.loads`. `RecursionError` is not a `ValueError`, so it fell to the
@@ -1219,9 +1161,7 @@ def test_asgi_app_assembles_a_chunked_body_and_stays_linear(tmp_path: Path):
     of copying under the old quadratic behavior.)"""
     secret = b"shared-secret"
     app = webhook.create_app(tmp_path, secret)
-    body = json.dumps({"station": "warden", "unblock_narrative": "x" * 800_000}).encode(
-        "utf-8"
-    )
+    body = json.dumps({"station": "warden", "unblock_narrative": "x" * 800_000}).encode("utf-8")
     headers = _signed_headers(secret, body)
     chunk_size = -(-len(body) // webhook.MAX_BODY_MESSAGES)  # ceil
 
@@ -1269,18 +1209,12 @@ def test_claim_id_with_an_event_id_does_not_depend_on_the_date(tmp_path: Path):
         "project_name": "Marshal",
         "event_id": "pr-100",
     }
-    assert webhook._claim_id_for(payload, "2026-08-13") == webhook._claim_id_for(
-        payload, "2026-08-14"
-    )
+    assert webhook._claim_id_for(payload, "2026-08-13") == webhook._claim_id_for(payload, "2026-08-14")
     no_event = {k: v for k, v in payload.items() if k != "event_id"}
-    assert webhook._claim_id_for(no_event, "2026-08-13") != webhook._claim_id_for(
-        no_event, "2026-08-14"
-    )
+    assert webhook._claim_id_for(no_event, "2026-08-13") != webhook._claim_id_for(no_event, "2026-08-14")
 
 
-def test_handle_on_pr_close_redelivery_across_utc_midnight_is_idempotent(
-    tmp_path: Path, monkeypatch
-):
+def test_handle_on_pr_close_redelivery_across_utc_midnight_is_idempotent(tmp_path: Path, monkeypatch):
     """The same property end to end: the first delivery lands at 23:59:50Z
     and the re-fire at 00:00:20Z the next day. Before the fix this stored
     two claims with two `shipped_date`s for one merged PR."""
@@ -1346,9 +1280,7 @@ def test_handle_on_ship_rejects_an_unknown_field_instead_of_wiping_the_day(
         {"merged": True, "gates_passed": True, "project_name": "M", "eventId": "1"},
     ],
 )
-def test_handle_on_pr_close_rejects_an_unknown_field(
-    tmp_path: Path, payload: dict[str, Any]
-):
+def test_handle_on_pr_close_rejects_an_unknown_field(tmp_path: Path, payload: dict[str, Any]):
     result = webhook.handle_on_pr_close(tmp_path, payload, sleep=lambda _: None)
     assert result.status == 400
     assert "unknown field(s)" in result.body["error"]
@@ -1411,9 +1343,7 @@ def test_asgi_app_bounds_the_number_of_body_chunks(tmp_path: Path):
 
 
 @pytest.mark.parametrize("value", ["20260813", "2026-W33-4", "2026-W33"])
-def test_handle_on_pr_close_rejects_a_non_canonical_iso_date(
-    tmp_path: Path, value: str
-):
+def test_handle_on_pr_close_rejects_a_non_canonical_iso_date(tmp_path: Path, value: str):
     """`date.fromisoformat` accepts every ISO 8601 date form on 3.11+, so a
     parse-only check kept the promise its own error message makes
     ("YYYY-MM-DD") for the shapes it rejected and broke it for these. The
@@ -1471,9 +1401,7 @@ def test_handle_on_pr_close_rejects_evidence_naming_a_nonexistent_notice(
     CLI compensates by calling `notices.get_notice` first; without the same
     check here this route was a way to attach evidence that passes Story
     9.5's entire evidence gate while referring to nothing."""
-    result = webhook.handle_on_pr_close(
-        tmp_path, _notice_payload("never-authored"), sleep=lambda _: None
-    )
+    result = webhook.handle_on_pr_close(tmp_path, _notice_payload("never-authored"), sleep=lambda _: None)
     assert result.status == 400
     assert "notice" in result.body["error"]
     assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
@@ -1531,9 +1459,7 @@ def test_claim_id_does_not_collide_across_its_two_name_parts(tmp_path: Path):
     swallowed by the idempotency guard at 201."""
     left = {"merged": True, "gates_passed": True, "project_name": "A|event:B", "event_id": "C"}
     right = {"merged": True, "gates_passed": True, "project_name": "A", "event_id": "B|event:C"}
-    assert webhook._claim_id_for(left, "2026-08-13") != webhook._claim_id_for(
-        right, "2026-08-13"
-    )
+    assert webhook._claim_id_for(left, "2026-08-13") != webhook._claim_id_for(right, "2026-08-13")
     assert webhook.handle_on_pr_close(tmp_path, left).status == 201
     assert webhook.handle_on_pr_close(tmp_path, right).status == 201
     assert len(claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 2
@@ -1542,9 +1468,7 @@ def test_claim_id_does_not_collide_across_its_two_name_parts(tmp_path: Path):
 # --- the alert record stays bounded --------------------------------------------
 
 
-def test_retry_exhausted_alert_truncates_an_oversized_payload(
-    tmp_path: Path, caplog, monkeypatch
-):
+def test_retry_exhausted_alert_truncates_an_oversized_payload(tmp_path: Path, caplog, monkeypatch):
     """The alert log IS this module's only operator-alert channel, and it
     embedded the whole caller-controlled payload -- so one signed delivery
     near `MAX_BODY_BYTES` wrote a ~1 MB log line, and the module's own
@@ -1567,9 +1491,7 @@ def test_retry_exhausted_alert_truncates_an_oversized_payload(
     assert document["payload"]["serialized_chars"] > 500_000
 
 
-def test_retry_exhausted_alert_keeps_a_small_payload_verbatim(
-    tmp_path: Path, caplog, monkeypatch
-):
+def test_retry_exhausted_alert_keeps_a_small_payload_verbatim(tmp_path: Path, caplog, monkeypatch):
     """The cap must not cost the ordinary case its detail -- every real
     payload is small, and the record is only useful if it shows one."""
 
@@ -1578,9 +1500,7 @@ def test_retry_exhausted_alert_keeps_a_small_payload_verbatim(
 
     monkeypatch.setattr(progress, "upsert", always_fails)
     with caplog.at_level("ERROR", logger=webhook.logger.name):
-        webhook.handle_on_ship(
-            tmp_path, {"station": "warden"}, sleep=lambda _: None
-        )
+        webhook.handle_on_ship(tmp_path, {"station": "warden"}, sleep=lambda _: None)
     (record,) = [r for r in caplog.records if r.levelname == "ERROR"]
     assert json.loads(record.getMessage())["payload"] == {"station": "warden"}
 
@@ -1596,9 +1516,7 @@ def test_retry_exhausted_alert_keeps_a_small_payload_verbatim(
         ({"type": "websocket", "path": webhook.ON_SHIP_PATH, "headers": []}, "ws"),
     ],
 )
-def test_asgi_app_never_propagates_a_send_failure(
-    tmp_path: Path, caplog, scope: dict[str, Any], label: str
-):
+def test_asgi_app_never_propagates_a_send_failure(tmp_path: Path, caplog, scope: dict[str, Any], label: str):
     """The 404, 405 and websocket-close sends sat OUTSIDE `app()`'s
     last-resort guard, so a `send` that raises there escaped the callable --
     the exact uncaught escape the guard exists to prevent, per the module
@@ -1706,18 +1624,14 @@ def test_verify_signature_rejects_a_timestamp_more_than_5_minutes_old():
     `body`, so this exact replay verified forever (DW-FU-13-4)."""
     secret, body = b"shared-secret", b'{"station":"warden"}'
     stale = str(int(time.time()) - webhook.MAX_TIMESTAMP_SKEW_SECONDS - 1)
-    header = "sha256=" + hmac.new(
-        secret, stale.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    header = "sha256=" + hmac.new(secret, stale.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
     assert webhook.verify_signature(secret, body, header, stale) is False
 
 
 def test_verify_signature_accepts_a_timestamp_just_inside_the_skew_window():
     secret, body = b"shared-secret", b'{"station":"warden"}'
     fresh_enough = str(int(time.time()) - webhook.MAX_TIMESTAMP_SKEW_SECONDS + 5)
-    header = "sha256=" + hmac.new(
-        secret, fresh_enough.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    header = "sha256=" + hmac.new(secret, fresh_enough.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
     assert webhook.verify_signature(secret, body, header, fresh_enough) is True
 
 
@@ -1728,9 +1642,7 @@ def test_verify_signature_rejects_a_timestamp_more_than_5_minutes_in_the_future(
     `MAX_TIMESTAMP_SKEW_SECONDS`'s own docstring."""
     secret, body = b"shared-secret", b'{"station":"warden"}'
     future = str(int(time.time()) + webhook.MAX_TIMESTAMP_SKEW_SECONDS + 1)
-    header = "sha256=" + hmac.new(
-        secret, future.encode("ascii") + b"." + body, hashlib.sha256
-    ).hexdigest()
+    header = "sha256=" + hmac.new(secret, future.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
     assert webhook.verify_signature(secret, body, header, future) is False
 
 

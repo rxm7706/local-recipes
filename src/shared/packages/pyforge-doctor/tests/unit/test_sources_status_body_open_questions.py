@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import status_body_consistency as sbc
 
@@ -22,20 +23,14 @@ def _open_questions_repo(tmp_path: Path) -> Path:
 
 
 def test_last_unclosed_memlog_question_returns_open_entry():
-    memlog = (
-        "- (correction) preamble\n"
-        "- (open) 2026-07-31 IS `guild` STILL THE RIGHT OWNER VALUE?\n"
-    )
+    memlog = "- (correction) preamble\n- (open) 2026-07-31 IS `guild` STILL THE RIGHT OWNER VALUE?\n"
     match = sbc.last_unclosed_memlog_question(memlog)
     assert match is not None
     assert match.line_no == 2
 
 
 def test_last_unclosed_memlog_question_clears_on_decision():
-    memlog = (
-        "- (open) 2026-07-31 IS `guild` STILL THE RIGHT OWNER VALUE?\n"
-        "- (decision) 2026-09-09 KEEP `guild`.\n"
-    )
+    memlog = "- (open) 2026-07-31 IS `guild` STILL THE RIGHT OWNER VALUE?\n- (decision) 2026-09-09 KEEP `guild`.\n"
     assert sbc.last_unclosed_memlog_question(memlog) is None
 
 
@@ -55,12 +50,7 @@ def test_open_questions_frontmatter_count_inline_empty():
 
 
 def test_open_questions_frontmatter_count_block_list():
-    text = (
-        "---\n"
-        "open_questions:\n"
-        '  - "One open question"\n'
-        "---\n"
-    )
+    text = '---\nopen_questions:\n  - "One open question"\n---\n'
     count, line_no, unparseable = sbc.open_questions_frontmatter_count(text)
     assert count == 1
     assert line_no == 2
@@ -84,9 +74,7 @@ def test_gather_open_questions_fires_on_charter_mismatch_fixture(tmp_path: Path)
 def test_gather_open_questions_silent_when_question_closed(tmp_path: Path):
     repo = _open_questions_repo(tmp_path)
     findings = sbc.gather_open_questions_reconcile(repo)
-    closed_paths = [
-        f for f in findings if "spec-charter-closed" in f.evidence.get("path", "")
-    ]
+    closed_paths = [f for f in findings if "spec-charter-closed" in f.evidence.get("path", "")]
     assert not closed_paths
 
 
@@ -106,18 +94,11 @@ def test_gather_live_charter_case():
     charter_hits = [
         f
         for f in findings
-        if f.check == sbc._CHECK_OPEN_QUESTIONS
-        and f.evidence.get("path", "").endswith("spec-pyforge-charter/SPEC.md")
+        if f.check == sbc._CHECK_OPEN_QUESTIONS and f.evidence.get("path", "").endswith("spec-pyforge-charter/SPEC.md")
     ]
-    assert not charter_hits, (
-        "live charter was reconciled 2026-09-09; fixture covers the firing case"
-    )
+    assert not charter_hits, "live charter was reconciled 2026-09-09; fixture covers the firing case"
     scanned = next(
-        (
-            f.evidence.get("scanned_specs")
-            for f in findings
-            if "scanned_specs" in f.evidence
-        ),
+        (f.evidence.get("scanned_specs") for f in findings if "scanned_specs" in f.evidence),
         None,
     )
     assert scanned and scanned > 0

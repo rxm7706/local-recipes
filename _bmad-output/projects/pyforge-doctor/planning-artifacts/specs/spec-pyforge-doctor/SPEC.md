@@ -6,6 +6,7 @@ surface:
   - scripts/deferred_work_check.py
   - scripts/deferred_work_intake.py
   - docs/MAP.md
+  - docs/_STYLE_GUIDE.md
   - docs/how-to/**
   - docs/tutorials/**
   - docs/explanation/**
@@ -13,6 +14,8 @@ surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/**
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
+  - docs/map.yaml
+  - scripts/docs_map_render.py
 surface-drift-exclude:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/actuators/__init__.py

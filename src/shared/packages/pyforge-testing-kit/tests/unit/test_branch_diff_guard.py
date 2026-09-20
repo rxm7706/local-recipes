@@ -65,9 +65,7 @@ def test_changed_paths_since_includes_untracked_when_asked(repo: Path):
     _make_origin_main(repo)
     (repo / "src").mkdir()
     (repo / "src" / "untracked.py").write_text("z = 3\n", encoding="utf-8")
-    changed = changed_paths_since(
-        repo, base="origin/main", pathspec="src", include_untracked=True
-    )
+    changed = changed_paths_since(repo, base="origin/main", pathspec="src", include_untracked=True)
     assert changed == ["src/untracked.py"]
     assert changed_paths_since(repo, base="origin/main", pathspec="src") == []
 
@@ -102,9 +100,7 @@ def test_pyforge_import_offenders_finds_top_level_imports(repo: Path):
     (repo / "clean.py").write_text("import os\n", encoding="utf-8")
     (repo / "dirty_import.py").write_text("import pyforge.core\n", encoding="utf-8")
     (repo / "dirty_from.py").write_text("from pyforge.core import x\n", encoding="utf-8")
-    offenders = pyforge_import_offenders(
-        ["clean.py", "dirty_import.py", "dirty_from.py", "missing.py"], repo
-    )
+    offenders = pyforge_import_offenders(["clean.py", "dirty_import.py", "dirty_from.py", "missing.py"], repo)
     assert offenders == ["dirty_import.py:1", "dirty_from.py:1"]
 
 

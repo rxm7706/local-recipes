@@ -11,6 +11,7 @@ import json
 
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
+
 from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 
 
@@ -63,9 +64,7 @@ def test_engine_liveness_maps_stopped_to_dead(harness, tmp_path, monkeypatch):
     assert harness.engine_liveness(tmp_path, run_id) == "dead"
 
 
-def test_engine_liveness_returns_unknown_when_status_subprocess_fails(
-    harness, tmp_path, monkeypatch
-):
+def test_engine_liveness_returns_unknown_when_status_subprocess_fails(harness, tmp_path, monkeypatch):
     def _fake_run(self, argv, *, cwd, timeout_s):
         return ProcessResult(returncode=1, stdout="", stderr="no such run: absent")
 
@@ -73,9 +72,7 @@ def test_engine_liveness_returns_unknown_when_status_subprocess_fails(
     assert harness.engine_liveness(tmp_path, "absent-run") == "unknown"
 
 
-def test_engine_liveness_returns_unknown_when_status_cannot_launch(
-    harness, tmp_path, monkeypatch
-):
+def test_engine_liveness_returns_unknown_when_status_cannot_launch(harness, tmp_path, monkeypatch):
     def _fake_run(self, argv, *, cwd, timeout_s):
         raise ProcessError("cannot launch") from FileNotFoundError("bmad-loop")
 
@@ -83,9 +80,7 @@ def test_engine_liveness_returns_unknown_when_status_cannot_launch(
     assert harness.engine_liveness(tmp_path, "any-run") == "unknown"
 
 
-def test_engine_liveness_returns_unknown_when_run_missing_from_list(
-    harness, tmp_path, monkeypatch
-):
+def test_engine_liveness_returns_unknown_when_run_missing_from_list(harness, tmp_path, monkeypatch):
     run_id = "acme-missing-from-list"
 
     def _fake_run(self, argv, *, cwd, timeout_s):
@@ -113,9 +108,7 @@ def test_engine_liveness_preserves_unknown_list_status(harness, tmp_path, monkey
     assert harness.engine_liveness(tmp_path, run_id) == "unknown"
 
 
-def test_engine_liveness_never_coerces_unrecognized_list_status_to_alive_or_dead(
-    harness, tmp_path, monkeypatch
-):
+def test_engine_liveness_never_coerces_unrecognized_list_status_to_alive_or_dead(harness, tmp_path, monkeypatch):
     run_id = "acme-future-status"
 
     def _fake_run(self, argv, *, cwd, timeout_s):

@@ -28,6 +28,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed.detect import optout as optout_module
 from pyforge.marshal.seed.detect.findings import REMEDIES, FindingType, Severity
 from pyforge.marshal.seed.detect.optout import (
@@ -121,9 +122,7 @@ def _state(
     )
 
 
-def _region_claim(
-    entry_id: str, path: str, region: str, *, start: int = 7, end: int = 20
-) -> ManagedArtifact:
+def _region_claim(entry_id: str, path: str, region: str, *, start: int = 7, end: int = 20) -> ManagedArtifact:
     return ManagedArtifact(
         id=entry_id,
         path=path,
@@ -595,9 +594,9 @@ def test_every_pair_opt_outs_to_record_returns_is_one_record_opt_out_accepts():
             _region_claim("has a space", "OTHER.md", "tiers"),
         )
     )
-    statuses = classify_regions(
-        _hybrid("agents-md", "AGENTS.md", "tiers"), _doc("intro"), state
-    ) + classify_regions(_hybrid("has a space", "OTHER.md", "tiers"), _doc("intro"), state)
+    statuses = classify_regions(_hybrid("agents-md", "AGENTS.md", "tiers"), _doc("intro"), state) + classify_regions(
+        _hybrid("has a space", "OTHER.md", "tiers"), _doc("intro"), state
+    )
 
     pairs = opt_outs_to_record(statuses, state)
 
@@ -982,9 +981,7 @@ def _imported_modules(tree: ast.AST, package: str) -> set[str]:
                 if node.module is not None:
                     modules.add(node.module)
             else:
-                modules.add(
-                    importlib.util.resolve_name("." * node.level + (node.module or ""), package)
-                )
+                modules.add(importlib.util.resolve_name("." * node.level + (node.module or ""), package))
     return modules
 
 
@@ -1006,7 +1003,5 @@ def test_optout_imports_nothing_upward_from_detect():
         "pyforge.marshal.seed.verbs",
     )
     assert not {
-        module
-        for module in modules
-        if any(module == layer or module.startswith(f"{layer}.") for layer in upward)
+        module for module in modules if any(module == layer or module.startswith(f"{layer}.") for layer in upward)
     }

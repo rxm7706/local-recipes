@@ -63,9 +63,7 @@ class ProcessResult:
 
 
 class ProcessPort(Protocol):
-    def run(
-        self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None
-    ) -> ProcessResult:
+    def run(self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
         """Run ``argv`` (already-tokenized, e.g. via ``shlex.split`` --
         this Protocol takes no raw command string, so it can never
         re-interpret shell metacharacters a caller already parsed) with
@@ -97,9 +95,7 @@ class ProcessPort(Protocol):
         reported as ``False``, never as an exception."""
         ...
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         """Launch ``argv`` as a detached child -- a new session (POSIX
         ``setsid``, never inheriting this process's own controlling
         terminal or process group), stdin closed (``DEVNULL``), stdout AND
@@ -147,9 +143,7 @@ class PosixProcess:
     inventing an arbitrary ceiling.
     """
 
-    def run(
-        self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None
-    ) -> ProcessResult:
+    def run(self, argv: Sequence[str], *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
         if not argv:
             # A whitespace-only command shlex.split()s to an empty list --
             # distinct from a shlex.split() ValueError (a caller's own
@@ -185,9 +179,7 @@ class PosixProcess:
         except FileNotFoundError as exc:
             raise ProcessError(f"executable not found: {argv[0]!r} ({exc})") from exc
         except subprocess.TimeoutExpired as exc:
-            raise ProcessError(
-                f"command timed out after {timeout_s}s: {' '.join(argv)}"
-            ) from exc
+            raise ProcessError(f"command timed out after {timeout_s}s: {' '.join(argv)}") from exc
         except ValueError as exc:
             # subprocess.run raises a plain ValueError -- not an OSError --
             # for an embedded NUL byte in argv, which would otherwise escape
@@ -198,9 +190,7 @@ class PosixProcess:
             # a non-executable file, ENOEXEC on a corrupt binary -- all must
             # land in ProcessError, never escape raw.
             raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
-        return ProcessResult(
-            returncode=result.returncode, stdout=result.stdout, stderr=result.stderr
-        )
+        return ProcessResult(returncode=result.returncode, stdout=result.stdout, stderr=result.stderr)
 
     def is_alive(self, pid: int) -> bool:
         try:
@@ -220,7 +210,7 @@ class PosixProcess:
             # existence, not ownership, is the question, so this is a live
             # process, not an absent one.
             return True
-        except (OverflowError, ValueError):
+        except OverflowError, ValueError:
             # NOT an OSError: `os.kill` raises a bare `OverflowError` for a
             # pid outside C `int` range (and a `ValueError` for other
             # unconvertible integer inputs), so neither is caught by the
@@ -236,9 +226,7 @@ class PosixProcess:
             return False
         return True
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         if not argv:
             # Same guard as run() above, and for the identical reason: there
             # is no argv[0] to exec, and this Protocol's "raises ProcessError

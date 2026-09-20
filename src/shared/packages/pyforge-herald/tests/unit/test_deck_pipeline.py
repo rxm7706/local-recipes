@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 from pptx import Presentation
+
 from pyforge.herald import deck_pipeline as deck_pipeline_module
 from pyforge.herald import registry, stamps, state
 from pyforge.herald.deck_pipeline import (
@@ -25,7 +26,6 @@ from pyforge.herald.deck_pipeline import (
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
     AdoptedArtifact,
-    AdoptResult,
     ExportPushResult,
     NpmLocalProver,
     PixiDeckExporter,
@@ -63,17 +63,11 @@ class FakeTransport:
     """A hand-written ``DesignTransport`` double recording every call, in
     order, as ``(method, kwargs)``."""
 
-    def __init__(
-        self, *, prompt="PROMPT", project=None, plan=None, fails: dict | None = None
-    ):
+    def __init__(self, *, prompt="PROMPT", project=None, plan=None, fails: dict | None = None):
         self.calls: list[tuple[str, dict]] = []
         self._prompt = prompt
-        self._project = project or ProjectRef(
-            project_id="p-new", url="https://claude.ai/design/p/p-new"
-        )
-        self._plan = plan or PlanHandle(
-            plan_token="tok", base_etags={"support.js": "0", "deck-stage.js": "0"}
-        )
+        self._project = project or ProjectRef(project_id="p-new", url="https://claude.ai/design/p/p-new")
+        self._plan = plan or PlanHandle(plan_token="tok", base_etags={"support.js": "0", "deck-stage.js": "0"})
         # Keyed by method name -- raises that exception INSTEAD OF the
         # normal canned return, after still recording the call.
         self._fails: dict = dict(fails or {})
@@ -134,9 +128,7 @@ def _make_deck(tmp_path: Path, slug: str, persona: str | None = None) -> Path:
     deck_dir = tmp_path / "presentations" / slug
     project_dir = deck_dir / "project"
     project_dir.mkdir(parents=True)
-    (project_dir / f"PyForge {persona}.dc.html").write_text(
-        "<html>proto</html>", encoding="utf-8"
-    )
+    (project_dir / f"PyForge {persona}.dc.html").write_text("<html>proto</html>", encoding="utf-8")
     (deck_dir / "README.md").write_text(f"# {slug}\n\nBody.\n", encoding="utf-8")
     return deck_dir
 
@@ -246,9 +238,7 @@ def test_seed_copy_files_honours_an_explicit_source_project_override(tmp_path: P
 
 def test_seed_write_files_carries_the_exact_local_prototype_bytes(tmp_path: Path):
     deck_dir = _make_deck(tmp_path, "pyforge-warden")
-    on_disk = (deck_dir / "project" / "PyForge Warden.dc.html").read_text(
-        encoding="utf-8"
-    )
+    on_disk = (deck_dir / "project" / "PyForge Warden.dc.html").read_text(encoding="utf-8")
     transport = FakeTransport()
     seed(transport, slug="pyforge-warden", repo_root=tmp_path, prover=FakeProver())
     _name, kwargs = transport.calls[5]
@@ -288,9 +278,7 @@ def test_seed_records_state_immediately_so_a_mid_pipeline_failure_never_duplicat
     immediately after `create_project` succeeds, so this exact retry
     refuses instead."""
     _make_deck(tmp_path, "pyforge-warden")
-    failing_transport = FakeTransport(
-        fails={"finalize_plan": RuntimeError("simulated: etag conflict")}
-    )
+    failing_transport = FakeTransport(fails={"finalize_plan": RuntimeError("simulated: etag conflict")})
     with pytest.raises(RuntimeError, match="etag conflict"):
         seed(
             failing_transport,
@@ -328,9 +316,7 @@ def test_seed_refuses_a_missing_readme_before_any_transport_call(tmp_path: Path)
     transport call at all."""
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     (deck_dir / "project").mkdir(parents=True)
-    (deck_dir / "project" / "PyForge Warden.dc.html").write_text(
-        "<html>proto</html>", encoding="utf-8"
-    )
+    (deck_dir / "project" / "PyForge Warden.dc.html").write_text("<html>proto</html>", encoding="utf-8")
     # Deliberately NO README.md.
     transport = FakeTransport()
     prover = FakeProver()
@@ -464,9 +450,7 @@ def test_npm_local_prover_runs_extract_then_build(monkeypatch, tmp_path: Path):
     assert calls == [["npm", "run", "extract"], ["npm", "run", "build"]]
 
 
-def test_npm_local_prover_maps_nonzero_exit_to_a_herald_error(
-    monkeypatch, tmp_path: Path
-):
+def test_npm_local_prover_maps_nonzero_exit_to_a_herald_error(monkeypatch, tmp_path: Path):
     class _Completed:
         returncode = 1
         stdout = ""
@@ -477,9 +461,7 @@ def test_npm_local_prover_maps_nonzero_exit_to_a_herald_error(
         NpmLocalProver().prove(tmp_path)
 
 
-def test_npm_local_prover_maps_a_launch_oserror_to_a_herald_error(
-    monkeypatch, tmp_path: Path
-):
+def test_npm_local_prover_maps_a_launch_oserror_to_a_herald_error(monkeypatch, tmp_path: Path):
     def _raise(*args, **kwargs):
         raise FileNotFoundError("no such file: npm")
 
@@ -558,9 +540,7 @@ class FakeCommitter:
         self._fails = fails
 
     def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
-        self.calls.append(
-            {"repo_root": repo_root, "paths": list(paths), "message": message}
-        )
+        self.calls.append({"repo_root": repo_root, "paths": list(paths), "message": message})
         if self._fails is not None:
             raise self._fails
 
@@ -580,9 +560,7 @@ def test_pull_prototype_short_circuits_on_unchanged_and_skips_every_downstream_s
     tmp_path: Path,
 ):
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E1", body=None, unchanged=True))
     prover = FakeProver()
     exporter = FakeExporter()
 
@@ -614,9 +592,7 @@ def test_pull_prototype_short_circuits_on_unchanged_and_skips_every_downstream_s
 
 def test_pull_prototype_if_none_match_uses_the_last_seen_etag(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E1", body=None, unchanged=True))
     pull_prototype(
         transport,
         slug="pyforge-warden",
@@ -633,9 +609,7 @@ def test_pull_prototype_if_none_match_uses_the_last_seen_etag(tmp_path: Path):
 def test_pull_prototype_writes_the_decoded_body_and_re_derives(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
     transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="E2", body="<html>edited & saved</html>", unchanged=False
-        )
+        answers=FileRead(path="x", etag="E2", body="<html>edited & saved</html>", unchanged=False)
     )
     prover = FakeProver()
     exporter = FakeExporter()
@@ -649,13 +623,7 @@ def test_pull_prototype_writes_the_decoded_body_and_re_derives(tmp_path: Path):
         now=lambda: _FIXED_NOW,
     )
 
-    local_path = (
-        tmp_path
-        / "presentations"
-        / "pyforge-warden"
-        / "project"
-        / "PyForge Warden.dc.html"
-    )
+    local_path = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
     assert result.local_path == local_path
     assert result.unchanged is False
     assert result.etag == "E2"
@@ -675,9 +643,7 @@ def test_pull_prototype_body_is_not_re_decoded(tmp_path: Path):
     second time into `&`."""
     _seed_state(tmp_path, "pyforge-warden")
     transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="E3", body="already &amp; decoded once", unchanged=False
-        )
+        answers=FileRead(path="x", etag="E3", body="already &amp; decoded once", unchanged=False)
     )
     pull_prototype(
         transport,
@@ -687,13 +653,7 @@ def test_pull_prototype_body_is_not_re_decoded(tmp_path: Path):
         exporter=FakeExporter(),
         now=lambda: _FIXED_NOW,
     )
-    local_path = (
-        tmp_path
-        / "presentations"
-        / "pyforge-warden"
-        / "project"
-        / "PyForge Warden.dc.html"
-    )
+    local_path = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
     assert local_path.read_text(encoding="utf-8") == "already &amp; decoded once"
 
 
@@ -728,9 +688,7 @@ def test_pull_prototype_refuses_a_truncated_answer_before_writing(tmp_path: Path
 
 def test_pull_prototype_refuses_a_changed_answer_with_no_body(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E5", body=None, unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E5", body=None, unchanged=False))
     with pytest.raises(HeraldError, match="no body"):
         pull_prototype(
             transport,
@@ -768,9 +726,7 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
     fixing the transient export failure genuinely re-attempts, rather than
     short-circuiting."""
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E6", body="<html>x</html>", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E6", body="<html>x</html>", unchanged=False))
     exporter = FakeExporter(fails=HeraldError("deck-export exited 1"))
     with pytest.raises(HeraldError, match="deck-export exited 1"):
         pull_prototype(
@@ -782,13 +738,7 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
             now=lambda: _FIXED_NOW,
         )
     # The write lands even though export later fails...
-    local_path = (
-        tmp_path
-        / "presentations"
-        / "pyforge-warden"
-        / "project"
-        / "PyForge Warden.dc.html"
-    )
+    local_path = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
     # ...but the etag is NOT recorded, so a retry can still re-attempt
     # re-derivation instead of short-circuiting as "unchanged" forever.
@@ -801,9 +751,7 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
 
 def test_pull_prototype_without_commit_never_calls_the_committer(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E7", body="<html>x</html>", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E7", body="<html>x</html>", unchanged=False))
     committer = FakeCommitter()
     result = pull_prototype(
         transport,
@@ -822,9 +770,7 @@ def test_pull_prototype_commit_true_stages_and_commits_after_a_real_change(
     tmp_path: Path,
 ):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E8", body="<html>x</html>", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E8", body="<html>x</html>", unchanged=False))
     committer = FakeCommitter()
     result = pull_prototype(
         transport,
@@ -847,9 +793,7 @@ def test_pull_prototype_commit_true_stages_and_commits_after_a_real_change(
 
 def test_pull_prototype_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E1", body=None, unchanged=True))
     committer = FakeCommitter()
     result = pull_prototype(
         transport,
@@ -868,9 +812,7 @@ def test_pull_prototype_commit_true_never_commits_an_unchanged_pull(tmp_path: Pa
 
 def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E9", body="<html>x</html>", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E9", body="<html>x</html>", unchanged=False))
     committer = FakeCommitter(fails=HeraldError("git commit failed: nothing to commit"))
     with pytest.raises(HeraldError, match="nothing to commit"):
         pull_prototype(
@@ -885,13 +827,7 @@ def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
         )
     # The write and state update already landed before the commit failed --
     # not rolled back (see the story spec's Design Notes).
-    local_path = (
-        tmp_path
-        / "presentations"
-        / "pyforge-warden"
-        / "project"
-        / "PyForge Warden.dc.html"
-    )
+    local_path = tmp_path / "presentations" / "pyforge-warden" / "project" / "PyForge Warden.dc.html"
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
 
 
@@ -900,9 +836,7 @@ def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
 
 def test_pull_marp_source_short_circuits_on_unchanged(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M1", body=None, unchanged=True))
     exporter = FakeExporter()
     result = pull_marp_source(
         transport,
@@ -926,9 +860,7 @@ def test_pull_marp_source_short_circuits_on_unchanged(tmp_path: Path):
 
 def test_pull_marp_source_uses_the_short_name_remote_path(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M2", body="# Deck", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M2", body="# Deck", unchanged=False))
     pull_marp_source(
         transport,
         slug="pyforge-warden",
@@ -944,9 +876,7 @@ def test_pull_marp_source_lands_at_the_dated_src_marp_path_and_calls_no_prover(
     tmp_path: Path,
 ):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M3", body="# Infographic", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M3", body="# Infographic", unchanged=False))
     exporter = FakeExporter()
 
     result = pull_marp_source(
@@ -959,12 +889,7 @@ def test_pull_marp_source_lands_at_the_dated_src_marp_path_and_calls_no_prover(
     )
 
     local_path = (
-        tmp_path
-        / "presentations"
-        / "pyforge-warden"
-        / "src"
-        / "marp"
-        / "pyforge-warden-infographic-2026-08-07.md"
+        tmp_path / "presentations" / "pyforge-warden" / "src" / "marp" / "pyforge-warden-infographic-2026-08-07.md"
     )
     assert result.local_path == local_path
     assert result.artifact == "marp:infographic"
@@ -1003,9 +928,7 @@ def test_pull_marp_source_refuses_when_not_seeded(tmp_path: Path):
 
 def test_pull_marp_source_commit_true_stages_after_a_real_change(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M4", body="# Deck", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M4", body="# Deck", unchanged=False))
     committer = FakeCommitter()
     result = pull_marp_source(
         transport,
@@ -1024,9 +947,7 @@ def test_pull_marp_source_commit_true_stages_after_a_real_change(tmp_path: Path)
 
 def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M1", body=None, unchanged=True))
     committer = FakeCommitter()
     result = pull_marp_source(
         transport,
@@ -1046,12 +967,8 @@ def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: 
 
 
 def test_pull_standalone_bundle_short_circuits_on_unchanged(tmp_path: Path):
-    _seed_state(
-        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
-    )
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
-    )
+    _seed_state(tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"})
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S1", body=None, unchanged=True))
     exporter = FakeExporter()
     result = pull_standalone_bundle(
         transport,
@@ -1074,11 +991,7 @@ def test_pull_standalone_bundle_short_circuits_on_unchanged(tmp_path: Path):
 
 def test_pull_standalone_bundle_uses_the_persona_remote_path(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="S2", body="<html>bundle</html>", unchanged=False
-        )
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S2", body="<html>bundle</html>", unchanged=False))
     pull_standalone_bundle(
         transport,
         slug="pyforge-warden",
@@ -1091,11 +1004,7 @@ def test_pull_standalone_bundle_uses_the_persona_remote_path(tmp_path: Path):
 
 def test_pull_standalone_bundle_lands_at_the_dated_export_path(tmp_path: Path):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="S3", body="<html>bundle</html>", unchanged=False
-        )
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S3", body="<html>bundle</html>", unchanged=False))
     exporter = FakeExporter()
 
     result = pull_standalone_bundle(
@@ -1130,11 +1039,7 @@ def test_pull_standalone_bundle_write_completes_before_export_runs(tmp_path: Pat
     file back at call time -- if the write had not completed, this would
     read stale/missing content instead of the just-pulled body."""
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="S4", body="<html>bundle</html>", unchanged=False
-        )
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S4", body="<html>bundle</html>", unchanged=False))
     seen_at_export_time = {}
 
     class ReadingExporter:
@@ -1175,11 +1080,7 @@ def test_pull_standalone_bundle_commit_true_stages_after_a_real_change(
     tmp_path: Path,
 ):
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="S5", body="<html>bundle</html>", unchanged=False
-        )
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S5", body="<html>bundle</html>", unchanged=False))
     committer = FakeCommitter()
     result = pull_standalone_bundle(
         transport,
@@ -1198,12 +1099,8 @@ def test_pull_standalone_bundle_commit_true_stages_after_a_real_change(
 def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
     tmp_path: Path,
 ):
-    _seed_state(
-        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
-    )
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
-    )
+    _seed_state(tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"})
+    transport = FakePullTransport(answers=FileRead(path="x", etag="S1", body=None, unchanged=True))
     committer = FakeCommitter()
     result = pull_standalone_bundle(
         transport,
@@ -1223,9 +1120,7 @@ def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
 
 def _init_git_repo(work: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=work, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=work, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=work, check=True)
     subprocess.run(["git", "config", "user.name", "Test"], cwd=work, check=True)
     (work / "README.md").write_text("scratch repo\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=work, check=True)
@@ -1240,9 +1135,7 @@ def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: P
     target.mkdir(parents=True)
     (target / "file.txt").write_text("content\n", encoding="utf-8")
 
-    SubprocessGitCommitter().commit(
-        repo_root=work, paths=[target], message="herald: pull warden (prototype)"
-    )
+    SubprocessGitCommitter().commit(repo_root=work, paths=[target], message="herald: pull warden (prototype)")
 
     log = subprocess.run(
         ["git", "log", "-1", "--name-only", "--format="],
@@ -1254,9 +1147,7 @@ def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: P
     assert "presentations/warden/file.txt" in log.stdout
 
 
-def test_subprocess_git_committer_commits_with_a_relative_repo_root(
-    tmp_path: Path, monkeypatch
-):
+def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Path, monkeypatch):
     """Review finding: `p.is_absolute()` was the wrong branch condition --
     every `paths` entry callers pass is already prefixed with `repo_root`,
     whether or not `repo_root` itself is absolute. Invoking with a
@@ -1371,9 +1262,7 @@ def _write_export_html(tmp_path: Path, slug: str, date: str, body: str) -> Path:
     return path
 
 
-def _write_export_pptx(
-    tmp_path: Path, slug: str, kind: str, date: str, raw_bytes: bytes
-) -> Path:
+def _write_export_pptx(tmp_path: Path, slug: str, kind: str, date: str, raw_bytes: bytes) -> Path:
     """``kind`` is ``"deck"`` or ``"infographic"`` -- the two PPTX filename
     shapes ``scripts/deck_export.py`` produces (Story 23.4). The content is
     arbitrary bytes, never a real ``.pptx`` zip: nothing in
@@ -1398,12 +1287,8 @@ def test_push_exports_first_push_uses_the_0_sentinel_etag(tmp_path: Path):
     result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
 
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
-    assert result == ExportPushResult(
-        slug="pyforge-warden", pushed=(filename,), skipped=()
-    )
-    assert transport.finalize_plan_calls == [
-        {"project_id": "p-1", "writes": [filename]}
-    ]
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(filename,), skipped=())
+    assert transport.finalize_plan_calls == [{"project_id": "p-1", "writes": [filename]}]
     write_call = transport.write_files_calls[0]
     assert write_call["files"][0]["path"] == filename
     assert write_call["files"][0]["data"] == "<html>v1</html>"
@@ -1431,9 +1316,7 @@ def test_push_exports_skips_a_file_whose_local_hash_is_unchanged(tmp_path: Path)
 
     result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
 
-    assert result == ExportPushResult(
-        slug="pyforge-warden", pushed=(), skipped=(filename,)
-    )
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(), skipped=(filename,))
     assert transport.finalize_plan_calls == []
     assert transport.write_files_calls == []
 
@@ -1442,9 +1325,7 @@ def test_push_exports_pushes_a_changed_file_even_with_a_prior_record(tmp_path: P
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
     _seed_state(tmp_path, "pyforge-warden", etags={f"export:{filename}": "stale-hash"})
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v2</html>")
-    transport = FakePushTransport(
-        plan=PlanHandle(plan_token="tok", base_etags={filename: "E9"})
-    )
+    transport = FakePushTransport(plan=PlanHandle(plan_token="tok", base_etags={filename: "E9"}))
 
     result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
 
@@ -1497,10 +1378,7 @@ def test_discover_export_files_ignores_a_non_dated_stray_file(tmp_path: Path):
     )
 
     assert len(candidates) == 1
-    assert (
-        candidates[0].filename
-        == "pyforge-warden-infographic-standalone-2026-08-07.html"
-    )
+    assert candidates[0].filename == "pyforge-warden-infographic-standalone-2026-08-07.html"
     assert candidates[0].data == "<html>REAL</html>"
 
 
@@ -1534,9 +1412,7 @@ def test_push_exports_conflict_raises_export_conflict_error(tmp_path: Path):
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
     _seed_state(tmp_path, "pyforge-warden")
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
-    transport = FakePushTransport(
-        write_fails={filename: TransportCallError("write_files: etag mismatch")}
-    )
+    transport = FakePushTransport(write_fails={filename: TransportCallError("write_files: etag mismatch")})
 
     with pytest.raises(ExportConflictError, match=filename):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -1548,9 +1424,7 @@ def test_push_exports_conflict_does_not_record_state_for_the_conflicted_file(
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
     _seed_state(tmp_path, "pyforge-warden")
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
-    transport = FakePushTransport(
-        write_fails={filename: TransportCallError("write_files: etag mismatch")}
-    )
+    transport = FakePushTransport(write_fails={filename: TransportCallError("write_files: etag mismatch")})
 
     with pytest.raises(ExportConflictError):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -1559,9 +1433,7 @@ def test_push_exports_conflict_does_not_record_state_for_the_conflicted_file(
     assert f"export:{filename}" not in recorded.etags
 
 
-def test_push_exports_conflict_on_one_file_does_not_abort_the_rest_of_the_batch(
-    tmp_path: Path, monkeypatch
-):
+def test_push_exports_conflict_on_one_file_does_not_abort_the_rest_of_the_batch(tmp_path: Path, monkeypatch):
     """`_discover_export_files` only ever surfaces one candidate today (the
     scope note in `deck_pipeline.py`'s own CAP-5 section), so this test
     exercises the batch-continues-past-a-conflict loop directly by
@@ -1587,9 +1459,7 @@ def test_push_exports_conflict_on_one_file_does_not_abort_the_rest_of_the_batch(
         "_discover_export_files",
         lambda *args, **kwargs: [bad_candidate, ok_candidate],
     )
-    transport = FakePushTransport(
-        write_fails={"bad.pptx": TransportCallError("etag mismatch")}
-    )
+    transport = FakePushTransport(write_fails={"bad.pptx": TransportCallError("etag mismatch")})
 
     with pytest.raises(ExportConflictError, match="bad.pptx"):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -1604,9 +1474,7 @@ def test_push_exports_conflict_on_one_file_does_not_abort_the_rest_of_the_batch(
     assert recorded.etags == {"export:ok.html": "hash-ok"}
 
 
-def test_push_exports_conflict_preserves_an_already_recorded_unrelated_etag(
-    tmp_path: Path, monkeypatch
-):
+def test_push_exports_conflict_preserves_an_already_recorded_unrelated_etag(tmp_path: Path, monkeypatch):
     """A conflict on one file must not disturb ANY other slug etag already
     on record -- including one belonging to a different artifact kind
     entirely (e.g. the prototype's own pull-side etag), proving `push_exports`
@@ -1627,9 +1495,7 @@ def test_push_exports_conflict_preserves_an_already_recorded_unrelated_etag(
         "_discover_export_files",
         lambda *args, **kwargs: [bad_candidate],
     )
-    transport = FakePushTransport(
-        write_fails={"bad.pptx": TransportCallError("etag mismatch")}
-    )
+    transport = FakePushTransport(write_fails={"bad.pptx": TransportCallError("etag mismatch")})
 
     with pytest.raises(ExportConflictError):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -1665,9 +1531,7 @@ def test_discover_export_files_discovers_html_and_both_pptx_kinds(tmp_path: Path
     deck_bytes = b"DECK-BYTES"
     infographic_bytes = b"INFOGRAPHIC-BYTES"
     _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
-    _write_export_pptx(
-        tmp_path, "pyforge-warden", "infographic", "2026-08-07", infographic_bytes
-    )
+    _write_export_pptx(tmp_path, "pyforge-warden", "infographic", "2026-08-07", infographic_bytes)
 
     candidates = deck_pipeline_module._discover_export_files(
         tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
@@ -1734,9 +1598,7 @@ def test_discover_export_files_raises_herald_error_when_html_cannot_be_read(
     (marp_dir / "pyforge-warden-infographic-standalone-2026-08-07.html").mkdir()
 
     with pytest.raises(HeraldError, match="could not read"):
-        deck_pipeline_module._discover_export_files(
-            tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
-        )
+        deck_pipeline_module._discover_export_files(tmp_path / "presentations" / "pyforge-warden", "pyforge-warden")
 
 
 def test_discover_export_files_raises_herald_error_when_pptx_cannot_be_read(
@@ -1747,9 +1609,7 @@ def test_discover_export_files_raises_herald_error_when_pptx_cannot_be_read(
     (pptx_dir / "pyforge-warden-deck-2026-08-07.pptx").mkdir()
 
     with pytest.raises(HeraldError, match="could not read"):
-        deck_pipeline_module._discover_export_files(
-            tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
-        )
+        deck_pipeline_module._discover_export_files(tmp_path / "presentations" / "pyforge-warden", "pyforge-warden")
 
 
 def test_push_exports_pptx_write_uses_base64_encoding(tmp_path: Path):
@@ -1791,9 +1651,7 @@ def test_push_exports_pushes_all_three_artifact_kinds_together(tmp_path: Path):
     deck_bytes = b"DECK-BYTES"
     info_bytes = b"INFOGRAPHIC-BYTES"
     _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
-    _write_export_pptx(
-        tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes
-    )
+    _write_export_pptx(tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes)
     transport = FakePushTransport()
 
     result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
@@ -1805,15 +1663,9 @@ def test_push_exports_pushes_all_three_artifact_kinds_together(tmp_path: Path):
     assert result.skipped == ()
 
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
-    assert recorded.etags[f"export:{html_filename}"] == hashlib.sha256(
-        b"<html>v1</html>"
-    ).hexdigest()
-    assert recorded.etags[f"export:{deck_filename}"] == hashlib.sha256(
-        deck_bytes
-    ).hexdigest()
-    assert recorded.etags[f"export:{info_filename}"] == hashlib.sha256(
-        info_bytes
-    ).hexdigest()
+    assert recorded.etags[f"export:{html_filename}"] == hashlib.sha256(b"<html>v1</html>").hexdigest()
+    assert recorded.etags[f"export:{deck_filename}"] == hashlib.sha256(deck_bytes).hexdigest()
+    assert recorded.etags[f"export:{info_filename}"] == hashlib.sha256(info_bytes).hexdigest()
 
     by_path = {c["files"][0]["path"]: c["files"][0] for c in transport.write_files_calls}
     assert "encoding" not in by_path[html_filename]
@@ -1831,9 +1683,7 @@ def test_push_exports_second_push_with_no_changes_skips_all_three_kinds(
     deck_bytes = b"DECK-BYTES"
     info_bytes = b"INFOGRAPHIC-BYTES"
     _write_export_pptx(tmp_path, "pyforge-warden", "deck", "2026-08-07", deck_bytes)
-    _write_export_pptx(
-        tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes
-    )
+    _write_export_pptx(tmp_path, "pyforge-warden", "infographic", "2026-08-07", info_bytes)
     html_filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
     deck_filename = "pyforge-warden-deck-2026-08-07.pptx"
     info_filename = "pyforge-warden_infographic_deck-2026-08-07.pptx"
@@ -1879,13 +1729,9 @@ def test_push_exports_prove_true_nothing_to_push_makes_no_fetch_call(tmp_path: P
     _seed_state(tmp_path, "pyforge-warden")
     transport = FakePushTransport()
 
-    result = push_exports(
-        transport, slug="pyforge-warden", repo_root=tmp_path, prove=True
-    )
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
 
-    assert result == ExportPushResult(
-        slug="pyforge-warden", pushed=(), skipped=(), proven=()
-    )
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(), skipped=(), proven=())
     assert transport.fetch_rendered_bytes_calls == []
 
 
@@ -1896,13 +1742,9 @@ def test_push_exports_prove_true_skips_an_unchanged_file(tmp_path: Path):
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
     transport = FakePushTransport()
 
-    result = push_exports(
-        transport, slug="pyforge-warden", repo_root=tmp_path, prove=True
-    )
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
 
-    assert result == ExportPushResult(
-        slug="pyforge-warden", pushed=(), skipped=(filename,), proven=()
-    )
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(), skipped=(filename,), proven=())
     assert transport.fetch_rendered_bytes_calls == []
 
 
@@ -1925,19 +1767,12 @@ def test_push_exports_prove_true_all_match_marks_proven_and_appends_ledger_row(
     )
 
     assert result.proven == (filename,)
-    assert transport.fetch_rendered_bytes_calls == [
-        {"project_id": "p-1", "path": filename}
-    ]
+    assert transport.fetch_rendered_bytes_calls == [{"project_id": "p-1", "path": filename}]
     readme_text = readme_path.read_text(encoding="utf-8")
-    assert (
-        "## Ledger — 2026-09-16 push-and-prove (spec-design-sync-loop CAP-6)"
-        in readme_text
-    )
+    assert "## Ledger — 2026-09-16 push-and-prove (spec-design-sync-loop CAP-6)" in readme_text
     assert filename in readme_text
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
-    assert recorded.etags[f"export:{filename}"] == hashlib.sha256(
-        b"<html>v1</html>"
-    ).hexdigest()
+    assert recorded.etags[f"export:{filename}"] == hashlib.sha256(b"<html>v1</html>").hexdigest()
 
 
 def test_push_exports_prove_true_mismatch_raises_and_does_not_update_state_or_ledger(
@@ -2020,9 +1855,7 @@ def test_push_exports_prove_does_not_call_fetch_for_a_conflicted_file(tmp_path: 
     _seed_state(tmp_path, "pyforge-warden")
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
-    transport = FakePushTransport(
-        write_fails={filename: TransportCallError("etag mismatch")}
-    )
+    transport = FakePushTransport(write_fails={filename: TransportCallError("etag mismatch")})
 
     with pytest.raises(ExportConflictError):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
@@ -2043,9 +1876,7 @@ def test_push_exports_prove_true_fetch_failure_is_treated_like_a_mismatch(
     readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
     readme_path.write_text("# Deck\n", encoding="utf-8")
     filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
-    transport = FakePushTransport(
-        fetch_fails={filename: TransportCallError("network blip")}
-    )
+    transport = FakePushTransport(fetch_fails={filename: TransportCallError("network blip")})
 
     with pytest.raises(ReadBackMismatchError, match=filename):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
@@ -2113,16 +1944,12 @@ def test_strip_serve_harness_removes_a_single_injected_style_tag():
     stripped = deck_pipeline_module._strip_serve_harness(content, path="poster.html")
 
     assert b"data-omelette-injected" not in stripped
-    assert (
-        stripped
-        == b"<html><head>\n<title>x</title></head><body>hi</body></html>"
-    )
+    assert stripped == b"<html><head>\n<title>x</title></head><body>hi</body></html>"
 
 
 def test_strip_serve_harness_removes_multiple_contiguous_tags():
     content = (
-        b"<head><style data-omelette-injected>a</style>"
-        b"<script data-omelette-injected>b</script><title>t</title></head>"
+        b"<head><style data-omelette-injected>a</style><script data-omelette-injected>b</script><title>t</title></head>"
     )
 
     stripped = deck_pipeline_module._strip_serve_harness(content, path="x.html")
@@ -2172,9 +1999,7 @@ def test_strip_serve_harness_ignores_a_style_tag_without_the_marker():
 
 def _init_git_repo(root: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=root, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
     subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
     (root / "README.md").write_text("scratch repo\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
@@ -2226,9 +2051,7 @@ def test_select_exporter_returns_pptx_template_exporter_when_potx_declared(
     assert isinstance(exporter, PptxTemplateExporter)
 
 
-def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter(
-    tmp_path: Path, monkeypatch
-):
+def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter(tmp_path: Path, monkeypatch):
     """Regression proof for the 3 call-site swap: with no injected
     ``exporter=``, ``pull_prototype`` must resolve via ``select_exporter``
     (and therefore honor a declared ``.potx`` template) rather than always
@@ -2241,9 +2064,7 @@ def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter
     _init_git_repo(tmp_path)
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "old"})
     transport = FakePullTransport(
-        answers=FileRead(
-            path="PyForge Warden.dc.html", etag="new", body="<html>v2</html>", unchanged=False
-        )
+        answers=FileRead(path="PyForge Warden.dc.html", etag="new", body="<html>v2</html>", unchanged=False)
     )
     calls: list[str] = []
     monkeypatch.setattr(
@@ -2260,14 +2081,10 @@ def test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter
     )
 
     assert calls == ["pyforge-warden"]
-    assert (deck_dir / "project" / "PyForge Warden.dc.html").read_text(
-        encoding="utf-8"
-    ) == "<html>v2</html>"
+    assert (deck_dir / "project" / "PyForge Warden.dc.html").read_text(encoding="utf-8") == "<html>v2</html>"
 
 
-def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_exporter(
-    tmp_path: Path, monkeypatch
-):
+def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_exporter(tmp_path: Path, monkeypatch):
     """Regression proof for the 3 call-site swap (mirrors
     ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
     with no injected ``exporter=``, ``pull_marp_source`` must resolve via
@@ -2282,9 +2099,7 @@ def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_export
     )
     _init_git_repo(tmp_path)
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="new", body="# Deck", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="new", body="# Deck", unchanged=False))
     calls: list[str] = []
     monkeypatch.setattr(
         PptxTemplateExporter,
@@ -2303,9 +2118,7 @@ def test_pull_marp_source_with_no_explicit_exporter_routes_through_select_export
     assert calls == ["pyforge-warden"]
 
 
-def test_pull_standalone_bundle_with_no_explicit_exporter_routes_through_select_exporter(
-    tmp_path: Path, monkeypatch
-):
+def test_pull_standalone_bundle_with_no_explicit_exporter_routes_through_select_exporter(tmp_path: Path, monkeypatch):
     """Regression proof for the 3 call-site swap (mirrors
     ``test_pull_prototype_with_no_explicit_exporter_routes_through_select_exporter``):
     with no injected ``exporter=``, ``pull_standalone_bundle`` must resolve
@@ -2321,11 +2134,7 @@ def test_pull_standalone_bundle_with_no_explicit_exporter_routes_through_select_
     )
     _init_git_repo(tmp_path)
     _seed_state(tmp_path, "pyforge-warden")
-    transport = FakePullTransport(
-        answers=FileRead(
-            path="x", etag="new", body="<html>bundle</html>", unchanged=False
-        )
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="new", body="<html>bundle</html>", unchanged=False))
     calls: list[str] = []
     monkeypatch.setattr(
         PptxTemplateExporter,
@@ -2354,9 +2163,9 @@ def test_pptx_template_exporter_fills_the_template_and_stamps_the_pptx(
     _init_git_repo(tmp_path)
     html_exporter = FakeExporter()
 
-    PptxTemplateExporter(
-        html_exporter=html_exporter, now=lambda: datetime(2026, 9, 16, tzinfo=timezone.utc)
-    ).export(slug="pyforge-warden", repo_root=tmp_path)
+    PptxTemplateExporter(html_exporter=html_exporter, now=lambda: datetime(2026, 9, 16, tzinfo=timezone.utc)).export(
+        slug="pyforge-warden", repo_root=tmp_path
+    )
 
     out_path = deck_dir / "src" / "pptx" / "pyforge-warden-deck-2026-09-16.pptx"
     assert out_path.is_file()
@@ -2378,9 +2187,7 @@ def test_pptx_template_exporter_raises_when_no_potx_registered(tmp_path: Path):
     (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
 
     with pytest.raises(HeraldError, match="no PowerPoint template registered"):
-        PptxTemplateExporter(html_exporter=FakeExporter()).export(
-            slug="pyforge-warden", repo_root=tmp_path
-        )
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(slug="pyforge-warden", repo_root=tmp_path)
 
 
 def test_pptx_template_exporter_raises_naming_the_missing_content_plan(tmp_path: Path):
@@ -2390,15 +2197,11 @@ def test_pptx_template_exporter_raises_naming_the_missing_content_plan(tmp_path:
     template_path = deck_dir / "project" / "deck.pptx"
     template_path.parent.mkdir(parents=True)
     Presentation().save(str(template_path))
-    registry.register_potx_template(
-        deck_dir / "README.md", "presentations/pyforge-warden/project/deck.pptx"
-    )
+    registry.register_potx_template(deck_dir / "README.md", "presentations/pyforge-warden/project/deck.pptx")
 
     content_plan_path = deck_dir / "src" / "content_plan.json"
     with pytest.raises(HeraldError, match=str(content_plan_path)):
-        PptxTemplateExporter(html_exporter=FakeExporter()).export(
-            slug="pyforge-warden", repo_root=tmp_path
-        )
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(slug="pyforge-warden", repo_root=tmp_path)
 
 
 def test_pptx_template_exporter_propagates_a_missing_template_as_pptx_template_error(
@@ -2410,18 +2213,12 @@ def test_pptx_template_exporter_propagates_a_missing_template_as_pptx_template_e
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     deck_dir.mkdir(parents=True)
     (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
-    registry.register_potx_template(
-        deck_dir / "README.md", "presentations/pyforge-warden/project/missing.pptx"
-    )
+    registry.register_potx_template(deck_dir / "README.md", "presentations/pyforge-warden/project/missing.pptx")
     (deck_dir / "src").mkdir(parents=True)
-    (deck_dir / "src" / "content_plan.json").write_text(
-        json.dumps({"slides": []}), encoding="utf-8"
-    )
+    (deck_dir / "src" / "content_plan.json").write_text(json.dumps({"slides": []}), encoding="utf-8")
 
     with pytest.raises(PptxTemplateError):
-        PptxTemplateExporter(html_exporter=FakeExporter()).export(
-            slug="pyforge-warden", repo_root=tmp_path
-        )
+        PptxTemplateExporter(html_exporter=FakeExporter()).export(slug="pyforge-warden", repo_root=tmp_path)
 
 
 def test_pptx_template_exporter_propagates_an_html_exporter_failure(tmp_path: Path):
@@ -2433,14 +2230,10 @@ def test_pptx_template_exporter_propagates_an_html_exporter_failure(tmp_path: Pa
     html_exporter = FakeExporter(fails=HeraldError("deck-export failed"))
 
     with pytest.raises(HeraldError, match="deck-export failed"):
-        PptxTemplateExporter(html_exporter=html_exporter).export(
-            slug="pyforge-warden", repo_root=tmp_path
-        )
+        PptxTemplateExporter(html_exporter=html_exporter).export(slug="pyforge-warden", repo_root=tmp_path)
 
 
-def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_command(
-    monkeypatch, tmp_path: Path
-):
+def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_command(monkeypatch, tmp_path: Path):
     """The one hardcoded invariant this class exists for: its shelled
     ``deck-export`` targets must be exactly ``html``/``infographic-pptx``,
     never ``deck-pptx`` -- that target is what ``PptxTemplateExporter``
@@ -2462,8 +2255,7 @@ def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_comma
     _PixiPartialDeckExporter().export(slug="pyforge-warden", repo_root=tmp_path)
 
     assert calls == [
-        ["pixi", "run", "-e", "local-recipes", "deck-export", "pyforge-warden",
-         "html", "infographic-pptx"]
+        ["pixi", "run", "-e", "pyforge-guild", "deck-export", "pyforge-warden", "html", "infographic-pptx"]
     ]
     assert "deck-pptx" not in calls[0]
 
@@ -2472,26 +2264,16 @@ def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_comma
 
 
 def test_windowed_read_short_circuits_on_unchanged():
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
-    )
-    result = _windowed_read(
-        transport, project_id="p-1", path="x.dc.html", if_none_match="E1"
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E1", body=None, unchanged=True))
+    result = _windowed_read(transport, project_id="p-1", path="x.dc.html", if_none_match="E1")
     assert result.unchanged is True
-    assert transport.calls == [
-        {"project_id": "p-1", "path": "x.dc.html", "if_none_match": "E1"}
-    ]
+    assert transport.calls == [{"project_id": "p-1", "path": "x.dc.html", "if_none_match": "E1"}]
 
 
 def test_windowed_read_single_call_when_the_server_answers_whole():
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E2", body="<html></html>", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E2", body="<html></html>", unchanged=False))
     result = _windowed_read(transport, project_id="p-1", path="x.dc.html")
-    assert result == FileRead(
-        path="x.dc.html", etag="E2", body="<html></html>", unchanged=False
-    )
+    assert result == FileRead(path="x.dc.html", etag="E2", body="<html></html>", unchanged=False)
     assert len(transport.calls) == 1
 
 
@@ -2518,9 +2300,7 @@ def test_windowed_read_self_short_circuits_when_the_server_ignores_if_none_match
             )
         ]
     )
-    result = _windowed_read(
-        transport, project_id="p-1", path="big.dc.html", if_none_match="E1"
-    )
+    result = _windowed_read(transport, project_id="p-1", path="big.dc.html", if_none_match="E1")
     assert result.unchanged is True
     assert result.etag == "E1"
     assert len(transport.calls) == 1  # never asked for a second window
@@ -2606,9 +2386,7 @@ def test_windowed_read_strips_the_truncation_trailer_from_a_non_final_window():
 
 
 def test_windowed_read_refuses_a_changed_answer_with_no_body():
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="E4", body=None, unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="E4", body=None, unchanged=False))
     with pytest.raises(HeraldError, match="returned no body"):
         _windowed_read(transport, project_id="p-1", path="x.dc.html")
 
@@ -2664,9 +2442,7 @@ def test_windowed_read_raises_pagination_stalled_error_on_a_non_advancing_window
             ),
         ]
     )
-    with pytest.raises(
-        PaginationStalledError, match=r"big\.dc\.html.*line 2773.*line 2773"
-    ):
+    with pytest.raises(PaginationStalledError, match=r"big\.dc\.html.*line 2773.*line 2773"):
         _windowed_read(transport, project_id="p-1", path="big.dc.html")
     # Refused after exactly the second (stalled) window -- never asked for
     # a third, and never fell back to looping.
@@ -2700,9 +2476,7 @@ def test_windowed_read_raises_pagination_stalled_error_on_a_regressed_window():
             ),
         ]
     )
-    with pytest.raises(
-        PaginationStalledError, match=r"big\.dc\.html.*line 1000.*line 2773"
-    ):
+    with pytest.raises(PaginationStalledError, match=r"big\.dc\.html.*line 1000.*line 2773"):
         _windowed_read(transport, project_id="p-1", path="big.dc.html")
     assert len(transport.calls) == 2
 
@@ -2748,12 +2522,8 @@ def test_adopt_bootstraps_a_new_twin_and_registers(tmp_path: Path):
             unchanged=False,
         ),
     )
-    assert (dest_dir / "project" / "PyForge Roadmap.dc.html").read_text(
-        encoding="utf-8"
-    ) == "<html>one</html>"
-    assert (dest_dir / "project" / "github.md").read_text(
-        encoding="utf-8"
-    ) == "<html>two</html>"
+    assert (dest_dir / "project" / "PyForge Roadmap.dc.html").read_text(encoding="utf-8") == "<html>one</html>"
+    assert (dest_dir / "project" / "github.md").read_text(encoding="utf-8") == "<html>two</html>"
 
     registered = read_registry(dest_dir / "README.md")
     assert registered.project_name == "PyForge six-quarter roadmap"
@@ -2784,9 +2554,7 @@ def test_adopt_second_call_against_unchanged_content_writes_nothing(tmp_path: Pa
     )
     readme_before = (dest_dir / "README.md").read_text(encoding="utf-8")
 
-    second_transport = FakePullTransport(
-        answers=[FileRead(path="x", etag="E1", body=None, unchanged=True)]
-    )
+    second_transport = FakePullTransport(answers=[FileRead(path="x", etag="E1", body=None, unchanged=True)])
     result = adopt(
         second_transport,
         state_key="six-quarter-roadmap",
@@ -2815,11 +2583,7 @@ def test_adopt_second_call_against_unchanged_content_writes_nothing(tmp_path: Pa
 
 
 def test_adopt_skips_the_registry_for_a_design_system_mirror(tmp_path: Path):
-    transport = FakePullTransport(
-        answers=[
-            FileRead(path="x", etag="E1", body="body { color: red; }", unchanged=False)
-        ]
-    )
+    transport = FakePullTransport(answers=[FileRead(path="x", etag="E1", body="body { color: red; }", unchanged=False)])
     dest_dir = tmp_path / "presentations" / "_design-systems" / "modernist"
 
     result = adopt(
@@ -2852,9 +2616,7 @@ def test_adopt_refuses_an_empty_artifact_list(tmp_path: Path):
 def test_adopt_refuses_a_project_id_mismatch_on_a_later_call(tmp_path: Path):
     dest_dir = tmp_path / "presentations" / "six-quarter-roadmap"
     adopt(
-        FakePullTransport(
-            answers=[FileRead(path="x", etag="E1", body="one", unchanged=False)]
-        ),
+        FakePullTransport(answers=[FileRead(path="x", etag="E1", body="one", unchanged=False)]),
         state_key="six-quarter-roadmap",
         project_id="p-roadmap",
         artifacts=[("a.md", "a.md")],

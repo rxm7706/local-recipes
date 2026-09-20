@@ -229,8 +229,7 @@ class ExportPolicy:
         if self.webhook_url is not None:
             if not isinstance(self.webhook_url, str):
                 raise TypeError(
-                    f"ExportPolicy.webhook_url must be a string or None, got "
-                    f"{type(self.webhook_url).__name__}"
+                    f"ExportPolicy.webhook_url must be a string or None, got {type(self.webhook_url).__name__}"
                 )
             parsed = urlparse(self.webhook_url)
             # `.hostname`, not `.netloc` (Edge Case Hunter): a URL like
@@ -338,8 +337,7 @@ def authorize_export(
 
     log = logger or logging.getLogger(_SECURITY_LOGGER_NAME)
     log.warning(
-        "export refused: identity=%r role=%r is not authorized by this "
-        "export policy",
+        "export refused: identity=%r role=%r is not authorized by this export policy",
         identity,
         role,
     )
@@ -352,9 +350,7 @@ def authorize_export(
     raise ExportUnauthorizedError(f"export refused: role {role!r} is not authorized")
 
 
-def _post_refusal_webhook(
-    policy: ExportPolicy, *, identity: str | None, role: str | None, log: logging.Logger
-) -> None:
+def _post_refusal_webhook(policy: ExportPolicy, *, identity: str | None, role: str | None, log: logging.Logger) -> None:
     """Best-effort, HMAC-signed POST of a minimal refusal event — never raises.
 
     The payload is deliberately minimal: no `allowed_roles` or other policy
@@ -376,9 +372,7 @@ def _post_refusal_webhook(
     try:
         hostname = urlparse(webhook_url).hostname
         assert hostname is not None  # already required by __post_init__
-        if not policy.allow_private_webhook_targets and _webhook_target_is_blocked(
-            hostname
-        ):
+        if not policy.allow_private_webhook_targets and _webhook_target_is_blocked(hostname):
             log.warning(
                 "export-refusal webhook POST to %r refused: %r resolves to "
                 "a loopback/link-local/private/reserved address",
@@ -407,9 +401,7 @@ def _post_refusal_webhook(
         )
         urllib.request.urlopen(request, timeout=_WEBHOOK_TIMEOUT_SECONDS)
     except Exception:
-        log.warning(
-            "export-refusal webhook POST to %r failed", webhook_url, exc_info=True
-        )
+        log.warning("export-refusal webhook POST to %r failed", webhook_url, exc_info=True)
 
 
 def maybe_encrypt_export(path: str | Path, policy: ExportPolicy, *, output: str | Path) -> Path:

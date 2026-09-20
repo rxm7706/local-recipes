@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import chain
@@ -58,7 +59,10 @@ def _write_roster(target: Path) -> None:
                 ],
                 "dream_types": ["dream", "practice"],
                 "spec_statuses_ready_or_beyond": [
-                    "ready", "in-progress", "shipped", "absorbed",
+                    "ready",
+                    "in-progress",
+                    "shipped",
+                    "absorbed",
                 ],
             }
         ),
@@ -96,15 +100,7 @@ def _write_spec(
     status: str = "draft",
     owner_dream: str | None = None,
 ) -> Path:
-    spec_dir = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "specs"
-        / f"spec-{slug}"
-    )
+    spec_dir = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / f"spec-{slug}"
     spec_dir.mkdir(parents=True, exist_ok=True)
     od = owner_dream or f"docs/dreams/{slug}.md"
     (spec_dir / "SPEC.md").write_text(
@@ -181,9 +177,7 @@ def test_missing_title_reports(tmp_path: Path) -> None:
 
 def test_realized_without_realization_log_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="realized", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="realized", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("foo.md", "realized")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "realization-log-missing" for f in findings)
@@ -222,16 +216,12 @@ def test_living_unifying_strategy_has_no_historical_section_finding(
     monkeypatch.chdir(repo)
     findings = chain.gather_dreams_hygiene(repo)
     hist = [f for f in findings if f.check == "historical-section-too-long"]
-    assert not any(
-        f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist
-    )
+    assert not any(f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist)
 
 
 def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="dreamt", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="dreamt", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("foo.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "realization-log-missing" for f in findings)
@@ -241,9 +231,7 @@ def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
 
 def test_readme_table_orphan_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="dreamt", title="Foo", realization_log=False
-    )
+    _write_dream(tmp_path, "foo", status="dreamt", title="Foo", realization_log=False)
     _write_readme(tmp_path, [("missing.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "readme-table-orphan" for f in findings)
@@ -251,9 +239,7 @@ def test_readme_table_orphan_reports(tmp_path: Path) -> None:
 
 def test_readme_table_status_drift_reports(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "foo", status="realized", title="Foo", realization_log=True
-    )
+    _write_dream(tmp_path, "foo", status="realized", title="Foo", realization_log=True)
     _write_readme(tmp_path, [("foo.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert any(f.check == "readme-table-drift" for f in findings)
@@ -304,9 +290,7 @@ def test_cli_dreams_flag_rejected_on_other_source() -> None:
 
 def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "orphan-dream", status="dreamt", title="Orphan", realization_log=False
-    )
+    _write_dream(tmp_path, "orphan-dream", status="dreamt", title="Orphan", realization_log=False)
     _write_readme(tmp_path, [])
     findings = chain.gather_dreams_hygiene(tmp_path)
     hit = [f for f in findings if f.check == "dream-readme-missing"]
@@ -439,7 +423,7 @@ def test_kinship_wikilink_skips_frontmatter_with_a_quoted_dashes_scalar(
                 "status: dreamt",
                 "type: dream",
                 "title: Quoted",
-                'evidence: \'the gate still checks lines[0] == "---" first\'',
+                "evidence: 'the gate still checks lines[0] == \"---\" first'",
                 "note: [[not-a-link]]",
                 "---",
                 "",
@@ -584,12 +568,22 @@ def test_missing_spec_statuses_ready_or_beyond_degrades_to_fallback(
         json.dumps(
             {
                 "stations": [
-                    "herald", "marshal", "atlas", "warden", "mason",
-                    "doctor", "scribe", "steward",
+                    "herald",
+                    "marshal",
+                    "atlas",
+                    "warden",
+                    "mason",
+                    "doctor",
+                    "scribe",
+                    "steward",
                 ],
                 "guild_dreams": ["pyforge-charter"],
                 "dream_statuses": [
-                    "dreamt", "pitched", "specified", "realized", "archived",
+                    "dreamt",
+                    "pitched",
+                    "specified",
+                    "realized",
+                    "archived",
                 ],
                 "dream_types": ["dream", "practice"],
                 # spec_statuses_ready_or_beyond deliberately absent.
@@ -681,15 +675,7 @@ def test_specified_spec_not_ready_via_satellite_title(tmp_path: Path) -> None:
             ("host-dream.md", "realized"),
         ],
     )
-    spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-herald"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-host"
-    )
+    spec_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-herald" / "planning-artifacts" / "specs" / "spec-host"
     spec_dir.mkdir(parents=True, exist_ok=True)
     (spec_dir / "SPEC.md").write_text(
         "\n".join(
@@ -707,10 +693,7 @@ def test_specified_spec_not_ready_via_satellite_title(tmp_path: Path) -> None:
     )
     findings = chain.gather_dreams_hygiene(tmp_path)
     hit = [
-        f
-        for f in findings
-        if f.check == "specified-spec-not-ready"
-        and f.evidence.get("subject") == "satellite-dream"
+        f for f in findings if f.check == "specified-spec-not-ready" and f.evidence.get("subject") == "satellite-dream"
     ]
     assert len(hit) == 1
     assert hit[0].evidence["spec_statuses"] == ["draft"]
@@ -727,15 +710,7 @@ def test_specified_spec_not_ready_via_covers_dreams(tmp_path: Path) -> None:
         realization_log=True,
     )
     _write_readme(tmp_path, [("satellite-dream.md", "specified")])
-    spec_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-herald"
-        / "planning-artifacts"
-        / "specs"
-        / "spec-host"
-    )
+    spec_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-herald" / "planning-artifacts" / "specs" / "spec-host"
     spec_dir.mkdir(parents=True, exist_ok=True)
     (spec_dir / "SPEC.md").write_text(
         "\n".join(
@@ -761,9 +736,7 @@ def test_specified_spec_not_ready_via_covers_dreams(tmp_path: Path) -> None:
 
 def test_kinship_wikilink_resolves_existing_dream(tmp_path: Path) -> None:
     _write_roster(tmp_path)
-    _write_dream(
-        tmp_path, "target", status="dreamt", title="Target", realization_log=False
-    )
+    _write_dream(tmp_path, "target", status="dreamt", title="Target", realization_log=False)
     path = tmp_path / "docs" / "dreams" / "linker.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -782,8 +755,6 @@ def test_kinship_wikilink_resolves_existing_dream(tmp_path: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
-    _write_readme(
-        tmp_path, [("target.md", "dreamt"), ("linker.md", "dreamt")]
-    )
+    _write_readme(tmp_path, [("target.md", "dreamt"), ("linker.md", "dreamt")])
     findings = chain.gather_dreams_hygiene(tmp_path)
     assert not any(f.check == "kinship-wikilink-dead" for f in findings)

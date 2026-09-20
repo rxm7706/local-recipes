@@ -7,7 +7,7 @@ sources:
   - src/platform/config/local_dev/mint.py
   - .github/workflows/platform-ci.yml
   - docs/dreams/platform-dev-boots-local.md
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # Local Platform Development

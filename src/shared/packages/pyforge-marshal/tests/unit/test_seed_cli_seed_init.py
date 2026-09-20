@@ -23,6 +23,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import InternalError, UsageError
 from pyforge.marshal.seed.model.manifest import (
@@ -74,9 +75,7 @@ def _hybrid(entry_id: str, path: str, region_name: str) -> ManifestEntry:
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -208,9 +207,7 @@ def test_agents_and_slug_flags_reach_the_verb(tmp_path, capsys):
     target = tmp_path / "newproj"
     manifest = _manifest(_hybrid("hybrid", "WHOLE.md", "tiers"))
 
-    code = seed_cli.run_init(
-        _args(path=str(target), slug="my-slug", agents="claude,cursor"), manifest=manifest
-    )
+    code = seed_cli.run_init(_args(path=str(target), slug="my-slug", agents="claude,cursor"), manifest=manifest)
 
     assert code == 0
     state = read_state(target)

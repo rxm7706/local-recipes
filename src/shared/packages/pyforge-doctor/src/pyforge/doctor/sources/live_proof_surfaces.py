@@ -91,8 +91,7 @@ __all__ = ("CatalogRow", "gather", "parse_catalog")
 #: new live-proof surface means editing live-proof-surfaces.md, not
 #: hardcoding a second list in the source module").
 _CATALOG_RELATIVE = Path(
-    "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
-    "spec-pyforge-doctor/live-proof-surfaces.md"
+    "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md"
 )
 
 _CHECK = "live-proof-surface"
@@ -156,8 +155,7 @@ def parse_catalog(text: str) -> tuple[CatalogRow, ...]:
             continue
         if len(cells) != _EXPECTED_COLUMNS:
             raise ValueError(
-                f"live-proof-surfaces.md: expected {_EXPECTED_COLUMNS} "
-                f"columns, got {len(cells)}: {stripped!r}"
+                f"live-proof-surfaces.md: expected {_EXPECTED_COLUMNS} columns, got {len(cells)}: {stripped!r}"
             )
         rows.append(
             CatalogRow(
@@ -206,9 +204,7 @@ def _row_match(row: CatalogRow, changed_paths: Sequence[str]) -> tuple[str, ...]
     if not row.surface_globs:
         return ()
     patterns = [_glob_to_re(glob) for glob in row.surface_globs]
-    return tuple(
-        path for path in changed_paths if any(pattern.match(path) for pattern in patterns)
-    )
+    return tuple(path for path in changed_paths if any(pattern.match(path) for pattern in patterns))
 
 
 def _git(target: Path, *args: str) -> str | None:
@@ -218,13 +214,11 @@ def _git(target: Path, *args: str) -> str | None:
     subprocess site)."""
     try:
         return run_git(target, list(args))
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
 
 
-def _changed_paths(
-    target: Path, *, base: str = "origin/main", head: str = "HEAD"
-) -> list[str] | None:
+def _changed_paths(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> list[str] | None:
     """The sorted, de-duplicated list of paths changed between ``base`` and
     ``head``, or ``None`` on any git failure (unresolvable ref, non-repo
     target, ...). Sorted for a deterministic match order -- unlike
@@ -236,9 +230,7 @@ def _changed_paths(
     ``-c core.quotepath=false`` disables git's default quoting/escaping of
     non-ASCII filenames in ``--name-only`` output, same rationale as
     ``frozen_path.py``'s identical flag."""
-    output = _git(
-        target, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}"
-    )
+    output = _git(target, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}")
     if output is None:
         return None
     return sorted({line.strip() for line in output.splitlines() if line.strip()})

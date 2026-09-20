@@ -49,3 +49,16 @@ Type / Effort / Deps: fix / M / —.
 ## Source
 
 Contract recovered from `epics.md` Story 35.1 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `35-1-a-templated-form-merge-subject-is-corroborated-against-the-querying-projects-own-tracked-ledger-not-trusted-from-text-alone: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

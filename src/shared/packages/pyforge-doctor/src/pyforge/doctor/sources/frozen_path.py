@@ -90,7 +90,7 @@ def _git(target: Path, *args: str) -> str | None:
     ``cli_bridge.run_git`` (AD-5: the sole subprocess site)."""
     try:
         return run_git(target, list(args))
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
 
 
@@ -123,16 +123,11 @@ def _load_capabilities(path: Path) -> list[dict]:
     else:
         data = yaml.safe_load(text)
     if not isinstance(data, dict) or not isinstance(data.get("capabilities"), list):
-        raise ValueError(
-            f"{path}: expected a mapping with a 'capabilities' list, got "
-            f"{data!r}"
-        )
+        raise ValueError(f"{path}: expected a mapping with a 'capabilities' list, got {data!r}")
     return data["capabilities"]
 
 
-def _changed_paths(
-    target: Path, *, base: str = "origin/main", head: str = "HEAD"
-) -> set[str] | None:
+def _changed_paths(target: Path, *, base: str = "origin/main", head: str = "HEAD") -> set[str] | None:
     """The set of paths changed between ``base`` and ``head``, or ``None`` on
     any git failure (unresolvable ref, non-repo target, ...).
 
@@ -142,9 +137,7 @@ def _changed_paths(
     only the real unescaped name with this flag) -- without it, a frozen
     path containing a non-ASCII character could never match a real changed
     path, silently missing a genuine violation."""
-    output = _git(
-        target, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}"
-    )
+    output = _git(target, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}")
     if output is None:
         return None
     return {line.strip() for line in output.splitlines() if line.strip()}
@@ -172,12 +165,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 check=_CHECK,
                 status=DoctorStatus.OK,
                 message="no capability ledger found (pre-cutover)",
-                evidence={
-                    "searched": [
-                        str((target / "docs" / "foundry" / name))
-                        for name in _MANIFEST_CANDIDATES
-                    ]
-                },
+                evidence={"searched": [str((target / "docs" / "foundry" / name)) for name in _MANIFEST_CANDIDATES]},
             ),
         )
 
@@ -187,11 +175,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     capabilities = _load_capabilities(manifest_path)
     manifest_evidence = str(manifest_path.relative_to(target))
 
-    frozen_capabilities = [
-        cap
-        for cap in capabilities
-        if isinstance(cap, dict) and cap.get("state") in _FROZEN_STATES
-    ]
+    frozen_capabilities = [cap for cap in capabilities if isinstance(cap, dict) and cap.get("state") in _FROZEN_STATES]
 
     if not frozen_capabilities:
         count = len(capabilities)
@@ -235,10 +219,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             frozen_paths = []
         total_frozen_paths += len(frozen_paths)
         for changed_path in changed:
-            if any(
-                isinstance(prefix, str) and _is_frozen(changed_path, prefix)
-                for prefix in frozen_paths
-            ):
+            if any(isinstance(prefix, str) and _is_frozen(changed_path, prefix) for prefix in frozen_paths):
                 violations.add((name, changed_path))
 
     if not violations:
@@ -268,9 +249,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 source=Source.FROZEN_PATH_CHANGED,
                 check=_CHECK,
                 status=DoctorStatus.FAIL,
-                message=(
-                    f"{name}: change under a frozen path -- {changed_path}"
-                ),
+                message=(f"{name}: change under a frozen path -- {changed_path}"),
                 evidence={
                     "manifest": manifest_evidence,
                     "capability": name,

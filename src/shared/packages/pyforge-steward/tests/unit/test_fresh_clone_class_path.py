@@ -9,8 +9,8 @@ import pytest
 
 from pyforge.steward.cli import EXIT_OK, build_parser, main
 from pyforge.steward.fresh_clone import (
-    FRESH_CLONE_HEADING,
     _IMPROVISED_INSTALLER,
+    FRESH_CLONE_HEADING,
     native_fragments_in_section,
     prove,
 )
@@ -145,8 +145,7 @@ def test_prove_fails_when_playbook_improvises_installer(tmp_path: Path):
     matrix.parent.mkdir(parents=True)
     matrix.write_text("npx bmad-method install\n", encoding="utf-8")
     playbook.write_text(
-        "## Fresh-clone class-path (CAP-3)\n\n"
-        "Drive `new Installer()` from the transcript.\n",
+        "## Fresh-clone class-path (CAP-3)\n\nDrive `new Installer()` from the transcript.\n",
         encoding="utf-8",
     )
     (tmp_path / "pixi.toml").write_text("[workspace]\n", encoding="utf-8")
@@ -187,5 +186,3 @@ def test_cli_prove_class_path_on_live_checkout(capsys):
         "bmad-dashboard",
         "bmad-module-template",
     }
-
-

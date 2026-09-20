@@ -50,9 +50,7 @@ def test_parse_stage_entry_legacy_string():
 
 def test_parse_stage_entry_inline_table():
     parsed = parse_stage_entry({"harness": "gemini", "model": "gemini-3.7-flash"})
-    assert parsed == (
-        StageCandidate(harness="gemini", model="gemini-3.7-flash"),
-    )
+    assert parsed == (StageCandidate(harness="gemini", model="gemini-3.7-flash"),)
 
 
 def test_parse_stage_entry_fallthrough_list():
@@ -76,9 +74,7 @@ def test_policy_accepts_cross_provider_tier_map():
             ],
         }
     }
-    effective, findings = policy.compose(
-        project_slug="acme", project={"model_tier_map": tier_map}, flags={}
-    )
+    effective, findings = policy.compose(project_slug="acme", project={"model_tier_map": tier_map}, flags={})
     assert findings == ()
     assert effective.model_tier_map.value["easy"]["dev"]["harness"] == "gemini"
 
@@ -97,9 +93,7 @@ def test_sort_candidates_prefers_subscription_pool_first():
 
 
 def test_candidate_pool_from_catalog():
-    pool = candidate_pool_from_catalog(
-        _SAMPLE_CATALOG, harness="cursor", model="composer-2.5"
-    )
+    pool = candidate_pool_from_catalog(_SAMPLE_CATALOG, harness="cursor", model="composer-2.5")
     assert pool == "cursor-ultra"
 
 
@@ -255,7 +249,5 @@ def test_dispatch_fallback_uses_medium_tier():
         model_tier_map={"medium": {"dev": "sonnet-5"}},
         harness_preference=["claude"],
     )
-    resolution = resolve_tier_launch(
-        effective, "unknown", allow_unmapped_fallback=True
-    )
+    resolution = resolve_tier_launch(effective, "unknown", allow_unmapped_fallback=True)
     assert resolution.resolved_models["dev"] == "sonnet-5"

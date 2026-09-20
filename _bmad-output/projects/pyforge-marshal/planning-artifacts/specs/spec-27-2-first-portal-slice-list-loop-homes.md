@@ -2,7 +2,7 @@
 title: First portal slice — list loop homes
 type: feature
 created: '2026-08-25'
-status: shipped
+status: done
 updated: '2026-08-26'
 baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 context:
@@ -63,7 +63,8 @@ Self-review (build-auto reviewers not spawned — parent Wave B agent): ACs hold
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+Reconciled 2026-09-20: the `in-review` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `1e845b55fc 2026-09-16 land marshal fold (CAP-8 pilot): one chain — 32 Dreams, 55 Specs, rekey 2026-09-16` — that promotion is the ruling this record now reflects.
 baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 Verification: marshal meta 7 passed; platform portal tests 7 passed (plus empty-homes case added)
 
@@ -72,3 +73,8 @@ Verification: marshal meta 7 passed; platform portal tests 7 passed (plus empty-
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `27-2-first-portal-slice-list-loop-homes: done`).
+- Auto Run Result `Status: in-review` → `done` (see the reconcile line under it).

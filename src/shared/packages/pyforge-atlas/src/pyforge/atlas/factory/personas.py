@@ -61,8 +61,7 @@ class Persona(BaseModel):
         unknown = tuple(t for t in self.tools if t not in FACTORY_TOOLS)
         if unknown:
             raise ValueError(
-                f"persona {self.name!r} governs unknown tool(s) {unknown}; "
-                f"expected a subset of {FACTORY_TOOLS}"
+                f"persona {self.name!r} governs unknown tool(s) {unknown}; expected a subset of {FACTORY_TOOLS}"
             )
 
 
@@ -78,9 +77,7 @@ DEFAULT_PERSONAS: dict[str, Persona] = {
     "Compiler": _persona("Compiler", "Architect", "compiled", ("markdown_generator",)),
     "Linker": _persona("Linker", "Developer", "compiled", ("markdown_generator",)),
     "Linter": _persona("Linter", "QA/Reviewer", "compiled", ("search_ops",)),
-    "Oracle": _persona(
-        "Oracle", "Product Owner", "outputs", ("lasuite_client", "markdown_generator")
-    ),
+    "Oracle": _persona("Oracle", "Product Owner", "outputs", ("lasuite_client", "markdown_generator")),
 }
 
 #: The immutable set of persona names (§ 2.2). An overlay may not stray outside it.
@@ -100,9 +97,7 @@ def resolve_personas(
 
     Returns a fresh ``{name: Persona}`` dict; :data:`DEFAULT_PERSONAS` is never mutated.
     """
-    merged: dict[str, dict[str, Any]] = {
-        name: p.model_dump() for name, p in DEFAULT_PERSONAS.items()
-    }
+    merged: dict[str, dict[str, Any]] = {name: p.model_dump() for name, p in DEFAULT_PERSONAS.items()}
     for layer in overlays:
         for name, overrides in layer.items():
             if name not in merged:

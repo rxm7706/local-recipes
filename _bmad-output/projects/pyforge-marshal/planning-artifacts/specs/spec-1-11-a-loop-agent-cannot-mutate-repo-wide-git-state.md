@@ -49,3 +49,16 @@ Type / Effort / Deps: feature / S / S-1.6.
 ## Source
 
 Contract recovered from `epics.md` Story 1.11 (Intent + ACs) so `marshal factory dispatch` can resolve `spec-<ledger-key>.md` (MRS-DISP-005). No new story minted.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9784448e3c` (2026-08-09, "marshal 1.11: a loop agent cannot mutate repo-wide git state"). Ledger row `1-11-a-loop-agent-cannot-mutate-repo-wide-git-state: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_init.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -2,7 +2,7 @@
 title: '59.1: The Spec ladder is declared and the Charter states the rule'
 type: 'docs'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -45,3 +45,17 @@ Parent Spec capability: `spec-vocabulary-one-name-one-job CAP-1`.
 Surface: docs/governance/; docs/dreams/pyforge-charter.md. docs/dreams/README.md stays the Dream ladder only..
 Ledger key: `59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule.md`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `6542fd59c2` (2026-09-18, "Merge pull request #1435 from rxm7706/dispatch/pyforge-steward/59.1"). Ledger row `59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `docs/dreams/pyforge-charter.md`, `docs/governance/guild-roster.json`, `tests/scripts/test_spec_ladder_is_declared.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `59-1-the-spec-ladder-is-declared-and-the-charter-states-the-rule: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

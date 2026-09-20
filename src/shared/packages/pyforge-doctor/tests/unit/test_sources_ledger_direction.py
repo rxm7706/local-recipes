@@ -49,14 +49,7 @@ def _init_repo(repo: Path) -> None:
 
 
 def _write_ledger(repo: Path, project: str, statuses: dict[str, str]) -> Path:
-    ledger_path = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = repo / "_bmad-output" / "projects" / project / "planning-artifacts" / "sprint-status-ledger.yaml"
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["development_status:"]
     lines.extend(f"  {key}: {value}" for key, value in statuses.items())
@@ -72,19 +65,10 @@ def _commit(repo: Path, message: str, *, allow_empty: bool = False) -> None:
     _git(repo, *args)
 
 
-def _write_rekey(
-    repo: Path, project: str, text: str, name: str = "rekey-2026-09-17.md"
-) -> Path:
+def _write_rekey(repo: Path, project: str, text: str, name: str = "rekey-2026-09-17.md") -> Path:
     """A fold PR's re-key map -- same shape ``sources/ledger.py``'s
     ``gather()`` already reads (doctor Story 25.3)."""
-    p = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / name
-    )
+    p = repo / "_bmad-output" / "projects" / project / "planning-artifacts" / name
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text, encoding="utf-8")
     return p
@@ -93,14 +77,9 @@ def _write_rekey(
 def _write_policy(repo: Path, project: str, merge_subject_template: str) -> None:
     """A minimal ``marshal-policy.toml`` declaring only the one key this
     module reads -- Story 27.1's per-station template read."""
-    policy_path = (
-        repo / "_bmad-output" / "projects" / project
-        / "planning-artifacts" / "marshal-policy.toml"
-    )
+    policy_path = repo / "_bmad-output" / "projects" / project / "planning-artifacts" / "marshal-policy.toml"
     policy_path.parent.mkdir(parents=True, exist_ok=True)
-    policy_path.write_text(
-        f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8"
-    )
+    policy_path.write_text(f'merge_subject_template = "{merge_subject_template}"\n', encoding="utf-8")
 
 
 def test_landed_but_unpromoted_is_fail(tmp_path: Path) -> None:
@@ -233,14 +212,7 @@ def test_never_reads_tier3_feed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_ledger(repo, "pyforge-marshal", {"1-1-demo": "done"})
-    feed = (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / "pyforge-marshal"
-        / "implementation-artifacts"
-        / "sprint-status.yaml"
-    )
+    feed = repo / "_bmad-output" / "projects" / "pyforge-marshal" / "implementation-artifacts" / "sprint-status.yaml"
     feed.parent.mkdir(parents=True, exist_ok=True)
     feed.write_text("development_status:\n  1-1-demo: done\n", encoding="utf-8")
     _commit(repo, "seed")
@@ -576,8 +548,7 @@ def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
     _commit(repo, "seed ledger with rekey map")
     _commit(
         repo,
-        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
-        "loop/pyforge-atlas (bmad-loop)",
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
         allow_empty=True,
     )
 
@@ -615,8 +586,7 @@ def test_chained_rekey_maps_resolve_to_current_key(tmp_path: Path) -> None:
     _commit(repo, "seed ledger with two chained rekey maps")
     _commit(
         repo,
-        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
-        "loop/pyforge-atlas (bmad-loop)",
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
         allow_empty=True,
     )
 
@@ -639,8 +609,7 @@ def test_without_rekey_map_old_key_reads_as_unpromoted(tmp_path: Path) -> None:
     _commit(repo, "seed ledger without rekey map")
     _commit(
         repo,
-        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into "
-        "loop/pyforge-atlas (bmad-loop)",
+        "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
         allow_empty=True,
     )
 

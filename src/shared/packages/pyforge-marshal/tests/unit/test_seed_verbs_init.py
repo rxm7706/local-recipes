@@ -66,6 +66,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.detect.inventory import (
     classify,
@@ -109,9 +110,7 @@ def _manifest(*entries: ManifestEntry, model_version: ModelVersion = _VERSION) -
     return Manifest(model_version=model_version, never_write=(), entries=tuple(entries))
 
 
-def _copied_managed(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _copied_managed(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.COPIED_MANAGED,
@@ -121,9 +120,7 @@ def _copied_managed(
     )
 
 
-def _generated_derived(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _generated_derived(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.GENERATED_DERIVED,
@@ -133,9 +130,7 @@ def _generated_derived(
     )
 
 
-def _copied_seeded(
-    entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _copied_seeded(entry_id: str, path: str, *, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.COPIED_SEEDED,
@@ -145,9 +140,7 @@ def _copied_seeded(
     )
 
 
-def _hybrid(
-    entry_id: str, path: str, *region_names: str, applies_to: AppliesTo = AppliesTo.BOTH
-) -> ManifestEntry:
+def _hybrid(entry_id: str, path: str, *region_names: str, applies_to: AppliesTo = AppliesTo.BOTH) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
@@ -163,9 +156,7 @@ def _hybrid(
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return result
 
@@ -261,9 +252,7 @@ def test_init_into_nonexistent_target_bootstraps_and_materializes_everything(fre
 
 
 def test_init_default_slug_is_the_resolved_directory_basename(fresh_target):
-    manifest = _manifest(
-        _copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT)
-    )
+    manifest = _manifest(_copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
 
     result = run_init(fresh_target, manifest, commit=_fake_commit(manifest, fresh_target))
 
@@ -272,13 +261,9 @@ def test_init_default_slug_is_the_resolved_directory_basename(fresh_target):
 
 
 def test_init_explicit_slug_overrides_the_directory_basename(fresh_target):
-    manifest = _manifest(
-        _copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT)
-    )
+    manifest = _manifest(_copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
 
-    result = run_init(
-        fresh_target, manifest, slug="pyforge-scribe", commit=_fake_commit(manifest, fresh_target)
-    )
+    result = run_init(fresh_target, manifest, slug="pyforge-scribe", commit=_fake_commit(manifest, fresh_target))
 
     assert result.slug == "pyforge-scribe"
     assert (fresh_target / "docs" / "dreams" / "pyforge-scribe.md").is_file()
@@ -383,9 +368,7 @@ def test_applies_to_adopt_only_entries_are_excluded_from_the_init_plan(fresh_tar
 
 
 def test_applies_to_init_only_entries_are_included(fresh_target):
-    manifest = _manifest(
-        _copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT)
-    )
+    manifest = _manifest(_copied_seeded("starter-dream", "docs/dreams/{{ slug }}.md", applies_to=AppliesTo.INIT))
 
     result = run_init(fresh_target, manifest, slug="myproj", commit=_fake_commit(manifest, fresh_target))
 
@@ -422,9 +405,7 @@ def test_manifest_for_init_filters_and_resolves_every_slug_placeholder():
 def test_agents_are_recorded_with_no_union_needed_on_a_fresh_init(fresh_target):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
 
-    run_init(
-        fresh_target, manifest, agents=("claude", "cursor"), commit=_fake_commit(manifest, fresh_target)
-    )
+    run_init(fresh_target, manifest, agents=("claude", "cursor"), commit=_fake_commit(manifest, fresh_target))
 
     state = read_state(fresh_target)
     assert state.agents == ("claude", "cursor")
@@ -651,9 +632,7 @@ def test_default_commit_materializes_a_whole_file_entry_via_a_custom_template(fr
     none of the packaged manifest's own `never_write` patterns (unlike
     `docs/dreams/*.md` -- see `verbs/init.py`'s own module docstring)."""
     template_root = Path(tempfile.mkdtemp())
-    (template_root / ".bmad-config.user.toml.jinja").write_text(
-        '[project]\nslug = "{{ slug }}"\n', encoding="utf-8"
-    )
+    (template_root / ".bmad-config.user.toml.jinja").write_text('[project]\nslug = "{{ slug }}"\n', encoding="utf-8")
     manifest = _manifest(_copied_managed("cfg", ".bmad-config.user.toml"))
 
     result = run_init(fresh_target, manifest, slug="pyforge-scribe", template_path=template_root)
@@ -678,9 +657,7 @@ def test_default_commit_materializes_a_hybrid_region_via_the_real_packaged_fragm
     # dirty worktree; see `verbs/init.py`'s own module docstring.
     fresh_target.mkdir(parents=True)
     _init_git_repo(fresh_target)
-    (fresh_target / "CLAUDE.md").write_text(
-        "# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8"
-    )
+    (fresh_target / "CLAUDE.md").write_text("# My project\n\nSome existing repo-specific guidance.\n", encoding="utf-8")
     _commit_all(fresh_target)
     manifest = _manifest(
         ManifestEntry(
@@ -749,9 +726,7 @@ def test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all(fresh_ta
                 )
             elif entry.id == "projects-index":
                 target.write_text(
-                    "# Projects\n\n"
-                    "| Slug | Status |\n|---|---|\n"
-                    "| pyforge-scribe | active |\n",
+                    "# Projects\n\n| Slug | Status |\n|---|---|\n| pyforge-scribe | active |\n",
                     encoding="utf-8",
                 )
             else:
@@ -902,9 +877,7 @@ def test_writable_exemption_no_longer_refuses_against_the_real_packaged_manifest
 
     # Previously: raised `PreconditionFailure` (`never-write-target`)
     # unconditionally here -- the spec's own confirmed-live regression.
-    check_preconditions(
-        plan, repo_root=tmp_path, never_write=never_write, managed=(), force=False, dry_run=False
-    )
+    check_preconditions(plan, repo_root=tmp_path, never_write=never_write, managed=(), force=False, dry_run=False)
 
     action = plan.actions[0]
     target = tmp_path / action.target_path
@@ -949,14 +922,10 @@ def test_run_init_end_to_end_against_the_real_packaged_manifest(tmp_path, real_m
         entries=tuple(entry for entry in real_manifest.entries if not entry.path.endswith("/")),
     )
 
-    result = run_init(
-        tmp_path, filtered_manifest, slug="test", commit=_fake_commit(filtered_manifest, tmp_path)
-    )
+    result = run_init(tmp_path, filtered_manifest, slug="test", commit=_fake_commit(filtered_manifest, tmp_path))
 
     applied_ids = set(result.applied)
     assert "dreams-readme" in applied_ids
     assert "specs-readme" in applied_ids
     assert (tmp_path / "docs" / "dreams" / "README.md").is_file()
-    assert (
-        tmp_path / "_bmad-output" / "projects" / "test" / "planning-artifacts" / "specs" / "README.md"
-    ).is_file()
+    assert (tmp_path / "_bmad-output" / "projects" / "test" / "planning-artifacts" / "specs" / "README.md").is_file()

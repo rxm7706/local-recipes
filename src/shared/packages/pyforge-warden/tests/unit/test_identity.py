@@ -11,7 +11,6 @@ from pyforge.warden.extract._identity import (
 )
 from pyforge.warden.models import WithholdReason
 
-
 # --- exact pins -----------------------------------------------------------
 
 
@@ -222,9 +221,7 @@ def test_strict_loader_accepts_anchor_definitions_and_normal_documents():
 
     # An anchor DEFINITION with no alias use is harmless.
     assert yaml_safe_load_strict("a: &x 1\nb: 2\n") == {"a": 1, "b": 2}
-    assert yaml_safe_load_strict("requirements:\n  run:\n    - python\n") == {
-        "requirements": {"run": ["python"]}
-    }
+    assert yaml_safe_load_strict("requirements:\n  run:\n    - python\n") == {"requirements": {"run": ["python"]}}
 
 
 # --- CRLF normalization (fixed 2026-07-17) ----------------------------------
@@ -244,9 +241,7 @@ def test_read_bounded_text_normalizes_crlf_line_endings(tmp_path):
     manifest_path.write_bytes(b"package:\r\n  name: foo\r\n  version: 1.0\r\n")
     manifest = ScannedManifest(path="meta.yaml", kind="meta-yaml")
 
-    text = read_bounded_text(
-        manifest_path, manifest, max_bytes=1_000_000, max_line_bytes=8_192
-    )
+    text = read_bounded_text(manifest_path, manifest, max_bytes=1_000_000, max_line_bytes=8_192)
 
     assert "\r" not in text
     assert text == "package:\n  name: foo\n  version: 1.0\n"

@@ -27,11 +27,7 @@ _FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 
 
 def _schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "report-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "report-schema.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
@@ -65,9 +61,7 @@ def test_valid_finding_constructs():
 
 
 def test_finding_accepts_raw_string_source_and_status():
-    finding = Finding(
-        source="warden-doctor", check="x", status="ok", message="m", evidence={}
-    )
+    finding = Finding(source="warden-doctor", check="x", status="ok", message="m", evidence={})
     assert finding.source is Source.WARDEN_DOCTOR
     assert finding.status is DoctorStatus.OK
 
@@ -219,7 +213,8 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "chain-sprawl",
         "fr-without-cap",
         # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md vs the four
-        # Diátaxis quadrants -- missing link FAIL, unmapped page WARN.
+        # Diátaxis quadrants -- missing link FAIL, unmapped page FAIL
+        # (promoted from WARN by Story 30.2).
         "docs-map-hygiene",
         # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): leftover-
         # shelf path occupancy vs the docs/MAP.md allow-list.
@@ -228,6 +223,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # catalogued in live-proof-surfaces.md gets an advisory finding
         # naming it, matched via the catalog's own Surface globs column.
         "live-proof-surface",
+        # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its
+        # render (docs/MAP.md), authored-page staleness, skill-dir hygiene.
+        "docs-currency",
     }
 
 
@@ -332,9 +330,7 @@ def test_prescription_safe_upgrade_fields_round_trip():
     )
     document = prescription.to_json_dict()
     assert document["safe_upgrade_target"] == "2.1.0"
-    assert document["safe_upgrade_reason"] == (
-        "patch version bump, no known breaking-change signal"
-    )
+    assert document["safe_upgrade_reason"] == ("patch version bump, no known breaking-change signal")
 
 
 # --- DoctorReport: verb/prescriptions coherence ----------------------------
@@ -474,9 +470,7 @@ def test_sample_report_with_finding_fixture_validates_against_composed_schema():
     against the packaged schema COMPOSED with the shared base envelope
     schema -- proving the composed schema still admits every payload that
     validated against the station schema alone."""
-    jsonschema.validate(
-        _fixture("sample_report_with_finding.json"), compose(BASE_ENVELOPE_SCHEMA, _schema())
-    )
+    jsonschema.validate(_fixture("sample_report_with_finding.json"), compose(BASE_ENVELOPE_SCHEMA, _schema()))
 
 
 def test_check_report_json_dict_validates_against_schema():
@@ -541,9 +535,7 @@ def test_schema_source_enum_matches_the_source_taxonomy_exactly():
     (schema ⊆ enum) would still have passed while marshal-durability was missing,
     which is exactly the direction that broke.
     """
-    schema_sources = set(
-        _schema()["$defs"]["finding"]["properties"]["source"]["enum"]
-    )
+    schema_sources = set(_schema()["$defs"]["finding"]["properties"]["source"]["enum"])
     taxonomy = {member.value for member in Source}
     assert schema_sources == taxonomy, (
         "schema `source` enum and models.Source disagree — "

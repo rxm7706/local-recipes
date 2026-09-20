@@ -96,7 +96,7 @@ def _combined_output(result) -> str:
     text = result.output
     try:
         text += result.stderr
-    except (ValueError, AttributeError):
+    except ValueError, AttributeError:
         pass
     return text
 
@@ -132,24 +132,18 @@ def test_capture_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert "ADR-005b" in written[0].read_text(encoding="utf-8")
 
 
-def test_capture_invalid_type_writes_nothing_and_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_invalid_type_writes_nothing_and_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
-    result = runner.invoke(
-        app, ["capture", "--type", "decision", "--text", "some text"]
-    )
+    result = runner.invoke(app, ["capture", "--type", "decision", "--text", "some text"])
 
     assert result.exit_code == 2
     for capture_type in ("feedback", "project", "reference"):
         assert list((tmp_path / ".claude" / "memory" / capture_type).glob("*.md")) == []
 
 
-def test_capture_missing_text_writes_nothing_and_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_missing_text_writes_nothing_and_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
@@ -159,9 +153,7 @@ def test_capture_missing_text_writes_nothing_and_exits_2(
     assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
 
 
-def test_capture_blank_text_writes_nothing_and_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_blank_text_writes_nothing_and_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
@@ -171,9 +163,7 @@ def test_capture_blank_text_writes_nothing_and_exits_2(
     assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
 
 
-def test_capture_slug_collision_writes_second_distinct_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_slug_collision_writes_second_distinct_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
@@ -211,9 +201,7 @@ def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
         "I prefer that contributors run the full test suite before opening a PR.\n",
     )
 
-    result = runner.invoke(
-        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
-    )
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)], input="y\n")
 
     assert result.exit_code == 0
     written = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
@@ -227,15 +215,11 @@ def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
     assert "run-tests-first" in output
     assert "pointer-stub:" in output
 
-    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(
-        encoding="utf-8"
-    )
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
     assert "run-tests-first" in memory_md
 
     # Source is rewritten to a pointer stub (Story 1.4, FR-5), not left untouched.
-    source_content = (source_root / "feedback_run_tests_first.md").read_text(
-        encoding="utf-8"
-    )
+    source_content = (source_root / "feedback_run_tests_first.md").read_text(encoding="utf-8")
     assert "promoted: true" in source_content
     assert "I prefer that contributors run the full test suite" not in source_content
     assert ".claude/memory/feedback/run-tests-first.md" in source_content
@@ -255,13 +239,9 @@ def test_capture_promote_reinvocation_after_confirm_reports_nothing_to_promote(
         "Run the full test suite before opening a PR.\n",
     )
 
-    first = runner.invoke(
-        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
-    )
+    first = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)], input="y\n")
     assert first.exit_code == 0
-    written_after_first = list(
-        (tmp_path / ".claude" / "memory" / "feedback").glob("*.md")
-    )
+    written_after_first = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
     assert len(written_after_first) == 1
 
     # Re-invocation: no input needed -- if the code still called
@@ -270,15 +250,11 @@ def test_capture_promote_reinvocation_after_confirm_reports_nothing_to_promote(
 
     assert second.exit_code == 0
     assert "Nothing to promote" in _combined_output(second)
-    written_after_second = list(
-        (tmp_path / ".claude" / "memory" / "feedback").glob("*.md")
-    )
+    written_after_second = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
     assert written_after_second == written_after_first
 
 
-def test_capture_promote_confirm_no_writes_nothing_and_exits_0(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_promote_confirm_no_writes_nothing_and_exits_0(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
     source_root = tmp_path / "source"
@@ -290,9 +266,7 @@ def test_capture_promote_confirm_no_writes_nothing_and_exits_0(
         "Run the full test suite before opening a PR.\n",
     )
 
-    result = runner.invoke(
-        app, ["capture", "--promote", "--source", str(source_root)], input="n\n"
-    )
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)], input="n\n")
 
     assert result.exit_code == 0
     assert "Cancelled" in _combined_output(result)
@@ -315,8 +289,7 @@ def test_capture_promote_mixed_classifications_only_writes_team_relevant(
     _scaffold_source_entry(
         source_root,
         "feedback_tone.md",
-        "---\nname: tone\ndescription: Keep responses terse.\ntype: feedback\n---\n"
-        "Personal tone preference.\n",
+        "---\nname: tone\ndescription: Keep responses terse.\ntype: feedback\n---\nPersonal tone preference.\n",
     )
     _scaffold_source_entry(
         source_root,
@@ -331,9 +304,7 @@ def test_capture_promote_mixed_classifications_only_writes_team_relevant(
         "See `src/pyforge/scribe/nope.py` for details.\n",
     )
 
-    result = runner.invoke(
-        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
-    )
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)], input="y\n")
 
     assert result.exit_code == 0
     written = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
@@ -368,9 +339,7 @@ def test_capture_promote_missing_source_dir_writes_nothing_and_exits_2(
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
-    result = runner.invoke(
-        app, ["capture", "--promote", "--source", str(tmp_path / "does-not-exist")]
-    )
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(tmp_path / "does-not-exist")])
 
     assert result.exit_code == 2
     for capture_type in ("feedback", "project", "reference"):
@@ -392,9 +361,7 @@ def test_capture_promote_mutually_exclusive_with_type_and_text_exits_2(
     assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
 
 
-def _assistant_transcript_line(
-    text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z"
-) -> str:
+def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z") -> str:
     entry = {
         "type": "assistant",
         "timestamp": timestamp,
@@ -403,9 +370,7 @@ def _assistant_transcript_line(
     return json.dumps(entry)
 
 
-def _scaffold_transcript_entry(
-    transcript_root: Path, filename: str, lines: list[str]
-) -> Path:
+def _scaffold_transcript_entry(transcript_root: Path, filename: str, lines: list[str]) -> Path:
     path = transcript_root / filename
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
@@ -425,9 +390,7 @@ def test_capture_transcripts_confirm_yes_writes_file_and_prints_proposal(
     )
     original_bytes = source_path.read_bytes()
 
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n")
 
     assert result.exit_code == 0
     written = list((tmp_path / ".claude" / "memory" / "project").glob("*.md"))
@@ -439,9 +402,7 @@ def test_capture_transcripts_confirm_yes_writes_file_and_prints_proposal(
     assert "session-a.jsonl:L1" in output
     assert "captured:" in output
 
-    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(
-        encoding="utf-8"
-    )
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
     assert "SQLite" in memory_md
 
     # No pointer-stub write-back (unlike --promote): the source transcript
@@ -463,9 +424,7 @@ def test_capture_transcripts_confirm_no_writes_nothing_and_exits_0(
         [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
     )
 
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="n\n"
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="n\n")
 
     assert result.exit_code == 0
     assert "Cancelled" in _combined_output(result)
@@ -487,9 +446,7 @@ def test_capture_transcripts_nothing_to_promote_skips_confirm_prompt(
 
     # No input provided -- if the code incorrectly still called typer.confirm()
     # for an empty proposal, CliRunner would raise/abort for lack of stdin.
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(transcript_root)]
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)])
 
     assert result.exit_code == 0
     assert "Nothing to promote" in _combined_output(result)
@@ -501,9 +458,7 @@ def test_capture_transcripts_missing_source_dir_writes_nothing_and_exits_2(
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(tmp_path / "does-not-exist")]
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(tmp_path / "does-not-exist")])
 
     assert result.exit_code == 2
     for capture_type in ("feedback", "project", "reference"):
@@ -552,13 +507,9 @@ def test_capture_transcripts_confirm_yes_writes_full_sentence_at_truncation_boun
         "during peak load testing."
     )
     assert len(long_sentence) > 120
-    _scaffold_transcript_entry(
-        transcript_root, "session-a.jsonl", [_assistant_transcript_line(long_sentence)]
-    )
+    _scaffold_transcript_entry(transcript_root, "session-a.jsonl", [_assistant_transcript_line(long_sentence)])
 
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n")
 
     assert result.exit_code == 0
     written = list((tmp_path / ".claude" / "memory" / "project").glob("*.md"))
@@ -591,17 +542,13 @@ def test_capture_transcripts_confirm_yes_capture_failure_exits_2_cleanly(
 
     monkeypatch.setattr(cli_module, "capture_write", _boom)
 
-    result = runner.invoke(
-        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
-    )
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n")
 
     assert result.exit_code == 2
     assert "simulated capture failure" in _combined_output(result)
 
 
-def test_graph_compile_missing_memory_root_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_graph_compile_missing_memory_root_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(app, ["graph", "compile", "--nightly"])
@@ -629,9 +576,7 @@ def test_graph_compile_happy_path_is_unattended_and_reports_node_count(
     assert (tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json").is_file()
 
 
-def test_graph_compile_overlapping_run_skips_with_exit_0(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_graph_compile_overlapping_run_skips_with_exit_0(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 3.3: an overlapping cron firing (or a manual run while the
     nightly is still going) must be a clean exit-0 skip -- never a
     corrupted double-write, never red cron mail."""
@@ -660,9 +605,7 @@ def test_recall_no_compiled_graph_yet_reports_no_grounded_answer(
     assert not (tmp_path / ".claude").exists()
 
 
-def test_recall_after_compile_returns_grounded_cited_answer(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_recall_after_compile_returns_grounded_cited_answer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
     (tmp_path / ".claude" / "memory" / "project" / "kuzu-drop.md").write_text(
@@ -698,9 +641,7 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
         "session-a.jsonl",
         [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
     )
-    monkeypatch.setattr(
-        "pyforge.scribe.compile.default_transcript_root", lambda: transcript_root
-    )
+    monkeypatch.setattr("pyforge.scribe.compile.default_transcript_root", lambda: transcript_root)
 
     compile_result = runner.invoke(app, ["graph", "compile", "--nightly"])
 
@@ -722,9 +663,7 @@ def test_recall_unknown_kind_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert "unknown recall kind" in _combined_output(result)
 
 
-def test_recall_mode_and_kind_together_exit_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_recall_mode_and_kind_together_exit_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, ["recall", "why", "--mode", "planning", "--kind", "doc"])
     assert result.exit_code == 2
@@ -741,9 +680,7 @@ def test_recall_unknown_mode_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyP
 # --- Story 6.1: `scribe index build|report|move-list` -----------------------
 
 
-def test_index_build_missing_target_reports_zero_and_exits_0(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_build_missing_target_reports_zero_and_exits_0(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(app, ["index", "build"])
@@ -752,9 +689,7 @@ def test_index_build_missing_target_reports_zero_and_exits_0(
     assert "indexed 0 code node(s)" in _combined_output(result)
 
 
-def test_index_build_happy_path_writes_nodes_through_the_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_build_happy_path_writes_nodes_through_the_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
@@ -766,9 +701,7 @@ def test_index_build_happy_path_writes_nodes_through_the_store(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     result = runner.invoke(app, ["index", "build"])
 
@@ -780,9 +713,7 @@ def test_index_build_happy_path_writes_nodes_through_the_store(
     assert "code:python:example" in document["nodes"]
 
 
-def test_index_build_graphify_unavailable_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_build_graphify_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     try:
         import graphify  # noqa: F401
     except ImportError:
@@ -799,9 +730,7 @@ def test_index_build_graphify_unavailable_exits_2(
     assert result.exit_code == 2
 
 
-def test_index_report_writes_derived_gitignored_artifact(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_report_writes_derived_gitignored_artifact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
@@ -823,9 +752,7 @@ def test_index_report_writes_derived_gitignored_artifact(
     assert "A (degree=3)" in text
 
 
-def test_index_report_missing_target_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_report_missing_target_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(app, ["index", "report"])
@@ -833,15 +760,11 @@ def test_index_report_missing_target_exits_2(
     assert result.exit_code == 2
 
 
-def test_index_move_list_writes_json_with_findings(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_move_list_writes_json_with_findings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     src = tmp_path / "src" / "platform" / "app.py"
     src.parent.mkdir(parents=True)
-    src.write_text(
-        "import pyforge.scribe\nimport sys\nsys.path.insert(0, 'x')\n", encoding="utf-8"
-    )
+    src.write_text("import pyforge.scribe\nimport sys\nsys.path.insert(0, 'x')\n", encoding="utf-8")
 
     result = runner.invoke(app, ["index", "move-list"])
 
@@ -854,9 +777,7 @@ def test_index_move_list_writes_json_with_findings(
     assert "sys_path_insert" in categories
 
 
-def test_index_move_list_does_not_require_graphify(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_move_list_does_not_require_graphify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The move-list scan is independent of graphifyy/SCRIBE_GRAPHIFY_EXTRA."""
     monkeypatch.chdir(tmp_path)
 
@@ -886,9 +807,7 @@ def test_index_refresh_off_by_default_always_rebuilds_both_artifacts(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     first = runner.invoke(app, ["index", "refresh"])
     second = runner.invoke(app, ["index", "refresh"])
@@ -900,22 +819,16 @@ def test_index_refresh_off_by_default_always_rebuilds_both_artifacts(
         assert "cocoindex extra off, full rebuild" in output
         assert "graphify-ingest (1 node(s))" in output
         assert "move-list (0 finding(s))" in output
-    index_path = (
-        tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
-    )
+    index_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
     assert not index_path.exists()
 
 
-def test_index_refresh_on_mode_second_run_unchanged_skips_both(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_on_mode_second_run_unchanged_skips_both(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC2: two consecutive `index refresh` runs over unchanged sources ->
     zero recompute on the second run."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -926,17 +839,12 @@ def test_index_refresh_on_mode_second_run_unchanged_skips_both(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
 
     first = runner.invoke(app, ["index", "refresh"])
     assert first.exit_code == 0
     first_output = _combined_output(first)
-    assert (
-        "refreshed: move-list (0 finding(s)), graphify-ingest (1 node(s))"
-        in first_output
-    )
+    assert "refreshed: move-list (0 finding(s)), graphify-ingest (1 node(s))" in first_output
     assert "skipped (unchanged): (none)" in first_output
 
     second = runner.invoke(app, ["index", "refresh"])
@@ -954,9 +862,7 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
     derived artifact stays skipped/untouched."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -967,9 +873,7 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
             "source_location": "L1",
         }
     }
-    monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
-    )
+    monkeypatch.setattr(graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes))
     move_list_source = tmp_path / "src" / "platform" / "app.py"
     move_list_source.parent.mkdir(parents=True)
     move_list_source.write_text("x = 1\n", encoding="utf-8")
@@ -990,9 +894,7 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
     assert any(f["category"] == "import_pyforge" for f in document["findings"])
 
 
-def test_index_refresh_graphify_unavailable_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_graphify_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     try:
         import graphify  # noqa: F401
     except ImportError:
@@ -1009,9 +911,7 @@ def test_index_refresh_graphify_unavailable_exits_2(
     assert result.exit_code == 2
 
 
-def test_index_refresh_cocoindex_unavailable_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_cocoindex_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC/fix: `SCRIBE_COCOINDEX_EXTRA` on but `cocoindex` not installed ->
     a clean exit 2 (`CocoindexUnavailableError`), never an unhandled
     traceback. Deliberately does NOT fake `_import_cocoindex` -- mirrors
@@ -1035,9 +935,7 @@ def test_index_refresh_cocoindex_unavailable_exits_2(
 # --- Story 28.28 (marshal token-economy CAP-5): `index refresh --declare` --
 
 
-def _write_declare_manifest(
-    cwd: Path, *, sources_a: str = "a.md", sources_b: str = "b.md"
-) -> Path:
+def _write_declare_manifest(cwd: Path, *, sources_a: str = "a.md", sources_b: str = "b.md") -> Path:
     (cwd / sources_a).write_text("a\n", encoding="utf-8")
     (cwd / sources_b).write_text("b\n", encoding="utf-8")
     manifest = {
@@ -1067,19 +965,14 @@ def test_index_refresh_declare_first_run_refreshes_all_declared_artifacts(
     `--declare` invocation is its own opt-in."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     manifest_path = _write_declare_manifest(tmp_path)
 
     result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
 
     assert result.exit_code == 0
     output = _combined_output(result)
-    assert (
-        "refreshed: marshal:demo:epic-1-context, marshal:demo:epic-1-continuity"
-        in output
-    )
+    assert "refreshed: marshal:demo:epic-1-context, marshal:demo:epic-1-continuity" in output
     assert "skipped (unchanged): (none)" in output
 
 
@@ -1087,42 +980,25 @@ def test_index_refresh_declare_second_run_unchanged_sources_skips_all(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     manifest_path = _write_declare_manifest(tmp_path)
-    assert (
-        runner.invoke(
-            app, ["index", "refresh", "--declare", str(manifest_path)]
-        ).exit_code
-        == 0
-    )
+    assert runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)]).exit_code == 0
 
     result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
 
     assert result.exit_code == 0
     output = _combined_output(result)
     assert "refreshed: (none)" in output
-    assert (
-        "skipped (unchanged): marshal:demo:epic-1-context, marshal:demo:epic-1-continuity"
-        in output
-    )
+    assert "skipped (unchanged): marshal:demo:epic-1-context, marshal:demo:epic-1-continuity" in output
 
 
 def test_index_refresh_declare_one_changed_source_refreshes_only_that_artifact(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     manifest_path = _write_declare_manifest(tmp_path)
-    assert (
-        runner.invoke(
-            app, ["index", "refresh", "--declare", str(manifest_path)]
-        ).exit_code
-        == 0
-    )
+    assert runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)]).exit_code == 0
 
     (tmp_path / "a.md").write_text("a changed\n", encoding="utf-8")
     result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
@@ -1140,9 +1016,7 @@ def test_index_refresh_declare_uses_its_own_index_file_not_the_graph_move_list_o
     `default_cocoindex_index_path` -- it must never read or write
     `cocoindex-index.json`, the graph/move-list index."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(
-        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
-    )
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
     manifest_path = _write_declare_manifest(tmp_path)
 
     result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
@@ -1153,9 +1027,7 @@ def test_index_refresh_declare_uses_its_own_index_file_not_the_graph_move_list_o
     assert not (data_dir / "cocoindex-index.json").exists()
 
 
-def test_index_refresh_declare_malformed_json_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_declare_malformed_json_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text("{not json", encoding="utf-8")
@@ -1166,9 +1038,7 @@ def test_index_refresh_declare_malformed_json_exits_2(
     assert "not valid JSON" in _combined_output(result)
 
 
-def test_index_refresh_declare_missing_artifacts_key_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_declare_missing_artifacts_key_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps({}), encoding="utf-8")
@@ -1179,14 +1049,10 @@ def test_index_refresh_declare_missing_artifacts_key_exits_2(
     assert "no non-empty 'artifacts' list" in _combined_output(result)
 
 
-def test_index_refresh_declare_malformed_entry_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_declare_malformed_entry_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     manifest_path = tmp_path / "manifest.json"
-    manifest_path.write_text(
-        json.dumps({"artifacts": [{"sources": ["a.md"]}]}), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps({"artifacts": [{"sources": ["a.md"]}]}), encoding="utf-8")
 
     result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
 
@@ -1194,22 +1060,16 @@ def test_index_refresh_declare_malformed_entry_exits_2(
     assert "malformed artifact entry" in _combined_output(result)
 
 
-def test_index_refresh_declare_missing_manifest_file_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_declare_missing_manifest_file_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
 
-    result = runner.invoke(
-        app, ["index", "refresh", "--declare", str(tmp_path / "does-not-exist.json")]
-    )
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(tmp_path / "does-not-exist.json")])
 
     assert result.exit_code == 2
     assert "could not read declare manifest" in _combined_output(result)
 
 
-def test_index_refresh_declare_cocoindex_unavailable_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_index_refresh_declare_cocoindex_unavailable_exits_2(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Mirrors `test_index_refresh_cocoindex_unavailable_exits_2` -- a
     `--declare` run needs the real `cocoindex` package exactly as much as
     the built-in path does, even though it never consults

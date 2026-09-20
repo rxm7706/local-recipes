@@ -12,6 +12,7 @@ import tarfile
 import zipfile
 
 import pytest
+
 from pyforge.atlas.datasets import (
     ParselmouthMappingDataset,
     channeldata_json_to_rows,
@@ -168,10 +169,7 @@ from pyforge.atlas.datasets import core_sources as CS  # noqa: E402
 
 def _repodata(*names: str) -> dict:
     return {
-        "packages.conda": {
-            f"{n}-1.0-0.conda": {"name": n, "version": "1.0", "timestamp": 1700000000}
-            for n in names
-        },
+        "packages.conda": {f"{n}-1.0-0.conda": {"name": n, "version": "1.0", "timestamp": 1700000000} for n in names},
         "packages": {},
     }
 

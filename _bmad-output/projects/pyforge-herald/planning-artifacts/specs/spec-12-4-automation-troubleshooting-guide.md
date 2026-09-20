@@ -127,3 +127,16 @@ CLI-triggered equivalent that does exist and can genuinely misbehave.
 - `addressed_findings`: 2 (1 medium, 1 low). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
 
 **Follow-up review recommendation:** none outstanding for this story.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `fc357acf1d` (2026-09-10, "fix: ruff lint/format for Story 12.4's new OSV-provisioning test"); also `f0bd317e8d` (2026-09-10, "Merge latest main into Story 12.4 before landing"); also `721b0fc779` (2026-08-21, "doctor: Story 12.4 spec - tracked story spec with dev/review triage log"). Ledger row `12-4-automation-troubleshooting-guide: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/platform/tests/test_golden_path_promotion_osv_db.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -201,9 +201,7 @@ _REPORT_AXES = (AXIS_HYGIENE, AXIS_VULNERABILITY, AXIS_LICENSE, AXIS_CURRENCY)
 
 @lru_cache(maxsize=1)
 def _packaged_schema() -> dict[str, object]:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -354,9 +352,7 @@ def assemble_report(
         else (
             ResolutionDepth.LOCKED_CLOSURE.value
             if has_locked_closure
-            else (
-                ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
-            )
+            else (ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None)
         )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).
@@ -402,11 +398,7 @@ def assemble_report(
                 manifests_found=manifests_found,
                 manifests_parsed=manifests_parsed,
                 deps_total=0 if not_applicable else inventory.count,
-                deps_assessed=(
-                    0
-                    if not_applicable
-                    else min(assessed_by_axis.get(axis, 0), inventory.count)
-                ),
+                deps_assessed=(0 if not_applicable else min(assessed_by_axis.get(axis, 0), inventory.count)),
                 resolution_depth=None if not_applicable else resolution_depth,
                 # Fix 8 (review finding, 2026-07-18): gate `gating` the SAME
                 # way `not_applicable` already gates deps_total/deps_assessed/
@@ -503,9 +495,9 @@ def render_json(report: ComplianceReport) -> str:
     that validated before still validates, since the base only adds
     already-satisfied presence checks."""
     document = report.to_json_dict()
-    jsonschema.Draft202012Validator(
-        compose_envelope_schema(BASE_ENVELOPE_SCHEMA, _packaged_schema())
-    ).validate(document)
+    jsonschema.Draft202012Validator(compose_envelope_schema(BASE_ENVELOPE_SCHEMA, _packaged_schema())).validate(
+        document
+    )
     return json.dumps(
         document,
         sort_keys=True,
@@ -543,9 +535,7 @@ def _canonical_subject_key(name: str) -> str:
     return _CANONICAL_KEY_RUNS.sub("-", name).lower()
 
 
-def _manifest_clause(
-    subject: str | None, manifest_locations: Mapping[str, tuple[str, ...]]
-) -> str:
+def _manifest_clause(subject: str | None, manifest_locations: Mapping[str, tuple[str, ...]]) -> str:
     """The ``" (declared in <manifest> [<section>]; ...)"`` clause a
     remediation line appends when ``subject`` has a known declaration site
     — empty string (never fabricated) when ``subject`` is ``None`` or has
@@ -583,10 +573,7 @@ _DEP_CODE_ACTIONS: Mapping[str, str] = MappingProxyType(
             "declare the distribution that provides {subject} in the "
             "manifest -- {subject} is imported but not currently declared"
         ),
-        "DEP002": (
-            "remove {subject} from the manifest -- it is declared but not "
-            "used in the codebase"
-        ),
+        "DEP002": ("remove {subject} from the manifest -- it is declared but not used in the codebase"),
         "DEP003": (
             "add the distribution that provides {subject} as a direct "
             "dependency in the manifest -- it is currently only available "
@@ -597,10 +584,7 @@ _DEP_CODE_ACTIONS: Mapping[str, str] = MappingProxyType(
             "dev-dependency group in the manifest -- it is imported in "
             "non-dev code"
         ),
-        "DEP005": (
-            "remove {subject} from the manifest -- it is part of the "
-            "Python standard library"
-        ),
+        "DEP005": ("remove {subject} from the manifest -- it is part of the Python standard library"),
     }
 )
 
@@ -664,15 +648,9 @@ def _remediation_line(
         license_info = finding.get("license") or {}
         if license_info.get("verdict") == "denied":
             expression = license_info.get("expression") or "unknown"
-            action = (
-                f"{subject}: license {expression} is denied by policy -- "
-                "replace the dependency or add a waiver"
-            )
+            action = f"{subject}: license {expression} is denied by policy -- replace the dependency or add a waiver"
         else:
-            action = (
-                f"{subject}: license could not be resolved -- verify "
-                "manually or add a waiver"
-            )
+            action = f"{subject}: license could not be resolved -- verify manually or add a waiver"
         return f"{action}{manifest_clause}"
 
     if finding_id.startswith("currency:"):
@@ -680,30 +658,18 @@ def _remediation_line(
         currency_info = finding.get("currency") or {}
         if reason == "eol":
             eol_date = currency_info.get("eol_date") or "unknown"
-            action = (
-                f"{subject}: reached end-of-life ({eol_date}) -- upgrade to "
-                "a supported release"
-            )
+            action = f"{subject}: reached end-of-life ({eol_date}) -- upgrade to a supported release"
         elif reason == "over-lag":
             lag = currency_info.get("lag")
             latest = currency_info.get("latest") or "the latest release"
-            action = (
-                f"{subject}: {lag} release(s) behind {latest} -- upgrade "
-                "to close the gap"
-            )
+            action = f"{subject}: {lag} release(s) behind {latest} -- upgrade to close the gap"
         else:
-            action = (
-                f"{subject}: currency could not be resolved -- verify "
-                "manually or add a waiver"
-            )
+            action = f"{subject}: currency could not be resolved -- verify manually or add a waiver"
         return f"{action}{manifest_clause}"
 
     if finding_id.startswith("indeterminate:"):
         reason = finding_id.split(":", 2)[1]
-        action = (
-            f"{subject}: investigate the {reason!r} condition and resolve "
-            "it, or add a waiver"
-        )
+        action = f"{subject}: investigate the {reason!r} condition and resolve it, or add a waiver"
         return f"{action}{manifest_clause}"
 
     return None
@@ -766,8 +732,7 @@ def render_text(
     document = cast(dict[str, Any], report.to_json_dict())
     status = document["status"]
     lines = [
-        f"{TOOL_NAME}: status={status['value']} "
-        f"exit_code={document['exit_code']} findings={len(document['findings'])}"
+        f"{TOOL_NAME}: status={status['value']} exit_code={document['exit_code']} findings={len(document['findings'])}"
     ]
     driver = status["driver"]
     if driver is not None:
@@ -791,10 +756,7 @@ def render_text(
         reason = _single_line(notice.reason)
         authorized_by = _single_line(notice.authorized_by)
         expires_at = _single_line(notice.expires_at)
-        lines.append(
-            f"  [waiver] {notice.id} -- reason={reason} "
-            f"authorized_by={authorized_by} expires_at={expires_at}"
-        )
+        lines.append(f"  [waiver] {notice.id} -- reason={reason} authorized_by={authorized_by} expires_at={expires_at}")
     for notice in expired_waivers:
         reason = _single_line(notice.reason)
         authorized_by = _single_line(notice.authorized_by)
@@ -807,10 +769,7 @@ def render_text(
     for baseline_notice in applied_baseline:
         reason = _single_line(baseline_notice.reason)
         expires_at = _single_line(baseline_notice.expires_at)
-        lines.append(
-            f"  [baseline] {baseline_notice.id} -- reason={reason} "
-            f"expires_at={expires_at}"
-        )
+        lines.append(f"  [baseline] {baseline_notice.id} -- reason={reason} expires_at={expires_at}")
     for baseline_notice in expired_baseline:
         reason = _single_line(baseline_notice.reason)
         expires_at = _single_line(baseline_notice.expires_at)
@@ -851,9 +810,7 @@ def render_text(
             score = note.get("score")
             score_text = str(score) if score is not None else "unknown"
             recommendation = note.get("recommendation")
-            recommendation_text = (
-                _single_line(str(recommendation)) if recommendation else "unknown"
-            )
+            recommendation_text = _single_line(str(recommendation)) if recommendation else "unknown"
             lines.append(
                 f"  [advisory] tool={tool} "
                 f"score={score_text} "

@@ -36,12 +36,17 @@ import pytest
 
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.models import (
-    CfeResult, DoctorReport, ShipReceipt, ShipState, ShipTarget, ShipTargetKind,
+    CfeResult,
+    DoctorReport,
+    ShipReceipt,
+    ShipState,
+    ShipTarget,
+    ShipTargetKind,
     ShipTargetResult,
 )
 
-
 # --- CfeResult ----------------------------------------------------------------
+
 
 def test_cfe_result_constructs_with_all_four_fields():
     result = CfeResult(returncode=0, stdout="out", stderr="err", json_body={"ok": True})
@@ -69,6 +74,7 @@ def test_cfe_result_equality_is_by_value():
 
 
 # --- DoctorReport relocation sanity --------------------------------------------
+
 
 def test_doctor_report_imported_from_doctor_and_models_is_the_same_class_object():
     """`doctor.py` re-exports `DoctorReport` via `from .models import
@@ -116,9 +122,13 @@ def test_doctor_report_is_frozen():
 
 # --- ShipState -----------------------------------------------------------------
 
+
 def test_ship_state_has_exactly_the_four_ad9_members():
     assert {member.value for member in ShipState} == {
-        "not_attempted", "failed", "pending", "terminal",
+        "not_attempted",
+        "failed",
+        "pending",
+        "terminal",
     }
 
 
@@ -146,9 +156,11 @@ def test_ship_state_serializes_as_a_plain_json_string():
 
 # --- ShipTargetResult ------------------------------------------------------
 
+
 def test_ship_target_result_constructs_with_all_four_fields():
     result = ShipTargetResult(
-        target="conda-forge", state=ShipState.PENDING,
+        target="conda-forge",
+        state=ShipState.PENDING,
         reference="https://github.com/conda-forge/staged-recipes/pull/123",
         message="PR created: https://github.com/conda-forge/staged-recipes/pull/123",
     )
@@ -160,7 +172,10 @@ def test_ship_target_result_constructs_with_all_four_fields():
 
 def test_ship_target_result_reference_and_message_accept_none():
     result = ShipTargetResult(
-        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+        target="conda-forge",
+        state=ShipState.NOT_ATTEMPTED,
+        reference=None,
+        message=None,
     )
     assert result.reference is None
     assert result.message is None
@@ -168,7 +183,10 @@ def test_ship_target_result_reference_and_message_accept_none():
 
 def test_ship_target_result_is_frozen():
     result = ShipTargetResult(
-        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+        target="conda-forge",
+        state=ShipState.NOT_ATTEMPTED,
+        reference=None,
+        message=None,
     )
     with pytest.raises(FrozenInstanceError):
         result.state = ShipState.PENDING  # type: ignore[misc]
@@ -182,11 +200,15 @@ def test_ship_target_result_equality_is_by_value():
 
 # --- ShipTargetKind ----------------------------------------------------------
 
+
 def test_ship_target_kind_has_exactly_the_four_members():
     """Story 3.9 widens this from three members to four -- `PYPI_TEST`
     (FR-24, FR-50, AD-26)."""
     assert {member.value for member in ShipTargetKind} == {
-        "pypi", "conda-forge", "channel", "pypi-test",
+        "pypi",
+        "conda-forge",
+        "channel",
+        "pypi-test",
     }
 
 
@@ -206,6 +228,7 @@ def test_ship_target_kind_pypi_test_value():
 
 
 # --- ShipTarget ----------------------------------------------------------------
+
 
 def test_ship_target_constructs_with_both_fields():
     target = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
@@ -237,18 +260,28 @@ def test_ship_target_equality_is_by_value():
 # --- ShipReceipt (Story 3.7) ----------------------------------------------------
 
 _TERMINAL_RESULT = ShipTargetResult(
-    target="pypi", state=ShipState.TERMINAL, reference="https://pypi.org/project/pkg/0.1.0/",
+    target="pypi",
+    state=ShipState.TERMINAL,
+    reference="https://pypi.org/project/pkg/0.1.0/",
     message="View at:\n...\n",
 )
 _PENDING_RESULT = ShipTargetResult(
-    target="channel:myorg", state=ShipState.PENDING, reference=None,
+    target="channel:myorg",
+    state=ShipState.PENDING,
+    reference=None,
     message="could not determine whether channel already has pkg",
 )
 _FAILED_RESULT = ShipTargetResult(
-    target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+    target="pypi",
+    state=ShipState.FAILED,
+    reference=None,
+    message="ERROR HTTPError: 400\n",
 )
 _NOT_ATTEMPTED_RESULT = ShipTargetResult(
-    target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+    target="conda-forge",
+    state=ShipState.NOT_ATTEMPTED,
+    reference=None,
+    message=None,
 )
 
 

@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import (
@@ -29,18 +30,19 @@ from pyforge.doctor.sources import (
     bmad_method,
     board,
     capability_effect,
+    capability_ledger,
     chain,
     deps,
+    docs_currency,
     docs_map_hygiene,
     docs_shelf,
     factory,
     frozen_path,
-    capability_ledger,
-    one_chain,
     general_docs_consistency,
     ledger,
     live_proof_surfaces,
     marshal,
+    one_chain,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -77,6 +79,9 @@ _EXPECTED_DISPATCH = {
     "fr-without-cap": one_chain.gather_fr_without_cap,
     # Story 30.1 (spec-pyforge-doctor CAP-83): docs/MAP.md hygiene.
     "docs-map-hygiene": docs_map_hygiene.gather,
+    # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its render,
+    # authored-page staleness, skill-dir hygiene.
+    "docs-currency": docs_currency.gather,
     # Story 23.7 (Epic 23/spec-pyforge-doctor CAP-54) -- leftover-shelf
     # occupancy vs the docs/MAP.md allow-list.
     "docs-shelf-occupancy": docs_shelf.gather,
@@ -213,9 +218,7 @@ def test_dreams_flag_on_dream_chain_invokes_hygiene_gather(
     exit_code = dispatch.main(["dream-chain", "--dreams", "--json"])
 
     assert exit_code == 0
-    assert json.loads(capsys.readouterr().out) == [
-        f.to_json_dict() for f in hygiene_ok
-    ]
+    assert json.loads(capsys.readouterr().out) == [f.to_json_dict() for f in hygiene_ok]
 
 
 def test_dreams_flag_on_non_dream_chain_source_is_a_usage_error(

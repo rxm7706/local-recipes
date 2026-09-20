@@ -100,12 +100,8 @@ legitimate tool answer, and if one ever does, ``_parse_relay`` fails closed
 (``TransportUnreachableError``) rather than guess which occurrence is the
 real boundary."""
 
-_RESULT_RE = re.compile(
-    re.escape(_RESULT_OPEN) + r"(.*?)" + re.escape(_RESULT_CLOSE), re.DOTALL
-)
-_ERROR_RE = re.compile(
-    re.escape(_ERROR_OPEN) + r"(.*?)" + re.escape(_ERROR_CLOSE), re.DOTALL
-)
+_RESULT_RE = re.compile(re.escape(_RESULT_OPEN) + r"(.*?)" + re.escape(_RESULT_CLOSE), re.DOTALL)
+_ERROR_RE = re.compile(re.escape(_ERROR_OPEN) + r"(.*?)" + re.escape(_ERROR_CLOSE), re.DOTALL)
 
 _AUTH_DENIAL_RE = re.compile(
     r"not (?:currently )?(?:logged|authenticated)|please (?:log|sign) in"
@@ -138,9 +134,7 @@ class AgentProcessLauncher(Protocol):
     (``SubprocessAgentLauncher``) shells out to the ``claude`` CLI; every
     test in this package injects a hand-written fake instead."""
 
-    def run(
-        self, *, prompt: str, allowed_tools: Sequence[str]
-    ) -> AgentLaunchResult: ...
+    def run(self, *, prompt: str, allowed_tools: Sequence[str]) -> AgentLaunchResult: ...
 
 
 class SubprocessAgentLauncher:
@@ -285,9 +279,7 @@ class AgentSdkTransport:
 
     # --- the 9 port methods -------------------------------------------
 
-    def get_design_prompt(
-        self, *, design_system_id: str | None = None, project_id: str | None = None
-    ) -> str:
+    def get_design_prompt(self, *, design_system_id: str | None = None, project_id: str | None = None) -> str:
         arguments: dict[str, Any] = {}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -295,9 +287,7 @@ class AgentSdkTransport:
             arguments["project_id"] = project_id
         return self._call_text(GET_DESIGN_PROMPT_TOOL, arguments)
 
-    def create_project(
-        self, *, name: str, design_system_id: str | None = None
-    ) -> ProjectRef:
+    def create_project(self, *, name: str, design_system_id: str | None = None) -> ProjectRef:
         arguments: dict[str, Any] = {"name": name}
         if design_system_id is not None:
             arguments["design_system_id"] = design_system_id
@@ -334,24 +324,19 @@ class AgentSdkTransport:
                 "deletes": list(deletes),
             }
         else:
-            raise TransportCallError(
-                f"finalize_plan: unknown scope {scope!r}; expected 'paths' or 'project'"
-            )
+            raise TransportCallError(f"finalize_plan: unknown scope {scope!r}; expected 'paths' or 'project'")
         payload = self._call_json("finalize_plan", arguments)
         raw_etags = payload.get("base_etags")
         if raw_etags is None:
             raw_etags = {}
         if not isinstance(raw_etags, Mapping):
             raise TransportCallError(
-                f"claude-design finalize_plan returned base_etags as "
-                f"{type(raw_etags).__name__}, expected an object"
+                f"claude-design finalize_plan returned base_etags as {type(raw_etags).__name__}, expected an object"
             )
         etags = {str(key): as_text(value) for key, value in raw_etags.items()}
         plan_token = as_text(payload.get("plan_token"))
         if not plan_token:
-            raise TransportCallError(
-                "claude-design finalize_plan returned no plan_token"
-            )
+            raise TransportCallError("claude-design finalize_plan returned no plan_token")
         return PlanHandle(plan_token=plan_token, base_etags=MappingProxyType(etags))
 
     def create_support_js(
@@ -430,9 +415,7 @@ class AgentSdkTransport:
         return parse_read_response(self._raw_text("read_file", arguments))
 
     def render_preview(self, *, project_id: str, path: str) -> PreviewRef:
-        payload = self._call_json(
-            "render_preview", {"project_id": project_id, "path": path}
-        )
+        payload = self._call_json("render_preview", {"project_id": project_id, "path": path})
         return PreviewRef(
             open_url=as_text(payload.get("open_url")),
             expires_at=as_optional_text(payload.get("expires_at")),
@@ -445,22 +428,16 @@ class AgentSdkTransport:
             raw_files = []
         if not isinstance(raw_files, Sequence) or isinstance(raw_files, (str, bytes)):
             raise TransportCallError(
-                f"claude-design list_files returned files as "
-                f"{type(raw_files).__name__}, expected a list"
+                f"claude-design list_files returned files as {type(raw_files).__name__}, expected a list"
             )
         files: list[ListedFile] = []
         for entry in raw_files:
             if not isinstance(entry, Mapping):
                 raise TransportCallError(
-                    f"claude-design list_files returned a non-object file "
-                    f"entry ({type(entry).__name__})"
+                    f"claude-design list_files returned a non-object file entry ({type(entry).__name__})"
                 )
             raw_size = entry.get("size")
-            size = (
-                raw_size
-                if isinstance(raw_size, int) and not isinstance(raw_size, bool)
-                else None
-            )
+            size = raw_size if isinstance(raw_size, int) and not isinstance(raw_size, bool) else None
             files.append(
                 ListedFile(
                     path=as_text(entry.get("path")),
@@ -479,21 +456,15 @@ class AgentSdkTransport:
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                "claude-design list_projects returned an unparseable answer"
-            ) from exc
+            raise TransportCallError("claude-design list_projects returned an unparseable answer") from exc
         payload = sanitize_payload(payload)
         if not isinstance(payload, Sequence) or isinstance(payload, (str, bytes)):
-            raise TransportCallError(
-                f"claude-design list_projects returned {type(payload).__name__}, "
-                f"expected a list"
-            )
+            raise TransportCallError(f"claude-design list_projects returned {type(payload).__name__}, expected a list")
         projects: list[ProjectSummary] = []
         for entry in payload:
             if not isinstance(entry, Mapping):
                 raise TransportCallError(
-                    f"claude-design list_projects returned a non-object "
-                    f"project entry ({type(entry).__name__})"
+                    f"claude-design list_projects returned a non-object project entry ({type(entry).__name__})"
                 )
             projects.append(
                 ProjectSummary(
@@ -535,16 +506,9 @@ class AgentSdkTransport:
                     f"the local claude CLI reported no usable login: "
                     f"{detail} -- run /design-login in Claude Code"
                 )
-            raise TransportUnreachableError(
-                f"could not run the nested agent relay for claude-design "
-                f"{tool}: {detail}"
-            )
+            raise TransportUnreachableError(f"could not run the nested agent relay for claude-design {tool}: {detail}")
         tool_result = _parse_relay(tool, result.stdout, prompt=prompt)
-        text = (
-            sanitize_payload(tool_result.text)
-            if tool_result.is_error
-            else tool_result.text
-        )
+        text = sanitize_payload(tool_result.text) if tool_result.is_error else tool_result.text
         if tool_result.is_error:
             if _AUTH_DENIAL_RE.search(text):
                 raise AuthError(
@@ -568,12 +532,7 @@ class AgentSdkTransport:
         try:
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise TransportCallError(
-                f"claude-design {tool} returned an unparseable answer"
-            ) from exc
+            raise TransportCallError(f"claude-design {tool} returned an unparseable answer") from exc
         if not isinstance(payload, Mapping):
-            raise TransportCallError(
-                f"claude-design {tool} returned {type(payload).__name__}, "
-                f"expected an object"
-            )
+            raise TransportCallError(f"claude-design {tool} returned {type(payload).__name__}, expected an object")
         return sanitize_payload(payload)

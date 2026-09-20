@@ -41,11 +41,7 @@ _QUOTA_MARKERS_BY_HARNESS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-_QUOTA_MARKERS: tuple[str, ...] = tuple(
-    marker
-    for markers in _QUOTA_MARKERS_BY_HARNESS.values()
-    for marker in markers
-)
+_QUOTA_MARKERS: tuple[str, ...] = tuple(marker for markers in _QUOTA_MARKERS_BY_HARNESS.values() for marker in markers)
 
 _AUTH_MARKERS: tuple[str, ...] = (
     "not logged in",
@@ -67,9 +63,7 @@ _HARNESS_CONFIG_MARKERS: tuple[str, ...] = (
 # background-wait ceiling (Claude Code's 600s cap) kills the session before
 # it can commit real work -- the exact 51.3 incident. Transient: the next
 # dispatch of the same story is expected to make progress, not repeat.
-_BACKGROUND_TASK_CEILING_MARKERS: tuple[str, ...] = (
-    "background tasks still running",
-)
+_BACKGROUND_TASK_CEILING_MARKERS: tuple[str, ...] = ("background tasks still running",)
 
 
 def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:

@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: done
 frontmatter_added: 2026-07-28
 frontmatter_note: |
   This YAML block was ADDED post-recovery (operator decision 2026-07-27, AUD-ATLAS-045) so all
@@ -727,3 +727,7 @@ Review-pass modifications (2026-07-17, step-04 patches):
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `2-1-scaffold-the-kedro-pixi-project-via-nebi: done`).

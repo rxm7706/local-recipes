@@ -144,3 +144,16 @@ Dispatched with the diff file path only, no shared context.
 **Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- **392 passed, 2 skipped** (full suite).
 
 **Follow-up review recommendation (updated): false** -- narrow fix, covered by dedicated real-subprocess regression tests.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `91e94bb1f9` (2026-09-16, "herald: Story 21.12 -- fix mcp 2.2.0 transport symbol drift (CAP-6)"); also `471e214840` (2026-08-07, "herald: Story 2.2 — --commit opt-in flag on herald deck pull"); also `a65962b2bb` (2026-08-07, "scribe: Story 2.2 — nightly compile from named tool surfaces"). Ledger row `2-2-commit-opt-in: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-21-12-the-transport-speaks-the-mcp-sdk-it-actually-has-pinned.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/.memlog.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-lockstep/SPEC.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/deck-family-lockstep.md`, `src/shared/packages/pyforge-herald/pyproject.toml`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

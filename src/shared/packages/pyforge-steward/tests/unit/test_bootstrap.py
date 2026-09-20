@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.bootstrap import (
-    InitDuty,
-    ShellInitDuty,
     check_prereq,
     format_init_report,
     format_shell_init,
@@ -136,9 +135,7 @@ def test_cli_init_and_shell_init_exit_codes(
     assert "PYFORGE_REPO_ROOT" in out
 
 
-def test_cli_init_failure_projects_exit_1(
-    repo_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_init_failure_projects_exit_1(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(repo_root)
     monkeypatch.setattr("pyforge.steward.bootstrap.shutil.which", lambda _name: None)
     assert main(["init"]) == EXIT_FAILED

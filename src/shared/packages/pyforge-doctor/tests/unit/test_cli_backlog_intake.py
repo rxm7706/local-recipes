@@ -18,23 +18,12 @@ from pyforge.doctor.models import DoctorStatus, Finding, Source
 
 
 def _schema() -> dict:
-    schema_text = (
-        resources.files("pyforge.doctor")
-        .joinpath("data", "report-schema.json")
-        .read_text(encoding="utf-8")
-    )
+    schema_text = resources.files("pyforge.doctor").joinpath("data", "report-schema.json").read_text(encoding="utf-8")
     return json.loads(schema_text)
 
 
 def _write_ledger(target: Path, project: str, text: str) -> Path:
-    path = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "deferred-work-ledger.md"
-    )
+    path = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "deferred-work-ledger.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
@@ -57,9 +46,7 @@ def _forbid_gather(monkeypatch) -> None:
 # --- usage error: unparseable identifier, validated before gather ----------
 
 
-def test_unparseable_identifier_is_usage_error_never_reaches_gather(
-    monkeypatch, tmp_path: Path, capsys
-):
+def test_unparseable_identifier_is_usage_error_never_reaches_gather(monkeypatch, tmp_path: Path, capsys):
     _forbid_gather(monkeypatch)
 
     exit_code = main(["backlog-intake", "not-an-id", str(tmp_path)])
@@ -122,9 +109,7 @@ def test_path_positional_is_forwarded_to_gather(monkeypatch, tmp_path: Path):
 
 
 def test_matching_run_reports_warn_and_exits_zero(tmp_path: Path, capsys):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-1: entry\nstatus: open\nsummary: Epic 13.\n"
-    )
+    _write_ledger(tmp_path, "doctor", "## DW-1: entry\nstatus: open\nsummary: Epic 13.\n")
 
     exit_code = main(["backlog-intake", "13", str(tmp_path)])
 
@@ -147,12 +132,8 @@ def test_no_match_run_reports_ok_and_exits_zero(tmp_path: Path, capsys):
 # --- --json: schema-valid, verb-correct, no prescriptions key --------------
 
 
-def test_json_output_is_schema_valid_and_carries_the_right_verb(
-    tmp_path: Path, capsys
-):
-    _write_ledger(
-        tmp_path, "doctor", "## DW-1: entry\nstatus: open\nsummary: Epic 13.\n"
-    )
+def test_json_output_is_schema_valid_and_carries_the_right_verb(tmp_path: Path, capsys):
+    _write_ledger(tmp_path, "doctor", "## DW-1: entry\nstatus: open\nsummary: Epic 13.\n")
 
     exit_code = main(["backlog-intake", "13", str(tmp_path), "--json"])
 

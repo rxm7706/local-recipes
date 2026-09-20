@@ -72,9 +72,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         return ()
     token = _operator_token()
     if not token:
-        return _unreachable_finding(
-            "no operator token (set GH_TOKEN or GITHUB_TOKEN to reach sibling)"
-        )
+        return _unreachable_finding("no operator token (set GH_TOKEN or GITHUB_TOKEN to reach sibling)")
     try:
         sibling = _fetch_sibling_fingerprints(token)
     except _SiblingHTTPError as exc:
@@ -135,11 +133,7 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
     # as "no acknowledgement" (still fails toward extra warn noise, never
     # toward silence, either way).
     ack_raw = data.get("sibling-acknowledged")
-    ack = (
-        str(ack_raw)
-        if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool)
-        else ack_raw
-    )
+    ack = str(ack_raw) if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool) else ack_raw
     # Body = everything after the closing fence line (UTF-8). Empty body →
     # sha256 of b"".
     marker = "\n---\n"
@@ -210,9 +204,7 @@ def _fetch_sibling_fingerprints(token: str) -> dict[str, dict[str, str]] | None:
         if not isinstance(download, str) or not download:
             continue
         try:
-            text = _http_text(
-                download, token, timeout=_SIBLING_FETCH_TOTAL_BUDGET_SECONDS
-            )
+            text = _http_text(download, token, timeout=_SIBLING_FETCH_TOTAL_BUDGET_SECONDS)
         except urllib.error.HTTPError as exc:
             raise _SiblingHTTPError(exc.code) from exc
         except Exception:  # noqa: BLE001 -- fail-open per file / overall

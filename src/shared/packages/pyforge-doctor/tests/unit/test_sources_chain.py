@@ -56,16 +56,7 @@ def _write_dream(target: Path, slug: str, owner: str) -> None:
 
 
 def _write_spec(target: Path, project: str, spec_dir: str, *, owner_dream: str) -> None:
-    path = (
-        target
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "specs"
-        / spec_dir
-        / "SPEC.md"
-    )
+    path = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / "SPEC.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         f"---\nowner-dream: docs/dreams/{owner_dream}.md\n---\n",

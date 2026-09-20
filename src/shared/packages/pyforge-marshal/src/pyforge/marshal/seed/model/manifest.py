@@ -295,9 +295,7 @@ class ManifestEntry:
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
         object.__setattr__(self, "rationale", _require_text("rationale", self.rationale))
 
-        object.__setattr__(
-            self, "regions", tuple(self.regions) if isinstance(self.regions, list) else self.regions
-        )
+        object.__setattr__(self, "regions", tuple(self.regions) if isinstance(self.regions, list) else self.regions)
         if not isinstance(self.regions, tuple):
             raise ValueError(f"regions must be a list or tuple, got {self.regions!r}")
         for region in self.regions:
@@ -339,20 +337,14 @@ class ManifestEntry:
             # `ValueError` with the stdlib Enum's own "not a valid
             # RegionFormat" message, which `load_manifest` wraps as
             # `ManifestError` prefixed with this entry's id.
-            object.__setattr__(
-                self, "format", RegionFormat(_require_text("format", self.format, suffix=" or None"))
-            )
+            object.__setattr__(self, "format", RegionFormat(_require_text("format", self.format, suffix=" or None")))
             if not self.regions:
                 raise ValueError("hybrid-managed-region entries require at least one region")
         else:
             if self.format is not None:
-                raise ValueError(
-                    f"format is only valid on hybrid-managed-region entries, got {self.format!r}"
-                )
+                raise ValueError(f"format is only valid on hybrid-managed-region entries, got {self.format!r}")
             if self.regions:
-                raise ValueError(
-                    f"regions are only valid on hybrid-managed-region entries, got {self.regions!r}"
-                )
+                raise ValueError(f"regions are only valid on hybrid-managed-region entries, got {self.regions!r}")
 
         for name, value in (("pin", self.pin), ("legacy_of", self.legacy_of)):
             if value is not None:
@@ -362,9 +354,7 @@ class ManifestEntry:
             if value is not None and not isinstance(value, ModelVersion):
                 raise ValueError(f"{name} must be a ModelVersion or None, got {value!r}")
         if self.since is not None and self.until is not None and not (self.since < self.until):
-            raise ValueError(
-                f"until ({self.until}) must be strictly greater than since ({self.since})"
-            )
+            raise ValueError(f"until ({self.until}) must be strictly greater than since ({self.since})")
 
 
 @dataclass(frozen=True)
@@ -377,9 +367,7 @@ class Manifest:
 
     def __post_init__(self) -> None:
         if not isinstance(self.model_version, ModelVersion):
-            raise ValueError(
-                f"model_version must be a ModelVersion, got {self.model_version!r}"
-            )
+            raise ValueError(f"model_version must be a ModelVersion, got {self.model_version!r}")
         object.__setattr__(
             self,
             "never_write",
@@ -388,25 +376,17 @@ class Manifest:
         if not isinstance(self.never_write, tuple) or not all(
             isinstance(item, str) and item.strip() for item in self.never_write
         ):
-            raise ValueError(
-                f"never_write must contain only non-blank str, got {self.never_write!r}"
-            )
+            raise ValueError(f"never_write must contain only non-blank str, got {self.never_write!r}")
         # Stripped on store, like every other text field: a deny-pattern
         # carrying stray padding matches nothing, so a rule that reads as
         # present in the diff silently protects no path at all.
-        object.__setattr__(
-            self, "never_write", tuple(item.strip() for item in self.never_write)
-        )
-        object.__setattr__(
-            self, "entries", tuple(self.entries) if isinstance(self.entries, list) else self.entries
-        )
+        object.__setattr__(self, "never_write", tuple(item.strip() for item in self.never_write))
+        object.__setattr__(self, "entries", tuple(self.entries) if isinstance(self.entries, list) else self.entries)
         if not isinstance(self.entries, tuple):
             raise ValueError(f"entries must be a list or tuple, got {self.entries!r}")
         for entry in self.entries:
             if not isinstance(entry, ManifestEntry):
-                raise ValueError(
-                    f"entries must contain only ManifestEntry instances, got {entry!r}"
-                )
+                raise ValueError(f"entries must contain only ManifestEntry instances, got {entry!r}")
         # Id uniqueness belongs to BOTH layers. `load_manifest` enforces it
         # too (that is where the AC's "raise ManifestError naming the
         # duplicate id" contract lives), but this class is documented as
@@ -471,10 +451,7 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
     # a non-empty list" -- telling the author to repair a region the class
     # forbids outright.
     if raw_regions and artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
-        raise ValueError(
-            "regions are only valid on hybrid-managed-region entries,"
-            f" got class {artifact_class.value!r}"
-        )
+        raise ValueError(f"regions are only valid on hybrid-managed-region entries, got class {artifact_class.value!r}")
     built_regions: list[Region] = []
     for region_index, raw_region in enumerate(raw_regions):
         # Locate the offending region, the same way the loader locates the
@@ -552,9 +529,7 @@ def load_manifest(path: Path) -> Manifest:
         raise ManifestError(f"manifest: {path} is nested too deeply to parse") from exc
 
     if not isinstance(raw_document, dict):
-        raise ManifestError(
-            f"manifest: top-level document must be a mapping, got {raw_document!r}"
-        )
+        raise ManifestError(f"manifest: top-level document must be a mapping, got {raw_document!r}")
 
     try:
         _reject_unknown_keys(raw_document, _DOCUMENT_KEYS, "top-level")
@@ -588,8 +563,7 @@ def load_manifest(path: Path) -> Manifest:
         # is wrong" is a manual bisect.
         if not isinstance(raw_pattern, str) or not raw_pattern.strip():
             raise ManifestError(
-                f"manifest: never_write[{pattern_index}] must be a non-empty, non-blank str,"
-                f" got {raw_pattern!r}"
+                f"manifest: never_write[{pattern_index}] must be a non-empty, non-blank str, got {raw_pattern!r}"
             )
     never_write = tuple(raw_never_write)
 
@@ -608,17 +582,13 @@ def load_manifest(path: Path) -> Manifest:
             # and this was the one raise emitting two at once, so a consumer
             # routing on `startswith("manifest: ")` classified an entry
             # failure as a top-level one.
-            raise ManifestError(
-                f"artifacts[{index}]: entry must be a mapping, got {raw_entry!r}"
-            )
+            raise ManifestError(f"artifacts[{index}]: entry must be a mapping, got {raw_entry!r}")
         raw_id = raw_entry.get("id")
         # `.strip()`, matching `_require_text`: a whitespace-only id is
         # truthy, so a bare truthiness test would label the error with an
         # invisible locator ("   : id must be ...") instead of falling back
         # to the entry's position.
-        entry_label = (
-            raw_id if isinstance(raw_id, str) and raw_id.strip() else f"artifacts[{index}]"
-        )
+        entry_label = raw_id if isinstance(raw_id, str) and raw_id.strip() else f"artifacts[{index}]"
         try:
             entry = _build_entry(raw_entry)
         except ValueError as exc:
@@ -628,7 +598,5 @@ def load_manifest(path: Path) -> Manifest:
         seen_ids.add(entry.id)
         entries.append(entry)
 
-    filtered_entries = tuple(
-        entry for entry in entries if in_range(model_version, entry.since, entry.until)
-    )
+    filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))
     return Manifest(model_version=model_version, never_write=never_write, entries=filtered_entries)

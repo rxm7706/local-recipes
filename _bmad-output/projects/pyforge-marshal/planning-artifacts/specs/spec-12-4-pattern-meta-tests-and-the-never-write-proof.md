@@ -36,3 +36,16 @@ baseline_revision: c4c54211cf
 ## Verification
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `7e8631433f` (2026-08-23, "Merge pull request #651 from rxm7706/marshal/12-4-pattern-meta-tests"); also `7d4357acab` (2026-08-23, "Merge pull request #649 from rxm7706/marshal/12-4-pattern-meta-tests"). Ledger row `12-4-pattern-meta-tests-and-the-never-write-proof: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-marshal/tests/meta/test_p01_write_primitives_only_in_fs.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_p02_copier_sole_ownership.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_sc08_never_write_update_proof.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_seed_layer_import_rules.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyforge.herald import cli, watch as watch_module
+from pyforge.herald import cli
+from pyforge.herald import watch as watch_module
 from pyforge.herald.errors import AuthError, HeraldError
 
 
@@ -26,9 +27,7 @@ def test_deck_watch_missing_slug_is_a_usage_error():
     assert cli.main(["deck", "watch"]) == 2
 
 
-def test_deck_watch_forwards_one_slug_repo_root_and_default_interval(
-    monkeypatch, tmp_path: Path
-):
+def test_deck_watch_forwards_one_slug_repo_root_and_default_interval(monkeypatch, tmp_path: Path):
     seen = {}
 
     def _fake_watch(transport, *, slugs, repo_root, interval):
@@ -39,9 +38,7 @@ def test_deck_watch_forwards_one_slug_repo_root_and_default_interval(
 
     monkeypatch.setattr(watch_module, "watch", _fake_watch)
 
-    exit_code = cli.main(
-        ["deck", "watch", "pyforge-warden", "--repo-root", str(tmp_path)]
-    )
+    exit_code = cli.main(["deck", "watch", "pyforge-warden", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     assert seen["slugs"] == ["pyforge-warden"]
@@ -89,9 +86,7 @@ def test_deck_watch_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
     assert seen["repo_root"] == tmp_path
 
 
-def test_deck_watch_success_returns_0_and_prints_nothing_to_stderr(
-    monkeypatch, capsys
-):
+def test_deck_watch_success_returns_0_and_prints_nothing_to_stderr(monkeypatch, capsys):
     def _fake_watch(transport, *, slugs, repo_root, interval):
         return None
 
@@ -103,9 +98,7 @@ def test_deck_watch_success_returns_0_and_prints_nothing_to_stderr(
     assert capsys.readouterr().err == ""
 
 
-def test_deck_watch_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_watch_herald_error_reaches_dispatch_and_maps_to_its_exit_code(monkeypatch, capsys):
     def _fake_watch(transport, *, slugs, repo_root, interval):
         raise HeraldError("no bridge state recorded")
 
@@ -119,9 +112,7 @@ def test_deck_watch_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
     assert "no bridge state recorded" in err
 
 
-def test_deck_watch_auth_error_halts_and_reports_structurally_with_nonzero_exit(
-    monkeypatch, capsys
-):
+def test_deck_watch_auth_error_halts_and_reports_structurally_with_nonzero_exit(monkeypatch, capsys):
     """Story 4.3: an ``AuthError`` mid-loop reaches ``dispatch`` exactly
     like any other ``HeraldError`` -- one structured stderr line, exit code
     4 (``TransportError``'s mapping, per ``errors.exit_code_for``), no

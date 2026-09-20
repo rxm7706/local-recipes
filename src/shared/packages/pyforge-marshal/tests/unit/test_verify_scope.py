@@ -13,13 +13,7 @@ import pytest
 
 from pyforge.marshal.scope import UNRECOGNIZED, ScopeDrift, verify_scope
 
-_SCOPE_SRC = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "marshal"
-    / "scope.py"
-)
+_SCOPE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "scope.py"
 
 
 def _point_triangle(root: Path, slug: str) -> None:
@@ -63,9 +57,7 @@ def test_consistent_wrong_slug_is_drift_naming_found_vs_expected(tmp_path: Path)
         Path("projects/foo/wrong-leaf"),
     ],
 )
-def test_unrecognized_planning_symlink_shape_reports_unrecognized(
-    tmp_path: Path, bad_target: Path
-) -> None:
+def test_unrecognized_planning_symlink_shape_reports_unrecognized(tmp_path: Path, bad_target: Path) -> None:
     """DW-1-4-2 blind spot (1): foreign shapes are never inferred agreement."""
     _point_triangle(tmp_path, "ok-slug")
     link = tmp_path / "_bmad-output" / "planning-artifacts"

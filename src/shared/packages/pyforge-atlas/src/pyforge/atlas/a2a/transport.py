@@ -30,9 +30,9 @@ import hashlib
 import a2a.types as a2a_types
 from google.protobuf import json_format, struct_pb2
 from pydantic_core import PydanticSerializationError
+from pyforge.core.errors import PyforgeError
 
 from pyforge.atlas.a2a.schema import A2ADecodeError, AtlasPayload, _BasePayload, decode_payload
-from pyforge.core.errors import PyforgeError
 
 # The single DataPart field carrying the canonical payload JSON, and the metadata keys
 # that mirror the discriminator + stamp for envelope-level inspection (never the source of
@@ -69,9 +69,7 @@ def to_message(payload: AtlasPayload, *, message_id: str | None = None) -> a2a_t
     try:
         payload_json = payload.model_dump_json()
     except (PydanticSerializationError, ValueError, TypeError) as exc:
-        raise A2ATransportError(
-            f"payload is not JSON-serializable (a field carries a non-JSON value): {exc}"
-        ) from exc
+        raise A2ATransportError(f"payload is not JSON-serializable (a field carries a non-JSON value): {exc}") from exc
 
     # Serialization-boundary self-check: re-decode the canonical JSON and require it to
     # reproduce the payload EXACTLY. This closes the `model_construct` bypass (pydantic's
@@ -115,9 +113,7 @@ def _extract_payload_json(message: a2a_types.Message) -> str:
             candidate = mapping.get(_PAYLOAD_KEY)
             if isinstance(candidate, str):
                 return candidate
-    raise A2ATransportError(
-        f"no atlas payload DataPart found on the message (expected a {_PAYLOAD_KEY!r} field)"
-    )
+    raise A2ATransportError(f"no atlas payload DataPart found on the message (expected a {_PAYLOAD_KEY!r} field)")
 
 
 def from_message(message: a2a_types.Message) -> AtlasPayload:

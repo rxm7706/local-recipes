@@ -187,18 +187,14 @@ def test_mint_local_token_platform_config_wins_over_inherited_pythonpath(tmp_pat
     (decoy / "config" / "local_dev").mkdir(parents=True)
     (decoy / "config" / "__init__.py").write_text("", encoding="utf-8")
     (decoy / "config" / "local_dev" / "__init__.py").write_text("", encoding="utf-8")
-    (decoy / "config" / "local_dev" / "mint.py").write_text(
-        'def main(argv): return "decoy"\n', encoding="utf-8"
-    )
+    (decoy / "config" / "local_dev" / "mint.py").write_text('def main(argv): return "decoy"\n', encoding="utf-8")
     (decoy / "django.py").write_text("def setup(): pass\n", encoding="utf-8")
 
     monkeypatch.setenv("PYTHONPATH", str(decoy))
     assert login_mod._mint_local_token(repo, "marshal-operator") == "tok-marshal-operator"
 
 
-def test_mint_local_token_nonzero_exit_raises_runtime_error_with_stderr(
-    tmp_path, monkeypatch
-):
+def test_mint_local_token_nonzero_exit_raises_runtime_error_with_stderr(tmp_path, monkeypatch):
     def _fake_run(self, argv, *, cwd, timeout_s=None):
         return ProcessResult(returncode=1, stdout="", stderr="boom\n")
 

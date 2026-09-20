@@ -100,9 +100,7 @@ def _run_both(
                 "PyPI_Package_URL": f"https://pypi.org/project/{pkg}/" if pypi_ok else "N/A",
                 "Conda-forge_PURL": f"pkg:conda/{pkg}?channel=conda-forge" if cf_ok else "N/A",
                 "Conda-Forge_Package_URL": f"https://anaconda.org/conda-forge/{pkg}/" if cf_ok else "N/A",
-                "Conda-Forge_FeedStock_URL": (
-                    f"https://github.com/conda-forge/{pkg}-feedstock" if cf_ok else "N/A"
-                ),
+                "Conda-Forge_FeedStock_URL": (f"https://github.com/conda-forge/{pkg}-feedstock" if cf_ok else "N/A"),
                 "Verification_Timestamp_UTC": _FIXED_TS,
             }
         )

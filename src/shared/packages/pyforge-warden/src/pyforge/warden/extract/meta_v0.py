@@ -144,12 +144,8 @@ _MAX_LINE_BYTES = 8_192
 # (NFR-S5); a match never crosses a newline (`.` does not match `\n` by
 # default), so this is safe to run over the WHOLE text at once rather than
 # line-by-line.
-_JINJA_SET_TAG_RE = re.compile(
-    r"\{%-?\s*set\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<value>.*?)\s*-?%\}"
-)
-_JINJA_SPAN_RE = re.compile(
-    _JINJA_SET_TAG_RE.pattern + r"|\{%-?.*?-?%\}|\{#.*?#\}"
-)
+_JINJA_SET_TAG_RE = re.compile(r"\{%-?\s*set\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<value>.*?)\s*-?%\}")
+_JINJA_SPAN_RE = re.compile(_JINJA_SET_TAG_RE.pattern + r"|\{%-?.*?-?%\}|\{#.*?#\}")
 # A YAML list-item (`- {{...`) or mapping-value (`key: {{...`) line whose
 # content starts with a BARE (un-`$`-prefixed) `{{` — the one shape that
 # breaks yaml.safe_load if left unquoted (a plain scalar starting with `{`
@@ -392,9 +388,7 @@ class MetaV0Extractor:
     def __init__(self, router: Router) -> None:
         self._router = router
 
-    def extract(
-        self, manifest_path: Path, manifest: ScannedManifest
-    ) -> tuple[Component, ...]:
+    def extract(self, manifest_path: Path, manifest: ScannedManifest) -> tuple[Component, ...]:
         raw_text = read_bounded_text(
             manifest_path,
             manifest,
@@ -431,8 +425,7 @@ class MetaV0Extractor:
                 return ()
             if not isinstance(document, dict):
                 raise UnparsableManifestError(
-                    f"unparsable manifest {manifest.path}: top-level document "
-                    "is not a mapping"
+                    f"unparsable manifest {manifest.path}: top-level document is not a mapping"
                 )
             components: list[Component] = []
             components += walk_requirements(
@@ -443,12 +436,8 @@ class MetaV0Extractor:
                 self._router,
                 selector_comments=selector_comments,
             )
-            components += self._walk_test(
-                document.get("test"), context, manifest, selector_comments
-            )
-            components += self._walk_outputs(
-                document.get("outputs"), context, manifest, selector_comments
-            )
+            components += self._walk_test(document.get("test"), context, manifest, selector_comments)
+            components += self._walk_outputs(document.get("outputs"), context, manifest, selector_comments)
         except (yaml.YAMLError, RecursionError) as exc:
             # RecursionError: v0 has no structural if/then/else walker of
             # its own (that construct is v1-only -- see the module
@@ -458,9 +447,7 @@ class MetaV0Extractor:
             # nested (but well within the 5MB manifest cap) YAML document --
             # an intentional, documented tradeoff, not an oversight (Story
             # 2.3, Review Pass 1 correction #2).
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {exc}"
-            ) from exc
+            raise UnparsableManifestError(f"unparsable manifest {manifest.path}: {exc}") from exc
         return tuple(components)
 
     def _walk_test(

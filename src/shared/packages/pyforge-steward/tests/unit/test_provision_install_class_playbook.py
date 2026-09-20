@@ -27,9 +27,7 @@ _SIX_PIECES = (
 # Native install commands (not every backtick — bins, ellipses, and prose
 # citations of the matrix stay in the playbook as commentary). Inventing a
 # new npx/uv/corepack/pnpm/cd command fails the citation lock.
-_NATIVE_CMD = re.compile(
-    r"`((?:npx |uv tool install |corepack |pnpm |cd )[^`]+)`"
-)
+_NATIVE_CMD = re.compile(r"`((?:npx |uv tool install |corepack |pnpm |cd )[^`]+)`")
 
 # One matrix-owned native phrase each piece must carry (install-matrix.md).
 _REQUIRED_CITATIONS = {
@@ -117,9 +115,7 @@ def test_playbook_cites_install_matrix_and_lists_six_classes():
         assert required in native, f"{piece}: native-wire missing matrix citation {required!r}"
         assert required in matrix, f"{piece}: required citation missing from install-matrix.md"
         for fragment in _NATIVE_CMD.findall(native):
-            assert fragment in matrix, (
-                f"{piece}: invented native fragment {fragment!r} is not in install-matrix.md"
-            )
+            assert fragment in matrix, f"{piece}: invented native fragment {fragment!r} is not in install-matrix.md"
 
 
 def test_supported_modules_unchanged_skf_not_a_module(capsys):

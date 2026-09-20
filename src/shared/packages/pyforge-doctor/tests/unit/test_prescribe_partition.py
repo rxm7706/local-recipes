@@ -93,9 +93,7 @@ def test_none_yet_waived_in_a_realistic_mix_produces_zero_accepted_risk():
     findings = [
         _finding(DoctorStatus.WARN, check="fixable-a"),
         _finding(DoctorStatus.WARN, check="fixable-b"),
-        _finding(
-            DoctorStatus.FAIL, evidence={"fix_available": False}, check="unfixed-cve"
-        ),
+        _finding(DoctorStatus.FAIL, evidence={"fix_available": False}, check="unfixed-cve"),
     ]
     result = partition(findings)
     assert sum(1 for pf in result if pf.partition is Partition.ACCEPTED_RISK) == 0

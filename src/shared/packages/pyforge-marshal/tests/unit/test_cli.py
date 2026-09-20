@@ -23,9 +23,7 @@ from pyforge.marshal.cli.main import __version__, main
 from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
-_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "policy.json"
-)
+_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "policy.json"
 
 
 @pytest.fixture(autouse=True)
@@ -85,9 +83,7 @@ def test_exit_code_always_in_guarded_domain(argv, capsys):
 
 
 def test_keyboard_interrupt_during_parsing_returns_exit_sigint():
-    with patch(
-        "argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt
-    ):
+    with patch("argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt):
         assert main([]) == EXIT_SIGINT
 
 
@@ -95,9 +91,7 @@ def test_keyboard_interrupt_during_parser_construction_returns_exit_sigint():
     """The interrupt window opens before parse_args: _build_parser() must
     sit inside the same try, or a Ctrl-C during parser construction makes
     main() raise in violation of its returns-an-int-never-raises contract."""
-    with patch(
-        "pyforge.marshal.cli.main._build_parser", side_effect=KeyboardInterrupt
-    ):
+    with patch("pyforge.marshal.cli.main._build_parser", side_effect=KeyboardInterrupt):
         assert main([]) == EXIT_SIGINT
 
 
@@ -105,9 +99,7 @@ def test_bool_systemexit_code_is_clamped_not_relayed():
     """``SystemExit(True)`` passes an isinstance-int check (bool is an int
     subclass) -- the relay must exclude bools like every other boundary in
     this package, clamping to the usage code instead of returning True."""
-    with patch(
-        "argparse.ArgumentParser.parse_args", side_effect=SystemExit(True)
-    ):
+    with patch("argparse.ArgumentParser.parse_args", side_effect=SystemExit(True)):
         result = main([])
     assert result == 2
     assert not isinstance(result, bool)
@@ -409,9 +401,7 @@ def test_config_format_json_prints_a_valid_envelope(capsys, monkeypatch):
 
 def test_config_format_json_with_findings_has_error_status(capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    exit_code = main(
-        ["config", "--project", "acme", "--format", "json", "--set", "gate_mode=bogus"]
-    )
+    exit_code = main(["config", "--project", "acme", "--format", "json", "--set", "gate_mode=bogus"])
     assert exit_code != 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "error"
@@ -441,9 +431,7 @@ def test_config_format_json_renders_a_nonempty_landing_rule(tmp_path, capsys, mo
         """,
         encoding="utf-8",
     )
-    exit_code = main(
-        ["config", "--project-policy", str(toml_path), "--format", "json"]
-    )
+    exit_code = main(["config", "--project-policy", str(toml_path), "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     rules = payload["data"]["policy"]["landing_rules"]["value"]
@@ -687,14 +675,10 @@ def test_config_json_envelope_validates_against_envelope_schema(tmp_path, capsys
     success-path data.materialized_path, asserted nowhere else."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     target_dir = tmp_path / "materialized"
-    exit_code = main(
-        ["config", "--project", "acme", "--format", "json", "--materialize", str(target_dir)]
-    )
+    exit_code = main(["config", "--project", "acme", "--format", "json", "--materialize", str(target_dir)])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
-    envelope_schema = json.loads(
-        (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
-    )
+    envelope_schema = json.loads((_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8"))
     jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, envelope_schema))
     written = next(target_dir.glob("policy-*.json"))
     assert payload["data"]["materialized_path"] == str(written)
@@ -782,17 +766,13 @@ def test_nonpipe_oserror_during_config_output_returns_verdict_exit_code(monkeypa
     assert main(["config", "--project", "acme"]) == 0
 
 
-def test_config_materialize_is_skipped_when_composition_carries_error_findings(
-    tmp_path, capsys
-):
+def test_config_materialize_is_skipped_when_composition_carries_error_findings(tmp_path, capsys):
     """--materialize must not persist a durable, content-addressed artifact
     born of an error-class (unevaluable) invocation: the non-zero exit code
     protects only the immediate caller, while a written file would outlive
     it for any consumer globbing the target directory."""
     target_dir = tmp_path / "materialized"
-    exit_code = main(
-        ["config", "--set", "gate_mode=bogus", "--materialize", str(target_dir)]
-    )
+    exit_code = main(["config", "--set", "gate_mode=bogus", "--materialize", str(target_dir)])
     assert exit_code != 0
     # the skip happens before materialize() -- the target dir is never even created
     assert not target_dir.exists()
@@ -823,16 +803,8 @@ def test_piped_invocation_with_closed_reader_exits_in_domain(argv):
     import subprocess
     import sys as sys_module
 
-    env = {
-        k: v
-        for k, v in os_module.environ.items()
-        if k not in ("PYTHONUNBUFFERED", "BMAD_ACTIVE_PROJECT")
-    }
-    code = (
-        "import sys\n"
-        "from pyforge.marshal.cli.main import main\n"
-        f"sys.exit(main({argv!r}))\n"
-    )
+    env = {k: v for k, v in os_module.environ.items() if k not in ("PYTHONUNBUFFERED", "BMAD_ACTIVE_PROJECT")}
+    code = f"import sys\nfrom pyforge.marshal.cli.main import main\nsys.exit(main({argv!r}))\n"
     proc = subprocess.Popen(
         [sys_module.executable, "-c", code],
         stdout=subprocess.PIPE,
@@ -1115,6 +1087,7 @@ def test_check_subcommand_is_wired(capsys, monkeypatch):
     import json as json_module
 
     from pyforge.core.process import ProcessResult
+
     from pyforge.marshal.cli import check as check_module
 
     class _FakeProcess:
@@ -1160,9 +1133,7 @@ def test_gate_evaluate_all_commands_pass_exits_clean(tmp_path, capsys, monkeypat
 
 def test_gate_evaluate_one_command_fails_reports_gate_failed(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 3
     payload = json.loads(capsys.readouterr().out)
@@ -1201,18 +1172,14 @@ def test_gate_evaluate_unresolvable_command_reports_unevaluable(tmp_path, capsys
 
 def test_gate_evaluate_malformed_command_reports_unevaluable(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["\'unterminated"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["\'unterminated"]\n')
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["verdict"] == "unevaluable"
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-003" in codes
-    assert payload["data"]["commands"] == [
-        {"command": "'unterminated", "resolvable": False, "returncode": None}
-    ]
+    assert payload["data"]["commands"] == [{"command": "'unterminated", "resolvable": False, "returncode": None}]
 
 
 def test_gate_evaluate_zero_commands_configured_reports_warn(capsys, monkeypatch):
@@ -1227,9 +1194,7 @@ def test_gate_evaluate_zero_commands_configured_reports_warn(capsys, monkeypatch
     assert "MRS-GATE-004" in codes
 
 
-def test_gate_evaluate_missing_project_and_empty_allowlist_surface_both_findings(
-    capsys, monkeypatch
-):
+def test_gate_evaluate_missing_project_and_empty_allowlist_surface_both_findings(capsys, monkeypatch):
     """I/O matrix: '--project/env both omitted' -> MRS-POLICY-005 (no active
     project) AND MRS-GATE-004 (empty allowlist) surface together."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1240,9 +1205,7 @@ def test_gate_evaluate_missing_project_and_empty_allowlist_surface_both_findings
     assert {"MRS-POLICY-005", "MRS-GATE-004"} <= codes
 
 
-def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     # Hermetic: --run now resolves a real loop home via _home_path (Story
     # 2.3) -- pin BMAD_LOOP_HOME_ROOT under tmp_path so this test never
@@ -1252,9 +1215,7 @@ def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(
     # A command that would otherwise fail -- proves --run truly skips running
     # any configured command rather than merely also reporting MRS-GATE-005.
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["false"]\n')
-    exit_code = main(
-        ["gate", "evaluate", "--project", "acme", "--run", "run-42", "--format", "json"]
-    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--run", "run-42", "--format", "json"])
     assert exit_code == 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["verdict"] == "unevaluable"
@@ -1300,15 +1261,11 @@ def test_gate_evaluate_no_run_reports_gate_mode_autonomy_label(capsys, monkeypat
     }
 
 
-def test_gate_evaluate_no_run_reports_project_overridden_gate_mode_label(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_no_run_reports_project_overridden_gate_mode_label(tmp_path, capsys, monkeypatch):
     """The label tracks the EFFECTIVE (post-composition) gate mode, not just
     the built-in default -- a project policy selecting `per-epic` (L3)
     surfaces the L3 label, not L2."""
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'gate_mode = "per-epic"\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'gate_mode = "per-epic"\n')
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1317,9 +1274,7 @@ def test_gate_evaluate_no_run_reports_project_overridden_gate_mode_label(
     assert payload["data"]["autonomy_label"]["name"] == "Conditional / Context Gates"
 
 
-def test_gate_evaluate_no_run_default_text_format_shows_gate_mode_and_label(
-    capsys, monkeypatch
-):
+def test_gate_evaluate_no_run_default_text_format_shows_gate_mode_and_label(capsys, monkeypatch):
     """AD-14: `--format text` is a pure projection of the SAME envelope
     `data` `--format json` prints -- review finding, verified live that the
     original diff added `data.gate_mode`/`data.autonomy_label` without
@@ -1334,9 +1289,7 @@ def test_gate_evaluate_no_run_default_text_format_shows_gate_mode_and_label(
     assert "Task-Based / Operator" in out
 
 
-def test_gate_evaluate_run_flag_default_text_format_omits_gate_mode_line(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_run_flag_default_text_format_omits_gate_mode_line(tmp_path, capsys, monkeypatch):
     """The --run branch carries no gate_mode/autonomy_label key (AD-26), so
     the text projection must not print a `gate mode:` line for it either."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1347,9 +1300,7 @@ def test_gate_evaluate_run_flag_default_text_format_omits_gate_mode_line(
     assert "gate mode:" not in out
 
 
-def test_gate_evaluate_no_run_malformed_gate_mode_falls_back_to_default_label(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_no_run_malformed_gate_mode_falls_back_to_default_label(tmp_path, capsys, monkeypatch):
     """`_valid_gate_mode` already rejects an out-of-vocabulary `gate_mode` at
     composition time (falls through to the next layer), so
     `describe_gate_mode` only ever receives one of the 3 known values via
@@ -1384,18 +1335,14 @@ def test_gate_evaluate_project_flag_wins_over_env(tmp_path, capsys, monkeypatch)
     assert payload["data"]["commands"][0]["command"] == "true"
 
 
-def test_gate_evaluate_only_the_selected_projects_conventional_policy_is_read(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_only_the_selected_projects_conventional_policy_is_read(tmp_path, capsys, monkeypatch):
     """I/O matrix: 'wrong project never runs' -- reuses cli/config.py's own
     conventional-path resolution, so only the SLUG-matching project's file
     is ever read; a differently-slugged project's own commands never
     execute. Proven constructively: two projects, two DISTINCT verify
     commands, and only the selected slug's command shows up in the report."""
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
-    _conventional_policy(
-        tmp_path, monkeypatch, "other-slug", 'verify_commands = ["false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "other-slug", 'verify_commands = ["false"]\n')
 
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 0
@@ -1410,9 +1357,7 @@ def test_gate_evaluate_only_the_selected_projects_conventional_policy_is_read(
     assert payload_other["data"]["commands"][0]["command"] == "false"
 
 
-def test_gate_evaluate_traversal_shaped_slug_never_reads_or_runs_a_file(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_traversal_shaped_slug_never_reads_or_runs_a_file(tmp_path, capsys, monkeypatch):
     """Review finding (security): `conventional_project_policy_path` builds
     its path by naive string interpolation with no traversal check, so an
     unvalidated `--project '../../../../whatever'` could resolve OUTSIDE
@@ -1431,13 +1376,9 @@ def test_gate_evaluate_traversal_shaped_slug_never_reads_or_runs_a_file(
     marker = tmp_path / "marker-outside-projects"
     evil_dir = tmp_path / "outside" / "planning-artifacts"
     evil_dir.mkdir(parents=True)
-    (evil_dir / "marshal-policy.toml").write_text(
-        f'verify_commands = ["touch {marker}"]\n', encoding="utf-8"
-    )
+    (evil_dir / "marshal-policy.toml").write_text(f'verify_commands = ["touch {marker}"]\n', encoding="utf-8")
 
-    exit_code = main(
-        ["gate", "evaluate", "--project", "../../outside", "--format", "json"]
-    )
+    exit_code = main(["gate", "evaluate", "--project", "../../outside", "--format", "json"])
     assert exit_code == 1
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
@@ -1462,9 +1403,7 @@ def test_gate_evaluate_rejects_an_arbitrary_project_policy_path(tmp_path, capsys
     foreign = tmp_path / "foreign.toml"
     foreign.write_text(f'verify_commands = ["touch {marker}"]\n', encoding="utf-8")
 
-    exit_code = main(
-        ["gate", "evaluate", "--project", "acme", "--project-policy", str(foreign)]
-    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--project-policy", str(foreign)])
 
     assert exit_code == EXIT_USAGE
     assert "--project-policy" in capsys.readouterr().err
@@ -1484,6 +1423,7 @@ def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypat
     clean exit 0 carrying the fake's own stdout can only mean the injected
     port was the one actually used."""
     from pyforge.core.process import ProcessResult
+
     from pyforge.marshal.cli import gate as gate_module
 
     calls: list[tuple[list[str], object]] = []
@@ -1506,9 +1446,7 @@ def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypat
         "acme",
         'verify_commands = ["definitely-not-a-real-binary-xyz"]\n',
     )
-    args = argparse.Namespace(
-        project="acme", run_id=None, scope_check=False, story=None, format="json"
-    )
+    args = argparse.Namespace(project="acme", run_id=None, scope_check=False, story=None, format="json")
 
     exit_code = gate_module.run_evaluate(args, process=_RecordingProcess())
 
@@ -1523,9 +1461,7 @@ def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypat
     assert payload["data"]["root"] == str(tmp_path)
 
 
-def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(tmp_path, capsys, monkeypatch):
     """Review finding: this is the first command to print ARBITRARY child
     output, and the adapter decodes it with errors="replace", so one
     undecodable byte puts U+FFFD into the text render. On a stdout whose
@@ -1535,6 +1471,7 @@ def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
     really failed with 3. pytest's own capsys is a UTF-8 buffer, so no
     existing test could reach this; an ascii TextIOWrapper stands in."""
     from pyforge.core.process import ProcessResult
+
     from pyforge.marshal.cli import gate as gate_module
 
     class _NonAsciiProcess:
@@ -1547,12 +1484,8 @@ def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
     buffer = io.BytesIO()
-    monkeypatch.setattr(
-        sys, "stdout", io.TextIOWrapper(buffer, encoding="ascii", errors="strict")
-    )
-    args = argparse.Namespace(
-        project="acme", run_id=None, scope_check=False, story=None, format="text"
-    )
+    monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(buffer, encoding="ascii", errors="strict"))
+    args = argparse.Namespace(project="acme", run_id=None, scope_check=False, story=None, format="text")
 
     exit_code = gate_module.run_evaluate(args, process=_NonAsciiProcess())
     sys.stdout.flush()
@@ -1565,9 +1498,7 @@ def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
     assert rb"\ufffd" in written
 
 
-def test_gate_evaluate_unreadable_policy_does_not_also_claim_it_is_unconfigured(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_unreadable_policy_does_not_also_claim_it_is_unconfigured(tmp_path, capsys, monkeypatch):
     """Review finding: MRS-GATE-004 asserts the allowlist is UNCONFIGURED.
     When the conventional policy file exists but cannot be parsed, the
     operator DID configure commands and Marshal could not read them --
@@ -1577,9 +1508,7 @@ def test_gate_evaluate_unreadable_policy_does_not_also_claim_it_is_unconfigured(
 
     The run must still never be green: MRS-POLICY-004 keeps it unevaluable."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", "verify_commands = [ this is not toml\n"
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", "verify_commands = [ this is not toml\n")
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
 
     assert exit_code == 1
@@ -1595,9 +1524,7 @@ def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(capsys, monk
     Marshal's bare defaults (verify_commands=()) -- it can never accidentally
     pick up some OTHER project's commands."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    exit_code = main(
-        ["gate", "evaluate", "--project", "definitely-not-a-real-marshal-project", "--format", "json"]
-    )
+    exit_code = main(["gate", "evaluate", "--project", "definitely-not-a-real-marshal-project", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["commands"] == []
@@ -1607,9 +1534,7 @@ def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(capsys, monk
 
 def test_gate_evaluate_text_format_is_a_projection_of_the_same_data(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
     exit_code = main(["gate", "evaluate", "--project", "acme"])
     assert exit_code == 3
     out = capsys.readouterr().out
@@ -1642,17 +1567,13 @@ def test_gate_evaluate_text_format_includes_captured_output(tmp_path, capsys, mo
     assert "to-stderr" in out
 
 
-def test_gate_evaluate_json_envelope_validates_against_envelope_schema(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_json_envelope_validates_against_envelope_schema(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
-    envelope_schema = json.loads(
-        (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
-    )
+    envelope_schema = json.loads((_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8"))
     jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, envelope_schema))
     assert payload["command"] == "gate evaluate"
 
@@ -1662,9 +1583,7 @@ def test_gate_evaluate_deterministic_across_two_runs(tmp_path, capsys, monkeypat
     call anywhere in the path -- two consecutive runs produce an identical
     verdict and exit code."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
     argv = ["gate", "evaluate", "--project", "acme", "--format", "json"]
 
     exit_code_1 = main(argv)
@@ -1677,9 +1596,7 @@ def test_gate_evaluate_deterministic_across_two_runs(tmp_path, capsys, monkeypat
     assert payload_1["data"] == payload_2["data"]
 
 
-def test_gate_evaluate_writes_no_file_under_the_repo_root_it_evaluates(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_writes_no_file_under_the_repo_root_it_evaluates(tmp_path, capsys, monkeypatch):
     """AC: 'no file has been added, removed, or modified by Marshal itself'
     -- gate evaluate reads a policy file and spawns read-only-from-Marshal's-
     perspective subprocesses; it performs no filesystem write of its own.
@@ -1692,14 +1609,11 @@ def test_gate_evaluate_writes_no_file_under_the_repo_root_it_evaluates(
     just the path set, is compared -- an in-place rewrite leaves the tree
     listing identical."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
 
     def _snapshot():
         return {
-            str(p.relative_to(tmp_path)): (p.read_bytes() if p.is_file() else None)
-            for p in sorted(tmp_path.rglob("*"))
+            str(p.relative_to(tmp_path)): (p.read_bytes() if p.is_file() else None) for p in sorted(tmp_path.rglob("*"))
         }
 
     before = _snapshot()
@@ -1783,9 +1697,7 @@ def _write_clean_verification_spec(tmp_path, slug, epic, seq):
     tracked-spec lookup, whether or not ``--scope-check`` itself cares)."""
     from pyforge.marshal.core.identity import StoryKey, render_filename_slug
 
-    specs_dir = (
-        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=epic, seq=seq)
     (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
@@ -1794,9 +1706,7 @@ def _write_clean_verification_spec(tmp_path, slug, epic, seq):
     )
 
 
-def test_gate_evaluate_scope_check_without_story_reports_mrs_gate_009(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_without_story_reports_mrs_gate_009(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1811,7 +1721,8 @@ def test_gate_evaluate_scope_check_without_story_reports_mrs_gate_009(
 
 
 def test_gate_evaluate_scope_check_without_active_project_reports_mrs_gate_009(
-    capsys, monkeypatch,
+    capsys,
+    monkeypatch,
 ):
     from pyforge.marshal.cli import gate as gate_module
 
@@ -1829,9 +1740,7 @@ def test_gate_evaluate_scope_check_without_active_project_reports_mrs_gate_009(
     assert exit_code == 1
 
 
-def test_gate_evaluate_scope_check_unresolved_story_reports_mrs_ident_001(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_unresolved_story_reports_mrs_ident_001(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1845,9 +1754,7 @@ def test_gate_evaluate_scope_check_unresolved_story_reports_mrs_ident_001(
     assert exit_code == 1
 
 
-def test_gate_evaluate_scope_check_changed_file_inside_surface_passes(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_changed_file_inside_surface_passes(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1859,9 +1766,7 @@ def test_gate_evaluate_scope_check_changed_file_inside_surface_passes(
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
-    )
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["checked"] is True
     assert payload["data"]["scope_check"]["violations"] == 0
@@ -1870,9 +1775,7 @@ def test_gate_evaluate_scope_check_changed_file_inside_surface_passes(
     assert "MRS-GATE-008" not in codes
 
 
-def test_gate_evaluate_scope_check_changed_file_outside_surface_reports_mrs_gate_007(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_changed_file_outside_surface_reports_mrs_gate_007(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.model import Verdict
 
@@ -1885,9 +1788,7 @@ def test_gate_evaluate_scope_check_changed_file_outside_surface_reports_mrs_gate
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-007" in codes
@@ -1895,9 +1796,7 @@ def test_gate_evaluate_scope_check_changed_file_outside_surface_reports_mrs_gate
     assert exit_code == 2
 
 
-def test_gate_evaluate_scope_check_frozen_seed_path_reports_mrs_gate_008(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_frozen_seed_path_reports_mrs_gate_008(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -1905,24 +1804,17 @@ def test_gate_evaluate_scope_check_frozen_seed_path_reports_mrs_gate_008(
         tmp_path,
         monkeypatch,
         "acme",
-        'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
-        'frozen_surfaces = ["recipes/x/recipe.yaml"]\n',
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\nfrozen_surfaces = ["recipes/x/recipe.yaml"]\n',
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
-    )
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
-    frozen_finding = next(
-        finding for finding in payload["findings"] if finding["code"] == "MRS-GATE-008"
-    )
+    frozen_finding = next(finding for finding in payload["findings"] if finding["code"] == "MRS-GATE-008")
     assert "policy" in frozen_finding["message"]
 
 
-def test_gate_evaluate_scope_check_spec_declared_surface_narrows(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_spec_declared_surface_narrows(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey, render_filename_slug
 
@@ -1933,14 +1825,7 @@ def test_gate_evaluate_scope_check_spec_declared_surface_narrows(
         "acme",
         'epic_surfaces = { "2" = ["recipes/x/**", "recipes/y/**"] }\n',
     )
-    specs_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
     (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
@@ -1951,9 +1836,7 @@ def test_gate_evaluate_scope_check_spec_declared_surface_narrows(
 
     # recipes/y/** is in the POLICY surface but excluded by the spec's own
     # narrower declaration -- a change there must now violate.
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
-    )
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["spec_surface"] == ["recipes/x/**"]
     assert payload["data"]["scope_check"]["effective_surface"] == ["recipes/x/**"]
@@ -1968,9 +1851,7 @@ def test_find_spec_text_degrades_to_none_on_a_non_utf8_spec_file(tmp_path):
     from pyforge.marshal.cli.gate import _find_spec_text
     from pyforge.marshal.core.identity import StoryKey, render_filename_slug
 
-    specs_dir = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
     (specs_dir / f"spec-{render_filename_slug(key)}.md").write_bytes(b"\xff\xfe not utf-8")
@@ -1978,9 +1859,7 @@ def test_find_spec_text_degrades_to_none_on_a_non_utf8_spec_file(tmp_path):
     assert _find_spec_text(tmp_path, "acme", key) is None
 
 
-def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(tmp_path, capsys, monkeypatch):
     """AD-27, review finding (Edge Case Hunter): a multi-line YAML `surface:`
     block in the story's own tracked spec is a form the parser does not
     support -- it must be reported and skipped (MRS-GATE-009), never
@@ -1996,14 +1875,7 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
         "acme",
         'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
     )
-    specs_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
     # A `## Verification` section with no `**Commands:**` sub-list parses to
@@ -2013,15 +1885,12 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
     # and this test still isolates the ONE thing it means to pin: the
     # multi-line `surface:` block's own MRS-GATE-009.
     (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
-        '---\ntitle: \'x\'\nsurface:\n  - "recipes/x/**"\n---\n\n'
-        "<intent-contract>\n\n## Verification\n",
+        "---\ntitle: 'x'\nsurface:\n  - \"recipes/x/**\"\n---\n\n<intent-contract>\n\n## Verification\n",
         encoding="utf-8",
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["checked"] is False
     codes = [finding["code"] for finding in payload["findings"]]
@@ -2029,9 +1898,7 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
     assert exit_code == 1
 
 
-def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey, render_filename_slug
 
@@ -2041,9 +1908,7 @@ def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(
     # section (Story 2.7) keeps the now-unconditional spec-binding check
     # silent, so this test still isolates the VCS failure's own
     # MRS-GATE-009.
-    specs_dir = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
     (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
@@ -2052,18 +1917,14 @@ def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(fail_with="not a git repository")
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(fail_with="not a git repository"))
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-009" in codes
     assert exit_code == 1
 
 
-def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(tmp_path, capsys, monkeypatch):
     """Pins the CORRECT, currently-unproven behavior (review finding, Blind
     Hunter): an unconfigured epic (`epic_surfaces` left at its DEFAULT `{}`)
     falls back to `gate.default_epic_surface`'s auto-derived per-station
@@ -2081,9 +1942,7 @@ def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
     _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/anything/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/anything/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     default_surface = list(gate_core.default_epic_surface("acme"))
     assert payload["data"]["scope_check"]["checked"] is True
@@ -2095,9 +1954,7 @@ def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
     assert exit_code == 2
 
 
-def test_gate_evaluate_scope_check_unconfigured_epic_permits_a_default_surface_path(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_unconfigured_epic_permits_a_default_surface_path(tmp_path, capsys, monkeypatch):
     """Story 28.14, CAP-16: a changed file matching the auto-derived
     default (a bookkeeping path, here `pixi.toml`) is NOT flagged
     MRS-GATE-007 even with zero declared `[epic_surfaces]` entries -- the
@@ -2108,7 +1965,7 @@ def test_gate_evaluate_scope_check_unconfigured_epic_permits_a_default_surface_p
     _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["checked"] is True
     assert payload["data"]["scope_check"]["violations"] == 0
@@ -2128,10 +1985,8 @@ def test_gate_evaluate_scope_check_unconfigured_epic_permits_implementation_arti
     _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
     args = _scope_check_args(story="2.3")
 
-    changed = (
-        "_bmad-output/projects/acme/implementation-artifacts/stories/2.3.md",
-    )
-    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    changed = ("_bmad-output/projects/acme/implementation-artifacts/stories/2.3.md",)
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["checked"] is True
     assert payload["data"]["scope_check"]["violations"] == 0
@@ -2157,7 +2012,7 @@ def test_gate_evaluate_scope_check_unconfigured_epic_denies_planning_artifacts_o
     args = _scope_check_args(story="2.3")
 
     changed = ("_bmad-output/projects/acme/planning-artifacts/marshal-policy.toml",)
-    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["checked"] is True
     codes = [finding["code"] for finding in payload["findings"]]
@@ -2180,15 +2035,13 @@ def test_gate_evaluate_scope_check_unconfigured_epic_denies_a_different_stations
     args = _scope_check_args(story="2.3")
 
     changed = ("src/shared/packages/pyforge-atlas/src/pyforge/atlas/somefile.py",)
-    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-007" in codes
 
 
-def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default(tmp_path, capsys, monkeypatch):
     """Story 28.14, CAP-16: a DECLARED `[epic_surfaces]` entry is used
     outright, exactly as today -- the auto-derived default is never
     consulted or merged in, even for a path the default would have
@@ -2205,7 +2058,7 @@ def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default
     )
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
+    gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["policy_surface"] == ["recipes/x/**"]
     codes = [finding["code"] for finding in payload["findings"]]
@@ -2215,9 +2068,7 @@ def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default
 # --- Story 28.15: scope-violation enforcement mode (CAP-17) ------------------
 
 
-def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(tmp_path, capsys, monkeypatch):
     """AC1: no declared mode -- a violation lands as a named MRS-GATE-012
     advisory finding, verdict/exit code stay ok, never SCOPE_VIOLATION."""
     from pyforge.marshal.cli import gate as gate_module
@@ -2226,9 +2077,7 @@ def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     policy_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
     policy_dir.mkdir(parents=True, exist_ok=True)
-    (policy_dir / "marshal-policy.toml").write_text(
-        'epic_surfaces = { "2" = ["recipes/x/**"] }\n', encoding="utf-8"
-    )
+    (policy_dir / "marshal-policy.toml").write_text('epic_surfaces = { "2" = ["recipes/x/**"] }\n', encoding="utf-8")
     from pyforge.marshal.cli import config as config_module
 
     monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
@@ -2236,9 +2085,7 @@ def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(
     _write_clean_verification_spec(tmp_path, "acme", 2, 3)
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["mode"] == "warn"
     codes = [finding["code"] for finding in payload["findings"]]
@@ -2249,9 +2096,7 @@ def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(
     assert exit_code == 0
 
 
-def test_gate_evaluate_scope_check_off_mode_reports_zero_findings(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_off_mode_reports_zero_findings(tmp_path, capsys, monkeypatch):
     """AC3: off declared -- MRS-GATE-007/008 (and their warn-mode
     advisories) are not evaluated at all, zero findings."""
     from pyforge.marshal.cli import gate as gate_module
@@ -2261,15 +2106,12 @@ def test_gate_evaluate_scope_check_off_mode_reports_zero_findings(
         tmp_path,
         monkeypatch,
         "acme",
-        'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
-        'scope_violation_mode = "off"\n',
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\nscope_violation_mode = "off"\n',
     )
     _write_clean_verification_spec(tmp_path, "acme", 2, 3)
     args = _scope_check_args(story="2.3")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope_check"]["mode"] == "off"
     assert payload["data"]["scope_check"]["violations"] == 0
@@ -2279,9 +2121,7 @@ def test_gate_evaluate_scope_check_off_mode_reports_zero_findings(
     assert exit_code == 0
 
 
-def test_gate_evaluate_scope_check_two_stations_apply_their_own_mode_independently(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_two_stations_apply_their_own_mode_independently(tmp_path, capsys, monkeypatch):
     """AC5: one station's declared mode never changes another's -- station
     'acme' declares hard (refuses), station 'other' declares warn
     (advisory, never blocks), same violated glob shape for both."""
@@ -2297,8 +2137,7 @@ def test_gate_evaluate_scope_check_two_stations_apply_their_own_mode_independent
         policy_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
         policy_dir.mkdir(parents=True, exist_ok=True)
         (policy_dir / "marshal-policy.toml").write_text(
-            'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
-            f'scope_violation_mode = "{mode}"\n',
+            f'epic_surfaces = {{ "2" = ["recipes/x/**"] }}\nscope_violation_mode = "{mode}"\n',
             encoding="utf-8",
         )
         _write_clean_verification_spec(tmp_path, slug, 2, 3)
@@ -2316,9 +2155,7 @@ def test_gate_evaluate_scope_check_two_stations_apply_their_own_mode_independent
     assert "MRS-GATE-012" in [f["code"] for f in warn_payload["findings"]]
 
 
-def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(tmp_path, capsys, monkeypatch):
     """When ``--run`` was requested but its fold could not be produced,
     MRS-GATE-005 already reports the root cause -- the scope check itself
     contributes no second, redundant finding, and `data` carries no
@@ -2360,21 +2197,16 @@ def _write_tracked_spec(tmp_path, slug, key, *, commands=()):
     `**Commands:**` Success signal declaring exactly `commands`."""
     from pyforge.marshal.core.identity import render_filename_slug
 
-    specs_dir = (
-        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     commands_block = "\n".join(f"- `{command}` -- expected: ok." for command in commands)
     (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
-        "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n"
-        f"## Verification\n\n**Commands:**\n{commands_block}\n",
+        f"---\ntitle: 'x'\n---\n\n<intent-contract>\n\n## Verification\n\n**Commands:**\n{commands_block}\n",
         encoding="utf-8",
     )
 
 
-def test_gate_evaluate_story_with_no_tracked_spec_reports_mrs_gate_010(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_with_no_tracked_spec_reports_mrs_gate_010(tmp_path, capsys, monkeypatch):
     """No `--scope-check` at all -- the binding check still runs off the
     bare `--story` flag."""
     from pyforge.marshal.cli import gate as gate_module
@@ -2398,9 +2230,7 @@ def test_gate_evaluate_story_with_no_tracked_spec_reports_mrs_gate_010(
     assert exit_code == 2
 
 
-def test_gate_evaluate_story_no_story_supplied_skips_binding_check(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_no_story_supplied_skips_binding_check(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -2416,16 +2246,12 @@ def test_gate_evaluate_story_no_story_supplied_skips_binding_check(
     assert exit_code == 0
 
 
-def test_gate_evaluate_story_declared_commands_subset_of_policy_no_binding_finding(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_declared_commands_subset_of_policy_no_binding_finding(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
     _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true",))
     args = _story_args()
 
@@ -2440,9 +2266,7 @@ def test_gate_evaluate_story_declared_commands_subset_of_policy_no_binding_findi
     assert exit_code == 3  # "false" itself still fails, MRS-GATE-001
 
 
-def test_gate_evaluate_story_narrowed_command_reports_mrs_gate_011(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_narrowed_command_reports_mrs_gate_011(tmp_path, capsys, monkeypatch):
     """The spec's own Success signal promised `missing-check`, but the
     policy's `verify_commands` no longer runs it -- narrowed since
     tracking."""
@@ -2452,9 +2276,7 @@ def test_gate_evaluate_story_narrowed_command_reports_mrs_gate_011(
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
-    _write_tracked_spec(
-        tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true", "missing-check")
-    )
+    _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true", "missing-check"))
     args = _story_args()
 
     exit_code = gate_module.run_evaluate(args)
@@ -2465,22 +2287,18 @@ def test_gate_evaluate_story_narrowed_command_reports_mrs_gate_011(
     assert exit_code == 2
 
 
-def test_gate_evaluate_story_extra_policy_command_is_not_a_finding(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_extra_policy_command_is_not_a_finding(tmp_path, capsys, monkeypatch):
     """One-directional (AC): policy running MORE than the spec declared is
     not itself a binding violation -- the spec's promise is a floor."""
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n')
     _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true",))
     args = _story_args()
 
-    exit_code = gate_module.run_evaluate(args)
+    gate_module.run_evaluate(args)
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-010" not in codes
@@ -2504,9 +2322,7 @@ def test_gate_evaluate_story_unresolved_story_key_skips_binding_reports_only_mrs
     assert exit_code == 1
 
 
-def test_gate_evaluate_story_no_resolvable_project_reports_mrs_gate_009(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_no_resolvable_project_reports_mrs_gate_009(tmp_path, capsys, monkeypatch):
     """Review finding (P1): an empty --project/active project must be
     reported the SAME loud way --scope-check's own identical precondition
     already reports it (MRS-GATE-009), never a silent skip -- this test
@@ -2526,9 +2342,7 @@ def test_gate_evaluate_story_no_resolvable_project_reports_mrs_gate_009(
     assert exit_code == 1
 
 
-def test_gate_evaluate_story_syntactically_invalid_project_reports_mrs_gate_009(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_syntactically_invalid_project_reports_mrs_gate_009(tmp_path, capsys, monkeypatch):
     """The non-trivial case (P1): a NON-EMPTY but syntactically invalid
     project slug also fails `policy._is_valid_project_slug` -- unlike the
     empty-string case above, this exercises the actual validity check
@@ -2550,9 +2364,7 @@ def test_gate_evaluate_story_syntactically_invalid_project_reports_mrs_gate_009(
     assert exit_code == 1
 
 
-def test_gate_evaluate_story_run_scope_unavailable_skips_binding_check_too(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_run_scope_unavailable_skips_binding_check_too(tmp_path, capsys, monkeypatch):
     """Mirrors --scope-check's own suppression (MRS-GATE-005 already covers
     the one root cause) -- with no --scope-check at all this time, proving
     the guard is not accidentally scope-check-specific."""
@@ -2571,9 +2383,7 @@ def test_gate_evaluate_story_run_scope_unavailable_skips_binding_check_too(
     assert exit_code == 1
 
 
-def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(tmp_path, capsys, monkeypatch):
     """`_find_spec_text` is called EXACTLY ONCE per invocation, its result
     used for both --scope-check and the spec-binding check (the story's
     own "Never duplicate" constraint)."""
@@ -2599,9 +2409,7 @@ def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(
     monkeypatch.setattr(gate_module, "_find_spec_text", _counting_find_spec_text)
     args = _story_args(scope_check=True)
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",)))
     payload = json.loads(capsys.readouterr().out)
     assert len(calls) == 1
     assert payload["data"]["scope_check"]["checked"] is True
@@ -2615,14 +2423,10 @@ def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(
 # --- Story 33.5: `gate evaluate --story` classifies review depth -----------
 
 
-def _write_tracked_spec_with_low_risk(
-    tmp_path, slug, key, *, declared_low_risk: bool, commands=()
-):
+def _write_tracked_spec_with_low_risk(tmp_path, slug, key, *, declared_low_risk: bool, commands=()):
     from pyforge.marshal.core.identity import render_filename_slug
 
-    specs_dir = (
-        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
-    )
+    specs_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
     specs_dir.mkdir(parents=True, exist_ok=True)
     commands_block = "\n".join(f"- `{command}` -- expected: ok." for command in commands)
     low_risk_line = f"declared_low_risk: {'true' if declared_low_risk else 'false'}\n"
@@ -2635,9 +2439,7 @@ def _write_tracked_spec_with_low_risk(
     )
 
 
-def test_gate_evaluate_story_low_risk_small_diff_resolves_fewer_review_cycles(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_low_risk_small_diff_resolves_fewer_review_cycles(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey
 
@@ -2653,9 +2455,7 @@ def test_gate_evaluate_story_low_risk_small_diff_resolves_fewer_review_cycles(
     )
     args = _story_args(story="33.5")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=("a.py", "b.py"))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("a.py", "b.py")))
     payload = json.loads(capsys.readouterr().out)
     depth = payload["data"]["review_depth"]
     assert depth["checked"] is True
@@ -2666,9 +2466,7 @@ def test_gate_evaluate_story_low_risk_small_diff_resolves_fewer_review_cycles(
     assert exit_code == 0
 
 
-def test_gate_evaluate_story_standard_tier_keeps_default_review_cycles(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_story_standard_tier_keeps_default_review_cycles(tmp_path, capsys, monkeypatch):
     from pyforge.marshal.cli import gate as gate_module
     from pyforge.marshal.core.identity import StoryKey
 
@@ -2688,9 +2486,7 @@ def test_gate_evaluate_story_standard_tier_keeps_default_review_cycles(
     )
     args = _story_args(story="33.5")
 
-    exit_code = gate_module.run_evaluate(
-        args, vcs=_FakeVcs(changed=tuple(f"f{i}.py" for i in range(10)))
-    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=tuple(f"f{i}.py" for i in range(10))))
     payload = json.loads(capsys.readouterr().out)
     depth = payload["data"]["review_depth"]
     assert depth["checked"] is True
@@ -2714,9 +2510,7 @@ def test_gate_evaluate_without_story_omits_review_depth(tmp_path, capsys, monkey
 # --- Story 2.1 follow-up review pass -- regression guards ------------------
 
 
-def test_gate_evaluate_symlinked_policy_out_of_tree_is_refused_and_never_runs(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_symlinked_policy_out_of_tree_is_refused_and_never_runs(tmp_path, capsys, monkeypatch):
     """A conventional policy path that RESOLVES outside
     `_bmad-output/projects/` must be refused, not executed.
 
@@ -2736,9 +2530,7 @@ def test_gate_evaluate_symlinked_policy_out_of_tree_is_refused_and_never_runs(
     outside = tmp_path / "outside"
     outside.mkdir()
     marker = outside / "PROOF"
-    (outside / "evil.toml").write_text(
-        f'verify_commands = ["touch {marker}"]\n', encoding="utf-8"
-    )
+    (outside / "evil.toml").write_text(f'verify_commands = ["touch {marker}"]\n', encoding="utf-8")
     root = tmp_path / "repo"
     policy_path = _conventional_policy(root, monkeypatch, "acme", "")
     policy_path.unlink()
@@ -2759,9 +2551,7 @@ def test_gate_evaluate_symlinked_policy_out_of_tree_is_refused_and_never_runs(
     assert payload["data"]["policy_source"] is None
 
 
-def test_gate_evaluate_text_format_cannot_be_forged_by_a_policy_path(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_policy_path(tmp_path, capsys, monkeypatch):
     """Review finding: the pass that quoted `slug` and the command strings
     left `root` and `policy source` interpolated RAW. Both are paths, POSIX
     filenames may contain newlines, and `policy_source` is a symlink TARGET
@@ -2792,9 +2582,7 @@ def test_gate_evaluate_text_format_cannot_be_forged_by_a_policy_path(
     assert "\\n" in out
 
 
-def test_gate_evaluate_symlinked_policy_inside_the_project_is_read_and_recorded(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_symlinked_policy_inside_the_project_is_read_and_recorded(tmp_path, capsys, monkeypatch):
     """The containment check refuses only what ESCAPES the project. A
     symlink pointing elsewhere inside the project's OWN directory is a
     legitimate layout (this repo symlinks artifact directories the same
@@ -2817,9 +2605,7 @@ def test_gate_evaluate_symlinked_policy_inside_the_project_is_read_and_recorded(
     assert [entry["command"] for entry in payload["data"]["commands"]] == ["true"]
 
 
-def test_gate_evaluate_symlink_to_another_project_is_refused_and_never_runs(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_symlink_to_another_project_is_refused_and_never_runs(tmp_path, capsys, monkeypatch):
     """FR-20's "another project's gates never run", through the filesystem.
 
     Review finding, verified live: fencing containment at the shared
@@ -2833,9 +2619,7 @@ def test_gate_evaluate_symlink_to_another_project_is_refused_and_never_runs(
     """
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     marker = tmp_path / "VICTIM_RAN"
-    victim_policy = _conventional_policy(
-        tmp_path, monkeypatch, "victim", f'verify_commands = ["touch {marker}"]\n'
-    )
+    victim_policy = _conventional_policy(tmp_path, monkeypatch, "victim", f'verify_commands = ["touch {marker}"]\n')
     policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
     policy_path.unlink()
     policy_path.symlink_to(victim_policy)
@@ -2850,9 +2634,7 @@ def test_gate_evaluate_symlink_to_another_project_is_refused_and_never_runs(
     assert payload["data"]["policy_source"] is None
 
 
-def test_gate_evaluate_relocated_projects_tree_is_refused_and_never_runs(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_relocated_projects_tree_is_refused_and_never_runs(tmp_path, capsys, monkeypatch):
     """The containment fence must not be relocatable along with the thing it
     fences.
 
@@ -2891,9 +2673,7 @@ def test_gate_evaluate_relocated_projects_tree_is_refused_and_never_runs(
 
 
 @pytest.mark.parametrize("kind", ["dangling", "loop"])
-def test_gate_evaluate_broken_symlink_policy_is_not_a_green_gate(
-    kind, tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_broken_symlink_policy_is_not_a_green_gate(kind, tmp_path, capsys, monkeypatch):
     """A broken symlink is a CONFIGURED policy that cannot be followed, not
     an absent one.
 
@@ -2934,9 +2714,7 @@ def test_gate_evaluate_shell_syntax_never_half_runs_green(tmp_path, capsys, monk
     inspects `tokens[0]`, and `true` resolves.
     """
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true && false"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true && false"]\n')
 
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     payload = json.loads(capsys.readouterr().out)
@@ -2978,14 +2756,10 @@ def test_gate_evaluate_shell_syntax_never_half_runs_green(tmp_path, capsys, monk
         "true;false",
     ],
 )
-def test_gate_evaluate_every_shell_operator_form_fails_closed(
-    command, tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_every_shell_operator_form_fails_closed(command, tmp_path, capsys, monkeypatch):
     """Each detected operator form lands `unevaluable`, never `clean`."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", f"verify_commands = [{command!r}]\n"
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", f"verify_commands = [{command!r}]\n")
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 1
@@ -3002,7 +2776,7 @@ def test_gate_evaluate_every_shell_operator_form_fails_closed(
         # byte-identical to a bare one and failed these CLOSED -- a valid
         # verify command permanently `unevaluable` with no escape hatch.
         "echo '|'",
-        "echo \"|\"",
+        'echo "|"',
         "echo '>'",
         "echo '&&'",
         "echo ';'",
@@ -3015,9 +2789,7 @@ def test_gate_evaluate_every_shell_operator_form_fails_closed(
         "echo ok",
     ],
 )
-def test_gate_evaluate_quoted_or_escaped_metacharacters_still_run(
-    command, tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_quoted_or_escaped_metacharacters_still_run(command, tmp_path, capsys, monkeypatch):
     """The guard must fire on SYNTAX, never on DATA -- otherwise it fails
     closed on legitimate commands and trains the gate away."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -3026,9 +2798,7 @@ def test_gate_evaluate_quoted_or_escaped_metacharacters_still_run(
     # characters -- so a backslash-escaped case would reach the guard
     # double-escaped and prove the opposite of what it claims. A TOML basic
     # string uses JSON's own escape rules.
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", f"verify_commands = [{json.dumps(command)}]\n"
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", f"verify_commands = [{json.dumps(command)}]\n")
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
@@ -3042,9 +2812,7 @@ def test_gate_evaluate_quoted_shell_metacharacters_still_run(tmp_path, capsys, m
     still execute -- otherwise the fix would fail-closed on legitimate
     commands and train the gate away."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["echo \'a && b\'"]\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", "verify_commands = [\"echo 'a && b'\"]\n")
 
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     payload = json.loads(capsys.readouterr().out)
@@ -3054,9 +2822,7 @@ def test_gate_evaluate_quoted_shell_metacharacters_still_run(tmp_path, capsys, m
     assert payload["data"]["commands"][0]["stdout"] == "a && b\n"
 
 
-def test_gate_evaluate_unstattable_policy_path_never_escapes_main(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_unstattable_policy_path_never_escapes_main(tmp_path, capsys, monkeypatch):
     """`Path.is_file()` PROPAGATES PermissionError on this package's 3.12
     floor (3.13+ suppresses all OSError), so an unsearchable
     planning-artifacts/ crashed straight out through `main()`'s
@@ -3090,9 +2856,7 @@ def test_gate_evaluate_unstattable_policy_path_never_escapes_main(
     assert payload["data"]["commands"][0]["command"] == "false"
 
 
-def test_gate_evaluate_directory_on_the_policy_path_is_not_a_green_gate(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_directory_on_the_policy_path_is_not_a_green_gate(tmp_path, capsys, monkeypatch):
     """A directory squatting on `marshal-policy.toml` used to make
     `is_file()` False, compose bare defaults, and exit 0 on MRS-GATE-004
     having run nothing. It must report the unreadable policy instead."""
@@ -3108,9 +2872,7 @@ def test_gate_evaluate_directory_on_the_policy_path_is_not_a_green_gate(
     assert payload["findings"][0]["code"] == "MRS-POLICY-004"
 
 
-def test_policy_read_failure_never_names_a_flag_gate_evaluate_does_not_have(
-    tmp_path, capsys, monkeypatch
-):
+def test_policy_read_failure_never_names_a_flag_gate_evaluate_does_not_have(tmp_path, capsys, monkeypatch):
     """`MRS-POLICY-004`'s message said "cannot read --project-policy ..." for
     a CONVENTIONAL-path read -- pointing the operator at a flag `marshal gate
     evaluate` rejects with a usage error (and which this command's own
@@ -3128,9 +2890,7 @@ def test_policy_read_failure_never_names_a_flag_gate_evaluate_does_not_have(
     assert message.startswith("cannot read project policy ")
 
 
-def test_gate_evaluate_text_format_cannot_be_forged_by_a_command_string(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_command_string(tmp_path, capsys, monkeypatch):
     """A newline inside a verify command forged whole lines of the default
     text report -- verified live, a command string ending
     `\\nfindings:\\n  MRS-GATE-001 [error] FORGED` printed a `findings:`
@@ -3166,27 +2926,21 @@ def test_gate_evaluate_text_format_cannot_be_forged_by_a_slug(tmp_path, capsys, 
     monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
 
-    exit_code = main(
-        ["gate", "evaluate", "--project", "bad\nfindings:\n  MRS-GATE-001 [error] FORGED"]
-    )
+    exit_code = main(["gate", "evaluate", "--project", "bad\nfindings:\n  MRS-GATE-001 [error] FORGED"])
     out = capsys.readouterr().out
 
     assert exit_code == 1
     assert "\nfindings:\n  MRS-GATE-001 [error] FORGED" not in out
 
 
-def test_gate_evaluate_envelope_records_the_tree_and_policy_it_evaluated(
-    tmp_path, capsys, monkeypatch
-):
+def test_gate_evaluate_envelope_records_the_tree_and_policy_it_evaluated(tmp_path, capsys, monkeypatch):
     """An envelope asserting `clean` must say WHERE and FROM WHAT. `slug`
     alone does not: `repo_root()` is `__file__`-derived (which tree gets
     gated depends on which copy of the package is importable), and the
     conventional path can be a symlink, so slug + convention do not
     determine the file that was read."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
-    policy_path = _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n'
-    )
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
 
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     payload = json.loads(capsys.readouterr().out)

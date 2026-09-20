@@ -48,9 +48,7 @@ class TestEpicContextContractUntouched:
         assert "{{.implementation_artifacts}}/epic-<N>-context.md" in text
         # ...and marshal's own declaration names the identical location, so
         # the freshness answer and the file the skill loads cannot diverge.
-        assert derived.epic_context_output_relpath("s", "7").endswith(
-            "/implementation-artifacts/epic-7-context.md"
-        )
+        assert derived.epic_context_output_relpath("s", "7").endswith("/implementation-artifacts/epic-7-context.md")
 
     def test_the_required_header_is_unchanged(self):
         assert "# Epic <N> Context:" in _read(STEP_01)
@@ -121,9 +119,7 @@ class TestLayerOffKeepsTheOldRule:
     def test_the_previous_mtime_rule_survives_verbatim_as_the_fallback(self):
         """AC 3's "today's compile-on-hunch behavior is unchanged" is only
         true if the old rule is still literally written down."""
-        assert (
-            "no file in `{{.planning_artifacts}}` is newer" in _read(STEP_01)
-        )
+        assert "no file in `{{.planning_artifacts}}` is newer" in _read(STEP_01)
 
     def test_the_continuity_cache_write_is_explicitly_layer_gated(self):
         text = _read(STEP_01)

@@ -18,9 +18,7 @@ from pyforge.herald import auth
 from pyforge.herald.errors import OperatorAuthorizationError
 
 
-def test_no_env_var_and_no_config_file_resolves_to_no_auth_context(
-    tmp_path, monkeypatch
-):
+def test_no_env_var_and_no_config_file_resolves_to_no_auth_context(tmp_path, monkeypatch):
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
     assert auth.resolve_auth_context(config_path=tmp_path / "config") is None
 
@@ -33,18 +31,14 @@ def test_env_var_with_operator_role_resolves(monkeypatch, tmp_path):
     assert context.source == f"env:{auth.TOKEN_ENV_VAR}"
 
 
-def test_env_var_with_a_different_role_resolves_to_that_role_not_operator(
-    monkeypatch, tmp_path
-):
+def test_env_var_with_a_different_role_resolves_to_that_role_not_operator(monkeypatch, tmp_path):
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "viewer:tok-123")
     context = auth.resolve_auth_context(config_path=tmp_path / "config")
     assert context is not None
     assert context.role == "viewer"
 
 
-def test_env_var_present_but_not_colon_delimited_is_ignored_not_treated_as_operator(
-    monkeypatch, tmp_path
-):
+def test_env_var_present_but_not_colon_delimited_is_ignored_not_treated_as_operator(monkeypatch, tmp_path):
     """A trivial bypass this module's own docstring calls out: merely
     setting ``HERALD_TOKEN`` to any non-empty string must not grant the
     operator role -- the role has to be explicitly encoded."""
@@ -62,9 +56,7 @@ def test_config_file_with_operator_role_resolves(monkeypatch, tmp_path):
     assert context.source == f"file:{config_path}"
 
 
-def test_config_file_with_a_non_operator_role_resolves_to_that_role(
-    monkeypatch, tmp_path
-):
+def test_config_file_with_a_non_operator_role_resolves_to_that_role(monkeypatch, tmp_path):
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
     config_path = tmp_path / "config"
     config_path.write_text(json.dumps({"role": "viewer"}))
@@ -78,18 +70,14 @@ def test_missing_config_file_resolves_to_no_auth_context(monkeypatch, tmp_path):
     assert auth.resolve_auth_context(config_path=tmp_path / "does-not-exist") is None
 
 
-def test_malformed_json_config_file_resolves_to_no_auth_context_not_a_crash(
-    monkeypatch, tmp_path
-):
+def test_malformed_json_config_file_resolves_to_no_auth_context_not_a_crash(monkeypatch, tmp_path):
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
     config_path = tmp_path / "config"
     config_path.write_text("{not json")
     assert auth.resolve_auth_context(config_path=config_path) is None
 
 
-def test_config_file_with_no_role_field_resolves_to_no_auth_context(
-    monkeypatch, tmp_path
-):
+def test_config_file_with_no_role_field_resolves_to_no_auth_context(monkeypatch, tmp_path):
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
     config_path = tmp_path / "config"
     config_path.write_text(json.dumps({"token": "x"}))
@@ -107,9 +95,7 @@ def test_env_var_takes_precedence_over_config_file(monkeypatch, tmp_path):
 
 def test_require_operator_role_passes_through_an_operator_context():
     context = auth.AuthContext(role="operator", source="env:HERALD_TOKEN")
-    assert (
-        auth.require_operator_role(context, action="herald success publish") is context
-    )
+    assert auth.require_operator_role(context, action="herald success publish") is context
 
 
 def test_require_operator_role_raises_for_a_non_operator_role():

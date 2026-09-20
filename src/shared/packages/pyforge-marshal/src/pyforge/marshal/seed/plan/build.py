@@ -126,9 +126,7 @@ _ACTIONABLE_STATES = frozenset({ArtifactState.ABSENT, ArtifactState.PRESENT_DIVE
 _GIT_TIMEOUT_S = 30.0
 
 
-def _current_text_verbose(
-    state: ArtifactState, repo_root: Path, entry_path: str
-) -> tuple[str, bool]:
+def _current_text_verbose(state: ArtifactState, repo_root: Path, entry_path: str) -> tuple[str, bool]:
     """The one text both `_chosen_anchor` and `build_plan`'s own
     `artifact_hashes` computation read/hash -- a single shared definition
     so the two can never see a different byte stream for the same artifact
@@ -202,7 +200,7 @@ def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, 
         return "", False
     try:
         return target.read_text(encoding="utf-8"), True
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return "", False
 
 
@@ -362,24 +360,16 @@ def _pendency(
         else:
             found_spans = parse_regions(current_text, entry.format)
             found_names = {span.name for span in found_spans}
-            not_present = tuple(
-                region for region in entry.regions if region.name not in found_names
-            )
+            not_present = tuple(region for region in entry.regions if region.name not in found_names)
             surviving = marker_region_names(current_text, entry)
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return None
     not_present_names = {region.name for region in not_present}
     return _Pendency(
         not_present=not_present,
-        pending=tuple(
-            region
-            for region in not_present
-            if not _is_opted_out(entry.id, region.name, opted_out)
-        ),
+        pending=tuple(region for region in not_present if not _is_opted_out(entry.id, region.name, opted_out)),
         retained=tuple(
-            region
-            for region in entry.regions
-            if region.name not in not_present_names or region.name in surviving
+            region for region in entry.regions if region.name not in not_present_names or region.name in surviving
         ),
     )
 
@@ -470,7 +460,7 @@ def _chosen_anchor(
             (region.name, resolve_anchor(current_text, entry.format, region.anchor).matched)
             for region in pendency.pending
         )
-    except (RegionParseError, MarkerError, NotImplementedError):
+    except RegionParseError, MarkerError, NotImplementedError:
         return ()
 
 
@@ -516,9 +506,7 @@ def _repo_is_dirty(process: PosixProcess, repo_root: Path) -> bool:
     return bool(result.stdout)
 
 
-def build_plan(
-    manifest: Manifest, inventory: Inventory, *, opted_out: frozenset[str] = frozenset()
-) -> Plan:
+def build_plan(manifest: Manifest, inventory: Inventory, *, opted_out: frozenset[str] = frozenset()) -> Plan:
     """Map each qualifying `Classification` in `inventory` to one `Action`,
     plus a `RepoFingerprint` of `inventory.repo_root` (`inventory.
     repo_root` supplies the target repo -- there is no separate `repo_root`
@@ -614,11 +602,7 @@ def build_plan(
             "containment and would silently suppress entries"
         )
     inadmissible = sorted(
-        {
-            key if isinstance(key, str) else type(key).__name__
-            for key in opted_out
-            if not is_opt_out_key(key)
-        }
+        {key if isinstance(key, str) else type(key).__name__ for key in opted_out if not is_opt_out_key(key)}
     )
     if inadmissible:
         raise ValueError(
@@ -650,9 +634,7 @@ def build_plan(
         if classification.state not in _ACTIONABLE_STATES:
             continue
         entry = entries_by_id[classification.entry_id]
-        current_text, content_known = _current_text_verbose(
-            classification.state, inventory.repo_root, entry.path
-        )
+        current_text, content_known = _current_text_verbose(classification.state, inventory.repo_root, entry.path)
         pendency = _pendency(entry, classification.state, current_text, opted_out)
         if _is_fully_opted_out(pendency, content_known=content_known):
             # A hybrid entry that was owed insertions, has had every one of
@@ -683,10 +665,7 @@ def build_plan(
     )
     artifact_hashes = tuple(
         sorted(
-            (
-                (entry.id, hash_content(current_text))
-                for entry, _state, current_text, _pendency in actioned
-            ),
+            ((entry.id, hash_content(current_text)) for entry, _state, current_text, _pendency in actioned),
             key=lambda pair: pair[0],
         )
     )
@@ -764,17 +743,11 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
 
     current_head = _git_head(process, repo_root)
     if current_head != fingerprint.git_head:
-        drift.append(
-            f"git_head: the plan was built at {fingerprint.git_head!r},"
-            f" the repo is now at {current_head!r}"
-        )
+        drift.append(f"git_head: the plan was built at {fingerprint.git_head!r}, the repo is now at {current_head!r}")
 
     current_dirty = _repo_is_dirty(process, repo_root)
     if current_dirty != fingerprint.dirty:
-        drift.append(
-            f"dirty: the plan was built with dirty={fingerprint.dirty},"
-            f" the repo is now dirty={current_dirty}"
-        )
+        drift.append(f"dirty: the plan was built with dirty={fingerprint.dirty}, the repo is now dirty={current_dirty}")
 
     # Review finding: a dict comprehension over `plan.actions` silently
     # collapses two actions sharing an `artifact_id` onto the last one,
@@ -823,9 +796,7 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
     for artifact_id, recorded_sha in fingerprint.artifact_hashes:
         action = actions_by_id.get(artifact_id)
         if action is None:
-            drift.append(
-                f"{artifact_id}: hashed in the plan's fingerprint but no Action carries it"
-            )
+            drift.append(f"{artifact_id}: hashed in the plan's fingerprint but no Action carries it")
             continue
         target_path = action.target_path
         current_text, readable = _read_text_or_blank_verbose(repo_root, target_path)
@@ -853,8 +824,7 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
             # a symlinked target's own rollback bound is filed separately.
             if target.exists():
                 drift.append(
-                    f"{artifact_id}: {target_path!r} was absent when the plan was built"
-                    " and something exists there now"
+                    f"{artifact_id}: {target_path!r} was absent when the plan was built and something exists there now"
                 )
             continue
         if not readable:
@@ -902,9 +872,7 @@ def write_plan(plan: Plan, path: Path) -> None:
     rationale, or anchor string carrying non-ASCII text should read as
     itself in `plan.json`, not as `\\uXXXX` escapes (review finding: the
     stdlib default escapes every non-ASCII code point)."""
-    atomic_write_bytes(
-        path, json.dumps(plan.to_json_dict(), indent=2, ensure_ascii=False).encode("utf-8")
-    )
+    atomic_write_bytes(path, json.dumps(plan.to_json_dict(), indent=2, ensure_ascii=False).encode("utf-8"))
 
 
 def load_plan(path: Path) -> Plan:

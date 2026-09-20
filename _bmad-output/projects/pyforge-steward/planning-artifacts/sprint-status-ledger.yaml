@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 398
+# stories: 407
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -262,10 +262,14 @@ development_status:
   63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: done
   63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted: backlog
   63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point: backlog
+  63-5-pyforge-foundry-full-the-fleet-s-whole-dependency-closure-is-one-locked-artifact: done
+  63-6-no-station-code-assumes-the-local-recipes-environment-at-runtime: done
   64-1-the-nine-frames-go-bare-type-frame-and-the-readme-pins-the-upstream-heads: done
   64-2-pyforge-publishes-its-frame-conformance-profile: done
   65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill: done
   65-2-the-ledger-query-answers-done-running-next-in-one-call: done
+  66-1-lint-and-types-gate-the-ten-packages-locally-and-on-the-runners-alike: done
+  66-2-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks: done
   7-1-one-build-whole-guild: done
   7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: done
@@ -397,11 +401,11 @@ development_status:
   epic-59-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
-  epic-60: backlog
+  epic-60: in-progress
   epic-60-retrospective: optional
-  epic-61: backlog
+  epic-61: in-progress
   epic-61-retrospective: optional
-  epic-62: backlog
+  epic-62: in-progress
   epic-62-retrospective: optional
   epic-63: in-progress
   epic-63-retrospective: optional
@@ -409,6 +413,8 @@ development_status:
   epic-64-retrospective: optional
   epic-65: done
   epic-65-retrospective: optional
+  epic-66: done
+  epic-66-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
   epic-8: done

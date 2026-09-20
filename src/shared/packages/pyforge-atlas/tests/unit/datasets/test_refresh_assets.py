@@ -14,11 +14,11 @@ import json
 import pandas as pd
 
 from pyforge.atlas.datasets import (
+    VULN_DB_ENV_RESOURCE,
     MappingCacheDataset,
     OSVOfflineStoreDataset,
     RefreshRequest,
     VDBStoreDataset,
-    VULN_DB_ENV_RESOURCE,
 )
 
 _FORCE = RefreshRequest(store="s", force=True)
@@ -34,6 +34,7 @@ def _seed_vdb(path) -> None:
 
 
 # -- offline / lazy construction (kedro-catalog-check compatibility) ---------
+
 
 def test_vdb_constructs_offline_no_refresher(tmp_path):
     ds = VDBStoreDataset(filepath=str(tmp_path / "vdb"))
@@ -56,6 +57,7 @@ def test_mapping_constructs_offline(tmp_path):
 
 
 # -- AC-3: declared resource + coerce_cvss_score boundary --------------------
+
 
 def test_vdb_declares_vuln_db_resource(tmp_path):
     ds = VDBStoreDataset(filepath=str(tmp_path / "vdb"))
@@ -89,9 +91,7 @@ def test_vdb_load_coerces_cvss_numeric_nan_to_none(tmp_path):
 def test_vdb_load_coerces_string_score_to_float(tmp_path):
     # DW-B2-2: a numeric-STRING cvss (the partial-model_dump shape that survives parquet)
     # must come out a float via coerce_cvss_score at the read boundary.
-    raw = pd.DataFrame(
-        {"package_name": ["a", "b"], "cve_id": ["CVE-1", "CVE-2"], "cvss_score": ["9.8", "7.0"]}
-    )
+    raw = pd.DataFrame({"package_name": ["a", "b"], "cve_id": ["CVE-1", "CVE-2"], "cvss_score": ["9.8", "7.0"]})
     ds = VDBStoreDataset(filepath=str(tmp_path / "vdb"), refresher=lambda: raw)
     ds.save(RefreshRequest(store="v"))
     vals = ds.load()["cvss_score"].tolist()
@@ -100,6 +100,7 @@ def test_vdb_load_coerces_string_score_to_float(tmp_path):
 
 
 # -- AC-1: cadence / force freshness semantics -------------------------------
+
 
 def test_fresh_store_within_cadence_is_a_noop_not_stale(tmp_path):
     # A store still fresh within cadence + no force => no-op, NOT marked stale (the
@@ -125,6 +126,7 @@ def test_force_triggers_a_due_refresh(tmp_path):
 
 
 # -- AC-5: air-gapped degradation (keep last-good + mark stale) --------------
+
 
 def test_vdb_airgapped_due_refresh_keeps_last_good_and_marks_stale(tmp_path):
     p = tmp_path / "vdb"
@@ -230,6 +232,7 @@ def test_osv_non_list_on_disk_degrades_to_empty(tmp_path):
 
 # -- staleness marker robustness (EC4) ---------------------------------------
 
+
 def test_staleness_robust_to_malformed_marker(tmp_path):
     ds = VDBStoreDataset(filepath=str(tmp_path / "vdb"))
     ds._staleness_path.parent.mkdir(parents=True, exist_ok=True)
@@ -238,14 +241,13 @@ def test_staleness_robust_to_malformed_marker(tmp_path):
     assert ds.staleness() is None
     assert ds.is_stale() is False
     # a dict with a non-numeric marked_at must not crash.
-    ds._staleness_path.write_text(
-        json.dumps({"stale": True, "reason": "x", "marked_at": "nope"}), encoding="utf-8"
-    )
+    ds._staleness_path.write_text(json.dumps({"stale": True, "reason": "x", "marked_at": "nope"}), encoding="utf-8")
     marker = ds.staleness()
     assert marker is not None and marker.stale is True and marker.marked_at == 0
 
 
 # -- MappingCacheDataset: merge + keep-last-good (AC-4 / AC-5) ----------------
+
 
 def test_mapping_merge_retains_old_only_keys_and_new_wins(tmp_path):
     p = tmp_path / "map.json"
@@ -282,12 +284,10 @@ _BAD_UTF8 = b"\xff\xfe\x00\x80not utf-8"
 
 def test_osv_load_degrades_on_invalid_utf8_store(tmp_path):
     p = tmp_path / "cve"
-    OSVOfflineStoreDataset(
-        filepath=str(p), refresher=lambda: [{"id": "CVE-1"}]
-    ).save(RefreshRequest(store="o"))
+    OSVOfflineStoreDataset(filepath=str(p), refresher=lambda: [{"id": "CVE-1"}]).save(RefreshRequest(store="o"))
     (p / OSVOfflineStoreDataset.STORE_FILENAME).write_bytes(_BAD_UTF8)
     ds = OSVOfflineStoreDataset(filepath=str(p))
-    assert ds.load() == []          # degrades, does not raise
+    assert ds.load() == []  # degrades, does not raise
     assert ds.is_stale() is True
 
 
@@ -296,7 +296,7 @@ def test_mapping_load_and_save_degrade_on_invalid_utf8_last_good(tmp_path):
     ds = MappingCacheDataset(filepath=str(p))
     ds.save({"numpy": "numpy"})
     p.write_bytes(_BAD_UTF8)  # corrupt the last-good cache with invalid UTF-8
-    assert ds.load() == {}    # corrupt last-good → empty, no crash
+    assert ds.load() == {}  # corrupt last-good → empty, no crash
     # save() must not raise even though last-good is unreadable (single-writer path);
     # the unreadable last-good is treated as absent, so the new export lands.
     ds.save({"pandas": "pandas"})

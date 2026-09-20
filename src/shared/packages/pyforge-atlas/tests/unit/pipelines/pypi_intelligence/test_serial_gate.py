@@ -69,9 +69,7 @@ def test_denominator_never_re_includes_pypi_only_rows():
             "fetched_at": [pd.NA],
         }
     )
-    universe = pd.DataFrame(
-        {"pypi_name": ["mapped", "pypi-only-a", "pypi-only-b"], "last_serial": [5, 1, 2]}
-    )
+    universe = pd.DataFrame({"pypi_name": ["mapped", "pypi-only-a", "pypi-only-b"], "last_serial": [5, 1, 2]})
     out = fetch_pypi_current_versions(actionable, universe, now=_NOW)
     assert set(out["pypi_name"]) == {"mapped"}  # pypi-only-* never re-included
 
@@ -111,8 +109,6 @@ def test_eligibility_stats_split_sums_to_eligible():
     assert stats["eligible_safety_recheck"] == 1
     # the three branch counts partition the eligible set
     assert (
-        stats["eligible_never_fetched"]
-        + stats["eligible_serial_moved"]
-        + stats["eligible_safety_recheck"]
+        stats["eligible_never_fetched"] + stats["eligible_serial_moved"] + stats["eligible_safety_recheck"]
         == stats["eligible"]
     )

@@ -84,13 +84,11 @@ def _git(repo_root: Path, *args: str) -> str:
         )
     except subprocess.TimeoutExpired as exc:
         raise errors.HeraldError(
-            f"could not write stamp: 'git {' '.join(args)}' in {repo_root} "
-            f"exceeded {_GIT_TIMEOUT_SECONDS}s ({exc})"
+            f"could not write stamp: 'git {' '.join(args)}' in {repo_root} exceeded {_GIT_TIMEOUT_SECONDS}s ({exc})"
         ) from exc
     except (OSError, subprocess.CalledProcessError) as exc:
         raise errors.HeraldError(
-            f"could not write stamp: 'git {' '.join(args)}' failed in "
-            f"{repo_root} ({exc})"
+            f"could not write stamp: 'git {' '.join(args)}' failed in {repo_root} ({exc})"
         ) from exc
     return completed.stdout.strip()
 
@@ -162,37 +160,23 @@ def read_stamp(artifact_path: Path) -> Stamp | None:
     except json.JSONDecodeError as exc:
         raise errors.HeraldError(f"stamp {stamp_path} is not valid JSON: {exc}") from exc
     if not isinstance(document, dict):
-        raise errors.HeraldError(
-            f"stamp {stamp_path} does not hold a JSON object at its top level"
-        )
+        raise errors.HeraldError(f"stamp {stamp_path} does not hold a JSON object at its top level")
     known = {"tree", "etag", "derived_at"}
     missing = sorted(known - set(document))
     if missing:
-        raise errors.HeraldError(
-            f"stamp {stamp_path} is missing field(s) {', '.join(missing)}"
-        )
+        raise errors.HeraldError(f"stamp {stamp_path} is missing field(s) {', '.join(missing)}")
     unknown = sorted(set(document) - known)
     if unknown:
-        raise errors.HeraldError(
-            f"stamp {stamp_path} carries unknown field(s) "
-            f"{', '.join(map(repr, unknown))}"
-        )
+        raise errors.HeraldError(f"stamp {stamp_path} carries unknown field(s) {', '.join(map(repr, unknown))}")
     tree = document["tree"]
     etag = document["etag"]
     derived_at = document["derived_at"]
     if not isinstance(tree, str):
-        raise errors.HeraldError(
-            f"stamp {stamp_path} field 'tree' must be a string, not "
-            f"{type(tree).__name__}"
-        )
+        raise errors.HeraldError(f"stamp {stamp_path} field 'tree' must be a string, not {type(tree).__name__}")
     if etag is not None and not isinstance(etag, str):
-        raise errors.HeraldError(
-            f"stamp {stamp_path} field 'etag' must be a string or null, "
-            f"not {type(etag).__name__}"
-        )
+        raise errors.HeraldError(f"stamp {stamp_path} field 'etag' must be a string or null, not {type(etag).__name__}")
     if not isinstance(derived_at, str):
         raise errors.HeraldError(
-            f"stamp {stamp_path} field 'derived_at' must be a string, not "
-            f"{type(derived_at).__name__}"
+            f"stamp {stamp_path} field 'derived_at' must be a string, not {type(derived_at).__name__}"
         )
     return Stamp(tree=tree, etag=etag, derived_at=derived_at)

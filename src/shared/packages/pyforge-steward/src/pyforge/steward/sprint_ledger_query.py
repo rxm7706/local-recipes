@@ -58,7 +58,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import yaml
-
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 # ── Repo-root resolution (mirrors `provision.py`'s walk-up precedent, keyed on
@@ -120,10 +119,7 @@ def flag_env_var(flag_name: str) -> str:
 
 
 def flag_off_message(flag_name: str) -> str:
-    return (
-        f"flag {flag_name} is off (set {flag_env_var(flag_name)}=true, "
-        f"flags.json, or --flag {flag_name}=true)"
-    )
+    return f"flag {flag_name} is off (set {flag_env_var(flag_name)}=true, flags.json, or --flag {flag_name}=true)"
 
 
 def _coerce_flag_value(raw: Any) -> Any:
@@ -217,9 +213,11 @@ KNOWN_STATUSES: Tuple[str, ...] = tuple(_STATUS_FIELDS)
 
 # --- Dataclasses ---
 
+
 @dataclass
 class WorkPassportItem:
     """Work Passport identity record for a story across systems."""
+
     passport_id: str
     story_id: str
     station: str
@@ -250,6 +248,7 @@ StoryItem = WorkPassportItem
 @dataclass
 class EpicItem:
     """Epic metadata containing owned stories."""
+
     epic_id: str
     station: str
     title: str
@@ -260,6 +259,7 @@ class EpicItem:
 @dataclass
 class StationProgress:
     """Completion metrics for a station; the buckets always sum to `total_stories`."""
+
     station: str
     total_stories: int = 0
     done: int = 0
@@ -284,6 +284,7 @@ class StationProgress:
 @dataclass
 class EstateSummary:
     """Aggregate completion metrics across the estate."""
+
     stations: Dict[str, StationProgress] = field(default_factory=dict)
     total_stories: int = 0
     total_done: int = 0
@@ -306,6 +307,7 @@ class EstateSummary:
 @dataclass
 class QueryResult:
     """Container for query results and metadata."""
+
     summary: EstateSummary
     epics: List[EpicItem]
     stories: List[WorkPassportItem]
@@ -317,6 +319,7 @@ class QueryResult:
 @dataclass
 class StationLedger:
     """What a `LedgerSourcePlugin` returns for one station."""
+
     station: str
     status_map: Dict[str, str] = field(default_factory=dict)
     epics: List[EpicItem] = field(default_factory=list)
@@ -326,6 +329,7 @@ class StationLedger:
 
 
 # --- Interfaces & Plugin Registries ---
+
 
 class QueryFormatterPlugin(ABC):
     """Abstract interface for formatters."""
@@ -439,6 +443,7 @@ class HookRegistry:
 
 
 # --- Built-in Formatter Implementations ---
+
 
 def _uncolumned(total: int, *shown: int) -> int:
     """Stories in buckets a human-facing table has no column for."""
@@ -566,15 +571,17 @@ class TableFormatter(QueryFormatterPlugin):
         headers = ["Station", "Story ID", "Status", "Next", "Jira Key", "GitHub Item", "Title"]
         rows = []
         for s in result.stories:
-            rows.append([
-                s.station,
-                s.story_id,
-                s.status.upper(),
-                s.next,
-                s.jira_key or "-",
-                s.github_item_id or "-",
-                s.title[:45] + ("..." if len(s.title) > 45 else "")
-            ])
+            rows.append(
+                [
+                    s.station,
+                    s.story_id,
+                    s.status.upper(),
+                    s.next,
+                    s.jira_key or "-",
+                    s.github_item_id or "-",
+                    s.title[:45] + ("..." if len(s.title) > 45 else ""),
+                ]
+            )
 
         col_widths = [len(h) for h in headers]
         for row in rows:
@@ -613,11 +620,15 @@ class SyncMatrixFormatter(QueryFormatterPlugin):
 
             if not has_jira or not has_gh:
                 unlinked_count += 1
-                alignment = "⚠️ UNLINKED (" + (
-                    "Missing Jira & GH" if not has_jira and not has_gh else (
-                        "Missing Jira" if not has_jira else "Missing GH"
+                alignment = (
+                    "⚠️ UNLINKED ("
+                    + (
+                        "Missing Jira & GH"
+                        if not has_jira and not has_gh
+                        else ("Missing Jira" if not has_jira else "Missing GH")
                     )
-                ) + ")"
+                    + ")"
+                )
             else:
                 aligned_count += 1
                 alignment = "✅ ALIGNED"
@@ -635,8 +646,7 @@ class SyncMatrixFormatter(QueryFormatterPlugin):
 
 _LEDGER_GLOB = "_bmad-output/projects/*/planning-artifacts/sprint-status-ledger.yaml"
 _FACTS_METHOD = (
-    "count story keys by status with parse_sprint_status semantics "
-    "(steward sprint_ledger_query; epic-N keys excluded)"
+    "count story keys by status with parse_sprint_status semantics (steward sprint_ledger_query; epic-N keys excluded)"
 )
 
 
@@ -725,7 +735,7 @@ class AtlasDatasetFormatter(QueryFormatterPlugin):
                     "effort": s.effort or "",
                 }
                 for s in result.stories
-            ]
+            ],
         }
         return json.dumps(dataset, indent=2)
 
@@ -753,8 +763,8 @@ class StaticDossierFormatter(QueryFormatterPlugin):
               <td><code>{esc(st.story_id)}</code></td>
               <td><span class="badge {status_cls}">{esc(st.status.upper())}</span></td>
               <td><code>{esc(st.passport_id[:8])}...</code></td>
-              <td>{esc(st.jira_key or '-')}</td>
-              <td>{esc(st.github_item_id or '-')}</td>
+              <td>{esc(st.jira_key or "-")}</td>
+              <td>{esc(st.github_item_id or "-")}</td>
               <td><strong>{esc(st.title)}</strong></td>
             </tr>
             """)
@@ -1152,9 +1162,7 @@ class TrackedLedgerSource(LedgerSourcePlugin):
         try:
             content = epics_file.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
-            ledger.warnings.append(
-                f"{epics_file}: unreadable ({type(exc).__name__}: {exc}); station {station} skipped"
-            )
+            ledger.warnings.append(f"{epics_file}: unreadable ({type(exc).__name__}: {exc}); station {station} skipped")
             ledger.loaded = False
             return ledger
         ledger.epics, ledger.stories = parse_epics_markdown(content, station, ledger.status_map)
@@ -1234,7 +1242,7 @@ def fetch_running_stations(process: ProcessPort, root: Path) -> RunningFact:
         )
     try:
         payload = json.loads(result.stdout)
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except json.JSONDecodeError, TypeError, ValueError:
         return RunningFact(ok=False, warning="marshal watch --fleet did not return JSON")
     if not isinstance(payload, dict):
         return RunningFact(ok=False, warning="marshal watch --fleet JSON was not an object")
@@ -1308,6 +1316,7 @@ def _is_computed_running(story: WorkPassportItem) -> bool:
 
 
 # --- Core Query Engine ---
+
 
 class SprintLedgerQueryEngine:
     """Engine for loading, filtering, querying, and exporting sprint ledgers."""
@@ -1413,9 +1422,7 @@ class SprintLedgerQueryEngine:
             for s in st_stories:
                 bucket = _STATUS_FIELDS.get(s.status, "other")
                 setattr(progress, bucket, getattr(progress, bucket) + 1)
-            progress.completion_pct = (
-                progress.done / progress.total_stories * 100.0 if progress.total_stories else 0.0
-            )
+            progress.completion_pct = progress.done / progress.total_stories * 100.0 if progress.total_stories else 0.0
             station_summaries[st] = progress
             all_stories.extend(st_stories)
 
@@ -1426,8 +1433,7 @@ class SprintLedgerQueryEngine:
                 total_field = f"total_{bucket}"
                 setattr(estate_summary, total_field, getattr(estate_summary, total_field) + getattr(progress, bucket))
         estate_summary.overall_completion_pct = (
-            estate_summary.total_done / estate_summary.total_stories * 100.0
-            if estate_summary.total_stories else 0.0
+            estate_summary.total_done / estate_summary.total_stories * 100.0 if estate_summary.total_stories else 0.0
         )
 
         # `next` (Story 65.2, CAP-150): computed over the FULL scanned set,
@@ -1475,7 +1481,8 @@ class SprintLedgerQueryEngine:
         if search_term:
             term = search_term.lower()
             filtered_stories = [
-                s for s in filtered_stories
+                s
+                for s in filtered_stories
                 if term in s.title.lower() or term in s.story_id.lower() or term in (s.jira_key or "").lower()
             ]
 

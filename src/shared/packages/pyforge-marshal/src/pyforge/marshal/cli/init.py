@@ -213,11 +213,10 @@ import os
 import secrets
 import shlex
 import subprocess
+import tomllib
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-
-import tomllib
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
@@ -362,7 +361,6 @@ def _home_path(slug: str) -> Path:
     return _loop_home_root() / slug
 
 
-
 def _mrs_init_003_from_scope_drift(
     home: Path,
     slug: str,
@@ -378,9 +376,9 @@ def _mrs_init_003_from_scope_drift(
     (3) marker+planning agreement on a slug other than the one requested
     (DW-1-4-2 blind spot (2) — no silent reconcile of a repurposed home).
     """
-    marker = drift.marker  # type: ignore[attr-defined]
-    planning = drift.planning_artifacts  # type: ignore[attr-defined]
-    implementation = drift.implementation_artifacts  # type: ignore[attr-defined]
+    marker = drift.marker
+    planning = drift.planning_artifacts
+    implementation = drift.implementation_artifacts
 
     if planning == UNRECOGNIZED and planning_link.is_symlink():
         try:
@@ -400,11 +398,7 @@ def _mrs_init_003_from_scope_drift(
             path=str(planning_link),
         )
 
-    recognized = [
-        value
-        for value in (marker, planning, implementation)
-        if value != UNRECOGNIZED
-    ]
+    recognized = [value for value in (marker, planning, implementation) if value != UNRECOGNIZED]
     if len(set(recognized)) > 1:
         return Finding(
             code="MRS-INIT-003",
@@ -419,12 +413,7 @@ def _mrs_init_003_from_scope_drift(
             path=str(home),
         )
 
-    if (
-        marker != UNRECOGNIZED
-        and planning != UNRECOGNIZED
-        and marker == planning
-        and marker != slug
-    ):
+    if marker != UNRECOGNIZED and planning != UNRECOGNIZED and marker == planning and marker != slug:
         return Finding(
             code="MRS-INIT-003",
             severity=Severity.ERROR,
@@ -463,9 +452,7 @@ def _op_failed_finding(message: str) -> Finding:
     return Finding(code="MRS-INIT-004", severity=Severity.ERROR, message=message)
 
 
-def _render_mcp_json(
-    effective: policy.EffectivePolicy, home: Path, fs: FsPort
-) -> tuple[str, list[Finding]]:
+def _render_mcp_json(effective: policy.EffectivePolicy, home: Path, fs: FsPort) -> tuple[str, list[Finding]]:
     """Story 6.9 (AD-43): renders ``<home>/.mcp.json`` from the composed
     policy's ``mcp_servers`` field, using the SAME copy-when-absent
     discipline ``run_preflight``'s own adapter seed-file step already
@@ -592,8 +579,7 @@ def _probe_mcp_servers(
                     code="MRS-PREFLIGHT-012",
                     severity=Severity.ERROR,
                     message=(
-                        f"MCP server {name!r}'s command {command!r} is not "
-                        "resolvable on PATH or as an absolute path"
+                        f"MCP server {name!r}'s command {command!r} is not resolvable on PATH or as an absolute path"
                     ),
                     path=str(mcp_path),
                 )
@@ -635,12 +621,7 @@ def run_init(
     # from git's own stderr instead of this crisp pre-I/O rejection). A
     # git-ref constraint on TOP of the shared check, not a second slug
     # regex -- the spec's single-shape-check rule still holds.
-    if (
-        slug.startswith(".")
-        or slug.endswith(".")
-        or ".." in slug
-        or slug.endswith(".lock")
-    ):
+    if slug.startswith(".") or slug.endswith(".") or ".." in slug or slug.endswith(".lock"):
         findings.append(
             Finding(
                 code="MRS-INIT-001",
@@ -685,10 +666,7 @@ def run_init(
             Finding(
                 code="MRS-INIT-002",
                 severity=Severity.ERROR,
-                message=(
-                    f"no such BMAD project: {slug!r} -- {planning_dir} does "
-                    "not exist in the main checkout"
-                ),
+                message=(f"no such BMAD project: {slug!r} -- {planning_dir} does not exist in the main checkout"),
                 path=str(planning_dir),
             )
         )
@@ -801,9 +779,7 @@ def run_init(
             try:
                 removed = fs.remove_empty_dir(local)
             except FsError as exc:
-                findings.append(
-                    _op_failed_finding(f"removing stale tier-3 directory {local}: {exc}")
-                )
+                findings.append(_op_failed_finding(f"removing stale tier-3 directory {local}: {exc}"))
                 return _emit(args, data, findings)
             if not removed:
                 findings.append(
@@ -897,9 +873,7 @@ def run_init(
             mcp_project_data = _read_project_policy(mcp_policy_path)
         except PolicyIOError as exc:
             findings.append(exc.finding)
-    mcp_effective, mcp_policy_findings = policy.compose(
-        project_slug=slug, project=mcp_project_data, flags={}
-    )
+    mcp_effective, mcp_policy_findings = policy.compose(project_slug=slug, project=mcp_project_data, flags={})
     findings.extend(mcp_policy_findings)
     mcp_status, mcp_render_findings = _render_mcp_json(mcp_effective, home, fs)
     data["mcp_json"] = {"status": mcp_status}
@@ -909,9 +883,7 @@ def run_init(
     # needs shell quoting (a BMAD_LOOP_HOME_ROOT override containing a
     # space); it is a no-op for the common unspaced path, and the slug's
     # charset never needs quoting (review finding).
-    data["launch_line"] = (
-        f"cd {shlex.quote(str(home))} && export BMAD_ACTIVE_PROJECT={shlex.quote(slug)}"
-    )
+    data["launch_line"] = f"cd {shlex.quote(str(home))} && export BMAD_ACTIVE_PROJECT={shlex.quote(slug)}"
     return _emit(args, data, findings)
 
 
@@ -941,9 +913,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
 
 def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
     verdict_value = compute_verdict(tuple(findings))
-    envelope = build_envelope(
-        command="init", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command="init", verdict=verdict_value, data=data, findings=tuple(findings))
     # flush=True + the broken-pipe guard mirror cli/config.py::run_config
     # exactly -- see that function's comment for the full rationale (stdout
     # is block-buffered when piped/redirected, so an un-flushed write never
@@ -975,12 +945,8 @@ def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> sta
     slug = entry.branch.removeprefix("loop/")
     marker_path = entry.path / "_bmad" / "custom" / ".active-project"
     link_path = entry.path / "_bmad-output" / "planning-artifacts"
-    tier3_local_path = (
-        entry.path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    )
-    tier3_canonical_path = (
-        repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    )
+    tier3_local_path = entry.path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    tier3_canonical_path = repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
 
     marker_text = fs.read_text(marker_path)
     symlink_target = fs.read_symlink_target(link_path)
@@ -1025,9 +991,7 @@ def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> sta
     )
 
 
-def _gather_main_checkout_facts(
-    main_entry: WorktreeEntry, repo_root: Path, fs: FsPort
-) -> status.MainCheckoutFacts:
+def _gather_main_checkout_facts(main_entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> status.MainCheckoutFacts:
     """Reads the main checkout's own raw state via ``FsPort``. Sub-paths are
     built from ``repo_root`` (not ``main_entry.path``) -- both name the same
     directory, but ``repo_root`` is this module's one authoritative value for
@@ -1065,9 +1029,7 @@ def run_homes(
     try:
         invocation_dir = Path.cwd()
     except OSError as exc:
-        findings.append(
-            _homes_op_failed_finding(f"resolving the current working directory: {exc}")
-        )
+        findings.append(_homes_op_failed_finding(f"resolving the current working directory: {exc}"))
         return _emit_homes(args, data, findings)
     try:
         repo_root = vcs.repo_common_root(invocation_dir)
@@ -1101,8 +1063,7 @@ def run_homes(
     if main_entry is None:
         findings.append(
             _homes_op_failed_finding(
-                f"'git worktree list' for {repo_root} did not include an "
-                "entry for the main checkout itself"
+                f"'git worktree list' for {repo_root} did not include an entry for the main checkout itself"
             )
         )
         return _emit_homes(args, data, findings)
@@ -1168,9 +1129,7 @@ def _render_text_homes(data: Mapping[str, object], findings: tuple[Finding, ...]
 
 def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
     verdict_value = compute_verdict(tuple(findings))
-    envelope = build_envelope(
-        command="homes", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command="homes", verdict=verdict_value, data=data, findings=tuple(findings))
     # Same flush + broken-pipe-suppression convention as _emit (init's own)
     # and cli/config.py::run_config.
     try:
@@ -1211,11 +1170,7 @@ def _machine_state_dir() -> Path:
     it. Behavior unchanged: ``_ack_state_path`` below is now a one-line
     caller."""
     override = os.environ.get(ENV_MARSHAL_STATE_HOME)
-    base = (
-        Path(override).expanduser()
-        if override
-        else Path.home() / ".local" / "state" / "pyforge-marshal"
-    )
+    base = Path(override).expanduser() if override else Path.home() / ".local" / "state" / "pyforge-marshal"
     if not base.is_absolute():
         # Same anchoring as _loop_home_root's own BMAD_LOOP_HOME_ROOT
         # override (review finding: a relative MARSHAL_STATE_HOME would
@@ -1289,7 +1244,6 @@ def add_preflight_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=run_preflight)
 
 
-
 def _shared_git_state_findings(vcs: VcsPort, home: Path) -> tuple[list[Finding], dict]:
     """S-1.11 (FR-178): does the SHARED git directory carry an ignore rule that
     shadows tracked files?
@@ -1317,7 +1271,7 @@ def _shared_git_state_findings(vcs: VcsPort, home: Path) -> tuple[list[Finding],
         repo_root = vcs.repo_common_root(home)
         exclude = repo_root / ".git" / "info" / "exclude"
         text = exclude.read_text(encoding="utf-8", errors="replace")
-    except (VcsCommandError, OSError):
+    except VcsCommandError, OSError:
         return findings, data
     shadowing: list[dict] = []
     for raw in text.splitlines():
@@ -1326,8 +1280,7 @@ def _shared_git_state_findings(vcs: VcsPort, home: Path) -> tuple[list[Finding],
             continue
         matched = vcs.tracked_paths_matching(repo_root, rule)
         if matched:
-            shadowing.append({"rule": rule, "tracked_shadowed": len(matched),
-                              "example": matched[0]})
+            shadowing.append({"rule": rule, "tracked_shadowed": len(matched), "example": matched[0]})
     data["shared_git_exclude_rules_shadowing_tracked"] = shadowing
     for entry in shadowing:
         findings.append(
@@ -1380,7 +1333,7 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
         # port method that actually answers "what is this home at".
         base = vcs.resolve_ref(repo_root, "main")
         head = vcs.worktree_head_sha(home)
-    except (VcsCommandError, OSError, subprocess.SubprocessError):
+    except VcsCommandError, OSError, subprocess.SubprocessError:
         return findings, data
     data["home_head"] = head[:10]
     data["main_head"] = base[:10]
@@ -1389,7 +1342,7 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
         return findings, data
     try:
         behind = vcs.merge_base(repo_root, head, base) == head
-    except (VcsCommandError, OSError, subprocess.SubprocessError):
+    except VcsCommandError, OSError, subprocess.SubprocessError:
         behind = True
     if behind:
         findings.append(
@@ -1408,6 +1361,7 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
             )
         )
     return findings, data
+
 
 def run_preflight(
     args: argparse.Namespace,
@@ -1482,10 +1436,7 @@ def run_preflight(
             Finding(
                 code="MRS-PREFLIGHT-009",
                 severity=Severity.ERROR,
-                message=(
-                    f"loop home not provisioned: {home} is not a directory -- "
-                    f"run 'marshal init {slug}' first"
-                ),
+                message=(f"loop home not provisioned: {home} is not a directory -- run 'marshal init {slug}' first"),
                 path=str(home),
             )
         )
@@ -1509,9 +1460,7 @@ def run_preflight(
             project_data = _read_project_policy(policy_path)
         except PolicyIOError as exc:
             findings.append(exc.finding)
-    effective, policy_findings = policy.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
     findings.extend(policy_findings)
 
     # --- repo root -- needed by main_checked_out_once and the seed-copy source
@@ -1596,9 +1545,7 @@ def run_preflight(
         backend_name, backend_available = harness.multiplexer_backend_available()
     except HarnessError as exc:
         backend_name, backend_available = "", False
-        findings.append(
-            Finding(code="MRS-PREFLIGHT-003", severity=Severity.ERROR, message=str(exc))
-        )
+        findings.append(Finding(code="MRS-PREFLIGHT-003", severity=Severity.ERROR, message=str(exc)))
     else:
         if not backend_available:
             findings.append(
@@ -1640,8 +1587,7 @@ def run_preflight(
                     code="MRS-PREFLIGHT-004",
                     severity=Severity.ERROR,
                     message=(
-                        "cannot resolve the configured adapter: the rendered "
-                        "harness policy declares no [adapter].name"
+                        "cannot resolve the configured adapter: the rendered harness policy declares no [adapter].name"
                     ),
                 )
             )
@@ -1668,10 +1614,7 @@ def run_preflight(
                     Finding(
                         code="MRS-PREFLIGHT-004",
                         severity=Severity.ERROR,
-                        message=(
-                            f"adapter {adapter_name!r} binary "
-                            f"{adapter_binary_name!r} not found on PATH"
-                        ),
+                        message=(f"adapter {adapter_name!r} binary {adapter_binary_name!r} not found on PATH"),
                     )
                 )
             # Both draw from the SAME resolved profile as adapter_binary
@@ -1692,9 +1635,7 @@ def run_preflight(
     feed_error = harness.story_feed_error(home)
     data["story_feed"] = {"resolvable": feed_error is None, "error": feed_error}
     if feed_error is not None:
-        findings.append(
-            Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error)
-        )
+        findings.append(Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error))
 
     # --- Tier-3 feed drift against the tracked ledger (2026-09-10) ---------------
     # `story_feed_error`/`story_feed_keys` above only prove the Tier-3
@@ -1714,18 +1655,12 @@ def run_preflight(
         ledger_path = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
         try:
             ledger_raw = harness.ledger_story_statuses(ledger_path)
-            tier3_raw = harness.ledger_story_statuses(
-                project_dir / "implementation-artifacts" / "sprint-status.yaml"
-            )
+            tier3_raw = harness.ledger_story_statuses(project_dir / "implementation-artifacts" / "sprint-status.yaml")
         except HarnessError:
             ledger_raw = tier3_raw = ()
         if ledger_raw or tier3_raw:
-            ledger_actionable = {
-                k for k, v in ledger_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES
-            }
-            tier3_actionable = {
-                k for k, v in tier3_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES
-            }
+            ledger_actionable = {k for k, v in ledger_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES}
+            tier3_actionable = {k for k, v in tier3_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES}
             missing = sorted(ledger_actionable - tier3_actionable)
             data["story_feed"]["tier3_drift"] = missing
             if missing:
@@ -1806,8 +1741,7 @@ def run_preflight(
                 violators = [
                     entry.path
                     for entry in worktree_entries
-                    if entry.branch == "main"
-                    and fs.resolve_path(entry.path) != repo_root_realpath
+                    if entry.branch == "main" and fs.resolve_path(entry.path) != repo_root_realpath
                 ]
             except FsError as exc:
                 data["main_checked_out_once"] = False
@@ -1827,10 +1761,7 @@ def run_preflight(
                     Finding(
                         code="MRS-PREFLIGHT-007",
                         severity=Severity.ERROR,
-                        message=(
-                            "main is checked out in more than one worktree: "
-                            f"{repo_root} and {other_paths}"
-                        ),
+                        message=(f"main is checked out in more than one worktree: {repo_root} and {other_paths}"),
                     )
                 )
 
@@ -1851,10 +1782,7 @@ def run_preflight(
                 Finding(
                     code="MRS-PREFLIGHT-009",
                     severity=Severity.ERROR,
-                    message=(
-                        f"cannot seed {dst}: the main checkout could not be "
-                        f"resolved: {repo_root_error}"
-                    ),
+                    message=(f"cannot seed {dst}: the main checkout could not be resolved: {repo_root_error}"),
                     path=str(dst),
                 )
             )
@@ -1934,14 +1862,8 @@ def run_preflight(
                 seed_cli.packaged_seed_model_version(),
                 fs=fs,
                 apply=True,
-                **(
-                    {"probe": kit_probe} if kit_probe is not None else {}
-                ),
-                **(
-                    {"index_builder": kit_index_builder}
-                    if kit_index_builder is not None
-                    else {}
-                ),
+                **({"probe": kit_probe} if kit_probe is not None else {}),
+                **({"index_builder": kit_index_builder} if kit_index_builder is not None else {}),
             )
         except (ManifestError, OSError, ValueError) as exc:
             data["token_economy_kit"] = []
@@ -1953,12 +1875,9 @@ def run_preflight(
                 )
             )
         else:
-            data["token_economy_kit"] = [
-                outcome.to_json_dict() for outcome in kit_result.outcomes
-            ]
+            data["token_economy_kit"] = [outcome.to_json_dict() for outcome in kit_result.outcomes]
             if any(
-                outcome.item_id == "codegraph-index"
-                and outcome.action.value in ("applied", "failed")
+                outcome.item_id == "codegraph-index" and outcome.action.value in ("applied", "failed")
                 for outcome in kit_result.outcomes
             ):
                 data["token_economy_kit_note"] = kit_timeout_note()
@@ -2077,7 +1996,6 @@ def run_preflight(
 
     findings.extend(shared_findings)
 
-
     return _emit_preflight(args, data, findings)
 
 
@@ -2092,20 +2010,13 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
         lines.append(f"harness_version: {data['harness_version']}")
     if "multiplexer" in data:
         multiplexer = data["multiplexer"]
-        lines.append(
-            f"multiplexer: backend={multiplexer['backend']!r} "
-            f"available={multiplexer['available']}"
-        )
+        lines.append(f"multiplexer: backend={multiplexer['backend']!r} available={multiplexer['available']}")
     if "adapter" in data:
         adapter = data["adapter"]
-        lines.append(
-            f"adapter: name={adapter['name']!r} binary_present={adapter['binary_present']}"
-        )
+        lines.append(f"adapter: name={adapter['name']!r} binary_present={adapter['binary_present']}")
     if "story_feed" in data:
         story_feed = data["story_feed"]
-        lines.append(
-            f"story_feed: resolvable={story_feed['resolvable']} error={story_feed['error']!r}"
-        )
+        lines.append(f"story_feed: resolvable={story_feed['resolvable']} error={story_feed['error']!r}")
     if "verify_commands" in data:
         lines.append("verify_commands:")
         for entry in data["verify_commands"]:
@@ -2113,9 +2024,7 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
     if "mcp_servers" in data:
         lines.append("mcp_servers:")
         for entry in data["mcp_servers"]:
-            lines.append(
-                f"  {entry['name']!r} ({entry['command']!r}): resolvable={entry['resolvable']}"
-            )
+            lines.append(f"  {entry['name']!r} ({entry['command']!r}): resolvable={entry['resolvable']}")
     if "main_checked_out_once" in data:
         lines.append(f"main_checked_out_once: {data['main_checked_out_once']}")
     if "seed_files" in data:
@@ -2139,9 +2048,7 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
 
 def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
     verdict_value = compute_verdict(tuple(findings))
-    envelope = build_envelope(
-        command="preflight", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command="preflight", verdict=verdict_value, data=data, findings=tuple(findings))
     # Same flush + broken-pipe-suppression convention as _emit/_emit_homes
     # and cli/config.py::run_config.
     try:
@@ -2303,15 +2210,11 @@ def _append_abandonment_journal_entry(fs: FsPort, run_dir: Path, entry, *, fsync
     line itself)."""
     prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
-        fs.write_text_atomic(
-            run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
-        )
+        fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _ABANDON_JOURNAL_FILENAME, prepared.line, fsync=fsync)
 
 
-def _journal_abandonments(
-    fs: FsPort, repo_root: Path, slug: str, story_keys: tuple[str, ...]
-) -> Finding | None:
+def _journal_abandonments(fs: FsPort, repo_root: Path, slug: str, story_keys: tuple[str, ...]) -> Finding | None:
     """One journal ``observation`` entry per abandoned story key (AD-27:
     operator-attributed, attributable not authenticated -- see that AD's
     own trust-model text). Returns a ``Finding`` (never raises) on any I/O
@@ -2321,15 +2224,7 @@ def _journal_abandonments(
     rather than deferred to a later fold)."""
     moment = datetime.now(timezone.utc)
     run_id = mint_run_id(slug, _abandon_format_utc_compact(moment), _abandon_random_token())
-    run_dir = (
-        repo_root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     try:
         fs.ensure_dir(run_dir.parent)
         fs.create_dir_exclusive(run_dir)
@@ -2351,8 +2246,7 @@ def _journal_abandonments(
             payload={
                 "story_key": story_key,
                 "reason": (
-                    f"teardown of loop/{slug} forced past an unreachable "
-                    f"promotion for {story_key}, named via --abandon"
+                    f"teardown of loop/{slug} forced past an unreachable promotion for {story_key}, named via --abandon"
                 ),
             },
         )
@@ -2410,12 +2304,7 @@ def run_teardown(
     # apply this same guard today -- a pre-existing Story 1.7 gap, not
     # introduced here; logged to deferred-work.md rather than fixed in this
     # story's own surface.)
-    if (
-        slug.startswith(".")
-        or slug.endswith(".")
-        or ".." in slug
-        or slug.endswith(".lock")
-    ):
+    if slug.startswith(".") or slug.endswith(".") or ".." in slug or slug.endswith(".lock"):
         findings.append(
             Finding(
                 code="MRS-TEARDOWN-001",
@@ -2432,9 +2321,7 @@ def run_teardown(
     try:
         invocation_dir = Path.cwd()
     except OSError as exc:
-        findings.append(
-            _teardown_op_failed_finding(f"resolving the current working directory: {exc}")
-        )
+        findings.append(_teardown_op_failed_finding(f"resolving the current working directory: {exc}"))
         return _emit_teardown(args, data, findings)
     try:
         repo_root = vcs.repo_common_root(invocation_dir)
@@ -2456,9 +2343,7 @@ def run_teardown(
     try:
         worktree_path = vcs.worktree_path_for_branch(repo_root, branch)
     except VcsCommandError as exc:
-        findings.append(
-            _teardown_op_failed_finding(f"resolving worktree state for {branch}: {exc}")
-        )
+        findings.append(_teardown_op_failed_finding(f"resolving worktree state for {branch}: {exc}"))
         return _emit_teardown(args, data, findings)
     try:
         branch_present = vcs.branch_exists(repo_root, branch)
@@ -2486,9 +2371,7 @@ def run_teardown(
         try:
             leftover = fs.exists(home)
         except FsError as exc:
-            findings.append(
-                _teardown_op_failed_finding(f"checking for a leftover at {home}: {exc}")
-            )
+            findings.append(_teardown_op_failed_finding(f"checking for a leftover at {home}: {exc}"))
             return _emit_teardown(args, data, findings)
         if leftover:
             findings.append(
@@ -2523,9 +2406,7 @@ def run_teardown(
         try:
             worktree_on_disk = fs.is_dir(worktree_path)
         except FsError as exc:
-            findings.append(
-                _teardown_op_failed_finding(f"checking whether {worktree_path} exists: {exc}")
-            )
+            findings.append(_teardown_op_failed_finding(f"checking whether {worktree_path} exists: {exc}"))
             return _emit_teardown(args, data, findings)
         if worktree_on_disk:
             # Probe failures block only an UNFORCED teardown (follow-up
@@ -2542,14 +2423,10 @@ def run_teardown(
             except VcsCommandError as exc:
                 if not force:
                     findings.append(
-                        _teardown_op_failed_finding(
-                            f"checking for uncommitted changes in {worktree_path}: {exc}"
-                        )
+                        _teardown_op_failed_finding(f"checking for uncommitted changes in {worktree_path}: {exc}")
                     )
                     return _emit_teardown(args, data, findings)
-                reasons.append(
-                    f"the dirty-state of {worktree_path} could not be determined: {exc}"
-                )
+                reasons.append(f"the dirty-state of {worktree_path} could not be determined: {exc}")
             else:
                 if dirty:
                     reasons.append(f"{worktree_path} has uncommitted changes")
@@ -2560,20 +2437,12 @@ def run_teardown(
             merged = vcs.is_branch_merged(repo_root, branch, into="main")
         except VcsCommandError as exc:
             if not force:
-                findings.append(
-                    _teardown_op_failed_finding(
-                        f"checking whether {branch} is merged into main: {exc}"
-                    )
-                )
+                findings.append(_teardown_op_failed_finding(f"checking whether {branch} is merged into main: {exc}"))
                 return _emit_teardown(args, data, findings)
-            reasons.append(
-                f"whether {branch} is merged into main could not be determined: {exc}"
-            )
+            reasons.append(f"whether {branch} is merged into main could not be determined: {exc}")
         else:
             if not merged:
-                reasons.append(
-                    f"branch {branch}'s content is not yet safely captured on main"
-                )
+                reasons.append(f"branch {branch}'s content is not yet safely captured on main")
 
     # --- AD-29 unreachable-promotion check: --force ALONE is never enough. --
     # Unlike the dirty/unmerged reasons above, this refusal survives a bare
@@ -2683,10 +2552,7 @@ def run_teardown(
                 )
             )
 
-    if reasons and (
-        not force
-        or ((unreachable or undetermined_reachability) and not unreachable_authorized)
-    ):
+    if reasons and (not force or ((unreachable or undetermined_reachability) and not unreachable_authorized)):
         # Name the path the checks and the removal actually operate on --
         # git's registered location when one exists (follow-up review
         # finding: the headline previously named the merely COMPUTED
@@ -2786,9 +2652,7 @@ def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, .
 
 def _emit_teardown(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
     verdict_value = compute_verdict(tuple(findings))
-    envelope = build_envelope(
-        command="teardown", verdict=verdict_value, data=data, findings=tuple(findings)
-    )
+    envelope = build_envelope(command="teardown", verdict=verdict_value, data=data, findings=tuple(findings))
     # Same flush + broken-pipe-suppression convention as _emit/_emit_homes/
     # _emit_preflight and cli/config.py::run_config.
     try:

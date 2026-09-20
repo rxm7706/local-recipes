@@ -103,3 +103,16 @@ in `load_budget`, shared by every story that reads `.steward/budget.yaml`):
 **Re-verification (2026-08-07, after both patches):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- **200 passed** (full suite).
 
 **Follow-up review recommendation (updated): false** -- both findings are narrow, each covered by a dedicated regression test.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `19b388d781` (2026-08-07, "herald: Story 4.1 -- poll loop with quiescence debounce"); also `9535a9ce97` (2026-08-07, "steward: sync sprint-status ledger — Epic 4 done (Stories 4.1-4.3); all 4 epics closed"); also `5424d55c0c` (2026-08-07, "steward: Story 4.1 — A ceiling can be declared, machine-readably"). Ledger row `4-1-a-ceiling-can-be-declared-machine-readably: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-4-1-poll-loop-with-quiescence-debounce.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_cli_watch.py`, `src/shared/packages/pyforge-herald/tests/test_watch.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

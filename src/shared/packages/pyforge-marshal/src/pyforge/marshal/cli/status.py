@@ -122,10 +122,8 @@ from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import dispatch_fleet, layer_savings_sources, promotion
 from ..core import policy as policy_core
-from ..core import promotion
-from ..core import dispatch_fleet
-from ..core import layer_savings_sources
 from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
@@ -198,15 +196,15 @@ def _format_dollar_estimate(amount: float | None) -> str:
 
 def _format_savings_summary(layer_savings: dict[str, object]) -> str:
     """Format per-layer savings into a compact summary string for status display.
-    
+
     Story 28.4: Formats savings telemetry (CAP-7) into a readable summary.
     Returns empty string when no savings data is available.
     """
     if not layer_savings:
         return ""
-    
+
     parts = []
-    
+
     # Layer 0: Output compression savings
     if "output_compression_saved" in layer_savings:
         bytes_saved = layer_savings["output_compression_saved"]
@@ -214,15 +212,15 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
             parts.append(f"output:{bytes_saved}")
         elif isinstance(bytes_saved, (int, float)) and bytes_saved >= 0:
             parts.append(f"output:{_format_bytes(bytes_saved)}")
-    
-    # Layer 1: Wire compression savings  
+
+    # Layer 1: Wire compression savings
     if "wire_compression_saved" in layer_savings:
         bytes_saved = layer_savings["wire_compression_saved"]
         if isinstance(bytes_saved, str):
             parts.append(f"wire:{bytes_saved}")
         elif isinstance(bytes_saved, (int, float)) and bytes_saved >= 0:
             parts.append(f"wire:{_format_bytes(bytes_saved)}")
-    
+
     # Layer 2: Graph hits vs file reads
     graph_stats = layer_savings.get("graph_hits_vs_file_reads")
     if isinstance(graph_stats, str):
@@ -237,7 +235,7 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
                 parts.append(f"graph:{hits}/{total}({hit_rate:.0f}%)")
             else:
                 parts.append("graph:0/0")
-    
+
     # Layer 3: Derived context cache hits
     if "derived_context_cache_hits" in layer_savings:
         cache_hits = layer_savings["derived_context_cache_hits"]
@@ -245,7 +243,7 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
             parts.append(f"context:{cache_hits}")
         elif isinstance(cache_hits, int) and cache_hits >= 0:
             parts.append(f"context:{cache_hits}hits")
-    
+
     # Layer 4: Planning graph tokens saved
     if "planning_graph_tokens_saved" in layer_savings:
         tokens_saved = layer_savings["planning_graph_tokens_saved"]
@@ -253,7 +251,7 @@ def _format_savings_summary(layer_savings: dict[str, object]) -> str:
             parts.append(f"planning:{tokens_saved}")
         elif isinstance(tokens_saved, (int, float)) and tokens_saved >= 0:
             parts.append(f"planning:{tokens_saved}tok")
-    
+
     return ",".join(parts)
 
 
@@ -325,14 +323,11 @@ def _format_rollup_by_harness(rollup: Mapping[str, object]) -> str:
             if not isinstance(layers, Mapping) or not layers:
                 continue
             layer_text = ", ".join(
-                f"{layer_key}={_format_layer_values(layer_key, values)}"
-                for layer_key, values in layers.items()
+                f"{layer_key}={_format_layer_values(layer_key, values)}" for layer_key, values in layers.items()
             )
             parts.append(f"{layer_kind}: {layer_text}")
         body = "; ".join(parts)
-        lines.append(
-            f"  {profile_name} (currency={currency}, runs={runs}): {body}"
-        )
+        lines.append(f"  {profile_name} (currency={currency}, runs={runs}): {body}")
     return "\n".join(lines)
 
 
@@ -565,9 +560,7 @@ class _RunJournalFacts:
     journal_readable: bool = False
 
 
-def _gather_run_journal_facts(
-    fs: FsPort, run_dir: Path, run_id: str
-) -> _RunJournalFacts:
+def _gather_run_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> _RunJournalFacts:
     """Read+fold ``run_dir``'s own journal ONCE (mirrors ``cli/spin.py::
     _resolve_harness_run_id_for_resume``'s identical read sequence, applied
     to several different payload fields/kinds off the SAME already-folded
@@ -576,10 +569,16 @@ def _gather_run_journal_facts(
     launch pid for this run_id reports ``launch_pid=None``, the caller's
     own "journal unreadable" signal."""
     empty = _RunJournalFacts(
-        launch_pid=None, launched_at=None, supervisor_pid=None, budget_consumed=None,
-        layer_savings={}, savings_by_story={},
-        budget_consumed_usd=None, budget_by_story_usd={},
-        layer_savings_usd={}, savings_usd_by_story={},
+        launch_pid=None,
+        launched_at=None,
+        supervisor_pid=None,
+        budget_consumed=None,
+        layer_savings={},
+        savings_by_story={},
+        budget_consumed_usd=None,
+        budget_by_story_usd={},
+        layer_savings_usd={},
+        savings_usd_by_story={},
     )
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
@@ -648,16 +647,10 @@ def _gather_run_journal_facts(
     savings_usd_by_story: dict[str, dict[str, float]] = {}
     budget_by_story: dict[str, int | float] = {}
     budget_by_story_usd: dict[str, float] = {}
-    usage_entries = [
-        entry
-        for entry in fold_result.by_kind(_BUDGET_USAGE_KIND)
-        if entry.run_id == run_id
-    ]
+    usage_entries = [entry for entry in fold_result.by_kind(_BUDGET_USAGE_KIND) if entry.run_id == run_id]
     if usage_entries:
         candidate_cost = usage_entries[-1].payload.get("cost_estimate")
-        if isinstance(candidate_cost, (int, float)) and not isinstance(
-            candidate_cost, bool
-        ):
+        if isinstance(candidate_cost, (int, float)) and not isinstance(candidate_cost, bool):
             budget_consumed = candidate_cost
         candidate_usd = usage_entries[-1].payload.get("cost_estimate_usd")
         if isinstance(candidate_usd, (int, float)) and not isinstance(candidate_usd, bool):
@@ -679,12 +672,7 @@ def _gather_run_journal_facts(
     for entry in usage_entries:
         story_key = entry.payload.get("story_key")
         cost = entry.payload.get("cost_estimate")
-        if (
-            isinstance(story_key, str)
-            and story_key
-            and isinstance(cost, (int, float))
-            and not isinstance(cost, bool)
-        ):
+        if isinstance(story_key, str) and story_key and isinstance(cost, (int, float)) and not isinstance(cost, bool):
             budget_by_story[story_key] = cost
         if isinstance(story_key, str) and story_key:
             entry_usd = entry.payload.get("cost_estimate_usd")
@@ -706,11 +694,7 @@ def _gather_run_journal_facts(
     # Story 5.2: `core.journal.fold`'s own `FoldResult.open_intents` for
     # THIS run_id only, rendered to plain JSON-dicts here (never inside
     # `core/status.py`, which stays pure and never imports `JournalEntry`).
-    open_intents = tuple(
-        entry.to_json_dict()
-        for entry in fold_result.open_intents
-        if entry.run_id == run_id
-    )
+    open_intents = tuple(entry.to_json_dict() for entry in fold_result.open_intents if entry.run_id == run_id)
 
     return _RunJournalFacts(
         launch_pid=launch_pid,
@@ -744,9 +728,7 @@ def _latest_bmad_loop_run_id(home: Path) -> str | None:
         candidates = sorted(
             path.name
             for path in runs_dir.iterdir()
-            if path.is_dir()
-            and not path.name.startswith(".retired")
-            and (path / "state.json").is_file()
+            if path.is_dir() and not path.name.startswith(".retired") and (path / "state.json").is_file()
         )
     except OSError:
         return None
@@ -766,9 +748,7 @@ def _latest_bmad_loop_run_id(home: Path) -> str | None:
 _HARNESS_RUN_ID_DISCOVERY_WINDOW_SECONDS = 5 * 60
 
 
-def _discover_harness_run_id_by_filesystem(
-    home: Path, launched_at: datetime | None
-) -> str | None:
+def _discover_harness_run_id_by_filesystem(home: Path, launched_at: datetime | None) -> str | None:
     """Third fallback for a POISONED ``harness_run_id`` (2026-08-15,
     ``spec-marshal-status-harness-run-id-poisoning``): when
     ``cli/spin.py``'s own launch-time poll to confirm bmad-loop's
@@ -843,11 +823,7 @@ def _discover_harness_run_id_by_filesystem(
     # CAP-4: loop-home FILE read -- correlate harness_run_id from bmad-loop run dirs
     runs_dir = home / ".bmad-loop" / "runs"
     try:
-        candidates = [
-            p.name
-            for p in runs_dir.iterdir()
-            if p.is_dir() and (p / "state.json").is_file()
-        ]
+        candidates = [p.name for p in runs_dir.iterdir() if p.is_dir() and (p / "state.json").is_file()]
     except OSError:
         return None
     target = launched_at.astimezone().replace(tzinfo=None)
@@ -924,19 +900,10 @@ def _merge_dispatch_overlay(
     if run_dir is None:
         return facts
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-    if (
-        journal.session_pid is None
-        and journal.completion_verdict is None
-        and journal.story_key is None
-    ):
+    if journal.session_pid is None and journal.completion_verdict is None and journal.story_key is None:
         return facts
-    alive = (
-        journal.session_pid is not None and process.is_alive(journal.session_pid)
-    )
-    supervisor_alive = (
-        journal.supervisor_pid is not None
-        and process.is_alive(journal.supervisor_pid)
-    )
+    alive = journal.session_pid is not None and process.is_alive(journal.session_pid)
+    supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     elapsed: float | None = None
     if journal.launched_at is not None:
         elapsed = (clock.now() - journal.launched_at).total_seconds()
@@ -950,9 +917,7 @@ def _merge_dispatch_overlay(
         journal=journal,
         effective_policy=effective_policy,
     )
-    completion_verdict = (
-        verdict.value if verdict is not None else journal.completion_verdict
-    )
+    completion_verdict = verdict.value if verdict is not None else journal.completion_verdict
     in_flight = list_live_dispatch_stories(
         fs=fs,
         vcs=vcs,
@@ -1039,9 +1004,7 @@ def _gather_home_facts(
                             escalated_task_phase=snapshot.escalated_task_phase,
                             escalated_preserve_ref=snapshot.escalated_preserve_ref,
                         )
-        return status_core.FleetHomeFacts(
-            slug=slug, branch=branch, has_run=True, journal_unreadable=True
-        )
+        return status_core.FleetHomeFacts(slug=slug, branch=branch, has_run=True, journal_unreadable=True)
 
     # Prefer `journal_facts.harness_run_id` (captured off the SAME fold
     # this function already paid for above) over a second, independent
@@ -1060,9 +1023,7 @@ def _gather_home_facts(
         # CAP-4: loop-home FILE read -- poisoned-journal harness_run_id recovery
         or _discover_harness_run_id_by_filesystem(home, journal_facts.launched_at)
     )
-    snapshot = (
-        harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
-    )
+    snapshot = harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
     if snapshot is None:
         # TWO different causes, and they must not be conflated (this
         # distinction is the whole of DW-STATUS-2026-09-08-1's fix):
@@ -1078,12 +1039,8 @@ def _gather_home_facts(
         #     `unknown` stays correct. Reporting THAT as `idle` would be the
         #     precise false-green the CAP-2 fallback guard exists to prevent.
         if harness_run_id is not None:
-            return status_core.FleetHomeFacts(
-                slug=slug, branch=branch, has_run=True, run_state_retired=True
-            )
-        return status_core.FleetHomeFacts(
-            slug=slug, branch=branch, has_run=True, journal_unreadable=True
-        )
+            return status_core.FleetHomeFacts(slug=slug, branch=branch, has_run=True, run_state_retired=True)
+        return status_core.FleetHomeFacts(slug=slug, branch=branch, has_run=True, journal_unreadable=True)
 
     # `journal_facts.supervisor_pid` (never `launch_pid`, which names the
     # DETACHED HARNESS process, a different process entirely -- see this
@@ -1092,9 +1049,7 @@ def _gather_home_facts(
     # confirmed-dead supervisor -- the safe direction, never silently
     # "alive".
     supervisor_alive = (
-        process.is_alive(journal_facts.supervisor_pid)
-        if journal_facts.supervisor_pid is not None
-        else False
+        process.is_alive(journal_facts.supervisor_pid) if journal_facts.supervisor_pid is not None else False
     )
 
     # Story 5.8 (a dead supervisor sidecar must not hide a live engine,
@@ -1225,7 +1180,7 @@ def _gather_unpushed_work_findings(
 
     try:
         payload = json.loads(result.stdout)
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except json.JSONDecodeError, TypeError, ValueError:
         return None, unavailable_finding
 
     raw_findings = payload.get("findings") if isinstance(payload, dict) else None
@@ -1432,8 +1387,7 @@ def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
     ONLY report a ``done: null`` patch ever gets, since ``010`` fires solely
     for ``done is False``, so the omission bit harder here."""
     keys = sorted(
-        f"{_one_line(slug)}/{_one_line(entry.get('story_key'))}"
-        f"@{_one_line(entry.get('run_id'))}"
+        f"{_one_line(slug)}/{_one_line(entry.get('story_key'))}@{_one_line(entry.get('run_id'))}"
         for slug, entry in named
     )
     if not keys:
@@ -1441,9 +1395,7 @@ def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
     return f"{len(keys)} patch(es) ({', '.join(keys)})"
 
 
-def _merged_keys_for_slug(
-    slug: str, main_subjects: tuple[str, ...]
-) -> tuple[frozenset[str], tuple[Finding, ...]]:
+def _merged_keys_for_slug(slug: str, main_subjects: tuple[str, ...]) -> tuple[frozenset[str], tuple[Finding, ...]]:
     """``slug``'s own durably-merged story keys, as canonical dot-form
     ``str``s, plus every ``Finding`` raised while resolving ``slug``'s own
     ``merge_subject_template`` (Story 4.14) -- the ONE policy-read-then-
@@ -1494,14 +1446,10 @@ def _merged_keys_for_slug(
                 project_data = _read_project_policy(policy_path)
             except PolicyIOError as exc:
                 findings.append(exc.finding)
-    effective, policy_findings = policy_core.compose(
-        project_slug=slug, project=project_data, flags={}
-    )
+    effective, policy_findings = policy_core.compose(project_slug=slug, project=project_data, flags={})
     findings.extend(policy_findings)
     template = effective.merge_subject_template.value
-    merged = frozenset(
-        str(key) for key in promotion.merged_story_keys(main_subjects, template, slug)
-    )
+    merged = frozenset(str(key) for key in promotion.merged_story_keys(main_subjects, template, slug))
     return merged, tuple(findings)
 
 
@@ -1591,8 +1539,7 @@ def run_status(
             code=_MRS_STATUS_006,
             severity=Severity.ERROR,
             message=(
-                "--run and --reconcile-ledger are mutually exclusive -- "
-                "each selects a different report; pass only one"
+                "--run and --reconcile-ledger are mutually exclusive -- each selects a different report; pass only one"
             ),
         )
         data = {"project": args.project, "discrepancies": []}
@@ -1602,9 +1549,7 @@ def run_status(
         return _reconcile_ledger(args, vcs=vcs, harness=harness)
 
     if run_id is not None:
-        return _run_detail(
-            args, run_id=run_id, vcs=vcs, fs=fs, harness=harness
-        )
+        return _run_detail(args, run_id=run_id, vcs=vcs, fs=fs, harness=harness)
 
     findings: list[Finding] = []
     data: dict[str, object] = {"project": args.project, "homes": []}
@@ -1652,9 +1597,7 @@ def run_status(
     # `unpushed_work: null` (unknown), never a silent "clean".
     unpushed_by_ref: dict[str, dict[str, object]] | None = {}
     if fleet:
-        unpushed_by_ref, unpushed_unavailable_finding = _gather_unpushed_work_findings(
-            process, git_repo_root
-        )
+        unpushed_by_ref, unpushed_unavailable_finding = _gather_unpushed_work_findings(process, git_repo_root)
         if unpushed_unavailable_finding is not None:
             findings.append(unpushed_unavailable_finding)
 
@@ -1730,9 +1673,7 @@ def run_status(
         )
         escalation = missing_spec_escalations.get(slug)
         if escalation is None:
-            escalation = missing_spec_escalations.get(
-                dispatch_fleet.normalize_station_slug(slug)
-            )
+            escalation = missing_spec_escalations.get(dispatch_fleet.normalize_station_slug(slug))
         if escalation is not None:
             facts = replace(
                 facts,
@@ -1741,9 +1682,7 @@ def run_status(
             )
         fin_esc = finalize_escalations.get(slug)
         if fin_esc is None:
-            fin_esc = finalize_escalations.get(
-                dispatch_fleet.normalize_station_slug(slug)
-            )
+            fin_esc = finalize_escalations.get(dispatch_fleet.normalize_station_slug(slug))
         if fin_esc is not None:
             facts = replace(
                 facts,
@@ -1754,9 +1693,7 @@ def run_status(
             matched = unpushed_by_ref.get(facts.branch)
             if matched is not None:
                 facts = replace(facts, unpushed_work=matched)
-        stranded = status_core.derive_dispatch_stranded_work(
-            facts, unpushed_by_ref=unpushed_by_ref
-        )
+        stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
 
@@ -1771,9 +1708,7 @@ def run_status(
             if not main_subjects_attempted:
                 main_subjects_attempted = True
                 try:
-                    main_subjects = vcs.commit_subjects(
-                        git_repo_root, _MERGE_BASE_BRANCH
-                    )
+                    main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
                     main_subjects_available = True
                 except VcsCommandError as exc:
                     # `_MRS_STATUS_011`'s cause 1: an unreadable `main`.
@@ -1818,8 +1753,7 @@ def run_status(
                 blocking = [
                     f
                     for f in keys_findings
-                    if classify(f.code) is not Verdict.CLEAN
-                    and classify(f.code) is not Verdict.WARN
+                    if classify(f.code) is not Verdict.CLEAN and classify(f.code) is not Verdict.WARN
                 ]
                 if blocking:
                     keys_available = False
@@ -1850,12 +1784,8 @@ def run_status(
                 # import `core`; it is only the reverse direction AD-3/AD-4
                 # forbid, which is why that helper's own docstring explains
                 # it cannot import `cli/spin.py`'s twin.
-                story_key = status_core._render_story_key_best_effort(
-                    patch.parent.name
-                )
-                done: bool | None = (
-                    story_key in merged_keys if keys_available else None
-                )
+                story_key = status_core._render_story_key_best_effort(patch.parent.name)
+                done: bool | None = story_key in merged_keys if keys_available else None
                 # `confidence` is `core/status.py`'s OWN already-established
                 # vocabulary for this EXACT evidence source, never a third
                 # one: a POSITIVE `merged_story_keys` match is the stronger
@@ -1871,11 +1801,7 @@ def run_status(
                 # another station's merge. See `_merged_keys_for_slug`'s own
                 # docstring above for the measurement.
 
-                confidence = (
-                    status_core.CONFIDENCE_CONFIRMED
-                    if done is True
-                    else status_core.CONFIDENCE_UNCONFIRMED
-                )
+                confidence = status_core.CONFIDENCE_CONFIRMED if done is True else status_core.CONFIDENCE_UNCONFIRMED
                 failed_patches.append(
                     {
                         "story_key": story_key,
@@ -2129,15 +2055,7 @@ def _run_detail(
             _render_text_run_detail,
         )
 
-    run_dir = (
-        git_repo_root
-        / "_bmad-output"
-        / "projects"
-        / slug
-        / "implementation-artifacts"
-        / "runs"
-        / run_id
-    )
+    run_dir = git_repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
     if not fs.is_dir(run_dir):
         row, not_found_finding = status_core.build_run_detail(
             status_core.RunDetailFacts(project=slug, run_id=run_id, found=False)
@@ -2176,9 +2094,7 @@ def _run_detail(
     # if the journal's own entry never recorded one.
     snapshot = None
     if home is not None:
-        harness_run_id = journal_facts.harness_run_id or _resolve_harness_run_id_for_resume(
-            fs, run_dir, run_id
-        )
+        harness_run_id = journal_facts.harness_run_id or _resolve_harness_run_id_for_resume(fs, run_dir, run_id)
         if harness_run_id:
             snapshot = harness.run_status_snapshot(home, harness_run_id)
 
@@ -2189,16 +2105,10 @@ def _run_detail(
         state_readable=snapshot is not None,
         finished=snapshot.finished if snapshot is not None else False,
         paused_stage=snapshot.paused_stage if snapshot is not None else None,
-        paused_story_key=(
-            snapshot.paused_story_key if snapshot is not None else None
-        ),
+        paused_story_key=(snapshot.paused_story_key if snapshot is not None else None),
         paused_reason=snapshot.paused_reason if snapshot is not None else None,
-        escalated_spec_file=(
-            snapshot.escalated_spec_file if snapshot is not None else None
-        ),
-        escalated_task_phase=(
-            snapshot.escalated_task_phase if snapshot is not None else None
-        ),
+        escalated_spec_file=(snapshot.escalated_spec_file if snapshot is not None else None),
+        escalated_task_phase=(snapshot.escalated_task_phase if snapshot is not None else None),
         tasks=snapshot.tasks if snapshot is not None else (),
         deferred=snapshot.deferred if snapshot is not None else (),
         gate_verdicts=gate_verdicts,
@@ -2209,9 +2119,7 @@ def _run_detail(
         open_intents=journal_facts.open_intents,
         # Story 25.5 (CAP-5): `None` when there is no snapshot (run state
         # unreadable) -- never fabricated as `{}`-clean.
-        sweeps_refused=(
-            snapshot.sweeps_refused if snapshot is not None else None
-        ),
+        sweeps_refused=(snapshot.sweeps_refused if snapshot is not None else None),
     )
     row, finding = status_core.build_run_detail(facts)
     if finding is not None:
@@ -2273,10 +2181,7 @@ def _reconcile_ledger(
             Finding(
                 code=_MRS_STATUS_005,
                 severity=Severity.WARN,
-                message=(
-                    f"project {slug!r}: cannot read the tracked ledger at "
-                    f"{ledger_path}: {exc}"
-                ),
+                message=(f"project {slug!r}: cannot read the tracked ledger at {ledger_path}: {exc}"),
                 path=str(ledger_path),
             )
         )
@@ -2336,24 +2241,19 @@ def _reconcile_ledger(
                 code=_MRS_STATUS_007,
                 severity=Severity.ERROR,
                 message=(
-                    f"cannot read {_MERGE_BASE_BRANCH!r}'s commit history "
-                    f"to determine story durability: {git_error}"
+                    f"cannot read {_MERGE_BASE_BRANCH!r}'s commit history to determine story durability: {git_error}"
                 ),
             )
         )
         data = {"project": slug, "discrepancies": []}
         return _emit(args, data, findings, _render_text_reconcile, data_version=2)
 
-    discrepancies = status_core.reconcile_ledger_vs_git(
-        frozenset(ledger_done_keys), merged_keys
-    )
+    discrepancies = status_core.reconcile_ledger_vs_git(frozenset(ledger_done_keys), merged_keys)
     data = {"project": slug, "discrepancies": list(discrepancies)}
     return _emit(args, data, findings, _render_text_reconcile, data_version=2)
 
 
-def _render_text_reconcile(
-    data: Mapping[str, object], findings: tuple[Finding, ...]
-) -> str:
+def _render_text_reconcile(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14/NFR-12), matching every other view
     this command's own ``_render_text*`` convention already establishes."""
@@ -2365,22 +2265,17 @@ def _render_text_reconcile(
     ]
     for discrepancy in discrepancies:
         lines.append(
-            f"  {discrepancy['story_key']} {discrepancy['kind']} "
-            f"[{discrepancy.get('confidence', 'unconfirmed')}]"
+            f"  {discrepancy['story_key']} {discrepancy['kind']} [{discrepancy.get('confidence', 'unconfirmed')}]"
         )
 
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(
-                f"  {finding.code} [{finding.severity.value}] {finding.message}"
-            )
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
     return "\n".join(lines)
 
 
-def _render_text_status(
-    data: Mapping[str, object], findings: tuple[Finding, ...]
-) -> str:
+def _render_text_status(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every other command's
     own ``_render_text*`` convention."""
@@ -2404,14 +2299,11 @@ def _render_text_status(
             remedy = home.get("awaiting_operator_remedy") or status_core.AWAITING_OPERATOR_REMEDY
             state_text = f"awaiting-operator ({remedy})"
         # Story 28.4: Add savings display alongside budget consumption (CAP-7)
-        savings_summary = _format_savings_summary(home.get('layer_savings', {}))
+        savings_summary = _format_savings_summary(home.get("layer_savings", {}))
         savings_text = f" savings={savings_summary}" if savings_summary else ""
         budget_usd_text = _format_dollar_estimate(home.get("budget_consumed_usd"))
-        
-        line = (
-            f"  {prefix}{home['slug']} ({home['branch']}): {state_text} "
-            f"story={home['current_story']} "
-        )
+
+        line = f"  {prefix}{home['slug']} ({home['branch']}): {state_text} story={home['current_story']} "
         if home.get("dispatch_phase") is not None:
             line += f"dispatch_phase={home['dispatch_phase']} "
         line += (
@@ -2419,10 +2311,7 @@ def _render_text_status(
             f"budget_consumed={home['budget_consumed']}{budget_usd_text}{savings_text}"
         )
         if escalated:
-            line += (
-                f" reason={home.get('escalation_reason')!r} "
-                f"artifact={home.get('escalation_artifact')!r}"
-            )
+            line += f" reason={home.get('escalation_reason')!r} artifact={home.get('escalation_artifact')!r}"
             # Story 25.5 (CAP-5): the recovery pointer, appended only when
             # present -- a pure projection of the SAME
             # `escalation_preserve_ref` JSON field (NFR-12).
@@ -2466,10 +2355,7 @@ def _render_text_status(
         if failed:
             pending = sum(1 for entry in failed if entry.get("done") is False)
             unknown = sum(1 for entry in failed if entry.get("done") is None)
-            line += (
-                f" FAILED_PATCHES n={len(failed)} pending={pending} "
-                f"unknown={unknown}"
-            )
+            line += f" FAILED_PATCHES n={len(failed)} pending={pending} unknown={unknown}"
         # Story 28.15 (CAP-17): the SAME `dispatch_verification_scope_
         # advisories` list the `--format json` payload carries -- a pure
         # projection (NFR-12), mirroring `failed`/`unpushed`'s own
@@ -2484,9 +2370,7 @@ def _render_text_status(
             # already filtered to a `dict` by `gather_dispatch_journal_facts`
             # before it ever reaches `DispatchJournalFacts.verification_scope_
             # advisories`.
-            codes = ",".join(dict.fromkeys(
-                entry.get("code", "?") for entry in scope_advisories
-            ))
+            codes = ",".join(dict.fromkeys(entry.get("code", "?") for entry in scope_advisories))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
 
@@ -2503,15 +2387,11 @@ def _render_text_status(
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(
-                f"  {finding.code} [{finding.severity.value}] {finding.message}"
-            )
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
     return "\n".join(lines)
 
 
-def _render_text_run_detail(
-    data: Mapping[str, object], findings: tuple[Finding, ...]
-) -> str:
+def _render_text_run_detail(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (Story 5.2, NFR-12) -- every field this
     prints has an identical machine-readable counterpart in ``data``, never
@@ -2549,12 +2429,9 @@ def _render_text_run_detail(
         # up as clean.
         sweeps = data.get("sweeps_refused")
         if sweeps:
-            detail = ", ".join(
-                f"{trigger} ({reason})" for trigger, reason in sweeps.items()
-            )
+            detail = ", ".join(f"{trigger} ({reason})" for trigger, reason in sweeps.items())
             lines.append(
-                f"sweeps_refused: {detail} -- deferred work is untouched; "
-                "run `bmad-loop sweep` with a clean worktree"
+                f"sweeps_refused: {detail} -- deferred work is untouched; run `bmad-loop sweep` with a clean worktree"
             )
         elif sweeps is not None:
             lines.append("sweeps_refused: (none)")
@@ -2565,10 +2442,10 @@ def _render_text_run_detail(
         lines.append(f"stories: {len(stories)}")
         for story in stories:
             # Story 28.4: Add per-story savings display (CAP-7)
-            story_savings_summary = _format_savings_summary(story.get('layer_savings', {}))
+            story_savings_summary = _format_savings_summary(story.get("layer_savings", {}))
             story_savings_text = f" savings={story_savings_summary}" if story_savings_summary else ""
             story_budget_usd_text = _format_dollar_estimate(story.get("budget_consumed_usd"))
-            
+
             line = (
                 f"  {story['story_key']} phase={story['phase']} "
                 f"commit_sha={story['commit_sha']} branch={story['branch']!r} "
@@ -2598,17 +2475,12 @@ def _render_text_run_detail(
         open_intents = data.get("open_intents") or []
         lines.append(f"open_intents: {len(open_intents)}")
         for intent in open_intents:
-            lines.append(
-                f"  {intent.get('kind')} id={intent.get('id')} "
-                f"payload={intent.get('payload')}"
-            )
+            lines.append(f"  {intent.get('kind')} id={intent.get('id')} payload={intent.get('payload')}")
 
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(
-                f"  {finding.code} [{finding.severity.value}] {finding.message}"
-            )
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
     return "\n".join(lines)
 
 

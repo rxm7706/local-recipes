@@ -2,7 +2,7 @@
 title: 'marshal seed check'
 type: 'feature'
 created: '2026-08-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '7e0c58afb801927e17a3a6a4bfea7fca428bddd5'
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -224,3 +224,7 @@ are currently unreachable via any live CLI flow (no `adopt`/`init`/`update` verb
 populate `state.managed[]` for real), so their regression tests are necessarily synthetic
 (hand-built `SeedState`/`ManagedArtifact` fixtures) rather than end-to-end proof; Epic 11's
 migration work should re-verify this logic once real cross-version state exists.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `10-5-marshal-seed-check: done`).

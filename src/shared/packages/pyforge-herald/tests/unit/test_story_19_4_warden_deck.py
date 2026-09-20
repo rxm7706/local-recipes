@@ -75,17 +75,9 @@ def test_pipeline_output_is_not_marp_export_provenance():
     assert _MARP_PPTX.is_file()
     assert _PIPELINE_PPTX.stat().st_size < _MARP_PPTX.stat().st_size // 5
     with zipfile.ZipFile(_MARP_PPTX) as marp:
-        marp_slides = [
-            n
-            for n in marp.namelist()
-            if n.startswith("ppt/slides/slide") and n.endswith(".xml")
-        ]
+        marp_slides = [n for n in marp.namelist() if n.startswith("ppt/slides/slide") and n.endswith(".xml")]
     with zipfile.ZipFile(_PIPELINE_PPTX) as pipeline:
-        pipeline_slides = [
-            n
-            for n in pipeline.namelist()
-            if n.startswith("ppt/slides/slide") and n.endswith(".xml")
-        ]
+        pipeline_slides = [n for n in pipeline.namelist() if n.startswith("ppt/slides/slide") and n.endswith(".xml")]
     assert len(pipeline_slides) == 15
     assert len(marp_slides) == 28
     assert "Six axes of dependency trust" in _slide_xml(_PIPELINE_PPTX, 9)

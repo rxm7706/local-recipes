@@ -2,7 +2,7 @@
 title: 'GraphStore port + flat-file v1 adapter (Story 2.1)'
 type: 'feature'
 created: '2026-08-07'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -148,3 +148,17 @@ drift, concurrent-compile races, idempotency, accidental network calls):
 - **No findings requiring a code change** beyond what's implemented — this
   story's scope (pure local file I/O) has a narrow surface for these classes
   of bug.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `2221e12892` (2026-09-18, "Rename scribe Story 2.1 spec to match the ledger key"); also `a0ef150159` (2026-08-07, "herald: Story 2.1 — herald deck pull <slug> with etag short-circuit"); also `aaee60fd03` (2026-08-07, "scribe: sync sprint-status ledger — Epic 2 done (Stories 2.1-2.4)"). Ledger row `2-1-graphstore-port-flat-file-v1-adapter: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-2-1-graphstore-port-flat-file-v1-adapter.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-review` → `done` (ledger row `2-1-graphstore-port-flat-file-v1-adapter: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

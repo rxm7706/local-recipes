@@ -80,3 +80,16 @@ exactly one HTTP round-trip per `AqlRequest`.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-34-2`/`spec-21-13`'s own dispatch runs, which hit the identical refusal.
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** no commit subject on `main` names this story (hand-implemented, or landed under another story's subject); the ledger row `24-4-a-live-artifactory-transport-exists-for-the-attended-operator-to-plug-in: done` is the record and `story-status` accepts it.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** not attributable to one commit — see the summary.
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

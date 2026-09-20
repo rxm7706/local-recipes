@@ -2,7 +2,7 @@
 title: '25.3: The ledger-regression verdict reads a re-key map, so a rebase moves done rows as done'
 type: 'feature'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -50,3 +50,17 @@ Standard: `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md`.
 Surface: doctor sources/ledger.py, pyforge/doctor/rekey.py, scripts/promote_sprint_status.py --rekey, pixi.toml sprint-ledger-sync passthrough, story-status-check, doctor fixture tests.
 Ledger key: `25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done.md`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `a0a7f38713` (2026-09-16, "Merge pull request #1390 from rxm7706/doctor-25-3-rekey-classify"). Ledger row `25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md`, `scripts/.spec-surface-baseline.json`, `scripts/bmad_drift_check.py`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `25-3-the-ledger-regression-verdict-reads-a-re-key-map-so-a-rebase-moves-done-rows-as-done: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

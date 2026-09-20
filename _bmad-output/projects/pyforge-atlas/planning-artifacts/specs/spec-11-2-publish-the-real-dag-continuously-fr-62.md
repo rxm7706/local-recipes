@@ -2,7 +2,7 @@
 title: 'Publish the real Kedro-Viz DAG continuously'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 review_loop_iteration: 2
 followup_review_recommended: true
 context: []
@@ -313,3 +313,7 @@ follow-up recommendation still stands and is not resolved by this pass.
 functional fix was already independently reviewed once on the sibling branch and is now reviewed a
 second time here, both passes converging on acceptance). The carried-over pass-3 follow-up
 recommendation is the more significant outstanding item — see that pass's own residual-risk framing.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `11-2-publish-the-real-dag-continuously-fr-62: done`).

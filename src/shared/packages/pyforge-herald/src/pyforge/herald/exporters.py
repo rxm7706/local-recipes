@@ -20,9 +20,7 @@ from pyforge.core.hooks import HookSpec, PluginError, PluginRegistry
 
 DECK_EXPORT_HOOK_SPEC_NAME = "pyforge.herald.deck_export"
 DECK_EXPORT_OWNER = "herald"
-DECK_EXPORT_HOOK_SPEC = HookSpec(
-    name=DECK_EXPORT_HOOK_SPEC_NAME, owner=DECK_EXPORT_OWNER
-)
+DECK_EXPORT_HOOK_SPEC = HookSpec(name=DECK_EXPORT_HOOK_SPEC_NAME, owner=DECK_EXPORT_OWNER)
 
 FORMAT_MARP = "marp"
 FORMAT_PPTX = "pptx"
@@ -66,10 +64,7 @@ class _DeckExportPlugin:
         if self.format_id in backends:
             backend = backends[self.format_id]
             if not callable(backend):
-                raise PluginError(
-                    f"backends[{self.format_id!r}] must be callable, "
-                    f"got {type(backend).__name__}"
-                )
+                raise PluginError(f"backends[{self.format_id!r}] must be callable, got {type(backend).__name__}")
             backend(context)
         self._record_after_backend(context)
         return _continue_around(context)
@@ -93,9 +88,7 @@ class DcHtmlExportPlugin(_DeckExportPlugin):
     format_id = FORMAT_DC_HTML
 
 
-def default_export_plugins() -> tuple[
-    MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin
-]:
+def default_export_plugins() -> tuple[MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin]:
     return (MarpExportPlugin(), PptxExportPlugin(), DcHtmlExportPlugin())
 
 

@@ -372,14 +372,14 @@ def redact_raw_text(text: str) -> str | None:
     """
     try:
         parsed = json.loads(text)
-    except (ValueError, TypeError, RecursionError):
+    except ValueError, TypeError, RecursionError:
         parsed = None
     try:
         if isinstance(parsed, Mapping):
             return to_redacted(parsed).text
         wrapped = to_redacted({"text": text})
         return json.loads(wrapped.text)["text"]
-    except (ValueError, LookupError, TypeError, RecursionError):
+    except ValueError, LookupError, TypeError, RecursionError:
         return None
 
 
@@ -462,26 +462,16 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
     # whitespace-only command was accepted, storing an entry that proves
     # nothing in a record whose entire purpose is proving what was checked.
     if not isinstance(command, str) or not command.strip():
-        raise ValueError(
-            f"commands[{index}]['command'] must be a non-blank str, got {_safe_repr(command)}"
-        )
+        raise ValueError(f"commands[{index}]['command'] must be a non-blank str, got {_safe_repr(command)}")
     resolvable = entry["resolvable"]
     if not isinstance(resolvable, bool):
-        raise ValueError(
-            f"commands[{index}]['resolvable'] must be a bool, got {_safe_repr(resolvable)}"
-        )
+        raise ValueError(f"commands[{index}]['resolvable'] must be a bool, got {_safe_repr(resolvable)}")
     returncode = entry["returncode"]
     if returncode is not None and (isinstance(returncode, bool) or not isinstance(returncode, int)):
-        raise ValueError(
-            f"commands[{index}]['returncode'] must be an int or None, "
-            f"got {_safe_repr(returncode)}"
-        )
+        raise ValueError(f"commands[{index}]['returncode'] must be an int or None, got {_safe_repr(returncode)}")
     for key in _OPTIONAL_COMMAND_KEYS:
         if key in entry and not isinstance(entry[key], str):
-            raise ValueError(
-                f"commands[{index}][{key!r}] must be a str when present, got "
-                f"{type(entry[key]).__name__}"
-            )
+            raise ValueError(f"commands[{index}][{key!r}] must be a str when present, got {type(entry[key]).__name__}")
     # Cross-field consistency (follow-up review finding, verified live). The
     # schema DOCUMENTS both invariants in prose -- `returncode` is "null when
     # the command never ran (resolvable: false)" and stdout/stderr are
@@ -507,10 +497,7 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
                 f"no {present_optional} -- a command that never ran captured no output"
             )
     elif returncode is None:
-        raise ValueError(
-            f"commands[{index}] is resolvable (resolvable: True) so 'returncode' must be "
-            "an int, got None"
-        )
+        raise ValueError(f"commands[{index}] is resolvable (resolvable: True) so 'returncode' must be an int, got None")
     return dict(entry)
 
 
@@ -554,14 +541,10 @@ def build_gate_record(
     key = identity.normalize(story_key)
 
     if isinstance(commands, str):
-        raise ValueError(
-            f"commands must be a sequence of command reports, not a bare str: {commands!r}"
-        )
+        raise ValueError(f"commands must be a sequence of command reports, not a bare str: {commands!r}")
     if not isinstance(commands, Sequence):
         raise ValueError(f"commands must be a Sequence, got {commands!r}")
-    command_reports = [
-        _validate_command_report(entry, index) for index, entry in enumerate(commands)
-    ]
+    command_reports = [_validate_command_report(entry, index) for index, entry in enumerate(commands)]
 
     if scope_check_verdict is not None:
         try:
@@ -583,9 +566,7 @@ def build_gate_record(
     try:
         parsed = datetime.fromisoformat(timestamp)
     except ValueError as exc:
-        raise ValueError(
-            f"timestamp must be a valid ISO-8601 string, got {timestamp!r}"
-        ) from exc
+        raise ValueError(f"timestamp must be a valid ISO-8601 string, got {timestamp!r}") from exc
     offset = parsed.utcoffset()
     # Two distinct messages (review finding): `offset is None` means no
     # timezone was attached at all (the most likely real-world mistake --
@@ -595,10 +576,7 @@ def build_gate_record(
     # way but pointed a caller who forgot a timezone entirely toward the
     # wrong diagnosis.
     if offset is None:
-        raise ValueError(
-            f"timestamp must include a UTC timezone (e.g. a 'Z' suffix or "
-            f"'+00:00'), got {timestamp!r}"
-        )
+        raise ValueError(f"timestamp must include a UTC timezone (e.g. a 'Z' suffix or '+00:00'), got {timestamp!r}")
     if offset != timedelta(0):
         raise ValueError(f"timestamp must be UTC (zero tz offset), got {timestamp!r}")
     # Last, so the two more specific diagnostics above still win for the

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.cli import DUTIES, build_parser, main, resolve_duty
 from pyforge.steward.track import (
     RETENTION,
@@ -26,13 +27,11 @@ _SCHEMA = (
     / "data"
     / "track.schema.json"
 )
+
+
 def _repo_root() -> Path:
     for ancestor in Path(__file__).resolve().parents:
-        if (
-            (ancestor / "pixi.toml").is_file()
-            and (ancestor / "docs").is_dir()
-            and (ancestor / "_bmad-output").is_dir()
-        ):
+        if (ancestor / "pixi.toml").is_file() and (ancestor / "docs").is_dir() and (ancestor / "_bmad-output").is_dir():
             return ancestor
     raise AssertionError("could not locate repo root")
 
@@ -130,9 +129,7 @@ def test_bare_track_lists_assemble():
 
 def test_assemble_via_cli(tmp_path, capsys):
     out = tmp_path / "track.json"
-    rc = main(
-        ["track", "assemble", "--run-dir", str(_FIXTURE), "--out", str(out)]
-    )
+    rc = main(["track", "assemble", "--run-dir", str(_FIXTURE), "--out", str(out)])
     assert rc == 0
     assert out.is_file()
     assert "run-fixture-53-3" in capsys.readouterr().out

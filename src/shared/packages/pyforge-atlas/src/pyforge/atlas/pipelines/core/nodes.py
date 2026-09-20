@@ -50,6 +50,7 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 # Phase B — conda package enumeration
 # ---------------------------------------------------------------------------
 
+
 def enumerate_conda_packages(
     core_repodata_raw: pd.DataFrame,
     core_channeldata_raw: pd.DataFrame,
@@ -102,6 +103,7 @@ def enumerate_conda_packages(
 # Story 21.4 — Anaconda main channeldata materializer (Tier 1, CAP-2)
 # ---------------------------------------------------------------------------
 
+
 def enumerate_anaconda_main_packages(core_anaconda_main_channeldata_raw: pd.DataFrame) -> pd.DataFrame:
     # Story 21.4 (Tier 1 catalog source; catalog-sources.md "Anaconda main channeldata")
     """Materialize the Anaconda ``main`` channel's package list.
@@ -131,6 +133,7 @@ def enumerate_anaconda_main_packages(core_anaconda_main_channeldata_raw: pd.Data
 # ---------------------------------------------------------------------------
 # Phase B.5 — feedstock attribution
 # ---------------------------------------------------------------------------
+
 
 def _pick_feedstock(pkg_name: str, feedstocks: list[str] | None) -> str | None:
     # legacy: Phase B.5  (_pick_feedstock CFA:1572; logic CFA:1586-1590; call CFA:1632)
@@ -163,16 +166,14 @@ def attribute_feedstocks(core_feedstock_outputs_raw: pd.DataFrame) -> pd.DataFra
     if src is None or src.empty or not {"conda_name", "feedstocks"} <= set(src.columns):
         return pd.DataFrame(columns=["conda_name", "feedstock_name"])
     out = src.copy()
-    out["feedstock_name"] = [
-        _pick_feedstock(name, fs)
-        for name, fs in zip(out["conda_name"], out["feedstocks"])
-    ]
+    out["feedstock_name"] = [_pick_feedstock(name, fs) for name, fs in zip(out["conda_name"], out["feedstocks"])]
     return out[["conda_name", "feedstock_name"]].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
 # Phase B.6 — latest-status (LITE: presence → active; NO per-version yanked scan)
 # ---------------------------------------------------------------------------
+
 
 def detect_latest_status(
     core_repodata_raw: pd.DataFrame,
@@ -193,6 +194,7 @@ def detect_latest_status(
 # ---------------------------------------------------------------------------
 # Phase F — downloads (provenance discipline)
 # ---------------------------------------------------------------------------
+
 
 def compute_downloads(
     core_anaconda_downloads_raw: pd.DataFrame,
@@ -252,17 +254,11 @@ def compute_downloads(
         d30 = d30.rename(columns={"downloads": "downloads_30d"})
 
         # Breakdown tables — s3-parquet path ONLY.
-        platform_breakdown = (
-            s3.groupby(["conda_name", "platform"], as_index=False)["downloads"].sum()
-        )[plat_cols]
+        platform_breakdown = (s3.groupby(["conda_name", "platform"], as_index=False)["downloads"].sum())[plat_cols]
         # regex-filter the dirty pkg_python column BEFORE aggregation.
         clean = s3[s3["pyver"].astype(str).str.match(_CLEAN_PYVER)]
-        pyver_breakdown = (
-            clean.groupby(["conda_name", "pyver"], as_index=False)["downloads"].sum()
-        )[pyver_cols]
-        channel_breakdown = (
-            s3.groupby(["conda_name", "channel"], as_index=False)["downloads"].sum()
-        )[chan_cols]
+        pyver_breakdown = (clean.groupby(["conda_name", "pyver"], as_index=False)["downloads"].sum())[pyver_cols]
+        channel_breakdown = (s3.groupby(["conda_name", "channel"], as_index=False)["downloads"].sum())[chan_cols]
     else:
         d30 = None
 
@@ -283,8 +279,8 @@ def compute_downloads(
         # is a run-summary label the schema explicitly NEVER writes per row
         # (CFA:189-193). A both-present package whose value came from s3 is
         # 's3-parquet'; only a row that fell back to anaconda is 'anaconda-api'.
-        merged["downloads_source"] = merged["downloads_total_s3"].notna().map(
-            {True: "s3-parquet", False: "anaconda-api"}
+        merged["downloads_source"] = (
+            merged["downloads_total_s3"].notna().map({True: "s3-parquet", False: "anaconda-api"})
         )
         downloads = merged[["conda_name", "downloads_total", "downloads_source"]]
     elif s3_present:
@@ -315,6 +311,7 @@ def compute_downloads(
 # Phase I — per-version download history (PROMOTED to an explicit node, AC-3)
 # ---------------------------------------------------------------------------
 
+
 def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase I  (promoted from Phase F side-effect: api CFA:2931 / s3 CFA:3402; table CFA:312-316)
     """Per-version download history as an EXPLICIT declared output (AC-3) — no longer
@@ -332,6 +329,7 @@ def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) 
 # ---------------------------------------------------------------------------
 # Phase J — dependency graph (archived-feedstock skip-set filter at the write site)
 # ---------------------------------------------------------------------------
+
 
 def _inactive_feedstocks(cf_graph: pd.DataFrame) -> set[str]:
     """Build the archived/inactive feedstock skip-set (v7.9.0 fix; spec § 3.3
@@ -362,6 +360,7 @@ def build_dependency_graph(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Phase M — feedstock health (same archived-feedstock scope filter at write SELECT)
 # ---------------------------------------------------------------------------
+
 
 def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase M  (phase_m_feedstock_health CFA:6263)

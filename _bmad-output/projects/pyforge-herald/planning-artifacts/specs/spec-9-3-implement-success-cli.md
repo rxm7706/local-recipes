@@ -137,3 +137,16 @@ either way.
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `11634075b3` (2026-08-08, "herald: Story 9.2 + 9.3 + 9.5 — success CLI wired to claim storage"). Ledger row `9-3-implement-success-cli: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/tests/test_cli_epic6.py`, `src/shared/packages/pyforge-herald/tests/test_cli_success.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

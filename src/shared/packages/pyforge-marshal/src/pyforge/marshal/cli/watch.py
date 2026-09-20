@@ -111,7 +111,7 @@ def seconds_to_next_half_hour(now: datetime) -> int:
     if now.minute < 30:
         nxt = now.replace(minute=30, second=0, microsecond=0)
     else:
-        nxt = (now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+        nxt = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
     return max(0, int((nxt - now).total_seconds()))
 
 
@@ -130,21 +130,12 @@ def recommend_delay(
         return None, "run/dispatch is finished -- no next-check delay"
     if paused_or_escalated and not actively_progressing:
         delay = min(1800, boundary)
-        return delay, (
-            f"paused/escalated -- boundary-only delay {delay}s "
-            f"(next :00/:30 in {boundary}s UTC)"
-        )
+        return delay, (f"paused/escalated -- boundary-only delay {delay}s (next :00/:30 in {boundary}s UTC)")
     if actively_progressing:
         delay = min(300, boundary)
-        return delay, (
-            f"actively progressing -- min(300, boundary) = {delay}s "
-            f"(next :00/:30 in {boundary}s UTC)"
-        )
+        return delay, (f"actively progressing -- min(300, boundary) = {delay}s (next :00/:30 in {boundary}s UTC)")
     delay = boundary
-    return delay, (
-        f"idle/paused fleet or non-active run -- boundary-only {delay}s "
-        f"(next :00/:30 in {boundary}s UTC)"
-    )
+    return delay, (f"idle/paused fleet or non-active run -- boundary-only {delay}s (next :00/:30 in {boundary}s UTC)")
 
 
 def add_watch_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -152,10 +143,7 @@ def add_watch_subparser(subparsers: argparse._SubParsersAction) -> None:
     ``status``/``check`` (Story 44.1 Code Map)."""
     parser = subparsers.add_parser(
         "watch",
-        help=(
-            "Operator ritual as a CLI verb: ground-truth + delta + "
-            "boundary-aware next-check delay (Story 44.1)."
-        ),
+        help=("Operator ritual as a CLI verb: ground-truth + delta + boundary-aware next-check delay (Story 44.1)."),
         description=(
             "Ports .claude/skills/marshal-run-watch into marshal watch. "
             "Pinned (--project + --run), station (--project), or fleet "
@@ -197,7 +185,7 @@ def _read_cache(path: Path) -> Mapping[str, Any] | None:
         return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    except OSError, json.JSONDecodeError, TypeError, ValueError:
         return None
     return payload if isinstance(payload, Mapping) else None
 
@@ -284,9 +272,7 @@ def _paused_or_escalated(status: Mapping[str, Any], overall: str) -> bool:
     return bool(status.get("paused_reason") or status.get("escalation_reason"))
 
 
-def _dispatch_outranks_loop(
-    *, loop_last_fact: datetime | None, dispatch_last_fact: datetime | None
-) -> bool:
+def _dispatch_outranks_loop(*, loop_last_fact: datetime | None, dispatch_last_fact: datetime | None) -> bool:
     """Story 51.6 (spec-pyforge-marshal CAP-254) -- the ONE comparison
     ``_gather_station`` uses to pick its engine, kept pure and small on
     purpose so it can be mutation-tested directly: true only when the
@@ -382,10 +368,7 @@ def _snapshot_loop(
         "finished": bool(status.get("finished")),
         "stories": [{"key": r["key"], "phase": r["phase"], "commit_sha": r["commit_sha"]} for r in rows],
         "loop_sha": loop_sha,
-        "prs": [
-            {"number": p.get("number"), "state": p.get("state"), "updatedAt": p.get("updatedAt")}
-            for p in prs
-        ],
+        "prs": [{"number": p.get("number"), "state": p.get("state"), "updatedAt": p.get("updatedAt")} for p in prs],
         "list_status": (_list_row(listed, run_id) or {}).get("status"),
     }
 
@@ -408,7 +391,9 @@ def _dispatch_verdict_is_terminal(verdict: object) -> bool:
     return member is not DispatchSessionVerdict.LIVE
 
 
-def _snapshot_dispatch(slug: str, home: Mapping[str, Any], loop_sha: str | None, prs: list[Mapping[str, Any]]) -> dict[str, Any]:
+def _snapshot_dispatch(
+    slug: str, home: Mapping[str, Any], loop_sha: str | None, prs: list[Mapping[str, Any]]
+) -> dict[str, Any]:
     run_id = home.get("dispatch_run_id")
     verdict = home.get("dispatch_completion_verdict")
     finished = _dispatch_verdict_is_terminal(verdict)
@@ -425,10 +410,7 @@ def _snapshot_dispatch(slug: str, home: Mapping[str, Any], loop_sha: str | None,
         "dispatch_verification_verdict": home.get("dispatch_verification_verdict"),
         "current_story": home.get("current_story"),
         "loop_sha": loop_sha,
-        "prs": [
-            {"number": p.get("number"), "state": p.get("state"), "updatedAt": p.get("updatedAt")}
-            for p in prs
-        ],
+        "prs": [{"number": p.get("number"), "state": p.get("state"), "updatedAt": p.get("updatedAt")} for p in prs],
     }
 
 
@@ -533,11 +515,7 @@ def _up_next(
     remaining = [key for key in queue if key not in done and key not in active]
     if remaining:
         return remaining
-    from_status = [
-        r["key"]
-        for r in rows
-        if r["key"] not in done and r["key"] not in active
-    ]
+    from_status = [r["key"] for r in rows if r["key"] not in done and r["key"] not in active]
     return from_status
 
 
@@ -607,7 +585,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         if not home.is_dir():
             return {"runs": []}
         return _run_json(
-            ["pixi", "run", "-e", "local-recipes", "bmad-loop", "list", "--json"],
+            ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "list", "--json"],
             home,
             "bmad-loop list --json",
         )
@@ -615,7 +593,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def run_status(slug: str, run_id: str) -> Mapping[str, Any]:
         home = Path.home() / ".bmad-loops" / slug
         return _run_json(
-            ["pixi", "run", "-e", "local-recipes", "bmad-loop", "status", run_id, "--json"],
+            ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "status", run_id, "--json"],
             home if home.is_dir() else root,
             f"bmad-loop status {run_id} --json",
         )
@@ -640,7 +618,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
             return None
         try:
             payload = json.loads(result.stdout)
-        except (json.JSONDecodeError, TypeError, ValueError):
+        except json.JSONDecodeError, TypeError, ValueError:
             return None
         homes = payload.get("data", {}).get("homes") if isinstance(payload, Mapping) else None
         if isinstance(homes, list) and homes and isinstance(homes[0], Mapping):
@@ -790,19 +768,13 @@ def _render_text(data: Mapping[str, Any], findings: Sequence[Finding]) -> str:
             lines.append("")
             lines.append(f"**User Action Required:** {data.get('user_action_required')}")
     elif data.get("quiet"):
-        lines.append(
-            f"## {data.get('slug')} — Run `{data.get('run_id')}` "
-            f"({data.get('pattern')}) Status Report"
-        )
+        lines.append(f"## {data.get('slug')} — Run `{data.get('run_id')}` ({data.get('pattern')}) Status Report")
         lines.append(f"*(checked {data.get('checked_at')})*")
         lines.append("")
         lines.append("nothing changed")
     else:
         sections = data.get("sections") or {}
-        lines.append(
-            f"## {data.get('slug')} — Run `{data.get('run_id')}` "
-            f"({data.get('pattern')}) Status Report"
-        )
+        lines.append(f"## {data.get('slug')} — Run `{data.get('run_id')}` ({data.get('pattern')}) Status Report")
         lines.append(f"*(checked {data.get('checked_at')})*")
         lines.append("")
         lines.append("**Session Completions:**")
@@ -844,9 +816,7 @@ def _render_text(data: Mapping[str, Any], findings: Sequence[Finding]) -> str:
     return "\n".join(lines)
 
 
-def _probe_sha_prs(
-    ports: WatchPorts, slug: str, findings: list[Finding]
-) -> tuple[str | None, list[Mapping[str, Any]]]:
+def _probe_sha_prs(ports: WatchPorts, slug: str, findings: list[Finding]) -> tuple[str | None, list[Mapping[str, Any]]]:
     sha: str | None = None
     prs: list[Mapping[str, Any]] = []
     try:
@@ -922,9 +892,7 @@ def _gather_station(
         if run_id is None and isinstance(raw_dispatch_id, str) and raw_dispatch_id:
             loop_last = ports.loop_last_fact(slug, loop_id) if ports.loop_last_fact is not None else None
             dispatch_last = (
-                ports.dispatch_last_fact(slug, raw_dispatch_id)
-                if ports.dispatch_last_fact is not None
-                else None
+                ports.dispatch_last_fact(slug, raw_dispatch_id) if ports.dispatch_last_fact is not None else None
             )
             if _dispatch_outranks_loop(loop_last_fact=loop_last, dispatch_last_fact=dispatch_last):
                 pattern = "bmad-build-auto"
@@ -1137,11 +1105,7 @@ def run_watch(
             gathered = _gather_station(ports=ports, slug=item, run_id=None, findings=findings)
             if gathered is None:
                 # Drop no-active-run errors for idle fleet members.
-                findings[:] = [
-                    f
-                    for f in findings
-                    if not (f.code == _MRS_WATCH_002 and item in f.message)
-                ]
+                findings[:] = [f for f in findings if not (f.code == _MRS_WATCH_002 and item in f.message)]
                 projects.append(
                     {
                         "slug": item,
@@ -1164,9 +1128,7 @@ def run_watch(
             any_active = any_active or bool(gathered["actively_progressing"])
             any_paused = any_paused or escalated
             if escalated:
-                actions.append(
-                    f"{item}: {gathered['sections']['user_action_required']}"
-                )
+                actions.append(f"{item}: {gathered['sections']['user_action_required']}")
             projects.append(
                 {
                     "slug": item,

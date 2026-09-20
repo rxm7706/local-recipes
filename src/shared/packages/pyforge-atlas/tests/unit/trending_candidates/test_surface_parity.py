@@ -56,7 +56,7 @@ def _server_tool_defaults() -> dict:
     args = node.args.args
     defaults = node.args.defaults
     # defaults align to the TAIL of args
-    paired = dict(zip((a.arg for a in args[len(args) - len(defaults):]), defaults))
+    paired = dict(zip((a.arg for a in args[len(args) - len(defaults) :]), defaults))
     return {name: ast.literal_eval(paired[name]) for name in FILTERS}
 
 
@@ -77,8 +77,7 @@ def _tools_in_source(source: str) -> set[str]:
     return {
         node.name
         for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.FunctionDef)
-        and any(_is_tool_decorator(d) for d in node.decorator_list)
+        if isinstance(node, ast.FunctionDef) and any(_is_tool_decorator(d) for d in node.decorator_list)
     }
 
 
@@ -93,9 +92,7 @@ def _registered_server_tools() -> set[str]:
 
 
 def test_mcp_tool_defaults_match_the_query_seam():
-    assert _signature_defaults(tools.query_trending_candidates) == _signature_defaults(
-        query.query_trending_candidates
-    )
+    assert _signature_defaults(tools.query_trending_candidates) == _signature_defaults(query.query_trending_candidates)
 
 
 def test_server_tool_defaults_match_the_query_seam():
@@ -142,10 +139,7 @@ def test_every_registered_server_tool_is_recorded_in_the_audit_surface():
     ``query_trending_candidates`` shipped, and exactly how the next new tool would ship,
     with the whole suite green. This asserts the direction that fails for it."""
     unrecorded = _registered_server_tools() - audit.registered_surface_tools()
-    assert not unrecorded, (
-        "registered on the server but recorded in no mcp/audit.py bucket: "
-        f"{sorted(unrecorded)}"
-    )
+    assert not unrecorded, f"registered on the server but recorded in no mcp/audit.py bucket: {sorted(unrecorded)}"
 
 
 def test_the_registry_guard_sees_a_bare_mcp_tool_decorator_too():
@@ -181,19 +175,12 @@ def test_the_server_tool_forwards_every_filter_to_the_same_named_keyword():
     delegations = [
         call
         for call in ast.walk(node)
-        if isinstance(call, ast.Call)
-        and isinstance(call.func, ast.Attribute)
-        and call.func.attr == TOOL_NAME
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr == TOOL_NAME
     ]
     assert len(delegations) == 1, "the wrapper must be a single delegate call"
     call = delegations[0]
     assert not call.args, "every filter must be forwarded BY KEYWORD, never positionally"
-    forwarded = {
-        kw.arg: kw.value.id
-        for kw in call.keywords
-        if isinstance(kw.value, ast.Name)
-    }
+    forwarded = {kw.arg: kw.value.id for kw in call.keywords if isinstance(kw.value, ast.Name)}
     assert {name: name for name in FILTERS}.items() <= forwarded.items(), (
-        f"server.py's {TOOL_NAME} does not forward each filter to its own name: "
-        f"{forwarded}"
+        f"server.py's {TOOL_NAME} does not forward each filter to its own name: {forwarded}"
     )

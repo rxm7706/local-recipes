@@ -73,9 +73,7 @@ def _cli_raises(exc: BaseException):
 
 
 def test_cve_mcp_success_returns_one_finding_per_row():
-    findings = gather(
-        "cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD))
-    )
+    findings = gather("cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD)))
     assert len(findings) == 2
     for finding, row in zip(findings, _CVE_ROWS):
         assert isinstance(finding, Finding)
@@ -86,9 +84,7 @@ def test_cve_mcp_success_returns_one_finding_per_row():
 
 
 def test_cve_delta_positive_is_fail_delta_nonpositive_is_warn():
-    findings = gather(
-        "cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD))
-    )
+    findings = gather("cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD)))
     by_check = {f.check: f for f in findings}
     assert by_check["some-package"].status is DoctorStatus.FAIL  # delta=2
     assert by_check["another-package"].status is DoctorStatus.WARN  # delta=-2
@@ -176,9 +172,7 @@ def test_cve_both_mcp_and_cli_fail_returns_one_fail_finding_tagged_cve():
 def test_cve_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
     findings = gather(
         "cve",
-        mcp_caller=_mcp_returns(
-            "cve_watcher", json.dumps({"meta": {}, "rows": ["not-a-dict"]})
-        ),
+        mcp_caller=_mcp_returns("cve_watcher", json.dumps({"meta": {}, "rows": ["not-a-dict"]})),
     )
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
@@ -186,22 +180,14 @@ def test_cve_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
 
 
 def test_cve_equivalence_mcp_and_cli_paths():
-    via_mcp = gather(
-        "cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD))
-    )
+    via_mcp = gather("cve", mcp_caller=_mcp_returns("cve_watcher", json.dumps(_CVE_PAYLOAD)))
     via_cli = gather(
         "cve",
         mcp_caller=_mcp_raises(ConnectionError("forced failure")),
         cli_runner=_cli_ok(_CVE_PAYLOAD),
     )
-    mcp_dicts = sorted(
-        (f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items())))
-        for f in via_mcp
-    )
-    cli_dicts = sorted(
-        (f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items())))
-        for f in via_cli
-    )
+    mcp_dicts = sorted((f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items()))) for f in via_mcp)
+    cli_dicts = sorted((f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items()))) for f in via_cli)
     assert mcp_dicts == cli_dicts
 
 
@@ -248,9 +234,7 @@ _CADENCE_ROWS = [
 ]
 
 
-def _abandonment_mcp_caller(
-    *, health_stuck=None, health_bad=None, cadence=None, raise_for=None
-):
+def _abandonment_mcp_caller(*, health_stuck=None, health_bad=None, cadence=None, raise_for=None):
     """Fake dispatcher for the abandonment axis's three MCP sub-calls,
     keyed by (tool_name, arguments['filter_kind']) for feedstock_health and
     plain tool_name for release_cadence."""
@@ -314,9 +298,7 @@ def test_abandonment_one_sub_call_failing_does_not_hide_the_others():
     # all-or-nothing for this composite axis).
     findings = gather(
         "abandonment",
-        mcp_caller=_abandonment_mcp_caller(
-            raise_for=frozenset({("feedstock_health", "stuck")})
-        ),
+        mcp_caller=_abandonment_mcp_caller(raise_for=frozenset({("feedstock_health", "stuck")})),
         # The CLI fallback MUST be injected. Without it `gather` falls through to the
         # real `.claude/scripts/conda-forge-expert/feedstock_health.py` on disk, which
         # exists and succeeds -- so `_FetchFailed` never raises, no degraded sentinel
@@ -379,15 +361,9 @@ def test_abandonment_cli_fallback_for_all_three_sub_calls():
 def test_abandonment_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
     findings = gather(
         "abandonment",
-        mcp_caller=_abandonment_mcp_caller(
-            health_stuck=["not-a-dict"], health_bad=[], cadence=[]
-        ),
+        mcp_caller=_abandonment_mcp_caller(health_stuck=["not-a-dict"], health_bad=[], cadence=[]),
     )
-    fails = [
-        f
-        for f in findings
-        if f.source is Source.FEEDSTOCK_HEALTH and f.status is DoctorStatus.FAIL
-    ]
+    fails = [f for f in findings if f.source is Source.FEEDSTOCK_HEALTH and f.status is DoctorStatus.FAIL]
     assert len(fails) == 1
     assert "non-object row" in fails[0].message
 
@@ -429,9 +405,7 @@ _VERSION_DOWNLOADS_ROWS = [
 
 def _adoption_mcp_caller(*, stage=None, version_downloads=None, raise_for=None):
     stage = stage if stage is not None else _ADOPTION_STAGE_ROWS
-    version_downloads = (
-        version_downloads if version_downloads is not None else _VERSION_DOWNLOADS_ROWS
-    )
+    version_downloads = version_downloads if version_downloads is not None else _VERSION_DOWNLOADS_ROWS
     raise_for = raise_for or frozenset()
 
     def caller(tool: str, arguments: dict) -> str:
@@ -465,12 +439,9 @@ def test_adoption_silent_stage_is_fail_declining_is_warn_other_is_ok():
 
 
 def test_adoption_version_downloads_sub_call_only_runs_with_a_target():
-    findings = gather(
-        "adoption", target="stable-package", mcp_caller=_adoption_mcp_caller()
-    )
+    findings = gather("adoption", target="stable-package", mcp_caller=_adoption_mcp_caller())
     version_download_findings = [
-        f for f in findings if f.evidence.get("conda_name") == "stable-package"
-        and "version" in f.evidence
+        f for f in findings if f.evidence.get("conda_name") == "stable-package" and "version" in f.evidence
     ]
     assert len(version_download_findings) == len(_VERSION_DOWNLOADS_ROWS)
     assert all(f.source is Source.ADOPTION for f in version_download_findings)
@@ -537,9 +508,7 @@ def test_adoption_cli_fallback_for_both_sub_calls():
 
 
 def test_adoption_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
-    findings = gather(
-        "adoption", mcp_caller=_adoption_mcp_caller(stage=["not-a-dict"])
-    )
+    findings = gather("adoption", mcp_caller=_adoption_mcp_caller(stage=["not-a-dict"]))
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.FAIL
     assert findings[0].source is Source.ADOPTION

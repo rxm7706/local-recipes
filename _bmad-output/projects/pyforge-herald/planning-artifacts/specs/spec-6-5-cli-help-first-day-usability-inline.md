@@ -114,3 +114,16 @@ mechanism for this one AC would duplicate that machinery for no behavioral gain.
 
 **Re-verification (2026-08-07):** `pixi run --frozen -e pyforge-herald pyforge-herald-test` --
 424 passed, 2 skipped; `ruff format --check`/`ruff check` clean.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `a08c002c5a` (2026-08-07, "herald: Story 6.5 — CLI Help & First-Day Usability (Inline)"); also `88b7752340` (2026-08-07, "marshal: Story 6.5 — conformance smoke in an ephemeral home"). Ledger row `6-5-cli-help-first-day-usability-inline: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** (merge carries no file diff of its own)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

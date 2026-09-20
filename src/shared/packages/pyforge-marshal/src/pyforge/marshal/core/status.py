@@ -77,9 +77,9 @@ from typing import Literal
 from pyforge.core.process import ProcessResult
 
 from ..ports.harness import DeferredStory, TaskPhaseSnapshot
+from .dispatch_supervisor_state import landing_journal_indicates_complete
 from .identity import StoryKey, normalize, render_feed_key
 from .model import Finding, Severity
-from .dispatch_supervisor_state import landing_journal_indicates_complete
 
 _LOOP_BRANCH_PREFIX = "loop/"
 
@@ -122,12 +122,9 @@ class HomeFacts:
     tier3_canonical_is_dir: bool = True
 
     def __post_init__(self) -> None:
-        if not isinstance(self.branch, str) or not self.branch.startswith(
-            _LOOP_BRANCH_PREFIX
-        ):
+        if not isinstance(self.branch, str) or not self.branch.startswith(_LOOP_BRANCH_PREFIX):
             raise ValueError(
-                f"HomeFacts.branch must be a {_LOOP_BRANCH_PREFIX!r}-prefixed "
-                f"branch name, got {self.branch!r}"
+                f"HomeFacts.branch must be a {_LOOP_BRANCH_PREFIX!r}-prefixed branch name, got {self.branch!r}"
             )
 
 
@@ -204,10 +201,7 @@ def _mismatch_reason(
     to "report before any further comparison" for this read-only command.
     """
     if link_occupied:
-        return (
-            "planning-artifacts is occupied by a real (non-symlink) "
-            "directory or file where a symlink belongs"
-        )
+        return "planning-artifacts is occupied by a real (non-symlink) directory or file where a symlink belongs"
     if raw_link_target is not None and link_slug is None:
         return f"unrecognized planning-artifacts symlink target {str(raw_link_target)!r}"
     reasons: list[str] = []
@@ -240,8 +234,7 @@ def _tier3_mismatch_reason(
         return None
     if tier3_local_realpath != tier3_canonical_realpath:
         return (
-            f"tier-3 backlink resolves to {tier3_local_realpath} but the "
-            f"canonical store is {tier3_canonical_realpath}"
+            f"tier-3 backlink resolves to {tier3_local_realpath} but the canonical store is {tier3_canonical_realpath}"
         )
     if not tier3_canonical_is_dir:
         return (
@@ -335,9 +328,7 @@ def _evaluate_main_checkout(
     return row, findings
 
 
-def evaluate_homes(
-    homes: Sequence[HomeFacts], main_checkout: MainCheckoutFacts
-) -> HomesEvaluation:
+def evaluate_homes(homes: Sequence[HomeFacts], main_checkout: MainCheckoutFacts) -> HomesEvaluation:
     """Evaluate every discovered home plus the main checkout (module
     docstring's three checks) and build ``data.homes``/``data.main_checkout``
     rows plus every finding, in ``homes`` order with the main checkout's
@@ -352,9 +343,7 @@ def evaluate_homes(
     main_row, main_findings = _evaluate_main_checkout(main_checkout)
     findings.extend(main_findings)
 
-    return HomesEvaluation(
-        homes=tuple(home_rows), main_checkout=main_row, findings=tuple(findings)
-    )
+    return HomesEvaluation(homes=tuple(home_rows), main_checkout=main_row, findings=tuple(findings))
 
 
 # =============================================================================
@@ -403,9 +392,7 @@ class DomainField:
 
     def __post_init__(self) -> None:
         if self.domain not in ("git", "journal"):
-            raise ValueError(
-                f"DomainField.domain must be 'git' or 'journal', got {self.domain!r}"
-            )
+            raise ValueError(f"DomainField.domain must be 'git' or 'journal', got {self.domain!r}")
 
 
 def domain_field_to_dict(field: DomainField) -> dict[str, object]:
@@ -604,15 +591,12 @@ def classify_resync_outcome(
         return report, Finding(
             code=_RESYNC_LAUNCH_FAILURE_CODE,
             severity=Severity.ERROR,
-            message=failure_reason
-            or f"landing_resync_commands entry {command!r} could not be run",
+            message=failure_reason or f"landing_resync_commands entry {command!r} could not be run",
         )
 
     if result.returncode != 0:
         outcome = (
-            f"was terminated by signal {-result.returncode}"
-            if result.returncode < 0
-            else f"exited {result.returncode}"
+            f"was terminated by signal {-result.returncode}" if result.returncode < 0 else f"exited {result.returncode}"
         )
         return (
             {
@@ -694,9 +678,7 @@ _AWAITING_OPERATOR_PHASE = "awaiting-operator"
 # `scripts/loop_stall_check.py` read the same run as a 15-minute stall
 # (DW-BL011-1) -- the same class of mislabel the 2026-08-07 `"escalated"`
 # fix above closed.
-_TERMINAL_TASK_PHASES = frozenset(
-    {_DONE_PHASE, _DEFERRED_PHASE, _ESCALATED_PHASE, _AWAITING_OPERATOR_PHASE}
-)
+_TERMINAL_TASK_PHASES = frozenset({_DONE_PHASE, _DEFERRED_PHASE, _ESCALATED_PHASE, _AWAITING_OPERATOR_PHASE})
 
 #: The ONE spelling of the parked state's human remedy suffix (Story 25.5):
 #: every text render projects the machine token ``"awaiting-operator"`` as
@@ -793,9 +775,7 @@ def derive_home_state(
     in-flight task right now -- e.g. between stories -- reads the same as
     "nothing to report" a caller with no run at all would report)."""
     has_active = any(task.phase not in _TERMINAL_TASK_PHASES for task in tasks)
-    parked = not has_active and any(
-        task.phase == _AWAITING_OPERATOR_PHASE for task in tasks
-    )
+    parked = not has_active and any(task.phase == _AWAITING_OPERATOR_PHASE for task in tasks)
     if parked:
         if paused_stage == _ESCALATION_PAUSED_STAGE:
             return "paused-on-escalation"
@@ -1140,9 +1120,7 @@ def _dispatch_overlay_active(facts: FleetHomeFacts) -> bool:
     return derive_dispatch_phase(facts) is not None
 
 
-def _apply_missing_spec_escalation(
-    row: dict[str, object], facts: FleetHomeFacts
-) -> dict[str, object]:
+def _apply_missing_spec_escalation(row: dict[str, object], facts: FleetHomeFacts) -> dict[str, object]:
     """Story 28.19: missing-spec drain refuse surfaces as ``awaiting-operator``."""
     story = facts.missing_spec_escalation_story
     spec_glob = facts.missing_spec_escalation_glob
@@ -1164,9 +1142,7 @@ def _apply_missing_spec_escalation(
     return patched
 
 
-def _apply_finalize_escalation(
-    row: dict[str, object], facts: FleetHomeFacts
-) -> dict[str, object]:
+def _apply_finalize_escalation(row: dict[str, object], facts: FleetHomeFacts) -> dict[str, object]:
     """Story 28.24: supervisor shell failure surfaces as ``awaiting-operator``."""
     story = facts.finalize_escalation_story
     worktree = facts.finalize_escalation_worktree
@@ -1187,9 +1163,7 @@ def _apply_finalize_escalation(
     }
 
 
-def _apply_dispatch_overlay(
-    row: dict[str, object], facts: FleetHomeFacts
-) -> dict[str, object]:
+def _apply_dispatch_overlay(row: dict[str, object], facts: FleetHomeFacts) -> dict[str, object]:
     """Story 22.1/22.2: when a dispatch session is live, surface it in fleet status."""
     phase = derive_dispatch_phase(facts)
     if phase is not None:
@@ -1219,9 +1193,7 @@ def _apply_dispatch_overlay(
     return _merge_dispatch_row_fields(patched, facts)
 
 
-def _merge_dispatch_row_fields(
-    row: dict[str, object], facts: FleetHomeFacts
-) -> dict[str, object]:
+def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) -> dict[str, object]:
     patched = dict(row)
     if facts.dispatch_run_id is not None:
         patched["dispatch_run_id"] = facts.dispatch_run_id
@@ -1230,13 +1202,9 @@ def _merge_dispatch_row_fields(
     if facts.dispatch_verification_verdict is not None:
         patched["dispatch_verification_verdict"] = facts.dispatch_verification_verdict
     if facts.dispatch_verification_failed_gate is not None:
-        patched["dispatch_verification_failed_gate"] = (
-            facts.dispatch_verification_failed_gate
-        )
+        patched["dispatch_verification_failed_gate"] = facts.dispatch_verification_failed_gate
     if facts.dispatch_verification_scope_advisories:
-        patched["dispatch_verification_scope_advisories"] = list(
-            facts.dispatch_verification_scope_advisories
-        )
+        patched["dispatch_verification_scope_advisories"] = list(facts.dispatch_verification_scope_advisories)
     if facts.dispatch_landing_findings:
         patched["dispatch_landing_findings"] = list(facts.dispatch_landing_findings)
     patched["dispatch_supervisor_alive"] = facts.dispatch_supervisor_alive
@@ -1354,18 +1322,12 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "layer_savings_usd": facts.layer_savings_usd if facts.layer_savings_usd else None,
             "escalation_reason": facts.paused_reason if escalated else None,
             "escalation_artifact": (
-                facts.escalated_spec_file
-                if facts.escalated_spec_file is not None
-                else facts.escalated_task_phase
+                facts.escalated_spec_file if facts.escalated_spec_file is not None else facts.escalated_task_phase
             )
             if escalated
             else None,
             "escalation_preserve_ref": facts.escalated_preserve_ref if escalated else None,
-            "parked_stories": tuple(
-                task.story_key
-                for task in facts.tasks
-                if task.phase == _AWAITING_OPERATOR_PHASE
-            ),
+            "parked_stories": tuple(task.story_key for task in facts.tasks if task.phase == _AWAITING_OPERATOR_PHASE),
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
@@ -1381,9 +1343,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             path=facts.slug,
         )
         return _apply_finalize_escalation(
-            _apply_missing_spec_escalation(
-                _apply_dispatch_overlay(row, facts), facts
-            ),
+            _apply_missing_spec_escalation(_apply_dispatch_overlay(row, facts), facts),
             facts,
         ), finding
 
@@ -1415,10 +1375,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         row = _apply_dispatch_overlay(row, facts)
         if row.get("state") == "running" and facts.dispatch_story:
             finding = None
-        elif (
-            facts.dispatch_completion_verdict == "completed"
-            and not _dispatch_tail_still_live(facts)
-        ):
+        elif facts.dispatch_completion_verdict == "completed" and not _dispatch_tail_still_live(facts):
             row = {
                 **row,
                 "state": "idle",
@@ -1427,9 +1384,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             }
             finding = None
         row = _apply_dispatch_overlay(row, facts)
-        return _apply_finalize_escalation(
-            _apply_missing_spec_escalation(row, facts), facts
-        ), finding
+        return _apply_finalize_escalation(_apply_missing_spec_escalation(row, facts), facts), finding
 
     # A RETIRED run: its journal read fine, but bmad-loop's own snapshot for
     # it is gone (`.bmad-loop/runs/.retired-*`). That is not the same thing as
@@ -1466,9 +1421,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             path=facts.slug,
         )
         return _apply_finalize_escalation(
-            _apply_missing_spec_escalation(
-                _apply_dispatch_overlay(row, facts), facts
-            ),
+            _apply_missing_spec_escalation(_apply_dispatch_overlay(row, facts), facts),
             facts,
         ), finding
 
@@ -1488,9 +1441,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "failed_patches": facts.failed_patches,
         }
         return _apply_finalize_escalation(
-            _apply_missing_spec_escalation(
-                _apply_dispatch_overlay(row, facts), facts
-            ),
+            _apply_missing_spec_escalation(_apply_dispatch_overlay(row, facts), facts),
             facts,
         ), None
 
@@ -1528,11 +1479,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
     escalated = state == "paused-on-escalation"
     escalation_reason = facts.paused_reason if escalated else None
     escalation_artifact = (
-        (
-            facts.escalated_spec_file
-            if facts.escalated_spec_file is not None
-            else facts.escalated_task_phase
-        )
+        (facts.escalated_spec_file if facts.escalated_spec_file is not None else facts.escalated_task_phase)
         if escalated
         else None
     )
@@ -1553,19 +1500,13 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         # `escalation_artifact` above (same 2026-08-07 review rationale:
         # a stale ref must not leak into a row whose state is not the
         # escalated one).
-        "escalation_preserve_ref": (
-            facts.escalated_preserve_ref if escalated else None
-        ),
+        "escalation_preserve_ref": (facts.escalated_preserve_ref if escalated else None),
         # Story 25.5 (CAP-5): every task currently parked at bmad-loop
         # 0.11's `awaiting-operator`, in `state.json`'s own task order --
         # populated for ANY state (a park never blocks siblings, so a
         # `running` run can legitimately carry parked stories the operator
         # still owes), `()` when none.
-        "parked_stories": tuple(
-            task.story_key
-            for task in facts.tasks
-            if task.phase == _AWAITING_OPERATOR_PHASE
-        ),
+        "parked_stories": tuple(task.story_key for task in facts.tasks if task.phase == _AWAITING_OPERATOR_PHASE),
         # Story 5.5: the caller's own already-matched detector finding,
         # verbatim -- never re-derived here (AD-48). `None` when no
         # matching finding exists, or the detector could not be consulted.
@@ -1576,9 +1517,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "failed_patches": facts.failed_patches,
     }
     row = _apply_dispatch_overlay(row, facts)
-    return _apply_finalize_escalation(
-        _apply_missing_spec_escalation(row, facts), facts
-    ), None
+    return _apply_finalize_escalation(_apply_missing_spec_escalation(row, facts), facts), None
 
 
 def sort_fleet_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -1688,13 +1627,9 @@ class RunDetailFacts:
     budget_by_story: Mapping[str, int | float] = field(default_factory=dict)
     # Story 28.4 (CAP-7): per-story layer savings keyed by Marshal's own
     # canonical dot-form story key -- absent when no savings were recorded.
-    savings_by_story: Mapping[str, Mapping[str, object]] = field(
-        default_factory=dict
-    )
+    savings_by_story: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
     budget_by_story_usd: Mapping[str, float] = field(default_factory=dict)
-    savings_usd_by_story: Mapping[str, Mapping[str, float]] = field(
-        default_factory=dict
-    )
+    savings_usd_by_story: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
     open_intents: tuple[dict[str, object], ...] = ()
     # Story 25.5 (CAP-5): `RunStatusSnapshot.sweeps_refused` verbatim --
     # trigger -> reason slug (the closed `SWEEP_REFUSED_*` vocabulary).
@@ -1788,23 +1723,15 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
         "state_readable": facts.state_readable,
         "finished": facts.finished if facts.state_readable else None,
         "paused_stage": facts.paused_stage if facts.state_readable else None,
-        "paused_story_key": (
-            facts.paused_story_key if facts.state_readable else None
-        ),
+        "paused_story_key": (facts.paused_story_key if facts.state_readable else None),
         "paused_reason": facts.paused_reason if facts.state_readable else None,
-        "escalated_spec_file": (
-            facts.escalated_spec_file if facts.state_readable else None
-        ),
-        "escalated_task_phase": (
-            facts.escalated_task_phase if facts.state_readable else None
-        ),
+        "escalated_spec_file": (facts.escalated_spec_file if facts.state_readable else None),
+        "escalated_task_phase": (facts.escalated_task_phase if facts.state_readable else None),
         # Story 25.5 (CAP-5): trigger -> reason slug, verbatim. `None` when
         # the live run state could not be read (mirrors the sibling
         # snapshot-sourced fields above), never fabricated as `{}`-clean.
         "sweeps_refused": (
-            dict(facts.sweeps_refused)
-            if facts.state_readable and facts.sweeps_refused is not None
-            else None
+            dict(facts.sweeps_refused) if facts.state_readable and facts.sweeps_refused is not None else None
         ),
         "stories": stories,
         "deferred": deferred,
@@ -2044,9 +1971,7 @@ def not_loop_native_completions(
     return frozenset(key for key in not_loop_native_candidates if key in ledger_backlog_keys)
 
 
-def render_ledger_advancements(
-    ledger_text: str, raw_keys: frozenset[str]
-) -> tuple[str, frozenset[str]]:
+def render_ledger_advancements(ledger_text: str, raw_keys: frozenset[str]) -> tuple[str, frozenset[str]]:
     """A targeted LINE REWRITE of the tracked ``sprint-status-ledger.yaml``
     twin's own text (Story 5.9, this story's own Boundaries: "a targeted
     line rewrite, not a re-render"). For every ``development_status:`` map

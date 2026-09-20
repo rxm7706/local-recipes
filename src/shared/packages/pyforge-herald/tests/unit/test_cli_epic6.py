@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 
 import pytest
+
 from pyforge.herald import auth, claims, cli, evidence
 
 # --- Story 6.1: dispatcher ---------------------------------------------
@@ -187,9 +188,7 @@ def test_success_publish_with_no_auth_context_names_the_remediation(capsys):
     assert "HERALD_TOKEN" in err
 
 
-def test_success_publish_with_operator_role_proceeds_to_the_real_publish(
-    capsys, monkeypatch, tmp_path
-):
+def test_success_publish_with_operator_role_proceeds_to_the_real_publish(capsys, monkeypatch, tmp_path):
     """Epic 9 replaces the Epic 6 stub with a real publish -- this test now
     creates a draft claim first (via ``claims.create`` directly, ahead of
     the ``--repo-root``-scoped CLI call) and asserts the gate still runs
@@ -217,9 +216,7 @@ def test_success_publish_with_operator_role_proceeds_to_the_real_publish(
     assert "published" in out
 
 
-def test_success_publish_confirmation_declined_takes_no_action(
-    capsys, monkeypatch, tmp_path
-):
+def test_success_publish_confirmation_declined_takes_no_action(capsys, monkeypatch, tmp_path):
     claim = claims.create(tmp_path / claims.DEFAULT_CLAIMS_PATH, project_name="warden")
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: False)
@@ -256,9 +253,7 @@ def test_notice_author_without_operator_role_is_refused_exit_1(capsys, monkeypat
     assert "unauthorized" in capsys.readouterr().err
 
 
-def test_notice_author_with_operator_role_authors_a_draft(
-    capsys, monkeypatch, tmp_path
-):
+def test_notice_author_with_operator_role_authors_a_draft(capsys, monkeypatch, tmp_path):
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: True)
     monkeypatch.chdir(tmp_path)

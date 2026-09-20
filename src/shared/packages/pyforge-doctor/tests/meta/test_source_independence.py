@@ -86,10 +86,7 @@ from pyforge.doctor.sources import REGISTRY, SourceRegistration
 #: whole ``pyforge.doctor`` tree at varying depths).
 SOURCE_PACKAGE = ("pyforge", "doctor", "sources")
 
-SOURCES_DIR = (
-    Path(__file__).resolve().parents[2]
-    / "src" / "pyforge" / "doctor" / "sources"
-)
+SOURCES_DIR = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "doctor" / "sources"
 
 #: Hand-maintained: every ``Source`` "in scope" (see ``_in_scope_sources``)
 #: mapped to the ONE ``sources/<file>.py`` that backs it. Multiple sources
@@ -140,6 +137,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.DOCS_MAP_HYGIENE: "docs_map_hygiene.py",  # Story 30.1 (spec-pyforge-doctor CAP-83)
     Source.DOCS_SHELF_OCCUPANCY: "docs_shelf.py",  # Story 23.7 (spec-pyforge-doctor CAP-54)
     Source.LIVE_PROOF_SURFACE: "live_proof_surfaces.py",  # Story 26.1 (spec-pyforge-doctor CAP-77)
+    Source.DOCS_CURRENCY: "docs_currency.py",  # Story 30.2 (spec-pyforge-doctor CAP-84)
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
@@ -157,7 +155,13 @@ _ALLOWLIST: dict[Source, str] = {
 #: deliberately excluded -- see the module docstring's "Doctor itself is not
 #: in the forbidden set" section.
 _ALL_STATIONS: tuple[str, ...] = (
-    "herald", "marshal", "atlas", "warden", "mason", "scribe", "steward",
+    "herald",
+    "marshal",
+    "atlas",
+    "warden",
+    "mason",
+    "scribe",
+    "steward",
 )
 
 
@@ -167,9 +171,7 @@ def _in_scope_sources() -> frozenset[Source]:
     owner == "doctor", Doctor judging itself) falls out of scope by
     construction, and any future self-judging source would too."""
     return frozenset(
-        registration.source
-        for registration in REGISTRY
-        if registration.subject_station != registration.owning_station
+        registration.source for registration in REGISTRY if registration.subject_station != registration.owning_station
     )
 
 
@@ -246,9 +248,7 @@ def _imported_modules(tree: ast.AST) -> set[str]:
     return names
 
 
-def _forbidden_import_offenders(
-    tree: ast.AST, forbidden_stations: tuple[str, ...]
-) -> list[str]:
+def _forbidden_import_offenders(tree: ast.AST, forbidden_stations: tuple[str, ...]) -> list[str]:
     """Every imported module that names a forbidden station package or
     ``bmad_loop`` (checked unconditionally -- the generalized AD-13 rule)."""
     imported = _imported_modules(tree)
@@ -256,8 +256,7 @@ def _forbidden_import_offenders(
         module
         for module in imported
         if any(
-            module == f"pyforge.{station}" or module.startswith(f"pyforge.{station}.")
-            for station in forbidden_stations
+            module == f"pyforge.{station}" or module.startswith(f"pyforge.{station}.") for station in forbidden_stations
         )
         or module == "bmad_loop"
         or module.startswith("bmad_loop.")
@@ -272,19 +271,19 @@ def _docstring_node_ids(tree: ast.AST) -> set[int]:
     string scan fails on the documentation itself."""
     docstrings: set[int] = set()
     for node in ast.walk(tree):
-        if isinstance(node, (ast.Module, ast.ClassDef,
-                             ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             body = getattr(node, "body", None)
-            if (body and isinstance(body[0], ast.Expr)
-                    and isinstance(body[0].value, ast.Constant)
-                    and isinstance(body[0].value.value, str)):
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
                 docstrings.add(id(body[0].value))
     return docstrings
 
 
-def _string_constant_offenders(
-    tree: ast.AST, forbidden_texts: tuple[str, ...]
-) -> list[str]:
+def _string_constant_offenders(tree: ast.AST, forbidden_texts: tuple[str, ...]) -> list[str]:
     """Every forbidden substring found in a non-docstring string constant --
     catches an import smuggled past the AST scan (``importlib.import_
     module``, ``__import__``, a subprocess invoking the CLI).
@@ -299,8 +298,7 @@ def _string_constant_offenders(
     docstrings = _docstring_node_ids(tree)
     found: list[str] = []
     for node in ast.walk(tree):
-        if (isinstance(node, ast.Constant) and isinstance(node.value, str)
-                and id(node) not in docstrings):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
             for forbidden in forbidden_texts:
                 if re.search(rf"\b{re.escape(forbidden)}\b", node.value):
                     found.append(forbidden)
@@ -352,11 +350,7 @@ def test_every_real_sources_file_is_mapped_by_at_least_one_source():
     # rglob, not glob (review pass 1 fix): a future sources/<subpkg>/impl.py
     # must still be caught as unmapped here, not left invisible to a
     # top-level-only scan.
-    real_files = {
-        path.name
-        for path in SOURCES_DIR.rglob("*.py")
-        if path.name not in NON_SOURCE_MODULES
-    }
+    real_files = {path.name for path in SOURCES_DIR.rglob("*.py") if path.name not in NON_SOURCE_MODULES}
     mapped_files = set(SOURCE_MODULE.values())
     unmapped = real_files - mapped_files
     assert not unmapped, (
@@ -368,11 +362,7 @@ def test_every_real_sources_file_is_mapped_by_at_least_one_source():
 def test_every_mapped_filename_actually_exists():
     # The reverse typo-guard: a SOURCE_MODULE entry naming a file that
     # doesn't exist would otherwise silently never be scanned below.
-    real_files = {
-        path.name
-        for path in SOURCES_DIR.rglob("*.py")
-        if path.name not in NON_SOURCE_MODULES
-    }
+    real_files = {path.name for path in SOURCES_DIR.rglob("*.py") if path.name not in NON_SOURCE_MODULES}
     missing = set(SOURCE_MODULE.values()) - real_files
     assert not missing, f"SOURCE_MODULE references missing file(s): {sorted(missing)}"
 
@@ -405,9 +395,7 @@ _SOURCE_MODULE_IDS = [f"{source.value}:{filename}" for source, filename in _SOUR
 
 
 @pytest.mark.parametrize("source,filename", _SOURCE_MODULE_CASES, ids=_SOURCE_MODULE_IDS)
-def test_source_never_imports_a_forbidden_station_or_the_harness(
-    source: Source, filename: str
-) -> None:
+def test_source_never_imports_a_forbidden_station_or_the_harness(source: Source, filename: str) -> None:
     """No source imports the package of the station it judges (or any other
     non-self, non-allowlisted station), and none imports ``bmad_loop`` --
     including lazy imports and resolved relative imports."""
@@ -421,9 +409,7 @@ def test_source_never_imports_a_forbidden_station_or_the_harness(
 
 
 @pytest.mark.parametrize("source,filename", _SOURCE_MODULE_CASES, ids=_SOURCE_MODULE_IDS)
-def test_source_has_no_textual_reference_that_would_execute(
-    source: Source, filename: str
-) -> None:
+def test_source_has_no_textual_reference_that_would_execute(source: Source, filename: str) -> None:
     """Catches an import smuggled past the AST scan via a string constant
     that could reach ``importlib.import_module``/``__import__`` -- comments
     and docstrings are stripped first, since every one of these modules
@@ -450,11 +436,7 @@ def test_guard_fires_on_synthetic_lazy_import():
     # A lazy import inside a function body is exactly how sources/warden.py
     # legitimately imports warden -- the guard must catch it just as surely
     # as a module-level import when it is NOT the allowlisted exception.
-    tree = ast.parse(
-        "def gather():\n"
-        "    from pyforge.marshal import policy\n"
-        "    return policy\n"
-    )
+    tree = ast.parse("def gather():\n    from pyforge.marshal import policy\n    return policy\n")
     assert "pyforge.marshal" in _forbidden_import_offenders(tree, _ALL_STATIONS)
 
 
@@ -464,8 +446,10 @@ def test_guard_fires_on_synthetic_relative_import_resolving_to_a_station():
     # it resolves to pyforge.marshal from sources/'s own package depth.
     tree = ast.parse("from ...marshal import policy\nfrom ..models import Finding\n")
     assert _imported_modules(tree) == {
-        "pyforge.marshal", "pyforge.marshal.policy",
-        "pyforge.doctor.models", "pyforge.doctor.models.Finding",
+        "pyforge.marshal",
+        "pyforge.marshal.policy",
+        "pyforge.doctor.models",
+        "pyforge.doctor.models.Finding",
     }
     assert "pyforge.marshal" in _forbidden_import_offenders(tree, _ALL_STATIONS)
 
@@ -486,9 +470,7 @@ def test_guard_fires_on_synthetic_bmad_loop_import():
     tree = ast.parse("import bmad_loop\n")
     assert _forbidden_import_offenders(tree, _ALL_STATIONS) == ["bmad_loop"]
     lazy = ast.parse(
-        "def gather():\n"
-        "    from bmad_loop.sprintstatus import ACTIONABLE_STATUSES\n"
-        "    return ACTIONABLE_STATUSES\n"
+        "def gather():\n    from bmad_loop.sprintstatus import ACTIONABLE_STATUSES\n    return ACTIONABLE_STATUSES\n"
     )
     assert "bmad_loop.sprintstatus" in _forbidden_import_offenders(lazy, _ALL_STATIONS)
 
@@ -497,9 +479,7 @@ def test_guard_does_not_fire_on_a_lookalike_identifier_past_the_word_boundary():
     # Review pass 1 fix: a plain substring check flagged an unrelated
     # identifier ("pyforge.marshaling_utils") merely starting with the
     # forbidden dotted name -- word-boundary matching must not repeat it.
-    tree = ast.parse(
-        'DOC_LINK = "see pyforge.marshaling_utils for the json-marshal helper"\n'
-    )
+    tree = ast.parse('DOC_LINK = "see pyforge.marshaling_utils for the json-marshal helper"\n')
     assert _string_constant_offenders(tree, ("pyforge.marshal",)) == []
 
 
@@ -521,8 +501,7 @@ def test_resolve_relative_rejects_the_level_one_past_the_package_root():
 
 def test_guard_fires_on_synthetic_string_constant_past_stripped_docstring():
     tree = ast.parse(
-        '"""explains why this module must never reach pyforge.marshal."""\n'
-        'BAD = "reach pyforge.marshal dynamically"\n'
+        '"""explains why this module must never reach pyforge.marshal."""\nBAD = "reach pyforge.marshal dynamically"\n'
     )
     assert _string_constant_offenders(tree, ("pyforge.marshal",)) == ["pyforge.marshal"]
 
@@ -532,7 +511,6 @@ def test_guard_does_not_fire_on_a_docstring_mentioning_the_forbidden_name():
     # repeatedly while explaining why it must not import them -- a naive
     # scan that didn't strip docstrings first would fail every one of them.
     tree = ast.parse(
-        '"""this module must never import pyforge.marshal or bmad_loop."""\n'
-        'GOOD = "a perfectly ordinary string"\n'
+        '"""this module must never import pyforge.marshal or bmad_loop."""\nGOOD = "a perfectly ordinary string"\n'
     )
     assert _string_constant_offenders(tree, ("pyforge.marshal", "bmad_loop")) == []

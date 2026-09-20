@@ -108,3 +108,16 @@ Dispatched with the diff file path only, no shared context. Two findings landed 
 **Follow-up review recommendation (updated): false** -- both findings are narrow, each covered by a dedicated regression test.
 
 </intent-contract>
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `71d524a90e` (2026-08-07, "herald: Story 3.2 — stale hand-mirror detection"); also `6c63b86534` (2026-08-07, "steward: Story 3.2 — a bmad-loop runner and its environment materialize together"); also `ede7ebd89c` (2026-08-07, "doctor: Story 3.2 — rank the actionable partition"). Ledger row `3-2-rank-the-actionable-partition-fr-7-ad-4: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-3-2-stale-hand-mirror-detection.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/tests/test_cli_status.py`, `src/shared/packages/pyforge-herald/tests/test_deck_status.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -176,9 +176,7 @@ def _render_text_check(data: Mapping[str, object], findings: tuple[Finding, ...]
     return "\n".join(lines)
 
 
-def _emit(
-    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
-) -> int:
+def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
         command="check",
@@ -234,18 +232,14 @@ def run_check(
 
     try:
         payload = json.loads(result.stdout)
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except json.JSONDecodeError, TypeError, ValueError:
         findings.append(_unavailable_finding("its stdout did not parse as JSON"))
         return _emit(args, data, findings)
 
     registry = payload.get("registry") if isinstance(payload, dict) else None
     results = payload.get("results") if isinstance(payload, dict) else None
     if not isinstance(registry, list) or not isinstance(results, list):
-        findings.append(
-            _unavailable_finding(
-                "its JSON output did not carry the expected registry/results shape"
-            )
-        )
+        findings.append(_unavailable_finding("its JSON output did not carry the expected registry/results shape"))
         return _emit(args, data, findings)
 
     data["registry"] = registry

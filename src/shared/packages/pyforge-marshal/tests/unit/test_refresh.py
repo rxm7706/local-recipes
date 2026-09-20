@@ -213,9 +213,7 @@ def test_dirty_home_refused_by_name_no_ff(tmp_path, capsys, monkeypatch):
     assert any(f["code"] == "MRS-REFRESH-003" for f in out["findings"])
 
 
-def test_clean_behind_home_fast_forwards_and_pushes_loop_slug_only(
-    tmp_path, capsys, monkeypatch
-):
+def test_clean_behind_home_fast_forwards_and_pushes_loop_slug_only(tmp_path, capsys, monkeypatch):
     monkeypatch.chdir(tmp_path)
     home = tmp_path / "acme"
     home.mkdir()
@@ -276,9 +274,7 @@ def test_sync_status_step_skips_when_no_epics_md(tmp_path):
 
 
 def test_sync_status_step_skips_when_script_missing(tmp_path):
-    epics = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
-    )
+    epics = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
     epics.parent.mkdir(parents=True)
     epics.write_text("# Epic 1\n", encoding="utf-8")
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
@@ -287,19 +283,10 @@ def test_sync_status_step_skips_when_script_missing(tmp_path):
 
 
 def _seed_epics_and_script(tmp_path: Path) -> None:
-    epics = (
-        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
-    )
+    epics = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
     epics.parent.mkdir(parents=True)
     epics.write_text("# Epic 1\n", encoding="utf-8")
-    script = (
-        tmp_path
-        / ".claude"
-        / "skills"
-        / "bmad-sprint-planning"
-        / "scripts"
-        / "sprint_plan.py"
-    )
+    script = tmp_path / ".claude" / "skills" / "bmad-sprint-planning" / "scripts" / "sprint_plan.py"
     script.parent.mkdir(parents=True)
     script.write_text("# stub\n", encoding="utf-8")
 
@@ -395,9 +382,7 @@ def test_sync_status_step_reports_failure_when_child_times_out(tmp_path, monkeyp
     _seed_epics_and_script(tmp_path)
 
     def _timeout(self, argv, *, cwd, timeout_s=None):
-        raise ProcessError(
-            f"command timed out after {timeout_s}s: {' '.join(argv)}"
-        )
+        raise ProcessError(f"command timed out after {timeout_s}s: {' '.join(argv)}")
 
     monkeypatch.setattr(PosixProcess, "run", _timeout)
     findings: list = []
@@ -457,9 +442,7 @@ def test_compose_effective_invalid_slug_never_probes_a_policy_path(monkeypatch):
 
 
 def test_compose_effective_valid_slug_without_a_policy_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        refresh_mod, "conventional_project_policy_path", lambda slug: tmp_path / "absent.toml"
-    )
+    monkeypatch.setattr(refresh_mod, "conventional_project_policy_path", lambda slug: tmp_path / "absent.toml")
     effective = _REAL_COMPOSE_EFFECTIVE("acme")
     assert type(effective).__name__ == "EffectivePolicy"
 
@@ -534,9 +517,7 @@ def test_sync_status_step_reports_the_scripts_own_error_field(tmp_path, monkeypa
     _seed_epics_and_script(tmp_path)
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
-        return ProcessResult(
-            returncode=0, stdout=json.dumps({"ok": False, "error": "epics.md unparsable"}), stderr=""
-        )
+        return ProcessResult(returncode=0, stdout=json.dumps({"ok": False, "error": "epics.md unparsable"}), stderr="")
 
     monkeypatch.setattr(PosixProcess, "run", _fake_run)
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
@@ -626,15 +607,11 @@ def test_malformed_project_slug_is_an_error_finding(tmp_path, capsys, monkeypatc
 def test_unresolvable_repo_root_is_reported(tmp_path, capsys, monkeypatch):
     monkeypatch.chdir(tmp_path)
     vcs = _FakeVcs()
-    monkeypatch.setattr(
-        vcs, "repo_common_root", lambda start: (_ for _ in ()).throw(VcsCommandError("not a repo"))
-    )
+    monkeypatch.setattr(vcs, "repo_common_root", lambda start: (_ for _ in ()).throw(VcsCommandError("not a repo")))
     run_refresh(_ns(), vcs=vcs)
     out = json.loads(capsys.readouterr().out)
     assert out["data"]["homes"] == []
-    assert any(
-        f["code"] == "MRS-REFRESH-002" and "repo root" in f["message"] for f in out["findings"]
-    )
+    assert any(f["code"] == "MRS-REFRESH-002" and "repo root" in f["message"] for f in out["findings"])
 
 
 def test_worktree_enumeration_failure_is_reported(tmp_path, capsys, monkeypatch):
@@ -644,9 +621,7 @@ def test_worktree_enumeration_failure_is_reported(tmp_path, capsys, monkeypatch)
     out = json.loads(capsys.readouterr().out)
     assert out["data"]["repo_root"] == "/fake-repo"
     assert out["data"]["homes"] == []
-    assert any(
-        f["code"] == "MRS-REFRESH-002" and "enumerate" in f["message"] for f in out["findings"]
-    )
+    assert any(f["code"] == "MRS-REFRESH-002" and "enumerate" in f["message"] for f in out["findings"])
     assert vcs.fetch_calls == []
 
 
@@ -685,9 +660,7 @@ def test_fetch_failure_stops_before_any_home_is_touched(tmp_path, capsys, monkey
     out = json.loads(capsys.readouterr().out)
     assert out["data"]["base"] == "develop"
     assert out["data"]["homes"] == []
-    assert any(
-        f["code"] == "MRS-REFRESH-002" and "origin/develop" in f["message"] for f in out["findings"]
-    )
+    assert any(f["code"] == "MRS-REFRESH-002" and "origin/develop" in f["message"] for f in out["findings"])
     assert vcs.ff_calls == []
 
 

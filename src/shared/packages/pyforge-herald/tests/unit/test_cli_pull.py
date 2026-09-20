@@ -23,9 +23,7 @@ def _fake_pull_result(**overrides):
     defaults = {
         "slug": "pyforge-warden",
         "artifact": "prototype",
-        "local_path": Path(
-            "presentations/pyforge-warden/project/PyForge Warden.dc.html"
-        ),
+        "local_path": Path("presentations/pyforge-warden/project/PyForge Warden.dc.html"),
         "unchanged": False,
         "etag": "E2",
         "committed": False,
@@ -42,9 +40,7 @@ def test_deck_pull_missing_slug_is_a_usage_error():
     assert cli.main(["deck", "pull"]) == 2
 
 
-def test_deck_pull_success_prints_the_local_path_and_returns_0(
-    monkeypatch, capsys, tmp_path: Path
-):
+def test_deck_pull_success_prints_the_local_path_and_returns_0(monkeypatch, capsys, tmp_path: Path):
     seen = {}
 
     def _fake_pull(transport, *, slug, repo_root, commit):
@@ -56,9 +52,7 @@ def test_deck_pull_success_prints_the_local_path_and_returns_0(
 
     monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
 
-    exit_code = cli.main(
-        ["deck", "pull", "pyforge-warden", "--repo-root", str(tmp_path)]
-    )
+    exit_code = cli.main(["deck", "pull", "pyforge-warden", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     assert seen["slug"] == "pyforge-warden"
@@ -97,9 +91,7 @@ def test_deck_pull_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
     assert seen["repo_root"] == tmp_path
 
 
-def test_deck_pull_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
-    monkeypatch, capsys
-):
+def test_deck_pull_herald_error_reaches_dispatch_and_maps_to_its_exit_code(monkeypatch, capsys):
     def _fake_pull(transport, *, slug, repo_root, commit):
         raise HeraldError("no bridge state recorded")
 
@@ -147,9 +139,7 @@ def test_deck_pull_commit_flag_reports_committed_in_stdout(monkeypatch, capsys):
     assert "committed" in out
 
 
-def test_deck_pull_without_commit_flag_does_not_mention_committed_in_stdout(
-    monkeypatch, capsys
-):
+def test_deck_pull_without_commit_flag_does_not_mention_committed_in_stdout(monkeypatch, capsys):
     def _fake_pull(transport, *, slug, repo_root, commit):
         return _fake_pull_result(committed=commit)
 

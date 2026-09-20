@@ -191,3 +191,16 @@ pyforge-herald-test` -- 614 passed, 2 skipped; `ruff format --check`/`ruff check
 
 **Follow-up review recommendation:** the `edit_history` dead-code gap noted above, if this
 Moment ever gains an edit/republish command.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `95f1db76aa` (2026-08-13, "Merge branch 'bmad-loop/20260813-094919-bfcb/9-1-findings-model-severity-types-remedies' into bmad-loop/202608"). Ledger row `9-1-implement-claim-data-model-database-schema: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_findings.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

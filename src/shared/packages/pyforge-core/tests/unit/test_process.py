@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 
@@ -37,16 +38,12 @@ def test_run_returns_process_result_for_a_passing_command(process, tmp_path):
 
 
 def test_run_reports_a_nonzero_exit_without_raising(process, tmp_path):
-    result = process.run(
-        [sys.executable, "-c", "import sys; sys.exit(3)"], cwd=tmp_path
-    )
+    result = process.run([sys.executable, "-c", "import sys; sys.exit(3)"], cwd=tmp_path)
     assert result.returncode == 3
 
 
 def test_run_captures_stderr(process, tmp_path):
-    result = process.run(
-        [sys.executable, "-c", "import sys; sys.stderr.write('boom\\n')"], cwd=tmp_path
-    )
+    result = process.run([sys.executable, "-c", "import sys; sys.stderr.write('boom\\n')"], cwd=tmp_path)
     assert result.stderr == "boom\n"
     assert result.returncode == 0
 
@@ -252,9 +249,7 @@ def test_is_alive_false_on_an_unexpected_oserror(process, monkeypatch):
 # --- spawn_detached: detached launch + log redirection -----------------------
 
 
-def test_spawn_detached_launches_and_redirects_both_streams_to_the_log(
-    process, tmp_path
-):
+def test_spawn_detached_launches_and_redirects_both_streams_to_the_log(process, tmp_path):
     log_path = tmp_path / "spawned.log"
     marker = tmp_path / "marker.txt"
     script = (
@@ -263,9 +258,7 @@ def test_spawn_detached_launches_and_redirects_both_streams_to_the_log(
         "print('stderr line', file=sys.stderr)\n"
         f"pathlib.Path({str(marker)!r}).write_text('done', encoding='utf-8')\n"
     )
-    pid = process.spawn_detached(
-        [sys.executable, "-c", script], cwd=tmp_path, log_path=log_path
-    )
+    pid = process.spawn_detached([sys.executable, "-c", script], cwd=tmp_path, log_path=log_path)
     assert isinstance(pid, int) and pid > 0
 
     deadline = time.monotonic() + 5.0
@@ -288,14 +281,9 @@ def test_spawn_detached_child_does_not_import_from_its_cwd(process, tmp_path):
 
     Asserts the EFFECT, not just the kwarg: a hostile ``json.py`` sits in
     the child's own cwd and must not be what it imports."""
-    (tmp_path / "json.py").write_text(
-        "raise SystemExit('shadowed stdlib json was imported')\n", encoding="utf-8"
-    )
+    (tmp_path / "json.py").write_text("raise SystemExit('shadowed stdlib json was imported')\n", encoding="utf-8")
     marker = tmp_path / "imported-from.txt"
-    script = (
-        "import json, pathlib\n"
-        f"pathlib.Path({str(marker)!r}).write_text(json.__file__, encoding='utf-8')\n"
-    )
+    script = f"import json, pathlib\npathlib.Path({str(marker)!r}).write_text(json.__file__, encoding='utf-8')\n"
     log_path = tmp_path / "shadow.log"
 
     process.spawn_detached([sys.executable, "-c", script], cwd=tmp_path, log_path=log_path)
@@ -310,9 +298,7 @@ def test_spawn_detached_child_does_not_import_from_its_cwd(process, tmp_path):
     assert str(tmp_path) not in marker.read_text(encoding="utf-8")
 
 
-def test_spawn_detached_raises_process_error_for_a_missing_executable(
-    process, tmp_path
-):
+def test_spawn_detached_raises_process_error_for_a_missing_executable(process, tmp_path):
     with pytest.raises(ProcessError):
         process.spawn_detached(
             ["definitely-not-a-real-binary-xyz"],
@@ -326,14 +312,10 @@ def test_spawn_detached_raises_process_error_for_empty_argv(process, tmp_path):
         process.spawn_detached([], cwd=tmp_path, log_path=tmp_path / "spawned.log")
 
 
-def test_spawn_detached_raises_process_error_when_the_log_cannot_be_opened(
-    process, tmp_path
-):
+def test_spawn_detached_raises_process_error_when_the_log_cannot_be_opened(process, tmp_path):
     log_path = tmp_path / "nonexistent-dir" / "spawned.log"
     with pytest.raises(ProcessError, match="cannot open log"):
-        process.spawn_detached(
-            [sys.executable, "-c", "pass"], cwd=tmp_path, log_path=log_path
-        )
+        process.spawn_detached([sys.executable, "-c", "pass"], cwd=tmp_path, log_path=log_path)
 
 
 def test_spawn_detached_quotes_the_log_path_in_its_error_message(process, tmp_path):
@@ -343,9 +325,7 @@ def test_spawn_detached_quotes_the_log_path_in_its_error_message(process, tmp_pa
     reprs its interpolated value (``{list(argv)!r}``, ``{argv[0]!r}``)."""
     log_path = tmp_path / "no-such-dir" / "a\nfindings:\n  FORGED.log"
     with pytest.raises(ProcessError) as excinfo:
-        process.spawn_detached(
-            [sys.executable, "-c", "pass"], cwd=tmp_path, log_path=log_path
-        )
+        process.spawn_detached([sys.executable, "-c", "pass"], cwd=tmp_path, log_path=log_path)
     assert "\n" not in str(excinfo.value)
 
 
@@ -420,9 +400,7 @@ def test_spawn_detached_calls_popen_with_the_detach_recipe(process, tmp_path, mo
     assert kwargs["env"]["PATH"] == os.environ["PATH"]
 
 
-def test_spawn_detached_reports_a_generic_message_for_a_bad_cwd_or_missing_executable(
-    process, tmp_path, monkeypatch
-):
+def test_spawn_detached_reports_a_generic_message_for_a_bad_cwd_or_missing_executable(process, tmp_path, monkeypatch):
     """``Popen`` raises the identical ``FileNotFoundError`` both when
     ``argv[0]`` cannot be resolved AND when ``cwd`` itself cannot be
     chdir'd into -- this method cannot tell the two apart from the exception
@@ -435,9 +413,7 @@ def test_spawn_detached_reports_a_generic_message_for_a_bad_cwd_or_missing_execu
 
     monkeypatch.setattr(process_module.subprocess, "Popen", _raise_file_not_found)
     with pytest.raises(ProcessError) as excinfo:
-        process.spawn_detached(
-            ["whatever"], cwd=tmp_path, log_path=tmp_path / "spawned.log"
-        )
+        process.spawn_detached(["whatever"], cwd=tmp_path, log_path=tmp_path / "spawned.log")
     assert "executable not found" not in str(excinfo.value)
     assert "cannot launch" in str(excinfo.value)
 
@@ -450,6 +426,4 @@ def test_spawn_detached_wraps_a_generic_launch_oserror(process, tmp_path, monkey
 
     monkeypatch.setattr(process_module.subprocess, "Popen", _raise_eacces)
     with pytest.raises(ProcessError, match="cannot launch"):
-        process.spawn_detached(
-            ["whatever"], cwd=tmp_path, log_path=tmp_path / "spawned.log"
-        )
+        process.spawn_detached(["whatever"], cwd=tmp_path, log_path=tmp_path / "spawned.log")

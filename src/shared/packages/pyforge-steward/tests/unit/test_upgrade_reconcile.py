@@ -212,9 +212,7 @@ def test_reconcile_restores_from_bak(tmp_path):
     bak.write_text(snaps["_bmad/scripts/resolve_config.py"], encoding="utf-8")
     resolve.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
 
-    report = reconcile_clobbered_custom_surfaces(
-        repo, _CATALOG, pre_apply_snapshots=snaps
-    )
+    report = reconcile_clobbered_custom_surfaces(repo, _CATALOG, pre_apply_snapshots=snaps)
     assert report.all_clear
     finding = report.findings[0]
     assert finding.action == "restored_from_bak"
@@ -231,9 +229,7 @@ def test_reconcile_restores_from_snapshot_when_bak_useless(tmp_path):
     bak.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
     resolve.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
 
-    report = reconcile_clobbered_custom_surfaces(
-        repo, _CATALOG, pre_apply_snapshots=snaps
-    )
+    report = reconcile_clobbered_custom_surfaces(repo, _CATALOG, pre_apply_snapshots=snaps)
     assert report.all_clear
     assert report.findings[0].action == "restored_from_snapshot"
     assert "BMAD_ACTIVE_PROJECT" in resolve.read_text(encoding="utf-8")
@@ -246,18 +242,14 @@ def test_reconcile_flags_when_unrecoverable(tmp_path):
     resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
     resolve.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
 
-    report = reconcile_clobbered_custom_surfaces(
-        repo, _CATALOG, pre_apply_snapshots=snaps
-    )
+    report = reconcile_clobbered_custom_surfaces(repo, _CATALOG, pre_apply_snapshots=snaps)
     assert report.all_clear is False
     assert report.findings[0].action == "flagged"
 
 
 def test_verify_six_layers_runtime_with_full_script(tmp_path):
     repo = _write_repo(tmp_path / "repo")
-    ok_env, ok_marker, notes = verify_six_layer_resolution(
-        repo, resolve_rel="_bmad/scripts/resolve_config.py"
-    )
+    ok_env, ok_marker, notes = verify_six_layer_resolution(repo, resolve_rel="_bmad/scripts/resolve_config.py")
     assert ok_env and ok_marker
     assert not any("failed" in n for n in notes)
 
@@ -272,9 +264,7 @@ def test_list_installer_bak_files(tmp_path):
 
 def test_apply_clobber_resolve_restores_and_accounts_bak(tmp_path):
     repo = _write_repo(tmp_path / "repo")
-    installer = _fake_installer(
-        tmp_path / "fake-bmad-method", clobber_resolve=True, leave_bak=True
-    )
+    installer = _fake_installer(tmp_path / "fake-bmad-method", clobber_resolve=True, leave_bak=True)
     report = apply_bmad_core_upgrade(
         repo=repo,
         target_version="6.11.0",
@@ -311,9 +301,7 @@ _DELTA_OURS = (
     'MARKER = ".active-project"\n'
 )
 _DELTA_THEIRS_CLEAN = 'LINE1 = "same"\nMID = "same"\nLINE2 = "new"\nTRAILER = "same"\n'
-_DELTA_THEIRS_CONFLICT = (
-    'LINE1 = "new-upstream"\nMID = "same"\nLINE2 = "same"\nTRAILER = "same"\n'
-)
+_DELTA_THEIRS_CONFLICT = 'LINE1 = "new-upstream"\nMID = "same"\nLINE2 = "same"\nTRAILER = "same"\n'
 
 
 def _write_scripts_package(root: Path, *, resolve_body: str) -> Path:
@@ -331,12 +319,8 @@ def test_reconcile_delta_replay_clean(tmp_path):
     # Simulate the core installer clobbering it back to the pristine base shape.
     resolve.write_text(_DELTA_BASE, encoding="utf-8")
 
-    installed_root = _write_scripts_package(
-        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
-    )
-    target_root = _write_scripts_package(
-        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CLEAN
-    )
+    installed_root = _write_scripts_package(tmp_path / "installed-pkg", resolve_body=_DELTA_BASE)
+    target_root = _write_scripts_package(tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CLEAN)
 
     report = reconcile_clobbered_custom_surfaces(
         repo,
@@ -360,12 +344,8 @@ def test_reconcile_delta_replay_conflict_keeps_plain_restore(tmp_path):
     resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
     resolve.write_text(_DELTA_BASE, encoding="utf-8")
 
-    installed_root = _write_scripts_package(
-        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
-    )
-    target_root = _write_scripts_package(
-        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT
-    )
+    installed_root = _write_scripts_package(tmp_path / "installed-pkg", resolve_body=_DELTA_BASE)
+    target_root = _write_scripts_package(tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT)
 
     report = reconcile_clobbered_custom_surfaces(
         repo,
@@ -380,9 +360,7 @@ def test_reconcile_delta_replay_conflict_keeps_plain_restore(tmp_path):
     assert any("upstream delta conflict for" in n for n in report.notes)
     # Plain restore kept — no merge bytes written, no conflict sibling either.
     assert resolve.read_text(encoding="utf-8") == _DELTA_OURS
-    conflict_sibling = (
-        repo / "_bmad" / "scripts" / "resolve_config.py.customization-conflict"
-    )
+    conflict_sibling = repo / "_bmad" / "scripts" / "resolve_config.py.customization-conflict"
     assert not conflict_sibling.exists()
     # An unresolved upstream-delta conflict must not report as clear even
     # though the plain-restored bytes still carry the repo-custom markers.
@@ -404,12 +382,8 @@ def test_apply_clobber_resolve_delta_replay_conflict_gates_all_clear_false(tmp_p
         clobber_resolve=True,
         clobber_body=_DELTA_BASE,
     )
-    installed_root = _write_scripts_package(
-        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
-    )
-    target_root = _write_scripts_package(
-        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT
-    )
+    installed_root = _write_scripts_package(tmp_path / "installed-pkg", resolve_body=_DELTA_BASE)
+    target_root = _write_scripts_package(tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT)
 
     report = apply_bmad_core_upgrade(
         repo=repo,

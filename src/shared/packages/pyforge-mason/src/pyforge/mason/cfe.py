@@ -175,7 +175,7 @@ from typing import TextIO
 
 from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from .models import BuildResult, CfeResult
-from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND, detect_native_build_config
+from .resolve import STEP_NOT_FOUND, ResolvedCfeRoot, detect_native_build_config
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
     "pyyaml": "yaml",
@@ -263,7 +263,7 @@ def probe_import_floor(interpreter: str) -> ImportFloorResult:
             timeout=_PROBE_TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, UnicodeDecodeError, subprocess.TimeoutExpired):
+    except OSError, UnicodeDecodeError, subprocess.TimeoutExpired:
         return ImportFloorResult(interpreter=interpreter, missing=tuple(CFE_IMPORT_FLOOR))
 
     stdout_lines = set(completed.stdout.splitlines())
@@ -468,8 +468,7 @@ def run_streamed(
         raise TypeError("run_streamed(argv=...) must be a sequence of arguments, not None")
     if isinstance(argv, (str, bytes)):
         raise TypeError(
-            f"run_streamed(argv=...) must be a sequence of arguments, not a bare "
-            f"{type(argv).__name__} -- got {argv!r}"
+            f"run_streamed(argv=...) must be a sequence of arguments, not a bare {type(argv).__name__} -- got {argv!r}"
         )
     # Materialized once, before the emptiness check and before `Popen`
     # (review pass, 2026-08-10, second): `not argv` is always False for a
@@ -488,13 +487,10 @@ def run_streamed(
         # likely mistake: it means "wait forever" to subprocess's own API,
         # and this function deliberately has no such mode.
         raise TypeError(
-            f"run_streamed(timeout=...) must be a number of seconds, not "
-            f"{type(timeout).__name__} -- got {timeout!r}"
+            f"run_streamed(timeout=...) must be a number of seconds, not {type(timeout).__name__} -- got {timeout!r}"
         )
     if not math.isfinite(timeout) or timeout <= 0:
-        raise ValueError(
-            f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}"
-        )
+        raise ValueError(f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}")
 
     sink = stderr_sink if stderr_sink is not None else sys.stderr
     if not callable(getattr(sink, "write", None)):
@@ -507,8 +503,7 @@ def run_streamed(
         # caller from a child that simply said nothing.
         raise TypeError(
             "run_streamed(stderr_sink=...) must have a callable write(); got "
-            f"{type(sink).__name__}"
-            + (" (sys.stderr is None -- pass an explicit sink)" if sink is None else "")
+            f"{type(sink).__name__}" + (" (sys.stderr is None -- pass an explicit sink)" if sink is None else "")
         )
 
     proc = subprocess.Popen(
@@ -832,9 +827,7 @@ def _invoke_captured(
             f"{type(timeout).__name__} -- got {timeout!r}"
         )
     if not math.isfinite(timeout) or timeout <= 0:
-        raise ValueError(
-            f"_invoke_captured(timeout=...) must be a finite, positive number -- got {timeout!r}"
-        )
+        raise ValueError(f"_invoke_captured(timeout=...) must be a finite, positive number -- got {timeout!r}")
 
     script_path = root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS[script_key]
 
@@ -1211,9 +1204,7 @@ def build_native(
     `--docker`/`--config` only, and no story task calls for exposing it.
     """
     resolved_timeout = timeout if timeout is not None else _BUILD_NATIVE_TIMEOUT_SECONDS
-    script_path = (
-        root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
-    )
+    script_path = root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
     config = detect_native_build_config()
 
     try:

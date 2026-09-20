@@ -42,3 +42,16 @@ deferred: []
 ## Verification
 
 `pixi run -e pyforge-steward -- pytest src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py -q`
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `d7853d7983` (2026-08-26, "Merge pull request #874 from rxm7706/steward/37-1-five-tier-roster-drain"). Ledger row `37-1-declare-eight-stations-five-tier-complete: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-37-1-declare-eight-stations-five-tier-complete.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py`, `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

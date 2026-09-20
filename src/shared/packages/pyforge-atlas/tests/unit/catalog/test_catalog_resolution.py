@@ -31,9 +31,7 @@ def _network_blocked():
     connect_ex probing, UDP sendto — review-pass P1 widened the block)."""
 
     def _blocked(*args, **kwargs):  # pragma: no cover - only on violation
-        raise AssertionError(
-            "network access attempted during catalog resolution (gate is offline-only)"
-        )
+        raise AssertionError("network access attempted during catalog resolution (gate is offline-only)")
 
     orig_connect = socket.socket.connect
     orig_connect_ex = socket.socket.connect_ex
@@ -79,9 +77,7 @@ def test_full_catalog_materializes_with_stub_credentials_offline(catalog_config)
 
     failures: dict[str, str] = {}
     with _network_blocked():
-        catalog = DataCatalog.from_config(
-            dict(catalog_config), credentials=dict(STUB_CREDENTIALS)
-        )
+        catalog = DataCatalog.from_config(dict(catalog_config), credentials=dict(STUB_CREDENTIALS))
         for name in catalog_config:
             try:
                 dataset = catalog[name]
@@ -100,9 +96,7 @@ def test_every_entry_instantiates_individually(catalog_config):
     with _network_blocked():
         for name, spec in catalog_config.items():
             try:
-                catalog = DataCatalog.from_config(
-                    {name: dict(spec)}, credentials=dict(STUB_CREDENTIALS)
-                )
+                catalog = DataCatalog.from_config({name: dict(spec)}, credentials=dict(STUB_CREDENTIALS))
                 dataset = catalog[name]  # force materialization (P1)
                 assert dataset is not None
             except Exception as exc:  # noqa: BLE001 - reported en masse

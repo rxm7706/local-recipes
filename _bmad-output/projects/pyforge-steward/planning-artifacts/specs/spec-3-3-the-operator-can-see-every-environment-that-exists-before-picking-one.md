@@ -92,3 +92,16 @@ Dispatched with the diff file path only, no shared context.
 **Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- **162 passed** (full suite).
 
 **Follow-up review recommendation (updated): false** -- narrow fix, covered by a dedicated regression test.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `39ab78ca2b` (2026-08-07, "steward: Story 3.3 — the operator can see every environment that exists, before picking one"); also `1ce28cd68f` (2026-08-07, "doctor: Story 3.3 — root-cause naming"); also `52b0cbbb8d` (2026-08-03, "marshal: promote Story 3.3 to done, refresh dashboard"). Ledger row `3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `src/shared/packages/pyforge-steward/tests/conformance/test_provision_list.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

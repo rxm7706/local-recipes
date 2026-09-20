@@ -29,9 +29,7 @@ def _load_guard():
 
 
 def _git(cwd: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    ).stdout.strip()
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
 
 
 def _commit_all(cwd: Path, subject: str) -> str:
@@ -55,12 +53,23 @@ def test_a_merge_that_carries_a_retro_is_not_itself_a_retro(tmp_path: Path) -> N
     retro = _commit_all(repo, "retro: x")
 
     _git(repo, "checkout", "-q", "main")
-    _git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "--no-ff", "-m", "Merge retro into main", "retro")
+    _git(
+        repo,
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "merge",
+        "-q",
+        "--no-ff",
+        "-m",
+        "Merge retro into main",
+        "retro",
+    )
     merge = _git(repo, "rev-parse", "HEAD")
     assert merge != retro
 
     retros = guard.retro_commits_since(repo, base)
     assert retros == [retro], (
-        "the authored retro must be the newest qualifying retro; the merge that "
-        f"carried it must not appear: {retros}"
+        f"the authored retro must be the newest qualifying retro; the merge that carried it must not appear: {retros}"
     )

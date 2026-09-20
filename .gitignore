@@ -737,7 +737,13 @@ Thumbs.db
 data.locks/
 
 # Repo-root Kedro data when PYFORGE_ATLAS_DATA_ROOT=<repo>/data (bootstrap chain default).
-data/
+# Anchored to the repo root (Story 30.2 fix) -- an unanchored `data/` matches at ANY depth,
+# silently swallowing every station's own package `data/` dir (pyforge-doctor, -steward,
+# -warden, -marshal all ship real tracked files there, e.g. report-schema.json). Found live
+# 2026-09-20: a newly added src/shared/packages/pyforge-doctor/.../data/docs-map-schema.json
+# was invisible to `git add -A` -- present on disk, tracked nowhere, would have shipped in no
+# build and silently degraded docs-currency to a permanent fail-open WARN.
+/data/
 
 # Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)
 .claude/scheduled_tasks.lock
@@ -928,6 +934,8 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # tarballs. Never commit — paths are host-absolute and archives hold full
 # trees.
 .steward/workspaces.yaml
+# Story 66.2: the pre-push hook journals every PYFORGE_PREFLIGHT_SKIP=1 here.
+.steward/preflight-skips.log
 .steward/workspace-archive/
 
 # Fleet-drain / agent scratch worktrees (`git worktree add` under repo root).

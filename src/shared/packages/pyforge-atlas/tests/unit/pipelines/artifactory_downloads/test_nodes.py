@@ -108,9 +108,7 @@ def test_explicit_null_base_url_does_not_pass_none_through():
     mock = MockArtifactory(topology={"repo-a": ["repo-a-local"]}, download_rows={"repo-a": []})
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(N, "ArtifactoryConfig", _spy_config)
-        result = N.fetch_artifactory_downloads(
-            {"virtual_repos": ["repo-a"], "base_url": None, "transport": mock}
-        )
+        result = N.fetch_artifactory_downloads({"virtual_repos": ["repo-a"], "base_url": None, "transport": mock})
 
     assert captured["base_url"] == ""
     assert result.empty
@@ -131,16 +129,12 @@ def test_configured_repos_with_injected_transport_aggregates_across_repos():
         },
     )
 
-    result = N.fetch_artifactory_downloads(
-        {"virtual_repos": ["repo-a", "repo-b"], "transport": mock}
-    )
+    result = N.fetch_artifactory_downloads({"virtual_repos": ["repo-a", "repo-b"], "transport": mock})
 
     assert list(result.columns) == ["name", "version", "download_count"]
     # summed ACROSS repos -- 10 + 5 = 15 -- matching Story 15.1's own within-repo
     # aggregation extended across the fetch node's per-virtual-repo loop.
-    assert result.to_dict("records") == [
-        {"name": "pkg-a", "version": "1.0", "download_count": 15}
-    ]
+    assert result.to_dict("records") == [{"name": "pkg-a", "version": "1.0", "download_count": 15}]
     # two separate repos -> two separate topology+aggregation round trips each.
     assert len(mock.calls) == 4  # (GET+POST) x 2 virtual repos
     assert [m for m, _ in mock.calls] == ["GET", "POST", "GET", "POST"]
@@ -181,9 +175,7 @@ def test_join_artifactory_identity_resolves_conda_name_and_flags_internal():
             {"name": "acme-internal-tool", "version": "1.0.0", "download_count": 5},
         ]
     )
-    mapping = pd.DataFrame(
-        {"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]}
-    )
+    mapping = pd.DataFrame({"pypi_name": ["requests"], "conda_name": ["requests"], "match_source": ["parselmouth"]})
     universe = pd.DataFrame({"pypi_name": ["requests"]})
 
     result = N.join_artifactory_identity(raw, mapping, universe)
@@ -302,16 +294,12 @@ def test_mixed_joined_rows_export_only_the_resolved_row():
 
 def test_empty_joined_dataframe_yields_header_only():
     result = N.format_artifactory_purl_export(_joined([]))
-    assert result == {
-        "artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
-    }
+    assert result == {"artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"}
 
 
 def test_none_joined_dataframe_yields_header_only():
     result = N.format_artifactory_purl_export(None)
-    assert result == {
-        "artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
-    }
+    assert result == {"artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"}
 
 
 def test_export_matches_export_purls_mapped_tsv_shape_byte_for_byte():
@@ -339,11 +327,7 @@ def test_export_matches_export_purls_mapped_tsv_shape_byte_for_byte():
     # dots preserved; CHANNEL_QUALIFIER; MAPPED_TSV_HEADER) -- not imported, since that
     # module lives in a completely separate tree, `.claude/skills/conda-forge-expert/scripts/`.
     expected_header = "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence"
-    expected_row = (
-        "pkg:conda/cool-pkg?channel=conda-forge\t"
-        "pkg:pypi/foo-bar.baz\t"
-        "g10_spelling\t"
-    )
+    expected_row = "pkg:conda/cool-pkg?channel=conda-forge\tpkg:pypi/foo-bar.baz\tg10_spelling\t"
     assert result == {"artifactory_downloads.tsv": f"{expected_header}\n{expected_row}\n"}
 
 
@@ -367,9 +351,7 @@ def test_missing_conda_name_variants_are_excluded(bad_conda_name):
         ]
     )
     result = N.format_artifactory_purl_export(joined)
-    assert result == {
-        "artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
-    }
+    assert result == {"artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"}
 
 
 # ---------------------------------------------------------------------------
@@ -413,9 +395,30 @@ def test_project_artifactory_names_selects_only_the_three_identity_columns():
 def test_project_artifactory_names_dedupes_distinct_pypi_conda_pairs():
     joined = _joined(
         [
-            {"pypi_name": "foo", "version": "1.0", "download_count": 1, "conda_name": "foo", "match_source": "x", "is_internal": False},
-            {"pypi_name": "foo", "version": "2.0", "download_count": 2, "conda_name": "foo", "match_source": "x", "is_internal": False},
-            {"pypi_name": "bar", "version": "1.0", "download_count": 3, "conda_name": None, "match_source": None, "is_internal": True},
+            {
+                "pypi_name": "foo",
+                "version": "1.0",
+                "download_count": 1,
+                "conda_name": "foo",
+                "match_source": "x",
+                "is_internal": False,
+            },
+            {
+                "pypi_name": "foo",
+                "version": "2.0",
+                "download_count": 2,
+                "conda_name": "foo",
+                "match_source": "x",
+                "is_internal": False,
+            },
+            {
+                "pypi_name": "bar",
+                "version": "1.0",
+                "download_count": 3,
+                "conda_name": None,
+                "match_source": None,
+                "is_internal": True,
+            },
         ]
     )
     out = N.project_artifactory_names(joined)
@@ -430,7 +433,14 @@ def test_project_artifactory_names_includes_internal_only_rows():
     (unlike format_artifactory_purl_export, which excludes unresolved rows)."""
     joined = _joined(
         [
-            {"pypi_name": "internal-pkg", "version": "1.0", "download_count": 5, "conda_name": None, "match_source": None, "is_internal": True},
+            {
+                "pypi_name": "internal-pkg",
+                "version": "1.0",
+                "download_count": 5,
+                "conda_name": None,
+                "match_source": None,
+                "is_internal": True,
+            },
         ]
     )
     out = N.project_artifactory_names(joined)
@@ -500,12 +510,34 @@ def _consumption(rows: list[dict]) -> pd.DataFrame:
 def test_build_enterprise_jfrog_consumption_happy_path_outer_join():
     joined = _joined(
         [
-            {"pypi_name": "Requests", "version": "1.0", "download_count": 10, "conda_name": "requests", "match_source": "x", "is_internal": False},
-            {"pypi_name": "Requests", "version": "2.0", "download_count": 5, "conda_name": "requests", "match_source": "x", "is_internal": False},
+            {
+                "pypi_name": "Requests",
+                "version": "1.0",
+                "download_count": 10,
+                "conda_name": "requests",
+                "match_source": "x",
+                "is_internal": False,
+            },
+            {
+                "pypi_name": "Requests",
+                "version": "2.0",
+                "download_count": 5,
+                "conda_name": "requests",
+                "match_source": "x",
+                "is_internal": False,
+            },
         ]
     )
     consumption = _consumption(
-        [{"name": "requests", "platform_env_count": 3, "internal_app_count": 1, "internal_component_count": 2, "internal_lob_count": 4}]
+        [
+            {
+                "name": "requests",
+                "platform_env_count": 3,
+                "internal_app_count": 1,
+                "internal_component_count": 2,
+                "internal_lob_count": 4,
+            }
+        ]
     )
 
     result = N.build_enterprise_jfrog_consumption(joined, consumption)
@@ -527,7 +559,16 @@ def test_build_enterprise_jfrog_consumption_happy_path_outer_join():
 
 def test_build_enterprise_jfrog_consumption_downloads_only_defaults_telemetry_to_zero():
     joined = _joined(
-        [{"pypi_name": "foo", "version": "1.0", "download_count": 7, "conda_name": None, "match_source": None, "is_internal": True}]
+        [
+            {
+                "pypi_name": "foo",
+                "version": "1.0",
+                "download_count": 7,
+                "conda_name": None,
+                "match_source": None,
+                "is_internal": True,
+            }
+        ]
     )
     result = N.build_enterprise_jfrog_consumption(joined, _consumption([]))
     row = result.iloc[0]
@@ -538,7 +579,15 @@ def test_build_enterprise_jfrog_consumption_downloads_only_defaults_telemetry_to
 
 def test_build_enterprise_jfrog_consumption_consumption_only_defaults_downloads_to_zero():
     consumption = _consumption(
-        [{"name": "bar", "platform_env_count": 2, "internal_app_count": 0, "internal_component_count": 0, "internal_lob_count": 1}]
+        [
+            {
+                "name": "bar",
+                "platform_env_count": 2,
+                "internal_app_count": 0,
+                "internal_component_count": 0,
+                "internal_lob_count": 1,
+            }
+        ]
     )
     result = N.build_enterprise_jfrog_consumption(_joined([]), consumption)
     row = result.iloc[0]
@@ -550,7 +599,16 @@ def test_build_enterprise_jfrog_consumption_consumption_only_defaults_downloads_
 
 def test_build_enterprise_jfrog_consumption_drops_pep503_too_short_names():
     joined = _joined(
-        [{"pypi_name": "a", "version": "1.0", "download_count": 1, "conda_name": None, "match_source": None, "is_internal": True}]
+        [
+            {
+                "pypi_name": "a",
+                "version": "1.0",
+                "download_count": 1,
+                "conda_name": None,
+                "match_source": None,
+                "is_internal": True,
+            }
+        ]
     )
     result = N.build_enterprise_jfrog_consumption(joined, _consumption([]))
     assert result.empty

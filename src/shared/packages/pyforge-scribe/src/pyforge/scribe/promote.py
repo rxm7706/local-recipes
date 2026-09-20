@@ -142,14 +142,12 @@ def classify_and_draft(source_root: Path, memory_root: Path, repo_root: Path) ->
     """
     if not source_root.is_dir():
         raise ValueError(
-            f"{source_root} does not exist -- pass --source to point at the correct "
-            "user-local auto-memory directory"
+            f"{source_root} does not exist -- pass --source to point at the correct user-local auto-memory directory"
         )
 
     claimed_slugs: dict[str, set[str]] = {t: set() for t in CAPTURE_TYPES}
     entries = tuple(
-        _classify_one(path, memory_root, repo_root, claimed_slugs)
-        for path in sorted(source_root.glob("*.md"))
+        _classify_one(path, memory_root, repo_root, claimed_slugs) for path in sorted(source_root.glob("*.md"))
     )
     return PromotionProposal(source_root=source_root, entries=entries)
 
@@ -282,9 +280,7 @@ def _classify_one(
     type_dir = memory_root / capture_type
     slug = _preview_unique_slug(type_dir, slug_base, claimed_slugs[capture_type])
     rewritten_text = rewrite_team_voice(body)
-    rewritten_description = _truncate(
-        rewrite_team_voice(description or body), _DESCRIPTION_MAX_LEN
-    )
+    rewritten_description = _truncate(rewrite_team_voice(description or body), _DESCRIPTION_MAX_LEN)
     target_path = type_dir / f"{slug}.md"
     memory_index_line = f"- [{slug}]({capture_type}/{slug}.md) — {rewritten_description}"
 

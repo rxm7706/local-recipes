@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from pyforge.doctor.actuators.flag_kill_switch import (
     disable_flag,
     kill_switch,

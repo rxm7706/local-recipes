@@ -30,7 +30,7 @@ Spot-check failures never flip CAP-5 ``verdict`` / ``DutyResult.ok``.
 Story 14.6 / CAP-6: the installer is driven on purpose — the argv carries
 ``--directory <repo> --modules <every module the installed manifest lists,
 core first>``, stdin is closed, and ``node`` / ``bmad-method`` resolve from the
-repo's ``.pixi/envs/local-recipes/bin`` only when absent from PATH. An exit-0
+repo's ``.pixi/envs/pyforge-guild/bin`` only when absent from PATH. An exit-0
 run that changed nothing is a refusal (``ApplyReport.zero_diff``, trap 12),
 never a green; a manifest that names no modules stops the apply before the
 review branch exists (trap 13). No wrapper script.
@@ -99,7 +99,8 @@ _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
 _RATTLER_PKGS_CACHE_RELATIVE_PATH = Path(".cache/rattler/cache/pkgs")
 # CAP-6: where the installer's `node` / `bmad-method` live when they are not on
 # PATH — always derived from the repo path, never a machine path.
-_PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/local-recipes/bin")
+# Story 63.6 (spec-pyforge-steward CAP-152): the Guild env is the only runtime env.
+_PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/bin")
 # Stable ``X.Y.Z`` plus optional npm prerelease suffix (e.g. ``6.12.1-next.0``).
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[\w.]+)?$")
 
@@ -125,44 +126,29 @@ TRAP_LOCAL_CUSTOMIZATION = 16
 
 # 2026-08-21 worked example: eight loop homes validate clean, zero warnings.
 WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
-_CFE_META_TEST_REL = Path(
-    ".claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py"
-)
+_CFE_META_TEST_REL = Path(".claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py")
 _INSTALL_MATRIX_REL = Path(
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-channel-product/install-matrix.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md"
 )
 # Matrix table native URL for bmad-loop (uv-from-git class). Mirrors the
 # install-matrix.md `bmad-loop` row verbatim — the two move together
 # (DW-FU-15-4-3 closed 2026-09-06: v0.11.0 sat here while the matrix said v0.11.1).
-_BMAD_LOOP_UV_GIT_SPEC = (
-    "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"
-)
+_BMAD_LOOP_UV_GIT_SPEC = "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"
 # Matrix table custom-source URL for bmad-manticore.
-_MANTICORE_CUSTOM_SOURCE_URL = (
-    "https://github.com/bmad-code-org/bmad-manticore"
-)
+_MANTICORE_CUSTOM_SOURCE_URL = "https://github.com/bmad-code-org/bmad-manticore"
 
 # Relative paths for the trap-5 pin fan-out catalog (2026-08-21 session).
 _MARSHAL_PKG = Path("src/shared/packages/pyforge-marshal")
 _PIN_ROOT_PIXI = Path("pixi.toml")
 _PIN_MARSHAL_PYPROJECT = _MARSHAL_PKG / "pyproject.toml"
 _PIN_MARSHAL_PIXI = _MARSHAL_PKG / "pixi.toml"
-_PIN_HARNESS = (
-    _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "adapters" / "harness_bmadloop.py"
-)
-_PIN_SEED_MANIFEST = (
-    _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "seed" / "templates" / "manifest.yaml"
-)
-_PIN_DRIFT_TEST = (
-    _MARSHAL_PKG / "tests" / "unit" / "test_seed_templates_manifest.py"
-)
+_PIN_HARNESS = _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "adapters" / "harness_bmadloop.py"
+_PIN_SEED_MANIFEST = _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "seed" / "templates" / "manifest.yaml"
+_PIN_DRIFT_TEST = _MARSHAL_PKG / "tests" / "unit" / "test_seed_templates_manifest.py"
 _HOOK_SCRIPT_REL = Path(".bmad-loop") / "bmad_loop_hook.py"
 _VERSION_CORE_RE = re.compile(r"(\d+\.\d+\.\d+)")
 _PIN_LOWER_RE = re.compile(r">=\s*(\d+\.\d+\.\d+)")
-_HARNESS_RANGE_RE = re.compile(
-    r"""HARNESS_VERSION_RANGE_TEXT\s*=\s*["']([^"']+)["']"""
-)
+_HARNESS_RANGE_RE = re.compile(r"""HARNESS_VERSION_RANGE_TEXT\s*=\s*["']([^"']+)["']""")
 _DRIFT_MAP_ENTRY_RE = re.compile(
     r"""["'](?P<id>bmad-(?:loop|method|installed-skills))["']\s*:\s*["'](?P<pin>[^"']+)["']"""
 )
@@ -178,9 +164,7 @@ def repo_root() -> Path:
     for candidate in (here, *here.parents):
         if (candidate / _BMAD_LOOP_WORKTREE_RELATIVE_PATH).is_file():
             return candidate
-    raise UpgradeError(
-        "cannot locate repo root (scripts/bmad-loop-worktree not found walking up)"
-    )
+    raise UpgradeError("cannot locate repo root (scripts/bmad-loop-worktree not found walking up)")
 
 
 @dataclass(frozen=True)
@@ -303,7 +287,6 @@ class PreflightReport:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         return payload
-
 
 
 @dataclass(frozen=True)
@@ -509,9 +492,7 @@ class ApplyReport:
             "custom_modules": [m.to_dict() for m in self.custom_modules],
             "custom_modules_ok": self.custom_modules_ok,
             "local_customizations_reapply": (
-                self.local_customizations_reapply.to_dict()
-                if self.local_customizations_reapply
-                else None
+                self.local_customizations_reapply.to_dict() if self.local_customizations_reapply else None
             ),
             "local_customizations_ok": self.local_customizations_ok,
         }
@@ -542,7 +523,7 @@ def catalog_dir() -> Path:
         as_path = Path(str(root))
         if as_path.is_dir():
             return as_path
-    except (TypeError, ModuleNotFoundError, AttributeError):
+    except TypeError, ModuleNotFoundError, AttributeError:
         pass
     return Path(__file__).resolve().parent / "data" / "bmad_core_releases"
 
@@ -550,9 +531,7 @@ def catalog_dir() -> Path:
 def load_release_catalog(version: str, *, directory: Path | None = None) -> dict[str, Any]:
     """Load the curated catalog for *version* (``X.Y.Z.yaml``)."""
     if not _VERSION_RE.match(version):
-        raise UpgradeError(
-            f"target version must be X.Y.Z or X.Y.Z-prerelease, got {version!r}"
-        )
+        raise UpgradeError(f"target version must be X.Y.Z or X.Y.Z-prerelease, got {version!r}")
     base = directory or catalog_dir()
     path = base / f"{version}.yaml"
     if not path.is_file():
@@ -564,10 +543,7 @@ def load_release_catalog(version: str, *, directory: Path | None = None) -> dict
     if not isinstance(data, dict):
         raise UpgradeError(f"release catalog {path} is not a mapping")
     if str(data.get("version", "")) != version:
-        raise UpgradeError(
-            f"catalog version mismatch: file declares {data.get('version')!r}, "
-            f"expected {version!r}"
-        )
+        raise UpgradeError(f"catalog version mismatch: file declares {data.get('version')!r}, expected {version!r}")
     return data
 
 
@@ -600,9 +576,7 @@ def load_custom_modules(catalog: Mapping[str, Any]) -> tuple[CustomModuleDef, ..
     """
     raw = catalog.get("custom_modules") or []
     if not isinstance(raw, list):
-        raise UpgradeError(
-            f"release catalog key `custom_modules` must be a list, got {type(raw).__name__}"
-        )
+        raise UpgradeError(f"release catalog key `custom_modules` must be a list, got {type(raw).__name__}")
     out: list[CustomModuleDef] = []
     for index, entry in enumerate(raw):
         key = f"custom_modules[{index}]"
@@ -612,11 +586,7 @@ def load_custom_modules(catalog: Mapping[str, Any]) -> tuple[CustomModuleDef, ..
         if not isinstance(name, str) or not name.strip():
             raise UpgradeError(f"release catalog key `{key}.name` must be a non-empty string")
         own = entry.get("own_installer")
-        if (
-            not isinstance(own, list)
-            or not own
-            or not all(isinstance(part, str) and part.strip() for part in own)
-        ):
+        if not isinstance(own, list) or not own or not all(isinstance(part, str) and part.strip() for part in own):
             raise UpgradeError(
                 f"release catalog key `{key}.own_installer` must be a non-empty list "
                 "of argv strings (e.g. [bmad-module-skill-forge, update])"
@@ -624,16 +594,12 @@ def load_custom_modules(catalog: Mapping[str, Any]) -> tuple[CustomModuleDef, ..
         config_paths_raw = entry.get("config_paths") or []
         if not isinstance(config_paths_raw, list):
             raise UpgradeError(f"release catalog key `{key}.config_paths` must be a list")
-        config_paths = tuple(
-            str(p).replace("\\", "/") for p in config_paths_raw if str(p).strip()
-        )
+        config_paths = tuple(str(p).replace("\\", "/") for p in config_paths_raw if str(p).strip())
         pin_raw = entry.get("pin")
         pin = pin_raw.strip() if isinstance(pin_raw, str) and pin_raw.strip() else None
         source_raw = entry.get("packaged_source")
         packaged_source = (
-            str(source_raw).replace("\\", "/")
-            if isinstance(source_raw, str) and source_raw.strip()
-            else None
+            str(source_raw).replace("\\", "/") if isinstance(source_raw, str) and source_raw.strip() else None
         )
         out.append(
             CustomModuleDef(
@@ -713,11 +679,7 @@ def _manifest_module_entries(data: Any) -> list[tuple[str, str | None]]:
         if name in seen:
             continue
         seen.add(name)
-        source = (
-            source_raw.strip()
-            if isinstance(source_raw, str) and source_raw.strip()
-            else None
-        )
+        source = source_raw.strip() if isinstance(source_raw, str) and source_raw.strip() else None
         out.append((name, source))
     return out
 
@@ -872,8 +834,7 @@ def _local_mod_findings(
                     break
         if hit_markers or upstream_lacks:
             reason = (
-                "repo-custom multi-project layers 5/6 present; "
-                "upstream rewrite would drop them"
+                "repo-custom multi-project layers 5/6 present; upstream rewrite would drop them"
                 if hit_markers
                 else "local file differs from upstream package copy"
             )
@@ -916,9 +877,7 @@ def _prerequisite_findings(catalog: dict[str, Any]) -> list[PrerequisiteFinding]
                 name=str(row["name"]),
                 severity=str(row.get("severity") or "hard"),
                 notes=str(row.get("notes") or "").strip(),
-                min_version=(
-                    str(row["min_version"]) if row.get("min_version") is not None else None
-                ),
+                min_version=(str(row["min_version"]) if row.get("min_version") is not None else None),
             )
         )
     return out
@@ -949,9 +908,7 @@ def _config_migration_finding(catalog: dict[str, Any]) -> ConfigMigrationFinding
     )
 
 
-def _custom_module_findings(
-    repo: Path, catalog: Mapping[str, Any]
-) -> list[CustomModuleFinding]:
+def _custom_module_findings(repo: Path, catalog: Mapping[str, Any]) -> list[CustomModuleFinding]:
     """CAP-7 pre-flight: each catalog ``custom_modules`` entry vs the installed manifest.
 
     Four shapes: matched (catalog + manifest ``source: custom``); catalog names
@@ -1025,18 +982,14 @@ def _custom_module_findings(
     return findings
 
 
-def default_installed_package_root(
-    installed_version: str, *, cache_root: Path | None = None
-) -> Path | None:
+def default_installed_package_root(installed_version: str, *, cache_root: Path | None = None) -> Path | None:
     """Best-effort glob for the CACHED INSTALLED version's unpacked bmad-method package.
 
     Never raises. Returns ``None`` when *cache_root* (default: the machine's
     rattler package cache) is not a directory or no matching package is found.
     """
     try:
-        root = (
-            cache_root if cache_root is not None else Path.home() / _RATTLER_PKGS_CACHE_RELATIVE_PATH
-        )
+        root = cache_root if cache_root is not None else Path.home() / _RATTLER_PKGS_CACHE_RELATIVE_PATH
         if not root.is_dir():
             return None
         for candidate in sorted(root.glob(f"bmad-method-{installed_version}-*")):
@@ -1044,7 +997,7 @@ def default_installed_package_root(
             if pkg.is_dir():
                 return pkg
         return None
-    except (OSError, RuntimeError):
+    except OSError, RuntimeError:
         # e.g. Path.home() cannot resolve a home directory — best-effort,
         # never an error (this scan is always optional).
         return None
@@ -1107,9 +1060,7 @@ def _skill_customization_findings(
             if _is_pycache_noise(relpath):
                 continue
             if installed_fp.get(relpath) != packaged_fp.get(relpath):
-                full_rel = str((installed_dir / relpath).relative_to(repo)).replace(
-                    "\\", "/"
-                )
+                full_rel = str((installed_dir / relpath).relative_to(repo)).replace("\\", "/")
                 if full_rel in exclude:
                     continue
                 findings.append(
@@ -1147,10 +1098,7 @@ def _scripts_customization_findings(
             findings.append(
                 LocalCustomizationFinding(
                     path=rel,
-                    reason=(
-                        "differs from the installed-version package copy — "
-                        "installer-owned script edited in place"
-                    ),
+                    reason=("differs from the installed-version package copy — installer-owned script edited in place"),
                 )
             )
     return findings
@@ -1165,9 +1113,7 @@ def _looks_like_bmad_method_package(root: Path) -> bool:
     from a genuinely clean repo (the exact trap-16 false-confidence CAP-8
     exists to prevent).
     """
-    return any(
-        (root / "src" / sub).is_dir() for sub in ("bmm-skills", "core-skills", "scripts")
-    )
+    return any((root / "src" / sub).is_dir() for sub in ("bmm-skills", "core-skills", "scripts"))
 
 
 def _local_customization_findings(
@@ -1182,9 +1128,7 @@ def _local_customization_findings(
         return []
     if not _looks_like_bmad_method_package(installed_package_root):
         return []
-    exclude = frozenset(
-        str(p).replace("\\", "/") for p in (catalog.get("upstream_touched_paths") or [])
-    )
+    exclude = frozenset(str(p).replace("\\", "/") for p in (catalog.get("upstream_touched_paths") or []))
     return _skill_customization_findings(
         repo, installed_package_root, exclude=exclude
     ) + _scripts_customization_findings(repo, installed_package_root, exclude=exclude)
@@ -1211,12 +1155,8 @@ def build_preflight_report(
     installed = installed_version or read_installed_version(repo)
     installed_skills = _read_installed_skill_names(repo)
     package_removals = load_package_removals(package_root) if package_root else None
-    resolved_installed_root = installed_package_root or default_installed_package_root(
-        installed
-    )
-    local_customizations = _local_customization_findings(
-        repo, resolved_installed_root, catalog
-    )
+    resolved_installed_root = installed_package_root or default_installed_package_root(installed)
+    local_customizations = _local_customization_findings(repo, resolved_installed_root, catalog)
 
     skill_changes, removals = _skill_changes(
         catalog, installed_skills=installed_skills, package_removals=package_removals
@@ -1231,13 +1171,7 @@ def build_preflight_report(
     # Design Notes in the story spec). Computed unconditionally, independent
     # of any --no-shims flag, so a plain pre-flight can audit it too.
     shims_to_retire = tuple(
-        sorted(
-            {
-                name
-                for name in (catalog.get("shims_to_retire") or [])
-                if name in installed_skills
-            }
-        )
+        sorted({name for name in (catalog.get("shims_to_retire") or []) if name in installed_skills})
     )
 
     trap_ids: list[int] = []
@@ -1264,15 +1198,10 @@ def build_preflight_report(
     ]
     if resolved_installed_root is None or not resolved_installed_root.is_dir():
         if resolved_installed_root is None:
-            reason = (
-                "no --installed-package-root and no cached package found for "
-                f"installed version {installed}"
-            )
+            reason = f"no --installed-package-root and no cached package found for installed version {installed}"
         else:
             reason = f"--installed-package-root {resolved_installed_root} is not a directory"
-        notes.append(
-            f"local-customization scan skipped — {reason} (report-only, never required)"
-        )
+        notes.append(f"local-customization scan skipped — {reason} (report-only, never required)")
     elif not _looks_like_bmad_method_package(resolved_installed_root):
         notes.append(
             "local-customization scan skipped — --installed-package-root "
@@ -1283,10 +1212,7 @@ def build_preflight_report(
         )
     pair_from = catalog.get("baseline_pair_from")
     if pair_from:
-        notes.append(
-            f"catalog baseline pair: {pair_from} → {target_version} "
-            "(failure-modes.md traps 1–4, 9, 11)"
-        )
+        notes.append(f"catalog baseline pair: {pair_from} → {target_version} (failure-modes.md traps 1–4, 9, 11)")
         if installed != str(pair_from) and installed != target_version:
             notes.append(
                 f"installed {installed} differs from catalog baseline_pair_from "
@@ -1295,10 +1221,7 @@ def build_preflight_report(
     if package_root is not None:
         pkg_ver = load_package_version(package_root)
         if pkg_ver and pkg_ver != target_version:
-            notes.append(
-                f"warning: --package-root package.json version is {pkg_ver}, "
-                f"but --target is {target_version}"
-            )
+            notes.append(f"warning: --package-root package.json version is {pkg_ver}, but --target is {target_version}")
     if installed == target_version:
         notes.append(
             "installed version already equals target — report still lists "
@@ -1339,10 +1262,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         lines.append("(none)")
     for ch in report.skill_changes:
         if ch.kind == "rename":
-            lines.append(
-                f"- rename: {ch.name} → {ch.to} "
-                f"(shim: {ch.shim_disposition}; source: {ch.source})"
-            )
+            lines.append(f"- rename: {ch.name} → {ch.to} (shim: {ch.shim_disposition}; source: {ch.source})")
         else:
             lines.append(f"- {ch.kind}: {ch.name} (source: {ch.source})")
 
@@ -1363,31 +1283,22 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         lines.append("(none)")
     for item in report.legacy_custom:
         succ = f" → rename to {item.successor}" if item.successor else ""
-        lines.append(
-            f"- [trap {item.trap_id}] {item.path} (legacy {item.legacy_name}{succ})"
-        )
+        lines.append(f"- [trap {item.trap_id}] {item.path} (legacy {item.legacy_name}{succ})")
 
     lines.extend(["", "## New hard prerequisites"])
     if not report.hard_prerequisites:
         lines.append("(none)")
     for item in report.hard_prerequisites:
         ver = f" >={item.min_version}" if item.min_version else ""
-        lines.append(
-            f"- [trap {item.trap_id}] {item.name}{ver} ({item.severity}): {item.notes}"
-        )
+        lines.append(f"- [trap {item.trap_id}] {item.name}{ver} ({item.severity}): {item.notes}")
 
     lines.extend(["", "## Forwarder / orchestrator contract changes"])
     if not report.forwarder_changes:
         lines.append("(none)")
     for item in report.forwarder_changes:
-        suite = (
-            ", ".join(f"{k}>={v}" for k, v in sorted(item.suite_min_versions.items()))
-            or "(no suite mins)"
-        )
+        suite = ", ".join(f"{k}>={v}" for k, v in sorted(item.suite_min_versions.items())) or "(no suite mins)"
         dest = f" → {item.forwards_to}" if item.forwards_to else ""
-        lines.append(
-            f"- [trap {item.trap_id}] {item.skill}{dest}: {item.notes} [{suite}]"
-        )
+        lines.append(f"- [trap {item.trap_id}] {item.skill}{dest}: {item.notes} [{suite}]")
 
     lines.extend(["", "## Config-format migration"])
     if report.config_migration is None:
@@ -1403,9 +1314,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         if custom.matched:
             lines.append(f"- [ok] {custom.name}: {custom.detail}")
         else:
-            lines.append(
-                f"- [MISMATCH] [trap {custom.trap_id}] {custom.name}: {custom.detail}"
-            )
+            lines.append(f"- [MISMATCH] [trap {custom.trap_id}] {custom.name}: {custom.detail}")
         if custom.notes:
             lines.append(f"  - catalog notes: {custom.notes}")
 
@@ -1415,9 +1324,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
     for entry in report.local_customizations:
         lines.append(f"- [trap {entry.trap_id}] {entry.path}: {entry.reason}")
 
-    lines.extend(
-        ["", f"## Shims to retire (--no-shims candidates) [{len(report.shims_to_retire)}]"]
-    )
+    lines.extend(["", f"## Shims to retire (--no-shims candidates) [{len(report.shims_to_retire)}]"])
     if not report.shims_to_retire:
         lines.append("(none)")
     for name in report.shims_to_retire:
@@ -1458,17 +1365,12 @@ def assert_clean_tree(repo: Path) -> None:
     if not (repo / ".git").exists() and not (repo / ".git").is_file():
         # Bare fixtures without git are only allowed via injected runners in tests;
         # production apply always requires a git checkout.
-        raise UpgradeError(
-            "apply requires a git checkout (no .git found) — refuse to mutate in place"
-        )
+        raise UpgradeError("apply requires a git checkout (no .git found) — refuse to mutate in place")
     status = _git("status", "--porcelain", cwd=repo)
     dirty = status.stdout.strip()
     if dirty:
         preview = "\n".join(dirty.splitlines()[:20])
-        raise UpgradeError(
-            "apply requires a clean working tree; refuse to start with dirty paths:\n"
-            f"{preview}"
-        )
+        raise UpgradeError(f"apply requires a clean working tree; refuse to start with dirty paths:\n{preview}")
 
 
 def _fingerprint_tree(repo: Path, root: Path) -> dict[str, str]:
@@ -1513,8 +1415,7 @@ def compare_custom_fingerprints(
         return True, (), None
     reason = (
         "_bmad/custom/** is NOT byte-identical after apply — "
-        "installer or side effect touched custom; named paths: "
-        + ", ".join(differs)
+        "installer or side effect touched custom; named paths: " + ", ".join(differs)
     )
     return False, tuple(differs), reason
 
@@ -1524,9 +1425,7 @@ def refuse_legacy_custom(preflight: PreflightReport) -> None:
     if not preflight.legacy_custom:
         return
     named = ", ".join(
-        f"{item.path} (legacy {item.legacy_name}"
-        + (f" → {item.successor}" if item.successor else "")
-        + ")"
+        f"{item.path} (legacy {item.legacy_name}" + (f" → {item.successor}" if item.successor else "") + ")"
         for item in preflight.legacy_custom
     )
     raise UpgradeError(
@@ -1595,12 +1494,10 @@ def default_installer_runner(
     )
 
 
-def resolve_installer_environment(
-    repo: Path, installer_bin: str
-) -> tuple[dict[str, str], str]:
+def resolve_installer_environment(repo: Path, installer_bin: str) -> tuple[dict[str, str], str]:
     """Environment for the installer run plus a human note on how it resolved.
 
-    ``<repo>/.pixi/envs/local-recipes/bin`` is prepended to ``PATH`` only when
+    ``<repo>/.pixi/envs/pyforge-guild/bin`` is prepended to ``PATH`` only when
     *installer_bin* and/or ``node`` are absent from the current ``PATH``; the
     directory is derived from *repo*, never a machine path.
     """
@@ -1611,12 +1508,9 @@ def resolve_installer_environment(
         return env, f"installer binaries resolved from PATH: {', '.join(wanted)}"
     pixi_bin = repo / _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH
     current = env.get("PATH", "")
-    env["PATH"] = (
-        f"{pixi_bin}{os.pathsep}{current}" if current else str(pixi_bin)
-    )
+    env["PATH"] = f"{pixi_bin}{os.pathsep}{current}" if current else str(pixi_bin)
     return env, (
-        f"installer binaries not on PATH ({', '.join(missing)}) — "
-        f"prepended {pixi_bin} to PATH for the installer run"
+        f"installer binaries not on PATH ({', '.join(missing)}) — prepended {pixi_bin} to PATH for the installer run"
     )
 
 
@@ -1624,7 +1518,7 @@ def _runner_accepts_env(runner: Callable[..., Any]) -> bool:
     """True when *runner* declares an ``env`` parameter or ``**kwargs``."""
     try:
         params = inspect.signature(runner).parameters.values()
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
     for param in params:
         if param.kind is inspect.Parameter.VAR_KEYWORD:
@@ -1783,13 +1677,9 @@ def _run_own_installer(
             tuple(notes),
         )
     if result.stdout and result.stdout.strip():
-        notes.append(
-            f"{module.name} own installer stdout (truncated): {result.stdout.strip()[:500]}"
-        )
+        notes.append(f"{module.name} own installer stdout (truncated): {result.stdout.strip()[:500]}")
     if result.stderr and result.stderr.strip():
-        notes.append(
-            f"{module.name} own installer stderr (truncated): {result.stderr.strip()[:500]}"
-        )
+        notes.append(f"{module.name} own installer stderr (truncated): {result.stderr.strip()[:500]}")
     return int(result.returncode), None, tuple(notes)
 
 
@@ -1798,14 +1688,11 @@ def _verify_custom_module_skill_dirs(
 ) -> tuple[SkillDirVerification | None, tuple[str, ...]]:
     """Compare every packaged ``<name>-*`` dir with ``.claude/skills/<dir>`` (finding only)."""
     if not module.packaged_source:
-        return None, (
-            f"{module.name}: no packaged_source in the catalog — skill-dir verification skipped",
-        )
+        return None, (f"{module.name}: no packaged_source in the catalog — skill-dir verification skipped",)
     source = repo / module.packaged_source
     if not source.is_dir():
         return None, (
-            f"{module.name}: packaged source {module.packaged_source} absent — "
-            "skill-dir verification skipped",
+            f"{module.name}: packaged source {module.packaged_source} absent — skill-dir verification skipped",
         )
     prefix = f"{module.name}-"
     installed_root = repo / _IDE_SKILLS_RELATIVE_PATH
@@ -1902,22 +1789,23 @@ def _run_custom_module_phase(
             continue
 
         module_notes: list[str] = []
-        restores = _restore_custom_module_configs(
-            repo, config_snapshots.get(module.name, {})
-        )
+        restores = _restore_custom_module_configs(repo, config_snapshots.get(module.name, {}))
 
         exit_code: int | None
         error: str | None
         if core_exit != 0:
-            exit_code, error = None, (
-                f"skipped — core installer exited {core_exit}; the module tree is not "
-                "rebuilt on a failed core apply"
+            exit_code, error = (
+                None,
+                (f"skipped — core installer exited {core_exit}; the module tree is not rebuilt on a failed core apply"),
             )
         elif not core_changed:
-            exit_code, error = None, (
-                "skipped — core installer exited 0 but changed nothing "
-                f"(trap {TRAP_SILENT_NOOP_APPLY}); refuse to run the own installer on a "
-                "no-op apply"
+            exit_code, error = (
+                None,
+                (
+                    "skipped — core installer exited 0 but changed nothing "
+                    f"(trap {TRAP_SILENT_NOOP_APPLY}); refuse to run the own installer on a "
+                    "no-op apply"
+                ),
             )
         else:
             exit_code, error, run_notes = _run_own_installer(
@@ -1938,11 +1826,7 @@ def _run_custom_module_phase(
         block_before = _config_toml_module_block(config_toml_before, module.name)
         block_after = _config_toml_module_block(config_toml_after, module.name)
         block_changed = block_before != block_after
-        block_diff = (
-            _config_toml_block_diff(block_before, block_after, module.name)
-            if block_changed
-            else ""
-        )
+        block_diff = _config_toml_block_diff(block_before, block_after, module.name) if block_changed else ""
         if block_changed:
             module_notes.append(
                 f"the core installer regenerated the [modules.{module.name}] block of "
@@ -1992,7 +1876,6 @@ def _run_custom_module_phase(
                 "add a catalog entry"
             )
     return tuple(reports), tuple(phase_notes)
-
 
 
 def _markers_present(text: str, markers: Sequence[str]) -> bool:
@@ -2060,9 +1943,7 @@ def verify_six_layer_resolution(
     markers = ("BMAD_ACTIVE_PROJECT", ".active-project")
     body = resolve_path.read_text(encoding="utf-8", errors="replace")
     if not _markers_present(body, markers):
-        return False, False, (
-            f"{resolve_rel} lacks multi-project markers after reconcile",
-        )
+        return False, False, (f"{resolve_rel} lacks multi-project markers after reconcile",)
 
     runnable = "_bmad-output/projects" in body and ".bmad-config.toml" in body
     if not runnable:
@@ -2081,12 +1962,8 @@ def verify_six_layer_resolution(
     project_dir.mkdir(parents=True, exist_ok=True)
     probe_key = "cap3_probe_token"
     probe_val = "layers-5-6-alive"
-    (project_dir / ".bmad-config.toml").write_text(
-        f'{probe_key} = "{probe_val}"\n', encoding="utf-8"
-    )
-    (project_dir / ".bmad-config.user.toml").write_text(
-        "# cap3 user overlay\n", encoding="utf-8"
-    )
+    (project_dir / ".bmad-config.toml").write_text(f'{probe_key} = "{probe_val}"\n', encoding="utf-8")
+    (project_dir / ".bmad-config.user.toml").write_text("# cap3 user overlay\n", encoding="utf-8")
 
     def _run(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -2120,9 +1997,7 @@ def verify_six_layer_resolution(
     try:
         marker.write_text(probe_slug + "\n", encoding="utf-8")
         marker_proc = _run(dict(base_env))
-        layers_ok_marker = (
-            marker_proc.returncode == 0 and probe_val in (marker_proc.stdout or "")
-        )
+        layers_ok_marker = marker_proc.returncode == 0 and probe_val in (marker_proc.stdout or "")
         if not layers_ok_marker:
             notes.append(
                 f".active-project marker probe failed (exit {marker_proc.returncode}): "
@@ -2136,7 +2011,6 @@ def verify_six_layer_resolution(
             marker.write_text(previous, encoding="utf-8")
 
     return layers_ok_env, layers_ok_marker, tuple(notes)
-
 
 
 def _three_way_merge(*, ours: bytes, base: bytes, theirs: bytes) -> tuple[bool, bytes]:
@@ -2171,19 +2045,12 @@ def _three_way_merge(*, ours: bytes, base: bytes, theirs: bytes) -> tuple[bool, 
     return result.returncode == 0, result.stdout
 
 
-def snapshot_local_customizations(
-    repo: Path, findings: Sequence[LocalCustomizationFinding]
-) -> dict[str, bytes | None]:
+def snapshot_local_customizations(repo: Path, findings: Sequence[LocalCustomizationFinding]) -> dict[str, bytes | None]:
     """Pre-apply bytes for every CAP-8-flagged file (``None`` when absent)."""
-    return {
-        f.path: ((repo / f.path).read_bytes() if (repo / f.path).is_file() else None)
-        for f in findings
-    }
+    return {f.path: ((repo / f.path).read_bytes() if (repo / f.path).is_file() else None) for f in findings}
 
 
-def _installer_owned_package_paths(
-    rel: str, *, old_root: Path, new_root: Path
-) -> tuple[Path | None, Path | None]:
+def _installer_owned_package_paths(rel: str, *, old_root: Path, new_root: Path) -> tuple[Path | None, Path | None]:
     """Map a CAP-8-flagged repo-relative path to its old/new packaged counterparts."""
     parts = Path(rel).parts
     if len(parts) >= 3 and parts[0] == ".claude" and parts[1] == "skills":
@@ -2231,10 +2098,7 @@ def reapply_local_customizations(
             findings=(),
             all_clean=True,
             notes=(
-                (
-                    "local-customization re-apply skipped — --installed-package-root "
-                    "and/or --package-root unavailable"
-                ),
+                ("local-customization re-apply skipped — --installed-package-root and/or --package-root unavailable"),
             ),
         )
 
@@ -2277,9 +2141,7 @@ def reapply_local_customizations(
             )
             continue
 
-        old_path, new_path = _installer_owned_package_paths(
-            rel, old_root=installed_package_root, new_root=package_root
-        )
+        old_path, new_path = _installer_owned_package_paths(rel, old_root=installed_package_root, new_root=package_root)
         old_missing = old_path is None or not old_path.is_file()
         new_missing = new_path is None or not new_path.is_file()
         if old_missing or new_missing:
@@ -2304,9 +2166,7 @@ def reapply_local_customizations(
             continue
 
         assert old_path is not None and new_path is not None  # narrowed above
-        clean, output = _three_way_merge(
-            ours=ours, base=old_path.read_bytes(), theirs=new_path.read_bytes()
-        )
+        clean, output = _three_way_merge(ours=ours, base=old_path.read_bytes(), theirs=new_path.read_bytes())
         if clean:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(output)
@@ -2359,14 +2219,10 @@ def reconcile_clobbered_custom_surfaces(
     for rel in candidates:
         path = repo / rel
         before = rel in pre_apply_snapshots
-        after_text = (
-            path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
-        )
+        after_text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
         after = _markers_present(after_text, markers) if after_text else False
         bak = _bak_candidate(repo, rel)
-        bak_rel = (
-            str(bak.relative_to(repo)).replace("\\", "/") if bak is not None else None
-        )
+        bak_rel = str(bak.relative_to(repo)).replace("\\", "/") if bak is not None else None
         if bak_rel and bak_rel not in bak_accounted:
             bak_accounted.append(bak_rel)
 
@@ -2441,9 +2297,7 @@ def reconcile_clobbered_custom_surfaces(
                 )
 
         if path.is_file():
-            markers_after = _markers_present(
-                path.read_text(encoding="utf-8", errors="replace"), markers
-            )
+            markers_after = _markers_present(path.read_text(encoding="utf-8", errors="replace"), markers)
         if action != "flagged" and not markers_after:
             action = "flagged"
             detail = "restore wrote bytes but markers still absent"
@@ -2465,9 +2319,7 @@ def reconcile_clobbered_custom_surfaces(
         (t for t in touched if t.endswith("resolve_config.py")),
         "_bmad/scripts/resolve_config.py",
     )
-    layers_ok_env, layers_ok_marker, verify_notes = verify_six_layer_resolution(
-        repo, resolve_rel=resolve_rel
-    )
+    layers_ok_env, layers_ok_marker, verify_notes = verify_six_layer_resolution(repo, resolve_rel=resolve_rel)
     notes.extend(verify_notes)
 
     flagged = [f for f in findings if f.action == "flagged"]
@@ -2480,13 +2332,10 @@ def reconcile_clobbered_custom_surfaces(
     )
     if all_clear:
         notes.append(
-            "CAP-3 clear: markers present; six layers resolve via "
-            "BMAD_ACTIVE_PROJECT and .active-project marker"
+            "CAP-3 clear: markers present; six layers resolve via BMAD_ACTIVE_PROJECT and .active-project marker"
         )
     else:
-        notes.append(
-            "CAP-3 incomplete: clobber flagged and/or six-layer probes failed"
-        )
+        notes.append("CAP-3 incomplete: clobber flagged and/or six-layer probes failed")
     if bak_accounted:
         notes.append("installer .bak accounted: " + ", ".join(sorted(set(bak_accounted))))
     else:
@@ -2550,19 +2399,14 @@ def apply_bmad_core_upgrade(
     )
     # CAP-8: re-derive the same cheap glob rather than growing PreflightReport's
     # shape just to carry a Path through.
-    resolved_installed_root = installed_package_root or default_installed_package_root(
-        preflight.installed_version
-    )
+    resolved_installed_root = installed_package_root or default_installed_package_root(preflight.installed_version)
     refuse_legacy_custom(preflight)
     # CAP-6: refuse before any branch exists when the manifest names no modules.
     modules = read_installed_modules(repo)
     # CAP-7: one source of truth for `--modules` — the manifest. Assert every
     # `source: custom` module is on it rather than adding a second selection path.
     module_sources = read_installed_module_sources(repo)
-    unselected_custom = [
-        name for name, source in module_sources.items()
-        if source == "custom" and name not in modules
-    ]
+    unselected_custom = [name for name, source in module_sources.items() if source == "custom" and name not in modules]
     if unselected_custom:
         raise UpgradeError(
             f"installed custom module(s) {', '.join(unselected_custom)} would not be "
@@ -2583,23 +2427,20 @@ def apply_bmad_core_upgrade(
 
     review_branch = branch or default_apply_branch(target_version)
     custom_before = fingerprint_custom_tree(repo)
-    catalog = load_release_catalog(
-        target_version, directory=catalog_directory
-    )
+    catalog = load_release_catalog(target_version, directory=catalog_directory)
     # CAP-7: the catalog annotates; the manifest selects. Validated in the
     # pre-flight already (a malformed entry raised there, before any branch).
     custom_module_defs = load_custom_modules(catalog)
     installed_custom_defs = [
-        module for module in custom_module_defs
+        module
+        for module in custom_module_defs
         if module.name in modules and module_sources.get(module.name) == "custom"
     ]
     surface_snapshots = snapshot_repo_custom_surfaces(repo, catalog)
     # CAP-8: snapshot every pre-flight-flagged local customization's bytes at
     # the same point as the other pre-apply snapshots, before the core
     # installer runs.
-    local_customization_pre_snapshots = snapshot_local_customizations(
-        repo, preflight.local_customizations
-    )
+    local_customization_pre_snapshots = snapshot_local_customizations(repo, preflight.local_customizations)
     config_snapshots = _snapshot_custom_module_configs(repo, installed_custom_defs)
     config_toml_before = _read_config_toml_text(repo)
     snapshot_sha = create_review_branch(repo, review_branch)
@@ -2623,8 +2464,7 @@ def apply_bmad_core_upgrade(
     result = _call_installer_runner(runner, repo, installer_cmd, env=env)
 
     notes: list[str] = [
-        "deliberate apply — installer diff left on review branch for human review "
-        "(never merged/applied blind)",
+        "deliberate apply — installer diff left on review branch for human review (never merged/applied blind)",
         "steward did not write _bmad/bmm/** or _bmad/core/** — installer is sole writer",
         f"installer argv: {' '.join(installer_cmd)}",
     ]
@@ -2709,10 +2549,7 @@ def apply_bmad_core_upgrade(
 
     changed = list_changed_paths(repo)
     if changed:
-        notes.append(
-            f"installer diff on branch {review_branch} ({len(changed)} path(s)) — "
-            "review before merge"
-        )
+        notes.append(f"installer diff on branch {review_branch} ({len(changed)} path(s)) — review before merge")
     elif not zero_diff:
         notes.append("installer produced no working-tree changes")
 
@@ -2763,10 +2600,12 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
             "zero-diff: REFUSED — installer exited 0 and changed nothing "
             f"(trap {TRAP_SILENT_NOOP_APPLY}); branch {report.branch} left in place"
         )
-    lines.extend([
-        "",
-        "## Review surface (installer diff paths)",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Review surface (installer diff paths)",
+        ]
+    )
     if not report.changed_paths:
         lines.append("(none)")
     for path in report.changed_paths:
@@ -2786,19 +2625,14 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
     else:
         rec = report.reconcile
         lines.append(
-            f"all_clear={rec.all_clear} layers_ok_env={rec.layers_ok_env} "
-            f"layers_ok_marker={rec.layers_ok_marker}"
+            f"all_clear={rec.all_clear} layers_ok_env={rec.layers_ok_env} layers_ok_marker={rec.layers_ok_marker}"
         )
         if not rec.findings:
             lines.append("(no tracked surfaces)")
         for finding in rec.findings:
-            lines.append(
-                f"- [{finding.action}] {finding.path}: {finding.detail}"
-            )
+            lines.append(f"- [{finding.action}] {finding.path}: {finding.detail}")
         if rec.bak_files_accounted:
-            lines.append(
-                "bak accounted: " + ", ".join(rec.bak_files_accounted)
-            )
+            lines.append("bak accounted: " + ", ".join(rec.bak_files_accounted))
 
     lines.extend(["", "## CAP-7 custom modules"])
     if not report.custom_modules:
@@ -2806,10 +2640,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
     else:
         lines.append(f"custom_modules_ok={report.custom_modules_ok}")
     for module in report.custom_modules:
-        lines.append(
-            f"- {module.name}: selected={module.selected} "
-            f"pin={module.pin or '(none)'} ok={module.ok}"
-        )
+        lines.append(f"- {module.name}: selected={module.selected} pin={module.pin or '(none)'} ok={module.ok}")
         for restore in module.config_paths:
             lines.append(f"  - config {restore.path}: {restore.status} — {restore.detail}")
         if module.selected:
@@ -2818,9 +2649,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
                 if module.own_installer_exit is not None
                 else f"not run — {module.own_installer_error}"
             )
-            lines.append(
-                f"  - own installer: {' '.join(module.own_installer_cmd)} ({exit_text})"
-            )
+            lines.append(f"  - own installer: {' '.join(module.own_installer_cmd)} ({exit_text})")
             verification = module.verification
             if verification is None:
                 lines.append("  - skill-dir verification: skipped")
@@ -2835,13 +2664,9 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
                     f"equal to {verification.packaged_source} ok={verification.ok}{extra}"
                 )
             block_state = (
-                "CHANGED by the installer (reported, never edited)"
-                if module.config_toml_block_changed
-                else "unchanged"
+                "CHANGED by the installer (reported, never edited)" if module.config_toml_block_changed else "unchanged"
             )
-            lines.append(
-                f"  - {_CONFIG_TOML_RELATIVE_PATH} [modules.{module.name}]: {block_state}"
-            )
+            lines.append(f"  - {_CONFIG_TOML_RELATIVE_PATH} [modules.{module.name}]: {block_state}")
             for diff_line in module.config_toml_block_diff.rstrip("\n").splitlines():
                 lines.append(f"    {diff_line}")
         for note in module.notes:
@@ -2853,10 +2678,7 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         lines.append("(none flagged)")
     else:
         for reapply_finding in reapply.findings:
-            lines.append(
-                f"- [{reapply_finding.action}] {reapply_finding.path}: "
-                f"{reapply_finding.detail}"
-            )
+            lines.append(f"- [{reapply_finding.action}] {reapply_finding.path}: {reapply_finding.detail}")
             if reapply_finding.conflict_path:
                 lines.append(f"    conflict file: {reapply_finding.conflict_path}")
 
@@ -3003,7 +2825,7 @@ def _parse_version_tuple(version: str) -> tuple[int, int, int] | None:
     parts = match.group(1).split(".")
     try:
         return int(parts[0]), int(parts[1]), int(parts[2])
-    except (ValueError, IndexError):
+    except ValueError, IndexError:
         return None
 
 
@@ -3012,9 +2834,7 @@ def _pin_lower_bound(pin: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _classify_pin_value(
-    current: str | None, *, from_version: str, to_version: str
-) -> tuple[str, str]:
+def _classify_pin_value(current: str | None, *, from_version: str, to_version: str) -> tuple[str, str]:
     """Return ``(status, detail)`` for a version-floor pin string."""
     if current is None:
         return "missing", "pin site not found or unreadable"
@@ -3042,7 +2862,7 @@ def _read_pixi_dep(path: Path, package: str) -> str | None:
         return None
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    except OSError, tomllib.TOMLDecodeError:
         return None
 
     # Root pixi: feature/dependency tables; package pixi: package.run-dependencies.
@@ -3079,7 +2899,7 @@ def _read_pyproject_dep(path: Path, package: str) -> str | None:
         return None
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    except OSError, tomllib.TOMLDecodeError:
         return None
     reqs = (data.get("project") or {}).get("dependencies") or []
     if not isinstance(reqs, list):
@@ -3116,7 +2936,7 @@ def _read_seed_manifest_pin(path: Path, entry_id: str) -> str | None:
         return None
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    except (OSError, yaml.YAMLError):
+    except OSError, yaml.YAMLError:
         return None
     entries = data.get("entries") or data.get("artifacts") or []
     if not isinstance(entries, list):
@@ -3172,12 +2992,8 @@ def _packaged_hook_text(*, repo: Path | None = None) -> str | None:
     loop-home rows can still classify as moved/not_moved.
     """
     try:
-        return (
-            resources.files("bmad_loop.data")
-            .joinpath("bmad_loop_hook.py")
-            .read_text(encoding="utf-8")
-        )
-    except (OSError, ModuleNotFoundError, AttributeError, TypeError, ValueError):
+        return resources.files("bmad_loop.data").joinpath("bmad_loop_hook.py").read_text(encoding="utf-8")
+    except OSError, ModuleNotFoundError, AttributeError, TypeError, ValueError:
         pass
     try:
         import bmad_loop
@@ -3185,7 +3001,7 @@ def _packaged_hook_text(*, repo: Path | None = None) -> str | None:
         data = Path(bmad_loop.__file__).resolve().parent / "data" / "bmad_loop_hook.py"
         if data.is_file():
             return data.read_text(encoding="utf-8")
-    except (ImportError, OSError, TypeError):
+    except ImportError, OSError, TypeError:
         pass
     if repo is not None:
         search_roots = [repo, *repo.resolve().parents]
@@ -3308,10 +3124,7 @@ def _enumerate_loop_home_relays(
                     foreign=True,
                     current_value="(diverges from packaged wheel)",
                     status="not_moved",
-                    detail=(
-                        "relay stale vs installed bmad-loop — "
-                        "run bmad-loop init (foreign; steward never edits)"
-                    ),
+                    detail=("relay stale vs installed bmad-loop — run bmad-loop init (foreign; steward never edits)"),
                 )
             )
     if not rows:
@@ -3345,14 +3158,9 @@ def build_pin_fan_out_report(
 ) -> PinFanOutReport:
     """Enumerate known pin sites with moved/not-moved — never edits anything."""
     if package not in {"bmad-loop", "bmad-method"}:
-        raise UpgradeError(
-            f"pin-fan-out package must be bmad-loop or bmad-method, got {package!r}"
-        )
+        raise UpgradeError(f"pin-fan-out package must be bmad-loop or bmad-method, got {package!r}")
     if not _VERSION_RE.match(from_version) or not _VERSION_RE.match(to_version):
-        raise UpgradeError(
-            f"pin-fan-out versions must be X.Y.Z "
-            f"(from={from_version!r} to={to_version!r})"
-        )
+        raise UpgradeError(f"pin-fan-out versions must be X.Y.Z (from={from_version!r} to={to_version!r})")
 
     notes: list[str] = [
         "CAP-4 report-only: foreign-station sites are never edited by steward",
@@ -3363,9 +3171,7 @@ def build_pin_fan_out_report(
         if site.package != package:
             continue
         current = _read_site_value(repo, site)
-        status, detail = _classify_pin_value(
-            current, from_version=from_version, to_version=to_version
-        )
+        status, detail = _classify_pin_value(current, from_version=from_version, to_version=to_version)
         if site.foreign and status == "not_moved":
             detail = f"{detail} (foreign; steward never edits)"
         sites.append(
@@ -3418,9 +3224,7 @@ def format_pin_fan_out(report: PinFanOutReport, *, as_json: bool) -> str:
     for site in report.sites:
         foreign = " foreign" if site.foreign else ""
         value = site.current_value if site.current_value is not None else "(missing)"
-        lines.append(
-            f"- [{site.status}]{foreign} {site.site_id}: {value} — {site.detail}"
-        )
+        lines.append(f"- [{site.status}]{foreign} {site.site_id}: {value} — {site.detail}")
     if report.notes:
         lines.extend(["", "## Notes"])
         for note in report.notes:
@@ -3475,19 +3279,13 @@ NATIVE_PATH_SPOT_CHECK_CATALOG: tuple[NativePathClassDef, ...] = (
         class_id="own-npx",
         mode="executable",
         argv=("npx", "bmad-module-skill-forge", "--help"),
-        citation=(
-            "install-matrix.md Class → gate: own-npx → "
-            "npx bmad-module-skill-forge --help"
-        ),
+        citation=("install-matrix.md Class → gate: own-npx → npx bmad-module-skill-forge --help"),
     ),
     NativePathClassDef(
         class_id="installer-selection",
         mode="executable",
         argv=("bmad-tea-install", "--help"),
-        citation=(
-            "install-matrix.md Class → gate: installer-selection → "
-            "TEA via bmad-tea-install (conda parity)"
-        ),
+        citation=("install-matrix.md Class → gate: installer-selection → TEA via bmad-tea-install (conda parity)"),
     ),
     NativePathClassDef(
         class_id="custom-source",
@@ -3511,10 +3309,7 @@ NATIVE_PATH_SPOT_CHECK_CATALOG: tuple[NativePathClassDef, ...] = (
         class_id="plugin-marketplace",
         mode="executable",
         argv=("npx", "skills", "add", "--help"),
-        citation=(
-            "install-matrix.md Class → gate: plugin-marketplace → "
-            "labs npx skills add --help"
-        ),
+        citation=("install-matrix.md Class → gate: plugin-marketplace → labs npx skills add --help"),
     ),
     NativePathClassDef(
         class_id="uv-from-git",
@@ -3534,10 +3329,7 @@ NATIVE_PATH_SPOT_CHECK_CATALOG: tuple[NativePathClassDef, ...] = (
         class_id="build-from-source",
         mode="check-by-doc",
         argv=None,
-        citation=(
-            "install-matrix.md Class → gate: build-from-source → "
-            "dashboards excluded (check-by-doc)"
-        ),
+        citation=("install-matrix.md Class → gate: build-from-source → dashboards excluded (check-by-doc)"),
     ),
 )
 
@@ -3568,9 +3360,7 @@ CommandRunner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]
 _NATIVE_SPOT_CHECK_TIMEOUT_SEC = 60
 
 
-def _default_command_runner(
-    argv: Sequence[str], cwd: Path
-) -> subprocess.CompletedProcess[str]:
+def _default_command_runner(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             list(argv),
@@ -3640,10 +3430,7 @@ def run_native_path_spot_checks(
         if entry.mode == "check-by-doc":
             # Dashboards: no build subprocess; require matrix still documents
             # the check-by-doc / dashboards exclusion so doc-only is not a noop.
-            cited = (
-                "check-by-doc" in matrix_text.lower()
-                and "dashboard" in matrix_text.lower()
-            )
+            cited = "check-by-doc" in matrix_text.lower() and "dashboard" in matrix_text.lower()
             results.append(
                 NativePathSpotCheck(
                     class_id=entry.class_id,
@@ -3651,13 +3438,9 @@ def run_native_path_spot_checks(
                     ok=cited,
                     status="check-by-doc" if cited else "warn",
                     detail=(
-                        "dashboards: check-by-doc only (no build subprocess); "
-                        f"cited: {entry.citation}"
+                        f"dashboards: check-by-doc only (no build subprocess); cited: {entry.citation}"
                         if cited
-                        else (
-                            "advisory warn: matrix lacks dashboards/check-by-doc "
-                            f"citation — {entry.citation}"
-                        )
+                        else (f"advisory warn: matrix lacks dashboards/check-by-doc citation — {entry.citation}")
                     ),
                     argv=None,
                     advisory=True,
@@ -3712,11 +3495,7 @@ def run_native_path_spot_checks(
         code = proc.returncode if proc.returncode is not None else -1
         ok = code == 0
         # On failure prefer stderr so real errors are not hidden by empty stdout.
-        raw = (
-            (proc.stderr or proc.stdout or "")
-            if not ok
-            else (proc.stdout or proc.stderr or "")
-        )
+        raw = (proc.stderr or proc.stdout or "") if not ok else (proc.stdout or proc.stderr or "")
         preview = raw.strip().splitlines()
         tail = " | ".join(preview[-2:])[:300] if preview else ""
         if ok:
@@ -3780,13 +3559,13 @@ _BMAD_DRIFT_TASK_ARGV: tuple[str, ...] = (
     "pixi",
     "run",
     "-e",
-    "local-recipes",
+    "pyforge-guild",
     "bmad-drift-check",
 )
 
 
 def _import_drift_factory() -> tuple[Any, Any]:
-    """Import seam for tests; raises ImportError outside the local-recipes env."""
+    """Import seam for tests; raises ImportError outside the Guild env."""
     from pyforge.doctor.models import DoctorStatus
     from pyforge.doctor.sources import factory as bmad_drift_factory
 
@@ -3813,7 +3592,7 @@ def _run_bmad_drift_task(
         return GateResult(
             name="bmad-drift-integrity",
             ok=True,
-            detail="no HARD/FAIL integrity findings (via `pixi run -e local-recipes bmad-drift-check`)",
+            detail="no HARD/FAIL integrity findings (via `pixi run -e pyforge-guild bmad-drift-check`)",
         )
     kind = "findings" if proc.returncode == 1 else "could-not-run"
     return GateResult(
@@ -3864,8 +3643,7 @@ def run_bmad_drift_integrity(
 def run_cfe_meta_tests(
     repo: Path,
     *,
-    pytest_runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
-    | None = None,
+    pytest_runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]] | None = None,
 ) -> GateResult:
     """CFE skill meta-test ``test_bmad_artifacts_in_sync`` (integrity class)."""
     test_path = repo / _CFE_META_TEST_REL
@@ -3876,9 +3654,7 @@ def run_cfe_meta_tests(
             detail=f"missing meta test: {_CFE_META_TEST_REL}",
         )
 
-    def _default(
-        argv: Sequence[str], cwd: Path
-    ) -> subprocess.CompletedProcess[str]:
+    def _default(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             list(argv),
             cwd=cwd,
@@ -3901,9 +3677,7 @@ def run_cfe_meta_tests(
     tail = (result.stdout or result.stderr or "").strip().splitlines()
     preview = tail[-3:] if tail else []
     detail = (
-        "test_bmad_artifacts_in_sync green"
-        if ok
-        else f"pytest exit {result.returncode}: " + " | ".join(preview)[:400]
+        "test_bmad_artifacts_in_sync green" if ok else f"pytest exit {result.returncode}: " + " | ".join(preview)[:400]
     )
     return GateResult(
         name="cfe-meta-tests",
@@ -3924,8 +3698,7 @@ def run_loop_home_gate(
     *,
     refresh_relays: bool,
     loop_bin: str = "bmad-loop",
-    runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
-    | None = None,
+    runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]] | None = None,
 ) -> GateResult:
     """``bmad-loop init`` (optional relay refresh) then ``validate`` for one home.
 
@@ -3933,9 +3706,7 @@ def run_loop_home_gate(
     """
     name = f"loop-home:{home.name}"
 
-    def _default(
-        argv: Sequence[str], cwd: Path
-    ) -> subprocess.CompletedProcess[str]:
+    def _default(argv: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             list(argv),
             cwd=cwd,
@@ -3959,9 +3730,7 @@ def run_loop_home_gate(
                 mutated=True,
             )
 
-    validate = run(
-        [loop_bin, "validate", "--project", str(home), "--json"], home
-    )
+    validate = run([loop_bin, "validate", "--project", str(home), "--json"], home)
     if validate.returncode != 0 and not (validate.stdout or "").strip():
         err = (validate.stderr or "").strip()[:300]
         return GateResult(
@@ -3988,10 +3757,7 @@ def run_loop_home_gate(
     detail = (
         f"validate clean (warnings={warnings}, problems={problems})"
         if ok_flag
-        else (
-            f"validate not clean: ok={payload.get('ok')!r} "
-            f"warnings={warnings} problems={problems}"
-        )
+        else (f"validate not clean: ok={payload.get('ok')!r} warnings={warnings} problems={problems}")
     )
     return GateResult(
         name=name,
@@ -4030,12 +3796,8 @@ def build_prove_landed_report(
     ]
 
     gates: list[GateResult] = []
-    gates.append(
-        drift_runner() if drift_runner is not None else run_bmad_drift_integrity(repo)
-    )
-    gates.append(
-        cfe_runner() if cfe_runner is not None else run_cfe_meta_tests(repo)
-    )
+    gates.append(drift_runner() if drift_runner is not None else run_bmad_drift_integrity(repo))
+    gates.append(cfe_runner() if cfe_runner is not None else run_cfe_meta_tests(repo))
 
     homes = _list_loop_homes(home_root)
     if not homes:
@@ -4055,9 +3817,7 @@ def build_prove_landed_report(
             if loop_home_runner is not None:
                 gates.append(loop_home_runner(home, refresh_relays))
             else:
-                gates.append(
-                    run_loop_home_gate(home, refresh_relays=refresh_relays)
-                )
+                gates.append(run_loop_home_gate(home, refresh_relays=refresh_relays))
 
     loop_gates = [g for g in gates if g.name.startswith("loop-home:")]
     homes_total = len(loop_gates)
@@ -4081,9 +3841,7 @@ def build_prove_landed_report(
         native_spot_checks: tuple[NativePathSpotCheck, ...] = ()
         notes.append("native path spot-checks: skipped")
     else:
-        native_spot_checks = run_native_path_spot_checks(
-            repo, command_runner=command_runner
-        )
+        native_spot_checks = run_native_path_spot_checks(repo, command_runner=command_runner)
         ok_n = sum(1 for s in native_spot_checks if s.ok)
         total_n = len(native_spot_checks)
         fail_n = total_n - ok_n
@@ -4093,10 +3851,7 @@ def build_prove_landed_report(
                 "fail/warn (do not affect CAP-5 verdict)"
             )
         else:
-            notes.append(
-                f"native path spot-checks: {ok_n}/{total_n} ok "
-                "(advisory; not a hard gate)"
-            )
+            notes.append(f"native path spot-checks: {ok_n}/{total_n} ok (advisory; not a hard gate)")
 
     # Verdict follows Epic 14 hard gates only — never native spot-checks.
     verdict = "pass" if all(g.ok for g in gates) else "fail"
@@ -4132,9 +3887,7 @@ def format_prove_landed(report: ProveLandedReport, *, as_json: bool) -> str:
         lines.append("(none)")
     for spot in report.native_spot_checks:
         mark = "ok" if spot.ok else spot.status
-        lines.append(
-            f"- [{mark}] {spot.class_id} ({spot.mode}): {spot.detail}"
-        )
+        lines.append(f"- [{mark}] {spot.class_id} ({spot.mode}): {spot.detail}")
 
     if report.notes:
         lines.extend(["", "## Notes"])
@@ -4175,9 +3928,7 @@ class UpgradeDuty:
 
     def _prove_landed(self, ns: argparse.Namespace) -> DutyResult:
         repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
-        loops = (
-            Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
-        )
+        loops = Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
         as_json = bool(getattr(ns, "json", False))
         refresh = not bool(getattr(ns, "no_init", False))
         report = build_prove_landed_report(
@@ -4198,14 +3949,10 @@ class UpgradeDuty:
         if not package or not from_version or not to_version:
             return DutyResult(
                 ok=False,
-                summary=(
-                    "upgrade pin-fan-out: --package, --from, and --to are required"
-                ),
+                summary=("upgrade pin-fan-out: --package, --from, and --to are required"),
             )
         repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
-        loops = (
-            Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
-        )
+        loops = Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
         as_json = bool(getattr(ns, "json", False))
         report = build_pin_fan_out_report(
             repo=repo,
@@ -4230,13 +3977,9 @@ class UpgradeDuty:
         repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
         package_root = Path(ns.package_root) if getattr(ns, "package_root", None) else None
         installed_package_root = (
-            Path(ns.installed_package_root)
-            if getattr(ns, "installed_package_root", None)
-            else None
+            Path(ns.installed_package_root) if getattr(ns, "installed_package_root", None) else None
         )
-        catalog_directory = (
-            Path(ns.catalog_dir) if getattr(ns, "catalog_dir", None) else None
-        )
+        catalog_directory = Path(ns.catalog_dir) if getattr(ns, "catalog_dir", None) else None
         installed_override = getattr(ns, "installed_version", None)
         as_json = bool(getattr(ns, "json", False))
         do_apply = bool(getattr(ns, "apply", False))
@@ -4270,9 +4013,7 @@ class UpgradeDuty:
             installer_bin=installer_bin,
             no_shims=no_shims,
         )
-        reconcile_ok = (
-            apply_report.reconcile is not None and apply_report.reconcile.all_clear
-        )
+        reconcile_ok = apply_report.reconcile is not None and apply_report.reconcile.all_clear
         ok = (
             apply_report.installer_exit == 0
             and not apply_report.zero_diff

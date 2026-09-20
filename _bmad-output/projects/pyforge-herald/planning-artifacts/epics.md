@@ -10,7 +10,7 @@ project_name: pyforge-herald
 epicCount: 22  # 2026-09-13: Epic 22 added (spec-pyforge-pages). Dated snapshot; the ledger enumerates.
 storyCount: 55  # 2026-09-13: + Story 22.1. Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-09-18"   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
+updated: "2026-09-20"   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade (arch→epics) after the 2026-09-20 docs-site research seed; no story minted. Prior 2026-09-18   # Epic 24 appended (spec-pyforge-herald CAP-48..50, Epic 23 residue); Epic 23 done. Prior 2026-09-17: one-chain herald fold; Fold provenance names CAP-1..47
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -878,3 +878,32 @@ default gate and never a second PR gate.
 **Surface:** `pixi.toml` (an opt-in `deck-sync-proof` task gated on `HERALD_LIVE_SYNC_PROOF=1`), `src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py` (a `--proof-dir` that writes both reports and the etag/tree stamps; no new stage), `.herald/sync-proof/<slug>/` (gitignored runtime output; the operator commits the two reports as the story's evidence under `planning-artifacts/specs/spec-pyforge-herald/sync-proof-2026-09-1x.md`), `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md` (one new row: herald `sync-all` idempotency), `planning-artifacts/deferred-work-ledger.md` (DW-FU-23-6 → done citing the run).
 **Given** 23.6's idempotency AC is proven over hand-written fakes and one live smoke that exercised only the skipped path, because no dispatch environment has live Claude Design credentials — the proof needs a person **When** one opt-in command runs `sync-all --slug <seeded deck>` twice against live Design and writes both per-deck reports plus the stamps to a proof dir **Then** the second report is all-`unchanged` with zero git writes and zero Design writes, the artifacts are recorded, and the surface is catalogued as live-proof-only so a static pass never claims it
 **And** the task is never in the default gate or any CI lane, and the operator-run half is stated as such in the story's completion note — this story is `done` when the recorded run exists, not when the task does
+
+## Epic 25: Herald runs from the Guild env (spec-pyforge-herald CAP-51)
+
+Minted 2026-09-20 from the station Dream's entry of the same date (operator ruling: only `pyforge-guild` exists at runtime). A new epic because Epic 24 is `done`. One story; the env side is steward 63.6.
+
+### Story 25.1: The deck pipeline runs from the Guild env
+
+As a fleet operator running herald where only `pyforge-guild` exists,
+I want `deck_pipeline.py` and `sync_all.py` to shell `deck-export`, `deck-facts` and `deck-trio` through `-e pyforge-guild`,
+So that a deck sync never depends on the recipe factory's environment.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-herald CAP-51 • cross-project gate: the three tasks must be in `guild-tasks` first (steward 63.6) — a ledger `blocked`/`backlog` flip the operator makes, per AGENTS.md
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:497-527` (`DeckExporter` argv), `sync_all.py:348-401` (`FactsRefresher`, the trio step), `tests/unit/test_deck_pipeline.py:2465` and the sync-all tests (argv assertions).
+**Given** three shell-outs name `-e local-recipes` for tasks that are herald's own
+**When** they name `-e pyforge-guild` and the tasks live in `guild-tasks`
+**Then** the argv assertions read the Guild env; `deck-sync-proof`'s opt-in live run still passes; steward 63.6's guard lists no herald offender
+**And** `pyforge-herald-test` green
+**Outcome (2026-09-20):** done, hand-driven in PR #1551 with steward 63.6 (the gate resolved in one landing) — see the tracked spec's Auto Run Result.
+
+## Currency reconciliation — 2026-09-20 (fleet consistency pass)
+
+*Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
+grace period or not, so the whole chain reads current for the foundry cutover. Trigger: the
+station Spec's `.memlog.md` gained a 2026-09-20 event — the fleet consistency pass reconciled every
+tracked story spec's frontmatter against the sprint ledger, matched each "Ledger status" line,
+reconstructed missing Auto Run Results from `main`'s landing commits, fixed invalid frontmatter,
+and let `sprint-ledger-sync` roll the epic keys up (`spec→prd→arch→epics` cascade). Bookkeeping only:
+no requirement, decision, story or AD changes in this epics. `updated:` bumped to record that the
+check ran.*

@@ -104,3 +104,16 @@ warnings: []
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `3f79dc2a60` (2026-08-07, "herald: Story 1.6 — herald deck seed <slug> (CAP-1), Epic 1 done"); also `277f4e4e52` (2026-08-07, "steward: Story 1.6 — ask "is anything host-unscoped right now?" and get a real answer"); also `935c8f4a61` (2026-07-31, "marshal: recover Story 1.6 — isolation verification and home enumeration (closes Epic 1's "). Ledger row `1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-1-6-herald-deck-seed-slug.md`, `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/__init__.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py`, `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py`, `src/shared/packages/pyforge-herald/tests/test_bridge.py`, `src/shared/packages/pyforge-herald/tests/test_cli_seed.py`, `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

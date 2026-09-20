@@ -135,10 +135,7 @@ def _forbidden_module_references(tree: ast.AST, path: str = "<test>") -> list[st
                 if alias.name.split(".")[0] in _FORBIDDEN_TOP_LEVEL_MODULES:
                     offenders.append(f"{path}:{node.lineno} imports {alias.name!r}")
         elif isinstance(node, ast.ImportFrom):
-            if (
-                node.module is not None
-                and node.module.split(".")[0] in _FORBIDDEN_TOP_LEVEL_MODULES
-            ):
+            if node.module is not None and node.module.split(".")[0] in _FORBIDDEN_TOP_LEVEL_MODULES:
                 offenders.append(f"{path}:{node.lineno} imports from {node.module!r}")
         elif (
             isinstance(node, ast.Call)
@@ -148,9 +145,7 @@ def _forbidden_module_references(tree: ast.AST, path: str = "<test>") -> list[st
             and isinstance(node.args[0].value, str)
             and node.args[0].value.split(".")[0] in _FORBIDDEN_TOP_LEVEL_MODULES
         ):
-            offenders.append(
-                f"{path}:{node.lineno} lazily imports {node.args[0].value!r}"
-            )
+            offenders.append(f"{path}:{node.lineno} lazily imports {node.args[0].value!r}")
     return offenders
 
 
@@ -159,17 +154,14 @@ def test_supervisor_imports_no_socket_or_multiprocessing_module():
     for path in _supervisor_source_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         offenders.extend(_forbidden_module_references(tree, str(path)))
-    assert not offenders, (
-        "the supervisor sidecar must have no control channel (AD-9) -- "
-        f"found: {offenders}"
-    )
+    assert not offenders, f"the supervisor sidecar must have no control channel (AD-9) -- found: {offenders}"
 
 
 @pytest.mark.parametrize(
     "snippet",
     [
-        'import socket',
-        'from multiprocessing import Process',
+        "import socket",
+        "from multiprocessing import Process",
         'import importlib\nimportlib.import_module("socket")',
         'from importlib import import_module\nimport_module("multiprocessing")',
         '__import__("socket")',
@@ -212,18 +204,11 @@ def test_supervisor_never_reads_stdin_or_calls_input():
     for path in _supervisor_source_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "input"
-            ):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "input":
                 offenders.append(f"{path}:{node.lineno} calls input()")
             if isinstance(node, ast.Attribute) and node.attr == "stdin":
                 offenders.append(f"{path}:{node.lineno} references .stdin")
-    assert not offenders, (
-        "the supervisor sidecar must never read its own stdin (AD-9) -- "
-        f"found: {offenders}"
-    )
+    assert not offenders, f"the supervisor sidecar must never read its own stdin (AD-9) -- found: {offenders}"
 
 
 def test_lint_imports_passes_against_the_installed_package():
@@ -241,9 +226,6 @@ def test_lint_imports_passes_against_the_installed_package():
     )
     stdout = _strip_ansi(result.stdout)
     assert result.returncode == 0, (
-        f"lint-imports failed (exit {result.returncode}):\n"
-        f"stdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
+        f"lint-imports failed (exit {result.returncode}):\nstdout:\n{stdout}\nstderr:\n{_strip_ansi(result.stderr)}"
     )
-    assert re.search(r"\b0\s+broken\b", stdout), (
-        f"expected a '0 broken' summary in lint-imports output:\n{stdout}"
-    )
+    assert re.search(r"\b0\s+broken\b", stdout), f"expected a '0 broken' summary in lint-imports output:\n{stdout}"

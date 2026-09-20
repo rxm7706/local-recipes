@@ -8,13 +8,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
-from pyforge.marshal.core import policy
-from pyforge.marshal.core.model import Severity
-from scope_triangle import point_scope_triangle
-from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core import policy
+from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import (
@@ -96,9 +96,7 @@ class FakeVcs:
     def worktree_path_for_branch(self, _repo_root: Path, branch: str) -> Path | None:
         return self.worktrees.get(branch)
 
-    def add_worktree(
-        self, repo_root: Path, home: Path, branch: str, *, base: str
-    ) -> None:
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.added.append((repo_root, home, branch, base))
         self.worktrees[branch] = home
         home.mkdir(parents=True, exist_ok=True)
@@ -106,9 +104,7 @@ class FakeVcs:
     def worktree_head_sha(self, _worktree: Path) -> str:
         return "baseline0001"
 
-    def changed_files(
-        self, _repo_root: Path, _worktree_path: Path, *, base: str
-    ) -> tuple[str, ...]:
+    def changed_files(self, _repo_root: Path, _worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return ()
 
     def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
@@ -137,9 +133,7 @@ class FakeBuildHarness:
             return HarnessResolution(
                 profile=None,
                 skipped=tuple(
-                    HarnessCandidateSkip(
-                        profile=name, reason=f"binary {name!r} not found on PATH"
-                    )
+                    HarnessCandidateSkip(profile=name, reason=f"binary {name!r} not found on PATH")
                     for name in preference
                 ),
             )
@@ -207,10 +201,7 @@ def test_spec_text_at_ref_reads_the_resolved_path_at_the_given_ref(tmp_path: Pat
     spec.write_text("---\nstatus: ready\n---\n", encoding="utf-8")
     rel_path = spec.relative_to(dispatch_core.canonical_repo_root(tmp_path)).as_posix()
     vcs = _FakeVcsForSpecTextAtRef({("origin/main", rel_path): "---\nstatus: done\n---\n"})
-    assert (
-        dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story)
-        == "---\nstatus: done\n---\n"
-    )
+    assert dispatch_core.spec_text_at_ref(vcs, tmp_path, slug, story) == "---\nstatus: done\n---\n"
 
 
 def test_spec_text_at_ref_none_when_no_local_candidate_resolves(tmp_path: Path) -> None:
@@ -340,10 +331,7 @@ def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -
     from pyforge.marshal.core import policy
 
     repo_root = Path(__file__).resolve().parents[6]
-    policy_path = (
-        repo_root
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
-    )
+    policy_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
     if not policy_path.is_file():
         pytest.skip("marshal-policy.toml not present in this checkout")
 
@@ -433,7 +421,7 @@ def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
 def test_dispatch_journals_and_echoes_what_the_wire_layer_did(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
-    """"Was this session wrapped?" is a RECORDED fact of every dispatch --
+    """ "Was this session wrapped?" is a RECORDED fact of every dispatch --
     echoed in `data` and journaled in the launch outcome entry -- rather
     than an inference from an argv nobody kept. An APPLIED layer raises no
     finding: nothing degraded."""
@@ -696,9 +684,7 @@ def test_run_dispatch_carries_profile_and_reports_skips(
             return Resolution(
                 profile="claude",
                 binary_path="/usr/bin/claude",
-                skipped=(
-                    Skip(profile="cursor", reason="authcheck exited 1 (auth required)"),
-                ),
+                skipped=(Skip(profile="cursor", reason="authcheck exited 1 (auth required)"),),
             )
 
     harness = SkippingHarness()
@@ -806,10 +792,7 @@ def _dispatch(
 
 
 def test_dispatch_branch_carries_its_station() -> None:
-    assert (
-        dispatch_core.dispatch_worktree_branch(_ATLAS, "20.2")
-        == "dispatch/pyforge-atlas/20.2"
-    )
+    assert dispatch_core.dispatch_worktree_branch(_ATLAS, "20.2") == "dispatch/pyforge-atlas/20.2"
     assert dispatch_core.legacy_dispatch_worktree_branch("20.2") == "marshal/20.2"
 
 
@@ -973,9 +956,7 @@ def test_every_branch_consumer_agrees_on_the_one_derivation(tmp_path: Path) -> N
 
     # 1. worktree provisioning
     provision_vcs = RecordingVcs(tmp_path)
-    provisioned = _ensure_dispatch_worktree(
-        provision_vcs, tmp_path, _ATLAS, _SHARED_FEED_KEY
-    )
+    provisioned = _ensure_dispatch_worktree(provision_vcs, tmp_path, _ATLAS, _SHARED_FEED_KEY)
     assert provisioned.branch == expected
     assert [b for _r, _h, b, _base in provision_vcs.added] == [expected]
 
@@ -989,9 +970,7 @@ def test_every_branch_consumer_agrees_on_the_one_derivation(tmp_path: Path) -> N
         facts_vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1028,18 +1007,14 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
     vcs.worktrees[dispatch_core.legacy_dispatch_worktree_branch(_SHARED_FEED_KEY)] = (
         dispatch_core.dispatch_worktree_path(tmp_path, _DOCTOR, _SHARED_FEED_KEY)
     )
-    resolution = dispatch_core.resolve_dispatch_branch(
-        vcs, tmp_path, slug=_ATLAS, story_key=_SHARED_FEED_KEY
-    )
+    resolution = dispatch_core.resolve_dispatch_branch(vcs, tmp_path, slug=_ATLAS, story_key=_SHARED_FEED_KEY)
     assert resolution.refusal is not None and resolution.resolved is None
 
     facts = gather_dispatch_git_facts(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1054,9 +1029,7 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
         fresh,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1109,9 +1082,7 @@ def test_branch_merged_ignores_ancestry_when_the_branch_has_not_diverged(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1142,9 +1113,7 @@ def test_branch_merged_trusts_ancestry_once_the_branch_has_diverged(
         vcs,
         fs=FakeFs(),
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(
-            tmp_path, _ATLAS, _SHARED_FEED_KEY
-        ),
+        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, _SHARED_FEED_KEY),
         story_key=_SHARED_FEED_KEY,
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
@@ -1183,20 +1152,9 @@ def test_gather_dispatch_git_facts_does_not_leak_another_stations_templated_key(
     subjects = ("Merge 22.11 into main",)
     vcs = _SubjectsVcs(tmp_path, subjects)
 
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / _ATLAS
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / _ATLAS / "planning-artifacts" / "sprint-status-ledger.yaml"
     fs = FakeFs()
-    fs.files[ledger_path] = (
-        "development_status:\n"
-        "  1-1-atlas-owns-story: done\n"
-        "  epic-1: done\n"
-    )
+    fs.files[ledger_path] = "development_status:\n  1-1-atlas-owns-story: done\n  epic-1: done\n"
 
     facts = gather_dispatch_git_facts(
         vcs,
@@ -1223,14 +1181,7 @@ def test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_ke
     subjects = ("Merge 22.11 into main",)
     vcs = _SubjectsVcs(tmp_path, subjects)
 
-    ledger_path = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / _ATLAS
-        / "planning-artifacts"
-        / "sprint-status-ledger.yaml"
-    )
+    ledger_path = tmp_path / "_bmad-output" / "projects" / _ATLAS / "planning-artifacts" / "sprint-status-ledger.yaml"
     fs = FakeFs()
     fs.files[ledger_path] = "development_status:\n  22-11-atlas-owns-this-one: done\n"
 
@@ -1282,12 +1233,8 @@ def test_branch_and_worktree_path_sanitize_the_key_identically(
     location, so the two must sanitize the story key the same way. Real keys
     render untouched; a key needing sanitization still agrees."""
     for key in ("22.9", "20.2", "12.1"):
-        assert dispatch_core.dispatch_worktree_branch(_ATLAS, key) == (
-            f"dispatch/{_ATLAS}/{key}"
-        )
-        assert dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, key).name == (
-            f"dispatch-{_ATLAS}-{key}"
-        )
+        assert dispatch_core.dispatch_worktree_branch(_ATLAS, key) == (f"dispatch/{_ATLAS}/{key}")
+        assert dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, key).name == (f"dispatch-{_ATLAS}-{key}")
 
     dirty = "20.1 rc/1"
     branch = dispatch_core.dispatch_worktree_branch(_ATLAS, dirty)
@@ -1301,9 +1248,7 @@ def test_branch_and_worktree_path_sanitize_the_key_identically(
     vcs = RecordingVcs(tmp_path)
     legacy = dispatch_core.legacy_dispatch_worktree_branch(dirty)
     vcs.worktrees[legacy] = worktree
-    resolution = dispatch_core.resolve_dispatch_branch(
-        vcs, tmp_path, slug=_ATLAS, story_key=dirty
-    )
+    resolution = dispatch_core.resolve_dispatch_branch(vcs, tmp_path, slug=_ATLAS, story_key=dirty)
     assert resolution.refusal is None
     assert resolution.resolved == legacy
     assert resolution.legacy is True
@@ -1415,9 +1360,7 @@ def test_dispatch_refuses_when_both_story_and_stories_given(
 
     _init_git_repo(tmp_path)
     monkeypatch.chdir(tmp_path)
-    args = argparse.Namespace(
-        slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json"
-    )
+    args = argparse.Namespace(slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json")
     code = run_dispatch(
         args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
     )
@@ -1436,9 +1379,7 @@ def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
     _seed_spec(tmp_path, slug, "22-11-fleet")
     _seed_spec(tmp_path, slug, "22-12-next")
     monkeypatch.chdir(tmp_path)
-    harness = _FakeLedgerHarness(
-        {slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))}
-    )
+    harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))})
     build_harness = FakeBuildHarness()
     args = argparse.Namespace(
         slug=slug,
@@ -1472,12 +1413,8 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"),)})
     vcs = FakeVcs(tmp_path)
     build_harness = FakeBuildHarness()
-    args = argparse.Namespace(
-        slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json"
-    )
-    code = run_dispatch(
-        args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness
-    )
+    args = argparse.Namespace(slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json")
+    code = run_dispatch(args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness)
     assert code != EXIT_OK
     payload = json.loads(capsys.readouterr().out)
     assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
@@ -1486,10 +1423,7 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     assert build_harness.calls == []
 
 
-_DONE_SPEC = (
-    "---\nstatus: done\nfollowup_review_recommended: false\n"
-    "difficulty: medium\n---\n# spec\n"
-)
+_DONE_SPEC = "---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\n---\n# spec\n"
 _READY_SPEC = "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n"
 
 
@@ -1508,9 +1442,7 @@ def _write_worktree_spec(repo: Path, slug: str, story: str, text: str) -> Path:
     return worktree
 
 
-def test_done_spec_does_not_launch_harness(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_done_spec_does_not_launch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 29.2: worktree spec done + follow-up false → 0 harness launches."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
@@ -1535,14 +1467,11 @@ def test_done_spec_does_not_launch_harness(
 
 
 _BLOCKED_SPEC = (
-    '---\nstatus: blocked\nblocking_condition: "awaiting operator review"\n'
-    "difficulty: medium\n---\n# spec\n"
+    '---\nstatus: blocked\nblocking_condition: "awaiting operator review"\ndifficulty: medium\n---\n# spec\n'
 )
 
 
-def test_blocked_spec_does_not_relaunch_harness(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_blocked_spec_does_not_relaunch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 51.4: worktree spec status: blocked -> MRS-DISP-045, 0 launches, no CAP-4 land attempt."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
@@ -1568,9 +1497,7 @@ def test_blocked_spec_does_not_relaunch_harness(
     assert "awaiting operator review" in finding.message
 
 
-def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """41.2-shaped: DIRTY PR → MRS-DISP-040 names the PR, launch count 0."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
@@ -1600,9 +1527,7 @@ def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
     assert "CHAIN" in finding.message
 
 
-def test_harness_done_lands_via_cap4_without_second_session(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """When CAP-4 can land, no second session and no MRS-DISP-040."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
@@ -1630,16 +1555,11 @@ def test_harness_done_lands_via_cap4_without_second_session(
     assert all(f.code != "MRS-DISP-040" for f in attempt.findings)
 
 
-def test_followup_true_still_launches(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     story = "29-1-followup"
-    followup = (
-        "---\nstatus: done\nfollowup_review_recommended: true\n"
-        "difficulty: medium\n---\n# spec\n"
-    )
+    followup = "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
     _write_worktree_spec(tmp_path, slug, story, followup)
     monkeypatch.chdir(tmp_path)
     harness = FakeBuildHarness()
@@ -1657,9 +1577,7 @@ def test_followup_true_still_launches(
 def test_relocated_spec_path_maps_primary_tree_onto_worktree(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     wt = tmp_path / "wt"
-    rel = Path(
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-5.md"
-    )
+    rel = Path("_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-5.md")
     (repo / rel).parent.mkdir(parents=True)
     (wt / rel).parent.mkdir(parents=True)
     (repo / rel).write_text("primary\n", encoding="utf-8")
@@ -1691,18 +1609,16 @@ def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:
 # --- Story 33.6: dispatch retry floor-raise (spec-adaptive-model-tiering CAP-2) ---
 
 
-def test_dispatch_escalates_model_after_prior_failed_attempts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_escalates_model_after_prior_failed_attempts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prior failed runs >= max_dev_attempts floor-raise dev -> review on launch."""
     import json
 
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.cli.dispatch import _count_prior_failed_dispatch_attempts
     from pyforge.marshal.core import policy
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
     from pyforge.marshal.core.identity import normalize, render_feed_key
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
-    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     def _seed_failed_run(run_id: str) -> None:
         run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
@@ -1805,9 +1721,7 @@ def test_dispatch_escalates_model_after_prior_failed_attempts(
     assert attempt.data.get("session_pid") == 4242
 
 
-def test_dispatch_does_not_escalate_on_first_attempt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_does_not_escalate_on_first_attempt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 33.6: zero prior failures keeps the base dev model."""
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
@@ -2281,16 +2195,14 @@ def test_dispatch_tier_map_leads_without_an_explicit_harness_flag(
     assert build_harness.calls[-1]["model"] == "grok-4.6"
 
 
-def test_dispatch_failure_count_resets_after_completed_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_failure_count_resets_after_completed_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 33.6: a COMPLETED dispatch breaks the prior-failure streak."""
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.cli.dispatch import _count_prior_failed_dispatch_attempts
     from pyforge.marshal.core import policy
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
     from pyforge.marshal.core.identity import normalize, render_feed_key
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
-    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     def _seed_run(run_id: str, verdict: DispatchSessionVerdict) -> None:
         run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
@@ -2410,9 +2322,7 @@ def test_resolve_max_parallel_cli_override_wins() -> None:
 # --------------------------------------------------------------------------
 
 
-def test_dispatch_refuses_triangle_drift_before_launch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_refuses_triangle_drift_before_launch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     point_scope_triangle(tmp_path, "pyforge-steward")
@@ -2433,9 +2343,7 @@ def test_dispatch_refuses_triangle_drift_before_launch(
     assert "marker='pyforge-steward'" in finding.message
 
 
-def test_dispatch_refuses_bmad_active_project_env_disagreement(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dispatch_refuses_bmad_active_project_env_disagreement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     os.environ["BMAD_ACTIVE_PROJECT"] = "pyforge-atlas"
@@ -2468,4 +2376,3 @@ def test_format_scope_drift_matches_bmad_switch_shape() -> None:
     assert text.startswith("scope drift:")
     assert "expected 'project-a'" in text
     assert "marker='project-b'" in text
-

@@ -226,15 +226,10 @@ def watch(
     resolved_now = now or _default_now
     resolved_sleep = sleep or _time.sleep
     resolved_pull = pull or pull_prototype
-    resolved_state_path = (
-        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
-    )
+    resolved_state_path = repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     clamped = _clamp_interval(interval)
 
-    decks = {
-        slug: _make_deck(slug, state_path=resolved_state_path, interval=clamped)
-        for slug in slugs
-    }
+    decks = {slug: _make_deck(slug, state_path=resolved_state_path, interval=clamped) for slug in slugs}
     poll_counts = {slug: 0 for slug in slugs}
     due_in = {slug: 0.0 for slug in slugs}  # seconds until each deck's next poll
 
@@ -257,10 +252,7 @@ def watch(
         )
         poll_counts[next_slug] += 1
         due_in[next_slug] = deck.interval
-        if (
-            max_polls_per_deck is not None
-            and poll_counts[next_slug] >= max_polls_per_deck
-        ):
+        if max_polls_per_deck is not None and poll_counts[next_slug] >= max_polls_per_deck:
             if all(count >= max_polls_per_deck for count in poll_counts.values()):
                 return
             due_in[next_slug] = float("inf")  # this deck is done; let others catch up

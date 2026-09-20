@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import pytest
 from kedro.io.core import DatasetError
+
 from pyforge.atlas.datasets.rate_limit import RateLimitedScheduler
 from pyforge.atlas.datasets.refresh import RefreshRequest
 from pyforge.atlas.datasets.vcs_sources import (
@@ -81,9 +82,7 @@ def test_fetch_one_acquires_a_rate_limit_token(tmp_path):
         return orig_acquire(n)
 
     sched.acquire = spy_acquire
-    ds = VcsHostSeedDataset(
-        url="https://gitlab.com/api/v4", host="gitlab", filepath=str(tmp_path), scheduler=sched
-    )
+    ds = VcsHostSeedDataset(url="https://gitlab.com/api/v4", host="gitlab", filepath=str(tmp_path), scheduler=sched)
     ds.fetch_one("group/project", fetcher=lambda ident: [{"name": "v1.0"}])
     assert calls == [1]
 
@@ -143,9 +142,7 @@ def test_fetch_one_exhausts_retries_and_raises(tmp_path):
 
 def test_load_many_success_persists_and_load_reads_it_back(tmp_path):
     ds = VcsHostSeedDataset(url="https://gitlab.com/api/v4", host="gitlab", filepath=str(tmp_path))
-    out = ds.load_many(
-        [("numpy", "group/numpy")], fetcher=lambda ident: [{"name": "v1.26.0"}]
-    )
+    out = ds.load_many([("numpy", "group/numpy")], fetcher=lambda ident: [{"name": "v1.26.0"}])
     assert out.loc[0, "upstream_version"] == "v1.26.0"
     assert not ds.is_stale()
     loaded = ds.load()
@@ -273,9 +270,7 @@ _REGISTRY_FIXTURES = {
 @pytest.mark.parametrize("registry", sorted(_REGISTRY_FIXTURES))
 def test_registry_extractor_shapes(registry, tmp_path):
     payload, expected = _REGISTRY_FIXTURES[registry]
-    ds = RegistryUpstreamDataset(
-        url="https://example.invalid", registry=registry, filepath=str(tmp_path / registry)
-    )
+    ds = RegistryUpstreamDataset(url="https://example.invalid", registry=registry, filepath=str(tmp_path / registry))
     out = ds.load_many([("pkg", "pkg")], fetcher=lambda ident: payload)
     assert out.loc[0, "upstream_version"] == expected
 

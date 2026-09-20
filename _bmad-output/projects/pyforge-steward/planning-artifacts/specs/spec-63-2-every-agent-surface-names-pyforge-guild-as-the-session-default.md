@@ -56,3 +56,15 @@ Minted 2026-09-18 from `epics.md` so `marshal factory dispatch` can resolve `spe
 **And** `governance-currency`, `general-docs-consistency-check` and `llms-full-check` are green
 **Status:** backlog
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `8a6aefcd60` (2026-09-16, "steward 63.2 + mint 63.3/63.4: every agent surface names pyforge-guild; default is its alias"). Ledger row `63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/hooks/session-start.sh`, `.cursor/environment.json`, `.github/workflows/copilot-setup-steps.yml`, `AGENTS.md`, `CLAUDE.md`, `_bmad-output/PROJECTS.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`, `docs/dreams/README.md`, `docs/reference/README.md`, `docs/reference/library-llms-full.md` (+3 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

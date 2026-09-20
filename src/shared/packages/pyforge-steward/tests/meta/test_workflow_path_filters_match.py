@@ -40,9 +40,7 @@ def _paths_filter(trigger: object) -> list[str] | None:
 
 
 def test_workflow_pull_request_and_push_path_filters_match():
-    workflow_files = sorted(WORKFLOWS_DIR.glob("*.yml")) + sorted(
-        WORKFLOWS_DIR.glob("*.yaml")
-    )
+    workflow_files = sorted(WORKFLOWS_DIR.glob("*.yml")) + sorted(WORKFLOWS_DIR.glob("*.yaml"))
     assert workflow_files, f"no workflow files found under {WORKFLOWS_DIR}"
 
     mismatches: dict[str, tuple[list[str], list[str]]] = {}
@@ -75,6 +73,5 @@ def test_workflow_pull_request_and_push_path_filters_match():
         "is broken"
     )
     assert not mismatches, (
-        "on.pull_request.paths and on.push.paths must be identical "
-        f"(DW-10-3-10); mismatched workflow(s): {mismatches}"
+        f"on.pull_request.paths and on.push.paths must be identical (DW-10-3-10); mismatched workflow(s): {mismatches}"
     )

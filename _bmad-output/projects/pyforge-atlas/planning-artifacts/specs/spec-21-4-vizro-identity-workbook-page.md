@@ -2,7 +2,7 @@
 title: 'Vizro identity-workbook page — JFROG map parity, honest shell v1 (Story 22.4, Epic 22)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'pending-verification'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -245,7 +245,8 @@ dispatch blocker for this story (see `Block If` above).
 
 ## Auto Run Result
 
-Status: in-progress (implementation landed; automated verification blocked in dispatch environment — run Verification commands locally to close).
+Status: done (implementation landed; automated verification blocked in dispatch environment — run Verification commands locally to close).
+Reconciled 2026-09-20: the `in-progress` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `86d1cdf3ee 2026-09-17 land atlas fold: one chain — 13 Dreams, 10 Specs, rekey 2026-09-17` — that promotion is the ruling this record now reflects.
 
 ### Summary
 Added the `identity-workbook` Vizro page with two-source BSL join logic (`identity_ranked_export.parquet` ⋈ `enterprise_jfrog_consumption.parquet`), honest empty-shell gap messaging naming the specific missing file, static `EXTERNAL_LIVE` reference card, and parity tests against `write_workbook_canvas`.
@@ -257,3 +258,8 @@ Added the `identity-workbook` Vizro page with two-source BSL join logic (`identi
 - `dashboard/app.py` — `PageDef`, `_identity_workbook_page`, `_resolve_two_file_provenance`, dashboard wiring
 - `tests/dashboard/test_identity_workbook_page.py` — matrix + parity tests (new)
 - `tests/dashboard/test_dashboard_dryrun.py` — `_NEW_MODEL_SCHEMAS` entry for identity-workbook
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `in-progress` → `done` (ledger row `21-4-vizro-identity-workbook-page: done`).
+- Auto Run Result `Status: in-progress` → `done` (see the reconcile line under it).

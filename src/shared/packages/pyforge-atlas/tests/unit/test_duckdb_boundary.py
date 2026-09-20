@@ -18,14 +18,7 @@ from pyforge.atlas.duckdb_writer import DUCKDB_WRITER_MODULE
 REPO_ROOT = Path(__file__).resolve().parents[6]
 PACKAGES_SRC = REPO_ROOT / "src" / "shared" / "packages"
 PLATFORM_SRC = REPO_ROOT / "src" / "platform"
-WRITER_MODULE = (
-    PACKAGES_SRC
-    / "pyforge-atlas"
-    / "src"
-    / "pyforge"
-    / "atlas"
-    / "duckdb_writer.py"
-)
+WRITER_MODULE = PACKAGES_SRC / "pyforge-atlas" / "src" / "pyforge" / "atlas" / "duckdb_writer.py"
 ATLAS_SRC = PACKAGES_SRC / "pyforge-atlas" / "src" / "pyforge" / "atlas"
 _ESTATE_SCAN_ROOTS = (PACKAGES_SRC, PLATFORM_SRC)
 _SKIP_PARTS = frozenset({"tests", "__pycache__"})
@@ -79,9 +72,7 @@ def _is_memory_target(arg: ast.expr | None) -> bool:
         return True
     if isinstance(arg, ast.JoinedStr):
         joined = "".join(
-            part.value
-            for part in arg.values
-            if isinstance(part, ast.Constant) and isinstance(part.value, str)
+            part.value for part in arg.values if isinstance(part, ast.Constant) and isinstance(part.value, str)
         )
         return joined == ":memory:"
     return False
@@ -125,9 +116,7 @@ def test_duckdb_boundary_writer_module_is_declared_once() -> None:
     text = WRITER_MODULE.read_text(encoding="utf-8")
     assert f'DUCKDB_WRITER_MODULE = "{DUCKDB_WRITER_MODULE}"' in text
     writers = _writer_modules_in_atlas()
-    assert writers == [WRITER_MODULE], (
-        f"expected exactly one atlas writer module, got {[p.name for p in writers]}"
-    )
+    assert writers == [WRITER_MODULE], f"expected exactly one atlas writer module, got {[p.name for p in writers]}"
 
 
 def test_duckdb_boundary_estate_connect_policy() -> None:
@@ -147,8 +136,7 @@ def test_duckdb_boundary_guard_detects_bare_file_connect(tmp_path: Path) -> None
 def test_duckdb_boundary_guard_rejects_string_read_only_false(tmp_path: Path) -> None:
     bad = tmp_path / "bad_string_read_only.py"
     bad.write_text(
-        "import duckdb\n"
-        "con = duckdb.connect('/data/atlas.duckdb', read_only=\"false\")\n",
+        "import duckdb\ncon = duckdb.connect('/data/atlas.duckdb', read_only=\"false\")\n",
         encoding="utf-8",
     )
     with pytest.raises(AssertionError, match="read_only=True or :memory:"):

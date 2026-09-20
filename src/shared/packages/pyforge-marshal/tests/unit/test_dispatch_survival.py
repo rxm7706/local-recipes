@@ -166,10 +166,7 @@ def test_reconcile_unsupervised_verdict_from_git_merge() -> None:
         branch_merged=True,
         story_merged_on_main=False,
     )
-    assert (
-        reconcile_unsupervised_verdict(session_alive=False, git=git)
-        == DispatchSessionVerdict.COMPLETED
-    )
+    assert reconcile_unsupervised_verdict(session_alive=False, git=git) == DispatchSessionVerdict.COMPLETED
 
 
 def test_gather_journal_reads_timing_and_preserve() -> None:
@@ -371,9 +368,7 @@ def test_dispatch_resume_respawns_dead_supervisor(monkeypatch: pytest.MonkeyPatc
     )
     assert code == EXIT_OK
     assert process.spawn_calls
-    assert any(
-        line for _p, line, _f in fs.appended if "dispatch-operator-resume" in line
-    )
+    assert any(line for _p, line, _f in fs.appended if "dispatch-operator-resume" in line)
 
 
 def test_failed_patch_path_matches_epic1_discipline() -> None:

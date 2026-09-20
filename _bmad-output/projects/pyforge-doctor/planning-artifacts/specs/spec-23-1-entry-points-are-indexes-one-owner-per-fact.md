@@ -2,7 +2,7 @@
 title: '23.1: Entry points are indexes; one owner per fact'
 type: 'fix'
 created: '2026-09-16'
-status: 'ready'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -42,3 +42,17 @@ Parent Spec capability: `spec-docs-shelf-alignment CAP-1`.
 Surface: docs/MAP.md, README.md, CLAUDE.md, AGENTS.md..
 Ledger key: `23-1-entry-points-are-indexes-one-owner-per-fact`.
 Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spec-23-1-entry-points-are-indexes-one-owner-per-fact.md`.
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `9348c8d01f` (2026-09-18, "Merge pull request #1437 from rxm7706/dispatch/pyforge-doctor/23.1"). Ledger row `23-1-entry-points-are-indexes-one-owner-per-fact: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `CLAUDE.md`, `docs/reference/github-workflows.md`, `docs/reference/judgement-vocabulary.md`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `ready` → `done` (ledger row `23-1-entry-points-are-indexes-one-owner-per-fact: done`).
+- `## Auto Run Result` reconstructed from git (none survived).

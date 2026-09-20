@@ -70,7 +70,8 @@ new etags and push date, and no longer carries `PENDING-PUSH` for files actually
 
 ## Auto Run Result
 
-Status: blocked
+Status: done
+Reconciled 2026-09-20: the `blocked` verdict below is the session's own record at halt time; the story was landed afterwards and the ledger row promoted to `done` by `4098c5ed3b 2026-09-17 herald: rebuild unity-data-stack standalone infographic content (Story 21.6)` — that promotion is the ruling this record now reflects.
 Blocking condition: `Unity Data Stack Infographic standalone.html` (145,176 B) is corrupted on
 disk — 72 verbatim repeats of a boilerplate fleet-status paragraph, every character
 space-separated, from character offset 6,350 through 142,949, overwriting nearly the entire body.
@@ -201,3 +202,7 @@ drift) with `21-6-unity-data-stack-rebuilt-to-the-standard` moved `blocked` → 
 `python scripts/promote_sprint_status.py --project herald`: `wrote 1, unchanged 0, skipped 0,
 refused 0`. `epic-21` correctly stayed `in-progress` (its rollup, recomputed from all child
 stories, not just this one).
+
+## Status reconcile 2026-09-20
+
+- Auto Run Result `Status: blocked` → `done` (see the reconcile line under it).

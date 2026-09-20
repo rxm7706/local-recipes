@@ -169,9 +169,7 @@ def _grid_websocket_renderer(view: View) -> Callable[[Document], None]:
 
 
 WIDGETS: dict[str, Widget] = {
-    "grid": Widget(
-        name="grid", static_renderer=_render_grid, websocket_renderer=_grid_websocket_renderer
-    ),
+    "grid": Widget(name="grid", static_renderer=_render_grid, websocket_renderer=_grid_websocket_renderer),
 }
 
 
@@ -181,6 +179,4 @@ def get_widget(name: str) -> Widget:
     widget = WIDGETS.get(name)
     if widget is not None:
         return widget
-    raise KeyError(
-        f"unknown widget type {name!r}; known widget types: {', '.join(WIDGETS)}"
-    )
+    raise KeyError(f"unknown widget type {name!r}; known widget types: {', '.join(WIDGETS)}")

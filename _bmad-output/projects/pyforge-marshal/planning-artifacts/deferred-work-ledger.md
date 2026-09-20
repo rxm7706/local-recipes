@@ -6481,3 +6481,25 @@ status: open
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-53-1: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session.md`
+  summary: reclassify_pre_existing_gate_findings can downgrade a genuine S-13.7 guard failure (MRS-GATE-001) to a non-blocking MRS-GATE-014 WARN when this story's own drift is on a non-.py governed file (invisible to extract_failure_paths_from_verify_output's four .py-only patterns) and the guard's combined output also names an unrelated, genuinely pre-existing drift finding on a .py file elsewhere in the repo -- that unrelated .py path is the only one extracted, it falls outside this story's blast radius,... [truncated, 604 chars total]
+  evidence: extract_failure_paths_from_verify_output (core/dispatch_verification.py) restricts all four regexes to .py paths; gather_spec_surface's "drift" finding detail (pyforge-doctor core/chain.py, _drift_findings) embeds the governed path in prose with no extension restriction, so a non-.py drift line never matches extraction while a co-occurring .py drift line elsewhere does -- reclassify_pre_existing_gate_findings' any()-over-extracted-paths check then sees only the unrelated, out-of-blast-radius .py path and downgrades. Root cause predates this story (extract_failure_paths_from_verify_output's .py-only scope is unchanged by this diff); this story is what first routes the S-13.7 guard's broad, multi-path, mixed-extension output through it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py:81 (extract_failure_paths_from_verify_output), src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispat... [truncated, 262 chars total]
+  origin: spec-deferred 8762706175c0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-31-1: Dispatch structure-graph — shared index provisioning via sync-from-base was drafted after the 28.31 spike but never minted as a story.
+
+- source_spec: `planning-artifacts/specs/spec-28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session.md`
+  summary: A draft story spec (`spec-28-34-dispatch-structure-graph-shared-index-provisioning.md`, written by the 28.31 session's auto-checkpoint `6a674c4f14` on 2026-09-10) proposed provisioning the dispatch structure-graph index from a shared base instead of per-worktree; it never got a ledger row, an epics.md story, or a CAP, and Epic 28 closed done without it. Found by the 2026-09-20 fleet consistency pass as the one tracked story spec with no ledger row.
+  evidence: `git log -- _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-*` shows only the 28.31 auto-checkpoint; `sprint-status-ledger.yaml` has no `28-34-*` key; `epics.md` has no `### Story 28.34`.
+  location: archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-34-dispatch-structure-graph-shared-index-provisioning.md (archived 2026-09-20, never deleted — steward 41.1)
+  origin: fleet consistency pass 2026-09-20 (spec-status fallout PR)
+  severity: low
+  promoted: 2026-09-20
+  status: open — mint as a story (new epic, since Epic 28 is done) only if the token-economy layers are switched on and dispatch index provisioning cost is measured again; until then the draft is reference material.

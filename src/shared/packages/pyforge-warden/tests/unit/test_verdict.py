@@ -71,29 +71,21 @@ def test_exit_sigint_constant():
 
 def test_compose_indeterminate_outranks_warn():
     warn_driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad")
-    ind_driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:requests"
-    )
+    ind_driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:requests")
     rungs = [(Status.WARN, warn_driver), (Status.INDETERMINATE, ind_driver)]
     assert compose(rungs) == (Status.INDETERMINATE, ind_driver)
     assert compose(reversed(rungs)) == (Status.INDETERMINATE, ind_driver)
 
 
 def test_compose_error_outranks_policy_violation():
-    policy_driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:requests@2.31.0"
-    )
-    error_driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:engine-timeout:osv"
-    )
+    policy_driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-x:requests@2.31.0")
+    error_driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="indeterminate:engine-timeout:osv")
     rungs = [(Status.POLICY_VIOLATION, policy_driver), (Status.ERROR, error_driver)]
     assert compose(rungs) == (Status.ERROR, error_driver)
 
 
 def test_compose_winner_driver_propagates():
-    winner_driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-y:numpy@1.0"
-    )
+    winner_driver = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-y:numpy@1.0")
     status, driver = compose(
         [
             (Status.CLEAN, None),
@@ -135,9 +127,7 @@ def test_compose_equal_rank_tie_break_is_feed_order_independent():
     """Equal-rank ties resolve to the smallest (axis, finding_id) driver,
     regardless of feed order."""
     small = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:aaa")
-    big = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-zzzz:zlib@1.3"
-    )
+    big = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-zzzz:zlib@1.3")
     rungs = [(Status.POLICY_VIOLATION, big), (Status.POLICY_VIOLATION, small)]
     assert compose(rungs) == (Status.POLICY_VIOLATION, small)
     assert compose(reversed(rungs)) == (Status.POLICY_VIOLATION, small)
@@ -185,22 +175,14 @@ def test_only_exact_reaches_clean_across_current_members():
 
 
 def test_allow_empty_downgrades_the_empty_extraction_driver_to_zero():
-    driver = StatusDriver(
-        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
-    )
-    assert (
-        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
-    )
+    driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan")
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
 
 
 def test_allow_empty_false_leaves_the_empty_extraction_driver_at_one():
-    driver = StatusDriver(
-        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
-    )
+    driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan")
     assert exit_code_for(Status.INDETERMINATE, driver=driver) == 1
-    assert (
-        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
-    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
 
 
 def test_allow_empty_with_no_driver_stays_at_one():
@@ -227,15 +209,11 @@ def test_allow_empty_never_leaks_to_an_unrelated_indeterminate_cause(finding_id)
 
 
 def test_allow_empty_never_affects_non_indeterminate_statuses():
-    driver = StatusDriver(
-        axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
-    )
+    driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan")
     for status in Status:
         if status is Status.INDETERMINATE:
             continue
-        assert exit_code_for(
-            status, driver=driver, allow_empty=True
-        ) == exit_code_for(status)
+        assert exit_code_for(status, driver=driver, allow_empty=True) == exit_code_for(status)
 
 
 def test_all_clean_guard_socket_proven_total_not_dead(component_factory):
@@ -252,10 +230,7 @@ def test_all_clean_guard_socket_proven_total_not_dead(component_factory):
         resolved_scan_set=(),
     )
     assert inventory.count == 3
-    rungs = [
-        (match_level_rung(component.cve_match_level), None)
-        for component in inventory.components
-    ]
+    rungs = [(match_level_rung(component.cve_match_level), None) for component in inventory.components]
     assert all(status is Status.CLEAN for status, _ in rungs)
     assert not any(status is Status.INDETERMINATE for status, _ in rungs)
     status, driver = compose(rungs)

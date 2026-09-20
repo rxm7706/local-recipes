@@ -15,8 +15,7 @@ import inspect
 
 import pandas as pd
 
-from pyforge.atlas.datasets import BigQueryDownloadsDataset
-from pyforge.atlas.datasets import request_datasets
+from pyforge.atlas.datasets import BigQueryDownloadsDataset, request_datasets
 
 
 class _StubJob:
@@ -62,8 +61,8 @@ def test_cost_estimate_is_derived_from_dry_run_bytes_not_a_literal():
 def test_preflight_reads_bytes_from_the_clients_dry_run():
     # the estimate must come from THIS run's dry-run, so different table states yield
     # different estimates (the exact failure mode the 2016 literal hid).
-    small = _ds(_StubBQClient(dry_bytes=30_000_000_000))    # 30 GB
-    big = _ds(_StubBQClient(dry_bytes=9_500_000_000_000))   # 9.5 TB (the real 2026 cost)
+    small = _ds(_StubBQClient(dry_bytes=30_000_000_000))  # 30 GB
+    big = _ds(_StubBQClient(dry_bytes=9_500_000_000_000))  # 9.5 TB (the real 2026 cost)
     q = "SELECT 1 WHERE timestamp >= TIMESTAMP('a') AND timestamp < TIMESTAMP('b')"
     small_bytes, small_usd = small.preflight(q)
     big_bytes, big_usd = big.preflight(q)

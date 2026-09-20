@@ -58,3 +58,16 @@ against its already-promoted twin is future work, not claimed here.
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station verify
   suite; contract mint, no new per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `754b21ea86` (2026-08-28, "fix(doctor 8.7): promoter learns to copy already-identified-but-untracked entries"); also `4abc3e0e68` (2026-08-26, "Record Story 8.7 as done in the tracked epics and spec."). Ledger row `8-7-the-promoter-learns-to-copy-already-identified-but-untracked-entries-too: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md`, `scripts/deferred_work_promote.py`, `tests/scripts/test_deferred_work_promote.py`
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

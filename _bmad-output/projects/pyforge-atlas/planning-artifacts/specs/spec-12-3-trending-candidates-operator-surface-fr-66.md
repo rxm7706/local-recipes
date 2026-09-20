@@ -2,7 +2,7 @@
 title: 'trending-candidates operator surface — read-only CLI/MCP query over classified candidates (S-13.3, FR-66/CAP-3)'
 type: 'feature'
 created: '2026-08-09'
-status: shipped
+status: done
 baseline_revision: '0750df1192dda873082d8b47f863112c920aab3c'
 final_revision: '96991f25085b1d647a05b58dba716b06d5a3db73'
 review_loop_iteration: 0
@@ -308,3 +308,7 @@ the envelope; any consumer written against the previous shape is unaffected.
 fixes a previous pass wrongly believed complete, plus an additive change to the envelope
 contract and the table's default human output. An independent pass is worth it; the trend
 across passes is that each one finds fewer and shallower defects.
+
+## Status reconcile 2026-09-20
+
+- frontmatter `status` `shipped` → `done` (ledger row `12-3-trending-candidates-operator-surface-fr-66: done`).

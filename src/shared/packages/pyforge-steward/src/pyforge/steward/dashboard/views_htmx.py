@@ -97,13 +97,13 @@ def backlog_htmx_view(request: Any) -> Any:
         }.get(s.status, "background:#6e7681;color:#fff")
 
         rows.append(f"""
-        <tr id="story-{esc(s.station)}-{esc(s.story_id.replace('.', '-'))}">
+        <tr id="story-{esc(s.station)}-{esc(s.story_id.replace(".", "-"))}">
           <td><code>{esc(s.station)}</code></td>
           <td><code>{esc(s.story_id)}</code></td>
           <td><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold;{badge_cls}">{esc(s.status.upper())}</span></td>
           <td><code>{esc(s.passport_id[:8])}...</code></td>
-          <td>{esc(s.jira_key or '-')}</td>
-          <td>{esc(s.github_item_id or '-')}</td>
+          <td>{esc(s.jira_key or "-")}</td>
+          <td>{esc(s.github_item_id or "-")}</td>
           <td>{esc(s.title)}</td>
         </tr>
         """)
@@ -179,9 +179,7 @@ def standup_htmx_view(request: Any) -> Any:
     from django.http import HttpResponse
 
     reading = compute_glass_reading(direction="inbound")
-    fragment = _render_glass_fragment(
-        reading, "Standup — any news from the vendor?", "glass-standup"
-    )
+    fragment = _render_glass_fragment(reading, "Standup — any news from the vendor?", "glass-standup")
     response = HttpResponse(fragment, content_type="text/html")
     response["Cache-Control"] = "no-store"
     return response
@@ -197,9 +195,7 @@ def shipped_htmx_view(request: Any) -> Any:
     from django.http import HttpResponse
 
     reading = compute_glass_reading(direction="inbound")
-    fragment = _render_glass_fragment(
-        reading, "Shipped — what testers can currently rely on", "glass-shipped"
-    )
+    fragment = _render_glass_fragment(reading, "Shipped — what testers can currently rely on", "glass-shipped")
     response = HttpResponse(fragment, content_type="text/html")
     response["Cache-Control"] = "no-store"
     return response

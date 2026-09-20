@@ -64,21 +64,15 @@ def test_adapter_probe_binary_absent_makes_no_subprocess_call(harness, monkeypat
 # --- binary present, both subprocess calls succeed ---------------------------
 
 
-def test_adapter_probe_binary_present_captures_version_and_probe_output(
-    harness, monkeypatch, tmp_path
-):
+def test_adapter_probe_binary_present_captures_version_and_probe_output(harness, monkeypatch, tmp_path):
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
-    version_result = subprocess.CompletedProcess(
-        args=[], returncode=0, stdout="claude 1.2.3\n", stderr=""
-    )
+    version_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="claude 1.2.3\n", stderr="")
     probe_result = subprocess.CompletedProcess(
         args=[], returncode=0, stdout='{"schema_version": 2, "cli": "claude"}', stderr=""
     )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert probe.binary_present is True
@@ -96,12 +90,8 @@ def test_adapter_probe_version_failure_degrades_only_binary_version(harness, mon
 
     monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
     version_result = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="boom")
-    probe_result = subprocess.CompletedProcess(
-        args=[], returncode=0, stdout='{"schema_version": 2}', stderr=""
-    )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    probe_result = subprocess.CompletedProcess(args=[], returncode=0, stdout='{"schema_version": 2}', stderr="")
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert probe.binary_version is None
@@ -111,19 +101,13 @@ def test_adapter_probe_version_failure_degrades_only_binary_version(harness, mon
 # --- probe-adapter subprocess failure degrades only probe_output -------------
 
 
-def test_adapter_probe_probe_adapter_nonzero_exit_degrades_only_probe_output(
-    harness, monkeypatch, tmp_path
-):
+def test_adapter_probe_probe_adapter_nonzero_exit_degrades_only_probe_output(harness, monkeypatch, tmp_path):
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
-    version_result = subprocess.CompletedProcess(
-        args=[], returncode=0, stdout="claude 1.2.3\n", stderr=""
-    )
+    version_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="claude 1.2.3\n", stderr="")
     probe_result = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="fail")
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert probe.binary_version == "1.2.3"
@@ -131,9 +115,7 @@ def test_adapter_probe_probe_adapter_nonzero_exit_degrades_only_probe_output(
     assert probe.probe_note == "bmad-loop probe-adapter exited 1"
 
 
-def test_adapter_probe_probe_adapter_timeout_degrades_only_probe_output(
-    harness, monkeypatch, tmp_path
-):
+def test_adapter_probe_probe_adapter_timeout_degrades_only_probe_output(harness, monkeypatch, tmp_path):
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
@@ -162,18 +144,14 @@ def test_adapter_probe_output_is_redacted_at_capture(harness, monkeypatch, tmp_p
     probe_result = subprocess.CompletedProcess(
         args=[], returncode=0, stdout=json.dumps({"help": f"use {token} to authenticate"}), stderr=""
     )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert token not in probe.probe_output
     assert "REDACTED" in probe.probe_output
 
 
-def test_adapter_probe_output_redacts_secret_shaped_field_names_not_just_token_regexes(
-    harness, monkeypatch, tmp_path
-):
+def test_adapter_probe_output_redacts_secret_shaped_field_names_not_just_token_regexes(harness, monkeypatch, tmp_path):
     """Review finding (Blind Hunter): the original implementation wrapped
     the WHOLE probe-adapter JSON document as one opaque string value
     (``{"text": <the whole document>}``) before redacting -- `to_redacted`'s
@@ -195,9 +173,7 @@ def test_adapter_probe_output_redacts_secret_shaped_field_names_not_just_token_r
         stdout=json.dumps({"session_token": secret_value, "cli": "claude"}),
         stderr="",
     )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert secret_value not in probe.probe_output
@@ -206,9 +182,7 @@ def test_adapter_probe_output_redacts_secret_shaped_field_names_not_just_token_r
     assert parsed["cli"] == "claude"  # a non-secret-shaped field survives untouched
 
 
-def test_adapter_probe_output_falls_back_to_opaque_redaction_for_non_json_output(
-    harness, monkeypatch, tmp_path
-):
+def test_adapter_probe_output_falls_back_to_opaque_redaction_for_non_json_output(harness, monkeypatch, tmp_path):
     """A well-formed-JSON-document assumption must not crash on a shape
     surprise -- non-JSON stdout still redacts (opaquely) rather than
     raising or silently passing through unredacted."""
@@ -220,9 +194,7 @@ def test_adapter_probe_output_falls_back_to_opaque_redaction_for_non_json_output
     probe_result = subprocess.CompletedProcess(
         args=[], returncode=0, stdout=f"not json at all, contains {token}", stderr=""
     )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert probe.probe_output is not None
@@ -239,15 +211,9 @@ def test_adapter_probe_notes_when_redaction_itself_fails(harness, monkeypatch, t
 
     monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
     version_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="claude 1.0\n", stderr="")
-    probe_result = subprocess.CompletedProcess(
-        args=[], returncode=0, stdout=json.dumps({"cli": "claude"}), stderr=""
-    )
-    monkeypatch.setattr(
-        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
-    )
-    monkeypatch.setattr(
-        module.BmadLoopHarness, "_redact_probe_output", staticmethod(lambda text: None)
-    )
+    probe_result = subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps({"cli": "claude"}), stderr="")
+    monkeypatch.setattr(module.subprocess, "run", _fake_run_dispatch(version_result, probe_result))
+    monkeypatch.setattr(module.BmadLoopHarness, "_redact_probe_output", staticmethod(lambda text: None))
 
     probe = harness.adapter_probe("claude", tmp_path)
     assert probe.probe_output is None

@@ -138,3 +138,16 @@ lazily, and as a string constant. S-6.10 generalises that shape across every sou
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `2e24406414` (2026-08-09, "doctor 6.7: forward_dependency comes home, and the harness coupling is decided"); also `451ba02272` (2026-08-07, "marshal: Story 6.7 — Entry-file family drift check, detect-only"). Ledger row `6-7-forward_dependency-comes-home-and-the-harness-coupling-is-decided: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `.claude/skills/conda-forge-expert/tests/fixtures/error_logs/unmatched.log`, `.claude/skills/conda-forge-expert/tests/meta/test_actionable_statuses_conformance.py`, `.gitignore`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md`, `_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/.memlog.md`, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/.memlog.md`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json`, `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py` (+5 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

@@ -455,9 +455,7 @@ GUARDED_EXIT_CODES: frozenset[int] = _LATTICE.exit_codes | {
 # admitted domain (EXIT_USAGE, and the SCOPE_VIOLATION/GATE_FAILED rungs)
 # names a judgment Marshal itself makes -- relaying a child's coincidental
 # 2/3/4 would assert one Marshal never evaluated. See `relay_exit_code`.
-_RELAY_PASSTHROUGH: frozenset[int] = frozenset(
-    {EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT}
-)
+_RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT})
 
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
@@ -1234,14 +1232,11 @@ def classify(code: str) -> Verdict:
         return _CLASSIFY_TABLE[code]
     except KeyError as exc:
         raise ValueError(
-            f"finding code {code!r} is registered but has no lattice "
-            "classification in _CLASSIFY_TABLE"
+            f"finding code {code!r} is registered but has no lattice classification in _CLASSIFY_TABLE"
         ) from exc
 
 
-def compute_verdict(
-    findings: Iterable[Finding], *, floor: Verdict = Verdict.CLEAN
-) -> Verdict:
+def compute_verdict(findings: Iterable[Finding], *, floor: Verdict = Verdict.CLEAN) -> Verdict:
     """The verdict for a command: the maximum (strongest, per
     ``LATTICE_ORDER``) over every emitted finding's classification, plus a
     command-declared ``floor`` (AD-31). Empty ``findings`` returns ``floor``
@@ -1254,9 +1249,7 @@ def compute_verdict(
         # element is this module's fail-loud ValueError, not a raw
         # AttributeError from deep inside the loop.
         if not isinstance(finding, Finding):
-            raise ValueError(
-                f"findings must contain only Finding instances, got {finding!r}"
-            )
+            raise ValueError(f"findings must contain only Finding instances, got {finding!r}")
         candidate = classify(finding.code)
         if _LATTICE.rank(candidate) < _LATTICE.rank(winner):
             winner = candidate

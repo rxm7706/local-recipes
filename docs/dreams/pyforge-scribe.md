@@ -125,6 +125,35 @@ Story 49.7 (Unifying CAP-14), not re-minted here.
   scribe capability. Also closed this date on `spec-pyforge-scribe`'s memlog: the ADR-numbering
   question (kept Scribe's own vocabulary; the read-a-target-repo's-`docs/adr/` half split off as
   deferred work), and the two remaining body questions, both answered in code.
+- **2026-09-20 (evening) — The managed instruction block carries no aspiration.** Found at the
+  bmad-project-context refresh closing the fleet consistency pass: two `TODO:` lines had stood in
+  `AGENTS.md`'s `bmad:context` block since 2026-09-04 (a commit-msg hook; repo-level ruff/mypy tasks),
+  never minted as a Story, so nothing ever scheduled them — exactly the "aspirational state" the
+  skill's own best-practices exclude ("describe what is; intent belongs in specs"). Steward now owns
+  the two capabilities (CAP-153 / CAP-154, Epic 66); scribe owns the guard: the instruction-surface
+  parity meta-test (CAP-27) reds a `TODO:` / `FIXME:` / "not yet landed" inside the managed block, so a
+  decision that has no Story cannot hide as a line agents pay for every session. Kinships:
+  `spec-pyforge-scribe` CAP-30 → Epic 20; steward CAP-154 retires the two lines it guards.
+- **2026-09-20 — Claude Code reads `AGENTS.md` natively now; the surface must be version-aware,
+  not version-dependent.** Operator ask 09:35Z after Claude Code 2.1.277 (2026-09-18) shipped
+  a built-in `agents-md` mod (research: the mod's README and source in `anthropics/claude-code
+  mods/agents-md`, and the strings in our own installed 2.1.278 binary). Facts that matter: four
+  modes via the `instructionFiles` option (`/config` → "Project instructions"); the default
+  `claude-md-or-agents-md` *stays out of any project that has a `CLAUDE.md`* — so in this repo the
+  mod does nothing today and `AGENTS.md` still arrives only through `CLAUDE.md`'s bare
+  `@AGENTS.md` import; `claude-md-and-agents-md` loads every `AGENTS.md` beside `CLAUDE.md`,
+  deduped by path then content (an `@`-imported file is never loaded twice) and attaches *nested*
+  `AGENTS.md` files on `Read` — which is the only way the atlas child
+  `src/shared/packages/pyforge-atlas/AGENTS.md` ever reaches Claude Code; the option lives in
+  user settings / `--settings` / managed settings, never the project's `.claude/settings.json`;
+  unavailable on Bedrock / Vertex / Foundry. So: keep the import as the floor (older versions
+  and the enterprise runtimes), pin the mode for the Claude runtimes we drive (operators' user
+  settings; marshal's dispatch launch — that half is marshal's, Story 46.11), state the
+  version/mode in the harness table, collapse the one duplication the parity test missed
+  (`CLAUDE.md` "Behavioral Guidelines" vs `AGENTS.md` "Behavioural guidelines" — same five
+  principles, different spelling), and give the operator a currency signal when the runtime is
+  below 2.1.277 or the mode is not the pinned one. → CAP-29 / Story 19.3 (Epic 19 stays `done`;
+  the story sits beneath it — a done key never moves).
 - **2026-09-19 — Scribe serves every harness (seeded at the review of PR #1513, a parallel
   session's AGENTS.md / GEMINI.md governance PR).** "What the team knows, every agent and every
   session knows" was true for one harness: Claude Code imports `.claude/memory/MEMORY.md`, and

@@ -23,9 +23,7 @@ from pyforge.marshal.seed.model.kit import (
 
 def _write_ccr_db(path: Path, *, original: int, compressed: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    entry = json.dumps(
-        {"original_tokens": original, "compressed_tokens": compressed}
-    )
+    entry = json.dumps({"original_tokens": original, "compressed_tokens": compressed})
     conn = sqlite3.connect(path)
     conn.execute(
         "CREATE TABLE ccr_entries (hash TEXT PRIMARY KEY, entry_json TEXT NOT NULL, "
@@ -212,10 +210,7 @@ def test_currency_for_harness_known_names() -> None:
 
 def test_currency_for_harness_none_and_unrecognized() -> None:
     assert sources.currency_for_harness(None) == sources.UNKNOWN_HARNESS_CURRENCY
-    assert (
-        sources.currency_for_harness("some-future-harness")
-        == sources.UNKNOWN_HARNESS_CURRENCY
-    )
+    assert sources.currency_for_harness("some-future-harness") == sources.UNKNOWN_HARNESS_CURRENCY
 
 
 def _write_run_journal(
@@ -248,9 +243,7 @@ def _write_run_journal(
         payload: dict[str, object] = {"story_key": run_id}
         if entry is not None:
             payload["layer_savings"] = entry
-        lines.append(
-            json.dumps({"kind": "budget-usage", "phase": "observation", "payload": payload})
-        )
+        lines.append(json.dumps({"kind": "budget-usage", "phase": "observation", "payload": payload}))
     (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -260,17 +253,12 @@ def test_read_rollup_by_harness_no_dispatch_runs_dir(tmp_path: Path) -> None:
 
 
 def test_read_rollup_by_harness_splits_two_harnesses(tmp_path: Path) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-claude",
         harness_profile="claude",
-        layer_savings_entries=[
-            {"output_compression_saved": 500, "wire_compression_saved": 200}
-        ],
+        layer_savings_entries=[{"output_compression_saved": 500, "wire_compression_saved": 200}],
     )
     _write_run_journal(
         runs_dir,
@@ -297,10 +285,7 @@ def test_read_rollup_by_harness_last_non_empty_wins(tmp_path: Path) -> None:
     # budget-usage entry omits `layer_savings` entirely (a terminal
     # cost-only flush), so the rollup must fall back to the EARLIER entry
     # that actually carried data rather than reporting nothing.
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-a",
@@ -317,10 +302,7 @@ def test_read_rollup_by_harness_last_non_empty_wins(tmp_path: Path) -> None:
 def test_read_rollup_by_harness_accumulates_across_runs_same_harness(
     tmp_path: Path,
 ) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-a",
@@ -342,10 +324,7 @@ def test_read_rollup_by_harness_accumulates_across_runs_same_harness(
 def test_read_rollup_by_harness_skips_run_missing_launch_or_usage(
     tmp_path: Path,
 ) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-no-launch",
@@ -370,10 +349,7 @@ def test_read_rollup_by_harness_recombines_split_graph_hits_wire_shape(
     # keys, `graph_hits`/`file_reads` -- neither of which is a recognized
     # `SILENT_LAYER_KEYS`/`CONFIGURED_LAYER_KEYS` name on its own. The rollup
     # must recombine them under the canonical key rather than raising.
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-claude",
@@ -381,16 +357,11 @@ def test_read_rollup_by_harness_recombines_split_graph_hits_wire_shape(
         layer_savings_entries=[{"graph_hits": 12, "file_reads": 3}],
     )
     report = sources.read_rollup_by_harness(tmp_path)
-    assert report["harnesses"]["claude"]["silent"] == {
-        "graph_hits_vs_file_reads": [(12, 3)]
-    }
+    assert report["harnesses"]["claude"]["silent"] == {"graph_hits_vs_file_reads": [(12, 3)]}
 
 
 def test_read_rollup_by_harness_tolerates_malformed_and_non_dict(tmp_path: Path) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     run_dir = runs_dir / "run-malformed"
     run_dir.mkdir(parents=True)
     (run_dir / "journal.jsonl").write_text(
@@ -424,17 +395,12 @@ def test_read_rollup_by_harness_skips_unrecognized_layer_key(tmp_path: Path) -> 
     # A schema-drift key (not yet added to the taxonomy) must not crash the
     # whole rollup via an uncaught `ValueError` -- only that key is skipped;
     # the run's other, recognized keys still bucket normally.
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-claude",
         harness_profile="claude",
-        layer_savings_entries=[
-            {"output_compression_saved": 500, "some_future_layer_key": 42}
-        ],
+        layer_savings_entries=[{"output_compression_saved": 500, "some_future_layer_key": 42}],
     )
     report = sources.read_rollup_by_harness(tmp_path)
     assert report["status"] == "ok"
@@ -449,10 +415,7 @@ def test_read_rollup_by_harness_skips_non_utf8_journal(tmp_path: Path) -> None:
     # `read_text(encoding="utf-8")` -- a `ValueError` subclass, NOT an
     # `OSError` subclass -- so it needs its own tolerance, not just the
     # `OSError` guard. Skips that one run; other runs still roll up.
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     bad_run_dir = runs_dir / "run-bad-encoding"
     bad_run_dir.mkdir(parents=True)
     (bad_run_dir / "journal.jsonl").write_bytes(b"\xff\xfe\x00\x01not utf-8 at all")
@@ -476,10 +439,7 @@ def test_read_rollup_by_harness_merges_nonoverlapping_keys_across_entries(
     # includes a key when its `LayerSavings` field `is not None`) -- both
     # must survive in the rollup via per-key merge, not whole-payload
     # replacement (which would drop whichever entry came first).
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     _write_run_journal(
         runs_dir,
         "run-claude",
@@ -694,10 +654,7 @@ def test_dispatch_idle_timing_no_runs_dir(tmp_path: Path) -> None:
 def test_dispatch_idle_timing_skips_blank_malformed_and_non_numeric_lines(
     tmp_path: Path,
 ) -> None:
-    runs = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
-    )
+    runs = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
     runs.mkdir(parents=True)
     journal = runs / "journal.jsonl"
     journal.write_text(
@@ -719,10 +676,7 @@ def test_dispatch_idle_timing_skips_blank_malformed_and_non_numeric_lines(
 
 
 def test_dispatch_idle_timing_names_no_idle_samples(tmp_path: Path) -> None:
-    runs = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
-    )
+    runs = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
     runs.mkdir(parents=True)
     (runs / "journal.jsonl").write_text(
         json.dumps({"payload": {"no_idle_seconds_here": True}}) + "\n", encoding="utf-8"
@@ -732,13 +686,8 @@ def test_dispatch_idle_timing_names_no_idle_samples(tmp_path: Path) -> None:
     assert report["sessions"] == []
 
 
-def test_read_rollup_by_harness_skips_glob_permission_error(
-    tmp_path: Path, monkeypatch
-) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+def test_read_rollup_by_harness_skips_glob_permission_error(tmp_path: Path, monkeypatch) -> None:
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     runs_dir.mkdir(parents=True)
 
     def _raises(self, _pattern):
@@ -752,10 +701,7 @@ def test_read_rollup_by_harness_skips_glob_permission_error(
 def test_read_rollup_by_harness_tolerates_blank_lines_and_non_dict_json(
     tmp_path: Path,
 ) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     run_dir = runs_dir / "run-odd-shapes"
     run_dir.mkdir(parents=True)
     (run_dir / "journal.jsonl").write_text(
@@ -789,10 +735,7 @@ def test_read_rollup_by_harness_tolerates_blank_lines_and_non_dict_json(
 
 
 def test_read_rollup_by_harness_skips_non_dict_payload(tmp_path: Path) -> None:
-    runs_dir = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
-    )
+    runs_dir = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
     run_dir = runs_dir / "run-non-dict-payload"
     run_dir.mkdir(parents=True)
     (run_dir / "journal.jsonl").write_text(
@@ -810,10 +753,7 @@ def test_read_rollup_by_harness_skips_non_dict_payload(tmp_path: Path) -> None:
 
 
 def test_dispatch_idle_timing_reads_journal_samples(tmp_path: Path) -> None:
-    runs = (
-        tmp_path
-        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
-    )
+    runs = tmp_path / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-a"
     runs.mkdir(parents=True)
     journal = runs / "journal.jsonl"
     journal.write_text(

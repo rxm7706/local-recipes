@@ -177,3 +177,15 @@ the dropdown nor in the panel echo.
 
 **Follow-up review recommendation:** none outstanding for this story.
 
+## Auto Run Result
+
+**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
+**Summary:** landed on `main` as `30589a72e9` (2026-08-07, "herald: Story 7.1 + 7.2 — web dashboard layout, tabs, sidebar, tooltips & inline help"). Ledger row `7-2-implement-web-tooltips-inline-help: done`.
+**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
+**Files changed:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-7-1-web-layout-header-tabs-sidebar-responsive.md`, `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-7-2-web-tooltips-inline-help.md`, `src/shared/packages/pyforge-herald/web/.gitignore`, `src/shared/packages/pyforge-herald/web/README.md`, `src/shared/packages/pyforge-herald/web/index.html`, `src/shared/packages/pyforge-herald/web/package-lock.json`, `src/shared/packages/pyforge-herald/web/package.json`, `src/shared/packages/pyforge-herald/web/src/App.jsx`, `src/shared/packages/pyforge-herald/web/src/App.test.jsx`, `src/shared/packages/pyforge-herald/web/src/app.css`, `src/shared/packages/pyforge-herald/web/src/components/EmptyState.jsx`, `src/shared/packages/pyforge-herald/web/src/components/ErrorState.jsx` (+17 more)
+**Residual risks:** none recorded — no run record survived to carry them.
+**Follow-up review recommendation:** false
+
+## Status reconcile 2026-09-20
+
+- `## Auto Run Result` reconstructed from git (none survived).

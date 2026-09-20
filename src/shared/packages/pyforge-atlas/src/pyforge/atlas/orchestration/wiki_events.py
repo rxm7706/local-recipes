@@ -30,9 +30,7 @@ def scan_raw_docs(raw_dir: str | Path) -> tuple[str, ...]:
         return ()
     # Normalize to '/' so the cursor's seen-set keys are identical across platforms (on Windows
     # ``relative_to`` yields backslashes, which would never match a '/'-keyed cursor).
-    return tuple(
-        sorted(str(p.relative_to(root)).replace(chr(92), "/") for p in root.rglob("*.md"))
-    )
+    return tuple(sorted(str(p.relative_to(root)).replace(chr(92), "/") for p in root.rglob("*.md")))
 
 
 @dataclass(frozen=True)
@@ -58,7 +56,7 @@ def _decode_cursor(cursor: str | None) -> set[str]:
         # guard. A malformed/foreign cursor degrades to "nothing seen" (one extra idempotent
         # compile at worst), NEVER a crash that kills the sensor tick (the docstring's promise).
         return {s for s in seen if isinstance(s, str)}
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return set()
 
 

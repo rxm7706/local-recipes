@@ -14,9 +14,8 @@ Mirrors ``test_cli_push.py``'s own shape exactly.
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from pyforge.herald import cli, sync_all as sync_all_module
+from pyforge.herald import cli
+from pyforge.herald import sync_all as sync_all_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.sync_all import DeckSyncReport, SyncAllReport
 
@@ -39,9 +38,12 @@ def test_deck_sync_all_forwards_slug_repo_root_and_dry_run(monkeypatch, tmp_path
 
     exit_code = cli.main(
         [
-            "deck", "sync-all",
-            "--slug", "pyforge-warden",
-            "--repo-root", str(tmp_path),
+            "deck",
+            "sync-all",
+            "--slug",
+            "pyforge-warden",
+            "--repo-root",
+            str(tmp_path),
             "--dry-run",
         ]
     )
@@ -52,9 +54,7 @@ def test_deck_sync_all_forwards_slug_repo_root_and_dry_run(monkeypatch, tmp_path
     assert seen["dry_run"] is True
 
 
-def test_deck_sync_all_forwards_proof_dir_when_the_gate_is_satisfied(
-    monkeypatch, tmp_path
-):
+def test_deck_sync_all_forwards_proof_dir_when_the_gate_is_satisfied(monkeypatch, tmp_path):
     """Story 24.3: with ``HERALD_LIVE_SYNC_PROOF=1`` set, ``--proof-dir`` is
     forwarded straight through to ``sync_all.sync_all`` as a keyword."""
     seen = {}
@@ -90,9 +90,7 @@ def test_deck_sync_all_proof_dir_refused_without_the_gate_env_var(monkeypatch, c
     assert "HERALD_LIVE_SYNC_PROOF" in capsys.readouterr().err
 
 
-def test_deck_sync_all_proof_dir_refused_when_the_gate_env_var_is_not_1(
-    monkeypatch, capsys
-):
+def test_deck_sync_all_proof_dir_refused_when_the_gate_env_var_is_not_1(monkeypatch, capsys):
     """Story 24.3: the gate checks for the exact string ``"1"`` -- any other
     value (e.g. left over from an unrelated ``0``/``true``) still refuses."""
 
@@ -124,9 +122,7 @@ def test_deck_sync_all_without_proof_dir_never_requires_the_gate(monkeypatch):
     assert exit_code == 0
 
 
-def test_deck_sync_all_gate_env_var_set_but_proof_dir_omitted_is_the_ordinary_path(
-    monkeypatch, tmp_path
-):
+def test_deck_sync_all_gate_env_var_set_but_proof_dir_omitted_is_the_ordinary_path(monkeypatch, tmp_path):
     """Story 24.3: ``HERALD_LIVE_SYNC_PROOF=1`` being set incidentally must
     not change the ordinary sync path when ``--proof-dir`` is not given --
     the gate only fires when ``--proof-dir`` is present."""
@@ -218,9 +214,7 @@ def test_deck_sync_all_prints_a_message_when_no_decks_are_found(monkeypatch, cap
 def test_deck_sync_all_prints_the_error_line_for_a_failed_deck(monkeypatch, capsys):
     def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
-            decks=(
-                DeckSyncReport(slug="pyforge-warden", error="deck-facts --refresh failed: boom"),
-            ),
+            decks=(DeckSyncReport(slug="pyforge-warden", error="deck-facts --refresh failed: boom"),),
             published=False,
         )
 
@@ -234,9 +228,7 @@ def test_deck_sync_all_prints_the_error_line_for_a_failed_deck(monkeypatch, caps
     assert "error: deck-facts --refresh failed: boom" in out
 
 
-def test_deck_sync_all_prints_a_published_line_when_the_site_was_rebuilt(
-    monkeypatch, capsys
-):
+def test_deck_sync_all_prints_a_published_line_when_the_site_was_rebuilt(monkeypatch, capsys):
     def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(DeckSyncReport(slug="pyforge-warden", pushed=("a.html",), published=True),),
@@ -263,9 +255,7 @@ def test_deck_sync_all_no_published_line_when_nothing_changed(monkeypatch, capsy
     assert "published" not in out
 
 
-def test_deck_sync_all_prints_the_publish_error_when_publish_failed(
-    monkeypatch, capsys
-):
+def test_deck_sync_all_prints_the_publish_error_when_publish_failed(monkeypatch, capsys):
     def _fake_sync_all(transport, *, slug, repo_root, dry_run, proof_dir=None):
         return SyncAllReport(
             decks=(DeckSyncReport(slug="pyforge-warden", pushed=("a.html",)),),

@@ -67,6 +67,7 @@ class HostMintClient:
         )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
-                return response.read()
+                payload: bytes = response.read()
+                return payload
         except urllib.error.URLError as exc:
             raise HostMintError from exc

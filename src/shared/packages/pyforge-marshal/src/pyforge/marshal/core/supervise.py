@@ -187,10 +187,7 @@ def _anchor_index(samples: Sequence[Sample]) -> int:
     derive genuinely cannot disagree."""
     anchor = 0
     for index, (previous, current) in enumerate(zip(samples, samples[1:]), start=1):
-        if (
-            current.pane_content != previous.pane_content
-            or current.log_mtime != previous.log_mtime
-        ):
+        if current.pane_content != previous.pane_content or current.log_mtime != previous.log_mtime:
             anchor = index
     return anchor
 
@@ -223,10 +220,7 @@ def idle_since(samples: Sequence[Sample]) -> datetime | None:
     ValueError)`` handler and would kill the sidecar with a traceback after
     ``supervisor-attach``."""
     if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
-        raise TypeError(
-            "samples must be a sequence of Sample (not a bare str/bytes), "
-            f"got {samples!r}"
-        )
+        raise TypeError(f"samples must be a sequence of Sample (not a bare str/bytes), got {samples!r}")
     anchor = idle_anchor(samples)
     return None if anchor is None else anchor.moment
 
@@ -245,10 +239,7 @@ def idle_anchor(samples: Sequence[Sample]) -> Sample | None:
     preserve -- silently making ``stop-and-retry`` unreachable again, the
     exact defect the rebase was introduced to fix."""
     if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
-        raise TypeError(
-            "samples must be a sequence of Sample (not a bare str/bytes), "
-            f"got {samples!r}"
-        )
+        raise TypeError(f"samples must be a sequence of Sample (not a bare str/bytes), got {samples!r}")
     if not samples:
         return None
     return samples[_anchor_index(samples)]
@@ -280,10 +271,7 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     rejected via a NEGATED ``>`` check, never a direct ``<= 0`` (review
     finding)."""
     if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
-        raise TypeError(
-            "samples must be a sequence of Sample (not a bare str/bytes), "
-            f"got {samples!r}"
-        )
+        raise TypeError(f"samples must be a sequence of Sample (not a bare str/bytes), got {samples!r}")
     if isinstance(threshold_s, bool) or not isinstance(threshold_s, (int, float)):
         raise TypeError(f"threshold_s must be a number, got {threshold_s!r}")
     # `not (threshold_s > 0)`, never `threshold_s <= 0` (review finding): IEEE
@@ -501,9 +489,7 @@ def evaluate_escalation(
 # =============================================================================
 
 
-def evaluate_retry_escalation(
-    deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int
-) -> bool:
+def evaluate_retry_escalation(deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int) -> bool:
     """Pure: ``True`` iff ANY story in ``deferred`` has already reached its
     own run's configured ceiling on either counter --
     ``story.attempt >= max_dev_attempts or story.review_cycle >=
@@ -542,10 +528,7 @@ def evaluate_retry_escalation(
     can never carry a non-positive ceiling; mirrors ``evaluate_escalation``'s
     own "no type guard beyond ordinary equality" reasoning for inputs whose
     invalid-input class the caller's own contract already excludes."""
-    return any(
-        story.attempt >= max_dev_attempts or story.review_cycle >= max_review_cycles
-        for story in deferred
-    )
+    return any(story.attempt >= max_dev_attempts or story.review_cycle >= max_review_cycles for story in deferred)
 
 
 # =============================================================================
@@ -617,11 +600,7 @@ def evaluate_compression_ladder(
     if ratio < threshold:
         return None
 
-    declared = (
-        declared_aggressiveness
-        if declared_aggressiveness in _CONTEXT_AGGRESSIVENESS_ORDER
-        else "medium"
-    )
+    declared = declared_aggressiveness if declared_aggressiveness in _CONTEXT_AGGRESSIVENESS_ORDER else "medium"
     declared_idx = _aggressiveness_index(declared)
     max_bump = len(_CONTEXT_AGGRESSIVENESS_ORDER) - 1 - declared_idx
     if max_bump <= 0:
@@ -722,7 +701,6 @@ def resolve_terminal_session_verdict(
     """
     from .dispatch_completion import (
         DispatchCompletionInput,
-        DispatchGitFacts,
         DispatchSessionVerdict,
         has_git_progress,
         judge_dispatch_completion,
@@ -730,20 +708,15 @@ def resolve_terminal_session_verdict(
     from .dispatch_verification import DispatchVerificationVerdict
 
     if session_alive:
-        return judge_dispatch_completion(
-            DispatchCompletionInput(session_alive=True, git=git)
-        )
+        return judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
     if git.branch_merged or git.story_merged_on_main:
         return DispatchSessionVerdict.COMPLETED
-    if (
-        verification_verdict == DispatchVerificationVerdict.REFUSED.value
-        and has_git_progress(git, spec_relative_path=spec_relative_path)
+    if verification_verdict == DispatchVerificationVerdict.REFUSED.value and has_git_progress(
+        git, spec_relative_path=spec_relative_path
     ):
         return DispatchSessionVerdict.FAILED
     if has_git_progress(git, spec_relative_path=spec_relative_path):
-        if is_marshal_initiated_stop(
-            detach_reason=detach_reason, session_log=session_log
-        ):
+        if is_marshal_initiated_stop(detach_reason=detach_reason, session_log=session_log):
             return DispatchSessionVerdict.LIVE
         return DispatchSessionVerdict.STOPPED_EXTERNALLY
     return DispatchSessionVerdict.FAILED

@@ -94,9 +94,7 @@ def test_broken_evidence_link_is_surfaced_by_id_without_raising(tmp_path):
     claim = claims.create(
         db_path,
         project_name="warden",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="t")],
     )
     out_dir = tmp_path / "out"
 
@@ -123,9 +121,7 @@ def test_a_claim_with_only_valid_evidence_is_never_named_broken(tmp_path):
     broken_claim = claims.create(
         db_path,
         project_name="marshal",
-        evidence=[
-            claims.Evidence(type="test_results", url="https://broken", label="t")
-        ],
+        evidence=[claims.Evidence(type="test_results", url="https://broken", label="t")],
     )
     out_dir = tmp_path / "out"
 
@@ -153,9 +149,7 @@ def test_run_evidence_revalidation_honors_an_injected_clock(tmp_path):
     )
     fixed = datetime(2026, 1, 1, tzinfo=UTC)
 
-    result = scheduler.run_evidence_revalidation(
-        db_path, validate=_always_valid, now=lambda: fixed
-    )
+    result = scheduler.run_evidence_revalidation(db_path, validate=_always_valid, now=lambda: fixed)
 
     assert result.claims_checked == 1
     assert result.broken_evidence_claim_ids == ()
@@ -166,9 +160,7 @@ def test_run_evidence_revalidation_honors_an_injected_clock(tmp_path):
 def test_run_evidence_revalidation_on_a_missing_db_is_a_noop(tmp_path):
     """Mirrors ``claims.revalidate_all``'s own no-database-yet contract
     (``test_revalidate_all_on_a_completely_missing_file_is_a_noop``)."""
-    result = scheduler.run_evidence_revalidation(
-        tmp_path / "herald.db", validate=_always_valid
-    )
+    result = scheduler.run_evidence_revalidation(tmp_path / "herald.db", validate=_always_valid)
     assert result.claims_checked == 0
     assert result.broken_evidence_claim_ids == ()
 
@@ -212,9 +204,7 @@ def test_run_progress_aggregation_on_an_empty_db_writes_an_empty_array(tmp_path)
 # --- run_scheduled_jobs: job isolation --------------------------------------
 
 
-def test_run_scheduled_jobs_still_aggregates_progress_when_revalidation_fails(
-    tmp_path, monkeypatch
-):
+def test_run_scheduled_jobs_still_aggregates_progress_when_revalidation_fails(tmp_path, monkeypatch):
     """A ``HeraldError`` from evidence revalidation (e.g. a claims-store
     problem) must not silently stop the progress snapshot from refreshing
     -- the two jobs are composed, not chained. The error still propagates
@@ -252,9 +242,7 @@ def test_run_scheduled_jobs_still_aggregates_progress_when_revalidation_fails(
 # --- run_evidence_revalidation: concurrent-conflict claims never misnamed --
 
 
-def test_a_claim_revalidate_all_left_untouched_is_never_named_broken(
-    tmp_path, monkeypatch
-):
+def test_a_claim_revalidate_all_left_untouched_is_never_named_broken(tmp_path, monkeypatch):
     """``claims.revalidate_all`` leaves a claim byte-for-byte unchanged when
     a concurrent writer raced it -- such a claim can still carry
     ``validated=False`` evidence from before this call ever ran (e.g. a
@@ -280,13 +268,9 @@ def test_a_claim_revalidate_all_left_untouched_is_never_named_broken(
         updated_at="2026-08-08T00:00:00+00:00",
         evidence=(stale_entry,),
     )
-    monkeypatch.setattr(
-        claims, "revalidate_all", lambda *_a, **_k: [untouched_claim]
-    )
+    monkeypatch.setattr(claims, "revalidate_all", lambda *_a, **_k: [untouched_claim])
 
-    result = scheduler.run_evidence_revalidation(
-        tmp_path / "herald.db", validate=_always_valid
-    )
+    result = scheduler.run_evidence_revalidation(tmp_path / "herald.db", validate=_always_valid)
 
     assert result.claims_checked == 1
     assert result.broken_evidence_claim_ids == ()

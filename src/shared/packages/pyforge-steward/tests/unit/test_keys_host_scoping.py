@@ -41,9 +41,7 @@ def _isolated_credential_environment(monkeypatch, tmp_path):
     # rather than silently failing _http.py's. Negative-case hosts
     # (c.example.com, lookalike subdomains, 2001:db8::2, pypi.org) stay
     # deliberately unconfigured AND out-of-allowlist.
-    monkeypatch.setenv(
-        "TEST_ARTIFACTORY_BASE_URL", "https://artifactory.example.com/artifactory"
-    )
+    monkeypatch.setenv("TEST_ARTIFACTORY_BASE_URL", "https://artifactory.example.com/artifactory")
     monkeypatch.setenv("TEST_MIRROR_A_BASE_URL", "https://a.example.com/")
     monkeypatch.setenv("TEST_MIRROR_B_BASE_URL", "https://b.example.com/")
     monkeypatch.setenv("TEST_IPV6_MIRROR_BASE_URL", "https://[2001:db8::1]:8081/")
@@ -52,9 +50,7 @@ def _isolated_credential_environment(monkeypatch, tmp_path):
     # case needs its exact host configured too. (Whether _http.py should
     # canonicalize trailing dots itself is a CFE-side question, noted for its
     # next retro — not resolved from steward's test suite.)
-    monkeypatch.setenv(
-        "TEST_ARTIFACTORY_DOT_BASE_URL", "https://artifactory.example.com./"
-    )
+    monkeypatch.setenv("TEST_ARTIFACTORY_DOT_BASE_URL", "https://artifactory.example.com./")
 
 
 def test_out_of_allowlist_host_returns_no_headers_even_with_env_var_set(monkeypatch):
@@ -64,9 +60,7 @@ def test_out_of_allowlist_host_returns_no_headers_even_with_env_var_set(monkeypa
 
 def test_in_allowlist_host_returns_the_header_http_py_would_produce(monkeypatch):
     monkeypatch.setenv("JFROG_API_KEY", "synthetic-test-token")
-    assert resolve_headers(ARTIFACTORY, IN_ALLOWLIST_URL) == {
-        "X-JFrog-Art-Api": "synthetic-test-token"
-    }
+    assert resolve_headers(ARTIFACTORY, IN_ALLOWLIST_URL) == {"X-JFrog-Art-Api": "synthetic-test-token"}
 
 
 def test_in_allowlist_host_with_no_credential_env_var_set_returns_empty():
@@ -94,27 +88,20 @@ def test_empty_hosts_is_rejected_rather_than_silently_never_matching():
 def test_subdomain_and_suffix_lookalike_hosts_do_not_match(monkeypatch):
     monkeypatch.setenv("JFROG_API_KEY", "synthetic-test-token")
     assert resolve_headers(ARTIFACTORY, "https://mirror.artifactory.example.com/x") == {}
-    assert (
-        resolve_headers(ARTIFACTORY, "https://artifactory.example.com.evil.example/x")
-        == {}
-    )
+    assert resolve_headers(ARTIFACTORY, "https://artifactory.example.com.evil.example/x") == {}
 
 
 def test_multi_entry_allowlist_matches_each_declared_host_exactly(monkeypatch):
     monkeypatch.setenv("JFROG_API_KEY", "synthetic-test-token")
     credential = HostScopedCredential(hosts=("a.example.com", "b.example.com"))
-    assert resolve_headers(credential, "https://b.example.com/x") == {
-        "X-JFrog-Art-Api": "synthetic-test-token"
-    }
+    assert resolve_headers(credential, "https://b.example.com/x") == {"X-JFrog-Art-Api": "synthetic-test-token"}
     assert resolve_headers(credential, "https://c.example.com/x") == {}
 
 
 def test_distinct_ipv6_hosts_do_not_collide_and_bracketed_entries_match(monkeypatch):
     monkeypatch.setenv("JFROG_API_KEY", "synthetic-test-token")
     credential = HostScopedCredential(hosts=("[2001:db8::1]:8081",))
-    assert resolve_headers(credential, "https://[2001:db8::1]/x") == {
-        "X-JFrog-Art-Api": "synthetic-test-token"
-    }
+    assert resolve_headers(credential, "https://[2001:db8::1]/x") == {"X-JFrog-Art-Api": "synthetic-test-token"}
     assert resolve_headers(credential, "https://[2001:db8::2]/x") == {}
 
 

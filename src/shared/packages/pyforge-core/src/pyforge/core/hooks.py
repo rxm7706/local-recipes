@@ -98,15 +98,9 @@ class DummyPlugin:
 
 
 def _require_plugin(obj: object, *, label: str) -> HookPlugin:
-    missing = [
-        attr
-        for attr in ("call", "hook_spec", "owner")
-        if not hasattr(obj, attr)
-    ]
+    missing = [attr for attr in ("call", "hook_spec", "owner") if not hasattr(obj, attr)]
     if missing:
-        raise PluginError(
-            f"{label} is not a HookPlugin (missing {', '.join(missing)})"
-        )
+        raise PluginError(f"{label} is not a HookPlugin (missing {', '.join(missing)})")
     if not callable(getattr(obj, "call")):
         raise PluginError(f"{label} has a non-callable call attribute")
     return obj  # type: ignore[return-value]
@@ -144,10 +138,7 @@ class PluginRegistry:
     def register(self, plugin: HookPlugin) -> None:
         plugin = _require_plugin(plugin, label="register()")
         key = (type(plugin), plugin.hook_spec, plugin.owner)
-        if any(
-            (type(existing), existing.hook_spec, existing.owner) == key
-            for existing in self._plugins
-        ):
+        if any((type(existing), existing.hook_spec, existing.owner) == key for existing in self._plugins):
             return
         self._plugins.append(plugin)
 
@@ -162,9 +153,7 @@ class PluginRegistry:
             try:
                 loaded = ep.load()
             except Exception as exc:
-                raise PluginError(
-                    f"entry point {ep.name!r} in group {group!r} failed to load"
-                ) from exc
+                raise PluginError(f"entry point {ep.name!r} in group {group!r} failed to load") from exc
             loaded_plugins.append(_as_plugin(loaded, ep_name=ep.name))
         for plugin in loaded_plugins:
             self.register(plugin)

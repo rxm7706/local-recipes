@@ -197,7 +197,7 @@ are **not** the IaC path for this fleet.
 ## 9. Deploy the chart (after registry push)
 
 Full Secret contract, two-release OCP shape, and limitations:
-`src/platform/deploy/README.md` and `overlays/ocp/README.md`.
+`docs/explanation/platform-deployment-architecture.md` and `overlays/ocp/README.md`.
 
 Minimal sequence (namespace + Secret + both releases):
 

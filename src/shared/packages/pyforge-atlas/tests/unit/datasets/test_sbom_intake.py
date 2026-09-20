@@ -42,7 +42,9 @@ def test_nbsp_pip_list_parses_identically_to_ascii():
 
 
 def test_nbsp_conda_list_parses_identically_to_ascii():
-    ascii_text = "# packages in environment\nnumpy   1.26.0   py311h_0   conda-forge\nrequests 2.31.0  pyhd_0     pypi\n"
+    ascii_text = (
+        "# packages in environment\nnumpy   1.26.0   py311h_0   conda-forge\nrequests 2.31.0  pyhd_0     pypi\n"
+    )
     nbsp_text = ascii_text.replace(" ", NBSP)
     assert parse_conda_list_text(nbsp_text) == parse_conda_list_text(ascii_text)
     parsed = parse_conda_list_text(ascii_text)
@@ -223,20 +225,23 @@ def test_requirements_extras_and_url_yield_no_garbage_version():
     extras spec or a direct-URL ref must yield version=None, never a garbage
     version that becomes an invalid purl (pkg:pypi/requests@[security]>=2.0)."""
     from pyforge.atlas.datasets.sbom_intake import parse_requirements_txt
-    txt = "\n".join([
-        "requests[security]>=2.0",
-        "uvicorn[standard]",
-        "black[d]==23.1.0",
-        "foo @ https://example.com/foo.whl",
-        "numpy>=1.20,<2.0",
-        "plain==1.2.3",
-    ])
+
+    txt = "\n".join(
+        [
+            "requests[security]>=2.0",
+            "uvicorn[standard]",
+            "black[d]==23.1.0",
+            "foo @ https://example.com/foo.whl",
+            "numpy>=1.20,<2.0",
+            "plain==1.2.3",
+        ]
+    )
     deps = {d["name"]: d.get("version") for d in parse_requirements_txt(txt, "requirements.txt")}
-    assert deps["requests"] is None          # extras, no valid version captured
+    assert deps["requests"] is None  # extras, no valid version captured
     assert deps["uvicorn"] is None
-    assert deps["black"] is None             # black[d]==... → extras before operator
-    assert deps["foo"] is None               # direct URL ref
-    assert deps["numpy"] == "1.20"           # legacy captures the first pin
+    assert deps["black"] is None  # black[d]==... → extras before operator
+    assert deps["foo"] is None  # direct URL ref
+    assert deps["numpy"] == "1.20"  # legacy captures the first pin
     assert deps["plain"] == "1.2.3"
     # and no dep carries a version starting with a non-digit
     for v in deps.values():
