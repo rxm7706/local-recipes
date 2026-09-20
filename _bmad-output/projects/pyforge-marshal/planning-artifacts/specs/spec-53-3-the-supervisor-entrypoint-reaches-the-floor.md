@@ -2,9 +2,10 @@
 title: '53.3: The supervisor entrypoint reaches the floor'
 type: 'chore'
 created: '2026-09-20'
-status: 'ready'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '326870e985259412f799da04092a1f6299e357d4'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
