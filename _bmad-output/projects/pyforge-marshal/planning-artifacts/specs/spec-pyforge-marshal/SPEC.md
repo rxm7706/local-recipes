@@ -1019,6 +1019,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-263 — marshal's shell-outs name the Guild env** ← spec-pyforge-marshal CAP-263 (ready 2026-09-20)
   - **intent:** `cli/watch.py`'s bmad-loop list/status probes, `core/gate.py`'s `platform-ci-local` verify line and `adapters/scribe_cli.py`'s fallback bin dirs reach their commands through `-e pyforge-guild` (bmad-loop is marshal's own run-dep, already in the Guild), never `-e local-recipes` and never `.pixi/envs/local-recipes`; the watch's fake-port tests assert the Guild argv.
   - **success:** no `-e local-recipes` / `envs/local-recipes` string remains in `pyforge-marshal/src`; the watch, gate and scribe-CLI tests pass with the Guild argv; steward 63.6's meta-test lists no marshal offender; `pyforge-marshal-test` green.
+- **CAP-264 — the dispatch supervisor entrypoint reaches the coverage floor** ← spec-pyforge-marshal CAP-264 (ready 2026-09-20)
+  - **intent:** `dispatch_supervisor/__main__.py` (623 statements, 388 uncovered, 35% on 2026-09-20) is unit-covered to the station floor (80%) through ports-driven tests of its finalize / halt / land / completion sequences, and the per-module floor exception the 53.2 landing added to `coverage_thresholds.toml` is removed in the same story.
+  - **success:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` reports the module ≥ 80% with no exception entry; the gate's OK line names no dated exception for marshal.
 
 ## Constraints
 

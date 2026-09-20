@@ -95,6 +95,77 @@ def default_thresholds_path() -> Path:
     return Path(__file__).resolve().parent / "coverage_thresholds.toml"
 
 
+@dataclass(frozen=True)
+class ModuleFloor:
+    """A deliberate, dated, story-bound floor for ONE module (percent).
+
+    The per-station floor is the rule; a module entry is a named exception a
+    Story retires. It can only lower the floor -- an entry above the station
+    floor is ignored -- and it must say ``until`` (a date or a story key) and
+    ``story`` (the backfill Story that removes it), so debt is never silent.
+    Same shape as the per-module mypy baseline (steward Story 66.1).
+    """
+
+    module: str
+    unit: float | None = None
+    integration: float | None = None
+    until: str = ""
+    story: str = ""
+
+    def for_suite(self, suite: Suite) -> float | None:
+        if suite == "unit":
+            return self.unit
+        if suite == "integration":
+            return self.integration
+        raise ValueError(f"unknown suite: {suite!r}")
+
+
+def load_module_floors(path: Path | None = None) -> dict[str, ModuleFloor]:
+    """Load ``[modules."<dotted.module>"]`` entries from the thresholds file.
+
+    Every entry needs ``until`` and ``story``; a missing key raises so the
+    exception is never an anonymous number.
+    """
+    raw_path = path if path is not None else default_thresholds_path()
+    if not raw_path.is_file():
+        return {}
+    data = tomllib.loads(raw_path.read_text(encoding="utf-8"))
+    table = data.get("modules") or {}
+    out: dict[str, ModuleFloor] = {}
+    for module, entry in table.items():
+        if not isinstance(entry, Mapping):
+            raise TypeError(f"modules.{module} must be a table, got {entry!r}")
+        until = str(entry.get("until", "")).strip()
+        story = str(entry.get("story", "")).strip()
+        if not until or not story:
+            raise ValueError(f"modules.{module} must carry `until` and `story` -- a floor exception is never anonymous")
+        out[module] = ModuleFloor(
+            module=module,
+            unit=float(entry["unit"]) if "unit" in entry else None,
+            integration=float(entry["integration"]) if "integration" in entry else None,
+            until=until,
+            story=story,
+        )
+    return out
+
+
+def floor_for_module(
+    module: str,
+    station_floor: float,
+    *,
+    suite: Suite,
+    module_floors: Mapping[str, ModuleFloor],
+) -> float:
+    """The floor one module is held to: the station floor, or a lower named exception."""
+    entry = module_floors.get(module)
+    if entry is None:
+        return station_floor
+    own = entry.for_suite(suite)
+    if own is None or own >= station_floor:
+        return station_floor
+    return own
+
+
 def load_thresholds(path: Path | None = None) -> dict[str, Thresholds]:
     """Load ``[defaults]`` + optional ``[stations.<slug>]`` overrides.
 
@@ -198,18 +269,20 @@ def modules_below_threshold(
     threshold: float,
     *,
     suite: Suite,
+    module_floors: Mapping[str, ModuleFloor] | None = None,
 ) -> list[ModuleFailure]:
-    """Return every module whose coverage is strictly below ``threshold``."""
-    return [
-        ModuleFailure(
-            module=name,
-            percent=float(pct),
-            threshold=float(threshold),
-            suite=suite,
-        )
-        for name, pct in sorted(percents.items())
-        if float(pct) < float(threshold)
-    ]
+    """Return every module whose coverage is strictly below its floor.
+
+    ``threshold`` is the station floor; ``module_floors`` may lower it for
+    a named module (a dated, story-bound exception) -- never raise it.
+    """
+    floors = module_floors or {}
+    out: list[ModuleFailure] = []
+    for name, pct in sorted(percents.items()):
+        floor = floor_for_module(name, float(threshold), suite=suite, module_floors=floors)
+        if float(pct) < floor:
+            out.append(ModuleFailure(module=name, percent=float(pct), threshold=floor, suite=suite))
+    return out
 
 
 def format_failure_message(
@@ -245,18 +318,26 @@ def evaluate_suite(
     suite: Suite,
     threshold: float,
     station: str,
+    module_floors: Mapping[str, ModuleFloor] | None = None,
 ) -> tuple[bool, str]:
     """Evaluate one suite; on failure the message names under-threshold modules.
 
     Returns ``(ok, message)``. ``ok`` is True when every module meets the
     floor (or there are no measured modules).
     """
-    failures = modules_below_threshold(percents, threshold, suite=suite)
+    failures = modules_below_threshold(percents, threshold, suite=suite, module_floors=module_floors)
     if not failures:
         measured = len(percents)
+        excepted = [
+            f"{name} ({float(pct):.1f}% ≥ {floor_for_module(name, threshold, suite=suite, module_floors=module_floors):.0f}%, "
+            f"until {module_floors[name].until}, {module_floors[name].story})"
+            for name, pct in sorted(percents.items())
+            if module_floors and name in module_floors and float(pct) < float(threshold)
+        ]
+        note = f"; {len(excepted)} under a dated exception: " + "; ".join(excepted) if excepted else ""
         return (
             True,
-            (f"coverage gate OK for pyforge-{station} {suite}: {measured} module(s) ≥ {threshold:.0f}%"),
+            (f"coverage gate OK for pyforge-{station} {suite}: {measured} module(s) ≥ {threshold:.0f}%{note}"),
         )
     return False, format_failure_message(
         failures,
@@ -418,7 +499,8 @@ def evaluate_coverage_payload(
         # measured. Absent modules are N/A for the suite (e.g. unit-only
         # code never imported by integration) — do not zero-fill them.
         percents = filter_percents(percents, wanted)
-    return evaluate_suite(percents, suite=suite, threshold=thr, station=station)
+    floors = load_module_floors(thresholds_path)
+    return evaluate_suite(percents, suite=suite, threshold=thr, station=station, module_floors=floors)
 
 
 def _cmd_evaluate(args: argparse.Namespace) -> int:

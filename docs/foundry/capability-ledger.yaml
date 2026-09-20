@@ -3128,6 +3128,12 @@ capabilities:
     heading: "marshal's shell-outs name the Guild env"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-264
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the dispatch supervisor entrypoint reaches the coverage floor"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core

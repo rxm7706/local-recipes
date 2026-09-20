@@ -7,7 +7,8 @@ from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessResult
 
-from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
@@ -632,3 +633,92 @@ def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(tmp_path: 
     assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
     entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
     assert entry["payload"]["deferred_work_intake_finding"] is None
+
+
+# --- 53.2 landing (2026-09-20): the touched-module coverage floor measured this
+# module at 77% -- the branches below were the uncovered ones: the CLI entry,
+# a malformed story key, a contended deferred-work lock, and the 51.7
+# corroboration re-gate over a non-empty promotion plan.
+
+
+def test_main_parses_argv_and_forwards_the_optional_worktree(monkeypatch, tmp_path: Path) -> None:
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    seen: list[tuple] = []
+    monkeypatch.setattr(
+        mod, "finalize_dispatch_land", lambda slug, key, worktree: seen.append((slug, key, worktree)) or 0
+    )
+    assert mod.main(["pyforge-marshal", "53.2"]) == 0
+    assert mod.main(["pyforge-marshal", "53.2", str(tmp_path)]) == 0
+    assert seen == [("pyforge-marshal", "53.2", None), ("pyforge-marshal", "53.2", tmp_path)]
+
+
+def test_a_malformed_story_key_is_refused_before_any_scan(monkeypatch, tmp_path: Path, capsys) -> None:
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(mod, "_scan_promotions", lambda *a, **k: (_ for _ in ()).throw(AssertionError("scanned")))
+    assert mod.finalize_dispatch_land("pyforge-marshal", "not-a-key") == 1
+    assert "dispatch land finalize:" in capsys.readouterr().err
+
+
+def test_a_contended_deferred_work_lock_is_a_warn_finding_not_a_crash(tmp_path: Path) -> None:
+    class _LockedFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise FsError(f"lock held: {path}")
+
+    finding = _run_deferred_work_intake(
+        _FakeIntakeProcess(), _LockedFs(), _FakeIntakeVcs(), tmp_path, "pyforge-marshal"
+    )
+    assert finding is not None and finding.code == "MRS-DISP-047" and finding.severity == Severity.WARN
+    assert "lock" in finding.message and "marshal" in finding.message
+
+
+def test_promotion_plan_is_regated_through_spec_status_corroboration(monkeypatch, tmp_path: Path) -> None:
+    """Story 51.7 / CAP-255 inside finalize: a `to_promote` candidate is
+    promoted only when its spec status at `origin/main` corroborates the
+    merge; the corroboration reads the spec through `spec_text_at_ref` and
+    fails closed on a git read error."""
+    from pyforge.marshal.core.identity import normalize
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    good, bad = normalize("53.2"), normalize("53.9")
+
+    class _Candidate:
+        def __init__(self, key):
+            self.story_key = key
+
+    class _Plan:
+        to_promote = (_Candidate(good), _Candidate(bad))
+
+    class _Scan:
+        findings: list = []
+        plan = _Plan()
+        combined_subjects = ("Merge pyforge-marshal/53-2 into main",)
+        template = "Merge {slug}/{key} into main"
+
+    executed: list = []
+    monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(mod, "GitVcs", lambda: _StubVcs())
+    monkeypatch.setattr(mod, "_scan_promotions", lambda *a, **k: _Scan())
+    monkeypatch.setattr(mod, "_promote_sprint_ledger", lambda *a, **k: ())
+    monkeypatch.setattr(mod, "_resync_home_branch", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "_execute_promotion_plan", lambda plan, **k: executed.extend(plan))
+
+    def _spec_text(vcs, root, slug, key):
+        if key == str(bad):
+            raise VcsCommandError("no such spec at origin/main")
+        return "---\nstatus: 'done'\n---\n"
+
+    monkeypatch.setattr(mod.dispatch_core, "spec_text_at_ref", _spec_text)
+    seen: dict = {}
+
+    def _corroborate(subjects, template, slug, *, spec_status_for):
+        seen["good"] = spec_status_for(good)
+        seen["bad"] = spec_status_for(bad)
+        return frozenset({good})
+
+    monkeypatch.setattr(mod.promotion, "corroborated_merged_story_keys", _corroborate)
+    assert mod.finalize_dispatch_land("pyforge-marshal", "53.2") == 0
+    assert seen == {"good": "done", "bad": None}
+    assert [c.story_key for c in executed] == [good]
