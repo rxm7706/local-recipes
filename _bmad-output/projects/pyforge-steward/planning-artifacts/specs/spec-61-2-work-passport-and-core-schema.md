@@ -14,8 +14,7 @@ deferred:
       Diff touches only `_bmad-output/**` and `src/shared/packages/**`, no `recipes/**`.
       CLAUDE.md / AGENTS.md require `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`
       for any such PR. No PR exists yet from this single-story dev dispatch.
-    location: >-
-      PR mechanics (not a file)
+    location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
     severity: low
 declared_low_risk: false
 baseline_revision: 'b338a1c7b968255480f18d70cd5e45e6f9b1f681'
