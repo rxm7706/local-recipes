@@ -41,7 +41,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
 # `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill),
-# `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint).
+# `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
+# `glass` (Epic 61, Story 61.3 — as-of glass standup/shipped freshness; export is a flag-gated plugin).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
