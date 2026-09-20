@@ -252,14 +252,23 @@ def _diff_shared_slugs(
         axes = [axis for axis in _COMPARED_AXES if left[axis] != right[axis]]
         if not axes:
             continue
+        sibling_hash = right["content_hash"]
+        ack = left.get("sibling_acknowledged", "")
+        if ack and ack == sibling_hash:
+            # Acknowledged at the current sibling hash: silence this Dream
+            # entirely (Story 29.1), regardless of which axes still differ.
+            continue
+        message = f"sibling dream {slug!r} diverges on " + ", ".join(axes)
+        if ack:
+            message += f" (acknowledged hash {ack} no longer matches current {sibling_hash})"
+        elif left["status"] == "archived":
+            message += " (archived)"
         findings.append(
             Finding(
                 source=Source.SIBLING_DREAMS_DRIFT,
                 check="sibling-dreams-drift",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"sibling dream {slug!r} diverges on " + ", ".join(axes)
-                ),
+                message=message,
                 evidence={
                     "slug": slug,
                     "axes": axes,
@@ -270,7 +279,8 @@ def _diff_shared_slugs(
                     "local_owner": left["owner"],
                     "sibling_owner": right["owner"],
                     "local_content_hash": left["content_hash"],
-                    "sibling_content_hash": right["content_hash"],
+                    "sibling_content_hash": sibling_hash,
+                    "sibling_acknowledged": ack,
                 },
             )
         )
