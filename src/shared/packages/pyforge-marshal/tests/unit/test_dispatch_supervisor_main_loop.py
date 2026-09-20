@@ -2189,7 +2189,9 @@ def test_supervisor_exits_completed_once_the_story_is_merged_on_main(tmp_path: P
 # ==========================================================================
 
 
-def test_main_threads_every_positional_into_the_supervisor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_threads_every_supervisor_positional_and_ignores_the_log_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     captured: dict = {}
 
     def _fake_run(**kwargs) -> int:
