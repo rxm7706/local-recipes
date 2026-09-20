@@ -456,6 +456,18 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   verification, the deferral `location:` rule), Story 53.2 (the landing reconciles from git
   facts and runs intake; journals MRS-DISP-047 when it had to). (2), (4), (5) of the 2026-09-19
   entry remain undecomposed.
+  **(10), 09:35Z:** Claude Code 2.1.277's built-in `agents-md` mod stays out of any project with a
+  `CLAUDE.md` unless `instructionFiles` is `claude-md-and-agents-md` — and that option is read from
+  user settings or `--settings`, never the project. A dispatched `claude -p` session therefore
+  depends on the operator's machine for whether nested `AGENTS.md` files (the atlas child) load.
+  The launch pins it: the claude harness profile passes `--settings` with the mode inline. →
+  CAP-262 / Story 46.11 (hand-driven the same morning; scribe 19.3 owns the surface side).
+  **(11), 10:15Z:** `cli/watch.py` shells `pixi run -e local-recipes bmad-loop list|status`,
+  `core/gate.py` names `-e local-recipes platform-ci-local`, and `adapters/scribe_cli.py` falls
+  back to `.pixi/envs/local-recipes/bin` — but `local-recipes` is the recipe factory, not a
+  runtime; only `pyforge-guild` exists where marshal runs (operator ruling, steward Dream
+  2026-09-20 later). bmad-loop is marshal's own run-dep. → CAP-263 / Story 46.12 (the steward
+  side is 63.6).
 - **2026-07-25** — three loop-policy actions adopted from the pyforge-atlas
   retro: the independent review pass made standing, not self-flagged; a
   deferral repeated in a second wave promoted to contract level; story size

@@ -264,7 +264,7 @@ def test_cli_fail_exit(tmp_path: Path, capsys, monkeypatch):
 
 def test_drift_gate_falls_back_to_pixi_task_when_doctor_missing(tmp_path: Path, monkeypatch):
     """Trap 15 (2026-09-06): the steward env has no pyforge.doctor — the gate
-    must take the verdict from `pixi run -e local-recipes bmad-drift-check`,
+    must take the verdict from `pixi run -e pyforge-guild bmad-drift-check`,
     not fail on the import."""
     import subprocess
 
@@ -282,7 +282,7 @@ def test_drift_gate_falls_back_to_pixi_task_when_doctor_missing(tmp_path: Path, 
 
     result = upgrade_mod.run_bmad_drift_integrity(tmp_path, fallback_runner=runner)
     assert result.ok is True
-    assert "pixi run -e local-recipes bmad-drift-check" in result.detail
+    assert "pixi run -e pyforge-guild bmad-drift-check" in result.detail
     assert seen and seen[0][0] == upgrade_mod._BMAD_DRIFT_TASK_ARGV
     assert seen[0][1] == tmp_path
 

@@ -455,8 +455,8 @@ _CIS_SKILL_NAMES: tuple[str, ...] = (
 
 _SUPPORTED_MODULES: dict[str, ModuleBackend] = {
     "bmb": SetupSkillBackend(
-        skill_dir=Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup"),
-        skills_source_dir=Path(".pixi/envs/local-recipes/share/bmad-builder/skills"),
+        skill_dir=Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills/bmad-bmb-setup"),
+        skills_source_dir=Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills"),
     ),
     "tea": CondaInstallBackend(
         installer="bmad-tea-install",
@@ -551,7 +551,11 @@ _MODULE_HELP_CSV_RELATIVE_PATH = Path("assets/module-help.csv")
 _BMAD_RELATIVE_PATH = Path("_bmad")
 _BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH = Path("_bmad/custom/config.toml")
 _CLAUDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
-_LOCAL_RECIPES_ENV_RELATIVE_PATH = Path(".pixi/envs/local-recipes")
+# Story 63.6 (spec-pyforge-steward CAP-152): only pyforge-guild exists at runtime; the suite
+# share trees (bmad-builder, bmad-labs-skills, TEA) are Guild-feature deps, so the Guild env
+# is where the provisioner reads them. `local-recipes` is the recipe factory, never a runtime.
+_GUILD_ENV_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild")
+_LOCAL_RECIPES_ENV_RELATIVE_PATH = _GUILD_ENV_RELATIVE_PATH  # legacy name kept for callers; same path
 
 
 def _module_variable_defaults(module_yaml: dict[str, object]) -> dict[str, object]:
@@ -626,7 +630,7 @@ def _materialize_module_output_dirs(
 def _conda_prefix(*, cwd: Path, share_package: str | None = None) -> Path:
     """Resolve the conda/pixi prefix that holds suite share packages.
 
-    Prefer this checkout's `.pixi/envs/local-recipes` when it already holds
+    Prefer this checkout's `.pixi/envs/pyforge-guild` when it already holds
     the requested share package — the same convention Story 6.1 used for the
     bmb setup-skill path, and what fresh-clone fixtures stage under. Fall
     back to `CONDA_PREFIX` (set when the operator is inside the env that owns
@@ -649,8 +653,8 @@ def _conda_prefix(*, cwd: Path, share_package: str | None = None) -> Path:
     raise FileNotFoundError(
         "CONDA_PREFIX is not set and "
         f"{_LOCAL_RECIPES_ENV_RELATIVE_PATH} is missing under {cwd} — activate "
-        "the local-recipes pixi environment (or run via `pixi run -e "
-        "local-recipes`) so conda package installers can find their share data."
+        "the pyforge-guild pixi environment (or run via `pixi run -e "
+        "pyforge-guild`) so conda package installers can find their share data."
     )
 
 
@@ -982,7 +986,7 @@ def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) 
         raise FileNotFoundError(
             f"module {name!r}'s setup-skill directory is missing at {skill_dir} "
             "-- the bmad-builder pixi dependency is not installed. Fix with "
-            "`pixi install -e local-recipes`."
+            "`pixi install -e pyforge-guild`."
         )
 
     module_yaml_path = skill_dir / _MODULE_YAML_RELATIVE_PATH
@@ -1115,7 +1119,7 @@ def _provision_conda_install(
         raise FileNotFoundError(
             f"module {name!r}'s share package is missing at {share_root} — "
             f"the {backend.share_package} pixi/conda dependency is not "
-            "installed. Fix with `pixi install -e local-recipes`."
+            "installed. Fix with `pixi install -e pyforge-guild`."
         )
 
     skill_names = _installer_skill_names(backend, share_root=share_root)
@@ -1439,7 +1443,7 @@ def provision_plugin_skill(plugin: str, skill: str, *, cwd: str | Path) -> dict[
         raise FileNotFoundError(
             f"plugin {plugin!r}'s skill {skill!r} is missing at {skill_dir} — "
             f"the {backend.share_package} pixi/conda dependency is not "
-            "installed. Fix with `pixi install -e local-recipes`."
+            "installed. Fix with `pixi install -e pyforge-guild`."
         )
 
     already_installed = skill in _module_toml_skills(plugin, cwd=root)

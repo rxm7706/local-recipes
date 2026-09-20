@@ -5,7 +5,7 @@ Each addition drives the package's own `*-install` entry point (AD-1),
 records a `_bmad/custom/config.toml` `[modules.<name>]` manifest section
 (Story 46.2, AD-9 -- moved off `_bmad/config.yaml`), refuses skill-name
 collisions before first install, and stays reproducible against a
-fresh-clone fixture (share data staged under `.pixi/envs/local-recipes`).
+fresh-clone fixture (share data staged under `.pixi/envs/pyforge-guild`).
 WDS is covered as an explicit skip citation, never as a registered module.
 
 Story 46.3 adds TEA's own post-install flattening (`workflows/testarch/
@@ -68,7 +68,7 @@ def _stage_share_skills(
 ) -> Path:
     """Stage a minimal share/<package>/<source_dir>/<skill>/ tree under the
     fresh-clone pixi-env convention Story 6.1 already uses for bmb."""
-    share = root / ".pixi/envs/local-recipes/share" / package / source_dir
+    share = root / ".pixi/envs/pyforge-guild/share" / package / source_dir
     for name in skill_names:
         (share / name).mkdir(parents=True)
         (share / name / "SKILL.md").write_text(f"# {name}\n", encoding="utf-8")
@@ -86,7 +86,7 @@ def _stage_nested_share_skills(
     """Stage share/<package>/<source_dir>/<container>/<leaf>/ -- TEA's own
     real, one-level-too-deep `workflows/testarch/bmad-testarch-*` shape
     (Story 46.3), as opposed to `_stage_share_skills`'s flat leaf shape."""
-    share = root / ".pixi/envs/local-recipes/share" / package / source_dir / container
+    share = root / ".pixi/envs/pyforge-guild/share" / package / source_dir / container
     for name in leaf_names:
         (share / name).mkdir(parents=True)
         (share / name / "SKILL.md").write_text(f"# {name}\n", encoding="utf-8")
@@ -107,7 +107,7 @@ _TEA_WORKFLOW_LEAF_NAMES: tuple[str, ...] = (
 _TEA_ALL_SKILL_NAMES: frozenset[str] = frozenset({"bmad-tea", *_TEA_WORKFLOW_LEAF_NAMES})
 
 # A small REPRESENTATIVE module.yaml -- not the full 14-variable real file
-# (`.pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise/
+# (`.pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise/
 # module.yaml`), just enough shape to exercise the override-one-key,
 # keep-the-rest-at-default contract: a `test_artifacts` variable to
 # override, a bool variable and a string variable that must both survive
@@ -156,7 +156,7 @@ def _fake_installer_run(cmd, **kwargs):  # noqa: ARG001
     assert isinstance(backend, CondaInstallBackend)
 
     cwd = Path(kwargs.get("cwd") or ".")
-    prefix = Path((kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/local-recipes"))
+    prefix = Path((kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/pyforge-guild"))
     share_root = prefix / "share" / backend.share_package
 
     def _copy_dir(src: Path, target: Path) -> None:
@@ -212,7 +212,7 @@ def tea_fixture(tmp_path):
     )
     share_root = (
         tmp_path
-        / ".pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise"
+        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     )
     (share_root / "module.yaml").write_text(_TEA_MODULE_YAML_TEXT, encoding="utf-8")
     return tmp_path
@@ -264,7 +264,7 @@ def test_live_share_skill_names_are_disjoint_across_installer_modules():
             repo = ancestor
             break
     assert repo is not None
-    share = repo / ".pixi/envs/local-recipes/share"
+    share = repo / ".pixi/envs/pyforge-guild/share"
     if not share.is_dir():
         pytest.skip("local-recipes pixi env share data not present")
 
@@ -313,7 +313,7 @@ def test_live_utility_skills_share_tree_matches_the_ten_expected_names():
             repo = ancestor
             break
     assert repo is not None
-    share = repo / ".pixi/envs/local-recipes/share"
+    share = repo / ".pixi/envs/pyforge-guild/share"
     if not share.is_dir():
         pytest.skip("local-recipes pixi env share data not present")
 
@@ -459,7 +459,7 @@ def test_provision_tea_flatten_refreshes_stale_content_on_reprovision(tea_fixtur
     # one workflow changes.
     share_leaf = (
         tea_fixture
-        / ".pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise"
+        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
         / "workflows/testarch/bmad-testarch-nfr/SKILL.md"
     )
     share_leaf.write_text("# bmad-testarch-nfr (v2, upgraded)\n", encoding="utf-8")
@@ -517,7 +517,7 @@ def test_provision_prefers_local_share_over_ambient_conda_prefix(tea_fixture, mo
 
     assert result["installer"] == "bmad-tea-install"
     assert seen
-    assert Path(seen[0]) == tea_fixture / ".pixi/envs/local-recipes"
+    assert Path(seen[0]) == tea_fixture / ".pixi/envs/pyforge-guild"
 
 
 def test_provision_installer_exit_0_but_skills_missing_raises(tea_fixture, monkeypatch):
@@ -551,7 +551,7 @@ def test_provision_installer_missing_non_nested_skill_after_successful_flatten_r
         dest.mkdir(parents=True, exist_ok=True)
         cwd = Path(kwargs.get("cwd") or ".")
         prefix = Path(
-            (kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/local-recipes")
+            (kwargs.get("env") or {}).get("CONDA_PREFIX", cwd / ".pixi/envs/pyforge-guild")
         )
         share_root = prefix / "share" / "bmad-method-test-architecture-enterprise"
         shutil.copytree(share_root / "workflows" / "testarch", dest / "testarch")
@@ -594,7 +594,7 @@ def test_discovery_backends_skill_names_are_disjoint_in_fixture(tmp_path):
         source_dir="skills",
         skill_names=("bmad-os-gh-triage",),
     )
-    share = tmp_path / ".pixi/envs/local-recipes/share"
+    share = tmp_path / ".pixi/envs/pyforge-guild/share"
     claimed: dict[str, str] = {}
     for name, backend in _SUPPORTED_MODULES.items():
         if not isinstance(backend, CondaInstallBackend):
@@ -855,7 +855,7 @@ def test_provision_tea_missing_module_yaml_raises_named_error(tea_fixture, monke
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
     share_root = (
         tea_fixture
-        / ".pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise"
+        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     )
     (share_root / "module.yaml").unlink()
 
@@ -874,7 +874,7 @@ def test_provision_tea_non_mapping_module_yaml_raises_named_error(tea_fixture, m
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
     share_root = (
         tea_fixture
-        / ".pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise"
+        / ".pixi/envs/pyforge-guild/share/bmad-method-test-architecture-enterprise"
     )
     (share_root / "module.yaml").write_text("- not-a-mapping\n", encoding="utf-8")
 

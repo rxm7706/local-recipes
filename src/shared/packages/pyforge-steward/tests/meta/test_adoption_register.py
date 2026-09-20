@@ -465,10 +465,10 @@ def test_single_station_branch_is_not_dead_code(tmp_path):
 
 def _labs_share_skill_names(root: Path) -> set[str] | None:
     """Full labs-shipped skill names from the pixi-installed share tree
-    (`.pixi/envs/local-recipes/share/bmad-labs-skills/skills/*`), or `None`
+    (`.pixi/envs/pyforge-guild/share/bmad-labs-skills/skills/*`), or `None`
     if that share tree isn't present in the running test environment --
     mirrors this file's own not-yet-provisioned skip precedent."""
-    share = root / ".pixi" / "envs" / "local-recipes" / "share" / "bmad-labs-skills" / "skills"
+    share = root / ".pixi" / "envs" / "pyforge-guild" / "share" / "bmad-labs-skills" / "skills"
     if not share.is_dir():
         return None
     return {p.name for p in share.iterdir() if p.is_dir()}

@@ -3,7 +3,7 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: "2026-08-26"
+updated: "2026-09-20"
 context: pyforge-herald
 ---
 
@@ -206,3 +206,12 @@ intake record; these deltas correct what a reader must no longer take at face va
 6. **"Next Steps" above is historical** — the PRD → architecture → epics chain it calls for
    was run in full (2026-08-01/02 artifacts, since reconciled on this same date); do not
    re-run planning from this brief.
+
+## Currency reconciliation — 2026-09-20
+
+*Chain-currency sweep: `research/docs-site-bmad-method-pattern-2026-09-20.md` (an operator-asked
+seed, 09:55Z: the docs site matches BMAD-METHOD's Astro + Starlight + Pages pattern so upstream's
+skills and workflows apply unchanged) post-dated this document. It is input for `bmad-spec`, not yet
+a capability: no requirement, decision or story changes here until that pass mints the CAP.
+`updated:` bumped to record that the check ran; the six decisions the research asks for are listed
+in its § 3 and on the Dream's 2026-09-20 entry.*

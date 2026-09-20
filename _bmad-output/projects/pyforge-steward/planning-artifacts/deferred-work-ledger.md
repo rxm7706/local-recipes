@@ -4608,6 +4608,17 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+### DW-OPS-2026-09-20-1: `eval-quality` is pinned only in the `local-recipes` env, so `test_wired_column_agrees_with_live_pipeline_truth_for_every_row` fails in any fresh worktree that installs station envs only
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`
+  summary: `pixi.toml` pins `bmad-eval-quality` (`eval-quality` CLI) in the `local-recipes` feature only (`pixi.toml:836`, `:1916`); `suite.py:705-718` cannot see it via `shutil.which` under `-e pyforge-steward` and falls back to `<repo>/.pixi/envs/local-recipes/bin/eval-quality`, which exists on the operator's primary checkout (10 GB env) and not in a fresh worktree, so the adoption register's `Wired` column disagrees with the live probe there. Fix: pin `bmad-eval-quality` in the `pyforge-steward` feature (steward wields it), regenerate the lock, run `pyforge-station-tests` (shared surface); then drop the `local-recipes` fallback or keep it as a secondary probe.
+  evidence: 2026-09-20 in `../local-recipes-wt-agents-md-mod` (station envs only): steward 1577 passed / 1 failed on that test; the same test passes on the main checkout at the same tree. Found on the fleet PR #1551's shared-surface run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  severity: low
+  status: done
+  verified: 2026-09-20 — resolved by steward Story 63.5 in the same PR (#1551): `bmad-eval-quality` pinned in `[feature.pyforge-steward.dependencies]`, lock re-solved, `test_wired_column_agrees_with_live_pipeline_truth_for_every_row` passes in a station-envs-only worktree (1578 passed). The `suite.py:714` fallback itself is Story 63.6's to remove.
+  raised: 2026-09-20 — Owner: steward (suite adoption register, Story 45.1's pin). Not caused by #1551; recorded at shutdown rather than folded in (a `pixi.toml` dep change is its own lane).
+
 ### DW-OPS-2026-09-19-5: `.gitignore:740` is an unanchored `data/` pattern — it swallows every `data/` directory in the tree, including packaged JSON schemas that must ship (two `git add -f` so far); worktree hygiene pass pending for 17 merged sibling/agent worktrees
 
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`

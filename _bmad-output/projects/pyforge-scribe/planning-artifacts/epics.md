@@ -723,6 +723,18 @@ authored into a per-tool file; Dream items (4)–(10) are seeded, not this epic'
 **Status:** done
 **Outcome (2026-09-19):** landed with Story 19.1 in PR #1513 (operator: "shouldn't we fix this" — yes, one path dependency); tracked spec `specs/spec-19-2-scribe-capture-and-recall-run-from-the-session-default-environment.md`.
 
+### Story 19.3: The instruction surface is version-aware — Claude Code's built-in agents-md mod
+
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** `spec-pyforge-scribe` CAP-29 (operator ask 2026-09-20 09:35Z) • sits beneath the closed Epic 19 (the epic key stays `done` — `ledger-regression`)
+**difficulty:** easy
+**Surface:** `AGENTS.md` (§ How each harness loads this file — the Claude Code row: ≥2.1.277 built-in `agents-md` mod, pinned mode `claude-md-and-agents-md`, nested `AGENTS.md` honoured; below / Bedrock / Vertex / Foundry: the `@AGENTS.md` import), `CLAUDE.md` (the duplicated "Behavioral Guidelines" section collapses to a one-line pointer), `.claude/settings.json` (`customInstructions` → `AGENTS.md`), `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (H2s compared after spelling normalisation; the Claude Code row's facts asserted), `scripts/claude_instruction_mode_check.py` + `scripts/detectors.py` (runtime-scope currency warn: `claude --version` < 2.1.277 or `instructionFiles` ≠ the pinned mode; silent when `claude` is absent), `planning-artifacts/research/multi-harness-instruction-surface-2026-09-19.md` (dated addendum). Hand-driven 2026-09-20.
+**Given** Claude Code 2.1.277 (2026-09-18) ships a built-in `agents-md` mod whose default mode stays out of any project with a `CLAUDE.md`, so `AGENTS.md` still reaches Claude Code only through the import and the atlas child `AGENTS.md` never does; the harness table says "only through that import" unconditionally; `CLAUDE.md` and `AGENTS.md` both carry the five guidelines under differently-spelled H2s
+**When** the table states version + pinned mode, the duplicate collapses, the parity test normalises spelling, the operator's settings carry the mode and a runtime check reports drift
+**Then** every parity meta-test passes; the check warns on a runtime below 2.1.277 or a non-pinned mode and is silent without `claude`; `governance-currency` is green on both files
+**And** the import stays the floor — nothing here depends on the mod being present
+**Status:** done
+**Outcome (2026-09-20):** hand-driven in the fleet PR with marshal 46.11; see the tracked spec's Auto Run Result.
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

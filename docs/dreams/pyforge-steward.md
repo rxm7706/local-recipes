@@ -101,6 +101,32 @@ Drift — orphaned between stations.
   temp dir at the pinned SHA by an opt-in task and never vendored. #28 stands
   at `CHANGES_REQUESTED`, 39 commits, mergeable, no LICENSE on `main` yet; the
   accepted-risk ledger entry stays open with today's date.
+- **2026-09-20 (later) — Only `pyforge-guild` exists at runtime; the fleet's whole closure is one
+  locked artifact.** Operator rulings 10:10Z–10:30Z, on the day's first fresh-worktree failure
+  (steward's adoption-register probe found `eval-quality` only because the primary checkout
+  happened to have the 10 GB `local-recipes` env on disk): (1) `local-recipes` is the recipe
+  factory, not a runtime — "only pyforge-guild, the bare minimum and default pixi environment,
+  will be available at runtime"; station code that shells to `-e local-recipes` or reads
+  `.pixi/envs/local-recipes/...` is a bug (audit 2026-09-20: marshal `cli/watch.py`, `core/gate.py`,
+  `adapters/scribe_cli.py`; herald `deck_pipeline.py`, `sync_all.py`; steward `provision.py`,
+  `upgrade.py`, `suite.py`; the shelled tasks — `bmad-loop`, `deck-export`, `deck-facts`,
+  `deck-trio`, `platform-ci-local`, `wasm-build` — and the bmad-builder skill share dir must be
+  reachable from `pyforge-guild`); (2) a station's own env carries what its code wields
+  (`bmad-eval-quality` now pinned in `pyforge-steward`); (3) a new environment,
+  **`pyforge-foundry-full`**, is the union of every PyForge feature — never the runtime, never
+  installed by default — so the ecosystem's full, real dependency closure is one solved, locked,
+  checkable artifact. The first union solve paid for itself: mason's `python-build <1.6` window
+  could not co-resolve with the `>=1.6.0` floors four features pin, and warden's `py-rattler
+  >=0.26.0` (a catalog-sync bump) blocked conda's rattler-solver variant — both fixed, and (4)
+  "never cap without a reason": mason's engine ranges are floors now (its Spec's one-minor-window
+  boundary amended by ruling). A pixi 0.81.0 bump was attempted the same hour and reverted:
+  conda-forge's `pixi` package is still 0.80.0 on every platform, and an in-env pixi below
+  `requires-pixi` refuses the manifest — retry with `bump-pixi-version -- 0.81.0` once
+  `pixi search pixi` shows 0.81.0 (18 registry sites now; `docsite-check.yml` was unregistered).
+  → CAP-151 / Story 63.5 (the union env + the steward pin, hand-driven the same day) and CAP-152 /
+  Story 63.6 (no station code assumes `local-recipes`: the shelled tasks move into `guild-tasks`
+  with their deps in `pyforge-guild`, a meta-test reds the pattern in every station's `src/`;
+  marshal 46.12 and herald 25.1 own their shell-outs).
 - **2026-09-20 — Proposed: the ledger query answers "what is done, what is running, what is
   next" in one call.** Asked at 08:00Z on the third drain: "the full list of epics and
   stories by station, with what's completed, running and queued next." Today that is three

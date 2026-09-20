@@ -157,17 +157,46 @@ def test_packaged_claude_argv_shape_and_verbatim_tiers():
         prompt="do the story",
         model="opus",
     )
-    assert argv == (
+    # Story 46.11 (spec-pyforge-marshal CAP-262): the launch pins Claude Code's
+    # built-in `agents-md` mod to `claude-md-and-agents-md` via `--settings`
+    # (one whole JSON token), so nested AGENTS.md files load in every dispatched
+    # session regardless of the operator's user settings.
+    assert argv[:5] == (
         "/home/u/.local/bin/claude",
         "-p",
         "--permission-mode",
         "bypassPermissions",
-        "--model",
-        "opus",
-        "do the story",
+        "--settings",
     )
+    assert argv[6:] == ("--model", "opus", "do the story")
+    settings = json.loads(argv[5])
+    assert settings == {
+        "pluginConfigs": {
+            "agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}
+        }
+    }
+    assert argv.count("do the story") == 1
     assert model == "opus"
     assert reason is None
+
+
+def test_packaged_claude_settings_pin_is_one_literal_token_the_renderer_never_formats():
+    """Story 46.11: the JSON braces survive `render_dispatch_argv`'s literal
+    `str.replace` substitution untouched, and a prompt that happens to contain
+    `{` or `}` cannot bleed into the settings token."""
+    claude = load_packaged_profiles()["claude"]
+    argv, _, _ = render_dispatch_argv(
+        claude,
+        binary_path="claude",
+        worktree=Path("/work/tree"),
+        prompt="fix {prompt}-shaped text and } braces",
+        model=None,
+    )
+    token = argv[5]
+    assert json.loads(token)["pluginConfigs"]["agents-md@builtin"]["options"] == {
+        "instructionFiles": "claude-md-and-agents-md"
+    }
+    assert argv[-1] == "fix {prompt}-shaped text and } braces"
 
 
 def test_packaged_gemini_maps_tiers_and_declares_trust_flags():

@@ -148,7 +148,7 @@ reds a missing pointer or a duplicated section (`spec-pyforge-scribe` CAP-27; re
 
 | Harness | How it reaches `AGENTS.md` |
 |---|---|
-| Claude Code | `CLAUDE.md` imports it (`@AGENTS.md`) — with a `CLAUDE.md` present Claude Code reads `AGENTS.md` only through that import |
+| Claude Code | `CLAUDE.md` imports it (`@AGENTS.md`) — the floor on every runtime. **≥ 2.1.277** (2026-09-18) also ships a built-in `agents-md` mod; its default mode `claude-md-or-agents-md` *stays out of any project that has a `CLAUDE.md`*, so this repo pins `instructionFiles: claude-md-and-agents-md` (operator user settings; marshal's dispatch launch passes it via `--settings`, Story 46.11) — then every `AGENTS.md` loads beside `CLAUDE.md`, deduped by path (the import never double-loads), and a nested `AGENTS.md` (e.g. `src/shared/packages/pyforge-atlas/AGENTS.md`) attaches on `Read`. Below 2.1.277 and on Bedrock / Vertex / Foundry only the import applies. Currency: `python scripts/claude_instruction_mode_check.py` (runtime, advisory). |
 | Gemini CLI / Antigravity | `.gemini/settings.json` → `context.fileName: ["AGENTS.md", "GEMINI.md"]`; `GEMINI.md` is the Gemini-only addendum |
 | Cursor | native (root and nested `AGENTS.md`); `.cursor/rules/*.mdc` add glob-scoped rules only |
 | GitHub Copilot cloud agent / CLI | native (root + nested; nearest wins); `.github/copilot-instructions.md` is the Copilot-only addendum; `.github/workflows/copilot-setup-steps.yml` installs the Guild env |

@@ -5,7 +5,9 @@ sources:
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
   - src/shared/packages/pyforge-scribe/README.md
   - CLAUDE.md
-verified: 2026-09-19
+  - AGENTS.md
+  - docs/how-to/configure-your-coding-agent.md
+verified: 2026-09-20
 ---
 
 # Agent Memory Lifecycle
@@ -47,5 +49,5 @@ This scans the user-local auto-memory, classifies each entry, and proposes team-
 
 ## Integration Requirements for New Agents
 If you are building a new agent loop to run against PyForge:
-1. Load `.claude/memory/MEMORY.md` into the agent's context at session start (Claude Code gets it through the `CLAUDE.md` import; other harnesses must read it explicitly).
+1. Load `.claude/memory/MEMORY.md` into the agent's context at session start (Claude Code gets it through the `CLAUDE.md` import; other harnesses must read it explicitly). The rules file itself is a separate matter: `AGENTS.md` reaches Claude Code through `CLAUDE.md`'s `@AGENTS.md` import on every version, and natively on 2.1.277+ once the built-in `agents-md` mod is pinned to `claude-md-and-agents-md`; see [Configure your coding agent](../how-to/configure-your-coding-agent.md) for the per-harness setting.
 2. Give the agent a shell capability that can invoke `scribe capture` for team-relevant findings, and `scribe recall` before re-deriving something the team may already know.

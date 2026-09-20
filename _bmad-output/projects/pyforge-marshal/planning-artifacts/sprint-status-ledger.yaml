@@ -268,6 +268,8 @@ development_status:
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
+  46-11-the-dispatched-claude-session-is-launched-with-the-instruction-file-mode-pinned: done
+  46-12-marshal-s-shell-outs-name-the-guild-env: done
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: backlog
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog

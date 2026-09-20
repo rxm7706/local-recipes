@@ -47,7 +47,7 @@ matching ``core/policy.py``'s closed-vocabulary discipline):
 - ``env``: extra child-environment entries the launch needs.
 - ``fallback_bin_dirs``: repo-root-relative directories probed when the
   binary is not on ``PATH`` (the pixi-env CLIs live in
-  ``.pixi/envs/local-recipes/bin``, invisible to a bare operator PATH).
+  ``.pixi/envs/pyforge-guild/bin``, invisible to a bare operator PATH).
 - ``verified`` / ``notes``: provenance, stated honestly -- ``true`` only for
   an invocation shape empirically smoke-tested against the real CLI.
 - ``wrapper`` (Story 28.2): the OPTIONAL wire-compression wrapper --

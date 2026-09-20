@@ -54,7 +54,7 @@ _MODULE_HELP_CSV = (
     "configure,,anytime,,,false,{project-root}/_bmad,config.yaml\n"
 )
 
-_SKILL_RELATIVE_PATH = Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup")
+_SKILL_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills/bmad-bmb-setup")
 
 
 def _write_bmb_skill(root: Path) -> Path:
@@ -67,9 +67,9 @@ def _write_bmb_skill(root: Path) -> Path:
 
 
 # ── Story 46.4: the five real bmad-builder skills under `skills_source_dir`
-# (`.pixi/envs/local-recipes/share/bmad-builder/skills/`) ───────────────────
+# (`.pixi/envs/pyforge-guild/share/bmad-builder/skills/`) ───────────────────
 
-_SKILLS_SOURCE_RELATIVE_PATH = Path(".pixi/envs/local-recipes/share/bmad-builder/skills")
+_SKILLS_SOURCE_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/share/bmad-builder/skills")
 
 _SIBLING_BUILDER_SKILL_NAMES = (
     "bmad-agent-builder",
@@ -528,7 +528,7 @@ def test_provision_module_missing_backend_dir_names_the_path_and_the_pixi_fix(tm
 
     assert result.ok is False
     assert "bmad-bmb-setup" in result.summary
-    assert "pixi install -e local-recipes" in result.summary
+    assert "pixi install -e pyforge-guild" in result.summary
 
 
 def test_provision_module_missing_backend_dir_via_cli_is_a_duty_failure_not_a_crash(tmp_path, monkeypatch):

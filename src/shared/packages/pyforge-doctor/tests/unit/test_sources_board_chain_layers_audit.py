@@ -308,3 +308,60 @@ def test_default_chain_completeness_unchanged(
     assert json.loads(capsys.readouterr().out) == [
         f.to_json_dict() for f in inv_ok
     ]
+
+
+# --- the git date index must cover every stage glob (found live 2026-09-20) -------
+#
+# scan_fleet reads a stage as REACHED only when _artifact_dates() dates one of the
+# files _resolve() found, and _artifact_dates() dates a path from the filename, its
+# frontmatter, or the one `git log -- *_GIT_SCOPES` pass. Story 30.2 (2026-09-06)
+# repointed the `context` stage at the root AGENTS.md -- no path date, no frontmatter,
+# and outside every scope -- so every station but atlas carried a phantom `context`
+# gap and the CAP-3 layers checkpoint read `fail` beside "15/15 layers present". The
+# fixture tests above cannot see it: a tmp_path is not a git repo and its files carry
+# no dates, so nothing is reached, `required` collapses to ["dream"], and "context not
+# in gaps" holds vacuously. These two pin the invariant structurally and live.
+
+
+def _live_scan():
+    assert _REPO_ROOT is not None
+    return board._load_dashboard_generate(_REPO_ROOT)
+
+
+def _glob_root(pattern: str) -> str:
+    """The literal prefix of a glob, up to its first wildcard segment."""
+    parts: list[str] = []
+    for seg in pattern.split("/"):
+        if any(ch in seg for ch in "*?["):
+            break
+        parts.append(seg)
+    return "/".join(parts)
+
+
+def test_every_stage_glob_is_inside_the_git_date_index() -> None:
+    gen = _live_scan()
+    scopes = tuple(gen._GIT_SCOPES)
+    outside: list[str] = []
+    for slug, project, *_rest in gen._fleet_chains():
+        for stage, patterns in gen._stage_globs(slug, project, slug == project).items():
+            for pat in patterns:
+                root = _glob_root(pat)
+                if not any(root == s or root.startswith(s + "/") for s in scopes):
+                    outside.append(f"{slug}/{stage}: {pat}")
+    assert not outside, (
+        "stage globs outside _GIT_SCOPES -- _artifact_dates() cannot date what it "
+        "finds there, so scan_fleet reads the stage as never reached:\n  "
+        + "\n  ".join(sorted(set(outside))[:20])
+    )
+
+
+def test_root_agents_md_is_dated_by_the_git_index() -> None:
+    gen = _live_scan()
+    assert _REPO_ROOT is not None
+    if not (_REPO_ROOT / ".git").exists():  # pragma: no cover - a tarball checkout
+        pytest.skip("not a git checkout")
+    created, updated = gen._artifact_dates("AGENTS.md")
+    assert created and updated, (
+        "AGENTS.md is the `context` stage for every station (Story 30.2) and must "
+        f"date from the git index; got created={created!r} updated={updated!r}"
+    )

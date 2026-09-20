@@ -4184,6 +4184,28 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **And** the four entry points call this one command and nothing else for preconditions (vocabulary-one-name-one-job: one mechanism, many surfaces); a cloud clone with no feed can land a ledger flip by following the printed remedy
 **Status:** backlog
 
+### Story 63.5: `pyforge-foundry-full` — the fleet's whole dependency closure is one locked artifact
+
+**Type:** feature • **Effort:** S • **Deps:** S-63.1 • **FR/AD:** `spec-pyforge-steward` CAP-151 • operator rulings 2026-09-20 10:10Z–10:30Z; hand-driven in the fleet PR #1551
+**Surface:** `pixi.toml` (`[environments] pyforge-foundry-full` = the union of every PyForge feature, `no-default-feature`; `bmad-eval-quality` pinned in `[feature.pyforge-steward.dependencies]`), `pixi.lock` (the union solved on all three platforms), `scripts/pixi_version_registry.py` (+ `docsite-check.yml`, an unregistered pin found by sweep); the union solve's findings fixed at their owners — `src/shared/packages/pyforge-mason/pixi.toml` + `engines/__init__.py` + `tests/meta/test_engine_version_range_sync.py` (engine ranges become floors, mason memlog decision) and `[feature.pyforge-warden.dependencies]` (`py-rattler` floor back to 0.25.0).
+**Given** a fresh worktree's steward suite failed because `eval-quality` was pinned only in `local-recipes` and `pyforge-guild`, and no environment ever resolved every station's extras together
+**When** the union env is declared and locked and the steward pin lands
+**Then** `pixi lock` solves `pyforge-foundry-full` (648 packages on linux-64); `pyforge-steward-test` passes in a station-envs-only worktree; `pyforge-station-tests` green on the lock; `llms-full-check` clean; `pixi-version-check` clean over 18 sites
+**And** the two inconsistencies the first solve exposed are fixed with reasons written beside the pins; the pixi 0.81.0 bump is deferred (conda-forge's `pixi` package is 0.80.0) and the retry command recorded
+**Status:** done
+**Outcome (2026-09-20):** landed in PR #1551; see the tracked spec's Auto Run Result.
+
+### Story 63.6: No station code assumes the `local-recipes` environment at runtime
+
+**Type:** feature • **Effort:** M • **Deps:** S-63.5 • **FR/AD:** `spec-pyforge-steward` CAP-152 • cross-station: marshal 46.12 and herald 25.1 own their shell-outs; this story owns the Guild side and the guard
+**Surface:** `pixi.toml` (`guild-tasks` gains `deck-export`, `deck-facts`, `deck-trio`, `platform-ci-local`, `wasm-build` and the bmad-loop probes' tasks, with their deps in `[feature.pyforge-guild.dependencies]`; the size delta reported), `src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py`, `upgrade.py`, `suite.py` (the `.pixi/envs/local-recipes` lookups read the Guild env's `share/` and `bin/`), `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` (new: every station's `src/` scanned for `-e local-recipes` / `.pixi/envs/local-recipes`), the affected steward tests' fixtures.
+**Given** the 2026-09-20 audit: marshal `cli/watch.py`, `core/gate.py`, `adapters/scribe_cli.py`; herald `deck_pipeline.py`, `sync_all.py`; steward `provision.py`, `upgrade.py`, `suite.py` all reach `local-recipes`, an env that does not exist at runtime
+**When** every shelled task is reachable from `pyforge-guild` and the guard scans every station's `src/`
+**Then** `pixi run -e pyforge-guild <task>` works for each; the guard lists exactly the marshal and herald offenders until 46.12 / 25.1 land, then zero
+**And** `pyforge-guild` stays the bare minimum — each added dep is named with the task that needs it; `pyforge-station-tests` green
+**Status:** done
+**Outcome (2026-09-20):** landed in PR #1551 with marshal 46.12 and herald 25.1 — see the tracked spec's Auto Run Result.
+
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame
