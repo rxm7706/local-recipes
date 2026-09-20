@@ -211,6 +211,15 @@ def evaluate_dispatch_verification(
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
     scope_check_completed = False
+    # Story 53.1: `commands` can no longer be empty -- the S-13.7 guard is
+    # unconditionally appended above, so a station with a bare
+    # `verify_commands = []` now runs the guard alone rather than nothing.
+    # This mirrors `harness_bmadloop.render_policy_toml`, which has never
+    # checked for emptiness before appending it either. The `not commands`
+    # branch stays as defensive dead code (never reachable today) rather
+    # than being deleted, so a future change to
+    # `_verify_commands_with_surface_guard` that CAN yield an empty tuple
+    # keeps reporting `MRS-GATE-004` instead of silently losing it.
     if not commands:
         if status_for(compute_verdict(findings)) is Status.OK:
             findings.append(gate.no_commands_configured_finding())
@@ -325,9 +334,16 @@ def evaluate_dispatch_verification(
 
     if spec_text is not None:
         declared_commands = spec_binding.parse_success_signal(spec_text)
-        binding_findings = gate.check_spec_binding(
-            declared_commands, effective.verify_commands.value
-        )
+        # Story 53.1: bind against the SAME widened `commands` the loop
+        # above actually ran, not the bare station policy -- the derived
+        # S-13.7 guard is an extra `policy_commands` entry no tracked spec
+        # declares, and `check_spec_binding`'s one-directional comparison
+        # already treats an undeclared extra as implicit, never a finding
+        # (see its own docstring). Binding against the narrower
+        # `effective.verify_commands.value` would work too (the guard is
+        # never in `declared_commands` either), but this keeps "what ran"
+        # and "what was checked" the same tuple.
+        binding_findings = gate.check_spec_binding(declared_commands, commands)
         findings.extend(binding_findings)
         data["spec_binding"] = {
             "story": str(story_key),
