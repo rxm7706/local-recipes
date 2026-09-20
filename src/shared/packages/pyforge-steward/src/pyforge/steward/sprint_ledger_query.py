@@ -1185,7 +1185,7 @@ class RunningFact:
     warning: Optional[str] = None
 
 
-def _fleet_running_stations(payload: Any) -> "frozenset[str]":
+def _fleet_running_stations(payload: Any) -> frozenset:
     """Every station slug the payload's `data.projects` reports as having a
     live run on it -- `pattern` set and `status` not idle/terminal."""
     projects = None
@@ -1231,21 +1231,21 @@ def fetch_running_stations(process: ProcessPort, root: Path) -> RunningFact:
     return RunningFact(ok=True, stations=_fleet_running_stations(payload))
 
 
-def _done_ids(stories: List[WorkPassportItem]) -> "set[Tuple[str, str]]":
+def _done_ids(stories: List[WorkPassportItem]) -> set:
     """`(station, canonical_story_key)` for every `done` story -- the ONE done
     set both `get_runnable_backlog()` and `_compute_next()` read (never a
     second, divergent ready predicate)."""
     return {(s.station, canonical_story_key(s.story_id)) for s in stories if s.status == "done"}
 
 
-def _unmet_deps(story: WorkPassportItem, done_ids: "set[Tuple[str, str]]") -> List[str]:
+def _unmet_deps(story: WorkPassportItem, done_ids: set) -> List[str]:
     """This story's own declared deps not yet `done`, within its own station."""
     return [dep for dep in story.deps if (story.station, dep) not in done_ids]
 
 
 def _compute_next(
     story: WorkPassportItem,
-    done_ids: "set[Tuple[str, str]]",
+    done_ids: set,
     running_fact: Optional[RunningFact],
 ) -> str:
     """`done` / `blocked` / `ready` / `waits on S-x.y[, …]` / `running` / `?`
@@ -1316,8 +1316,19 @@ class SprintLedgerQueryEngine:
         epic_id: Optional[str] = None,
         search_term: Optional[str] = None,
         flag_overrides: Optional[Dict[str, Any]] = None,
+        ready_only: bool = False,
+        running_only: bool = False,
+        resolve_running: bool = False,
     ) -> QueryResult:
-        """Execute a query against estate sprint ledgers."""
+        """Execute a query against estate sprint ledgers.
+
+        `resolve_running` (Story 65.2, CAP-150): when true, makes ONE
+        `marshal watch --fleet --format json` call (via `self.process`) to
+        corroborate every `in-progress` story's `next` as `running`, or `?`
+        when marshal is unreachable (fail-open, one warning). Defaults to
+        false so the library/API default stays a pure, offline read; the
+        `ledger-query` CLI duty always passes `True`.
+        """
         filters: Dict[str, Any] = {
             "station": station,
             "statuses": statuses,
@@ -1326,6 +1337,8 @@ class SprintLedgerQueryEngine:
             "epic_id": epic_id,
             "search_term": search_term,
             "flag_overrides": dict(flag_overrides or {}),
+            "ready_only": ready_only,
+            "running_only": running_only,
         }
         warnings = self.hooks.trigger_pre_query(filters)
         # The query uses the dict every pre_query hook saw -- a hook may mutate it.
@@ -1335,6 +1348,8 @@ class SprintLedgerQueryEngine:
         unlinked_only = bool(filters.get("unlinked_only"))
         epic_id = filters.get("epic_id")
         search_term = filters.get("search_term")
+        ready_only = bool(filters.get("ready_only"))
+        running_only = bool(filters.get("running_only"))
 
         stations_to_scan = [station] if station else self.known_stations()
 
@@ -1379,8 +1394,34 @@ class SprintLedgerQueryEngine:
             if estate_summary.total_stories else 0.0
         )
 
+        # `next` (Story 65.2, CAP-150): computed over the FULL scanned set,
+        # before any filter below, so `--ready`/`--running` filter on the
+        # resolved value and `done_ids` sees every done story in scope.
+        done_ids = _done_ids(all_stories)
+        running_fact = fetch_running_stations(self.process, self.root_dir) if resolve_running else None
+        if running_fact is not None and not running_fact.ok:
+            message = running_fact.warning or "marshal watch --fleet unavailable"
+            _warn(message)
+            warnings.append(message)
+        for s in all_stories:
+            s.next = _compute_next(s, done_ids, running_fact)
+            progress = station_summaries.get(s.station)
+            if progress is not None:
+                if s.next == "ready":
+                    progress.next_ready += 1
+                elif s.next == "running":
+                    progress.next_running += 1
+        estate_summary.total_next_ready = sum(p.next_ready for p in station_summaries.values())
+        estate_summary.total_next_running = sum(p.next_running for p in station_summaries.values())
+
         # Apply Filters
         filtered_stories = all_stories
+
+        if ready_only:
+            filtered_stories = [s for s in filtered_stories if s.next == "ready"]
+
+        if running_only:
+            filtered_stories = [s for s in filtered_stories if s.next == "running"]
 
         if unimplemented_only:
             filtered_stories = [s for s in filtered_stories if s.status != "done"]
