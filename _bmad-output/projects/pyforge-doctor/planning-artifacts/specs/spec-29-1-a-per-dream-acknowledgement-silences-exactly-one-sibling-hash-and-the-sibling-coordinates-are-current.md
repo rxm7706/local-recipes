@@ -8,7 +8,7 @@ followup_review_recommended: false
 context: []
 deferred: []
 declared_low_risk: false
-baseline_revision: '75f372141904d64a6ec2ecc1943e285aa2435960'
+baseline_revision: 'ff2455866b3379fccf333e175e5166dab351c67e'
 ---
 
 <intent-contract>
