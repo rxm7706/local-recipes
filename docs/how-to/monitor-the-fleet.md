@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - pixi.toml
-verified: 2026-09-19
+verified: 2026-09-20
 ---
 
 # How to Monitor the Fleet
