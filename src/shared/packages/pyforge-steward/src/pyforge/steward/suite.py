@@ -705,16 +705,16 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             exe = shutil.which(exe_name)
             if exe:
                 return StageProbe(value="runnable", ok=True, detail=f"cli: {exe}")
-            # A CLI-only bmad-suite tool (e.g. bmad-eval-quality) is pixi-pinned
-            # under `local-recipes`'s own env, never a station env -- pixi
-            # isolates each env's PATH, so a probe run under `-e pyforge-steward`
-            # (or any other station) never sees it via `shutil.which` even when
-            # it is genuinely provisioned on this machine. Fall back to the
-            # repo's own default env bin dir before declaring it missing.
-            local_recipes_exe = repo / ".pixi" / "envs" / "local-recipes" / "bin" / exe_name
-            if local_recipes_exe.is_file():
+            # Story 63.6 (spec-pyforge-steward CAP-152): a CLI-only bmad-suite tool is
+            # pinned in the station env that wields it (bmad-eval-quality in
+            # pyforge-steward since 63.5) AND in the Guild default -- the only env that
+            # exists at runtime. pixi isolates each env's PATH, so a probe run under
+            # another station never sees it via `shutil.which`; fall back to the Guild
+            # env's bin dir before declaring it missing. Never `local-recipes`.
+            guild_exe = repo / ".pixi" / "envs" / "pyforge-guild" / "bin" / exe_name
+            if guild_exe.is_file():
                 return StageProbe(
-                    value="runnable", ok=True, detail=f"cli: {local_recipes_exe}"
+                    value="runnable", ok=True, detail=f"cli: {guild_exe}"
                 )
             return StageProbe(
                 value="missing",

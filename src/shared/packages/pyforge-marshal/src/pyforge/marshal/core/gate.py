@@ -643,7 +643,9 @@ def check_scope_with_mode(
 
 SHARED_SURFACE_PREFIX = "src/platform/"
 CROSS_SURFACE_VERIFY_COMMAND = (
-    "pixi run -e local-recipes platform-ci-local -- --test"
+    # Story 46.12 (spec-pyforge-marshal CAP-263): only pyforge-guild exists at runtime;
+    # the task moved into guild-tasks (steward 63.6) and provisions the platform envs itself.
+    "pixi run -e pyforge-guild platform-ci-local -- --test"
 )
 CROSS_SURFACE_GATE_CODE = "MRS-GATE-015"
 

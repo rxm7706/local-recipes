@@ -607,7 +607,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
         if not home.is_dir():
             return {"runs": []}
         return _run_json(
-            ["pixi", "run", "-e", "local-recipes", "bmad-loop", "list", "--json"],
+            ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "list", "--json"],
             home,
             "bmad-loop list --json",
         )
@@ -615,7 +615,7 @@ def _default_ports(process: ProcessPort, root: Path) -> WatchPorts:
     def run_status(slug: str, run_id: str) -> Mapping[str, Any]:
         home = Path.home() / ".bmad-loops" / slug
         return _run_json(
-            ["pixi", "run", "-e", "local-recipes", "bmad-loop", "status", run_id, "--json"],
+            ["pixi", "run", "-e", "pyforge-guild", "bmad-loop", "status", run_id, "--json"],
             home if home.is_dir() else root,
             f"bmad-loop status {run_id} --json",
         )

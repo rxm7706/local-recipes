@@ -6169,6 +6169,7 @@ So that marshal never depends on the recipe factory's 10 GB environment being in
 **When** every argv names `-e pyforge-guild` and no `.pixi/envs/local-recipes` path remains
 **Then** the watch's fake-port tests assert the Guild argv; `grep -rn 'local-recipes' pyforge-marshal/src` finds only prose; steward 63.6's guard lists no marshal offender
 **And** `pyforge-marshal-test` green; the live watch on this host still names the running dispatch
+**Outcome (2026-09-20):** done, hand-driven in PR #1551 — see the tracked spec's Auto Run Result.
 
 ## Epic 47: The review bot remembers the correction you gave two weeks ago (spec-marshal-recall-in-the-loop CAP-1..4)
 

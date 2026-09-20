@@ -2462,7 +2462,7 @@ def test_pixi_partial_deck_exporter_excludes_deck_pptx_from_its_subprocess_comma
     _PixiPartialDeckExporter().export(slug="pyforge-warden", repo_root=tmp_path)
 
     assert calls == [
-        ["pixi", "run", "-e", "local-recipes", "deck-export", "pyforge-warden",
+        ["pixi", "run", "-e", "pyforge-guild", "deck-export", "pyforge-warden",
          "html", "infographic-pptx"]
     ]
     assert "deck-pptx" not in calls[0]

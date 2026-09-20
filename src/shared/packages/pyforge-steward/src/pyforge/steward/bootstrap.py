@@ -32,7 +32,10 @@ _PIXI_TOML_RELATIVE_PATH = Path("pixi.toml")
 _PRE_COMMIT_CONFIG_RELATIVE_PATH = Path("pre-commit-config.yaml")
 _PYFORGE_TOML_RELATIVE_PATH = Path("pyforge.toml")
 _DEFAULT_REPO_URL = "https://github.com/rxm7706/local-recipes.git"
-_DEFAULT_PIXI_ENV = "local-recipes"
+# Story 63.6 (spec-pyforge-steward CAP-152): the default a bare clone bootstraps is the
+# Guild env -- the bare minimum every harness gets at runtime. `local-recipes` (the recipe
+# factory, 10 GB) is an explicit `--env local-recipes` for recipe work, never the default.
+_DEFAULT_PIXI_ENV = "pyforge-guild"
 _REQUIRES_PIXI_RE = re.compile(r'requires-pixi = ">=([^"]+)"')
 _SHELL_INIT_MARKER = "# pyforge-steward shell-init"
 _VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")

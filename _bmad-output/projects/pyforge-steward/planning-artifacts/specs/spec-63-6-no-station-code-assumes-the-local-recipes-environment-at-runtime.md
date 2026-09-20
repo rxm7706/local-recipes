@@ -2,8 +2,10 @@
 title: '63.6: No station code assumes the local-recipes environment at runtime'
 type: 'feature'
 created: '2026-09-20'
-status: 'ready'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '7f5584a2e49412b4fe9ee000d8f8b1760d024c4b'
+final_revision: 'pending — the merge commit of the fleet/agents-md-mod PR (#1551)'
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 deferred: []
@@ -54,3 +56,21 @@ Minted 2026-09-20 from `epics.md` so `marshal factory dispatch` can resolve this
 
 **Manual checks:**
 - `pixi run -e pyforge-guild <task>` for each shelled task; `du -sh .pixi/envs/pyforge-guild` before and after, reported in the Auto Run Result.
+
+## Review Triage Log
+
+### 2026-09-20 — hand-driven pass (operator: "why didn't we do this in #1551")
+  - `[high]` `[patch]` `provision.py` read the bmad-builder / labs / TEA share trees from `.pixi/envs/local-recipes` (`_LOCAL_RECIPES_ENV_RELATIVE_PATH`), `upgrade.py` prepended `.pixi/envs/local-recipes/bin` to PATH and shelled `-e local-recipes bmad-drift-check`, `suite.py` fell back to the factory env's bin, `bootstrap.py` bootstrapped a clone with `local-recipes` by default. All repointed at `pyforge-guild`; the legacy constant name kept as an alias for callers.
+  - `[high]` `[patch]` the release catalog (`data/bmad_core_releases/6.12.0.yaml`) named the skf packaged source under `local-recipes`; `bmad-module-skill-forge` was pinned only there. Pinned in the Guild's linux-64 target (mirrors the factory's platform-scoped pin); catalog repointed.
+  - `[medium]` `[patch]` four tasks station code shells to (`deck-export`, `deck-facts`, `deck-trio`, `platform-ci-local`) lived in `[feature.local-recipes.tasks]`; moved to `guild-tasks`, `pyforge-herald` added to the Guild feature for the two that import `pyforge.herald.stamps`. Guild size 849 → 934 MB (herald's playwright/pillow/python-pptx/lxml + skill-forge), each dep named with the task that needs it.
+  - `[medium]` `[patch]` no guard existed. `tests/meta/test_no_station_assumes_local_recipes.py`: AST scan of every station's `src/` string constants — argv pairs, `.pixi/envs/local-recipes` paths, `-e local-recipes` / `pixi install -e local-recipes` messages; docstrings, schema `urn:` ids, the GitHub slug and the cutover-root name exempt; a self-test pins the rule.
+  - `[low]` `[patch]` 11 steward test fixtures staged the factory path; repointed. Two how-tos and the script header named `-e local-recipes` for the moved tasks; repointed (they still run under `local-recipes`, which composes `guild-tasks`).
+
+## Auto Run Result
+
+**Status:** done
+**Summary:** every shelled task is reachable from `pyforge-guild`; steward's lookups read the Guild env; the guard lists zero offenders across all ten packages (marshal 46.12 and herald 25.1 landed in the same PR).
+**Verification:** `pyforge-steward-test` 1593 passed (guard 12 incl. the self-test); `pixi run -e pyforge-guild deck-export|deck-facts|deck-trio|platform-ci-local -- --help` each run; `llms-full-check` clean; `environment.yaml` in sync; `pyforge-station-tests` — see the PR body.
+**Files changed:** see Binding, plus `bootstrap.py`, `data/bmad_core_releases/6.12.0.yaml`, `docs/how-to/presentation-deck.md`, `docs/how-to/recipe-testing-and-builds.md`, `scripts/platform-ci-local.sh` (header).
+**Residual risks:** the Guild grew 85 MB; an operator on macOS/Windows has no skf source in the Guild (the package is linux-64 only, as in the factory env) — `steward upgrade` reports it, as before.
+**Follow-up review recommendation:** false

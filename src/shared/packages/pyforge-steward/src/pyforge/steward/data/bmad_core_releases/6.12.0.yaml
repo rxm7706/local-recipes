@@ -1,6 +1,6 @@
 # Target-release catalog for CAP-1 pre-flight (Story 14.1 shape).
 # Grounded in the unpacked conda package `bmad-method 6.12.0`
-# (.pixi/envs/local-recipes/lib/node_modules/bmad-method, package.json 6.12.0,
+# (.pixi/envs/pyforge-guild/lib/node_modules/bmad-method, package.json 6.12.0,
 # CHANGELOG "v6.12.0 - 2026-09-03") diffed against the installed 6.11.0 tree on
 # 2026-09-06 — never from the release page.
 version: "6.12.0"
@@ -158,7 +158,7 @@ custom_modules:
     # `diff -rq` empty (core-upgrade memlog, 2026-09-06). The core argv now
     # gains `--pin skf=v2.1.0`.
     pin: v2.1.0
-    packaged_source: .pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src
+    packaged_source: .pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src
     notes: >-
       Trap 13 — `--action update -y` deselects and DELETES a cached custom module
       (335 _bmad/skf/** files + 16 skill dirs on 2026-09-06); closed by Story

@@ -81,7 +81,7 @@ def _no_real_home(monkeypatch, tmp_path):
 
 # ── Story 14.7 fixture shapes (mirror the live repo layout) ────────────────
 _PACKAGED_SOURCE_REL = (
-    ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
+    ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
 )
 _SKF_CONFIG_REL = "_bmad/skf/config.yaml"
 # Hand-set keys the 6.12 installer regenerated away (customization-inventory C7).
@@ -899,7 +899,7 @@ def test_apply_passes_env_to_keyword_aware_runner_and_prepends_pixi_bin(
         branch="review/env",
     )
 
-    pixi_bin = repo / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = repo / ".pixi" / "envs" / "pyforge-guild" / "bin"
     env = seen["env"]
     assert isinstance(env, dict)
     assert env["PATH"] == f"{pixi_bin}{os.pathsep}{os.environ['PATH']}"
@@ -935,7 +935,7 @@ def test_apply_env_untouched_when_binaries_on_path(tmp_path, monkeypatch):
 def test_resolve_installer_environment_pixi_bin_is_derived_from_repo(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     repo.mkdir()
-    pixi_bin = repo / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = repo / ".pixi" / "envs" / "pyforge-guild" / "bin"
 
     monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None)
     env, note = resolve_installer_environment(repo, "bmad-method")
@@ -963,7 +963,7 @@ def test_default_installer_runner_closes_stdin_and_uses_resolved_env(
     repo.mkdir()
     monkeypatch.setattr(shutil, "which", lambda name, *a, **k: None)
     env, _note = resolve_installer_environment(repo, "bmad-method")
-    pixi_bin = repo / ".pixi" / "envs" / "local-recipes" / "bin"
+    pixi_bin = repo / ".pixi" / "envs" / "pyforge-guild" / "bin"
 
     seen: dict[str, object] = {}
 
@@ -1018,7 +1018,7 @@ def test_apply_refuses_unresolvable_installer_binary_before_branch(tmp_path):
 
     message = str(excinfo.value)
     assert str(missing_bin) in message
-    assert str(repo / ".pixi" / "envs" / "local-recipes" / "bin") in message
+    assert str(repo / ".pixi" / "envs" / "pyforge-guild" / "bin") in message
     assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip() == before_branch
     assert not _git(repo, "branch", "--list", "review/no-binary").stdout.strip()
     assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
@@ -1164,7 +1164,7 @@ def test_apply_custom_module_own_installer_binary_missing_is_reported(tmp_path):
     assert module.own_installer_exit is None
     assert module.own_installer_error is not None
     assert "nonexistent-skf-installer" in module.own_installer_error
-    assert str(repo / ".pixi" / "envs" / "local-recipes" / "bin") in module.own_installer_error
+    assert str(repo / ".pixi" / "envs" / "pyforge-guild" / "bin") in module.own_installer_error
     assert module.ok is False
     assert report.custom_modules_ok is False
     assert not fx["own_record"].exists()

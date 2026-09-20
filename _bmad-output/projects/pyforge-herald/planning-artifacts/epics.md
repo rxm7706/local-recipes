@@ -895,4 +895,5 @@ So that a deck sync never depends on the recipe factory's environment.
 **When** they name `-e pyforge-guild` and the tasks live in `guild-tasks`
 **Then** the argv assertions read the Guild env; `deck-sync-proof`'s opt-in live run still passes; steward 63.6's guard lists no herald offender
 **And** `pyforge-herald-test` green
+**Outcome (2026-09-20):** done, hand-driven in PR #1551 with steward 63.6 (the gate resolved in one landing) — see the tracked spec's Auto Run Result.
 

@@ -2,8 +2,10 @@
 title: '46.12: Marshal''s shell-outs name the Guild env'
 type: 'fix'
 created: '2026-09-20'
-status: 'ready'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '7f5584a2e49412b4fe9ee000d8f8b1760d024c4b'
+final_revision: 'pending — the merge commit of the fleet/agents-md-mod PR (#1551)'
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 deferred: []
@@ -52,3 +54,18 @@ Minted 2026-09-20 from `epics.md` so `marshal factory dispatch` can resolve this
 
 **Manual checks:**
 - `grep -rn 'local-recipes' src/shared/packages/pyforge-marshal/src` finds no argv or path.
+
+## Review Triage Log
+
+### 2026-09-20 — hand-driven pass (operator: "why didn't we do this in #1551")
+  - `[high]` `[patch]` `cli/watch.py` shelled `-e local-recipes bmad-loop list|status`; `core/gate.py` `CROSS_SURFACE_VERIFY_COMMAND` named `-e local-recipes platform-ci-local`; `adapters/scribe_cli.py` fell back to `.pixi/envs/local-recipes/bin`; the three packaged harness profiles' `fallback_bin_dirs` named it too. All repointed at `pyforge-guild` (bmad-loop and headroom are Guild deps; `platform-ci-local` moved to `guild-tasks` by steward 63.6).
+  - `[low]` `[patch]` `test_watch.py` asserted the factory argv; updated.
+
+## Auto Run Result
+
+**Status:** done
+**Summary:** no runtime `local-recipes` reference remains in `pyforge-marshal/src` (the guard confirms); the watch, gate and scribe-CLI tests pass with the Guild argv.
+**Verification:** `pyforge-marshal-test` 8347 passed; the live watch on this host still names the running dispatch (53.2).
+**Files changed:** `cli/watch.py`, `core/gate.py`, `adapters/scribe_cli.py`, `core/harness_profile.py` (docstring), `data/harness_profiles/{claude,gemini,copilot}.toml`, `tests/unit/test_watch.py`.
+**Residual risks:** none from this change.
+**Follow-up review recommendation:** false

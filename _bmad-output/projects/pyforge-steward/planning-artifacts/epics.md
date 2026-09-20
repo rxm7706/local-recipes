@@ -4203,6 +4203,8 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **When** every shelled task is reachable from `pyforge-guild` and the guard scans every station's `src/`
 **Then** `pixi run -e pyforge-guild <task>` works for each; the guard lists exactly the marshal and herald offenders until 46.12 / 25.1 land, then zero
 **And** `pyforge-guild` stays the bare minimum — each added dep is named with the task that needs it; `pyforge-station-tests` green
+**Status:** done
+**Outcome (2026-09-20):** landed in PR #1551 with marshal 46.12 and herald 25.1 — see the tracked spec's Auto Run Result.
 
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 

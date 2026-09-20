@@ -30,7 +30,7 @@ Spot-check failures never flip CAP-5 ``verdict`` / ``DutyResult.ok``.
 Story 14.6 / CAP-6: the installer is driven on purpose — the argv carries
 ``--directory <repo> --modules <every module the installed manifest lists,
 core first>``, stdin is closed, and ``node`` / ``bmad-method`` resolve from the
-repo's ``.pixi/envs/local-recipes/bin`` only when absent from PATH. An exit-0
+repo's ``.pixi/envs/pyforge-guild/bin`` only when absent from PATH. An exit-0
 run that changed nothing is a refusal (``ApplyReport.zero_diff``, trap 12),
 never a green; a manifest that names no modules stops the apply before the
 review branch exists (trap 13). No wrapper script.
@@ -99,7 +99,8 @@ _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
 _RATTLER_PKGS_CACHE_RELATIVE_PATH = Path(".cache/rattler/cache/pkgs")
 # CAP-6: where the installer's `node` / `bmad-method` live when they are not on
 # PATH — always derived from the repo path, never a machine path.
-_PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/local-recipes/bin")
+# Story 63.6 (spec-pyforge-steward CAP-152): the Guild env is the only runtime env.
+_PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/pyforge-guild/bin")
 # Stable ``X.Y.Z`` plus optional npm prerelease suffix (e.g. ``6.12.1-next.0``).
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[\w.]+)?$")
 
@@ -1600,7 +1601,7 @@ def resolve_installer_environment(
 ) -> tuple[dict[str, str], str]:
     """Environment for the installer run plus a human note on how it resolved.
 
-    ``<repo>/.pixi/envs/local-recipes/bin`` is prepended to ``PATH`` only when
+    ``<repo>/.pixi/envs/pyforge-guild/bin`` is prepended to ``PATH`` only when
     *installer_bin* and/or ``node`` are absent from the current ``PATH``; the
     directory is derived from *repo*, never a machine path.
     """
@@ -3780,13 +3781,13 @@ _BMAD_DRIFT_TASK_ARGV: tuple[str, ...] = (
     "pixi",
     "run",
     "-e",
-    "local-recipes",
+    "pyforge-guild",
     "bmad-drift-check",
 )
 
 
 def _import_drift_factory() -> tuple[Any, Any]:
-    """Import seam for tests; raises ImportError outside the local-recipes env."""
+    """Import seam for tests; raises ImportError outside the Guild env."""
     from pyforge.doctor.models import DoctorStatus
     from pyforge.doctor.sources import factory as bmad_drift_factory
 
@@ -3813,7 +3814,7 @@ def _run_bmad_drift_task(
         return GateResult(
             name="bmad-drift-integrity",
             ok=True,
-            detail="no HARD/FAIL integrity findings (via `pixi run -e local-recipes bmad-drift-check`)",
+            detail="no HARD/FAIL integrity findings (via `pixi run -e pyforge-guild bmad-drift-check`)",
         )
     kind = "findings" if proc.returncode == 1 else "could-not-run"
     return GateResult(

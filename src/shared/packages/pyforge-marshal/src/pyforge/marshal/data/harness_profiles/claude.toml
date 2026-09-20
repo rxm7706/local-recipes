@@ -72,7 +72,7 @@ notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocat
 [wrapper]
 binary = "headroom"
 argv = ["wrap", "claude", "--code-memory", "none", "--port", "{wire_port}", "--"]
-fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+fallback_bin_dirs = [".pixi/envs/pyforge-guild/bin"]  # Story 46.12 (spec-pyforge-marshal CAP-263): only pyforge-guild exists at runtime (headroom-ai / the wire wrapper are Guild-feature deps)
 # HEADROOM_WORKSPACE_DIR is headroom's canonical read-write state root
 # (headroom/paths.py::workspace_dir), and the CCR store defaults to
 # `<workspace>/ccr_store.db` (headroom/cache/compression_store.py::

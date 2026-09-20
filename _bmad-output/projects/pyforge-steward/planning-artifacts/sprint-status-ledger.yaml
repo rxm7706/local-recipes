@@ -263,7 +263,7 @@ development_status:
   63-3-one-deny-list-one-hook-the-guild-session-guardrails-are-enforced-not-asserted: backlog
   63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point: backlog
   63-5-pyforge-foundry-full-the-fleet-s-whole-dependency-closure-is-one-locked-artifact: done
-  63-6-no-station-code-assumes-the-local-recipes-environment-at-runtime: backlog
+  63-6-no-station-code-assumes-the-local-recipes-environment-at-runtime: done
   64-1-the-nine-frames-go-bare-type-frame-and-the-readme-pins-the-upstream-heads: done
   64-2-pyforge-publishes-its-frame-conformance-profile: done
   65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill: done

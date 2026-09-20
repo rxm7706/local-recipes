@@ -164,7 +164,7 @@ def test_catalog_ships_612_custom_modules():
     assert raw[0]["pin"] == "v2.1.0"
     assert skf.pin == "v2.1.0"
     assert skf.packaged_source == (
-        ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
+        ".pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src"
     )
     assert "Trap 13" in skf.notes and "Trap 14" in skf.notes
     assert "skf-campaign" in skf.notes
