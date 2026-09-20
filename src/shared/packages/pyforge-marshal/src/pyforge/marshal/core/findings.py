@@ -1734,6 +1734,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # bmad-build-auto without an operator decision. The sibling of
         # MRS-DISP-040's `done`-status CAP-4-only refusal above.
         "MRS-DISP-045",
+        # Story 51.11 (CAP-258): a worktree spec reads status: blocked but
+        # its baseline_revision does not match this run's own baseline --
+        # advisory only, the exit still classifies as stopped_externally.
+        "MRS-DISP-046",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
