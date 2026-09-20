@@ -226,6 +226,99 @@ def merged_story_keys(
     return frozenset(keys)
 
 
+#: Reads a story's tracked spec ``status:`` value as it stands on
+#: ``origin/main`` (or ``None`` when unreadable). Injected by the caller
+#: (marshal, never core/this module) -- ``corroborated_merged_story_keys``
+#: stays pure (AD-4): no filesystem, no git, no clock.
+SpecStatusReader = Callable[[StoryKey], str | None]
+
+
+def _requires_spec_corroboration(match: LandingEvidenceMatch) -> bool:
+    """Story 51.7/CAP-255: exactly one landing-evidence shape is also the
+    shape a mint, fallout or fix PR's branch equally well carries -- a
+    ``GITHUB_PR_MERGE_SUBJECT`` match reached through a bare station branch
+    (``BranchDerivedShape.STATION_BRANCH``). That branch names the story
+    key with no intent to land it (the 2026-09-18 ``doctor/27-4-mint``
+    incident: PR #1477 merged the MINT branch, not a landing, and
+    ``story_merged_on_main`` read true anyway).
+
+    Every other shape is unaffected and ``spec_status_for`` is never
+    called for it: the intent-scoped ``dispatch/<slug>/<key>`` branch
+    Story 22.9 mints only when marshal itself dispatched THIS key
+    (``BranchDerivedShape.DISPATCH_BRANCH``), the templated/bmad-loop/
+    recovery-commit/story-direct shapes (none of which reach this
+    function through a station branch), and the ``land/…``-branch
+    recovery fallback ``corroborated_merged_story_keys`` below tries
+    separately -- all trusted exactly as ``merged_story_keys`` already
+    trusts them."""
+    return (
+        match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+        and match.branch_shape is BranchDerivedShape.STATION_BRANCH
+    )
+
+
+def corroborated_merged_story_keys(
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    spec_status_for: SpecStatusReader,
+    known_keys: frozenset[StoryKey] | None = None,
+) -> frozenset[StoryKey]:
+    """``merged_story_keys``, corroborated by content rather than trusting a
+    station branch's name alone (Story 51.7/CAP-255).
+
+    Same reachability surface as ``merged_story_keys`` -- every shape
+    ``classify_merge_subject`` recognizes, plus the identical ``land/
+    <station>-<epic>-<seq>`` recovery-branch fallback embedded in a GitHub
+    PR merge subject -- with exactly ONE additional gate: a match that
+    reached ``GITHUB_PR_MERGE_SUBJECT`` through a bare station branch
+    (see ``_requires_spec_corroboration``) counts as a landing only when
+    ``spec_status_for(key)`` reports the key's tracked spec as
+    ``status: done`` on ``origin/main`` -- a mint, fallout or fix PR merges
+    it at ``ready``/``backlog``, a landing merges the promoted twin.
+
+    Every other shape is trusted exactly as ``merged_story_keys`` already
+    trusts it; ``spec_status_for`` is never called for those, so a caller
+    whose reader is expensive (a git-show subprocess) pays for it only on
+    the one ambiguous shape.
+
+    ``known_keys`` (Story 35.1): forwarded verbatim, identical semantics to
+    ``merged_story_keys``'s own parameter -- this function does not relax
+    or replace that pre-existing templated-shape corroboration.
+
+    Pure (AD-4): ``spec_status_for`` is the caller's own injected reader
+    (marshal's ``cli``/dispatch-consumer layer, never core) -- no
+    filesystem or git access happens in this module."""
+    keys: set[StoryKey] = set()
+    for subject in subjects:
+        match = classify_merge_subject(subject, template=template, project_slug=project_slug)
+        if match is not None:
+            key = _story_key_from_ref(match.key)
+            if key is None:
+                continue
+            if (
+                known_keys is not None
+                and match.shape is LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT
+                and key not in known_keys
+            ):
+                continue
+            if _requires_spec_corroboration(match) and spec_status_for(key) != SPEC_STATUS_DONE:
+                continue
+            keys.add(key)
+            continue
+        gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
+        if gh_match is not None:
+            branch_match = classify_branch_name(
+                gh_match.group("branch"), project_slug=project_slug
+            )
+            if branch_match is not None:
+                key = _story_key_from_ref(branch_match.key)
+                if key is not None:
+                    keys.add(key)
+    return frozenset(keys)
+
+
 def branch_story_merge_confirmed_by_grammar(
     branch: str,
     story_key: StoryKey,
