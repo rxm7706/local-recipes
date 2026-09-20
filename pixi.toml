@@ -873,6 +873,7 @@ sqlite-vec = ">=0.1.6"            # headroom-ai's [proxy] extra; not on conda-fo
 [feature.pyforge-guild.target.linux-64.dependencies]
 bmad-module-skill-forge = ">=2.1.0"  # Story 63.6 (spec-pyforge-steward CAP-152): `steward upgrade` re-applies local skill edits from the packaged skf source (release catalog `packaged_source`), and only the Guild env exists at runtime -- mirrors [feature.local-recipes.target.linux-64.dependencies]'s pin (SelfExplainML build is linux-64 only)
 tmux = ">=3.5"                    # bmad-loop's spin multiplexer (see feature.pyforge-marshal.target.linux-64 for the 2026-09-10 incident)
+caveman = ">=2.6.0"               # Claude Code output-token compression skill installer (~65% output-token cut); `caveman-install` is what `marshal seed kit`'s caveman-skill item probes for (kit.py KIT_ITEMS) and what `MRS-DISP-042` names when absent. Previously left off this env on purpose (CAP-5, 2026-09-16: "caveman is a per-harness skill") on the theory the `output` layer's graceful skip made it safe to omit -- but that leaves every `marshal factory dispatch` running unwrapped by default with no local way to get the token savings. linux-64 only: SelfExplainML build (mirrors [feature.local-recipes.target.linux-64.dependencies]'s pin); the nodejs-24.* hold that keeps it compatible with codegraph applies here too, though codegraph itself is not a pyforge-guild dependency.
 
 # The Detectors workflow's environment (operator decision 2026-09-04, PR #1043): pixi
 # first, pip only as the documented fallback in .github/workflows/detectors.yml.

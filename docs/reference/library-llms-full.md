@@ -17,7 +17,9 @@ name pyforge-atlas's and pyforge-scribe's direct declarations) and 2026-09-19 (�
 `llms-full-check` reported on `main`) and 2026-09-20 (§ 10: headroom-ai's `[proxy]` extra
 documented -- `openai`, `orjson`, `magika`, `zstandard`, `onnxruntime`, `watchdog`,
 `sqlite-vec`; `pyforge-guild`-only, added after the extra's absence crashed a `marshal
-factory dispatch` run). Channels: conda-forge + SelfExplainML.
+factory dispatch` run; same pass also adds `caveman` to `pyforge-guild` -- its
+`caveman-install` presence-probe has no `fallback_bin_dirs` escape hatch, so it needs
+the SAME env dispatch runs in, not just `local-recipes`). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -577,7 +579,14 @@ Knowledge & indexing for agents:
 - **caveman** (>=2.6.0) — Claude Code output-token compression skill installer
   (`caveman-install`; ~65% output-token cut). **linux-64 only** (SelfExplainML
   patched build 2, host nodejs held at 24.* to coexist with codegraph — see
-  recipes/caveman).
+  recipes/caveman). Also `pyforge-guild` (linux-64 target) since 2026-09-20:
+  `marshal seed kit`'s caveman-skill item and `marshal factory dispatch`'s
+  own `_seed_dispatch_output_layer` both probe `caveman-install` with a bare
+  `shutil.which` (no `fallback_bin_dirs`, unlike headroom's harness-binary
+  resolution), so it has to be on the SAME env's PATH the dispatch process
+  itself runs in -- previously absent from `pyforge-guild` on the theory
+  that the `output` layer's graceful skip made it safe to omit, but that
+  left every dispatch running unwrapped by default.
 
 ---
 

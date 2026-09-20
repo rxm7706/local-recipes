@@ -2045,6 +2045,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -2117,7 +2118,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mypy-2.3.1-py314hfe1a184_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-26.8.2-ha5cdc1e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.21.0-h50021de_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.3-py314hd3a7d6b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/onnxruntime-1.30.0-py314h12b0d56_1_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openjpeg-2.5.4-heb1ab33_2.conda
@@ -2125,7 +2126,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/orjson-3.12.0-py314h6c1ebe3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.3.0-py314h50bfbbb_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixi-0.80.0-hf01adef_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-hd412ae8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-h5585027_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-7.35.1-py314h0469dc4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py314hfe1a184_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-h7cc23a3_1004.conda
@@ -13605,6 +13606,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -15569,6 +15571,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/caveman-2.6.0-hfc2019e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -15641,7 +15644,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mypy-2.3.1-py314hfe1a184_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-26.8.2-ha5cdc1e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.21.0-h50021de_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.3-py314hd3a7d6b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/onnxruntime-1.30.0-py314h12b0d56_1_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openjpeg-2.5.4-heb1ab33_2.conda
@@ -15649,7 +15652,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/orjson-3.12.0-py314h6c1ebe3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.3.0-py314h50bfbbb_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixi-0.80.0-hf01adef_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-hd412ae8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/playwright-1.63.0-h5585027_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-7.35.1-py314h0469dc4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py314hfe1a184_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-h7cc23a3_1004.conda
