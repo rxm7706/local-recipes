@@ -95,6 +95,24 @@ def test_mint_vendor_passport_requires_at_least_one_nickname():
         mint_vendor_passport(vendor_id="acme")
 
 
+def test_mint_vendor_passport_whitespace_only_jira_key_is_treated_as_absent():
+    """A whitespace-only string is not a real nickname -- must raise the same
+    as an omitted one, not be accepted as truthy."""
+    with pytest.raises(PassportMintError, match="nickname"):
+        mint_vendor_passport(vendor_id="acme", jira_key="   ")
+
+
+def test_mint_vendor_passport_strips_whitespace_padded_vendor_id():
+    """`"  acme  "` and `"acme"` must mint under the SAME stored vendor_id --
+    a copy-pasted argument with padding must not fragment the 'v1 is one
+    vendor' invariant into two never-matching identities."""
+    result = mint_vendor_passport(vendor_id="  acme  ", jira_key="PROJ-strip")
+    assert result["status"] == "minted"
+    assert result["vendor_id"] == "acme"
+    row = WorkPassport.objects.get(passport_id=result["passport_id"])
+    assert row.vendor_id == "acme"
+
+
 def test_mint_vendor_passport_refuses_when_dashboard_extra_not_importable(monkeypatch):
     """The spec's stated AC: `[dashboard]` not installed -> `status: refused`,
     exercised through `mint_vendor_passport` itself (not `record_vendor_passport`
@@ -117,6 +135,7 @@ def test_record_vendor_passport_happy_path_with_only_jira_key():
     row = WorkPassport.objects.get(passport_id=result["passport_id"])
     assert row.vendor_id == "acme"
     assert row.jira_key == "PROJ-100"
+    assert row.title == "Only Jira"
 
 
 def test_record_vendor_passport_happy_path_with_only_github_item_id():
@@ -126,6 +145,8 @@ def test_record_vendor_passport_happy_path_with_only_github_item_id():
     assert result["status"] == "minted"
     assert result["github_item_id"] == "GH-200"
     assert result["jira_key"] is None
+    row = WorkPassport.objects.get(passport_id=result["passport_id"])
+    assert row.title == "Only GH"
 
 
 def test_record_vendor_passport_identical_repeat_creates_two_distinct_rows():
@@ -252,6 +273,15 @@ def test_passport_duty_mint_neither_key_fails():
     assert result.ok is False
     assert "nickname" in result.summary
     assert WorkPassport.objects.count() == 0
+
+
+def test_passport_duty_mint_blank_vendor_id_fails():
+    """The `PassportMintError` path is not just exercised through
+    `mint_vendor_passport` directly -- it must also survive `PassportDuty.
+    run()`'s try/except-to-`DutyResult` conversion."""
+    ns = build_parser().parse_args(["passport", "mint", "--vendor-id", "", "--jira-key", "PROJ-1"])
+    result = PassportDuty().run(ns)
+    assert result.ok is False
 
 
 def test_passport_duty_json_on_success():
