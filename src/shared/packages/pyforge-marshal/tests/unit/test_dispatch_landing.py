@@ -21,7 +21,11 @@ from pyforge.marshal.core.dispatch_landing import (
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
 from pyforge.marshal.core.model import Severity
-from pyforge.marshal.dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
+from pyforge.marshal.dispatch_land import (
+    _SPEC_SURFACE_NAME_RE,
+    _reconcile_spec_surface_drift,
+    execute_dispatch_land,
+)
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
 
