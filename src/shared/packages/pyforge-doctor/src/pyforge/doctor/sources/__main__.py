@@ -61,6 +61,7 @@ from . import (
     frozen_path,
     general_docs_consistency,
     ledger,
+    live_proof_surfaces,
     marshal,
     one_chain,
     pixi_currency,
@@ -138,6 +139,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # occupancy vs the docs/MAP.md allow-list; same shape as
     # GENERAL_DOCS_CONSISTENCY above.
     Source.DOCS_SHELF_OCCUPANCY.value: docs_shelf.gather,
+    # Story 26.1 (spec-pyforge-doctor CAP-77) -- a touched surface
+    # catalogued in live-proof-surfaces.md gets an advisory finding naming
+    # it; same shape as DOCS_SHELF_OCCUPANCY above.
+    Source.LIVE_PROOF_SURFACE.value: live_proof_surfaces.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

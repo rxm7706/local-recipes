@@ -518,6 +518,16 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # docs/MAP.md vs the four Diátaxis quadrants (docs/tutorials, how-to,
     # reference, explanation) only. A MAP link to a missing page under docs/
     # is FAIL; an unmapped quadrant page is WARN (warn-first). CAN FAIL.
+    SourceRegistration(
+        source=Source.LIVE_PROOF_SURFACE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 26.1 (spec-pyforge-doctor CAP-77) -- sources/live_proof_surfaces.py.
+    # A touched surface catalogued in live-proof-surfaces.md (herald, scribe,
+    # atlas, warden, guild-cross-station) gets an advisory finding naming it;
+    # fleet subject (the catalog spans multiple stations, same rationale as
+    # GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY above). Never FAIL.
 )
 
 

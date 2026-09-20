@@ -224,6 +224,10 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # Story 23.7 (Epic 23 / spec-pyforge-doctor CAP-54): leftover-
         # shelf path occupancy vs the docs/MAP.md allow-list.
         "docs-shelf-occupancy",
+        # Story 26.1 (spec-pyforge-doctor CAP-77): a touched surface
+        # catalogued in live-proof-surfaces.md gets an advisory finding
+        # naming it, matched via the catalog's own Surface globs column.
+        "live-proof-surface",
     }
 
 
