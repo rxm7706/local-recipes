@@ -273,6 +273,11 @@ class FakeProcess:
     """``ProcessPort`` stand-in: scripted liveness, never a real subprocess."""
 
     def __init__(self, alive: bool | list[bool] = False) -> None:
+        if isinstance(alive, list) and not alive:
+            # An empty script would IndexError on the first tick, which reads
+            # as a fake defect rather than the supervisor assertion the test
+            # meant to make.
+            raise ValueError("FakeProcess(alive=[]) has no liveness to script")
         self._script = list(alive) if isinstance(alive, list) else None
         self._constant = alive if isinstance(alive, bool) else False
         self.is_alive_calls = 0
