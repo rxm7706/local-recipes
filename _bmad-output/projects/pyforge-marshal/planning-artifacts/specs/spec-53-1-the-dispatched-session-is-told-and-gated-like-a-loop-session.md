@@ -2,7 +2,7 @@
 title: '53.1: The dispatched session is told and gated like a loop session'
 type: 'feature'
 created: '2026-09-20'
-status: 'in-review'
+status: 'done'
 baseline_revision: '1735cf9f13c71e279818146464ff3a167b01d066'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -104,3 +104,27 @@ Minted 2026-09-20 from `epics.md` so `marshal factory dispatch` can resolve this
 - `[false]` `[reject]` `test_evaluate_dispatch_verification_dedupes_an_already_declared_guard` only exercises the guard already declared last, not first/middle — verified false: the filter-then-append algorithm removes the guard from wherever it sits and appends it at the end unconditionally, so its position in the source list cannot change the outcome; there is no untested code path, only an untested input arrangement that cannot produce a different result.
 - `[false]` `[reject]` No operator-facing way to preview a dispatch station's effective verify-command list (including the guard) before a run, unlike a loop home's inspectable rendered `policy.toml` — verified false: this is an intentional, already-documented design trade-off (`_verify_commands_with_surface_guard`'s own docstring: "this is not a rendered file... it is folded in at USE time"); the Always bullet requires guard-content parity across the two adapters, not preview-mechanism parity.
 - `[false]` `[reject]` Intent Alignment terminology divergences (spec's Approach says the guard is applied "at render" vs. the dispatch implementation applying it "at USE time"; R3-vs-R4 enforcement-mechanics phrasing; edge-case row 5's `location:` rule coverage) — verified false: prose imprecision only, no behavioral mismatch against any Always/Never bullet or I/O matrix row; the `location:` rule is covered by the prompt-text test, and the guard's own output behavior is unchanged (Never bullet forbids changing what it checks).
+
+## Auto Run Result
+
+**Summary:** A `marshal factory dispatch` session is now told and gated on the S-13.7 spec-surface-reconcile obligation the same way a `bmad-loop` session already is. The dispatch prompt (`harness_bmadbuild.py`) states the memlog/co-governor/`--write-baseline`/`location:` obligations verbatim, and the effective verify commands a dispatch session actually runs are derived (never declared) with `python scripts/spec_surface_reconcile.py` appended — the same constant (`harness_bmadloop._SURFACE_RECONCILE_COMMAND`) the loop adapter already renders into every loop home's `policy.toml`. `check_spec_binding` treats the derived guard as implicit, so no pre-authored tracked spec needed a `## Verification` edit.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py` — adds the `_SPEC_SURFACE_OBLIGATION` prompt constant (imported from the loop adapter's guard constant) and splices it into the dispatch prompt.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — adds `_verify_commands_with_surface_guard` (dedupes then appends the guard, whitespace-normalized like `check_spec_binding`); `evaluate_dispatch_verification` now runs commands through it; `run_verify_commands_only` (the `dispatch_land.py` merge-tree preview) also routed through it (review-pass fix, since the guard is filesystem-state-based and does transfer to a merge-tree preview, unlike the scope/spec-binding/cross-surface layers that function deliberately omits).
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py` — docstring only: documents `check_spec_binding`'s existing normalization now relied on by the guard's dedup.
+- `tests/unit/test_dispatch_verification.py`, `tests/unit/test_dispatch_verify_merge_tree.py`, `tests/unit/test_gate.py`, `tests/unit/test_harness_bmadbuild.py` — new/updated coverage for the prompt constant, guard append/dedup/failure behavior, spec-binding transparency, and the merge-tree preview's guard inclusion.
+
+**Review findings breakdown** (9 findings; see `## Review Triage Log` above for full evidence):
+- Patched (2): `run_verify_commands_only` excluding the guard from the merge-tree preview (medium); exact-match (non-whitespace-normalized) dedup in `_verify_commands_with_surface_guard` (low).
+- Deferred (1): `reclassify_pre_existing_gate_findings`'s `.py`-only path extraction can mask this story's own non-`.py` drift when an unrelated pre-existing `.py` drift finding co-occurs (medium; root cause pre-exists this story) — recorded in `deferred:` frontmatter.
+- Rejected (6, all `false` or `low`): the `cli/dispatch.py` re-preflight fingerprint reads being un-routed through the guard (false — pure drift-detection hash, never executed); lost `MRS-GATE-004` signal for a station with empty `verify_commands` (low — mirrors pre-existing, sanctioned loop-adapter parity behavior); private-constant cross-module reach and a duplicated filter/append idiom (low — the exact pattern the spec's Always bullet mandates, not an import-linter violation); the dedup test's guard-already-last-position coverage gap (false — the algorithm is position-independent); no operator-facing preview of a dispatch station's effective verify commands (false — a documented, intentional design trade-off); Intent Alignment's terminology divergences ("at render" vs "at USE time" wording, R3/R4 phrasing, edge-case row 5 coverage) (false — prose imprecision only, no behavioral mismatch).
+
+**Follow-up review recommendation:** `false`. This pass patched one `medium` and one `low` entry — not two or more `medium`, and no `high` — so the first-pass threshold is not met.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 8346 passed, 1 skipped, 12 deselected (re-run after patches; exit 0).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped (re-run after patches; exit 0).
+- Manual trace (in lieu of a live dispatch run): confirmed `evaluate_dispatch_verification`'s two real call sites (`cli/dispatch.py`, `dispatch_supervisor/__main__.py`) and `run_verify_commands_only`'s one call site (`dispatch_land.py`) all resolve the guard through the same `_verify_commands_with_surface_guard` function; confirmed the loop adapter's `render_policy_toml` output is byte-identical (untouched by this diff); confirmed `check_spec_binding` returns `()` unchanged for a pre-authored spec that never names the guard (existing + new tests).
+
+**Residual risks:** the deferred `reclassify_pre_existing_gate_findings` gap (above) remains: a dispatch session whose own drift is entirely on non-`.py` governed files, occurring alongside an unrelated pre-existing `.py` drift elsewhere in the repo, could still land with its own drift silently downgraded to WARN. `main`'s own `spec-surface-check` CI gate is an independent backstop that would still catch the residual drift after landing.
