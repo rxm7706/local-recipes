@@ -185,6 +185,49 @@ def test_build_fleet_row_omits_scope_advisories_key_when_empty() -> None:
     assert "dispatch_verification_scope_advisories" not in row
 
 
+def test_build_fleet_row_surfaces_landing_findings() -> None:
+    """Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+    (MRS-DISP-047/048) must render, not just journal -- same AC4 rationale
+    as the scope-advisories precedent above."""
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="53-2-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+        dispatch_landing_findings=(
+            {
+                "code": "MRS-DISP-048",
+                "severity": "error",
+                "message": "cannot commit/push spec-surface reconcile",
+            },
+        ),
+    )
+    row, finding = build_fleet_row(facts)
+    assert finding is None
+    assert row["dispatch_landing_findings"] == [
+        {
+            "code": "MRS-DISP-048",
+            "severity": "error",
+            "message": "cannot commit/push spec-surface reconcile",
+        }
+    ]
+
+
+def test_build_fleet_row_omits_landing_findings_key_when_empty() -> None:
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="53-2-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+    )
+    row, _finding = build_fleet_row(facts)
+    assert "dispatch_landing_findings" not in row
+
+
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[0] == "false":
