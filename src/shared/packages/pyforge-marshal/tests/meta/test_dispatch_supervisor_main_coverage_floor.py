@@ -72,9 +72,8 @@ def test_the_supervisor_entrypoint_measures_at_or_above_its_floor(tmp_path: Path
 
     assert completed.returncode == 0, completed.stdout[-4000:] + completed.stderr[-2000:]
     payload = json.loads(report.read_text(encoding="utf-8"))
-    measured = {
-        path: data for path, data in payload["files"].items() if path.endswith(str(_MODULE_TAIL))
-    }
+    tail = str(_MODULE_TAIL)
+    measured = {path: data for path, data in payload["files"].items() if path.endswith(tail)}
     assert len(measured) == 1, sorted(payload["files"])
     percent = next(iter(measured.values()))["summary"]["percent_covered"]
 
