@@ -561,13 +561,14 @@ class TableFormatter(QueryFormatterPlugin):
         if not result.stories:
             return "No stories matched."
 
-        headers = ["Station", "Story ID", "Status", "Jira Key", "GitHub Item", "Title"]
+        headers = ["Station", "Story ID", "Status", "Next", "Jira Key", "GitHub Item", "Title"]
         rows = []
         for s in result.stories:
             rows.append([
                 s.station,
                 s.story_id,
                 s.status.upper(),
+                s.next,
                 s.jira_key or "-",
                 s.github_item_id or "-",
                 s.title[:45] + ("..." if len(s.title) > 45 else "")
@@ -1158,14 +1159,132 @@ class TrackedLedgerSource(LedgerSourcePlugin):
         return ledger
 
 
+# --- Running fact (Story 65.2, CAP-150) ---
+
+# Restated, closed vocabulary read off marshal's OWN `watch --fleet --format
+# json` output (never its journal, never `pyforge.marshal` internals): a
+# project row counts as having a live run "on it" when its `pattern` is set
+# and its `status` is not one of these idle/terminal words.
+_RUN_INACTIVE_STATUSES = frozenset({"idle", "finished", "complete", "completed", "stopped"})
+_MARSHAL_WATCH_ARGV: Tuple[str, ...] = ("marshal", "watch", "--fleet", "--format", "json")
+_MARSHAL_WATCH_TIMEOUT_S = 120.0
+
+
+@dataclass(frozen=True)
+class RunningFact:
+    """The outcome of one `marshal watch --fleet --format json` call.
+
+    `ok=False` means unreachable/non-zero-exit/non-JSON -- CAP-150's fail-open
+    posture: every `next` that would read `running` reads `?` instead, and
+    `stations` stays empty. `stations` is this checkout's own -- marshal's
+    Tier-3 run state is per clone.
+    """
+
+    ok: bool
+    stations: frozenset = frozenset()
+    warning: Optional[str] = None
+
+
+def _fleet_running_stations(payload: Any) -> "frozenset[str]":
+    """Every station slug the payload's `data.projects` reports as having a
+    live run on it -- `pattern` set and `status` not idle/terminal."""
+    projects = None
+    if isinstance(payload, dict):
+        data = payload.get("data")
+        if isinstance(data, dict):
+            projects = data.get("projects")
+    running: set = set()
+    if isinstance(projects, list):
+        for row in projects:
+            if not isinstance(row, dict):
+                continue
+            slug = row.get("slug")
+            pattern = row.get("pattern")
+            status = str(row.get("status") or "").strip().lower()
+            if isinstance(slug, str) and slug and pattern and status not in _RUN_INACTIVE_STATUSES:
+                running.add(slug)
+    return frozenset(running)
+
+
+def fetch_running_stations(process: ProcessPort, root: Path) -> RunningFact:
+    """ONE `marshal watch --fleet --format json` call through
+    `pyforge.core.process` -- steward never imports `pyforge.marshal` and
+    never reads its journal (CAP-150's seam). Fail-open: `marshal` absent
+    from PATH, a non-zero exit, or non-JSON/non-object stdout all report
+    `RunningFact(ok=False, ...)` rather than raising.
+    """
+    try:
+        result = process.run(list(_MARSHAL_WATCH_ARGV), cwd=root, timeout_s=_MARSHAL_WATCH_TIMEOUT_S)
+    except ProcessError as exc:
+        return RunningFact(ok=False, warning=f"marshal watch --fleet unreachable: {exc}")
+    if result.returncode != 0:
+        return RunningFact(
+            ok=False,
+            warning=f"marshal watch --fleet exited {result.returncode}: {result.stderr.strip()[:200]}",
+        )
+    try:
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return RunningFact(ok=False, warning="marshal watch --fleet did not return JSON")
+    if not isinstance(payload, dict):
+        return RunningFact(ok=False, warning="marshal watch --fleet JSON was not an object")
+    return RunningFact(ok=True, stations=_fleet_running_stations(payload))
+
+
+def _done_ids(stories: List[WorkPassportItem]) -> "set[Tuple[str, str]]":
+    """`(station, canonical_story_key)` for every `done` story -- the ONE done
+    set both `get_runnable_backlog()` and `_compute_next()` read (never a
+    second, divergent ready predicate)."""
+    return {(s.station, canonical_story_key(s.story_id)) for s in stories if s.status == "done"}
+
+
+def _unmet_deps(story: WorkPassportItem, done_ids: "set[Tuple[str, str]]") -> List[str]:
+    """This story's own declared deps not yet `done`, within its own station."""
+    return [dep for dep in story.deps if (story.station, dep) not in done_ids]
+
+
+def _compute_next(
+    story: WorkPassportItem,
+    done_ids: "set[Tuple[str, str]]",
+    running_fact: Optional[RunningFact],
+) -> str:
+    """`done` / `blocked` / `ready` / `waits on S-x.y[, …]` / `running` / `?`
+    -- or the story's own ledger status verbatim for anything else (Story
+    65.2, CAP-150). `blocked` is checked before any deps computation, so a
+    blocked story is never reported `ready`.
+    """
+    if story.status == "done":
+        return "done"
+    if story.status == "blocked":
+        return "blocked"
+    if story.status == "backlog":
+        unmet = _unmet_deps(story, done_ids)
+        return "ready" if not unmet else "waits on " + ", ".join(unmet)
+    if story.status == "in-progress":
+        if running_fact is None:
+            # No running-fact call was made for this query (library default) --
+            # trust the ledger's own claim rather than fabricate unavailability.
+            return "running"
+        if not running_fact.ok:
+            return "?"
+        return "running" if story.station in running_fact.stations else story.status
+    return story.status
+
+
 # --- Core Query Engine ---
 
 class SprintLedgerQueryEngine:
     """Engine for loading, filtering, querying, and exporting sprint ledgers."""
 
-    def __init__(self, root_dir: Optional[Path] = None, flags_file_path: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        root_dir: Optional[Path] = None,
+        flags_file_path: Optional[Path] = None,
+        process: Optional[ProcessPort] = None,
+    ) -> None:
         self.root_dir = Path(root_dir) if root_dir is not None else repo_root()
         self.flags_file_path = flags_file_path
+        self.process: ProcessPort = process if process is not None else PosixProcess()
         self.formatters = FormatterRegistry()
         self.sources = SourceRegistry()
         self.hooks = HookRegistry()
