@@ -2,7 +2,7 @@
 title: '46.7: The docs name marshal dispatch and spin the execution front door'
 type: 'docs'
 created: '2026-09-18'
-status: 'done'
+status: 'in-progress'
 baseline_revision: 'ff2455866b'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -80,6 +80,14 @@ has no existing "bare bmad-build-auto invocation" signal to extend (verified by 
 `sources/`), and detecting a bare skill invocation from outside that session's own transcript is
 a separate, non-trivial design problem — not a same-sized docs edit. If wanted, it belongs to a
 follow-on story with its own CAP, not folded into this S-effort docs story.
+
+The intent-contract's I/O & Edge-Case Matrix row (read-only, recovered verbatim from `epics.md`)
+restates the AC as a table row rather than describing a runtime I/O scenario, and its "Expected
+Output/Behavior" cell is truncated mid-word. No pytest in this repo asserts markdown prose content
+in `AGENTS.md`/`CLAUDE.md`/a skill note, so there is no dedicated automated test to point the
+Matrix Test Audit at. The audit for this row was performed by direct inspection: the diff since
+`baseline_revision` was read in full and confirms the required phrases land in all three files,
+which is the applicable check for a `type: docs` story with no code-level I/O.
 
 ## Verification
 
