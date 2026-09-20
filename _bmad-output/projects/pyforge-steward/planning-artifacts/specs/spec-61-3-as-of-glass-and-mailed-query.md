@@ -89,8 +89,10 @@ class GlassReading:
     message: str = ""
 
 def compute_glass_reading(*, direction: str, now: datetime | None = None) -> GlassReading:
-    # validate direction in DIRECTIONS -> GlassError; reference_now = now or
-    # datetime.now(timezone.utc); naive `now` -> GlassError.
+    # validate direction in DIRECTIONS -> GlassError; THEN validate naive `now` -> GlassError
+    # (check before binding reference_now -- review pass 1 flagged the reverse order as a
+    # fragile validate-after-use pattern, harmless today but worth getting right the first time);
+    # only then reference_now = now or datetime.now(timezone.utc).
     # importlib.import_module("pyforge.steward.dashboard.glass_query") ->
     # ImportError -> GlassReading(status="refused", state=None, message="pyforge-steward[dashboard] extra not installed").
     # outcome = module.read_latest_corridor_load(direction=direction)
@@ -115,6 +117,11 @@ def render_glass_table(readings: dict[str, GlassReading], fmt: str) -> str:
     #   header ["View", "Direction", "State", "Waybill", "Loaded At (UTC)", "Message"]).
     # fmt == "markdown": pipe-table lines (mirror sprint_ledger_query's MarkdownFormatter/
     #   sync-matrix table-building idiom), same columns, "|---|---|---|---|---|---|" separator.
+    #   Escape each cell (`waybill`/`message` are caller-supplied free text, Story 61.1):
+    #   replace "|" -> "\|" and any newline -> " " before interpolating -- review pass 1 (Edge
+    #   Case Hunter): an unescaped "|" or newline in a waybill corrupts the table's column
+    #   structure. The CSV branch needs no such escaping -- `csv.writer` already quotes special
+    #   characters safely.
     # `reading.state or "refused"` / `reading.waybill or ""` / `reading.loaded_at or ""` per row.
 
 def _direction_ok(reading: GlassReading) -> bool:
@@ -216,13 +223,25 @@ no rows for a direction -> `state="unborn"`, `waybill=None`; a row loaded "today
 `state="failed"`; a row loaded on an earlier date, none today -> `state="stale"`, citing that row's
 waybill — **the I/O Matrix's three required scenarios**; `[dashboard]` extra absent — patch
 `sys.modules`/`importlib` to raise `ImportError` — -> `status="refused"`); `render_glass_table`
-(csv and markdown shape for both readings; unknown format -> `GlassError`); `GlassDuty.run()` (bare
-with both directions fresh -> `ok=True`; bare with one direction `"failed"` -> `ok=False`; export
-with the flag off (default) -> `ok=False`, summary names the flag; export with
-`--flag enable_glass_export=true` -> `ok=True`, table content present for both csv and markdown;
-`--json` on a bare and an export call, both success and failure branches); CLI parsing
+(csv and markdown shape for both readings, **including one reading with `status="refused"`**
+(review pass 1, Blind Hunter) — asserts the `reading.state or "refused"` / `reading.waybill or ""`
+fallbacks render correctly; a markdown-branch case with a waybill containing `"|"` and a newline,
+asserting the row is escaped and the table stays well-formed (review pass 1, Edge Case Hunter);
+unknown format -> `GlassError`); `GlassDuty.run()` (bare with both standup and shipped fresh ->
+`ok=True`; bare with the inbound reading `"failed"` -> `ok=False`; **bare with the dashboard extra
+forced unavailable -> `ok=False` via the duty layer itself, not only via `compute_glass_reading`
+directly** (review pass 1, Verification Gap Reviewer: closes the gap where `_direction_ok`'s
+`status == "ok"` guard was previously unexercised at the duty level); export with the flag off
+(default) -> `ok=False`, summary names the flag; export with `--flag enable_glass_export=true` ->
+`ok=True`, table content present for both csv and markdown; `--json` on a bare and an export call,
+both success and failure branches); a small assertion that the four state strings used across
+`compute_glass_reading`'s branches are each members of `GLASS_STATES` (review pass 1, Blind Hunter:
+keeps the constant from silently drifting from the literals); CLI parsing
 (`build_parser().parse_args(["glass"])`, `["glass", "export", "--format", "csv"]`, default format
-`"markdown"`).
+`"markdown"`). **Both `standup` and `shipped` test fixtures use `direction="inbound"`** — per the
+2026-09-19 bad_spec correction, there is no separate "shipped reads outbound" scenario to test;
+what needs proving instead is that `standup_htmx_view`/`shipped_htmx_view` (and `GlassDuty`'s two
+bare-output entries) read the SAME inbound reading and differ only in label.
 
 **Existing tests to edit:**
 - `tests/unit/test_cli.py:35-59` (`test_there_are_exactly_twenty_two_duties`): rename to
