@@ -5,7 +5,7 @@ created: '2026-09-20'
 status: 'in-review'
 baseline_revision: 'fa54e525cbf28e49e6975799390866e996ca0e59'
 review_loop_iteration: 1
-followup_review_recommended: false
+followup_review_recommended: true
 context: ['{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md']
 warnings: ['oversized']
 deferred: []
@@ -173,3 +173,13 @@ Count check: 3 + 24 + 16 + 11 = 54, matching `find docs/{tutorials,how-to,refere
   - `[medium]` `[bad_spec]` Intent Alignment Auditor: the Spec's own Tasks & Acceptance/AC text for skill-dir-hygiene ("a stray non-layout file … WARNs") is not reconciled anywhere in the Spec against the shipped `README.md`-only behavior — same root cause as the Blind Hunter/Edge Case Hunter rows above, grouped, same route.
 
 **Process note (deviation from the literal cascading-order default, recorded here):** the workflow's default is "if bad_spec exists, lower entries are moot since code will be re-derived." The bad_spec group above resolved to a **spec-text-only** amendment (KEEP: the shipped code was already correct — see Spec Change Log) rather than a code revert, so no re-derivation occurred and the `patch` group's findings were never invalidated or superseded by it. Applying both in this same pass is a deliberate efficiency choice, not an oversight: reverting-and-re-deriving already-correct code to reach the same code a second time would have been pure waste.
+
+**Patches applied (2026-09-20, same pass):** all six `patch`-routed rows above were sent to the implementation subagent and fixed:
+- `scripts/docs_map_render.py` now calls `docs_currency.load_map_yaml` (the same schema-validated read `gather()` uses) instead of a bare `yaml.safe_load`; invalid YAML, a page missing a required key, and a missing `pages` key all now return 1 with a clean stderr message instead of crashing uncaught or silently writing an empty registry.
+- Marker-detection/splice logic unified: new `docs_currency._find_registry_bounds` + public `docs_currency.splice_registry_section`; `docs_map_render.py` now calls the latter instead of carrying an independent copy of the begin/end constants and index arithmetic.
+- New `tests/scripts/test_docs_map_render.py` (9 tests) covers the happy-path splice and all documented error paths.
+- `docs_currency.py`'s `_stale_sources` now flags a `sources:` entry whose path was never committed to git (`reason: "source not found in git history"`), instead of silently treating it as current.
+- `test_sources_docs_currency.py` gained a test for `_is_git_ignored`'s previously-uncovered branch inside `_dead_references`.
+- `docs/how-to/run-and-understand-detectors.md` gained a "### Docs currency (`docs-currency-check`)" remediation subsection, and its existing "Docs map hygiene" subsection's stale "(warn)" wording was corrected to "(fail)" to match this story's own promotion.
+
+**A real regression the patch pass introduced, then fixed in the same pass (found by my own wider verification, not by the four review layers):** `docs_map_render.py`'s new `docs_currency` import pulls in `jsonschema` transitively, which broke `pyforge-doctor-scripts-test` (`-e pyforge-ci`) — an environment deliberately kept dependency-free (its own pixi.toml comment: "carries no runtime libraries at all… the standing proof that it never needs the very dependencies it audits"). This was latent from the very first implementation pass (the original `render_map_registry` import already pulled in `jsonschema`) but only surfaced once `tests/scripts/test_docs_map_render.py` gave `pyforge-ci`'s blanket `pytest tests/scripts -q` something to actually collect. Fixed: `pytest.importorskip("jsonschema")` guards the new test file (clean skip under `pyforge-ci`, matching the `shutil.which("steward")`-guard precedent `test_container_gates.py` already established for an analogous constraint); a new `docs-map-render-test` guild-tasks entry gives it real coverage from an env that has `jsonschema`, wired into `pr-preflight`'s `depends-on` beside `pyforge-doctor-scripts-test`. Verified both lanes green: `pyforge-ci` 531 passed/6 skipped (5 pre-existing + this file's 1 clean module-skip), `pyforge-guild docs-map-render-test` 9 passed.
