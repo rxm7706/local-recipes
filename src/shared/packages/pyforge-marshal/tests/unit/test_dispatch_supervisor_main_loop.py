@@ -26,6 +26,7 @@ from pyforge.marshal.core.dispatch_completion import DispatchGitFacts, DispatchS
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import (
+    SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF,
     JournalEntryId,
     Phase,
     build_entry,
@@ -522,31 +523,49 @@ def test_fold_dispatch_journal_reads_sidecars_through_the_fs_port(tmp_path: Path
         Finding(code="MRS-DISP-037", severity=Severity.WARN, message=f"padding finding {index:04d} " * 6).to_json_dict()
         for index in range(60)
     ]
-    # The offload is what puts a sidecar reference in the journal line; a
-    # journal with no offloaded entry folds identically whether or not the
-    # sidecar read works, which is why this test writes one first.
-    supervisor_main._append_entry(
-        fs,
-        run_dir,
-        build_entry(
-            id=JournalEntryId("dispatch-supervisor-1", 1),
-            ts="2026-09-20T10:00:00.000Z",
-            run_id=_RUN_ID,
-            kind=dispatch_core.KIND_DISPATCH_LAND,
-            phase=Phase.OUTCOME,
-            payload={"verdict": "landed", "ok": True, "land_findings": findings},
-            intent_id=JournalEntryId("dispatch-supervisor-1", 0),
-        ),
-        fsync=False,
-        offload_fields=frozenset({"land_findings"}),
-    )
+    payload = {"verdict": "landed", "ok": True, "land_findings": findings}
+
+    def _land(counter: int, **offload) -> None:
+        supervisor_main._append_entry(
+            fs,
+            run_dir,
+            build_entry(
+                id=JournalEntryId("dispatch-supervisor-1", counter),
+                ts=f"2026-09-20T10:00:0{counter}.000Z",
+                run_id=_RUN_ID,
+                kind=dispatch_core.KIND_DISPATCH_LAND,
+                phase=Phase.OUTCOME,
+                payload=payload,
+                intent_id=JournalEntryId("dispatch-supervisor-1", 0),
+            ),
+            fsync=False,
+            **offload,
+        )
+
+    # An offloaded entry is what puts a sidecar reference in the journal line;
+    # a journal with none folds identically whether or not the sidecar read
+    # works, which is why this test writes both offload shapes first.
+    #
+    # Counter 1 takes the WHOLE payload to a sidecar (``prepare_for_write``,
+    # AD-30: the line carries `{"sidecar_ref": ...}` in the payload's place),
+    # so the folded entry is readable at all only because
+    # ``_fold_dispatch_journal`` read that blob back through the ``FsPort``.
+    _land(1)
+    # Counter 2 is the dispatch-supervisor hotfix shape: only the named field
+    # moves out, and the verdict-driving keys stay on the line.
+    _land(2, offload_fields=frozenset({"land_findings"}))
 
     folded = supervisor_main._fold_dispatch_journal(fs, run_dir, fs.journal_text(run_dir))
 
     assert [entry.kind for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH)] == ["dispatch-launch"]
     landed = folded.by_kind(dispatch_core.KIND_DISPATCH_LAND)
-    assert [entry.payload["verdict"] for entry in landed] == ["landed"]
-    assert [len(entry.payload["land_findings"]) for entry in landed] == [len(findings)]
+    assert [entry.payload["verdict"] for entry in landed] == ["landed", "landed"]
+    whole, per_field = landed
+    # Resolved from the blob: the placeholder line carries no findings at all.
+    assert len(whole.payload["land_findings"]) == len(findings)
+    # Field offload: the findings left the line, the verdict did not.
+    assert "land_findings" not in per_field.payload
+    assert per_field.payload[SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF].endswith(".json")
 
 
 def test_maybe_fetch_origin_main_only_fetches_on_the_fifth_tick(tmp_path: Path) -> None:
