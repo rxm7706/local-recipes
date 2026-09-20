@@ -1818,7 +1818,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   evidence: `GH_TOKEN="$(gh auth token)" .pixi/envs/pyforge-guild/bin/python -m pyforge.doctor.sources sibling-dreams-drift` → six `sibling-dreams-drift: warn` rows, exit 0 (2026-09-19). Without the token the same run reports `sibling-dreams-unreachable` — the check fails open by design.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   severity: low
-  status: open
+  status: closed — Story 29.1 landed 2026-09-20: `sibling_dreams.py` honours a per-Dream `sibling-acknowledged: <hash>` frontmatter line (silent while it equals the sibling's current `content_hash`, re-fires naming both hashes the moment it does not) and `_SIBLING_OWNER` now points at `openteams-ai`. All six Dreams carry `sibling-acknowledged:` at their 2026-09-20 sibling hashes. Live re-verification: `GH_TOKEN="$(gh auth token)" pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources sibling-dreams-drift` → zero findings, exit 0.
   raised: 2026-09-19 — Owner: doctor (CAP-71); the fold decision is mason's/steward's (the six Dreams' new owners). Operator-only for the sibling-side edit.
   update: 2026-09-19 (evening) — decision: ACKNOWLEDGE, not push. Live read: the sibling repo has moved (`OpenTeams-WFT-CDO/…` 301 → `openteams-ai/mgmt-wf-python-modernization`, private), last pushed 2026-08-24; all six Dreams there are `status: dreamt`, untouched since 2026-08-13 — a pre-fold snapshot nobody evolved. CAP-71's constraints (read-only, never a sync engine, unlicensed prose, per-Dream human reconciliation) rule out a sibling-side edit. Mechanism to record the acknowledgement + the corrected owner: Story 29.1 (CAP-82). This row closes when 29.1 lands with a live zero.
 
