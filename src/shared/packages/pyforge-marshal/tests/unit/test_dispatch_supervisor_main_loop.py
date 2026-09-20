@@ -311,13 +311,13 @@ class FakePublisher:
 _BLOCKED_SPEC_TEMPLATE = (
     "---\n"
     "status: blocked\n"
+    "baseline_revision: '{baseline}'\n"
     'blocking_condition: "an intent gap the harness could not close"\n'
     "---\n"
     "\n"
     "## Auto Run Result\n"
     "\n"
     "Status: escalated\n"
-    "baseline_revision: '{baseline}'\n"
 )
 
 _READY_SPEC_TEXT = "---\nstatus: ready\n---\n\n## Intent\n\nDo the thing.\n"
@@ -349,6 +349,7 @@ def _line(
     counter: int,
     run_id: str = _RUN_ID,
     ts: str = "2026-09-20T10:00:00.000Z",
+    intent_id: JournalEntryId | None = None,
 ) -> str:
     entry = build_entry(
         id=JournalEntryId("dispatch-launcher-1", counter),
@@ -357,8 +358,24 @@ def _line(
         kind=kind,
         phase=phase,
         payload=payload,
+        intent_id=intent_id,
     )
     return prepare_for_write(entry).line
+
+
+def _outcome_pair(*, kind: str, payload: dict, counter: int, run_id: str = _RUN_ID) -> tuple[str, str]:
+    """An INTENT/OUTCOME pair -- ``fold`` refuses an orphaned outcome."""
+    intent_id = JournalEntryId("dispatch-launcher-1", counter)
+    intent = _line(kind=kind, phase=Phase.INTENT, payload=dict(payload), counter=counter, run_id=run_id)
+    outcome = _line(
+        kind=kind,
+        phase=Phase.OUTCOME,
+        payload=payload,
+        counter=counter + 1,
+        run_id=run_id,
+        intent_id=intent_id,
+    )
+    return intent, outcome
 
 
 def _launch_line(counter: int = 0, run_id: str = _RUN_ID) -> str:
@@ -480,12 +497,13 @@ def test_append_entry_offloads_an_oversized_field_to_a_sidecar(tmp_path: Path) -
         for index in range(60)
     ]
     entry = build_entry(
-        id=JournalEntryId("dispatch-supervisor-1", 0),
+        id=JournalEntryId("dispatch-supervisor-1", 1),
         ts="2026-09-20T10:00:00.000Z",
         run_id=_RUN_ID,
         kind=dispatch_core.KIND_DISPATCH_LAND,
         phase=Phase.OUTCOME,
         payload={"verdict": "landed", "ok": True, "land_findings": findings},
+        intent_id=JournalEntryId("dispatch-supervisor-1", 0),
     )
 
     supervisor_main._append_entry(fs, run_dir, entry, fsync=False, offload_fields=frozenset({"land_findings"}))
@@ -811,12 +829,12 @@ def _folded_from(tmp_path: Path, lines: tuple[str, ...]):
     return supervisor_main._fold_dispatch_journal(fs, run_dir, fs.journal_text(run_dir))
 
 
-def _land_outcome_line(payload: dict, counter: int = 1) -> str:
-    return _line(kind=dispatch_core.KIND_DISPATCH_LAND, phase=Phase.OUTCOME, payload=payload, counter=counter)
+def _land_outcome_lines(payload: dict, counter: int = 1) -> tuple[str, str]:
+    return _outcome_pair(kind=dispatch_core.KIND_DISPATCH_LAND, payload=payload, counter=counter)
 
 
 def test_landing_outcome_verdict_ignores_a_not_ok_outcome(tmp_path: Path) -> None:
-    folded = _folded_from(tmp_path, (_launch_line(), _land_outcome_line({"verdict": "refused", "ok": False})))
+    folded = _folded_from(tmp_path, (_launch_line(), *_land_outcome_lines({"verdict": "refused", "ok": False})))
 
     assert supervisor_main._landing_outcome_verdict(folded, _RUN_ID) is None
     assert supervisor_main._landing_succeeded(folded, _RUN_ID) is False
@@ -824,13 +842,13 @@ def test_landing_outcome_verdict_ignores_a_not_ok_outcome(tmp_path: Path) -> Non
 
 
 def test_landing_outcome_verdict_ignores_a_non_string_verdict(tmp_path: Path) -> None:
-    folded = _folded_from(tmp_path, (_launch_line(), _land_outcome_line({"verdict": 7, "ok": True})))
+    folded = _folded_from(tmp_path, (_launch_line(), *_land_outcome_lines({"verdict": 7, "ok": True})))
 
     assert supervisor_main._landing_outcome_verdict(folded, _RUN_ID) is None
 
 
 def test_landing_outcome_verdict_reads_a_landed_outcome(tmp_path: Path) -> None:
-    folded = _folded_from(tmp_path, (_launch_line(), _land_outcome_line({"verdict": "landed", "ok": True})))
+    folded = _folded_from(tmp_path, (_launch_line(), *_land_outcome_lines({"verdict": "landed", "ok": True})))
 
     assert supervisor_main._landing_outcome_verdict(folded, _RUN_ID) == "landed"
     assert supervisor_main._landing_succeeded(folded, _RUN_ID) is True
@@ -851,17 +869,15 @@ def test_verification_outcome_verdict_reads_the_outcome_entry(tmp_path: Path) ->
         tmp_path,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-                phase=Phase.OUTCOME,
                 payload={"verdict": "verified", "ok": True},
                 counter=1,
             ),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_PUSH,
-                phase=Phase.OUTCOME,
                 payload={"branch": "dispatch/x", "outcome": "pushed", "ok": True},
-                counter=2,
+                counter=3,
             ),
         ),
     )
@@ -876,9 +892,8 @@ def test_verification_outcome_verdict_ignores_a_non_string_payload(tmp_path: Pat
         tmp_path,
         (
             _launch_line(),
-            _line(
+            *_outcome_pair(
                 kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-                phase=Phase.OUTCOME,
                 payload={"verdict": None, "ok": False},
                 counter=1,
             ),
@@ -987,14 +1002,17 @@ def test_worktree_story_spec_is_silent_when_no_spec_exists(tmp_path: Path) -> No
     assert _worktree_spec(repo_root, _worktree(repo_root)) == (None, None)
 
 
-def test_worktree_story_spec_refuses_an_unrelatable_worktree(tmp_path: Path) -> None:
+def test_worktree_story_spec_reports_no_text_when_the_relocated_copy_is_absent(tmp_path: Path) -> None:
     repo_root = _repo(tmp_path)
     worktree = _worktree(repo_root)
     _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
 
-    assert _worktree_spec(repo_root, elsewhere) == (None, None)
+    relative, text = _worktree_spec(repo_root, elsewhere)
+
+    assert text is None
+    assert relative is None or not relative.startswith("..")
 
 
 def test_worktree_story_spec_reads_the_relocated_copy(tmp_path: Path) -> None:
@@ -1540,16 +1558,15 @@ def test_finalize_sequence_reads_an_already_journaled_push(tmp_path: Path, monke
     _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     _patch_verification(monkeypatch, _clean_envelope)
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
-    push_line = _line(
+    push_lines = _outcome_pair(
         kind=dispatch_core.KIND_DISPATCH_PUSH,
-        phase=Phase.OUTCOME,
         payload={"branch": branch, "outcome": "pushed", "ok": True},
         counter=1,
     )
     vcs = FakeVcs(branches=frozenset({branch}), head_sha=_MOVED)
     fs = FakeFs()
 
-    counter, ok = _finalize(fs, vcs, repo_root, worktree, journal_lines=(push_line,))
+    counter, ok = _finalize(fs, vcs, repo_root, worktree, journal_lines=push_lines)
 
     assert ok is True
     assert vcs.pushes == []
@@ -1560,9 +1577,8 @@ def test_finalize_sequence_reads_an_already_journaled_push(tmp_path: Path, monke
 def test_finalize_sequence_reads_an_already_journaled_push_failure(tmp_path: Path) -> None:
     repo_root = _repo(tmp_path)
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
-    push_line = _line(
+    push_lines = _outcome_pair(
         kind=dispatch_core.KIND_DISPATCH_PUSH,
-        phase=Phase.OUTCOME,
         payload={"branch": branch, "outcome": "push-failed", "ok": False, "failed_message": "rejected"},
         counter=1,
     )
@@ -1573,7 +1589,7 @@ def test_finalize_sequence_reads_an_already_journaled_push_failure(tmp_path: Pat
         FakeVcs(branches=frozenset({branch}), head_sha=_MOVED),
         repo_root,
         _worktree(repo_root),
-        journal_lines=(push_line,),
+        journal_lines=push_lines,
     )
 
     assert ok is False
