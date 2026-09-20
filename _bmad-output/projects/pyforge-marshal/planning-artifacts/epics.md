@@ -6409,6 +6409,8 @@ second verdict owner; the primary checkout is moved only when it is a clean `mai
 **Serial dispatch order (surface-overlap matrix, `cli/dispatch.py` and `dispatch_land.py` are the hubs):**
 51.8 → 51.2 → 51.3 (landed hollow; re-minted as 51.9) → 51.6 → 51.9 → 51.1 → 51.4 → 51.5 → 51.7; schedule 51.6 after Epic 52's Story 52.1 has merged (both touch `cli/watch.py` — a merge-order note, not a `Deps:` entry, so `forward-dependency` stays green).
 
+**Closed 2026-09-20.** Thirteen stories minted (51.1–51.13; 51.3 landed hollow and was re-minted as 51.9), all `done`: 51.1–51.9 from the 2026-09-18 (later) entry; 51.10–51.13 from the 2026-09-20 (night) entry, found while draining. Every story landed through `marshal factory dispatch` except 51.10/51.12/51.13 (hand-driven the same night, operator ruling 00:40Z). Residue carried forward, not left behind: `DW-FU-50-4` stays open (51.7's amendment no longer claims it); the retro (`epic-51-retrospective`) is owed.
+
 ### Story 51.1: Verification sees the merge result
 
 As a fleet operator whose stations land on shared modules within the same hour,

@@ -21,7 +21,7 @@ deferred:
     severity: low
 declared_low_risk: false
 baseline_revision: 'b49ccf497b43ef0309788c9818f1208075593845'
-final_revision: 'pending — the merge commit of PR #1529 (`Merge pyforge-doctor/30-1 into main`)'
+final_revision: 'f4d693ffe8b3fa2195ea2d39c13dcc9a2765c299'
 ---
 
 <intent-contract>
