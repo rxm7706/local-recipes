@@ -336,6 +336,17 @@ class Source(StrEnum):
     # README.md index pages are exempt; MAP.md § "Outside this map" layers
     # are never scanned.
     DOCS_MAP_HYGIENE = "docs-map-hygiene"
+    # Story 26.1 (spec-pyforge-doctor CAP-77): the closed taxonomy EXTENDED
+    # once more -- a touched surface catalogued in live-proof-surfaces.md
+    # (a fleet-wide inventory of surfaces a dev/review pass structurally
+    # cannot verify from inside the repo alone) gets an advisory finding
+    # naming it, quoting the catalog's own "how to prove it live" cell
+    # verbatim. Matches ONLY the catalog's hand-authored `Surface globs`
+    # column (added 2026-09-20 after the first attempt's keyword fallback
+    # produced false positives against real tracked files) -- never a
+    # keyword pulled from prose. Always WARN, never FAIL (AD-2). See
+    # sources/live_proof_surfaces.py for the independence rationale.
+    LIVE_PROOF_SURFACE = "live-proof-surface"
 
 
 class Partition(StrEnum):
