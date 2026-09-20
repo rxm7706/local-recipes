@@ -40,7 +40,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
-# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill),
+# `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill;
+#   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export).
 DUTIES: tuple[str, ...] = (

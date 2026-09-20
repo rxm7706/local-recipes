@@ -227,6 +227,106 @@ def test_load_extract_repeat_with_declared_off_transport_is_still_idempotent():
     assert CorridorLoad.objects.filter(direction="inbound", batch_sha=sha, waybill=waybill).count() == 1
 
 
+# -- load_extract -- Story 61.4: the outbound signed-slice gate --
+
+
+def test_load_extract_outbound_without_slice_name_raises():
+    """The I/O Matrix's one required scenario: no signer/slice -> refused.
+    Exercised here as the `slice_name` half, raised before the dashboard
+    extra or the transport declaration are ever consulted."""
+    with pytest.raises(CorridorLoadError, match="named slice"):
+        load_extract(
+            direction="outbound",
+            batch_sha="m" * 64,
+            waybill="w-outbound-no-slice",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="",
+            signer="operator",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-no-slice").count() == 0
+
+
+def test_load_extract_outbound_without_signer_raises():
+    with pytest.raises(CorridorLoadError, match="signer"):
+        load_extract(
+            direction="outbound",
+            batch_sha="n" * 64,
+            waybill="w-outbound-no-signer",
+            transport="app-upload",
+            config=_real_config(),
+            slice_name="vendor-findings",
+            signer="   ",
+        )
+    assert CorridorLoad.objects.filter(waybill="w-outbound-no-signer").count() == 0
+
+
+def test_load_extract_outbound_with_slice_and_signer_records_them():
+    sha = "o" * 64
+    outcome = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill="w-outbound-signed",
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert outcome.status == "loaded"
+    assert outcome.slice_name == "vendor-findings"
+    assert outcome.signer == "operator"
+    row = CorridorLoad.objects.get(direction="outbound", batch_sha=sha, waybill="w-outbound-signed")
+    assert row.slice_name == "vendor-findings"
+    assert row.signer == "operator"
+
+
+def test_load_extract_outbound_repeat_reports_originally_recorded_slice_and_signer():
+    """Mirrors the transport idempotency provenance rule: a repeat drop
+    reports the FIRST slice/signer, never a second call's own values, and
+    does not require them to be re-supplied."""
+    sha = "p" * 64
+    waybill = "w-outbound-repeat"
+    first = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="vendor-findings",
+        signer="operator",
+    )
+    assert first.status == "loaded"
+
+    second = load_extract(
+        direction="outbound",
+        batch_sha=sha,
+        waybill=waybill,
+        transport="app-upload",
+        config=_real_config(),
+        slice_name="",
+        signer="",
+    )
+    assert second.status == "idempotent"
+    assert second.slice_name == "vendor-findings"
+    assert second.signer == "operator"
+    assert CorridorLoad.objects.filter(direction="outbound", batch_sha=sha, waybill=waybill).count() == 1
+
+
+def test_load_extract_inbound_never_requires_slice_or_signer():
+    """The gate is outbound-only -- an inbound load with no slice/signer
+    given at all succeeds exactly as it did before Story 61.4."""
+    outcome = load_extract(
+        direction="inbound",
+        batch_sha="q" * 64,
+        waybill="w-inbound-no-signature-needed",
+        transport="app-upload",
+        config=_real_config(),
+    )
+    assert outcome.status == "loaded"
+    assert outcome.slice_name == ""
+    assert outcome.signer == ""
+
+
 def test_load_extract_refuses_when_dashboard_extra_not_importable(monkeypatch):
     """The spec's stated AC: `[dashboard]` not installed -> `status: refused`,
     exercised through `load_extract` itself (not `record_corridor_load`
@@ -262,16 +362,17 @@ def test_load_duty_first_load_then_repeat_is_idempotent(tmp_path, direction):
     extract = tmp_path / "extract.csv"
     extract.write_text("row,one\n", encoding="utf-8")
 
-    first_ns = build_parser().parse_args(
-        ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
-    )
+    args = ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
+    if direction == "outbound":
+        # Story 61.4: outbound alone requires a named slice + recorded signer.
+        args += ["--slice", "vendor-findings", "--signer", "operator"]
+
+    first_ns = build_parser().parse_args(args)
     first = LoadDuty().run(first_ns)
     assert first.ok is True
     assert first.details["status"] == "loaded"
 
-    second_ns = build_parser().parse_args(
-        ["load", direction, "--file", str(extract), "--waybill", f"w-duty-{direction}"]
-    )
+    second_ns = build_parser().parse_args(args)
     second = LoadDuty().run(second_ns)
     assert second.ok is True
     assert second.details["status"] == "idempotent"
