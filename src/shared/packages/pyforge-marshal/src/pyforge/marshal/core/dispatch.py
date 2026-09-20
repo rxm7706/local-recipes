@@ -108,6 +108,10 @@ class DispatchJournalFacts:
     # no violation.
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     landing_verdict: str | None = None
+    # Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+    # (MRS-DISP-047/048), a tuple of plain JSON-safe dicts -- same shape and
+    # same "never journal-only" rationale as `verification_scope_advisories`.
+    landing_findings: tuple[dict[str, object], ...] = ()
     harness_self_report_shipped: bool = False
     story_started_at: str | None = None
     story_ended_at: str | None = None

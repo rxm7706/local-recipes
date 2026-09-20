@@ -246,6 +246,73 @@ def test_gather_journal_reads_timing_and_preserve() -> None:
     assert facts.preserve_ref == "failed/22-6-test/changes.patch"
 
 
+def test_gather_journal_reads_land_findings_regardless_of_ok() -> None:
+    """Story 53.2 review (I1): `land_findings` (MRS-DISP-047/048) must be
+    readable from a KIND_DISPATCH_LAND OUTCOME entry even when the landing
+    was refused (``ok`` False) -- a refused landing is exactly the case
+    this must surface, not the one it can afford to drop."""
+    fs = FakeFs()
+    repo = Path("/repo")
+    run_dir = repo / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run1"
+    fs.dirs.add(run_dir)
+    launch = build_entry(
+        id=JournalEntryId("w", 0),
+        ts="2026-08-23T12:00:00.000Z",
+        run_id="run1",
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.INTENT,
+        payload={"story_key": "53-2-test", "worktree_path": "/wt", "model": "abc123"},
+    )
+    launch_out = build_entry(
+        id=JournalEntryId("w", 1),
+        ts="2026-08-23T12:00:01.000Z",
+        run_id="run1",
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("w", 0),
+        payload={"session_pid": 42},
+    )
+    land_intent = build_entry(
+        id=JournalEntryId("w", 2),
+        ts="2026-08-23T13:00:00.000Z",
+        run_id="run1",
+        kind=dispatch_core.KIND_DISPATCH_LAND,
+        phase=Phase.INTENT,
+        payload={"verdict": "refused"},
+    )
+    land_out = build_entry(
+        id=JournalEntryId("w", 3),
+        ts="2026-08-23T13:00:01.000Z",
+        run_id="run1",
+        kind=dispatch_core.KIND_DISPATCH_LAND,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("w", 2),
+        payload={
+            "verdict": "refused",
+            "ok": False,
+            "land_findings": [
+                {
+                    "code": "MRS-DISP-048",
+                    "severity": "error",
+                    "message": "cannot resolve ref",
+                }
+            ],
+        },
+    )
+    for entry in (launch, launch_out, land_intent, land_out):
+        line = prepare_for_write(entry).line
+        fs.append_line(run_dir / "journal.jsonl", line, fsync=False)
+    facts = gather_dispatch_journal_facts(fs, run_dir, "run1")
+    assert facts.landing_verdict is None
+    assert facts.landing_findings == (
+        {
+            "code": "MRS-DISP-048",
+            "severity": "error",
+            "message": "cannot resolve ref",
+        },
+    )
+
+
 def test_dispatch_resume_respawns_dead_supervisor(monkeypatch: pytest.MonkeyPatch) -> None:
     fs = FakeFs()
     repo = Path("/repo")

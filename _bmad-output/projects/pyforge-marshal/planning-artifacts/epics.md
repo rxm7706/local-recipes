@@ -6850,6 +6850,19 @@ with foreign drift is refused with `MRS-DISP-048` naming the foreign paths; a se
 finding; `MRS-DISP-047` is journaled whenever the landing had to name paths
 **And** finalize ingests the run's deferrals and journals any refusal; never a bare `--write-baseline`; the loop path is untouched
 
+### Story 53.3: The supervisor entrypoint reaches the floor
+
+As the operator who landed 53.2 behind a dated exception,
+I want `dispatch_supervisor/__main__.py` unit-covered to the 80% floor and the exception removed,
+So that Epic 53 closes with no named debt and the touched-module gate is whole again for marshal.
+
+**Type:** chore • **Effort:** L • **Deps:** S-53.2 • **FR/AD:** spec-pyforge-marshal CAP-264 • Dream 2026-09-20 (evening); operator ruling at the 53.2 landing
+**Surface:** `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_*.py` (ports-driven tests of the finalize / halt / land / completion sequences — the 388 uncovered statements), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/coverage_thresholds.toml` (the `[modules."pyforge.marshal.dispatch_supervisor.__main__"]` entry removed), no production change unless a test proves a defect.
+**Given** the module sits at 35% behind a dated, story-bound exception the 53.2 landing added
+**When** this story lands
+**Then** `pyforge-marshal-coverage-gate` reports the module ≥ 80% and its OK line names no exception for marshal; `pyforge-marshal-test` green
+**And** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci pyforge-deps-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

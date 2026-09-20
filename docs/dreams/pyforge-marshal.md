@@ -434,6 +434,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and `cli/watch.py::_snapshot_dispatch` treats any verdict outside its own invented set
   `{"", "None", "pending", "in-progress"}` as terminal — its tests use `"passed"`/`"pending"`,
   strings the supervisor never emits. → CAP-260 / Story 51.13 (hand-driven, same night).
+- **2026-09-20 (evening) — The supervisor entrypoint reaches the coverage floor.** Found at Story 53.2's
+  landing: the touched-module coverage floor (steward 66.1's gate) measured
+  `dispatch_supervisor/__main__.py` at 35% — 623 statements, 388 uncovered, 36% on `main` before
+  53.2 touched 15 of its 1,895 lines. Operator ruling: land 53.2 (Epic 53's last story, the
+  permanent fix for the landing ritual) behind a per-module, dated, story-bound floor exception
+  in `coverage_thresholds.toml` (35%, `until` this story — the same shape as the per-module mypy
+  baseline), and backfill the supervisor to the 80% floor next session. Kinships:
+  `spec-pyforge-marshal` CAP-264 → Story 53.3; steward `spec-pyforge-steward:CAP-153` (the gate).
 - **2026-09-20 (morning) — Proposed: the dispatch landing pays its own surface tax.** Operator
   ruling 08:40Z after seven autonomous landings in twelve hours (26.1, 61.3, 51.11, 29.1, 61.4,
   46.7, 65.x) each left `main` red on `spec-surface` until a human named the paths: *"we need

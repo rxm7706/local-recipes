@@ -820,6 +820,10 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # scope-violation advisories, visible here too -- never
                 # journal-only.
                 "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
+                # Story 53.2 review (I1): `execute_dispatch_land`'s envelope
+                # findings (MRS-DISP-047/048), same visibility rationale as
+                # `scope_advisories` above.
+                "landing_findings": r.get("dispatch_landing_findings") or [],
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
@@ -1070,6 +1074,32 @@ def main() -> int:
             ))
             watch.append(f"{slug}: {len(advisories)} scope-violation advisory(ies) "
                          f"(warn mode, not blocking) -- {codes}")
+        # Story 53.2 review (I1): `execute_dispatch_land`'s envelope findings
+        # (MRS-DISP-047/048) -- same non-dict/None guarding as `advisories`
+        # above. An ERROR-severity finding (MRS-DISP-048) means the landing
+        # was refused and a human must act, so it goes to `needs`; anything
+        # else (MRS-DISP-047, WARN) is FYI in `watch`, matching the
+        # scope-advisory treatment.
+        land_findings = (live.get(slug, {}) or {}).get("landing_findings") or []
+        if land_findings:
+            errors = [
+                f for f in land_findings
+                if isinstance(f, dict) and f.get("severity") == "error"
+            ]
+            warns = [f for f in land_findings if f not in errors]
+            if errors:
+                codes = ",".join(dict.fromkeys(
+                    str(f.get("code") or "?") for f in errors
+                ))
+                needs.append(f"{slug}: landing refused ({len(errors)} finding(s)) "
+                             f"-- {codes}")
+            if warns:
+                codes = ",".join(dict.fromkeys(
+                    str(f.get("code") or "?") if isinstance(f, dict) else "?"
+                    for f in warns
+                ))
+                watch.append(f"{slug}: {len(warns)} landing finding(s) "
+                             f"(not blocking) -- {codes}")
     try:
         prs = subprocess.run(
             ["gh", "pr", "list", "--repo", "rxm7706/local-recipes",

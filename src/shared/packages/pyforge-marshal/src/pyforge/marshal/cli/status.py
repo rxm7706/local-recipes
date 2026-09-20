@@ -937,6 +937,7 @@ def _merge_dispatch_overlay(
         dispatch_verification_verdict=journal.verification_verdict,
         dispatch_verification_failed_gate=journal.verification_failed_gate,
         dispatch_verification_scope_advisories=journal.verification_scope_advisories,
+        dispatch_landing_findings=journal.landing_findings,
         dispatch_supervisor_alive=supervisor_alive,
         dispatch_story_started_at=journal.story_started_at,
         dispatch_story_ended_at=journal.story_ended_at,

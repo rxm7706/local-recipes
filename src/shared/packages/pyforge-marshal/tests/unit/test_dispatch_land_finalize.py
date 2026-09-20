@@ -5,9 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pyforge.core.process import ProcessError, ProcessResult
+
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
     _FINALIZE_RESYNC_KIND,
+    _run_deferred_work_intake,
     finalize_dispatch_land,
 )
 
@@ -302,3 +308,417 @@ def test_finalize_skips_resync_on_a_dirty_primary(tmp_path: Path, monkeypatch) -
     assert entry["kind"] == _FINALIZE_RESYNC_KIND
     assert entry["phase"] == Phase.OBSERVATION
     assert entry["payload"]["resynced"] is False
+
+
+# Story 53.2 (spec-pyforge-marshal CAP-261b): `_run_deferred_work_intake`
+# promotes a landed story's `deferred:` entries via
+# `scripts/deferred_work_intake.py --fix` -- unit-level coverage of its own
+# three branches (clean, refused, could-not-launch), plus one integration
+# test proving `finalize_dispatch_land` actually wires its return value
+# into the SAME `findings` list that gates the function's own return code.
+
+
+class _FakeIntakeProcess:
+    def __init__(self, *, returncode: int = 0, stderr: str = "", stdout: str = "") -> None:
+        self.returncode = returncode
+        self.stderr = stderr
+        self.stdout = stdout
+        self.calls: list[tuple[list[str], Path]] = []
+
+    def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
+        return ProcessResult(returncode=self.returncode, stdout=self.stdout, stderr=self.stderr)
+
+
+class _RaisingIntakeProcess:
+    def run(self, tokens, *, cwd: Path):
+        raise ProcessError("deferred_work_intake.py could not be launched")
+
+
+class _FakeIntakeVcs:
+    """Records ``commit_paths_onto_remote_tip`` calls; never touches a real
+    git repo -- these tests never expect it to be called unless noted."""
+
+    def __init__(self, *, raises: bool = False) -> None:
+        self.raises = raises
+        self.calls: list[dict] = []
+
+    def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message):
+        self.calls.append({"repo_root": repo_root, "remote": remote, "ref": ref, "writes": writes, "message": message})
+        if self.raises:
+            from pyforge.marshal.adapters.vcs_git import VcsCommandError
+
+            raise VcsCommandError("push rejected")
+        return "new-sha"
+
+
+def test_run_deferred_work_intake_clean_run_returns_none(tmp_path: Path) -> None:
+    """The script runs but the tracked ledger's text is unchanged (the
+    fake process never touches the filesystem) -- no commit, no finding."""
+    process = _FakeIntakeProcess(returncode=0)
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    assert _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-steward") is None
+    [argv], [cwd] = zip(*process.calls)
+    assert argv[-2:] == ["--project", "steward"]
+    assert "--fix" in argv
+    assert cwd == tmp_path
+    assert vcs.calls == []
+
+
+def test_run_deferred_work_intake_refusal_returns_warn_finding(tmp_path: Path) -> None:
+    process = _FakeIntakeProcess(returncode=1, stderr="no resolvable location:")
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-marshal")
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "marshal" in finding.message
+    assert "no resolvable location:" in finding.message
+    assert vcs.calls == []
+
+
+def test_run_deferred_work_intake_process_error_returns_warn_finding(tmp_path: Path) -> None:
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(_RaisingIntakeProcess(), fs, vcs, tmp_path, "pyforge-doctor")
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "doctor" in finding.message
+    assert vcs.calls == []
+
+
+def test_run_deferred_work_intake_publishes_change_and_restores_local_text(
+    tmp_path: Path,
+) -> None:
+    """Story 53.2 review (B5/B6): when ``--fix`` actually mutates the
+    tracked ledger, the new text is published onto ``origin/main`` via
+    ``commit_paths_onto_remote_tip`` and ``root``'s own working-tree copy is
+    restored to its pre-``--fix`` text -- never left dirty for the next
+    finalize's ``has_uncommitted_changes`` gate to trip over."""
+    tracked_path = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "deferred-work-ledger.md"
+    )
+    tracked_path.parent.mkdir(parents=True)
+    tracked_path.write_text("# Deferred Work Ledger\n\nold entry\n", encoding="utf-8")
+
+    class _WritingProcess:
+        def __init__(self) -> None:
+            self.calls: list[tuple[list[str], Path]] = []
+
+        def run(self, tokens, *, cwd: Path):
+            self.calls.append((list(tokens), cwd))
+            tracked_path.write_text("# Deferred Work Ledger\n\nold entry\n\nnew entry\n", encoding="utf-8")
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    process = _WritingProcess()
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs()
+    finding = _run_deferred_work_intake(process, fs, vcs, tmp_path, "pyforge-marshal")
+    assert finding is None
+    assert len(vcs.calls) == 1
+    call = vcs.calls[0]
+    assert call["remote"] == "origin"
+    assert call["ref"] == "main"
+    assert call["writes"] == (
+        (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+            "# Deferred Work Ledger\n\nold entry\n\nnew entry\n",
+        ),
+    )
+    # root's own working tree is restored to the pre-`--fix` text.
+    assert tracked_path.read_text(encoding="utf-8") == "# Deferred Work Ledger\n\nold entry\n"
+
+
+def test_run_deferred_work_intake_warns_when_publish_fails(tmp_path: Path) -> None:
+    """Story 53.2 review (B5): a failed publish to ``origin/main`` is a
+    WARN, never a crash -- and the local working tree is still restored."""
+    tracked_path = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "deferred-work-ledger.md"
+    )
+    tracked_path.parent.mkdir(parents=True)
+    tracked_path.write_text("old\n", encoding="utf-8")
+
+    class _WritingProcess:
+        def run(self, tokens, *, cwd: Path):
+            tracked_path.write_text("new\n", encoding="utf-8")
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    fs = LocalFs()
+    vcs = _FakeIntakeVcs(raises=True)
+    finding = _run_deferred_work_intake(_WritingProcess(), fs, vcs, tmp_path, "pyforge-marshal")
+    assert finding is not None
+    assert finding.code == "MRS-DISP-047"
+    assert finding.severity == Severity.WARN
+    assert "could not be published" in finding.message
+    assert tracked_path.read_text(encoding="utf-8") == "old\n"
+
+
+def test_finalize_appends_deferred_work_intake_finding_into_the_gating_findings_list(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Black-box proof that `_run_deferred_work_intake`'s return value
+    reaches the SAME `findings` list `finalize_dispatch_land` checks for a
+    blocking severity: force it to return an ERROR-severity finding and
+    confirm the whole finalize call goes non-zero because of it, exactly
+    as it would for any other blocking finding this function collects."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, fs, vcs, root, project_slug):
+        seen["intake_args"] = (root, project_slug)
+        return Finding(code="MRS-DISP-047", severity=Severity.ERROR, message="forced for test")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 1
+    assert seen["intake_args"] == (tmp_path, "pyforge-steward")
+
+
+def test_finalize_stays_green_when_intake_returns_no_finding(tmp_path: Path, monkeypatch) -> None:
+    """The common case: intake ran clean (or found nothing to promote) and
+    returned ``None`` -- finalize must not append anything for it and must
+    stay green."""
+    seen: dict[str, object] = {}
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, fs, vcs, root, project_slug):
+        seen["called"] = True
+        return None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    assert seen["called"] is True
+
+
+def test_finalize_journals_the_intake_finding_into_the_resync_payload(tmp_path: Path, monkeypatch) -> None:
+    """Story 53.2 review (I2): the intake finding's serialized form must
+    reach the ``_FINALIZE_RESYNC_KIND`` journal payload -- a WARN-severity
+    intake refusal never blocks the return code, so without this the
+    finding would be visible nowhere durable once it prints to stderr."""
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+
+    def _fake_intake(process, fs, vcs, root, project_slug):
+        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message="forced for test")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        _fake_intake,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["payload"]["deferred_work_intake_finding"] == {
+        "code": "MRS-DISP-047",
+        "severity": "warn",
+        "message": "forced for test",
+    }
+
+
+def test_finalize_journals_a_null_intake_finding_when_intake_is_clean(tmp_path: Path, monkeypatch) -> None:
+    """The common (no-op) case journals an explicit ``None``, not an
+    absent key -- so a reader never has to distinguish "never ran" from
+    "ran clean"."""
+
+    class _Scan:
+        findings: list = []
+        plan = None
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.repo_root",
+        lambda: tmp_path,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__.GitVcs",
+        lambda: _StubVcs(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._scan_promotions",
+        lambda *args, **kwargs: _Scan(),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._promote_sprint_ledger",
+        lambda *args, **kwargs: (),
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._resync_home_branch",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land_finalize.__main__._run_deferred_work_intake",
+        lambda process, fs, vcs, root, project_slug: None,
+    )
+
+    assert finalize_dispatch_land("pyforge-steward", "42.5") == 0
+    entry = _read_finalize_resync_entry(tmp_path, "pyforge-steward")
+    assert entry["payload"]["deferred_work_intake_finding"] is None
+
+
+# --- 53.2 landing (2026-09-20): the touched-module coverage floor measured this
+# module at 77% -- the branches below were the uncovered ones: the CLI entry,
+# a malformed story key, a contended deferred-work lock, and the 51.7
+# corroboration re-gate over a non-empty promotion plan.
+
+
+def test_main_parses_argv_and_forwards_the_optional_worktree(monkeypatch, tmp_path: Path) -> None:
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    seen: list[tuple] = []
+    monkeypatch.setattr(
+        mod, "finalize_dispatch_land", lambda slug, key, worktree: seen.append((slug, key, worktree)) or 0
+    )
+    assert mod.main(["pyforge-marshal", "53.2"]) == 0
+    assert mod.main(["pyforge-marshal", "53.2", str(tmp_path)]) == 0
+    assert seen == [("pyforge-marshal", "53.2", None), ("pyforge-marshal", "53.2", tmp_path)]
+
+
+def test_a_malformed_story_key_is_refused_before_any_scan(monkeypatch, tmp_path: Path, capsys) -> None:
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(mod, "_scan_promotions", lambda *a, **k: (_ for _ in ()).throw(AssertionError("scanned")))
+    assert mod.finalize_dispatch_land("pyforge-marshal", "not-a-key") == 1
+    assert "dispatch land finalize:" in capsys.readouterr().err
+
+
+def test_a_contended_deferred_work_lock_is_a_warn_finding_not_a_crash(tmp_path: Path) -> None:
+    class _LockedFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise FsError(f"lock held: {path}")
+
+    finding = _run_deferred_work_intake(
+        _FakeIntakeProcess(), _LockedFs(), _FakeIntakeVcs(), tmp_path, "pyforge-marshal"
+    )
+    assert finding is not None and finding.code == "MRS-DISP-047" and finding.severity == Severity.WARN
+    assert "lock" in finding.message and "marshal" in finding.message
+
+
+def test_promotion_plan_is_regated_through_spec_status_corroboration(monkeypatch, tmp_path: Path) -> None:
+    """Story 51.7 / CAP-255 inside finalize: a `to_promote` candidate is
+    promoted only when its spec status at `origin/main` corroborates the
+    merge; the corroboration reads the spec through `spec_text_at_ref` and
+    fails closed on a git read error."""
+    from pyforge.marshal.core.identity import normalize
+    from pyforge.marshal.dispatch_land_finalize import __main__ as mod
+
+    good, bad = normalize("53.2"), normalize("53.9")
+
+    class _Candidate:
+        def __init__(self, key):
+            self.story_key = key
+
+    class _Plan:
+        to_promote = (_Candidate(good), _Candidate(bad))
+
+    class _Scan:
+        findings: list = []
+        plan = _Plan()
+        combined_subjects = ("Merge pyforge-marshal/53-2 into main",)
+        template = "Merge {slug}/{key} into main"
+
+    executed: list = []
+    monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(mod, "GitVcs", lambda: _StubVcs())
+    monkeypatch.setattr(mod, "_scan_promotions", lambda *a, **k: _Scan())
+    monkeypatch.setattr(mod, "_promote_sprint_ledger", lambda *a, **k: ())
+    monkeypatch.setattr(mod, "_resync_home_branch", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "_execute_promotion_plan", lambda plan, **k: executed.extend(plan))
+
+    def _spec_text(vcs, root, slug, key):
+        if key == str(bad):
+            raise VcsCommandError("no such spec at origin/main")
+        return "---\nstatus: 'done'\n---\n"
+
+    monkeypatch.setattr(mod.dispatch_core, "spec_text_at_ref", _spec_text)
+    seen: dict = {}
+
+    def _corroborate(subjects, template, slug, *, spec_status_for):
+        seen["good"] = spec_status_for(good)
+        seen["bad"] = spec_status_for(bad)
+        return frozenset({good})
+
+    monkeypatch.setattr(mod.promotion, "corroborated_merged_story_keys", _corroborate)
+    assert mod.finalize_dispatch_land("pyforge-marshal", "53.2") == 0
+    assert seen == {"good": "done", "bad": None}
+    assert [c.story_key for c in executed] == [good]

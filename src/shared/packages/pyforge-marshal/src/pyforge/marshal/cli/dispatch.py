@@ -96,6 +96,7 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    resolve_land_findings_from_payload,
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
 )
@@ -788,11 +789,16 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             if isinstance(stop_val, str):
                 completion_stop_reason = stop_val
     landing_verdict: str | None = None
+    landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
-        if entry.phase == Phase.OUTCOME and entry.payload.get("ok"):
-            verdict_val = entry.payload.get("verdict")
-            if isinstance(verdict_val, str):
-                landing_verdict = verdict_val
+        if entry.phase == Phase.OUTCOME:
+            if entry.payload.get("ok"):
+                verdict_val = entry.payload.get("verdict")
+                if isinstance(verdict_val, str):
+                    landing_verdict = verdict_val
+            # Story 53.2 review (I1): read regardless of `ok` -- a refused
+            # landing (MRS-DISP-048) is exactly the case this must surface.
+            landing_findings = resolve_land_findings_from_payload(entry.payload)
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
@@ -850,6 +856,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         verification_failed_gate=verification_failed_gate,
         verification_scope_advisories=verification_scope_advisories,
         landing_verdict=landing_verdict,
+        landing_findings=landing_findings,
         story_started_at=story_started_at,
         story_ended_at=story_ended_at,
         baseline_revision=baseline_revision,
