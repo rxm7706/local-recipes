@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 from pyforge.core.landing_evidence import (
+    BranchDerivedShape,
     LandingEvidenceShape,
     PRE_CONVENTION_RECOVERY_COMMITS,
     RECOVERY_LANDING_CONVENTION,
@@ -177,6 +178,7 @@ def test_dispatch_branch_merge_subject_classifies_for_its_own_station() -> None:
     assert match is not None
     assert match.key == StoryKeyRef(22, 9)
     assert match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+    assert match.branch_shape is BranchDerivedShape.DISPATCH_BRANCH
 
 
 def test_dispatch_branch_merge_subject_never_classifies_cross_station() -> None:
@@ -223,3 +225,37 @@ def test_dispatch_prefix_alone_is_not_a_project_branch() -> None:
     prefix, must not classify."""
     assert parse_station_branch_name("dispatch/22.9", "pyforge-marshal") is None
     assert parse_station_branch_name("dispatch/pyforge-marshalx/22.9", "pyforge-marshal") is None
+
+
+# --------------------------------------------------------------------------
+# Story 51.7/CAP-255: ``branch_shape`` -- the metadata marshal's
+# ``corroborated_merged_story_keys`` needs to tell a trustworthy dispatch
+# landing apart from an ambiguous station-branch one (no grammar change).
+# --------------------------------------------------------------------------
+
+
+def test_station_branch_merge_subject_reports_station_branch_shape() -> None:
+    """The 2026-09-18 ``doctor/27-4-mint`` incident: a bare
+    ``<station>/<key>-<desc>`` branch reached through a GitHub PR-merge
+    subject is ambiguous -- a mint/fallout/fix PR carries the exact same
+    shape as a real landing. Exposed as ``STATION_BRANCH`` so a caller can
+    require independent corroboration for it."""
+    subject = "Merge pull request #1477 from rxm7706/doctor/27-4-mint"
+    match = classify_merge_subject(
+        subject, template=_TEMPLATE, project_slug="pyforge-doctor"
+    )
+    assert match is not None
+    assert match.key == StoryKeyRef(27, 4)
+    assert match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+    assert match.branch_shape is BranchDerivedShape.STATION_BRANCH
+
+
+def test_branch_shape_is_none_for_non_github_pr_shapes() -> None:
+    """``branch_shape`` is populated only for ``GITHUB_PR_MERGE_SUBJECT`` --
+    every other shape leaves it ``None``, including when no branch is
+    involved at all."""
+    match = classify_merge_subject(
+        "Merge 4-2-teardown into main", template=_TEMPLATE, project_slug="pyforge-marshal"
+    )
+    assert match is not None
+    assert match.branch_shape is None
