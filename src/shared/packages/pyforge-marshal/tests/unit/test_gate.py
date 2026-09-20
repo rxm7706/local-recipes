@@ -413,6 +413,22 @@ def test_check_spec_binding_is_one_directional_extra_policy_commands_are_not_a_f
     assert findings == ()
 
 
+def test_check_spec_binding_derived_surface_guard_stays_implicit():
+    # Story 53.1 (spec-53-1, CAP-261a), Edge-Case Matrix row 4: a
+    # pre-authored tracked spec declares only the station's own two verify
+    # commands -- it never names the S-13.7 guard, and it must not have to.
+    # `dispatch_verify.py` binds against `policy_commands` widened with the
+    # SAME command `harness_bmadloop.render_policy_toml` appends for a loop
+    # session; this proves that widening produces zero new findings for an
+    # existing spec, via the real constant rather than a stand-in string.
+    from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
+
+    declared = ("pyforge-marshal-test", "pyforge-deps-test")
+    policy_commands = (*declared, _SURFACE_RECONCILE_COMMAND)
+    findings = gate.check_spec_binding(declared, policy_commands)
+    assert findings == ()
+
+
 def test_check_spec_binding_empty_declared_commands_reports_nothing():
     # A spec whose own Success signal declares zero commands (its
     # `## Verification` section exists but has no `**Commands:**` bullets)

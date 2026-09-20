@@ -294,7 +294,7 @@ development_status:
   51-13-the-watch-reads-the-dispatch-verdict-in-the-supervisor-s-own-vocabulary: done
   52-1-the-six-accumulated-violations-are-cleared: done
   52-2-the-conformance-suite-is-a-pr-gate: done
-  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: backlog
+  53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
   53-2-the-landing-reconciles-from-git-facts-and-runs-intake: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done

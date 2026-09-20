@@ -691,6 +691,16 @@ def check_spec_binding(
     exists but declares no commands at all) therefore reports no findings:
     there is nothing declared to miss.
 
+    Story 53.1 (spec-53-1, CAP-261a) leans on exactly this one-directional
+    property to make the S-13.7 surface-reconcile guard IMPLICIT: dispatch
+    binds against ``policy_commands`` widened with the derived guard
+    (``dispatch_verify.py``'s own ``_verify_commands_with_surface_guard``,
+    the same command ``harness_bmadloop.render_policy_toml`` appends for a
+    loop session), never a declared one. No pre-authored tracked spec names
+    the guard in its ``## Verification`` section, and none has to: an
+    undeclared EXTRA policy command was already a non-finding before this
+    story, so every existing spec's binding result is unchanged.
+
     Two normalizations happen before that comparison, both review findings
     (P2/P6):
 

@@ -23,6 +23,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.marshal.adapters.harness_bmadbuild import (
+    _SPEC_SURFACE_OBLIGATION,
     BmadBuildHarness,
     BuildHarnessError,
 )
@@ -241,6 +242,45 @@ def test_dispatch_renders_profile_argv_env_and_detaches(
     log_text = log_path.read_text(encoding="utf-8")
     assert "PROJ=pyforge-marshal" in log_text
     assert "EXTRA=yes" in log_text
+
+
+def test_spec_surface_obligation_states_the_full_s13_7_contract() -> None:
+    """Story 53.1 (spec-53-1, CAP-261a), "Always" bullet 4: the prompt text
+    is a tested constant asserting the obligation, the co-governor rule, the
+    ``--write-baseline`` prohibition, and the ``location:`` rule are all
+    present -- a dispatched session never reads ``policy.toml`` and has no
+    other way to learn the guard is coming (see the constant's own
+    docstring)."""
+    from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
+
+    assert _SURFACE_RECONCILE_COMMAND in _SPEC_SURFACE_OBLIGATION
+    assert ".memlog.md" in _SPEC_SURFACE_OBLIGATION
+    assert "co-governor" in _SPEC_SURFACE_OBLIGATION
+    assert "--write-baseline" in _SPEC_SURFACE_OBLIGATION
+    assert "location:" in _SPEC_SURFACE_OBLIGATION
+
+
+def test_dispatch_prompt_carries_the_spec_surface_obligation(
+    tmp_path: Path, bare_path: Path
+) -> None:
+    """The obligation constant is not just defined -- it is actually wired
+    into the prompt every dispatched session receives (``dispatch()``'s
+    ``{prompt}`` argv placeholder, ``result.command[5]`` per the existing
+    ``test_dispatch_renders_profile_argv_env_and_detaches`` convention)."""
+    resolution = _launch_ready_resolution(tmp_path, bare_path)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    result = BmadBuildHarness().dispatch(
+        worktree,
+        resolution=resolution,
+        project_slug="pyforge-marshal",
+        story_key="53-1-example",
+        spec_path=worktree / "spec.md",
+        model="opus",
+        budget_env={},
+        log_path=tmp_path / "session.log",
+    )
+    assert _SPEC_SURFACE_OBLIGATION in result.command[5]
 
 
 def test_dispatch_omitted_model_tier_reports_reason(
