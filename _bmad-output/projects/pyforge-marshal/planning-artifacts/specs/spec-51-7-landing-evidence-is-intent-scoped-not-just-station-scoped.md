@@ -2,10 +2,10 @@
 title: '51.7: Landing evidence is intent-scoped, not just station-scoped'
 type: 'fix'
 created: '2026-09-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'f819e046250a3bf9d8f41a803408e2e245d424ec'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 deferred: []
 declared_low_risk: false
