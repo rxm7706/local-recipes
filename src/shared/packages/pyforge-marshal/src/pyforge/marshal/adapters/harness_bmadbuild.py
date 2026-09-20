@@ -54,6 +54,7 @@ from ..ports.build_harness import (
     HarnessCandidateSkip,
     HarnessResolution,
 )
+from .harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 
 
 class BuildHarnessError(PyforgeError, Exception):
@@ -65,6 +66,28 @@ class BuildHarnessError(PyforgeError, Exception):
 #: wedged/prompting CLI -- a probe that cannot answer inside this window is
 #: treated as an auth failure (skip with reason), never a hang.
 _AUTHCHECK_TIMEOUT_S = 20.0
+
+#: Story 53.1 (spec-53-1, CAP-261a): states the S-13.7 obligation verbatim
+#: in the dispatched session's OWN prompt. A bmad-loop session reads its
+#: verify commands straight out of its rendered ``policy.toml`` and finds
+#: the guard (``adapters.harness_bmadloop._SURFACE_RECONCILE_COMMAND``)
+#: sitting there; a dispatched session never reads ``policy.toml`` or this
+#: module at all, so without this text it has no way to know the guard is
+#: coming until ``dispatch_verify.py`` -- which runs AFTER the session has
+#: already exited (CAP-3) -- refuses it. Names the same command the guard
+#: actually runs, so a session that greps its own prompt for the command
+#: can find it.
+_SPEC_SURFACE_OBLIGATION = (
+    "This run's own verification includes "
+    f"`{_SURFACE_RECONCILE_COMMAND}` -- the same S-13.7 guard bmad-loop "
+    "sessions already run. Before finishing, name every governed path you "
+    "changed on the owning Spec's `.memlog.md` and on each co-governor "
+    "`spec-surface` names; the guard fails your verification naming any "
+    "path you leave out. Never pass --write-baseline: a producer that "
+    "stamps its own baseline launders drift instead of reconciling it. "
+    "Every `deferred:` entry you write must cite a real repo path in "
+    "`location:`.\n"
+)
 
 
 def _resolve_binary(
@@ -224,6 +247,7 @@ class BmadBuildHarness:
             f"Use BMAD_ACTIVE_PROJECT={project_slug} and physical artifact "
             f"paths under _bmad-output/projects/{project_slug}/ — never "
             f"scripts/bmad-switch.\n"
+            f"{_SPEC_SURFACE_OBLIGATION}"
         )
         # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-
         # compression decision, resolved from the SAME `[context]` payload
